@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "ClintGymApp",
+    "slug": "clintgymapp",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "clintgymapp",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.clintgym.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to record training-proof videos for your coach to review.",
+        "NSPhotoLibraryUsageDescription": "Used to upload a training-proof video from your library."
+      }
+    },
+    "android": {
+      "package": "com.clintgym.app",
+      "permissions": ["CAMERA", "READ_MEDIA_VIDEO", "POST_NOTIFICATIONS"]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#0F172A"
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,131 @@
+# ClintGymApp
+
+Coaching app for a solo online personal trainer (South Africa-based), built
+around daily client accountability first. See the full product brief for
+context on all 8 phases, foundational decisions, and the testing plan — this
+README covers what's actually built and how to run it.
+
+## Status: Phase 1 (core accountability loop) scaffold
+
+What exists right now:
+
+- **Auth & signup gated behind payment.** `SignupScreen` creates the account
+  and a `clients` row at `access_status = 'expired'`; the trainer manually
+  flips it to `active` in the **Clients** tab once EFT/PayPal payment is
+  confirmed. See `docs/access-gating.md` — this is the single highest-stakes
+  piece of logic in the app, deliberately enforced at both the RLS-policy and
+  trigger level, not just in the UI.
+- **Morning check-in** (`CheckInScreen`) covering every field from the brief:
+  alcohol, sleep (bed/asleep/wake time + 1-5 quality), water + electrolytes,
+  meals + high-GI count/timing, screen time before bed, non-backlit reading,
+  breathing/stretching, and a distress/pain flag with a required note.
+- **Training-proof video upload** (`VideoUploadScreen`) to Supabase Storage
+  as an interim provider (`videos.storage_provider` also supports `mux` /
+  `cloudflare_stream` for when that's wired up), with a 30-day
+  `expires_at` on every row for the auto-delete job to key off.
+- **Exercise reference library** (`ExerciseLibraryScreen`) seeded with 10
+  placeholder entries — fill in real Muscle & Motion links once the
+  licensing terms are confirmed to cover in-app display (see brief).
+- **Trainer compliance dashboard** (`TrainerDashboardScreen`), sorted
+  distress-flags-first, then missing-check-in, then done — matching "sorted
+  by needs attention" from the brief. Distress is a visual flag on the
+  dashboard, deliberately not a push notification (per the brief: the
+  dashboard is checked daily anyway).
+- **Admin client list** (`ClientsScreen`) sorted by plan expiry, with the
+  manual access-status control.
+- **Client detail view** (`ClientDetailScreen`) with recent check-in history,
+  distress notes surfaced, and a trainer-private notes field.
+
+What's deliberately **not** built yet (tracked as gaps, not bugs):
+
+- No push notifications yet (daily trainer summary, renewal reminders) —
+  `expo-notifications` is installed but no token registration or send path
+  exists.
+- No scheduled jobs yet: video auto-delete past `expires_at`, and the
+  active → expiring_soon → expired transition based on `plan_expires_at`
+  (see `docs/access-gating.md`).
+- No consent/privacy-policy document itself — `SignupScreen` records
+  `consent_accepted_at` and a `privacy_policy_version`, but the actual
+  POPIA-compliant policy text needs a lawyer or reviewed template, not
+  something to draft here.
+- Intake form is a `jsonb` column ready to receive whatever questions the
+  trainer designs; no intake screen exists yet since those questions aren't
+  finalized.
+- Everything past Phase 1 (video annotation, nutrition, progress charts, AI
+  insights, anxiety toolkit, wearables, own video library) is out of scope
+  for this scaffold by design — see the brief's phased build order.
+- No app icon/splash/favicon assets exist yet (`app.json` intentionally omits
+  them rather than pointing at files that don't exist) — add real ones under
+  `src/assets/` before an EAS build or app store submission.
+
+## Stack
+
+- **App:** React Native + Expo (SDK 57), TypeScript, React Navigation
+  (bottom tabs + native stack, role-branching root navigator)
+- **Backend:** Supabase (Postgres + Auth + Storage), schema and RLS policies
+  in `supabase/migrations/`
+- **Video (interim):** Supabase Storage, bucket-scoped RLS by client folder
+  (`supabase/migrations/0003_video_storage.sql`); swap for Mux/Cloudflare
+  Stream when ready
+
+## Setup
+
+```bash
+npm install
+cp .env.example .env   # fill in Supabase URL/anon key + the trainer's auth UID
+```
+
+Apply the database schema against a Supabase project:
+
+```bash
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase db push
+```
+
+Create the trainer's own account through Supabase Auth (email/password),
+then insert their `trainers` row manually (there's no trainer signup screen —
+there's only one trainer, created once):
+
+```sql
+insert into public.trainers (id, name, email)
+values ('<trainer-auth-uid>', 'Trainer Name', 'trainer@example.com');
+```
+
+Put that same UID in `.env` as `EXPO_PUBLIC_DEFAULT_TRAINER_ID` so client
+signups attach to it.
+
+Run the app:
+
+```bash
+npm run start     # then press i / a / w, or scan the QR code with Expo Go
+```
+
+## Project layout
+
+```
+App.tsx                     # provider + navigation root
+src/
+  lib/supabase.ts           # Supabase client (env-configured)
+  types/database.ts         # hand-written mirror of the SQL schema
+  context/AuthContext.tsx   # session + role (trainer/client) resolution
+  navigation/                # role-branching navigators
+  screens/
+    auth/                    # login, signup + payment-pending
+    client/                  # check-in, video upload, exercises, profile
+    trainer/                 # dashboard, client list, client detail
+supabase/
+  migrations/                # schema, seed data, storage policies
+docs/
+  access-gating.md           # how the payment/access field is protected
+```
+
+## Testing this phase before it touches real client data
+
+At minimum, before onboarding a real client: sign up as a test client,
+confirm they see `PendingAccessScreen` (not the app) until flipped to
+`active`; confirm a second test client can never see the first client's
+check-ins or videos (RLS); confirm a distress-flagged check-in shows up
+red-bordered at the top of the trainer dashboard. See the brief's full
+"Testing plan" section for the broader manual QA checklist and beta-cohort
+guidance.
