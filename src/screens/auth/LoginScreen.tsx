@@ -24,6 +24,8 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.brand}>Daily Grizz</Text>
+      <Text style={styles.tagline}>Total Lifestyle Training & Accountability</Text>
       <Text style={styles.title}>Welcome back</Text>
       <TextInput
         style={styles.input}
@@ -52,7 +54,15 @@ export default function LoginScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
-  title: { fontSize: 28, fontWeight: "700", color: "#fff", marginBottom: 24 },
+  brand: { fontSize: 32, fontWeight: "800", color: "#fff", textAlign: "center" },
+  tagline: {
+    fontSize: 13,
+    color: "#94A3B8",
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 36,
+  },
+  title: { fontSize: 22, fontWeight: "700", color: "#fff", marginBottom: 24 },
   input: {
     backgroundColor: "#1E293B",
     color: "#fff",

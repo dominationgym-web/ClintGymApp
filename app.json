@@ -1,6 +1,7 @@
 {
   "expo": {
-    "name": "Total Lifestyle Training & Accountability",
+    "name": "Daily Grizz",
+    "description": "Total Lifestyle Training & Accountability",
     "slug": "clintgymapp",
     "version": "0.1.0",
     "orientation": "portrait",
