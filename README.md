@@ -50,9 +50,12 @@ What's deliberately **not** built yet (tracked as gaps, not bugs):
   `consent_accepted_at` and a `privacy_policy_version`, but the actual
   POPIA-compliant policy text needs a lawyer or reviewed template, not
   something to draft here.
-- Intake form is a `jsonb` column ready to receive whatever questions the
-  trainer designs; no intake screen exists yet since those questions aren't
-  finalized.
+- Intake form: `clients.intake_responses` (jsonb) renders as an always-visible
+  section on `ClientDetailScreen` (trainer view), formatted generically as
+  question/answer pairs - shows "No intake form completed yet" until it's
+  populated. No client-facing *input* screen exists yet, since the actual
+  questions aren't finalized; once they are, that screen just needs to write
+  into the same column and this display needs no changes.
 - Everything past Phase 1 (video annotation, nutrition, progress charts, AI
   insights, anxiety toolkit, wearables, own video library) is out of scope
   for this scaffold by design — see the brief's phased build order.

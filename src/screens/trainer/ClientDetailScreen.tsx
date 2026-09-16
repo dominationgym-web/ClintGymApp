@@ -7,6 +7,12 @@ import type { TrainerStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
+function formatIntakeLabel(key: string) {
+  return key
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function ClientDetailScreen({ route }: Props) {
   const { clientId } = route.params;
   const [client, setClient] = useState<Client | null>(null);
@@ -58,6 +64,20 @@ export default function ClientDetailScreen({ route }: Props) {
       {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
       {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
 
+      <Text style={styles.sectionHeading}>Intake form</Text>
+      {Object.keys(client.intake_responses ?? {}).length === 0 ? (
+        <Text style={styles.helper}>No intake form completed yet.</Text>
+      ) : (
+        <View style={styles.intakeBox}>
+          {Object.entries(client.intake_responses).map(([key, value]) => (
+            <View key={key} style={styles.intakeRow}>
+              <Text style={styles.intakeLabel}>{formatIntakeLabel(key)}</Text>
+              <Text style={styles.intakeValue}>{String(value)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       <Text style={styles.sectionHeading}>Trainer notes</Text>
       <TextInput
         style={styles.notesInput}
@@ -94,6 +114,10 @@ const styles = StyleSheet.create({
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
+  intakeBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
+  intakeRow: { marginBottom: 10 },
+  intakeLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 2 },
+  intakeValue: { color: "#E2E8F0", fontSize: 14 },
   notesInput: {
     backgroundColor: "#1E293B",
     color: "#fff",
