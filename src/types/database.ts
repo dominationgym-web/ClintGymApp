@@ -70,7 +70,7 @@ export type Exercise = {
   id: string;
   name: string;
   category: string | null;
-  source: "muscle_and_motion" | "own_library";
+  source: "movekit" | "muscle_and_motion" | "own_library";
   external_url: string | null;
   sort_order: number;
 }

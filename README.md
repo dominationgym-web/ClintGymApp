@@ -24,8 +24,10 @@ What exists right now:
   `cloudflare_stream` for when that's wired up), with a 30-day
   `expires_at` on every row for the auto-delete job to key off.
 - **Exercise reference library** (`ExerciseLibraryScreen`) seeded with 10
-  placeholder entries — fill in real Muscle & Motion links once the
-  licensing terms are confirmed to cover in-app display (see brief).
+  placeholder entries, sourced from the MoveKit Complete package (one-time
+  purchase, explicit commercial license — see `docs/exercise-library.md`).
+  Plays inline via `expo-video` in a modal rather than deep-linking out;
+  files live in the public `exercise-library` Supabase Storage bucket.
 - **Trainer compliance dashboard** (`TrainerDashboardScreen`), sorted
   distress-flags-first, then missing-check-in, then done — matching "sorted
   by needs attention" from the brief. Distress is a visual flag on the
