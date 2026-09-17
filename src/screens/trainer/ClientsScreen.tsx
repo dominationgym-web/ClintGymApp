@@ -72,7 +72,11 @@ export default function ClientsScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => navigation.navigate("ClientDetail", { clientId: item.id })}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{item.name}</Text>
+              <View style={styles.nameRow}>
+                {item.status_flag === "red" && <Text style={styles.flagIcon}>🚩</Text>}
+                {item.status_flag === "orange" && <View style={[styles.flagDot, { backgroundColor: "#F59E0B" }]} />}
+                <Text style={styles.name}>{item.name}</Text>
+              </View>
               {item.plan_expires_at && (
                 <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
               )}
@@ -112,6 +116,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
   },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  flagIcon: { fontSize: 13 },
+  flagDot: { width: 9, height: 9, borderRadius: 5 },
   name: { color: "#fff", fontWeight: "600" },
   expiry: { color: "#64748B", fontSize: 12, marginTop: 2 },
   statusPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },

@@ -49,6 +49,18 @@ export default function ClientDetailScreen({ route }: Props) {
     if (error) Alert.alert("Couldn't save notes", error.message);
   };
 
+  const markResolved = async () => {
+    const { error } = await supabase
+      .from("clients")
+      .update({ status_flag: "green", status_flag_note: null, status_flag_updated_at: new Date().toISOString() })
+      .eq("id", clientId);
+    if (error) {
+      Alert.alert("Couldn't update", error.message);
+      return;
+    }
+    setClient((c) => (c ? { ...c, status_flag: "green", status_flag_note: null } : c));
+  };
+
   if (loading || !client) {
     return (
       <View style={styles.centered}>
@@ -61,6 +73,24 @@ export default function ClientDetailScreen({ route }: Props) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
       <Text style={styles.title}>{client.name}</Text>
       <Text style={styles.helper}>{client.email}</Text>
+
+      {client.status_flag !== "green" && (
+        <View style={[styles.flagBanner, client.status_flag === "red" ? styles.flagBannerRed : styles.flagBannerOrange]}>
+          <Text style={styles.flagBannerTitle}>
+            {client.status_flag === "red" ? "🚩 Urgent - needs guidance" : "🟠 Wants feedback"}
+          </Text>
+          {client.status_flag_note && <Text style={styles.flagBannerNote}>{client.status_flag_note}</Text>}
+          {client.status_flag_updated_at && (
+            <Text style={styles.flagBannerTime}>
+              Set {new Date(client.status_flag_updated_at).toLocaleString()}
+            </Text>
+          )}
+          <Pressable style={styles.resolveButton} onPress={markResolved}>
+            <Text style={styles.resolveButtonText}>Mark as resolved</Text>
+          </Pressable>
+        </View>
+      )}
+
       {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
       {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
 
@@ -114,6 +144,20 @@ const styles = StyleSheet.create({
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
+  flagBanner: { borderRadius: 10, padding: 14, marginTop: 12, marginBottom: 4, borderWidth: 1.5 },
+  flagBannerRed: { backgroundColor: "#2A1414", borderColor: "#EF4444" },
+  flagBannerOrange: { backgroundColor: "#2A2114", borderColor: "#F59E0B" },
+  flagBannerTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  flagBannerNote: { color: "#E2E8F0", fontSize: 14, marginTop: 6 },
+  flagBannerTime: { color: "#94A3B8", fontSize: 11, marginTop: 6 },
+  resolveButton: {
+    backgroundColor: "#22C55E",
+    borderRadius: 8,
+    paddingVertical: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  resolveButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   intakeBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
   intakeRow: { marginBottom: 10 },
   intakeLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 2 },

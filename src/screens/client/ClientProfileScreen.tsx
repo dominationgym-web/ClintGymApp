@@ -1,6 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, ActivityIndicator, Alert } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import type { ClientStatusFlag } from "@/types/database";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Active",
@@ -8,10 +10,47 @@ const STATUS_LABEL: Record<string, string> = {
   expired: "Expired",
 };
 
+const FLAGS: { key: ClientStatusFlag; label: string; color: string }[] = [
+  { key: "red", label: "Urgent - I need guidance", color: "#EF4444" },
+  { key: "orange", label: "I'd like some feedback", color: "#F59E0B" },
+  { key: "green", label: "All good, no feedback needed", color: "#22C55E" },
+];
+
 export default function ClientProfileScreen() {
-  const { client, signOut } = useAuth();
+  const { client, signOut, refreshProfile } = useAuth();
+  const [selectedFlag, setSelectedFlag] = useState<ClientStatusFlag | null>(null);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
 
   if (!client) return null;
+
+  const activeFlag = selectedFlag ?? client.status_flag;
+
+  const handleSave = async () => {
+    if (activeFlag !== "green" && !note.trim() && !client.status_flag_note) {
+      Alert.alert("Add a quick note", "Let your trainer know what's going on so they have context.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({
+        status_flag: activeFlag,
+        status_flag_note: activeFlag === "green" ? null : note.trim() || client.status_flag_note,
+        status_flag_updated_at: new Date().toISOString(),
+      })
+      .eq("id", client.id);
+    setSaving(false);
+    if (error) {
+      Alert.alert("Couldn't update", error.message);
+      return;
+    }
+    setSelectedFlag(null);
+    setNote("");
+    await refreshProfile();
+  };
+
+  const hasChange = selectedFlag !== null && selectedFlag !== client.status_flag;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
@@ -26,13 +65,50 @@ export default function ClientProfileScreen() {
         <Text style={styles.helper}>Plan renews/expires {new Date(client.plan_expires_at).toLocaleDateString()}</Text>
       )}
 
+      <Text style={styles.sectionHeading}>How are you doing?</Text>
+      <Text style={styles.body}>
+        Let your trainer know if you need anything - they check this before anything else.
+      </Text>
+      {FLAGS.map((f) =>
+        f.key === "red" ? (
+          <Pressable key={f.key} style={styles.flagRow} onPress={() => setSelectedFlag(f.key)}>
+            <Text style={styles.flagIcon}>🚩</Text>
+            <View style={[styles.radio, activeFlag === f.key && { borderColor: f.color, backgroundColor: f.color }]} />
+            <Text style={styles.flagLabel}>{f.label}</Text>
+          </Pressable>
+        ) : (
+          <Pressable key={f.key} style={styles.flagRow} onPress={() => setSelectedFlag(f.key)}>
+            <View style={[styles.flagDot, { backgroundColor: f.color }]} />
+            <View style={[styles.radio, activeFlag === f.key && { borderColor: f.color, backgroundColor: f.color }]} />
+            <Text style={styles.flagLabel}>{f.label}</Text>
+          </Pressable>
+        )
+      )}
+
+      {activeFlag !== "green" && (
+        <TextInput
+          style={styles.noteInput}
+          multiline
+          placeholder="Quick note for your trainer (what's going on?)"
+          placeholderTextColor="#64748B"
+          value={note}
+          onChangeText={setNote}
+        />
+      )}
+
+      {hasChange && (
+        <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
+          {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Update status</Text>}
+        </Pressable>
+      )}
+
       <Text style={styles.sectionHeading}>Goals</Text>
       <Text style={styles.body}>{client.goals || "Not set yet - your trainer will add this."}</Text>
 
       <Text style={styles.sectionHeading}>Injuries / notes for your trainer</Text>
       <Text style={styles.body}>{client.injuries || "None on file."}</Text>
 
-      <Pressable style={styles.button} onPress={signOut}>
+      <Pressable style={styles.logoutButton} onPress={signOut}>
         <Text style={styles.buttonText}>Log out</Text>
       </Pressable>
     </ScrollView>
@@ -59,12 +135,27 @@ const styles = StyleSheet.create({
   helper: { color: "#64748B", fontSize: 12, marginBottom: 16 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 6 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },
-  button: {
+  flagRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
+  flagDot: { width: 10, height: 10, borderRadius: 5 },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#334155" },
+  flagIcon: { fontSize: 14, width: 10, textAlign: "center" },
+  flagLabel: { color: "#E2E8F0", fontSize: 14, flexShrink: 1 },
+  noteInput: {
+    backgroundColor: "#1E293B",
+    color: "#fff",
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 70,
+    textAlignVertical: "top",
+    marginTop: 14,
+  },
+  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 14 },
+  logoutButton: {
     backgroundColor: "#334155",
     borderRadius: 10,
     padding: 14,
     alignItems: "center",
     marginTop: 32,
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  buttonText: { color: "#0F172A", fontWeight: "700" },
 });

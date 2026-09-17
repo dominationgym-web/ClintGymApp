@@ -29,10 +29,15 @@ What exists right now:
   Plays inline via `expo-video` in a modal rather than deep-linking out;
   files live in the public `exercise-library` Supabase Storage bucket.
 - **Trainer compliance dashboard** (`TrainerDashboardScreen`), sorted
-  distress-flags-first, then missing-check-in, then done — matching "sorted
-  by needs attention" from the brief. Distress is a visual flag on the
-  dashboard, deliberately not a push notification (per the brief: the
-  dashboard is checked daily anyway).
+  urgent-flag-first, then today's distress-flag, then wants-feedback-flag,
+  then missing-check-in, then done — matching "sorted by needs attention"
+  from the brief. Distress/urgent flags are visual, deliberately not a push
+  notification (per the brief: the dashboard is checked daily anyway).
+- **Client status flag** (`clients.status_flag`) — a standalone 🚩red /
+  🟠orange / green traffic light the client sets any time from their Profile
+  screen (not tied to the daily check-in), for signalling "I need guidance
+  now" vs "I'd like feedback" vs "all good." Drives the dashboard sort order
+  above; the trainer can mark one resolved from `ClientDetailScreen`.
 - **Admin client list** (`ClientsScreen`) sorted by plan expiry, with the
   manual access-status control.
 - **Client detail view** (`ClientDetailScreen`) with recent check-in history,

@@ -5,6 +5,7 @@
 export type AccessStatus = "active" | "expiring_soon" | "expired";
 export type PlanType = "intro_1mo" | "sub_6mo" | "sub_12mo";
 export type HighGiTiming = "before_training" | "before_bed" | "other";
+export type ClientStatusFlag = "green" | "orange" | "red";
 
 export type Trainer = {
   id: string;
@@ -29,6 +30,9 @@ export type Client = {
   plan_expires_at: string | null;
   consent_accepted_at: string | null;
   privacy_policy_version: string | null;
+  status_flag: ClientStatusFlag;
+  status_flag_note: string | null;
+  status_flag_updated_at: string | null;
   created_at: string;
 }
 

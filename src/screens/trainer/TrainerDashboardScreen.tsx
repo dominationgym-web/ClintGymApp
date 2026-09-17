@@ -15,6 +15,23 @@ interface ClientStatus {
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+// Priority order for the dashboard: urgent flag first, then today's distress
+// flag, then wants-feedback flag, then simply missing a check-in, then done.
+// Lower number = higher up the list.
+function priority(r: ClientStatus): number {
+  if (r.client.status_flag === "red") return 0;
+  if (r.distressFlag) return 1;
+  if (r.client.status_flag === "orange") return 2;
+  if (!r.todaysCheckin) return 3;
+  return 4;
+}
+
+function flagBorderColor(client: Client): string | undefined {
+  if (client.status_flag === "red") return "#EF4444";
+  if (client.status_flag === "orange") return "#F59E0B";
+  return undefined;
+}
+
 export default function TrainerDashboardScreen({ navigation }: Props) {
   const { trainer } = useAuth();
   const [rows, setRows] = useState<ClientStatus[]>([]);
@@ -47,11 +64,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       return { client, todaysCheckin, distressFlag: todaysCheckin?.distress_flag ?? false };
     });
 
-    // Needs attention first: distress flags, then missing check-ins, then done.
-    result.sort((a, b) => {
-      const score = (r: ClientStatus) => (r.distressFlag ? 0 : r.todaysCheckin ? 2 : 1);
-      return score(a) - score(b);
-    });
+    result.sort((a, b) => priority(a) - priority(b));
 
     setRows(result);
   }, [trainer]);
@@ -81,18 +94,35 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
         data={rows}
         keyExtractor={(r) => r.client.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={({ item }) => (
-          <Pressable
-            style={[styles.row, item.distressFlag && styles.rowDistress]}
-            onPress={() => navigation.navigate("ClientDetail", { clientId: item.client.id })}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{item.client.name}</Text>
-              {item.distressFlag && <Text style={styles.distressText}>⚠ Distress/pain flagged today</Text>}
-            </View>
-            <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const borderColor = flagBorderColor(item.client);
+          return (
+            <Pressable
+              style={[styles.row, borderColor && { borderWidth: 1.5, borderColor }]}
+              onPress={() => navigation.navigate("ClientDetail", { clientId: item.client.id })}
+            >
+              <View style={{ flex: 1 }}>
+                <View style={styles.nameRow}>
+                  {item.client.status_flag === "red" && <Text style={styles.flagIcon}>🚩</Text>}
+                  {item.client.status_flag === "orange" && <View style={[styles.flagDot, { backgroundColor: borderColor }]} />}
+                  <Text style={styles.name}>{item.client.name}</Text>
+                </View>
+                {item.client.status_flag === "red" && (
+                  <Text style={[styles.flagText, { color: "#F87171" }]}>
+                    Urgent - needs guidance{item.client.status_flag_note ? `: ${item.client.status_flag_note}` : ""}
+                  </Text>
+                )}
+                {item.client.status_flag === "orange" && (
+                  <Text style={[styles.flagText, { color: "#FBBF24" }]}>
+                    🟠 Wants feedback{item.client.status_flag_note ? `: ${item.client.status_flag_note}` : ""}
+                  </Text>
+                )}
+                {item.distressFlag && <Text style={styles.distressText}>⚠ Distress/pain flagged today</Text>}
+              </View>
+              <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
+            </Pressable>
+          );
+        }}
         ListEmptyComponent={<Text style={styles.helper}>No active clients yet.</Text>}
       />
     </View>
@@ -111,8 +141,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
   },
-  rowDistress: { borderWidth: 1.5, borderColor: "#EF4444" },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  flagIcon: { fontSize: 14 },
+  flagDot: { width: 10, height: 10, borderRadius: 5 },
   name: { color: "#fff", fontWeight: "600", fontSize: 15 },
+  flagText: { fontSize: 12, marginTop: 4, fontWeight: "600" },
   distressText: { color: "#F87171", fontSize: 12, marginTop: 4, fontWeight: "600" },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
   dotGreen: { backgroundColor: "#22C55E" },
