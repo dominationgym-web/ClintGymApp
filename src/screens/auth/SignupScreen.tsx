@@ -13,6 +13,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import type { PlanType } from "@/types/database";
+import PasswordInput from "@/components/PasswordInput";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Signup">;
 
@@ -118,13 +119,7 @@ export default function SignupScreen({ navigation }: Props) {
         onChangeText={setEmail}
       />
       <TextInput style={styles.input} placeholder="Phone (optional)" value={phone} onChangeText={setPhone} />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+      <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
 
       <Text style={styles.sectionHeading}>Choose your plan</Text>
       {PLANS.map((p) => (
