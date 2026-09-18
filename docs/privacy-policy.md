@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Daily Grizz** (the "app"), operated by **Viveshan Naidoo, trading as Domination Gym** ("we", "us", "your trainer")
+**Daily Grizz** (the "app"), operated by **Clint Walters, trading as Domination Gym** ("we", "us", "your trainer")
 
 **Last updated:** 18 September 2026
 **Policy version:** `2026-09-18`
@@ -13,9 +13,9 @@ party" for the personal information described below.
 
 ## 1. Who we are
 
-**Viveshan Naidoo**, trading as **Domination Gym**, based in South Africa.
+**Clint Walters**, trading as **Domination Gym**, based in South Africa.
 
-**Contact / Information Officer:** Viveshan Naidoo
+**Contact / Information Officer:** Clint Walters
 - WhatsApp: 076 423 2075
 - Email: dominationgym@gmail.com
 

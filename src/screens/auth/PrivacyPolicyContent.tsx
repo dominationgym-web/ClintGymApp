@@ -9,7 +9,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: "1. Who we are",
     body:
-      "Viveshan Naidoo, trading as Domination Gym, based in South Africa, operates the Daily Grizz app and is the \"responsible party\" for your personal information under POPIA.\n\nContact / Information Officer: Viveshan Naidoo — WhatsApp 076 423 2075, email dominationgym@gmail.com.",
+      "Clint Walters, trading as Domination Gym, based in South Africa, operates the Daily Grizz app and is the \"responsible party\" for your personal information under POPIA.\n\nContact / Information Officer: Clint Walters — WhatsApp 076 423 2075, email dominationgym@gmail.com.",
   },
   {
     heading: "2. What we collect",
