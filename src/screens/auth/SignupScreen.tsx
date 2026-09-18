@@ -25,6 +25,16 @@ const PLANS: { key: PlanType; label: string }[] = [
 
 const PRIVACY_POLICY_VERSION = "2026-09-14";
 
+const POP_WHATSAPP_NUMBER = "076 423 2075";
+
+const EFT_DETAILS = [
+  { label: "Account holder", value: "Viveshan Naidoo" },
+  { label: "Bank", value: "Discovery Bank" },
+  { label: "Account type", value: "Current Account" },
+  { label: "Branch code", value: "679000" },
+  { label: "Account number", value: "14374977427" },
+];
+
 export default function SignupScreen({ navigation }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -96,7 +106,22 @@ export default function SignupScreen({ navigation }: Props) {
           personally.
         </Text>
         <Text style={styles.sectionHeading}>South Africa - EFT</Text>
-        <Text style={styles.body}>Bank details will be sent to you directly by your trainer.</Text>
+        <View style={styles.bankBox}>
+          {EFT_DETAILS.map(({ label, value }) => (
+            <View key={label} style={styles.bankRow}>
+              <Text style={styles.bankLabel}>{label}</Text>
+              <Text style={styles.bankValue}>{value}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.body}>
+          Use your name as the payment reference so your trainer can match it to your account.
+        </Text>
+        <Text style={styles.body}>
+          Then send proof of payment to <Text style={styles.bankValueInline}>{POP_WHATSAPP_NUMBER}</Text> on
+          WhatsApp.
+        </Text>
+
         <Text style={styles.sectionHeading}>International - PayPal</Text>
         <Text style={styles.body}>PayPal details will be sent to you directly by your trainer.</Text>
         <Pressable style={styles.button} onPress={() => navigation.replace("Login")}>
@@ -152,6 +177,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 16 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, flexShrink: 1 },
+  bankBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 12 },
+  bankRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8, gap: 12 },
+  bankLabel: { color: "#64748B", fontSize: 13, flexShrink: 0 },
+  bankValue: { color: "#fff", fontSize: 13, fontWeight: "600", textAlign: "right", flexShrink: 1 },
+  bankValueInline: { color: "#22C55E", fontWeight: "700" },
   input: {
     backgroundColor: "#1E293B",
     color: "#fff",
