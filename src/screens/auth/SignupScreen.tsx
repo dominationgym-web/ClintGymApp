@@ -8,12 +8,15 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Modal,
+  SafeAreaView,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import type { PlanType } from "@/types/database";
 import PasswordInput from "@/components/PasswordInput";
+import PrivacyPolicyContent, { PRIVACY_POLICY_VERSION } from "@/screens/auth/PrivacyPolicyContent";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Signup">;
 
@@ -22,8 +25,6 @@ const PLANS: { key: PlanType; label: string }[] = [
   { key: "sub_6mo", label: "6-month subscription" },
   { key: "sub_12mo", label: "12-month subscription (best rate)" },
 ];
-
-const PRIVACY_POLICY_VERSION = "2026-09-14";
 
 const POP_WHATSAPP_NUMBER = "076 423 2075";
 
@@ -44,6 +45,7 @@ export default function SignupScreen({ navigation }: Props) {
   const [consented, setConsented] = useState(false);
   const [loading, setLoading] = useState(false);
   const [awaitingPayment, setAwaitingPayment] = useState(false);
+  const [policyVisible, setPolicyVisible] = useState(false);
 
   const handleSignup = async () => {
     if (!name || !email || !password) {
@@ -154,6 +156,10 @@ export default function SignupScreen({ navigation }: Props) {
         </Pressable>
       ))}
 
+      <Pressable onPress={() => setPolicyVisible(true)}>
+        <Text style={styles.policyLink}>Read the full privacy policy</Text>
+      </Pressable>
+
       <Pressable style={styles.planRow} onPress={() => setConsented((c) => !c)}>
         <View style={[styles.checkbox, consented && styles.checkboxChecked]} />
         <Text style={styles.consentText}>
@@ -161,6 +167,20 @@ export default function SignupScreen({ navigation }: Props) {
           processed by my trainer in line with the privacy policy, per POPIA.
         </Text>
       </Pressable>
+
+      <Modal visible={policyVisible} animationType="slide" onRequestClose={() => setPolicyVisible(false)}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Privacy Policy</Text>
+            <Pressable onPress={() => setPolicyVisible(false)}>
+              <Text style={styles.closeText}>Close</Text>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 20 }}>
+            <PrivacyPolicyContent />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
         {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Continue to payment</Text>}
@@ -195,6 +215,16 @@ const styles = StyleSheet.create({
   checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: "#64748B" },
   checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   consentText: { color: "#E2E8F0", fontSize: 13, lineHeight: 18, flex: 1 },
+  policyLink: { color: "#22C55E", fontSize: 13, fontWeight: "600", marginBottom: 12, textDecorationLine: "underline" },
+  modalContainer: { flex: 1, backgroundColor: "#0F172A" },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalTitle: { color: "#fff", fontSize: 20, fontWeight: "700" },
+  closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
   button: {
     backgroundColor: "#22C55E",
     borderRadius: 10,

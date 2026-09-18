@@ -48,13 +48,18 @@ What's deliberately **not** built yet (tracked as gaps, not bugs):
 - No push notifications yet (daily trainer summary, renewal reminders) —
   `expo-notifications` is installed but no token registration or send path
   exists.
-- No scheduled jobs yet: video auto-delete past `expires_at`, and the
-  active → expiring_soon → expired transition based on `plan_expires_at`
-  (see `docs/access-gating.md`).
-- No consent/privacy-policy document itself — `SignupScreen` records
-  `consent_accepted_at` and a `privacy_policy_version`, but the actual
-  POPIA-compliant policy text needs a lawyer or reviewed template, not
-  something to draft here.
+- Video auto-delete is now live — a daily `pg_cron` job
+  (`delete_expired_videos`, `supabase/migrations/0009_video_auto_delete_job.sql`)
+  removes the Storage file and soft-deletes the row past `expires_at`. Still
+  missing: the active → expiring_soon → expired transition based on
+  `plan_expires_at` (see `docs/access-gating.md`) isn't automated yet.
+- Privacy policy is now real (`docs/privacy-policy.md`, rendered in-app via
+  `PrivacyPolicyContent`/a modal on `SignupScreen`, linked before the
+  consent checkbox so consent is actually informed) — drafted around
+  POPIA's Section 18 notice requirements and this app's real data
+  practices. Worth a lawyer's review given health-adjacent data counts as
+  "special personal information" under POPIA, but it's no longer a
+  placeholder.
 - Intake form: `clients.intake_responses` (jsonb) renders as an always-visible
   section on `ClientDetailScreen` (trainer view), formatted generically as
   question/answer pairs - shows "No intake form completed yet" until it's
