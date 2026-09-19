@@ -180,7 +180,7 @@ export default function CheckInScreen() {
         onChangeText={setScreenTimeMinutes}
       />
       <Toggle
-        label="Read on a non-backlit device before bed (not Kindle)"
+        label="Read before bed on a non-backlit device (e.g. Kindle - not phone, tablet, or laptop)"
         value={readNonBacklit}
         onToggle={() => setReadNonBacklit((v) => !v)}
       />
