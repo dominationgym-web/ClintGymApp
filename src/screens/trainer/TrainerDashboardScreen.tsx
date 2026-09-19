@@ -33,7 +33,7 @@ function flagBorderColor(client: Client): string | undefined {
 }
 
 export default function TrainerDashboardScreen({ navigation }: Props) {
-  const { trainer } = useAuth();
+  const { trainer, signOut } = useAuth();
   const [rows, setRows] = useState<ClientStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,7 +89,12 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today's compliance</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Today's compliance</Text>
+        <Pressable onPress={signOut}>
+          <Text style={styles.logoutLink}>Log out</Text>
+        </Pressable>
+      </View>
       <FlatList
         data={rows}
         keyExtractor={(r) => r.client.id}
@@ -132,7 +137,9 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
-  title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 16 },
+  title: { fontSize: 24, fontWeight: "700", color: "#fff" },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  logoutLink: { color: "#64748B", fontSize: 13, fontWeight: "600" },
   row: {
     flexDirection: "row",
     alignItems: "center",
