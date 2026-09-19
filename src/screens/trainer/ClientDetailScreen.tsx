@@ -7,6 +7,12 @@ import type { TrainerStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
+const PACKAGE_LABEL: Record<string, string> = {
+  training_only: "Training only",
+  training_nutrition: "Training + Nutrition",
+  training_nutrition_lifestyle: "Training + Nutrition + Lifestyle",
+};
+
 function formatIntakeLabel(key: string) {
   return key
     .replace(/[_-]+/g, " ")
@@ -73,6 +79,11 @@ export default function ClientDetailScreen({ route }: Props) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
       <Text style={styles.title}>{client.name}</Text>
       <Text style={styles.helper}>{client.email}</Text>
+      {client.package_type && (
+        <View style={styles.packageBadge}>
+          <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
+        </View>
+      )}
 
       {client.status_flag !== "green" && (
         <View style={[styles.flagBanner, client.status_flag === "red" ? styles.flagBannerRed : styles.flagBannerOrange]}>
@@ -142,6 +153,15 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
+  packageBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#1E293B",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  packageBadgeText: { color: "#22C55E", fontSize: 12, fontWeight: "600" },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
   flagBanner: { borderRadius: 10, padding: 14, marginTop: 12, marginBottom: 4, borderWidth: 1.5 },

@@ -14,7 +14,7 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
-import type { PlanType } from "@/types/database";
+import type { PackageType, PlanType } from "@/types/database";
 import PasswordInput from "@/components/PasswordInput";
 import PrivacyPolicyContent, { PRIVACY_POLICY_VERSION } from "@/screens/auth/PrivacyPolicyContent";
 
@@ -24,6 +24,20 @@ const PLANS: { key: PlanType; label: string }[] = [
   { key: "intro_1mo", label: "1-month intro (once-off)" },
   { key: "sub_6mo", label: "6-month subscription" },
   { key: "sub_12mo", label: "12-month subscription (best rate)" },
+];
+
+const PACKAGES: { key: PackageType; label: string; description: string }[] = [
+  { key: "training_only", label: "Training only", description: "Programming and check-ins on your training." },
+  {
+    key: "training_nutrition",
+    label: "Training + Nutrition",
+    description: "Training plus nutrition guidance.",
+  },
+  {
+    key: "training_nutrition_lifestyle",
+    label: "Training + Nutrition + Lifestyle",
+    description: "Full coaching - training, nutrition, and lifestyle/stress management.",
+  },
 ];
 
 const POP_WHATSAPP_NUMBER = "076 423 2075";
@@ -42,6 +56,7 @@ export default function SignupScreen({ navigation }: Props) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<PlanType>("intro_1mo");
+  const [pkg, setPkg] = useState<PackageType>("training_only");
   const [consented, setConsented] = useState(false);
   const [loading, setLoading] = useState(false);
   const [awaitingPayment, setAwaitingPayment] = useState(false);
@@ -85,6 +100,7 @@ export default function SignupScreen({ navigation }: Props) {
       email,
       phone: phone || null,
       plan_type: plan,
+      package_type: pkg,
       consent_accepted_at: new Date().toISOString(),
       privacy_policy_version: PRIVACY_POLICY_VERSION,
     });
@@ -148,6 +164,17 @@ export default function SignupScreen({ navigation }: Props) {
       <TextInput style={styles.input} placeholder="Phone (optional)" value={phone} onChangeText={setPhone} />
       <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
 
+      <Text style={styles.sectionHeading}>Choose your package</Text>
+      {PACKAGES.map((p) => (
+        <Pressable key={p.key} style={styles.packageRow} onPress={() => setPkg(p.key)}>
+          <View style={[styles.radio, pkg === p.key && styles.radioSelected]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.body}>{p.label}</Text>
+            <Text style={styles.packageDescription}>{p.description}</Text>
+          </View>
+        </Pressable>
+      ))}
+
       <Text style={styles.sectionHeading}>Choose your plan</Text>
       {PLANS.map((p) => (
         <Pressable key={p.key} style={styles.planRow} onPress={() => setPlan(p.key)}>
@@ -210,6 +237,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   planRow: { flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 10 },
+  packageRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 14, gap: 10 },
+  packageDescription: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
   radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: "#64748B" },
   radioSelected: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: "#64748B" },

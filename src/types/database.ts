@@ -4,6 +4,7 @@
 
 export type AccessStatus = "active" | "expiring_soon" | "expired";
 export type PlanType = "intro_1mo" | "sub_6mo" | "sub_12mo";
+export type PackageType = "training_only" | "training_nutrition" | "training_nutrition_lifestyle";
 export type HighGiTiming = "before_training" | "before_bed" | "other";
 export type ClientStatusFlag = "green" | "orange" | "red";
 
@@ -28,6 +29,7 @@ export type Client = {
   plan_type: PlanType | null;
   plan_started_at: string | null;
   plan_expires_at: string | null;
+  package_type: PackageType | null;
   consent_accepted_at: string | null;
   privacy_policy_version: string | null;
   status_flag: ClientStatusFlag;

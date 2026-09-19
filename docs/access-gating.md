@@ -4,6 +4,18 @@ The whole business model runs on one field: `clients.access_status`. Get this
 wrong and either a non-paying client gets full access, or a paying client
 gets locked out.
 
+Two other fields describe what a client is paying for, but don't gate access
+on their own — the app doesn't hide/show features based on them yet, they're
+just recorded so the trainer knows what to deliver and bill for:
+
+- `plan_type` — billing duration (`intro_1mo` / `sub_6mo` / `sub_12mo`).
+- `package_type` — what's included (`training_only` / `training_nutrition` /
+  `training_nutrition_lifestyle`).
+
+Both are chosen once at signup and then locked the same way `access_status`
+is (see the trigger below) — a client can't upgrade their own package or
+plan without the trainer confirming payment and changing it for them.
+
 ## How it's meant to work
 
 1. Client signs up (`SignupScreen`) → auth user created, `clients` row
