@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
+import { View, ActivityIndicator, Text, Pressable, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
 import AuthNavigator from "@/navigation/AuthNavigator";
@@ -40,6 +40,7 @@ export default function RootNavigator() {
 }
 
 function PendingAccessScreen() {
+  const { signOut } = useAuth();
   return (
     <View style={styles.centered}>
       <Text style={styles.title}>Almost there</Text>
@@ -47,6 +48,9 @@ function PendingAccessScreen() {
         Your account is created but not active yet. Once your trainer confirms your payment,
         you'll get full access here.
       </Text>
+      <Pressable style={styles.logoutButton} onPress={signOut}>
+        <Text style={styles.logoutText}>Log out</Text>
+      </Pressable>
     </View>
   );
 }
@@ -61,4 +65,6 @@ const styles = StyleSheet.create({
   },
   title: { color: "#fff", fontSize: 22, fontWeight: "700", marginBottom: 12 },
   body: { color: "#94A3B8", textAlign: "center", lineHeight: 20 },
+  logoutButton: { marginTop: 24, paddingVertical: 10, paddingHorizontal: 20 },
+  logoutText: { color: "#64748B", fontSize: 14, fontWeight: "600" },
 });
