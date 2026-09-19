@@ -60,12 +60,13 @@ What's deliberately **not** built yet (tracked as gaps, not bugs):
   practices. Worth a lawyer's review given health-adjacent data counts as
   "special personal information" under POPIA, but it's no longer a
   placeholder.
-- Intake form: `clients.intake_responses` (jsonb) renders as an always-visible
-  section on `ClientDetailScreen` (trainer view), formatted generically as
-  question/answer pairs - shows "No intake form completed yet" until it's
-  populated. No client-facing *input* screen exists yet, since the actual
-  questions aren't finalized; once they are, that screen just needs to write
-  into the same column and this display needs no changes.
+- **Intake form** is fully wired up: `IntakeFormScreen` (mostly tap-to-select
+  pills and short time fields, minimal typing by design) is shown once, the
+  first time an activated client logs in with an empty
+  `clients.intake_responses` (`RootNavigator` gates on this the same way it
+  gates on `access_status`). Submitting it writes straight into that jsonb
+  column, which `ClientDetailScreen` already renders as question/answer
+  pairs on the trainer side - no changes needed there.
 - Everything past Phase 1 (video annotation, nutrition, progress charts, AI
   insights, anxiety toolkit, wearables, own video library) is out of scope
   for this scaffold by design — see the brief's phased build order.

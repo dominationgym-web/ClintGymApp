@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import AuthNavigator from "@/navigation/AuthNavigator";
 import ClientNavigator from "@/navigation/ClientNavigator";
 import TrainerNavigator from "@/navigation/TrainerNavigator";
+import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
 
 export default function RootNavigator() {
   const { session, role, loading, client } = useAuth();
@@ -24,7 +25,11 @@ export default function RootNavigator() {
       ) : role === "trainer" ? (
         <TrainerNavigator />
       ) : role === "client" && client?.access_status === "active" ? (
-        <ClientNavigator />
+        Object.keys(client.intake_responses ?? {}).length === 0 ? (
+          <IntakeFormScreen />
+        ) : (
+          <ClientNavigator />
+        )
       ) : role === "client" ? (
         <PendingAccessScreen />
       ) : (
