@@ -72,6 +72,44 @@ function ChoiceField({
   );
 }
 
+function MultiChoiceField({
+  label,
+  options,
+  values,
+  onToggle,
+}: {
+  label: string;
+  options: string[];
+  values: string[];
+  onToggle: (opt: string) => void;
+}) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.choiceWrap}>
+        {options.map((opt) => (
+          <Pressable
+            key={opt}
+            style={[styles.pill, values.includes(opt) && styles.pillSelected]}
+            onPress={() => onToggle(opt)}
+          >
+            <Text style={[styles.pillText, values.includes(opt) && styles.pillTextSelected]}>{opt}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const GOAL_OPTIONS = [
+  "Gain muscle",
+  "Get stronger",
+  "Lose weight",
+  "General health and wellbeing",
+  "Improve mental fortitude",
+  "Training for something specific",
+];
+
 const OCCUPATION_TYPES = ["Desk / office", "Physical / labour", "Healthcare", "Education", "Self-employed", "Other"];
 const TRAINING_DURATIONS = ["Under 30 min", "30-45 min", "45-60 min", "Over 60 min"];
 const CAFFEINE_AMOUNTS = ["None", "1 cup", "2-3 cups", "4+ cups"];
@@ -81,6 +119,11 @@ export default function IntakeFormScreen() {
   const [saving, setSaving] = useState(false);
 
   const [age, setAge] = useState("");
+
+  const [goals, setGoals] = useState<string[]>([]);
+  const [trainingForDetail, setTrainingForDetail] = useState("");
+  const toggleGoal = (opt: string) =>
+    setGoals((prev) => (prev.includes(opt) ? prev.filter((g) => g !== opt) : [...prev, opt]));
 
   const [occupationType, setOccupationType] = useState("");
   const [occupationOther, setOccupationOther] = useState("");
@@ -117,13 +160,14 @@ export default function IntakeFormScreen() {
   const yn = (v: boolean | null) => (v === null ? "Not answered" : v ? "Yes" : "No");
 
   const handleSubmit = async () => {
-    if (!age.trim() || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
-      Alert.alert("Almost done", "Fill in at least your age, occupation, breakfast, and training habits.");
+    if (!age.trim() || goals.length === 0 || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
+      Alert.alert("Almost done", "Fill in at least your age, goals, occupation, breakfast, and training habits.");
       return;
     }
 
     const responses: Record<string, string> = {
       age: age.trim(),
+      training_goals: goals.join(", "),
       occupation_type: occupationType === "Other" ? occupationOther.trim() || "Other" : occupationType,
       job_stress_level: jobStress || "Not answered",
       work_setting: workSetting || "Not answered",
@@ -156,6 +200,9 @@ export default function IntakeFormScreen() {
     if (hasHealthCondition) {
       responses.health_condition_detail = healthDetail.trim() || "Not specified";
     }
+    if (goals.includes("Training for something specific")) {
+      responses.training_for_event = trainingForDetail.trim() || "Not specified";
+    }
 
     setSaving(true);
     const { error } = await supabase.from("clients").update({ intake_responses: responses }).eq("id", client.id);
@@ -185,12 +232,31 @@ export default function IntakeFormScreen() {
         />
       </View>
 
+      <Text style={styles.sectionHeading}>Your goals</Text>
+      <MultiChoiceField
+        label="What are you wanting to achieve from your training? (pick all that apply)"
+        options={GOAL_OPTIONS}
+        values={goals}
+        onToggle={toggleGoal}
+      />
+      {goals.includes("Training for something specific") && (
+        <View style={styles.field}>
+          <TextInput
+            style={styles.textInput}
+            value={trainingForDetail}
+            onChangeText={setTrainingForDetail}
+            placeholder="What are you training for?"
+            placeholderTextColor="#64748B"
+          />
+        </View>
+      )}
+
       <Text style={styles.sectionHeading}>Work</Text>
       <ChoiceField label="What kind of work do you do?" options={OCCUPATION_TYPES} value={occupationType} onChange={setOccupationType} />
       {occupationType === "Other" && (
         <View style={styles.field}>
           <TextInput
-            style={styles.timeInput}
+            style={styles.textInput}
             value={occupationOther}
             onChangeText={setOccupationOther}
             placeholder="What do you do?"
@@ -232,7 +298,7 @@ export default function IntakeFormScreen() {
       {hasHealthCondition && (
         <View style={styles.field}>
           <TextInput
-            style={[styles.timeInput, styles.multiline]}
+            style={[styles.textInput, styles.multiline]}
             value={healthDetail}
             onChangeText={setHealthDetail}
             placeholder="Briefly, what should we know?"
@@ -262,7 +328,8 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   label: { color: "#E2E8F0", fontSize: 14, marginBottom: 8, lineHeight: 19 },
   timeInput: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, maxWidth: 160 },
-  multiline: { minHeight: 70, textAlignVertical: "top", maxWidth: "100%" },
+  textInput: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12 },
+  multiline: { minHeight: 70, textAlignVertical: "top" },
   row: { flexDirection: "row", gap: 10 },
   choiceWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   pill: {
