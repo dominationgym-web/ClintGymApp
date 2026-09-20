@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import type { Checkin, Client } from "@/types/database";
+import type { Checkin, Client, Habit } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -12,6 +12,17 @@ const PACKAGE_LABEL: Record<string, string> = {
   training_nutrition: "Training + Nutrition",
   training_nutrition_lifestyle: "Training + Nutrition + Lifestyle",
 };
+
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function describeDays(activeDays: number[]) {
+  if (activeDays.length === 7) return "Every day";
+  return activeDays
+    .slice()
+    .sort()
+    .map((d) => DAY_LABELS[d])
+    .join(" ");
+}
 
 function formatIntakeLabel(key: string) {
   return key
@@ -23,9 +34,25 @@ export default function ClientDetailScreen({ route }: Props) {
   const { clientId } = route.params;
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [newHabitName, setNewHabitName] = useState("");
+  const [newHabitReps, setNewHabitReps] = useState(1);
+  const [newHabitStart, setNewHabitStart] = useState(() => new Date().toISOString().slice(0, 10));
+  const [newHabitEnd, setNewHabitEnd] = useState("");
+  const [addingHabit, setAddingHabit] = useState(false);
+
+  const loadHabits = async () => {
+    const { data } = await supabase
+      .from("habits")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: true });
+    setHabits(data ?? []);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -43,10 +70,47 @@ export default function ClientDetailScreen({ route }: Props) {
         setNotes(clientRow.trainer_notes ?? "");
       }
       setCheckins(checkinRows ?? []);
+      await loadHabits();
       setLoading(false);
     };
     load();
   }, [clientId]);
+
+  const addHabit = async () => {
+    if (!newHabitName.trim()) {
+      Alert.alert("Missing name", "Give the habit a name first.");
+      return;
+    }
+    setAddingHabit(true);
+    // Starts covering every day - the client narrows it down to whichever
+    // specific days and reminder time actually fit their own schedule.
+    const { error } = await supabase.from("habits").insert({
+      client_id: clientId,
+      name: newHabitName.trim(),
+      active_days: [0, 1, 2, 3, 4, 5, 6],
+      reps_target: newHabitReps,
+      start_date: newHabitStart || new Date().toISOString().slice(0, 10),
+      end_date: newHabitEnd || null,
+    });
+    setAddingHabit(false);
+    if (error) {
+      Alert.alert("Couldn't add habit", error.message);
+      return;
+    }
+    setNewHabitName("");
+    setNewHabitReps(1);
+    setNewHabitEnd("");
+    await loadHabits();
+  };
+
+  const deleteHabit = async (habitId: string) => {
+    const { error } = await supabase.from("habits").delete().eq("id", habitId);
+    if (error) {
+      Alert.alert("Couldn't remove habit", error.message);
+      return;
+    }
+    setHabits((prev) => prev.filter((h) => h.id !== habitId));
+  };
 
   const saveNotes = async () => {
     setSaving(true);
@@ -118,6 +182,77 @@ export default function ClientDetailScreen({ route }: Props) {
           ))}
         </View>
       )}
+
+      <Text style={styles.sectionHeading}>Habits</Text>
+      <Text style={styles.helper}>
+        You set what's needed and how often - the client picks which days and reminder time actually
+        fit their schedule.
+      </Text>
+      {habits.length === 0 && <Text style={styles.helper}>No habits set up yet.</Text>}
+      {habits.map((h) => (
+        <View key={h.id} style={styles.habitRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.habitName}>{h.name}</Text>
+            <Text style={styles.habitDetail}>
+              {h.reps_target}x/day · {describeDays(h.active_days)}
+              {h.reminder_enabled && h.reminder_time ? ` · Reminder ${h.reminder_time.slice(0, 5)}` : ""}
+              {h.end_date ? ` · Ends ${h.end_date}` : ""}
+            </Text>
+          </View>
+          <Pressable onPress={() => deleteHabit(h.id)}>
+            <Text style={styles.habitDelete}>Remove</Text>
+          </Pressable>
+        </View>
+      ))}
+
+      <View style={styles.addHabitBox}>
+        <Text style={styles.addHabitTitle}>Add a habit</Text>
+        <TextInput
+          style={styles.textInput}
+          placeholder="e.g. Take supplements"
+          placeholderTextColor="#64748B"
+          value={newHabitName}
+          onChangeText={setNewHabitName}
+        />
+
+        <Text style={styles.fieldLabel}>Times per day</Text>
+        <View style={styles.stepperRow}>
+          <Pressable style={styles.stepperButton} onPress={() => setNewHabitReps((r) => Math.max(1, r - 1))}>
+            <Text style={styles.stepperButtonText}>-</Text>
+          </Pressable>
+          <Text style={styles.stepperValue}>{newHabitReps}</Text>
+          <Pressable style={styles.stepperButton} onPress={() => setNewHabitReps((r) => r + 1)}>
+            <Text style={styles.stepperButtonText}>+</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.dateRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.fieldLabel}>Start date</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#64748B"
+              value={newHabitStart}
+              onChangeText={setNewHabitStart}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.fieldLabel}>End date (optional)</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Ongoing"
+              placeholderTextColor="#64748B"
+              value={newHabitEnd}
+              onChangeText={setNewHabitEnd}
+            />
+          </View>
+        </View>
+
+        <Pressable style={styles.button} onPress={addHabit} disabled={addingHabit}>
+          {addingHabit ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Add habit</Text>}
+        </Pressable>
+      </View>
 
       <Text style={styles.sectionHeading}>Trainer notes</Text>
       <TextInput
@@ -197,4 +332,37 @@ const styles = StyleSheet.create({
   checkinDate: { color: "#fff", fontWeight: "600" },
   distressText: { color: "#F87171", fontSize: 13, marginTop: 4, fontWeight: "600" },
   checkinDetail: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
+  habitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  habitName: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  habitDetail: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
+  habitDelete: { color: "#F87171", fontSize: 13, fontWeight: "600" },
+  addHabitBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginTop: 4 },
+  addHabitTitle: { color: "#fff", fontWeight: "700", fontSize: 15, marginBottom: 10 },
+  fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6, marginTop: 10 },
+  textInput: {
+    backgroundColor: "#0F172A",
+    color: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+  },
+  stepperRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  stepperButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#0F172A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperButtonText: { color: "#22C55E", fontSize: 18, fontWeight: "700" },
+  stepperValue: { color: "#fff", fontSize: 16, fontWeight: "700", minWidth: 20, textAlign: "center" },
+  dateRow: { flexDirection: "row", gap: 10 },
 });

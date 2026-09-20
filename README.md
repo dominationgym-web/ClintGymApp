@@ -19,6 +19,13 @@ What exists right now:
   alcohol, sleep (bed/asleep/wake time + 1-5 quality), water + electrolytes,
   meals + high-GI count/timing, screen time before bed, non-backlit reading,
   breathing/stretching, and a distress/pain flag with a required note.
+- **Flexible habits** (`HabitsScreen`) on top of the fixed daily check-in.
+  The trainer sets up what's needed and how often per client (e.g.
+  "Supplements" 3x/day, or "Gym" 1x/day) from `ClientDetailScreen`; the
+  client then picks whichever specific days and reminder time actually fit
+  their own schedule, and logs reps each day. Reminders are local
+  `expo-notifications` schedules (no push infra needed), rescheduled
+  whenever a habit's days/time change.
 - **Training-proof video upload** (`VideoUploadScreen`) to Supabase Storage
   as an interim provider (`videos.storage_provider` also supports `mux` /
   `cloudflare_stream` for when that's wired up), with a 30-day

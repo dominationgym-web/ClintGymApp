@@ -1,0 +1,292 @@
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TextInput,
+  Pressable,
+  Alert,
+  RefreshControl,
+} from "react-native";
+import * as Notifications from "expo-notifications";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import type { Habit } from "@/types/database";
+
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayWeekday = () => new Date().getDay(); // 0 = Sunday .. 6 = Saturday
+
+function isActiveToday(habit: Habit) {
+  const today = todayIso();
+  if (today < habit.start_date) return false;
+  if (habit.end_date && today > habit.end_date) return false;
+  return habit.active_days.includes(todayWeekday());
+}
+
+// Reminders are a nice-to-have on top of the habit itself - never let a
+// notification-scheduling failure (permissions denied, Expo Go quirks) block
+// the actual habit tracking.
+async function syncReminders(habits: Habit[]) {
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted") return;
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    for (const h of habits) {
+      if (!h.reminder_enabled || !h.reminder_time) continue;
+      const [hourStr, minuteStr] = h.reminder_time.split(":");
+      const hour = Number(hourStr);
+      const minute = Number(minuteStr);
+      if (Number.isNaN(hour) || Number.isNaN(minute)) continue;
+      for (const day of h.active_days) {
+        await Notifications.scheduleNotificationAsync({
+          content: { title: "Daily Grizz", body: h.name },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+            weekday: day + 1,
+            hour,
+            minute,
+          },
+        });
+      }
+    }
+  } catch {
+    // Ignore - habit tracking still works without reminders.
+  }
+}
+
+export default function HabitsScreen() {
+  const { client } = useAuth();
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [logs, setLogs] = useState<Record<string, number>>({});
+  const [reminderDrafts, setReminderDrafts] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!client) return;
+    const { data: habitRows } = await supabase
+      .from("habits")
+      .select("*")
+      .eq("client_id", client.id)
+      .order("created_at", { ascending: true });
+    const list = habitRows ?? [];
+    setHabits(list);
+    setReminderDrafts(Object.fromEntries(list.map((h) => [h.id, h.reminder_time ? h.reminder_time.slice(0, 5) : ""])));
+
+    if (list.length > 0) {
+      const { data: logRows } = await supabase
+        .from("habit_logs")
+        .select("*")
+        .eq("log_date", todayIso())
+        .in("habit_id", list.map((h) => h.id));
+      setLogs(Object.fromEntries((logRows ?? []).map((l) => [l.habit_id, l.reps_completed])));
+    } else {
+      setLogs({});
+    }
+
+    syncReminders(list);
+  }, [client]);
+
+  useEffect(() => {
+    load().finally(() => setLoading(false));
+  }, [load]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
+
+  const toggleDay = async (habit: Habit, day: number) => {
+    const nextDays = habit.active_days.includes(day)
+      ? habit.active_days.filter((d) => d !== day)
+      : [...habit.active_days, day].sort();
+    if (nextDays.length === 0) {
+      Alert.alert("Keep at least one day", "A habit needs to apply on at least one day.");
+      return;
+    }
+    const { error } = await supabase.from("habits").update({ active_days: nextDays }).eq("id", habit.id);
+    if (error) {
+      Alert.alert("Couldn't update", error.message);
+      return;
+    }
+    const updated = habits.map((h) => (h.id === habit.id ? { ...h, active_days: nextDays } : h));
+    setHabits(updated);
+    syncReminders(updated);
+  };
+
+  const toggleReminder = async (habit: Habit) => {
+    const nextEnabled = !habit.reminder_enabled;
+    if (nextEnabled) {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Notifications blocked",
+          "Enable notifications for Daily Grizz in your phone settings to get reminders."
+        );
+        return;
+      }
+    }
+    const { error } = await supabase.from("habits").update({ reminder_enabled: nextEnabled }).eq("id", habit.id);
+    if (error) {
+      Alert.alert("Couldn't update", error.message);
+      return;
+    }
+    const updated = habits.map((h) => (h.id === habit.id ? { ...h, reminder_enabled: nextEnabled } : h));
+    setHabits(updated);
+    syncReminders(updated);
+  };
+
+  const saveReminderTime = async (habit: Habit) => {
+    const raw = (reminderDrafts[habit.id] ?? "").trim();
+    if (!/^\d{2}:\d{2}$/.test(raw)) {
+      Alert.alert("Use HH:MM", "Enter the reminder time like 08:00 or 18:30.");
+      return;
+    }
+    const { error } = await supabase.from("habits").update({ reminder_time: `${raw}:00` }).eq("id", habit.id);
+    if (error) {
+      Alert.alert("Couldn't update", error.message);
+      return;
+    }
+    const updated = habits.map((h) => (h.id === habit.id ? { ...h, reminder_time: `${raw}:00` } : h));
+    setHabits(updated);
+    syncReminders(updated);
+  };
+
+  const logReps = async (habit: Habit, delta: number) => {
+    const current = logs[habit.id] ?? 0;
+    const next = Math.max(0, Math.min(habit.reps_target, current + delta));
+    setLogs((prev) => ({ ...prev, [habit.id]: next }));
+    const { error } = await supabase
+      .from("habit_logs")
+      .upsert({ habit_id: habit.id, log_date: todayIso(), reps_completed: next }, { onConflict: "habit_id,log_date" });
+    if (error) Alert.alert("Couldn't save", error.message);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color="#22C55E" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ padding: 20 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <Text style={styles.title}>Habits</Text>
+      <Text style={styles.helper}>Pick whichever days and reminder time actually fit your schedule.</Text>
+      {habits.length === 0 && <Text style={styles.helper}>Your trainer hasn't set up any habits yet.</Text>}
+
+      {habits.map((h) => {
+        const activeToday = isActiveToday(h);
+        const completed = logs[h.id] ?? 0;
+        const done = completed >= h.reps_target;
+        return (
+          <View key={h.id} style={[styles.habitCard, activeToday && done && styles.habitCardDone]}>
+            <Text style={styles.habitName}>{h.name}</Text>
+            <Text style={styles.habitTarget}>{h.reps_target}x/day</Text>
+
+            {activeToday ? (
+              <View style={styles.repsRow}>
+                <Pressable style={styles.stepperButton} onPress={() => logReps(h, -1)}>
+                  <Text style={styles.stepperButtonText}>-</Text>
+                </Pressable>
+                <Text style={styles.repsValue}>
+                  {completed} / {h.reps_target} today
+                </Text>
+                <Pressable style={styles.stepperButton} onPress={() => logReps(h, 1)}>
+                  <Text style={styles.stepperButtonText}>+</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Text style={styles.helper}>Not scheduled for today.</Text>
+            )}
+
+            <Text style={styles.fieldLabel}>Days that work for you</Text>
+            <View style={styles.dayRow}>
+              {DAY_LABELS.map((label, i) => (
+                <Pressable
+                  key={i}
+                  style={[styles.dayChip, h.active_days.includes(i) && styles.dayChipSelected]}
+                  onPress={() => toggleDay(h, i)}
+                >
+                  <Text style={[styles.dayChipText, h.active_days.includes(i) && styles.dayChipTextSelected]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Pressable style={styles.reminderToggleRow} onPress={() => toggleReminder(h)}>
+              <View style={[styles.checkbox, h.reminder_enabled && styles.checkboxChecked]} />
+              <Text style={styles.fieldLabel}>Remind me</Text>
+            </Pressable>
+            {h.reminder_enabled && (
+              <View style={styles.reminderTimeRow}>
+                <TextInput
+                  style={styles.timeInput}
+                  placeholder="HH:MM"
+                  placeholderTextColor="#64748B"
+                  value={reminderDrafts[h.id] ?? ""}
+                  onChangeText={(v) => setReminderDrafts((prev) => ({ ...prev, [h.id]: v }))}
+                />
+                <Pressable style={styles.saveTimeButton} onPress={() => saveReminderTime(h)}>
+                  <Text style={styles.saveTimeButtonText}>Save time</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#0F172A" },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
+  title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 6 },
+  helper: { color: "#64748B", fontSize: 13, marginBottom: 12 },
+  habitCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 14 },
+  habitCardDone: { borderWidth: 1.5, borderColor: "#22C55E" },
+  habitName: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  habitTarget: { color: "#64748B", fontSize: 12, marginTop: 2, marginBottom: 12 },
+  repsRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 14 },
+  stepperButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#0F172A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperButtonText: { color: "#22C55E", fontSize: 20, fontWeight: "700" },
+  repsValue: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 8 },
+  dayRow: { flexDirection: "row", gap: 6, marginBottom: 14 },
+  dayChip: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#0F172A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayChipSelected: { backgroundColor: "#22C55E" },
+  dayChipText: { color: "#64748B", fontWeight: "600", fontSize: 12 },
+  dayChipTextSelected: { color: "#0F172A" },
+  reminderToggleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: "#64748B" },
+  checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
+  reminderTimeRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
+  timeInput: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, padding: 10, width: 90, fontSize: 14 },
+  saveTimeButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  saveTimeButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
+});

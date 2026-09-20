@@ -2,6 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import type { ClientTabParamList } from "@/navigation/types";
 import CheckInScreen from "@/screens/client/CheckInScreen";
+import HabitsScreen from "@/screens/client/HabitsScreen";
 import VideoUploadScreen from "@/screens/client/VideoUploadScreen";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import ClientProfileScreen from "@/screens/client/ClientProfileScreen";
@@ -20,6 +21,7 @@ export default function ClientNavigator() {
       }}
     >
       <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in" }} />
+      <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits" }} />
       <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Training" }} />
       <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Exercises" }} />
       <Tab.Screen name="Profile" component={ClientProfileScreen} options={{ title: "Profile" }} />

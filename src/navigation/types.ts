@@ -9,6 +9,7 @@ export type AuthStackParamList = {
 
 export type ClientTabParamList = {
   CheckIn: undefined;
+  Habits: undefined;
   Training: undefined;
   Exercises: undefined;
   Profile: undefined;

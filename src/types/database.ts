@@ -81,6 +81,27 @@ export type Exercise = {
   sort_order: number;
 }
 
+export type Habit = {
+  id: string;
+  client_id: string;
+  name: string;
+  active_days: number[];
+  reps_target: number;
+  start_date: string;
+  end_date: string | null;
+  reminder_enabled: boolean;
+  reminder_time: string | null;
+  created_at: string;
+}
+
+export type HabitLog = {
+  id: string;
+  habit_id: string;
+  log_date: string;
+  reps_completed: number;
+  created_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -89,6 +110,8 @@ export interface Database {
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       videos: { Row: Video; Insert: Partial<Video>; Update: Partial<Video>; Relationships: [] };
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };
+      habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
+      habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
