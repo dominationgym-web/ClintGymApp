@@ -18,6 +18,7 @@ const STATUS_ORDER: AccessStatus[] = ["expired", "expiring_soon", "active"];
 export default function ClientsScreen({ navigation }: Props) {
   const { trainer } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
+  const [scores, setScores] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -28,7 +29,20 @@ export default function ClientsScreen({ navigation }: Props) {
       .select("*")
       .eq("trainer_id", trainer.id)
       .order("plan_expires_at", { ascending: true, nullsFirst: true });
-    setClients(data ?? []);
+    const list = data ?? [];
+    setClients(list);
+
+    // This month's consistency score - only meaningful for active clients.
+    const active = list.filter((c) => c.access_status === "active");
+    const results = await Promise.all(
+      active.map((c) => supabase.rpc("client_monthly_consistency", { p_client_id: c.id }))
+    );
+    const scoreMap: Record<string, number> = {};
+    active.forEach((c, i) => {
+      const row = results[i].data?.[0];
+      if (row) scoreMap[c.id] = row.overall_score;
+    });
+    setScores(scoreMap);
   }, [trainer]);
 
   useEffect(() => {
@@ -61,31 +75,42 @@ export default function ClientsScreen({ navigation }: Props) {
     );
   }
 
+  const topScore = Math.max(0, ...Object.values(scores));
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Clients</Text>
-      <Text style={styles.helper}>Tap the status pill to cycle it after confirming payment.</Text>
+      <Text style={styles.helper}>
+        Tap the status pill to cycle it after confirming payment. Score is this month's check-in +
+        habit + video consistency - use it to pick who's most consistent.
+      </Text>
       <FlatList
         data={clients}
         keyExtractor={(c) => c.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={({ item }) => (
-          <Pressable style={styles.row} onPress={() => navigation.navigate("ClientDetail", { clientId: item.id })}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.nameRow}>
-                {item.status_flag === "red" && <Text style={styles.flagIcon}>🚩</Text>}
-                {item.status_flag === "orange" && <View style={[styles.flagDot, { backgroundColor: "#F59E0B" }]} />}
-                <Text style={styles.name}>{item.name}</Text>
+        renderItem={({ item }) => {
+          const score = scores[item.id];
+          const isLeader = score !== undefined && score > 0 && score === topScore;
+          return (
+            <Pressable style={styles.row} onPress={() => navigation.navigate("ClientDetail", { clientId: item.id })}>
+              <View style={{ flex: 1 }}>
+                <View style={styles.nameRow}>
+                  {item.status_flag === "red" && <Text style={styles.flagIcon}>🚩</Text>}
+                  {item.status_flag === "orange" && <View style={[styles.flagDot, { backgroundColor: "#F59E0B" }]} />}
+                  {isLeader && <Text style={styles.flagIcon}>🏆</Text>}
+                  <Text style={styles.name}>{item.name}</Text>
+                </View>
+                {score !== undefined && <Text style={styles.score}>This month: {score}%</Text>}
+                {item.plan_expires_at && (
+                  <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
+                )}
               </View>
-              {item.plan_expires_at && (
-                <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
-              )}
-            </View>
-            <Pressable style={[styles.statusPill, statusStyle(item.access_status)]} onPress={() => cycleStatus(item)}>
-              <Text style={styles.statusText}>{STATUS_LABEL[item.access_status]}</Text>
+              <Pressable style={[styles.statusPill, statusStyle(item.access_status)]} onPress={() => cycleStatus(item)}>
+                <Text style={styles.statusText}>{STATUS_LABEL[item.access_status]}</Text>
+              </Pressable>
             </Pressable>
-          </Pressable>
-        )}
+          );
+        }}
         ListEmptyComponent={<Text style={styles.helper}>No clients yet.</Text>}
       />
     </View>
@@ -120,6 +145,7 @@ const styles = StyleSheet.create({
   flagIcon: { fontSize: 13 },
   flagDot: { width: 9, height: 9, borderRadius: 5 },
   name: { color: "#fff", fontWeight: "600" },
+  score: { color: "#22C55E", fontSize: 12, marginTop: 2, fontWeight: "600" },
   expiry: { color: "#64748B", fontSize: 12, marginTop: 2 },
   statusPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   statusText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },

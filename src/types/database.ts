@@ -114,6 +114,11 @@ export interface Database {
       habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      client_monthly_consistency: {
+        Args: { p_client_id: string; p_month?: string };
+        Returns: { checkin_rate: number; habit_rate: number | null; video_count: number; overall_score: number }[];
+      };
+    };
   };
 }
