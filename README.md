@@ -23,9 +23,12 @@ What exists right now:
   The trainer sets up what's needed and how often per client (e.g.
   "Supplements" 3x/day, or "Gym" 1x/day) from `ClientDetailScreen`; the
   client then picks whichever specific days and reminder time actually fit
-  their own schedule, and logs reps each day. Reminders are local
-  `expo-notifications` schedules (no push infra needed), rescheduled
-  whenever a habit's days/time change.
+  their own schedule, and logs reps each day. The reminder toggle/time is
+  saved but not yet delivered - `expo-notifications` was removed after Expo
+  Go dropped support for it in SDK 53 (importing it crashed the app for
+  every client on Expo Go, not just a dev-build edge case). Needs a real
+  push setup (Expo push tokens from a dev/production build + a server-side
+  send path) before reminders actually fire - see the gaps list below.
 - **Training-proof video upload** (`VideoUploadScreen`) to Supabase Storage
   as an interim provider (`videos.storage_provider` also supports `mux` /
   `cloudflare_stream` for when that's wired up), with a 30-day
@@ -57,9 +60,11 @@ What exists right now:
 
 What's deliberately **not** built yet (tracked as gaps, not bugs):
 
-- No push notifications yet (daily trainer summary, renewal reminders) —
-  `expo-notifications` is installed but no token registration or send path
-  exists.
+- No push notifications yet (daily trainer summary, renewal reminders, habit
+  reminders) — needs Expo push tokens from a dev/production build (Expo Go
+  no longer supports `expo-notifications` as of SDK 53) plus a server-side
+  send path. Habit `reminder_enabled`/`reminder_time` are captured and saved
+  already, just not delivered yet.
 - Video auto-delete is now live — a daily `pg_cron` job
   (`delete_expired_videos`, `supabase/migrations/0009_video_auto_delete_job.sql`)
   removes the Storage file and soft-deletes the row past `expires_at`. Still

@@ -10,7 +10,6 @@ import {
   Alert,
   RefreshControl,
 } from "react-native";
-import * as Notifications from "expo-notifications";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import type { Habit } from "@/types/database";
@@ -25,37 +24,6 @@ function isActiveToday(habit: Habit) {
   if (today < habit.start_date) return false;
   if (habit.end_date && today > habit.end_date) return false;
   return habit.active_days.includes(todayWeekday());
-}
-
-// Reminders are a nice-to-have on top of the habit itself - never let a
-// notification-scheduling failure (permissions denied, Expo Go quirks) block
-// the actual habit tracking.
-async function syncReminders(habits: Habit[]) {
-  try {
-    const { status } = await Notifications.getPermissionsAsync();
-    if (status !== "granted") return;
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    for (const h of habits) {
-      if (!h.reminder_enabled || !h.reminder_time) continue;
-      const [hourStr, minuteStr] = h.reminder_time.split(":");
-      const hour = Number(hourStr);
-      const minute = Number(minuteStr);
-      if (Number.isNaN(hour) || Number.isNaN(minute)) continue;
-      for (const day of h.active_days) {
-        await Notifications.scheduleNotificationAsync({
-          content: { title: "Daily Grizz", body: h.name },
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-            weekday: day + 1,
-            hour,
-            minute,
-          },
-        });
-      }
-    }
-  } catch {
-    // Ignore - habit tracking still works without reminders.
-  }
 }
 
 export default function HabitsScreen() {
@@ -96,8 +64,6 @@ export default function HabitsScreen() {
     } else {
       setLogsByHabit({});
     }
-
-    syncReminders(list);
   }, [client]);
 
   useEffect(() => {
@@ -125,29 +91,16 @@ export default function HabitsScreen() {
     }
     const updated = habits.map((h) => (h.id === habit.id ? { ...h, active_days: nextDays } : h));
     setHabits(updated);
-    syncReminders(updated);
   };
 
   const toggleReminder = async (habit: Habit) => {
     const nextEnabled = !habit.reminder_enabled;
-    if (nextEnabled) {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Notifications blocked",
-          "Enable notifications for Daily Grizz in your phone settings to get reminders."
-        );
-        return;
-      }
-    }
     const { error } = await supabase.from("habits").update({ reminder_enabled: nextEnabled }).eq("id", habit.id);
     if (error) {
       Alert.alert("Couldn't update", error.message);
       return;
     }
-    const updated = habits.map((h) => (h.id === habit.id ? { ...h, reminder_enabled: nextEnabled } : h));
-    setHabits(updated);
-    syncReminders(updated);
+    setHabits((prev) => prev.map((h) => (h.id === habit.id ? { ...h, reminder_enabled: nextEnabled } : h)));
   };
 
   const saveReminderTime = async (habit: Habit) => {
@@ -161,9 +114,7 @@ export default function HabitsScreen() {
       Alert.alert("Couldn't update", error.message);
       return;
     }
-    const updated = habits.map((h) => (h.id === habit.id ? { ...h, reminder_time: `${raw}:00` } : h));
-    setHabits(updated);
-    syncReminders(updated);
+    setHabits((prev) => prev.map((h) => (h.id === habit.id ? { ...h, reminder_time: `${raw}:00` } : h)));
   };
 
   const logReps = async (habit: Habit, delta: number) => {
@@ -251,7 +202,7 @@ export default function HabitsScreen() {
 
             <Pressable style={styles.reminderToggleRow} onPress={() => toggleReminder(h)}>
               <View style={[styles.checkbox, h.reminder_enabled && styles.checkboxChecked]} />
-              <Text style={styles.fieldLabel}>Remind me</Text>
+              <Text style={styles.fieldLabel}>Remind me (coming soon - saves your preferred time for now)</Text>
             </Pressable>
             {h.reminder_enabled && (
               <View style={styles.reminderTimeRow}>
