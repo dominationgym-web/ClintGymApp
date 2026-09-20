@@ -20,13 +20,11 @@ model is licensing clips for exactly this use.
 4. `ExerciseLibraryScreen` plays the video inline (`expo-video`, in a modal)
    the moment `external_url` is set — no app code changes needed per video.
 
-## Phase 1 list (11 placeholder rows already seeded, `source = 'movekit'`)
+## Current list (21 rows, all with videos live, `source = 'movekit'`)
 
-Match MoveKit's clip names to these as closely as possible — exact wording
-doesn't matter, just get a clip covering each movement. No overhead
-pressing of any kind (barbell or dumbbell) - trainer's call, considers it
-too risky for most clients - shoulders are trained via lateral raise and
-incline press instead:
+No overhead pressing of any kind (barbell or dumbbell) - trainer's call,
+considers it too risky for most clients - shoulders are trained via lateral
+raise and incline press instead:
 
 1. Barbell Back Squat
 2. Conventional Deadlift
@@ -39,6 +37,16 @@ incline press instead:
 9. Walking Lunge
 10. Plank
 11. Incline Dumbbell Press
+12. Bulgarian Split Squat
+13. Cable Rope Pushdown
+14. Dumbbell Row
+15. EZ-Bar Preacher Curl
+16. Lying Leg Curl
+17. Hip Abduction
+18. Hip Adduction
+19. Leg Extension
+20. Reverse-Grip Tricep Pushdown
+21. Seated Dumbbell Curl
 
 ## Expanding later (Phase 2+)
 
