@@ -80,10 +80,7 @@ export default function ClientsScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Clients</Text>
-      <Text style={styles.helper}>
-        Tap the status pill to cycle it after confirming payment. Score is this month's check-in +
-        habit + video consistency - use it to pick who's most consistent.
-      </Text>
+      <Text style={styles.helper}>Tap the status pill to cycle it after confirming payment.</Text>
       <FlatList
         data={clients}
         keyExtractor={(c) => c.id}
@@ -100,7 +97,6 @@ export default function ClientsScreen({ navigation }: Props) {
                   {isLeader && <Text style={styles.flagIcon}>🏆</Text>}
                   <Text style={styles.name}>{item.name}</Text>
                 </View>
-                {score !== undefined && <Text style={styles.score}>This month: {score}%</Text>}
                 {item.plan_expires_at && (
                   <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
                 )}
@@ -145,7 +141,6 @@ const styles = StyleSheet.create({
   flagIcon: { fontSize: 13 },
   flagDot: { width: 9, height: 9, borderRadius: 5 },
   name: { color: "#fff", fontWeight: "600" },
-  score: { color: "#22C55E", fontSize: 12, marginTop: 2, fontWeight: "600" },
   expiry: { color: "#64748B", fontSize: 12, marginTop: 2 },
   statusPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   statusText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
