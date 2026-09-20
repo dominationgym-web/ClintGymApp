@@ -8,10 +8,10 @@ import {
   ActivityIndicator,
   Pressable,
   Modal,
-  SafeAreaView,
   ScrollView,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -57,7 +57,17 @@ export default function ExerciseLibraryScreen() {
 
   useEffect(() => {
     if (selected) player.play();
-    return () => player.pause();
+    return () => {
+      // useVideoPlayer recreates/releases the native player whenever the
+      // source changes or this screen unmounts, which can race with this
+      // cleanup - pausing an already-released player throws, but there's
+      // nothing to pause in that case anyway, so it's safe to ignore.
+      try {
+        player.pause();
+      } catch {
+        // Already released - nothing to do.
+      }
+    };
   }, [selected, player]);
 
   const openExercise = async (exercise: Exercise) => {
