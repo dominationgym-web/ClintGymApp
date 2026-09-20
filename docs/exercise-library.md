@@ -20,7 +20,7 @@ model is licensing clips for exactly this use.
 4. `ExerciseLibraryScreen` plays the video inline (`expo-video`, in a modal)
    the moment `external_url` is set — no app code changes needed per video.
 
-## Phase 1 list (9 placeholder rows already seeded, `source = 'movekit'`)
+## Phase 1 list (11 placeholder rows already seeded, `source = 'movekit'`)
 
 Match MoveKit's clip names to these as closely as possible — exact wording
 doesn't matter, just get a clip covering each movement. No overhead
@@ -34,10 +34,11 @@ incline press instead:
 4. Bent-Over Barbell Row
 5. Dumbbell Lateral Raise
 6. Romanian Deadlift
-7. Pull-Up
-8. Walking Lunge
-9. Plank
-10. Incline Dumbbell Press
+7. Pull-Up (assign Lat Pulldown instead for clients not yet strong enough for a full pull-up)
+8. Lat Pulldown
+9. Walking Lunge
+10. Plank
+11. Incline Dumbbell Press
 
 ## Expanding later (Phase 2+)
 
