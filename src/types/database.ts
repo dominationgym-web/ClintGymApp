@@ -81,6 +81,21 @@ export type Exercise = {
   sort_order: number;
 }
 
+export type SetEffort = "comfortable" | "close_to_failure" | "failure";
+
+export type WorkoutLog = {
+  id: string;
+  client_id: string;
+  exercise_id: string | null;
+  exercise_name: string;
+  log_date: string;
+  set_number: number;
+  weight_kg: number | null;
+  reps: number;
+  effort: SetEffort;
+  created_at: string;
+}
+
 export type Habit = {
   id: string;
   client_id: string;
@@ -112,6 +127,7 @@ export interface Database {
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
       habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
+      workout_logs: { Row: WorkoutLog; Insert: Partial<WorkoutLog>; Update: Partial<WorkoutLog>; Relationships: [] };
     };
     Views: Record<string, never>;
     Functions: {

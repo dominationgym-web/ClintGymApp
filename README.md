@@ -30,6 +30,11 @@ What exists right now:
   as an interim provider (`videos.storage_provider` also supports `mux` /
   `cloudflare_stream` for when that's wired up), with a 30-day
   `expires_at` on every row for the auto-delete job to key off.
+- **Simple set-by-set training log** built into the exercise library -
+  tapping an exercise opens its video plus a "Log a set" form (weight, reps,
+  and how it felt: comfortable / close to failure / failure). Logged sets
+  show up under the exercise (`workout_logs` table) and in a recent-log
+  section on the trainer's client detail screen.
 - **Exercise reference library** (`ExerciseLibraryScreen`) seeded with 10
   placeholder entries, sourced from the MoveKit Complete package (one-time
   purchase, explicit commercial license — see `docs/exercise-library.md`).

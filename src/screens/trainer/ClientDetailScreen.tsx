@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import type { Checkin, Client, Habit } from "@/types/database";
+import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 
@@ -25,6 +25,12 @@ function describeDays(activeDays: number[]) {
     .join(" ");
 }
 
+const EFFORT_LABEL: Record<string, string> = {
+  comfortable: "Comfortable",
+  close_to_failure: "Close to failure",
+  failure: "Failure",
+};
+
 function formatIntakeLabel(key: string) {
   return key
     .replace(/[_-]+/g, " ")
@@ -37,6 +43,7 @@ export default function ClientDetailScreen({ route }: Props) {
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitLogsByHabit, setHabitLogsByHabit] = useState<Record<string, Record<string, number>>>({});
+  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -77,7 +84,7 @@ export default function ClientDetailScreen({ route }: Props) {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: clientRow }, { data: checkinRows }] = await Promise.all([
+      const [{ data: clientRow }, { data: checkinRows }, { data: workoutRows }] = await Promise.all([
         supabase.from("clients").select("*").eq("id", clientId).single(),
         supabase
           .from("checkins")
@@ -85,12 +92,20 @@ export default function ClientDetailScreen({ route }: Props) {
           .eq("client_id", clientId)
           .order("checkin_date", { ascending: false })
           .limit(14),
+        supabase
+          .from("workout_logs")
+          .select("*")
+          .eq("client_id", clientId)
+          .order("log_date", { ascending: false })
+          .order("set_number", { ascending: true })
+          .limit(30),
       ]);
       if (clientRow) {
         setClient(clientRow);
         setNotes(clientRow.trainer_notes ?? "");
       }
       setCheckins(checkinRows ?? []);
+      setWorkoutLogs(workoutRows ?? []);
       await loadHabits();
       setLoading(false);
     };
@@ -311,6 +326,20 @@ export default function ClientDetailScreen({ route }: Props) {
           </Text>
         </View>
       ))}
+
+      <Text style={styles.sectionHeading}>Recent training log</Text>
+      {workoutLogs.length === 0 && <Text style={styles.helper}>No sets logged yet.</Text>}
+      {workoutLogs.map((w) => (
+        <View key={w.id} style={styles.workoutRow}>
+          <Text style={styles.workoutExercise}>
+            {w.exercise_name} - Set {w.set_number}
+          </Text>
+          <Text style={styles.workoutDetail}>
+            {w.log_date} · {w.weight_kg ? `${w.weight_kg}kg x ` : ""}
+            {w.reps} reps · {EFFORT_LABEL[w.effort] ?? w.effort}
+          </Text>
+        </View>
+      ))}
     </ScrollView>
   );
 }
@@ -364,6 +393,9 @@ const styles = StyleSheet.create({
   checkinDate: { color: "#fff", fontWeight: "600" },
   distressText: { color: "#F87171", fontSize: 13, marginTop: 4, fontWeight: "600" },
   checkinDetail: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
+  workoutRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
+  workoutExercise: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  workoutDetail: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   habitRow: {
     flexDirection: "row",
     alignItems: "center",
