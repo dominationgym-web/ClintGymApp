@@ -14,6 +14,7 @@ import * as Notifications from "expo-notifications";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import type { Habit } from "@/types/database";
+import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -60,7 +61,9 @@ async function syncReminders(habits: Habit[]) {
 export default function HabitsScreen() {
   const { client } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [logs, setLogs] = useState<Record<string, number>>({});
+  // habit_id -> { "2026-09-20": repsCompleted, ... } for the last 60 days, used
+  // for both today's reps counter and the streak calculation.
+  const [logsByHabit, setLogsByHabit] = useState<Record<string, Record<string, number>>>({});
   const [reminderDrafts, setReminderDrafts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,14 +80,21 @@ export default function HabitsScreen() {
     setReminderDrafts(Object.fromEntries(list.map((h) => [h.id, h.reminder_time ? h.reminder_time.slice(0, 5) : ""])));
 
     if (list.length > 0) {
+      const since = new Date();
+      since.setDate(since.getDate() - 60);
       const { data: logRows } = await supabase
         .from("habit_logs")
         .select("*")
-        .eq("log_date", todayIso())
+        .gte("log_date", since.toISOString().slice(0, 10))
         .in("habit_id", list.map((h) => h.id));
-      setLogs(Object.fromEntries((logRows ?? []).map((l) => [l.habit_id, l.reps_completed])));
+      const byHabit: Record<string, Record<string, number>> = {};
+      for (const l of logRows ?? []) {
+        byHabit[l.habit_id] = byHabit[l.habit_id] ?? {};
+        byHabit[l.habit_id][l.log_date] = l.reps_completed;
+      }
+      setLogsByHabit(byHabit);
     } else {
-      setLogs({});
+      setLogsByHabit({});
     }
 
     syncReminders(list);
@@ -157,9 +167,12 @@ export default function HabitsScreen() {
   };
 
   const logReps = async (habit: Habit, delta: number) => {
-    const current = logs[habit.id] ?? 0;
+    const current = logsByHabit[habit.id]?.[todayIso()] ?? 0;
     const next = Math.max(0, Math.min(habit.reps_target, current + delta));
-    setLogs((prev) => ({ ...prev, [habit.id]: next }));
+    setLogsByHabit((prev) => ({
+      ...prev,
+      [habit.id]: { ...(prev[habit.id] ?? {}), [todayIso()]: next },
+    }));
     const { error } = await supabase
       .from("habit_logs")
       .upsert({ habit_id: habit.id, log_date: todayIso(), reps_completed: next }, { onConflict: "habit_id,log_date" });
@@ -186,11 +199,23 @@ export default function HabitsScreen() {
 
       {habits.map((h) => {
         const activeToday = isActiveToday(h);
-        const completed = logs[h.id] ?? 0;
+        const habitLogs = logsByHabit[h.id] ?? {};
+        const completed = habitLogs[todayIso()] ?? 0;
         const done = completed >= h.reps_target;
+        const tierResult = calculateHabitTier(h, habitLogs);
+        const isMaxTier = tierResult.tier === STREAK_TIERS.length - 1;
         return (
           <View key={h.id} style={[styles.habitCard, activeToday && done && styles.habitCardDone]}>
-            <Text style={styles.habitName}>{h.name}</Text>
+            <View style={styles.habitHeaderRow}>
+              <Text style={styles.habitName}>{h.name}</Text>
+              <View style={styles.streakBadge}>
+                <View style={[styles.streakDot, { backgroundColor: tierResult.color }]} />
+                <Text style={[styles.streakText, { color: tierResult.color }]}>
+                  {tierResult.label}
+                  {!isMaxTier ? ` · ${tierResult.progress}/${DAYS_PER_TIER}` : ""}
+                </Text>
+              </View>
+            </View>
             <Text style={styles.habitTarget}>{h.reps_target}x/day</Text>
 
             {activeToday ? (
@@ -256,7 +281,11 @@ const styles = StyleSheet.create({
   helper: { color: "#64748B", fontSize: 13, marginBottom: 12 },
   habitCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 14 },
   habitCardDone: { borderWidth: 1.5, borderColor: "#22C55E" },
-  habitName: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  habitHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
+  habitName: { color: "#fff", fontWeight: "700", fontSize: 16, flexShrink: 1 },
+  streakBadge: { flexDirection: "row", alignItems: "center", gap: 6 },
+  streakDot: { width: 8, height: 8, borderRadius: 4 },
+  streakText: { fontSize: 12, fontWeight: "600" },
   habitTarget: { color: "#64748B", fontSize: 12, marginTop: 2, marginBottom: 12 },
   repsRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 14 },
   stepperButton: {

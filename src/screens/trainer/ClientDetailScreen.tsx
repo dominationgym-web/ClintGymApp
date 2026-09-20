@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import type { Checkin, Client, Habit } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
+import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -35,6 +36,7 @@ export default function ClientDetailScreen({ route }: Props) {
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [habitLogsByHabit, setHabitLogsByHabit] = useState<Record<string, Record<string, number>>>({});
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -51,7 +53,26 @@ export default function ClientDetailScreen({ route }: Props) {
       .select("*")
       .eq("client_id", clientId)
       .order("created_at", { ascending: true });
-    setHabits(data ?? []);
+    const list = data ?? [];
+    setHabits(list);
+
+    if (list.length > 0) {
+      const since = new Date();
+      since.setDate(since.getDate() - 60);
+      const { data: logRows } = await supabase
+        .from("habit_logs")
+        .select("*")
+        .gte("log_date", since.toISOString().slice(0, 10))
+        .in("habit_id", list.map((h) => h.id));
+      const byHabit: Record<string, Record<string, number>> = {};
+      for (const l of logRows ?? []) {
+        byHabit[l.habit_id] = byHabit[l.habit_id] ?? {};
+        byHabit[l.habit_id][l.log_date] = l.reps_completed;
+      }
+      setHabitLogsByHabit(byHabit);
+    } else {
+      setHabitLogsByHabit({});
+    }
   };
 
   useEffect(() => {
@@ -189,21 +210,32 @@ export default function ClientDetailScreen({ route }: Props) {
         fit their schedule.
       </Text>
       {habits.length === 0 && <Text style={styles.helper}>No habits set up yet.</Text>}
-      {habits.map((h) => (
-        <View key={h.id} style={styles.habitRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.habitName}>{h.name}</Text>
-            <Text style={styles.habitDetail}>
-              {h.reps_target}x/day · {describeDays(h.active_days)}
-              {h.reminder_enabled && h.reminder_time ? ` · Reminder ${h.reminder_time.slice(0, 5)}` : ""}
-              {h.end_date ? ` · Ends ${h.end_date}` : ""}
-            </Text>
+      {habits.map((h) => {
+        const tierResult = calculateHabitTier(h, habitLogsByHabit[h.id] ?? {});
+        const isMaxTier = tierResult.tier === STREAK_TIERS.length - 1;
+        return (
+          <View key={h.id} style={styles.habitRow}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.habitNameRow}>
+                <Text style={styles.habitName}>{h.name}</Text>
+                <View style={[styles.streakDot, { backgroundColor: tierResult.color }]} />
+                <Text style={[styles.streakText, { color: tierResult.color }]}>
+                  {tierResult.label}
+                  {!isMaxTier ? ` ${tierResult.progress}/${DAYS_PER_TIER}` : ""}
+                </Text>
+              </View>
+              <Text style={styles.habitDetail}>
+                {h.reps_target}x/day · {describeDays(h.active_days)}
+                {h.reminder_enabled && h.reminder_time ? ` · Reminder ${h.reminder_time.slice(0, 5)}` : ""}
+                {h.end_date ? ` · Ends ${h.end_date}` : ""}
+              </Text>
+            </View>
+            <Pressable onPress={() => deleteHabit(h.id)}>
+              <Text style={styles.habitDelete}>Remove</Text>
+            </Pressable>
           </View>
-          <Pressable onPress={() => deleteHabit(h.id)}>
-            <Text style={styles.habitDelete}>Remove</Text>
-          </Pressable>
-        </View>
-      ))}
+        );
+      })}
 
       <View style={styles.addHabitBox}>
         <Text style={styles.addHabitTitle}>Add a habit</Text>
@@ -340,7 +372,10 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
   },
+  habitNameRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
   habitName: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  streakDot: { width: 8, height: 8, borderRadius: 4 },
+  streakText: { fontSize: 11, fontWeight: "600" },
   habitDetail: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
   habitDelete: { color: "#F87171", fontSize: 13, fontWeight: "600" },
   addHabitBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginTop: 4 },
