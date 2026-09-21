@@ -44,7 +44,11 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       .from("clients")
       .select("*")
       .eq("trainer_id", trainer.id)
-      .eq("access_status", "active");
+      // Everyone who still has access, which includes `expiring_soon` - those
+      // are paid-up clients inside their renewal window, and filtering on
+      // 'active' alone dropped them (and any red flag they had raised) off the
+      // dashboard entirely for the last week of every plan.
+      .neq("access_status", "expired");
 
     if (!clients) {
       setRows([]);
