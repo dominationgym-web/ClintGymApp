@@ -19,25 +19,32 @@ const FLAGS: { key: ClientStatusFlag; label: string; color: string }[] = [
 export default function ClientProfileScreen() {
   const { client, signOut, refreshProfile } = useAuth();
   const [selectedFlag, setSelectedFlag] = useState<ClientStatusFlag | null>(null);
-  const [note, setNote] = useState("");
+  // null means "not edited on this screen yet", so the box falls back to
+  // whatever note is already on the row. That way the client can see and edit a
+  // note they raised earlier instead of it silently riding along behind an empty
+  // box, and what they read in the box is exactly what gets saved.
+  const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   if (!client) return null;
 
   const activeFlag = selectedFlag ?? client.status_flag;
+  const noteValue = note ?? client.status_flag_note ?? "";
+  const savedNote = client.status_flag_note ?? "";
 
   const handleSave = async () => {
-    if (activeFlag !== "green" && !note.trim() && !client.status_flag_note) {
+    if (activeFlag !== "green" && !noteValue.trim()) {
       Alert.alert("Add a quick note", "Let your trainer know what's going on so they have context.");
       return;
     }
     setSaving(true);
+    // status_flag_updated_at is stamped server-side by the trigger in 0023 -
+    // the phone's clock is not trustworthy enough for the trainer to sort by.
     const { error } = await supabase
       .from("clients")
       .update({
         status_flag: activeFlag,
-        status_flag_note: activeFlag === "green" ? null : note.trim() || client.status_flag_note,
-        status_flag_updated_at: new Date().toISOString(),
+        status_flag_note: activeFlag === "green" ? null : noteValue.trim(),
       })
       .eq("id", client.id);
     setSaving(false);
@@ -46,11 +53,16 @@ export default function ClientProfileScreen() {
       return;
     }
     setSelectedFlag(null);
-    setNote("");
+    setNote(null);
     await refreshProfile();
   };
 
-  const hasChange = selectedFlag !== null && selectedFlag !== client.status_flag;
+  // Changing the flag counts, and so does adding detail to a flag that is
+  // already standing - for the state that means "urgent", being unable to save
+  // more context without first toggling the flag was the wrong constraint.
+  const hasChange =
+    (selectedFlag !== null && selectedFlag !== client.status_flag) ||
+    (activeFlag !== "green" && noteValue.trim() !== savedNote);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
@@ -91,7 +103,7 @@ export default function ClientProfileScreen() {
           multiline
           placeholder="Quick note for your trainer (what's going on?)"
           placeholderTextColor="#64748B"
-          value={note}
+          value={noteValue}
           onChangeText={setNote}
         />
       )}

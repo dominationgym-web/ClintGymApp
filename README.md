@@ -52,7 +52,9 @@ What exists right now:
   🟠orange / green traffic light the client sets any time from their Profile
   screen (not tied to the daily check-in), for signalling "I need guidance
   now" vs "I'd like feedback" vs "all good." Drives the dashboard sort order
-  above; the trainer can mark one resolved from `ClientDetailScreen`.
+  above; the trainer can mark one resolved from `ClientDetailScreen`. Every
+  change is logged to `client_status_flag_events` and timestamped server-side
+  (`0023`), so resolving a flag no longer erases what the client said.
 - **Admin client list** (`ClientsScreen`) sorted by plan expiry, with the
   manual access-status control.
 - **Client detail view** (`ClientDetailScreen`) with recent check-in history,
