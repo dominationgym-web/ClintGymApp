@@ -14,8 +14,6 @@ const STATUS_LABEL: Record<AccessStatus, string> = {
   expired: "Expired",
 };
 
-const STATUS_ORDER: AccessStatus[] = ["expired", "expiring_soon", "active"];
-
 export default function ClientsScreen({ navigation }: Props) {
   const { trainer } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);

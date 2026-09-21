@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { toIsoDate, todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { LifestyleResetDailyLog } from "@/types/database";
 import LifestyleResetContent from "@/screens/client/LifestyleResetContent";
@@ -26,8 +27,6 @@ const HABITS: { key: HabitKey; label: string; target: string }[] = [
   { key: "evening_winddown", label: "Evening wind-down", target: "5+ nights" },
 ];
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
-
 function currentWeekNumber(startedAt: string): number {
   const start = new Date(`${startedAt}T00:00:00`);
   const today = new Date();
@@ -51,7 +50,7 @@ export default function LifestyleResetScreen() {
       .from("lifestyle_reset_daily_logs")
       .select("*")
       .eq("client_id", client.id)
-      .gte("log_date", since.toISOString().slice(0, 10))
+      .gte("log_date", toIsoDate(since))
       .order("log_date", { ascending: true });
     const rows = data ?? [];
     setWeekLogs(rows);

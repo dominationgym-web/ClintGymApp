@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
+import { toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
@@ -50,7 +51,7 @@ export default function ClientDetailScreen({ route }: Props) {
 
   const [newHabitName, setNewHabitName] = useState("");
   const [newHabitReps, setNewHabitReps] = useState(1);
-  const [newHabitStart, setNewHabitStart] = useState(() => new Date().toISOString().slice(0, 10));
+  const [newHabitStart, setNewHabitStart] = useState(() => todayIso());
   const [newHabitEnd, setNewHabitEnd] = useState("");
   const [addingHabit, setAddingHabit] = useState(false);
 
@@ -69,7 +70,7 @@ export default function ClientDetailScreen({ route }: Props) {
       const { data: logRows } = await supabase
         .from("habit_logs")
         .select("*")
-        .gte("log_date", since.toISOString().slice(0, 10))
+        .gte("log_date", toIsoDate(since))
         .in("habit_id", list.map((h) => h.id));
       const byHabit: Record<string, Record<string, number>> = {};
       for (const l of logRows ?? []) {
@@ -125,7 +126,7 @@ export default function ClientDetailScreen({ route }: Props) {
       name: newHabitName.trim(),
       active_days: [0, 1, 2, 3, 4, 5, 6],
       reps_target: newHabitReps,
-      start_date: newHabitStart || new Date().toISOString().slice(0, 10),
+      start_date: newHabitStart || todayIso(),
       end_date: newHabitEnd || null,
     });
     setAddingHabit(false);
@@ -168,7 +169,7 @@ export default function ClientDetailScreen({ route }: Props) {
   };
 
   const toggleLifestyleReset = async () => {
-    const next = client?.lifestyle_reset_started_at ? null : new Date().toISOString().slice(0, 10);
+    const next = client?.lifestyle_reset_started_at ? null : todayIso();
     const { error } = await supabase.from("clients").update({ lifestyle_reset_started_at: next }).eq("id", clientId);
     if (error) {
       Alert.alert("Couldn't update", error.message);

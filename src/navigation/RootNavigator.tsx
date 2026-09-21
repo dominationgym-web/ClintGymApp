@@ -20,9 +20,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {!session ? (
-        <AuthNavigator />
-      ) : role === "trainer" ? (
+      {role === "trainer" ? (
         <TrainerNavigator />
       ) : role === "client" && client != null && client.access_status !== "expired" ? (
         Object.keys(client.intake_responses ?? {}).length === 0 ? (

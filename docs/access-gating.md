@@ -47,7 +47,29 @@ Two independent layers, deliberately redundant:
   (`auth.uid() = trainer_id`) can move the field.
 
 If you change either of these, re-verify with an integration test that signs
-in as a client and asserts the update/insert is rejected.
+in as a client and asserts the update/insert is rejected. That test doesn't
+exist yet - it needs a live Supabase project, so it isn't part of the unit
+suite.
+
+## What is covered by automated tests
+
+`src/lib/access.ts` holds the app-side gating decision, and
+`src/lib/access.test.ts` pins it down: `active` and `expiring_soon` both open
+the app, only `expired` lands on the pending screen, a client row that failed
+to load is treated as locked out rather than open, and an empty intake form
+can't be used to skip the access check. The status cycle the trainer taps
+through starts at `expired`, so an unrecognised status can never cycle
+straight into `active`.
+
+`expiring_soon` counting as access is deliberate and is the thing most likely
+to get broken again: the scheduled `auto_expire_plans` job sets it seven days
+before `plan_expires_at`, and those seven days are paid for. The app-side rule
+has to stay in step with `public.client_has_access` in the database, which
+gates client writes on `access_status <> 'expired'`. There is a test named for
+that renewal window so the reason survives.
+
+Run them with `npm test`. They do not cover the two database layers above -
+those are still manual, per the paragraph before this one.
 
 ## What's NOT built yet (Phase 1 gap to close before real billing volume)
 
