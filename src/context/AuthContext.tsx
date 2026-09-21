@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { AppState } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { Client, Trainer } from "@/types/database";
@@ -88,6 +89,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.subscription.unsubscribe();
   }, []);
+
+  // The client row is the access gate, so it must not go stale while the app is
+  // open. It used to be loaded once per session and never refetched, so a
+  // trainer confirming payment left the client stuck on PendingAccessScreen
+  // until they force-quit the app, and a revoked client kept the tabs
+  // indefinitely. (Since 0022 the database refuses a lapsed client's writes
+  // either way, but the UI should agree with the server.)
+  const userIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    userIdRef.current = session?.user.id ?? null;
+  }, [session]);
+
+  // Refetch whenever the app comes back to the foreground.
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && userIdRef.current) {
+        loadProfile(userIdRef.current);
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
+  // And live, while the app stays open, so an activation lands the moment the
+  // trainer taps it. Needs public.clients in the realtime publication (0024);
+  // if realtime is unavailable this simply never fires and the foreground
+  // refresh above still covers it.
+  useEffect(() => {
+    const userId = session?.user.id;
+    if (!userId || role !== "client") return;
+
+    const channel = supabase
+      .channel(`client-row-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "clients", filter: `id=eq.${userId}` },
+        // Refetch rather than trusting the payload: this row decides what the
+        // client can open, so it is worth one round trip to load it the same
+        // way every other path does.
+        () => loadProfile(userId)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user.id, role]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
