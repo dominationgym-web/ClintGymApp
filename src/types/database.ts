@@ -39,6 +39,19 @@ export type Client = {
   created_at: string;
 }
 
+// Append-only log of every flag change, written by the trigger in 0023. The
+// three status_flag* columns on Client stay the current-state cache; this is the
+// history that "Mark as resolved" used to erase.
+export type ClientStatusFlagEvent = {
+  id: string;
+  client_id: string;
+  flag: ClientStatusFlag;
+  note: string | null;
+  set_by: string | null;
+  set_by_role: "client" | "trainer" | "system";
+  created_at: string;
+}
+
 export type Checkin = {
   id: string;
   client_id: string;
@@ -138,6 +151,12 @@ export interface Database {
     Tables: {
       trainers: { Row: Trainer; Insert: Partial<Trainer>; Update: Partial<Trainer>; Relationships: [] };
       clients: { Row: Client; Insert: Partial<Client>; Update: Partial<Client>; Relationships: [] };
+      client_status_flag_events: {
+        Row: ClientStatusFlagEvent;
+        Insert: Partial<ClientStatusFlagEvent>;
+        Update: Partial<ClientStatusFlagEvent>;
+        Relationships: [];
+      };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       videos: { Row: Video; Insert: Partial<Video>; Update: Partial<Video>; Relationships: [] };
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };

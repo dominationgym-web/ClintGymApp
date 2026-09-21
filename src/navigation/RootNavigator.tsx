@@ -7,6 +7,13 @@ import ClientNavigator from "@/navigation/ClientNavigator";
 import TrainerNavigator from "@/navigation/TrainerNavigator";
 import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
 
+// A client's access is open unless their plan has actually expired.
+// `expiring_soon` is a client who is still paid up, inside the renewal window
+// that 0021's auto_expire_plans opens 7 days before expiry - they keep full
+// access and see the expiry date on their Profile screen. Only `expired` closes
+// the app, and a client row we failed to load falls through to
+// PendingAccessScreen rather than being let in. Mirrored server-side by
+// public.client_has_access in 0022.
 export default function RootNavigator() {
   const { session, role, loading, client } = useAuth();
 
