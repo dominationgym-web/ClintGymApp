@@ -25,20 +25,31 @@ describe("resolveAppArea", () => {
     expect(resolveAppArea({ ...signedIn, role: "trainer", client: null })).toBe("trainer");
   });
 
-  it("gives an active client with a completed intake the full app", () => {
-    expect(resolveAppArea({ ...signedIn, role: "client", client: client("active") })).toBe("client");
+  // The money test, both ways round: a paying client must get in, and a
+  // lapsed one must not. This mirrors `public.client_has_access` in migration
+  // 0022, which gates client writes on `access_status <> 'expired'`.
+  it.each<AccessStatus>(["active", "expiring_soon"])("gives a %s client the full app", (status) => {
+    expect(resolveAppArea({ ...signedIn, role: "client", client: client(status) })).toBe("client");
   });
 
-  it("sends an active client with no intake answers to the intake form", () => {
-    expect(resolveAppArea({ ...signedIn, role: "client", client: client("active", {}) })).toBe("intake");
+  it("locks an expired client out of the app", () => {
+    expect(resolveAppArea({ ...signedIn, role: "client", client: client("expired") })).toBe("pending");
   });
 
-  // The money test: nothing but `active` may open the app.
-  it.each<AccessStatus>(["expired", "expiring_soon"])("locks a %s client out of the app", (status) => {
-    expect(resolveAppArea({ ...signedIn, role: "client", client: client(status) })).toBe("pending");
+  // auto_expire_plans (migration 0021) moves a client to `expiring_soon` seven
+  // days before plan_expires_at. They have paid for those seven days, so
+  // treating that status as a lockout would shut every client out of the last
+  // week of their plan.
+  it("keeps a client in their renewal window inside the app", () => {
+    expect(resolveAppArea({ ...signedIn, role: "client", client: client("expiring_soon") })).toBe("client");
+  });
+
+  it.each<AccessStatus>(["active", "expiring_soon"])("sends a %s client with no intake answers to the form", (status) => {
+    expect(resolveAppArea({ ...signedIn, role: "client", client: client(status, {}) })).toBe("intake");
   });
 
   it("locks a client out when their row could not be loaded", () => {
+    // Failing closed is the safe direction when we can't read the status.
     expect(resolveAppArea({ ...signedIn, role: "client", client: null })).toBe("pending");
   });
 

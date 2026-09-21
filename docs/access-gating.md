@@ -54,12 +54,19 @@ suite.
 ## What is covered by automated tests
 
 `src/lib/access.ts` holds the app-side gating decision, and
-`src/lib/access.test.ts` pins it down: only `access_status === 'active'` opens
-the app, `expired` and `expiring_soon` both land on the pending screen, a
-client row that failed to load is treated as locked out rather than open, and
-an empty intake form can't be used to skip the access check. The status cycle
-the trainer taps through starts at `expired`, so an unrecognised status can
-never cycle straight into `active`.
+`src/lib/access.test.ts` pins it down: `active` and `expiring_soon` both open
+the app, only `expired` lands on the pending screen, a client row that failed
+to load is treated as locked out rather than open, and an empty intake form
+can't be used to skip the access check. The status cycle the trainer taps
+through starts at `expired`, so an unrecognised status can never cycle
+straight into `active`.
+
+`expiring_soon` counting as access is deliberate and is the thing most likely
+to get broken again: the scheduled `auto_expire_plans` job sets it seven days
+before `plan_expires_at`, and those seven days are paid for. The app-side rule
+has to stay in step with `public.client_has_access` in the database, which
+gates client writes on `access_status <> 'expired'`. There is a test named for
+that renewal window so the reason survives.
 
 Run them with `npm test`. They do not cover the two database layers above -
 those are still manual, per the paragraph before this one.

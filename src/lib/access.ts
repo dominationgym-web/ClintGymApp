@@ -4,14 +4,21 @@ import type { AccessStatus, Client } from "@/types/database";
 // docs/access-gating.md. Get it wrong and either a non-paying client gets full
 // access or a paying client is locked out, so the decision lives here as a
 // plain function that tests can pin down, and RootNavigator just renders it.
+//
+// "Has access" means `access_status <> 'expired'`, which covers both `active`
+// and `expiring_soon`. `expiring_soon` is a client who is still paid up and
+// inside their renewal window - the scheduled auto_expire_plans job sets it 7
+// days before `plan_expires_at` - so treating it as a lockout would shut
+// paying clients out of the last week of every plan. This mirrors
+// `public.client_has_access` in the database, and the two must stay in step.
 
 export type AppArea =
   | "loading" // still resolving the session and profile
   | "auth" // signed out, or signed in with no trainer/client row yet
   | "trainer"
-  | "intake" // active client who hasn't filled in the intake form
-  | "client" // active client, full app
-  | "pending"; // client whose access isn't active - no app access at all
+  | "intake" // client with access who hasn't filled in the intake form
+  | "client" // client with access, full app
+  | "pending"; // expired or unknown client - no app access at all
 
 export type AccessInput = {
   loading: boolean;
@@ -26,9 +33,10 @@ export function resolveAppArea({ loading, hasSession, role, client }: AccessInpu
   if (role === "trainer") return "trainer";
 
   if (role === "client") {
-    // `active` is the only status that opens the app. Anything else - and a
-    // client row we failed to load - waits on the trainer confirming payment.
-    if (client?.access_status !== "active") return "pending";
+    // Only `expired` closes the app. A client row we failed to load also waits
+    // on the pending screen rather than being let in - failing closed is the
+    // safe direction.
+    if (client == null || client.access_status === "expired") return "pending";
     return hasCompletedIntake(client) ? "client" : "intake";
   }
 
