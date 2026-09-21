@@ -100,6 +100,102 @@ const PHASES: { range: string; name: string; bullets: string[] }[] = [
   },
 ];
 
+type TrainingSession = { label: string; exercises: string[] };
+type TrainingPhase = {
+  range: string;
+  name: string;
+  sessionsPerWeek: string;
+  effort: string;
+  cardio: string;
+  sessions: TrainingSession[];
+  energyNote: string;
+};
+
+const TRAINING_PLAN: TrainingPhase[] = [
+  {
+    range: "Weeks 1-2",
+    name: "CALM",
+    sessionsPerWeek: "2 full-body sessions/week",
+    effort: "Comfortable only - nothing near failure",
+    cardio: "Walking only (covered by your Daily 6 movement target)",
+    sessions: [
+      {
+        label: "Session A (repeat twice this week)",
+        exercises: ["Barbell Back Squat (light)", "Bench Press (light)", "Bent-Over Barbell Row or Lat Pulldown", "Plank"],
+      },
+    ],
+    energyNote:
+      "If energy or stress is high this week, it's completely fine to keep the weight light or skip a session. Consistency matters far more than intensity right now.",
+  },
+  {
+    range: "Weeks 3-4",
+    name: "RHYTHM",
+    sessionsPerWeek: "2 full-body sessions/week",
+    effort: "Still comfortable - just adding a little more volume",
+    cardio: "Add 10-15 easy minutes (walk/cycle/swim), 1-2x/week",
+    sessions: [
+      {
+        label: "Session A (repeat twice this week)",
+        exercises: [
+          "Barbell Back Squat or Walking Lunge",
+          "Romanian Deadlift (light)",
+          "Incline Dumbbell Press",
+          "Lat Pulldown or Pull-Up",
+          "Dumbbell Lateral Raise",
+          "Plank",
+        ],
+      },
+    ],
+    energyNote: "Same rule as weeks 1-2: a heavy week at work or bad sleep means you scale back, not push through.",
+  },
+  {
+    range: "Weeks 5-8",
+    name: "BUILD",
+    sessionsPerWeek: "3 sessions/week, split by movement pattern",
+    effort: "Comfortable, except the last set of each exercise - close to failure",
+    cardio: "20-30 structured minutes, 2-3x/week",
+    sessions: [
+      {
+        label: "Day A - Lower body",
+        exercises: ["Barbell Back Squat", "Romanian Deadlift", "Walking Lunge", "Leg Extension", "Plank"],
+      },
+      {
+        label: "Day B - Push",
+        exercises: ["Bench Press", "Incline Dumbbell Press", "Dumbbell Lateral Raise", "Cable Rope Pushdown"],
+      },
+      {
+        label: "Day C - Pull",
+        exercises: ["Bent-Over Barbell Row", "Lat Pulldown", "Seated Dumbbell Curl", "EZ-Bar Preacher Curl"],
+      },
+    ],
+    energyNote:
+      "Only push that last set close to failure if the week has actually felt good - check your own Daily 6 and sleep before deciding. Any rough week, drop back to comfortable across the board.",
+  },
+  {
+    range: "Weeks 9-12",
+    name: "OPTIMISE",
+    sessionsPerWeek: "3 sessions/week, individualised with your trainer",
+    effort: "Comfortable most sets - failure on your last set when genuinely recovered",
+    cardio: "3-4x/week, mixing easy and slightly harder sessions",
+    sessions: [
+      {
+        label: "Day A - Lower body",
+        exercises: ["Barbell Back Squat", "Bulgarian Split Squat", "Leg Extension", "Lying Leg Curl", "Hip Abduction", "Hip Adduction", "Plank"],
+      },
+      {
+        label: "Day B - Push",
+        exercises: ["Bench Press", "Incline Dumbbell Press", "Dumbbell Lateral Raise", "Cable Rope Pushdown", "Reverse-Grip Tricep Pushdown"],
+      },
+      {
+        label: "Day C - Pull",
+        exercises: ["Romanian Deadlift", "Bent-Over Barbell Row or Lat Pulldown", "Dumbbell Row", "Seated Dumbbell Curl", "EZ-Bar Preacher Curl"],
+      },
+    ],
+    energyNote:
+      "By now you should know your own rhythm. Log the effort honestly in your Training Log every session - that's what lets your trainer fine-tune things from here.",
+  },
+];
+
 const TRACK_METRICS = ["Energy", "Sleep quality", "Stress", "Mood", "Hunger", "Training performance", "Digestion"];
 const TRACK_OPTIONAL = ["Waist measurement", "Body weight", "Resting heart rate", "HRV", "Strength levels"];
 
@@ -186,6 +282,30 @@ export default function LifestyleResetContent() {
             {p.range} · {p.name}
           </Text>
           <Bullets items={p.bullets} />
+        </View>
+      ))}
+
+      <Text style={styles.sectionTitle}>Your 12-Week Training Plan</Text>
+      <Text style={styles.body}>
+        Simple and achievable - built around the same four phases, scaled to how much you actually have in the tank
+        each week. Log every session in your Training Log (Exercises tab) - weight, reps, and how it felt. That's
+        what lets you and your trainer see real progress, not just how any one day feels.
+      </Text>
+      {TRAINING_PLAN.map((p) => (
+        <View key={p.name} style={[styles.card, { marginTop: 10 }]}>
+          <Text style={styles.cardTitle}>
+            {p.range} · {p.name}
+          </Text>
+          <Text style={styles.subItems}>{p.sessionsPerWeek}</Text>
+          <Text style={styles.subItems}>Effort: {p.effort}</Text>
+          <Text style={styles.subItems}>Cardio: {p.cardio}</Text>
+          {p.sessions.map((s) => (
+            <View key={s.label} style={{ marginTop: 10 }}>
+              <Text style={styles.subLabel}>{s.label}</Text>
+              <Bullets items={s.exercises} />
+            </View>
+          ))}
+          <Text style={styles.note}>{p.energyNote}</Text>
         </View>
       ))}
 
