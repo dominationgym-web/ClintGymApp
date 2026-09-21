@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { toIsoDate } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { AccessStatus, Client } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
@@ -76,7 +77,7 @@ export default function ClientsScreen({ navigation }: Props) {
       expiryDate.setDate(expiryDate.getDate() + planDays);
 
       updates.plan_started_at = today.toISOString();
-      updates.plan_expires_at = expiryDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      updates.plan_expires_at = toIsoDate(expiryDate); // Uses local date, not UTC
     }
 
     const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
