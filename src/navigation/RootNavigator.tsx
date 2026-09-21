@@ -24,7 +24,7 @@ export default function RootNavigator() {
         <AuthNavigator />
       ) : role === "trainer" ? (
         <TrainerNavigator />
-      ) : role === "client" && client?.access_status === "active" ? (
+      ) : role === "client" && client != null && client.access_status !== "expired" ? (
         Object.keys(client.intake_responses ?? {}).length === 0 ? (
           <IntakeFormScreen />
         ) : (
