@@ -14,10 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
+import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, SetEffort, WorkoutLog } from "@/types/database";
-
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
   { key: "comfortable", label: "Comfortable" },

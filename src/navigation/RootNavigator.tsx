@@ -2,6 +2,7 @@ import React from "react";
 import { View, ActivityIndicator, Text, Pressable, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
+import { resolveAppArea } from "@/lib/access";
 import AuthNavigator from "@/navigation/AuthNavigator";
 import ClientNavigator from "@/navigation/ClientNavigator";
 import TrainerNavigator from "@/navigation/TrainerNavigator";
@@ -9,8 +10,9 @@ import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
 
 export default function RootNavigator() {
   const { session, role, loading, client } = useAuth();
+  const area = resolveAppArea({ loading, hasSession: !!session, role, client });
 
-  if (loading) {
+  if (area === "loading") {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color="#22C55E" />
@@ -20,17 +22,13 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {!session ? (
-        <AuthNavigator />
-      ) : role === "trainer" ? (
+      {area === "trainer" ? (
         <TrainerNavigator />
-      ) : role === "client" && client?.access_status === "active" ? (
-        Object.keys(client.intake_responses ?? {}).length === 0 ? (
-          <IntakeFormScreen />
-        ) : (
-          <ClientNavigator />
-        )
-      ) : role === "client" ? (
+      ) : area === "intake" ? (
+        <IntakeFormScreen />
+      ) : area === "client" ? (
+        <ClientNavigator />
+      ) : area === "pending" ? (
         <PendingAccessScreen />
       ) : (
         <AuthNavigator />

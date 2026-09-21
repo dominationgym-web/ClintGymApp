@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { nextAccessStatus } from "@/lib/access";
 import { useAuth } from "@/context/AuthContext";
 import type { AccessStatus, Client } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
@@ -12,8 +13,6 @@ const STATUS_LABEL: Record<AccessStatus, string> = {
   expiring_soon: "Expiring soon",
   expired: "Expired",
 };
-
-const STATUS_ORDER: AccessStatus[] = ["expired", "expiring_soon", "active"];
 
 export default function ClientsScreen({ navigation }: Props) {
   const { trainer } = useAuth();
@@ -59,8 +58,7 @@ export default function ClientsScreen({ navigation }: Props) {
   // access, per the brief. Cycling it here is the "admin screen" - the
   // trainer only flips this after confirming EFT/PayPal payment themselves.
   const cycleStatus = async (client: Client) => {
-    const currentIdx = STATUS_ORDER.indexOf(client.access_status);
-    const next = STATUS_ORDER[(currentIdx + 1) % STATUS_ORDER.length];
+    const next = nextAccessStatus(client.access_status);
     const { error } = await supabase.from("clients").update({ access_status: next }).eq("id", client.id);
     if (!error) {
       setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, access_status: next } : c)));

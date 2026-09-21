@@ -10,10 +10,9 @@ import {
   Alert,
 } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { HighGiTiming } from "@/types/database";
-
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const HIGH_GI_OPTIONS: { key: HighGiTiming; label: string }[] = [
   { key: "before_training", label: "Before training" },

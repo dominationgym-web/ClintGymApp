@@ -140,6 +140,11 @@ npm run start     # then press i / a / w, or scan the QR code with Expo Go
 App.tsx                     # provider + navigation root
 src/
   lib/supabase.ts           # Supabase client (env-configured)
+  lib/dates.ts              # local calendar dates (never use toISOString here)
+  lib/access.ts             # the access_status gating decision
+  lib/clientFlags.ts        # trainer dashboard priority + flag colours
+  lib/habitStreak.ts        # habit colour-tier streak counting
+  lib/*.test.ts             # unit tests for all of the above
   types/database.ts         # hand-written mirror of the SQL schema
   context/AuthContext.tsx   # session + role (trainer/client) resolution
   navigation/                # role-branching navigators
@@ -151,11 +156,35 @@ supabase/
   migrations/                # schema, seed data, storage policies
 docs/
   access-gating.md           # how the payment/access field is protected
+.github/workflows/ci.yml     # typecheck + tests on every push and PR
 ```
+
+## Automated checks
+
+```bash
+npm run typecheck   # tsc --noEmit
+npm test            # vitest run
+npm run test:watch  # vitest, watching for changes
+```
+
+These cover the logic that costs real money or trust when it breaks: the
+`access_status` gating decision, the trainer dashboard's flag priority, and
+habit streak counting. They are plain unit tests over `src/lib` with no
+React Native renderer, so the whole suite runs in well under a second.
+
+Tests run with `TZ=Africa/Johannesburg` (set in `vitest.config.mts`), because
+date bugs in this app only appear in timezones ahead of UTC and would
+otherwise stay invisible on a UTC CI runner. Build calendar dates with the
+helpers in `src/lib/dates.ts` - never `toISOString().slice(0, 10)`, which
+converts to UTC first and returns the previous day for South African users.
+
+GitHub Actions runs both commands on every push and pull request.
 
 ## Testing this phase before it touches real client data
 
-At minimum, before onboarding a real client: sign up as a test client,
+Automated tests cover the pure logic; the following still needs a human,
+because it involves real auth, RLS and storage. At minimum, before
+onboarding a real client: sign up as a test client,
 confirm they see `PendingAccessScreen` (not the app) until flipped to
 `active`; confirm a second test client can never see the first client's
 check-ins or videos (RLS); confirm a distress-flagged check-in shows up

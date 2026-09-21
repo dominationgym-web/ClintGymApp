@@ -11,12 +11,12 @@ import {
   RefreshControl,
 } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { toIsoDate, todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Habit } from "@/types/database";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
-const todayIso = () => new Date().toISOString().slice(0, 10);
 const todayWeekday = () => new Date().getDay(); // 0 = Sunday .. 6 = Saturday
 
 function isActiveToday(habit: Habit) {
@@ -53,7 +53,7 @@ export default function HabitsScreen() {
       const { data: logRows } = await supabase
         .from("habit_logs")
         .select("*")
-        .gte("log_date", since.toISOString().slice(0, 10))
+        .gte("log_date", toIsoDate(since))
         .in("habit_id", list.map((h) => h.id));
       const byHabit: Record<string, Record<string, number>> = {};
       for (const l of logRows ?? []) {
