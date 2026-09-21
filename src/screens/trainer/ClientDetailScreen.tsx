@@ -195,6 +195,22 @@ export default function ClientDetailScreen({ route }: Props) {
         </View>
       )}
 
+      {client.plan_type && (
+        <View style={styles.planBox}>
+          <Text style={styles.planLabel}>{client.plan_type === 'intro_1mo' ? '1 Month' : client.plan_type === 'sub_6mo' ? '6 Month' : '12 Month'} Plan</Text>
+          {client.plan_started_at && (
+            <Text style={styles.planDate}>
+              Started: {new Date(client.plan_started_at).toLocaleDateString()}
+            </Text>
+          )}
+          {client.plan_expires_at && (
+            <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
+              Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
+            </Text>
+          )}
+        </View>
+      )}
+
       <View style={styles.resetBox}>
         <View style={{ flex: 1 }}>
           <Text style={styles.resetTitle}>12-Week Lifestyle Reset</Text>
@@ -384,6 +400,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   packageBadgeText: { color: "#22C55E", fontSize: 12, fontWeight: "600" },
+  planBox: {
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#22C55E",
+  },
+  planLabel: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  planDate: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
+  expired: { color: "#EF4444" },
   resetBox: {
     flexDirection: "row",
     alignItems: "center",

@@ -67,9 +67,14 @@ What's deliberately **not** built yet (tracked as gaps, not bugs):
   already, just not delivered yet.
 - Video auto-delete is now live — a daily `pg_cron` job
   (`delete_expired_videos`, `supabase/migrations/0009_video_auto_delete_job.sql`)
-  removes the Storage file and soft-deletes the row past `expires_at`. Still
-  missing: the active → expiring_soon → expired transition based on
-  `plan_expires_at` (see `docs/access-gating.md`) isn't automated yet.
+  removes the Storage file and soft-deletes the row past `expires_at`.
+- **Plan auto-expiry is now live** — when the trainer activates a client,
+  `plan_expires_at` is automatically calculated based on `plan_type` (30 days
+  for 1-month, 180 for 6-month, 365 for 12-month). A daily `pg_cron` job
+  (`auto_expire_plans`, `supabase/migrations/0021_plan_expiry_job.sql`)
+  auto-transitions clients to `expiring_soon` (7 days before expiry) and then
+  to `expired` on the actual expiry date. The trainer sees the expiry date on
+  the client detail screen.
 - Privacy policy is now real (`docs/privacy-policy.md`, rendered in-app via
   `PrivacyPolicyContent`/a modal on `SignupScreen`, linked before the
   consent checkbox so consent is actually informed) — drafted around

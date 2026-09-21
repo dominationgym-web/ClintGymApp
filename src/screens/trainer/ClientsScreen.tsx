@@ -61,9 +61,27 @@ export default function ClientsScreen({ navigation }: Props) {
   const cycleStatus = async (client: Client) => {
     const currentIdx = STATUS_ORDER.indexOf(client.access_status);
     const next = STATUS_ORDER[(currentIdx + 1) % STATUS_ORDER.length];
-    const { error } = await supabase.from("clients").update({ access_status: next }).eq("id", client.id);
+
+    // When moving to "active", calculate plan_expires_at based on plan_type
+    const updates: Record<string, any> = { access_status: next };
+
+    if (next === "active" && client.plan_type) {
+      const today = new Date();
+      const planDays =
+        client.plan_type === "intro_1mo" ? 30 :
+        client.plan_type === "sub_6mo" ? 180 :
+        365; // sub_12mo
+
+      const expiryDate = new Date(today);
+      expiryDate.setDate(expiryDate.getDate() + planDays);
+
+      updates.plan_started_at = today.toISOString();
+      updates.plan_expires_at = expiryDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    }
+
+    const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
     if (!error) {
-      setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, access_status: next } : c)));
+      setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
     }
   };
 
