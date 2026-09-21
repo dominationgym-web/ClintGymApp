@@ -30,6 +30,7 @@ export type Client = {
   plan_started_at: string | null;
   plan_expires_at: string | null;
   package_type: PackageType | null;
+  lifestyle_reset_started_at: string | null;
   consent_accepted_at: string | null;
   privacy_policy_version: string | null;
   status_flag: ClientStatusFlag;
@@ -117,6 +118,21 @@ export type HabitLog = {
   created_at: string;
 }
 
+export type LifestyleResetDailyLog = {
+  id: string;
+  client_id: string;
+  log_date: string;
+  morning_daylight: boolean;
+  breathing: boolean;
+  daily_movement: boolean;
+  protein_meals: boolean;
+  strength_training: boolean;
+  aerobic_exercise: boolean;
+  consistent_sleep: boolean;
+  evening_winddown: boolean;
+  created_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -128,6 +144,12 @@ export interface Database {
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
       habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
       workout_logs: { Row: WorkoutLog; Insert: Partial<WorkoutLog>; Update: Partial<WorkoutLog>; Relationships: [] };
+      lifestyle_reset_daily_logs: {
+        Row: LifestyleResetDailyLog;
+        Insert: Partial<LifestyleResetDailyLog>;
+        Update: Partial<LifestyleResetDailyLog>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

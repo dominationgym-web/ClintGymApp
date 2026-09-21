@@ -167,6 +167,16 @@ export default function ClientDetailScreen({ route }: Props) {
     setClient((c) => (c ? { ...c, status_flag: "green", status_flag_note: null } : c));
   };
 
+  const toggleLifestyleReset = async () => {
+    const next = client?.lifestyle_reset_started_at ? null : new Date().toISOString().slice(0, 10);
+    const { error } = await supabase.from("clients").update({ lifestyle_reset_started_at: next }).eq("id", clientId);
+    if (error) {
+      Alert.alert("Couldn't update", error.message);
+      return;
+    }
+    setClient((c) => (c ? { ...c, lifestyle_reset_started_at: next } : c));
+  };
+
   if (loading || !client) {
     return (
       <View style={styles.centered}>
@@ -184,6 +194,22 @@ export default function ClientDetailScreen({ route }: Props) {
           <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
         </View>
       )}
+
+      <View style={styles.resetBox}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.resetTitle}>12-Week Lifestyle Reset</Text>
+          {client.lifestyle_reset_started_at ? (
+            <Text style={styles.helper}>Started {client.lifestyle_reset_started_at}</Text>
+          ) : (
+            <Text style={styles.helper}>Not enrolled</Text>
+          )}
+        </View>
+        <Pressable style={styles.resetButton} onPress={toggleLifestyleReset}>
+          <Text style={styles.resetButtonText}>
+            {client.lifestyle_reset_started_at ? "End program" : "Enroll"}
+          </Text>
+        </Pressable>
+      </View>
 
       {client.status_flag !== "green" && (
         <View style={[styles.flagBanner, client.status_flag === "red" ? styles.flagBannerRed : styles.flagBannerOrange]}>
@@ -358,6 +384,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   packageBadgeText: { color: "#22C55E", fontSize: 12, fontWeight: "600" },
+  resetBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,
+  },
+  resetTitle: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  resetButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  resetButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
   flagBanner: { borderRadius: 10, padding: 14, marginTop: 12, marginBottom: 4, borderWidth: 1.5 },
