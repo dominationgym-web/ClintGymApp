@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Modal,
+  Clipboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -62,11 +63,34 @@ export default function SignupScreen({ navigation }: Props) {
   const [awaitingPayment, setAwaitingPayment] = useState(false);
   const [policyVisible, setPolicyVisible] = useState(false);
 
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await Clipboard.setString(text);
+      Alert.alert("Copied", `${label} copied to clipboard.`);
+    } catch (error) {
+      Alert.alert("Error", "Failed to copy to clipboard.");
+    }
+  };
+
   const handleSignup = async () => {
     if (!name || !email || !password) {
       Alert.alert("Missing details", "Fill in your name, email, and a password.");
       return;
     }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert("Invalid email", "Please enter a valid email address.");
+      return;
+    }
+
+    // Password strength
+    if (password.length < 8) {
+      Alert.alert("Weak password", "Password must be at least 8 characters long.");
+      return;
+    }
+
     if (!consented) {
       Alert.alert(
         "Consent required",
@@ -126,10 +150,18 @@ export default function SignupScreen({ navigation }: Props) {
         <Text style={styles.sectionHeading}>South Africa - EFT</Text>
         <View style={styles.bankBox}>
           {EFT_DETAILS.map(({ label, value }) => (
-            <View key={label} style={styles.bankRow}>
-              <Text style={styles.bankLabel}>{label}</Text>
-              <Text style={styles.bankValue}>{value}</Text>
-            </View>
+            <Pressable
+              key={label}
+              style={styles.bankRow}
+              onPress={() => copyToClipboard(value, label)}
+              android_ripple={{ color: "rgba(34, 197, 94, 0.1)" }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.bankLabel}>{label}</Text>
+                <Text style={styles.bankValue}>{value}</Text>
+              </View>
+              <Text style={styles.copyIcon}>📋</Text>
+            </Pressable>
           ))}
         </View>
         <Text style={styles.body}>
@@ -225,9 +257,10 @@ const styles = StyleSheet.create({
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, flexShrink: 1 },
   bankBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 12 },
-  bankRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8, gap: 12 },
+  bankRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 6 },
   bankLabel: { color: "#64748B", fontSize: 13, flexShrink: 0 },
   bankValue: { color: "#fff", fontSize: 13, fontWeight: "600", textAlign: "right", flexShrink: 1 },
+  copyIcon: { fontSize: 16, paddingLeft: 8 },
   bankValueInline: { color: "#22C55E", fontWeight: "700" },
   input: {
     backgroundColor: "#1E293B",

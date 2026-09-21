@@ -1,0 +1,27 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background (dark slate) -->
+  <rect width="1080" height="1920" fill="#0F172A"/>
+
+  <!-- Gradient overlay (optional depth) -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F172A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E293B;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bgGradient)"/>
+
+  <!-- Main content area (centered vertically at 40%) -->
+  <g>
+    <!-- Circle accent -->
+    <circle cx="540" cy="600" r="200" fill="none" stroke="#22C55E" stroke-width="8" opacity="0.3"/>
+    <circle cx="540" cy="600" r="240" fill="none" stroke="#22C55E" stroke-width="4" opacity="0.15"/>
+
+    <!-- App name -->
+    <text x="540" y="580" font-family="system-ui, -apple-system, sans-serif" font-size="120" font-weight="700" fill="#22C55E" text-anchor="middle">Daily Grizz</text>
+
+    <!-- Tagline -->
+    <text x="540" y="700" font-family="system-ui, -apple-system, sans-serif" font-size="48" fill="#94A3B8" text-anchor="middle" letter-spacing="2">Total Lifestyle Training</text>
+    <text x="540" y="760" font-family="system-ui, -apple-system, sans-serif" font-size="48" fill="#94A3B8" text-anchor="middle" letter-spacing="2">&amp; Accountability</text>
+  </g>
+</svg>
