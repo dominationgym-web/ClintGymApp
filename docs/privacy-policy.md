@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Daily Grizz** (the "app"), operated by **Clint Walters, trading as Domination Gym** ("we", "us", "your trainer")
+**Consistent Change** (the "app"), operated by **Clint Walters, trading as Domination Gym** ("we", "us", "your trainer")
 
 **Last updated:** 18 September 2026
 **Policy version:** `2026-09-18`
