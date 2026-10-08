@@ -9,7 +9,9 @@
     "scheme": "consistentchange",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.dominationgym.consistentchange",
@@ -24,7 +26,11 @@
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#0F172A"
       },
-      "permissions": ["CAMERA", "READ_MEDIA_VIDEO", "READ_MEDIA_IMAGES"]
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -55,6 +61,12 @@
           "color": "#22C55E"
         }
       ]
-    ]
+    ],
+    "owner": "grizzly75",
+    "extra": {
+      "eas": {
+        "projectId": "6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8"
+      }
+    }
   }
 }
