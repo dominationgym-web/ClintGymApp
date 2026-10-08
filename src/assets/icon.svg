@@ -1,0 +1,16 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#0F172A"/>
+
+  <!-- Rounded corners effect -->
+  <rect width="1024" height="1024" fill="#0F172A" rx="220"/>
+
+  <!-- Circle highlight -->
+  <circle cx="512" cy="512" r="380" fill="none" stroke="#22C55E" stroke-width="40"/>
+
+  <!-- Text: DG -->
+  <text x="512" y="580" font-family="system-ui, -apple-system, sans-serif" font-size="420" font-weight="700" fill="#22C55E" text-anchor="middle" letter-spacing="-20">DG</text>
+
+  <!-- Tagline -->
+  <text x="512" y="720" font-family="system-ui, -apple-system, sans-serif" font-size="80" fill="#94A3B8" text-anchor="middle" letter-spacing="2">DAILY GRIZZ</text>
+</svg>

@@ -36,6 +36,34 @@ export type Client = {
   status_flag: ClientStatusFlag;
   status_flag_note: string | null;
   status_flag_updated_at: string | null;
+  // Storage path in the client-avatars bucket (0026); null until a photo is set.
+  avatar_path: string | null;
+  // Off by default; only the client can turn it on (0027). While off, the
+  // trainer can't see any of their progress photos.
+  progress_photos_shared: boolean;
+  created_at: string;
+}
+
+// Private progress photo (0027). Visible to the client, and to the trainer
+// only while clients.progress_photos_shared is on.
+export type ProgressPhoto = {
+  id: string;
+  client_id: string;
+  storage_path: string;
+  taken_on: string;
+  created_at: string;
+}
+
+// Append-only log of every flag change, written by the trigger in 0023. The
+// three status_flag* columns on Client stay the current-state cache; this is the
+// history that "Mark as resolved" used to erase.
+export type ClientStatusFlagEvent = {
+  id: string;
+  client_id: string;
+  flag: ClientStatusFlag;
+  note: string | null;
+  set_by: string | null;
+  set_by_role: "client" | "trainer" | "system";
   created_at: string;
 }
 
@@ -56,6 +84,9 @@ export type Checkin = {
   screen_time_before_bed_minutes: number | null;
   read_non_backlit_device: boolean;
   breathing_or_stretching_done: boolean;
+  // Replaced the three questions above in the trimmed check-in. Null on
+  // check-ins from before it was asked.
+  wound_down: boolean | null;
   distress_flag: boolean;
   distress_notes: string | null;
   created_at: string;
@@ -138,7 +169,19 @@ export interface Database {
     Tables: {
       trainers: { Row: Trainer; Insert: Partial<Trainer>; Update: Partial<Trainer>; Relationships: [] };
       clients: { Row: Client; Insert: Partial<Client>; Update: Partial<Client>; Relationships: [] };
+      client_status_flag_events: {
+        Row: ClientStatusFlagEvent;
+        Insert: Partial<ClientStatusFlagEvent>;
+        Update: Partial<ClientStatusFlagEvent>;
+        Relationships: [];
+      };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
+      progress_photos: {
+        Row: ProgressPhoto;
+        Insert: Partial<ProgressPhoto>;
+        Update: Partial<ProgressPhoto>;
+        Relationships: [];
+      };
       videos: { Row: Video; Insert: Partial<Video>; Update: Partial<Video>; Relationships: [] };
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };

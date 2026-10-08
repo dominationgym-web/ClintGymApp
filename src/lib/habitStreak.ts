@@ -1,4 +1,5 @@
 import type { Habit } from "@/types/database";
+import { parseIsoDate, startOfLocalDay, toIsoDate } from "@/lib/dates";
 
 // Colours per your note: relaxing, easy on the eyes - progressing
 // Red -> Orange -> Yellow -> White -> Green as a habit gets locked in.
@@ -31,13 +32,12 @@ export function calculateHabitTier(habit: Habit, logsByDate: Record<string, numb
   let tier = 0;
   let progress = 0;
 
-  const start = new Date(`${habit.start_date}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayIso = today.toISOString().slice(0, 10);
+  const start = parseIsoDate(habit.start_date);
+  const today = startOfLocalDay(new Date());
+  const todayIso = toIsoDate(today);
 
   for (const d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
-    const iso = d.toISOString().slice(0, 10);
+    const iso = toIsoDate(d);
     if (habit.end_date && iso > habit.end_date) break;
     if (!habit.active_days.includes(d.getDay())) continue;
 

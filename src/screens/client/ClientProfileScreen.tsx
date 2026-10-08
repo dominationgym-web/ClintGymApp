@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, ActivityIndicator, Alert } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { File } from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { AVATAR_BUCKET, avatarContentType, avatarStoragePath } from "@/lib/avatars";
+import ClientAvatar from "@/components/ClientAvatar";
+import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import type { ClientStatusFlag } from "@/types/database";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -19,25 +24,95 @@ const FLAGS: { key: ClientStatusFlag; label: string; color: string }[] = [
 export default function ClientProfileScreen() {
   const { client, signOut, refreshProfile } = useAuth();
   const [selectedFlag, setSelectedFlag] = useState<ClientStatusFlag | null>(null);
-  const [note, setNote] = useState("");
+  // null means "not edited on this screen yet", so the box falls back to
+  // whatever note is already on the row. That way the client can see and edit a
+  // note they raised earlier instead of it silently riding along behind an empty
+  // box, and what they read in the box is exactly what gets saved.
+  const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   if (!client) return null;
 
+  const uploadPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+    setUploadingPhoto(true);
+    try {
+      const body = await new File(asset.uri).arrayBuffer();
+      const path = avatarStoragePath(client.id, asset.mimeType);
+      const { error: uploadError } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .upload(path, body, { contentType: avatarContentType(asset.mimeType) });
+      if (uploadError) throw uploadError;
+
+      const { error: updateError } = await supabase.from("clients").update({ avatar_path: path }).eq("id", client.id);
+      if (updateError) {
+        await supabase.storage.from(AVATAR_BUCKET).remove([path]);
+        throw updateError;
+      }
+      // Tidy up the old photo. If this fails the new one is already showing,
+      // so there is nothing to tell the client.
+      if (client.avatar_path && client.avatar_path !== path) {
+        await supabase.storage.from(AVATAR_BUCKET).remove([client.avatar_path]);
+      }
+      await refreshProfile();
+    } catch (err) {
+      Alert.alert("Couldn't save photo", err instanceof Error ? err.message : "Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const pickPhoto = async (source: "camera" | "library") => {
+    const permission =
+      source === "camera"
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission needed",
+        source === "camera" ? "Allow camera access to take your photo." : "Allow photo access to choose your photo."
+      );
+      return;
+    }
+    const options: ImagePicker.ImagePickerOptions = {
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    };
+    const result =
+      source === "camera"
+        ? await ImagePicker.launchCameraAsync({ ...options, cameraType: ImagePicker.CameraType.front })
+        : await ImagePicker.launchImageLibraryAsync(options);
+    if (result.canceled || !result.assets?.[0]) return;
+    await uploadPhoto(result.assets[0]);
+  };
+
+  const changePhoto = () => {
+    Alert.alert(client.avatar_path ? "Change your photo" : "Add your photo", "So your trainer can put a face to your name.", [
+      { text: "Take photo", onPress: () => pickPhoto("camera") },
+      { text: "Choose from gallery", onPress: () => pickPhoto("library") },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const activeFlag = selectedFlag ?? client.status_flag;
+  const noteValue = note ?? client.status_flag_note ?? "";
+  const savedNote = client.status_flag_note ?? "";
 
   const handleSave = async () => {
-    if (activeFlag !== "green" && !note.trim() && !client.status_flag_note) {
+    if (activeFlag !== "green" && !noteValue.trim()) {
       Alert.alert("Add a quick note", "Let your trainer know what's going on so they have context.");
       return;
     }
     setSaving(true);
+    // status_flag_updated_at is stamped server-side by the trigger in 0023 -
+    // the phone's clock is not trustworthy enough for the trainer to sort by.
     const { error } = await supabase
       .from("clients")
       .update({
         status_flag: activeFlag,
-        status_flag_note: activeFlag === "green" ? null : note.trim() || client.status_flag_note,
-        status_flag_updated_at: new Date().toISOString(),
+        status_flag_note: activeFlag === "green" ? null : noteValue.trim(),
       })
       .eq("id", client.id);
     setSaving(false);
@@ -46,14 +121,28 @@ export default function ClientProfileScreen() {
       return;
     }
     setSelectedFlag(null);
-    setNote("");
+    setNote(null);
     await refreshProfile();
   };
 
-  const hasChange = selectedFlag !== null && selectedFlag !== client.status_flag;
+  // Changing the flag counts, and so does adding detail to a flag that is
+  // already standing - for the state that means "urgent", being unable to save
+  // more context without first toggling the flag was the wrong constraint.
+  const hasChange =
+    (selectedFlag !== null && selectedFlag !== client.status_flag) ||
+    (activeFlag !== "green" && noteValue.trim() !== savedNote);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+      <Pressable style={styles.photoBlock} onPress={changePhoto} disabled={uploadingPhoto}>
+        <ClientAvatar name={client.name} path={client.avatar_path} size={96} />
+        {uploadingPhoto ? (
+          <ActivityIndicator style={{ marginTop: 8 }} color="#22C55E" />
+        ) : (
+          <Text style={styles.photoLink}>{client.avatar_path ? "Change photo" : "Add a photo"}</Text>
+        )}
+      </Pressable>
+
       <Text style={styles.title}>{client.name}</Text>
       <Text style={styles.email}>{client.email}</Text>
 
@@ -91,7 +180,7 @@ export default function ClientProfileScreen() {
           multiline
           placeholder="Quick note for your trainer (what's going on?)"
           placeholderTextColor="#64748B"
-          value={note}
+          value={noteValue}
           onChangeText={setNote}
         />
       )}
@@ -101,6 +190,8 @@ export default function ClientProfileScreen() {
           {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Update status</Text>}
         </Pressable>
       )}
+
+      <ProgressPhotosSection />
 
       <Text style={styles.sectionHeading}>Goals</Text>
       <Text style={styles.body}>{client.goals || "Not set yet - your trainer will add this."}</Text>
@@ -128,6 +219,8 @@ function statusStyle(status: string) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
+  photoBlock: { alignItems: "center", marginBottom: 16 },
+  photoLink: { color: "#22C55E", fontWeight: "600", marginTop: 8 },
   title: { fontSize: 26, fontWeight: "700", color: "#fff" },
   email: { color: "#94A3B8", marginBottom: 12 },
   statusPill: { alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginBottom: 8 },
