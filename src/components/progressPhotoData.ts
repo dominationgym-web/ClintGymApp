@@ -27,13 +27,16 @@ export async function loadProgressPhotos(clientId: string): Promise<LoadedProgre
   return rows.map((r) => ({ id: r.id, path: r.storage_path, angle: r.angle, takenOn: r.taken_on, url: urls[r.storage_path] }));
 }
 
-/** Date of the client's latest progress photo, or null if they have none. */
+/** Date of the client's latest progress photo, or null if they have none.
+ * Throws if it couldn't be loaded, so an offline moment isn't mistaken for
+ * "no photos" and the scheduled reminder isn't cancelled. */
 export async function latestProgressPhotoDate(clientId: string): Promise<string | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("progress_photos")
     .select("taken_on")
     .eq("client_id", clientId)
     .order("taken_on", { ascending: false })
     .limit(1);
+  if (error) throw error;
   return data?.[0]?.taken_on ?? null;
 }

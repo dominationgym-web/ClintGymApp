@@ -4,6 +4,7 @@ import {
   isCompleteSet,
   openSetDate,
   progressPhotoPath,
+  progressPhotoReminderAt,
   progressPhotoStatus,
   type ProgressPhotoAngle,
 } from "@/lib/progressPhotos";
@@ -60,5 +61,25 @@ describe("openSetDate", () => {
   it("starts a new set when an unfinished one is a week old", () => {
     const sets = groupIntoSets([photo("2026-10-01", "front")]);
     expect(openSetDate(sets, "2026-10-08")).toBe("2026-10-08");
+  });
+});
+
+describe("progressPhotoReminderAt", () => {
+  it("schedules nothing before the client has opted in", () => {
+    expect(progressPhotoReminderAt(null, new Date(2026, 9, 8, 12))).toBeNull();
+  });
+
+  it("is 9am local on the day the next set is due", () => {
+    // 2026-10-08 + 42 days = 2026-11-19.
+    const at = progressPhotoReminderAt("2026-10-08", new Date(2026, 9, 8, 12));
+    expect(at).toEqual(new Date(2026, 10, 19, 9, 0, 0, 0));
+  });
+
+  it("still schedules on the due day before 9am", () => {
+    expect(progressPhotoReminderAt("2026-10-08", new Date(2026, 10, 19, 7))).toEqual(new Date(2026, 10, 19, 9));
+  });
+
+  it("schedules nothing once that moment has passed, since the banner takes over", () => {
+    expect(progressPhotoReminderAt("2026-10-08", new Date(2026, 10, 19, 9, 30))).toBeNull();
   });
 });
