@@ -6,10 +6,13 @@ import { useAuth } from "@/context/AuthContext";
 import { todayIso } from "@/lib/dates";
 import { progressPhotoStatus, type ProgressPhotoStatus } from "@/lib/progressPhotos";
 import { latestProgressPhotoDate } from "@/components/progressPhotoData";
+import { scheduleProgressPhotoReminder } from "@/lib/notifications";
 import type { ClientTabParamList } from "@/navigation/types";
 
-// The 6-week reminder. Push notifications aren't available in Expo Go, so the
-// reminder is this banner, shown in the app whenever a photo is due.
+// The 6-week reminder. This banner shows in the app whenever a photo is due,
+// and each time it loads it also (re)schedules a phone notification for 9am on
+// the next due day. The notification only works in the installed app, not in
+// Expo Go, where the banner is the whole reminder.
 // Progress photos are optional, so it only reminds clients who have started
 // (taken a before photo); nobody gets nagged into a feature they don't want.
 export default function ProgressPhotoReminder() {
@@ -22,7 +25,11 @@ export default function ProgressPhotoReminder() {
       if (!client) return;
       let cancelled = false;
       latestProgressPhotoDate(client.id).then((last) => {
-        if (!cancelled) setStatus(progressPhotoStatus(last, todayIso()));
+        if (cancelled) return;
+        setStatus(progressPhotoStatus(last, todayIso()));
+        scheduleProgressPhotoReminder(last);
+      }).catch(() => {
+        // Offline: no banner this time, and the reminder already on the phone stays.
       });
       return () => {
         cancelled = true;

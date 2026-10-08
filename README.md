@@ -24,11 +24,7 @@ What exists right now:
   "Supplements" 3x/day, or "Gym" 1x/day) from `ClientDetailScreen`; the
   client then picks whichever specific days and reminder time actually fit
   their own schedule, and logs reps each day. The reminder toggle/time is
-  saved but not yet delivered - `expo-notifications` was removed after Expo
-  Go dropped support for it in SDK 53 (importing it crashed the app for
-  every client on Expo Go, not just a dev-build edge case). Needs a real
-  push setup (Expo push tokens from a dev/production build + a server-side
-  send path) before reminders actually fire - see the gaps list below.
+  saved but not yet delivered - see the gaps list below.
 - **Training-proof video upload** (`VideoUploadScreen`) to Supabase Storage
   as an interim provider (`videos.storage_provider` also supports `mux` /
   `cloudflare_stream` for when that's wired up), with a 30-day
@@ -62,11 +58,15 @@ What exists right now:
 
 What's deliberately **not** built yet (tracked as gaps, not bugs):
 
-- No push notifications yet (daily trainer summary, renewal reminders, habit
-  reminders) — needs Expo push tokens from a dev/production build (Expo Go
-  no longer supports `expo-notifications` as of SDK 53) plus a server-side
-  send path. Habit `reminder_enabled`/`reminder_time` are captured and saved
-  already, just not delivered yet.
+- Phone notifications are live only for the 6-week progress photo reminder
+  (`src/lib/notifications.ts`): a local notification scheduled on the phone
+  for 9am on the due day, so no server or push tokens are involved. They work
+  in the installed app only; in Expo Go `expo-notifications` is never loaded
+  (importing it there crashed the app as of SDK 53) and the in-app banner is
+  the whole reminder. Habit reminders (`reminder_enabled`/`reminder_time`,
+  already saved) can use the same local approach next. Anything sent from the
+  server (daily trainer summary, renewal reminders) still needs Expo push
+  tokens and a send path.
 - Video auto-delete is now live — a daily `pg_cron` job
   (`delete_expired_videos`, `supabase/migrations/0009_video_auto_delete_job.sql`)
   removes the Storage file and soft-deletes the row past `expires_at`.
@@ -140,6 +140,24 @@ Run the app:
 ```bash
 npm run start     # then press i / a / w, or scan the QR code with Expo Go
 ```
+
+### Building the installable app
+
+Builds run on Expo's EAS Build service (`eas.json`). The public Supabase
+values are set per build profile there, so a build doesn't need a local
+`.env`. Icons and the splash image are PNGs in `assets/`.
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest init                                      # once: links this folder to an Expo project
+npx eas-cli@latest build --profile preview --platform android    # APK to install directly on Android phones
+npx eas-cli@latest build --profile production --platform all     # store builds (needs Apple/Google accounts)
+npx eas-cli@latest submit --platform ios                         # or android, to upload to the stores
+```
+
+App identifiers are `com.dominationgym.dailygrizz` on both stores. They can't
+change once the app is published. Version numbers for store builds are kept by
+EAS (`appVersionSource: remote`, `autoIncrement`).
 
 ## Project layout
 

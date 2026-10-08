@@ -24,6 +24,26 @@ export function progressPhotoStatus(lastTakenOn: string | null, today: string): 
   return left <= 0 ? { kind: "due", daysOverdue: days - PROGRESS_PHOTO_INTERVAL_DAYS } : { kind: "not_due", daysLeft: left };
 }
 
+// Hour of the day (local time) the phone notification goes off on the day
+// photos fall due.
+export const PROGRESS_PHOTO_REMINDER_HOUR = 9;
+
+/**
+ * When to send the "time for your progress photos" phone notification: 9am on
+ * the day the next set is due. Null when there is nothing to schedule, either
+ * because the client hasn't opted in (no before photo) or because that moment
+ * has already passed, in which case the in-app banner is doing the reminding.
+ */
+export function progressPhotoReminderAt(lastTakenOn: string | null, now: Date): Date | null {
+  if (!lastTakenOn) return null;
+  const at = parseIsoDate(lastTakenOn);
+  // setDate rather than adding milliseconds, so it stays 9am local whatever
+  // the calendar does in between.
+  at.setDate(at.getDate() + PROGRESS_PHOTO_INTERVAL_DAYS);
+  at.setHours(PROGRESS_PHOTO_REMINDER_HOUR, 0, 0, 0);
+  return at.getTime() > now.getTime() ? at : null;
+}
+
 export type ProgressPhotoAngle = "front" | "side" | "back";
 
 // Every update is a set of these three, full body from feet to head.
