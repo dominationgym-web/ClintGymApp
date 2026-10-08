@@ -1,0 +1,12 @@
+-- Trim the morning check-in.
+--
+-- Three evening questions (screen-time minutes, "read on a non-backlit
+-- device", "did breathing/stretching") are replaced by one yes/no: did the
+-- client wind down without screens before bed. The old columns stay so past
+-- check-ins keep their answers; the app just stops asking them. "Asleep time",
+-- high-GI timing and electrolytes are likewise no longer asked and keep their
+-- defaults on new rows.
+--
+-- Nullable on purpose: null means "not asked" (every check-in before this
+-- change), so history is not misread as "no".
+alter table public.checkins add column wound_down boolean;

@@ -62,6 +62,7 @@ const savedCheckin: Checkin = {
   read_non_backlit_device: false,
   breathing_or_stretching_done: true,
   distress_flag: false,
+  wound_down: true,
   distress_notes: null,
   created_at: "2026-10-08T05:00:00Z",
 };
@@ -72,16 +73,25 @@ describe("formFromCheckin", () => {
     expect(form.bedTime).toBe("22:30");
     expect(form.wakeTime).toBe("");
     expect(form.waterLitres).toBe("1.5");
-    expect(form.screenTimeMinutes).toBe("");
-    expect(form.highGiTiming).toEqual(["before_bed"]);
+    expect(form.woundDown).toBe(true);
   });
 
   it("round-trips through validation to the same saved values", () => {
     const result = validateCheckinForm(formFromCheckin(savedCheckin));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const { id, client_id, checkin_date, created_at, ...values } = savedCheckin;
-    expect(result.values).toEqual({ ...values, sleep_bed_time: "22:30", sleep_asleep_time: "23:00" });
+    expect(result.values).toEqual({
+      alcohol_units: 2,
+      sleep_bed_time: "22:30",
+      sleep_wake_time: null,
+      sleep_quality: 4,
+      water_litres: 1.5,
+      meals_total: 3,
+      high_gi_count: 1,
+      wound_down: true,
+      distress_flag: false,
+      distress_notes: null,
+    });
   });
 });
 
@@ -109,9 +119,21 @@ describe("validateCheckinForm", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("drops high-GI timings when no high-GI meals were logged", () => {
-    const result = validateCheckinForm(form({ highGiTiming: ["before_bed"] }));
-    expect(result.ok && result.values.high_gi_timing).toEqual([]);
+  it("only saves the questions the trimmed check-in still asks", () => {
+    const result = validateCheckinForm(form({ woundDown: false }));
+    expect(result.ok && Object.keys(result.values).sort()).toEqual([
+      "alcohol_units",
+      "distress_flag",
+      "distress_notes",
+      "high_gi_count",
+      "meals_total",
+      "sleep_bed_time",
+      "sleep_quality",
+      "sleep_wake_time",
+      "water_litres",
+      "wound_down",
+    ]);
+    expect(result.ok && result.values.wound_down).toBe(false);
   });
 
   it("flags more high-GI meals than meals", () => {
@@ -121,7 +143,7 @@ describe("validateCheckinForm", () => {
 
 describe("unansweredSections", () => {
   it("lists what is still blank", () => {
-    expect(unansweredSections(EMPTY_CHECKIN_FORM)).toEqual(["sleep times", "sleep quality", "water", "meals"]);
+    expect(unansweredSections(EMPTY_CHECKIN_FORM)).toEqual(["sleep times", "sleep quality", "water", "meals", "wind-down"]);
     expect(unansweredSections(formFromCheckin(savedCheckin))).toEqual(["sleep times"]);
   });
 });

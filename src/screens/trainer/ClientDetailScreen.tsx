@@ -366,6 +366,7 @@ export default function ClientDetailScreen({ route }: Props) {
           <Text style={styles.checkinDetail}>
             Sleep {c.sleep_quality ?? "-"}/5 · Water {c.water_litres}L · Alcohol {c.alcohol_units}u · High-GI{" "}
             {c.high_gi_count}
+            {c.wound_down !== null && ` · Wind-down ${c.wound_down ? "yes" : "no"}`}
           </Text>
         </View>
       ))}

@@ -69,6 +69,9 @@ export type Checkin = {
   screen_time_before_bed_minutes: number | null;
   read_non_backlit_device: boolean;
   breathing_or_stretching_done: boolean;
+  // Replaced the three questions above in the trimmed check-in. Null on
+  // check-ins from before it was asked.
+  wound_down: boolean | null;
   distress_flag: boolean;
   distress_notes: string | null;
   created_at: string;

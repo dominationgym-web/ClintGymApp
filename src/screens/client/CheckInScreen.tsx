@@ -25,19 +25,7 @@ import {
   type CheckinForm,
   type CheckinValues,
 } from "@/lib/checkinForm";
-import type { Checkin, HighGiTiming } from "@/types/database";
-
-const HIGH_GI_OPTIONS: { key: HighGiTiming; label: string }[] = [
-  { key: "before_training", label: "Before training" },
-  { key: "before_bed", label: "Before bed" },
-  { key: "other", label: "Other" },
-];
-
-const HIGH_GI_LABELS: Record<HighGiTiming, string> = {
-  before_training: "before training",
-  before_bed: "before bed",
-  other: "other",
-};
+import type { Checkin } from "@/types/database";
 
 function Toggle({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
   return (
@@ -59,7 +47,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const yesNo = (value: boolean) => (value ? "Yes" : "No");
+const yesNo = (value: boolean | null) => (value === null ? "-" : value ? "Yes" : "No");
 const orDash = (value: string | null) => (value ? value.slice(0, 5) : "-");
 
 export default function CheckInScreen() {
@@ -114,14 +102,7 @@ export default function CheckInScreen() {
     return () => subscription.remove();
   }, [reloadIfNewDay]);
 
-  const toggleHighGiTiming = (key: HighGiTiming) => {
-    set(
-      "highGiTiming",
-      form.highGiTiming.includes(key) ? form.highGiTiming.filter((k) => k !== key) : [...form.highGiTiming, key],
-    );
-  };
-
-  const tidyTime = (key: "bedTime" | "asleepTime" | "wakeTime") => {
+  const tidyTime = (key: "bedTime" | "wakeTime") => {
     const parsed = parseTime(form[key]);
     if (parsed) set(key, parsed);
   };
@@ -219,25 +200,12 @@ export default function CheckInScreen() {
         )}
         <View style={styles.summaryCard}>
           <SummaryRow label="Alcohol (units)" value={String(saved.alcohol_units)} />
-          <SummaryRow
-            label="Bed / asleep / wake"
-            value={`${orDash(saved.sleep_bed_time)} / ${orDash(saved.sleep_asleep_time)} / ${orDash(saved.sleep_wake_time)}`}
-          />
+          <SummaryRow label="Bed / wake" value={`${orDash(saved.sleep_bed_time)} / ${orDash(saved.sleep_wake_time)}`} />
           <SummaryRow label="Sleep quality" value={saved.sleep_quality ? `${saved.sleep_quality} / 5` : "-"} />
           <SummaryRow label="Water" value={`${saved.water_litres} L`} />
-          <SummaryRow label="Electrolytes" value={yesNo(saved.electrolytes)} />
           <SummaryRow label="Meals yesterday" value={String(saved.meals_total)} />
-          <SummaryRow
-            label="High-GI meals"
-            value={
-              saved.high_gi_count > 0 && saved.high_gi_timing.length > 0
-                ? `${saved.high_gi_count} (${saved.high_gi_timing.map((t) => HIGH_GI_LABELS[t]).join(", ")})`
-                : String(saved.high_gi_count)
-            }
-          />
-          <SummaryRow label="Screen time before bed" value={`${saved.screen_time_before_bed_minutes ?? 0} min`} />
-          <SummaryRow label="Read on non-backlit device" value={yesNo(saved.read_non_backlit_device)} />
-          <SummaryRow label="Breathing / stretching" value={yesNo(saved.breathing_or_stretching_done)} />
+          <SummaryRow label="High-GI meals" value={String(saved.high_gi_count)} />
+          <SummaryRow label="Wound down without screens" value={yesNo(saved.wound_down)} />
           <SummaryRow label="Distress or pain flagged" value={yesNo(saved.distress_flag)} />
           {saved.distress_flag && saved.distress_notes && <Text style={styles.summaryNote}>{saved.distress_notes}</Text>}
         </View>
@@ -275,7 +243,6 @@ export default function CheckInScreen() {
           {(
             [
               { key: "bedTime", label: "Bed", placeholder: "22:30" },
-              { key: "asleepTime", label: "Asleep", placeholder: "23:00" },
               { key: "wakeTime", label: "Wake", placeholder: "06:00" },
             ] as const
           ).map((field) => (
@@ -317,7 +284,6 @@ export default function CheckInScreen() {
           value={form.waterLitres}
           onChangeText={(v) => set("waterLitres", v)}
         />
-        <Toggle label="Took electrolytes" value={form.electrolytes} onToggle={() => set("electrolytes", !form.electrolytes)} />
 
         <Text style={styles.sectionHeading}>Meals yesterday (total)</Text>
         <TextInput
@@ -338,39 +304,22 @@ export default function CheckInScreen() {
           value={form.highGiCount}
           onChangeText={(v) => set("highGiCount", v)}
         />
-        {Number(form.highGiCount) > 0 && (
-          <>
-            <Text style={styles.helper}>When did you have them?</Text>
-            {HIGH_GI_OPTIONS.map((opt) => (
-              <Toggle
-                key={opt.key}
-                label={opt.label}
-                value={form.highGiTiming.includes(opt.key)}
-                onToggle={() => toggleHighGiTiming(opt.key)}
-              />
-            ))}
-          </>
-        )}
 
-        <Text style={styles.sectionHeading}>Screen time before bed (minutes)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="number-pad"
-          placeholder="0"
-          placeholderTextColor="#64748B"
-          value={form.screenTimeMinutes}
-          onChangeText={(v) => set("screenTimeMinutes", v)}
-        />
-        <Toggle
-          label="Read before bed on a non-backlit device (e.g. Kindle - not phone, tablet, or laptop)"
-          value={form.readNonBacklit}
-          onToggle={() => set("readNonBacklit", !form.readNonBacklit)}
-        />
-        <Toggle
-          label="Did breathing/stretching"
-          value={form.breathingOrStretching}
-          onToggle={() => set("breathingOrStretching", !form.breathingOrStretching)}
-        />
+        <Text style={styles.sectionHeading}>Wound down without screens before bed?</Text>
+        <Text style={styles.hint}>Last 30-60 minutes before bed: no phone, TV or laptop. Reading, stretching or breathing all count.</Text>
+        <View style={styles.row}>
+          {([true, false] as const).map((answer) => (
+            <Pressable
+              key={String(answer)}
+              style={[styles.choice, form.woundDown === answer && styles.choiceSelected]}
+              onPress={() => set("woundDown", form.woundDown === answer ? null : answer)}
+            >
+              <Text style={[styles.choiceText, form.woundDown === answer && styles.choiceTextSelected]}>
+                {answer ? "Yes" : "No"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
         <Text style={styles.sectionHeading}>Anything wrong?</Text>
         <Toggle
@@ -414,6 +363,18 @@ const styles = StyleSheet.create({
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 18, marginBottom: 8 },
   label: { color: "#E2E8F0", fontSize: 14 },
   inputLabel: { color: "#94A3B8", fontSize: 12, marginBottom: 4 },
+  hint: { color: "#64748B", fontSize: 13, marginBottom: 10 },
+  choice: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  choiceSelected: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
+  choiceText: { color: "#fff", fontWeight: "600" },
+  choiceTextSelected: { color: "#0F172A" },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 10 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12 },
   multiline: { minHeight: 80, textAlignVertical: "top", marginTop: 8 },
