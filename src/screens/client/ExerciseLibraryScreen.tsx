@@ -43,7 +43,7 @@ export default function ExerciseLibraryScreen() {
   const [logging, setLogging] = useState(false);
   const [videoExpanded, setVideoExpanded] = useState(false);
   const { height: screenHeight } = useWindowDimensions();
-  // Keep the demo video compact so the set log is visible without scrolling;
+  // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
   const compactVideoHeight = Math.min(screenHeight * 0.28, 240);
 
@@ -167,23 +167,7 @@ export default function ExerciseLibraryScreen() {
           </View>
 
           <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
-            {selected?.external_url ? (
-              <>
-                <VideoView
-                  style={[styles.video, videoExpanded ? styles.videoExpanded : { height: compactVideoHeight }]}
-                  player={player}
-                  contentFit="contain"
-                  nativeControls
-                />
-                <Pressable onPress={() => setVideoExpanded((v) => !v)} hitSlop={8}>
-                  <Text style={styles.expandText}>{videoExpanded ? "Make video smaller" : "Make video bigger"}</Text>
-                </Pressable>
-              </>
-            ) : (
-              <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
-            )}
-
-            <Text style={styles.sectionHeading}>Log a set</Text>
+            <Text style={[styles.sectionHeading, { marginTop: 0 }]}>Log a set</Text>
             <View style={styles.setRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Weight (kg)</Text>
@@ -241,6 +225,23 @@ export default function ExerciseLibraryScreen() {
                   </View>
                 ))}
               </>
+            )}
+
+            <Text style={styles.sectionHeading}>Demo video</Text>
+            {selected?.external_url ? (
+              <>
+                <VideoView
+                  style={[styles.video, videoExpanded ? styles.videoExpanded : { height: compactVideoHeight }]}
+                  player={player}
+                  contentFit="contain"
+                  nativeControls
+                />
+                <Pressable onPress={() => setVideoExpanded((v) => !v)} hitSlop={8}>
+                  <Text style={styles.expandText}>{videoExpanded ? "Make video smaller" : "Make video bigger"}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
             )}
           </ScrollView>
         </SafeAreaView>
