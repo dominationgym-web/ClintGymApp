@@ -36,6 +36,8 @@ export type Client = {
   status_flag: ClientStatusFlag;
   status_flag_note: string | null;
   status_flag_updated_at: string | null;
+  // Storage path in the client-avatars bucket (0026); null until a photo is set.
+  avatar_path: string | null;
   created_at: string;
 }
 

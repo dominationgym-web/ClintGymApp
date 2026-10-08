@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
+import ClientAvatar from "@/components/ClientAvatar";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -188,8 +189,13 @@ export default function ClientDetailScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-      <Text style={styles.title}>{client.name}</Text>
-      <Text style={styles.helper}>{client.email}</Text>
+      <View style={styles.headerRow}>
+        <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{client.name}</Text>
+          <Text style={styles.helper}>{client.email}</Text>
+        </View>
+      </View>
       {client.package_type && (
         <View style={styles.packageBadge}>
           <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
@@ -391,6 +397,7 @@ export default function ClientDetailScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
   packageBadge: {
