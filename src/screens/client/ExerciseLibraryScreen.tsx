@@ -10,6 +10,7 @@ import {
   Modal,
   ScrollView,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -40,6 +41,11 @@ export default function ExerciseLibraryScreen() {
   const [reps, setReps] = useState("");
   const [effort, setEffort] = useState<SetEffort | null>(null);
   const [logging, setLogging] = useState(false);
+  const [videoExpanded, setVideoExpanded] = useState(false);
+  const { height: screenHeight } = useWindowDimensions();
+  // Keep the demo video compact so the set log is visible without scrolling;
+  // the client can tap to make it bigger.
+  const compactVideoHeight = Math.min(screenHeight * 0.28, 240);
 
   useEffect(() => {
     const load = async () => {
@@ -71,6 +77,7 @@ export default function ExerciseLibraryScreen() {
 
   const openExercise = async (exercise: Exercise) => {
     setSelected(exercise);
+    setVideoExpanded(false);
     setWeight("");
     setReps("");
     setEffort(null);
@@ -159,9 +166,19 @@ export default function ExerciseLibraryScreen() {
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 20 }}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
             {selected?.external_url ? (
-              <VideoView style={styles.video} player={player} contentFit="contain" nativeControls />
+              <>
+                <VideoView
+                  style={[styles.video, videoExpanded ? styles.videoExpanded : { height: compactVideoHeight }]}
+                  player={player}
+                  contentFit="contain"
+                  nativeControls
+                />
+                <Pressable onPress={() => setVideoExpanded((v) => !v)} hitSlop={8}>
+                  <Text style={styles.expandText}>{videoExpanded ? "Make video smaller" : "Make video bigger"}</Text>
+                </Pressable>
+              </>
             ) : (
               <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
             )}
@@ -257,7 +274,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
-  video: { width: "100%", aspectRatio: 9 / 16, backgroundColor: "#000", marginBottom: 12 },
+  video: { width: "100%", backgroundColor: "#000", borderRadius: 10, marginBottom: 8 },
+  videoExpanded: { aspectRatio: 9 / 16 },
+  expandText: { color: "#22C55E", fontSize: 13, fontWeight: "600", textAlign: "center" },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 10 },
   setRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6 },
