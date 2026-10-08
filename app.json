@@ -8,6 +8,7 @@
     "userInterfaceStyle": "automatic",
     "scheme": "clintgymapp",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "splash": {
       "backgroundColor": "#0F172A"
     },
@@ -22,7 +23,11 @@
     },
     "android": {
       "package": "com.clintgym.app",
-      "permissions": ["CAMERA", "READ_MEDIA_VIDEO"]
+      "permissions": ["CAMERA", "READ_MEDIA_VIDEO"],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      }
     },
     "web": {
       "bundler": "metro"
