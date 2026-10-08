@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { AVATAR_BUCKET, avatarContentType, avatarStoragePath } from "@/lib/avatars";
 import ClientAvatar from "@/components/ClientAvatar";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
+import DeleteAccountButton from "@/components/DeleteAccountButton";
 import type { ClientStatusFlag } from "@/types/database";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -202,6 +203,7 @@ export default function ClientProfileScreen() {
       <Pressable style={styles.logoutButton} onPress={signOut}>
         <Text style={styles.buttonText}>Log out</Text>
       </Pressable>
+      <DeleteAccountButton />
     </ScrollView>
   );
 }
