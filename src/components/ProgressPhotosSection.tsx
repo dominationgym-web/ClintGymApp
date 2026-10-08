@@ -11,8 +11,17 @@ import { PROGRESS_BUCKET, progressPhotoPath, progressPhotoStatus } from "@/lib/p
 import PhotoStrip, { type StripPhoto } from "@/components/PhotoStrip";
 import { loadProgressPhotos } from "@/components/progressPhotoData";
 
-// The client's own progress photos, on their Profile tab. Private unless they
-// switch on sharing with their trainer.
+// Shown on screen and again before each photo, so every photo is taken the
+// same way and the comparison is honest.
+const PHOTO_GUIDELINES = [
+  "Same place every time",
+  "Same lighting",
+  "Same time of day",
+  "Same outfit",
+];
+
+// The client's own progress photos, on their Profile tab. Optional, and
+// private to the client unless they switch on sharing with their trainer.
 export default function ProgressPhotosSection() {
   const { client, refreshProfile } = useAuth();
   const [photos, setPhotos] = useState<(StripPhoto & { path: string })[]>([]);
@@ -78,11 +87,15 @@ export default function ProgressPhotosSection() {
   };
 
   const addPhoto = () => {
-    Alert.alert(status.kind === "before" ? "Add your before photo" : "Add a progress photo", "Only you can see it unless you share with your trainer.", [
-      { text: "Take photo", onPress: () => pick("camera") },
-      { text: "Choose from gallery", onPress: () => pick("library") },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    Alert.alert(
+      status.kind === "before" ? "Add your before photo" : "Add a progress photo",
+      "Use the same place, lighting, time of day and outfit every time.\n\nOnly you can see this photo unless you share with your trainer.",
+      [
+        { text: "Take photo", onPress: () => pick("camera") },
+        { text: "Choose from gallery", onPress: () => pick("library") },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
   };
 
   const confirmDelete = (id: string) => {
@@ -106,6 +119,23 @@ export default function ProgressPhotosSection() {
     ]);
   };
 
+  // Turning sharing on must be a deliberate choice, so it asks first.
+  // Turning it off is one tap, no questions.
+  const onToggleSharing = (shared: boolean) => {
+    if (!shared) {
+      setSharing(false);
+      return;
+    }
+    Alert.alert(
+      "Share your progress photos?",
+      "Your trainer will be able to see all your progress photos, including ones you add later. You can turn this off at any time.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Yes, share them", onPress: () => setSharing(true) },
+      ]
+    );
+  };
+
   const setSharing = async (shared: boolean) => {
     setSavingShare(true);
     const { error } = await supabase.from("clients").update({ progress_photos_shared: shared }).eq("id", client.id);
@@ -118,13 +148,26 @@ export default function ProgressPhotosSection() {
     <View>
       <Text style={styles.heading}>Progress photos</Text>
       <Text style={styles.body}>
-        Take a before photo, then a new one every 6 weeks to see how far you've come. These are private to you.
+        Optional. Take a before photo, then a new one every 6 weeks to see how far you've come.
       </Text>
+      <Text style={[styles.body, styles.privateNote]}>
+        🔒 These photos are private and for your own use. Your trainer can't see them unless you choose to share them
+        below.
+      </Text>
+
+      <View style={styles.guideBox}>
+        <Text style={styles.guideTitle}>For a true picture of your progress, take every photo:</Text>
+        {PHOTO_GUIDELINES.map((g) => (
+          <Text key={g} style={styles.guideItem}>
+            • {g}
+          </Text>
+        ))}
+      </View>
 
       {!loading && status.kind !== "not_due" && (
         <View style={styles.dueBanner}>
           <Text style={styles.dueText}>
-            {status.kind === "before" ? "📸 Start with your before photo." : "📸 It's time for your 6-week progress photo."}
+            {status.kind === "before" ? "📸 Want to track your progress? Start with a before photo." : "📸 It's time for your 6-week progress photo."}
           </Text>
         </View>
       )}
@@ -156,13 +199,13 @@ export default function ProgressPhotosSection() {
           <Text style={styles.shareLabel}>Share with my trainer</Text>
           <Text style={styles.helper}>
             {client.progress_photos_shared
-              ? "Your trainer can see these photos. Turn this off at any time to make them private again."
-              : "Off: only you can see these photos."}
+              ? "On: your trainer can see your progress photos. Turn this off at any time and all of them, including ones they've already seen, become private to you again."
+              : "Off: only you can see your progress photos. Your trainer only gets access if you turn this on."}
           </Text>
         </View>
         <Switch
           value={client.progress_photos_shared}
-          onValueChange={setSharing}
+          onValueChange={onToggleSharing}
           disabled={savingShare}
           trackColor={{ true: "#22C55E", false: "#334155" }}
         />
@@ -172,6 +215,10 @@ export default function ProgressPhotosSection() {
 }
 
 const styles = StyleSheet.create({
+  privateNote: { marginTop: 8 },
+  guideBox: { backgroundColor: "#1E293B", borderRadius: 8, padding: 12, marginTop: 10 },
+  guideTitle: { color: "#E2E8F0", fontWeight: "600", marginBottom: 4 },
+  guideItem: { color: "#CBD5E1", fontSize: 14, lineHeight: 22 },
   heading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 6 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },
   helper: { color: "#64748B", fontSize: 12, marginTop: 6 },

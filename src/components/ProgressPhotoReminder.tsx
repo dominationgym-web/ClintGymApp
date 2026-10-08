@@ -10,6 +10,8 @@ import type { ClientTabParamList } from "@/navigation/types";
 
 // The 6-week reminder. Push notifications aren't available in Expo Go, so the
 // reminder is this banner, shown in the app whenever a photo is due.
+// Progress photos are optional, so it only reminds clients who have started
+// (taken a before photo); nobody gets nagged into a feature they don't want.
 export default function ProgressPhotoReminder() {
   const { client } = useAuth();
   const navigation = useNavigation<BottomTabNavigationProp<ClientTabParamList>>();
@@ -28,13 +30,12 @@ export default function ProgressPhotoReminder() {
     }, [client?.id])
   );
 
-  if (!status || status.kind === "not_due") return null;
+  if (!status || status.kind !== "due") return null;
   return (
     <Pressable style={styles.banner} onPress={() => navigation.navigate("Profile")}>
       <Text style={styles.text}>
-        {status.kind === "before"
-          ? "📸 Take your before photo so you can see your progress. Tap to start."
-          : "📸 It's been 6 weeks. Time for a progress photo! Tap to add it."}
+        📸 It's been 6 weeks. Time for a progress photo! Same place, lighting, time of day and outfit as before. Tap to
+        add it.
       </Text>
     </Pressable>
   );
