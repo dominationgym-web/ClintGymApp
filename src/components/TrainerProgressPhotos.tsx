@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import PhotoStrip, { type StripPhoto } from "@/components/PhotoStrip";
-import { loadProgressPhotos } from "@/components/progressPhotoData";
+import AngleCompare from "@/components/AngleCompare";
+import { loadProgressPhotos, type LoadedProgressPhoto } from "@/components/progressPhotoData";
 
 type Props = { clientId: string; clientName: string; shared: boolean };
 
 // The trainer's view of a client's progress photos: only when the client has
 // chosen to share them. The database enforces this too (0027).
 export default function TrainerProgressPhotos({ clientId, clientName, shared }: Props) {
-  const [photos, setPhotos] = useState<StripPhoto[] | null>(null);
+  const [photos, setPhotos] = useState<LoadedProgressPhoto[] | null>(null);
 
   useEffect(() => {
     if (!shared) return;
@@ -28,7 +28,7 @@ export default function TrainerProgressPhotos({ clientId, clientName, shared }: 
   if (photos.length === 0) return <Text style={styles.helper}>Shared, but no photos yet.</Text>;
   return (
     <View>
-      <PhotoStrip photos={photos} />
+      <AngleCompare photos={photos} />
     </View>
   );
 }

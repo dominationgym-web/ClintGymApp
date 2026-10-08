@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { progressPhotoPath, progressPhotoStatus } from "@/lib/progressPhotos";
+import {
+  groupIntoSets,
+  isCompleteSet,
+  openSetDate,
+  progressPhotoPath,
+  progressPhotoStatus,
+  type ProgressPhotoAngle,
+} from "@/lib/progressPhotos";
+
+const photo = (takenOn: string, angle: ProgressPhotoAngle) => ({ id: `${takenOn}-${angle}`, takenOn, angle });
+const fullSet = (d: string) => [photo(d, "front"), photo(d, "side"), photo(d, "back")];
 
 describe("progressPhotoStatus", () => {
   it("asks for a before photo when there are none", () => {
@@ -19,6 +29,36 @@ describe("progressPhotoStatus", () => {
 
 describe("progressPhotoPath", () => {
   it("puts the file in the client's own folder", () => {
-    expect(progressPhotoPath("abc", "image/jpeg", 5)).toBe("abc/progress-5.jpg");
+    expect(progressPhotoPath("abc", "side", "image/jpeg", 5)).toBe("abc/progress-side-5.jpg");
+  });
+});
+
+describe("groupIntoSets", () => {
+  it("groups by date, oldest first, one photo per angle", () => {
+    const sets = groupIntoSets([photo("2026-10-08", "front"), ...fullSet("2026-08-27")]);
+    expect(sets.map((s) => s.takenOn)).toEqual(["2026-08-27", "2026-10-08"]);
+    expect(isCompleteSet(sets[0])).toBe(true);
+    expect(isCompleteSet(sets[1])).toBe(false);
+    expect(sets[1].byAngle.front?.id).toBe("2026-10-08-front");
+  });
+});
+
+describe("openSetDate", () => {
+  it("starts today when there are no photos", () => {
+    expect(openSetDate([], "2026-10-08")).toBe("2026-10-08");
+  });
+
+  it("keeps a recent unfinished set open", () => {
+    const sets = groupIntoSets([photo("2026-10-05", "front")]);
+    expect(openSetDate(sets, "2026-10-08")).toBe("2026-10-05");
+  });
+
+  it("starts a new set once the last one is finished", () => {
+    expect(openSetDate(groupIntoSets(fullSet("2026-10-05")), "2026-10-08")).toBe("2026-10-08");
+  });
+
+  it("starts a new set when an unfinished one is a week old", () => {
+    const sets = groupIntoSets([photo("2026-10-01", "front")]);
+    expect(openSetDate(sets, "2026-10-08")).toBe("2026-10-08");
   });
 });
