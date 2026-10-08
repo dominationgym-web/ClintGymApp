@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { decode } from "base64-arraybuffer";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import type { Video } from "@/types/database";
@@ -33,13 +32,13 @@ export default function VideoUploadScreen() {
     if (!client) return;
     setUploading(true);
     try {
-      const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+      const body = await new File(asset.uri).arrayBuffer();
       const fileExt = asset.uri.split(".").pop() ?? "mp4";
       const storagePath = `${client.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("training-videos")
-        .upload(storagePath, decode(base64), { contentType: `video/${fileExt}` });
+        .upload(storagePath, body, { contentType: asset.mimeType ?? `video/${fileExt}` });
       if (uploadError) throw uploadError;
 
       const { error: insertError } = await supabase.from("videos").insert({
