@@ -25,7 +25,7 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.brand}>Daily Grizz</Text>
+      <Text style={styles.brand}>Consistent Change</Text>
       <Text style={styles.tagline}>Total Lifestyle Training & Accountability</Text>
       <Text style={styles.title}>Welcome back</Text>
       <TextInput

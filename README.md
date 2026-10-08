@@ -1,4 +1,4 @@
-# ClintGymApp
+# ClintGymApp (Consistent Change)
 
 Coaching app for a solo online personal trainer (South Africa-based), built
 around daily client accountability first. See the full product brief for
@@ -155,7 +155,7 @@ npx eas-cli@latest build --profile production --platform all     # store builds 
 npx eas-cli@latest submit --platform ios                         # or android, to upload to the stores
 ```
 
-App identifiers are `com.dominationgym.dailygrizz` on both stores. They can't
+App identifiers are `com.dominationgym.consistentchange` on both stores. They can't
 change once the app is published. Version numbers for store builds are kept by
 EAS (`appVersionSource: remote`, `autoIncrement`).
 

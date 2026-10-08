@@ -1,24 +1,24 @@
 {
   "expo": {
-    "name": "Daily Grizz",
+    "name": "Consistent Change",
     "description": "Total Lifestyle Training & Accountability",
-    "slug": "daily-grizz",
+    "slug": "consistent-change",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "scheme": "dailygrizz",
+    "scheme": "consistentchange",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.dominationgym.dailygrizz",
+      "bundleIdentifier": "com.dominationgym.consistentchange",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.dominationgym.dailygrizz",
+      "package": "com.dominationgym.consistentchange",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
