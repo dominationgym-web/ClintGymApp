@@ -6,6 +6,7 @@ import AuthNavigator from "@/navigation/AuthNavigator";
 import ClientNavigator from "@/navigation/ClientNavigator";
 import TrainerNavigator from "@/navigation/TrainerNavigator";
 import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
+import DeleteAccountButton from "@/components/DeleteAccountButton";
 
 // A client's access is open unless their plan has actually expired.
 // `expiring_soon` is a client who is still paid up, inside the renewal window
@@ -56,6 +57,7 @@ function PendingAccessScreen() {
       <Pressable style={styles.logoutButton} onPress={signOut}>
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
+      <DeleteAccountButton />
     </View>
   );
 }

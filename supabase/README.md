@@ -32,3 +32,13 @@ Nothing here handles column-level encryption. Supabase/Postgres encrypts data
 at rest by default; if that's insufficient for POPIA compliance on specific
 fields (e.g. `distress_notes`), that's an app-level decision to make with
 whoever reviews the privacy policy, not something this schema assumes.
+
+## Edge Functions
+
+- `functions/delete-account` — called by the app's "Delete my account" button
+  (Apple and Google require in-app account deletion). Removes the caller's
+  files from the `client-avatars`, `progress-photos` and `training-videos`
+  buckets, then deletes their auth user, which cascades through `clients` and
+  every `client_id` table. Refuses the trainer account. Deployed with
+  `verify_jwt` on; it only ever acts on the user in the caller's token. Any new
+  bucket holding client files under `<clientId>/` must be added to its list.

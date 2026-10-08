@@ -12,5 +12,9 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "supabase/functions"
   ]
 }
