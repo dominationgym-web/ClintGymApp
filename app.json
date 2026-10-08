@@ -1,36 +1,60 @@
 {
   "expo": {
-    "name": "Daily Grizz",
+    "name": "Consistent Change",
     "description": "Total Lifestyle Training & Accountability",
-    "slug": "clintgymapp",
-    "version": "0.1.0",
+    "slug": "consistent-change",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "scheme": "clintgymapp",
+    "scheme": "consistentchange",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
-    "splash": {
-      "backgroundColor": "#0F172A"
-    },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.clintgym.app",
+      "bundleIdentifier": "com.dominationgym.consistentchange",
       "infoPlist": {
-        "NSCameraUsageDescription": "Used to record training-proof videos for your coach to review.",
-        "NSPhotoLibraryUsageDescription": "Used to upload a training-proof video from your library."
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.clintgym.app",
-      "permissions": ["CAMERA", "READ_MEDIA_VIDEO"],
+      "package": "com.dominationgym.consistentchange",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#0F172A"
-      }
+      },
+      "permissions": ["CAMERA", "READ_MEDIA_VIDEO", "READ_MEDIA_IMAGES"]
     },
     "web": {
-      "bundler": "metro"
-    }
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0F172A"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Lets you pick a training video, progress photo or profile photo from your library to send to your coach.",
+          "cameraPermission": "Lets you record training videos and take progress and profile photos for your coach.",
+          "microphonePermission": "Records sound with your training videos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#22C55E"
+        }
+      ]
+    ]
   }
 }

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { todayIso } from "@/lib/dates";
+import { clientPriority, flagBorderColor } from "@/lib/clientFlags";
 import { useAuth } from "@/context/AuthContext";
 import type { Checkin, Client } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
@@ -13,24 +15,12 @@ interface ClientStatus {
   distressFlag: boolean;
 }
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
-
-// Priority order for the dashboard: urgent flag first, then today's distress
-// flag, then wants-feedback flag, then simply missing a check-in, then done.
-// Lower number = higher up the list.
-function priority(r: ClientStatus): number {
-  if (r.client.status_flag === "red") return 0;
-  if (r.distressFlag) return 1;
-  if (r.client.status_flag === "orange") return 2;
-  if (!r.todaysCheckin) return 3;
-  return 4;
-}
-
-function flagBorderColor(client: Client): string | undefined {
-  if (client.status_flag === "red") return "#EF4444";
-  if (client.status_flag === "orange") return "#F59E0B";
-  return undefined;
-}
+const priority = (r: ClientStatus): number =>
+  clientPriority({
+    statusFlag: r.client.status_flag,
+    distressFlag: r.distressFlag,
+    hasCheckedInToday: r.todaysCheckin !== null,
+  });
 
 export default function TrainerDashboardScreen({ navigation }: Props) {
   const { trainer, signOut } = useAuth();
@@ -44,7 +34,11 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       .from("clients")
       .select("*")
       .eq("trainer_id", trainer.id)
-      .eq("access_status", "active");
+      // Everyone who still has access, which includes `expiring_soon` - those
+      // are paid-up clients inside their renewal window, and filtering on
+      // 'active' alone dropped them (and any red flag they had raised) off the
+      // dashboard entirely for the last week of every plan.
+      .neq("access_status", "expired");
 
     if (!clients) {
       setRows([]);
@@ -100,7 +94,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
         keyExtractor={(r) => r.client.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => {
-          const borderColor = flagBorderColor(item.client);
+          const borderColor = flagBorderColor(item.client.status_flag);
           return (
             <Pressable
               style={[styles.row, borderColor && { borderWidth: 1.5, borderColor }]}

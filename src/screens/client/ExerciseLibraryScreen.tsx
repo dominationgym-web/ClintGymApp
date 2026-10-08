@@ -10,14 +10,14 @@ import {
   Modal,
   ScrollView,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
+import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, SetEffort, WorkoutLog } from "@/types/database";
-
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
   { key: "comfortable", label: "Comfortable" },
@@ -41,6 +41,11 @@ export default function ExerciseLibraryScreen() {
   const [reps, setReps] = useState("");
   const [effort, setEffort] = useState<SetEffort | null>(null);
   const [logging, setLogging] = useState(false);
+  const [videoExpanded, setVideoExpanded] = useState(false);
+  const { height: screenHeight } = useWindowDimensions();
+  // Keep the demo video (shown under the set log) compact so it fits on screen;
+  // the client can tap to make it bigger.
+  const compactVideoHeight = Math.min(screenHeight * 0.28, 240);
 
   useEffect(() => {
     const load = async () => {
@@ -72,6 +77,7 @@ export default function ExerciseLibraryScreen() {
 
   const openExercise = async (exercise: Exercise) => {
     setSelected(exercise);
+    setVideoExpanded(false);
     setWeight("");
     setReps("");
     setEffort(null);
@@ -160,14 +166,8 @@ export default function ExerciseLibraryScreen() {
             </Pressable>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 20 }}>
-            {selected?.external_url ? (
-              <VideoView style={styles.video} player={player} contentFit="contain" nativeControls />
-            ) : (
-              <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
-            )}
-
-            <Text style={styles.sectionHeading}>Log a set</Text>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+            <Text style={[styles.sectionHeading, { marginTop: 0 }]}>Log a set</Text>
             <View style={styles.setRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Weight (kg)</Text>
@@ -226,6 +226,23 @@ export default function ExerciseLibraryScreen() {
                 ))}
               </>
             )}
+
+            <Text style={styles.sectionHeading}>Demo video</Text>
+            {selected?.external_url ? (
+              <>
+                <VideoView
+                  style={[styles.video, videoExpanded ? styles.videoExpanded : { height: compactVideoHeight }]}
+                  player={player}
+                  contentFit="contain"
+                  nativeControls
+                />
+                <Pressable onPress={() => setVideoExpanded((v) => !v)} hitSlop={8}>
+                  <Text style={styles.expandText}>{videoExpanded ? "Make video smaller" : "Make video bigger"}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
+            )}
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -258,7 +275,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
-  video: { width: "100%", aspectRatio: 9 / 16, backgroundColor: "#000", marginBottom: 12 },
+  video: { width: "100%", backgroundColor: "#000", borderRadius: 10, marginBottom: 8 },
+  videoExpanded: { aspectRatio: 9 / 16 },
+  expandText: { color: "#22C55E", fontSize: 13, fontWeight: "600", textAlign: "center" },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 10 },
   setRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6 },

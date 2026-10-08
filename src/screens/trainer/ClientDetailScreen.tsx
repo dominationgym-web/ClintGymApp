@@ -2,8 +2,11 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
+import { toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
+import ClientAvatar from "@/components/ClientAvatar";
+import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -50,7 +53,7 @@ export default function ClientDetailScreen({ route }: Props) {
 
   const [newHabitName, setNewHabitName] = useState("");
   const [newHabitReps, setNewHabitReps] = useState(1);
-  const [newHabitStart, setNewHabitStart] = useState(() => new Date().toISOString().slice(0, 10));
+  const [newHabitStart, setNewHabitStart] = useState(() => todayIso());
   const [newHabitEnd, setNewHabitEnd] = useState("");
   const [addingHabit, setAddingHabit] = useState(false);
 
@@ -69,7 +72,7 @@ export default function ClientDetailScreen({ route }: Props) {
       const { data: logRows } = await supabase
         .from("habit_logs")
         .select("*")
-        .gte("log_date", since.toISOString().slice(0, 10))
+        .gte("log_date", toIsoDate(since))
         .in("habit_id", list.map((h) => h.id));
       const byHabit: Record<string, Record<string, number>> = {};
       for (const l of logRows ?? []) {
@@ -125,7 +128,7 @@ export default function ClientDetailScreen({ route }: Props) {
       name: newHabitName.trim(),
       active_days: [0, 1, 2, 3, 4, 5, 6],
       reps_target: newHabitReps,
-      start_date: newHabitStart || new Date().toISOString().slice(0, 10),
+      start_date: newHabitStart || todayIso(),
       end_date: newHabitEnd || null,
     });
     setAddingHabit(false);
@@ -168,7 +171,7 @@ export default function ClientDetailScreen({ route }: Props) {
   };
 
   const toggleLifestyleReset = async () => {
-    const next = client?.lifestyle_reset_started_at ? null : new Date().toISOString().slice(0, 10);
+    const next = client?.lifestyle_reset_started_at ? null : todayIso();
     const { error } = await supabase.from("clients").update({ lifestyle_reset_started_at: next }).eq("id", clientId);
     if (error) {
       Alert.alert("Couldn't update", error.message);
@@ -187,11 +190,32 @@ export default function ClientDetailScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-      <Text style={styles.title}>{client.name}</Text>
-      <Text style={styles.helper}>{client.email}</Text>
+      <View style={styles.headerRow}>
+        <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{client.name}</Text>
+          <Text style={styles.helper}>{client.email}</Text>
+        </View>
+      </View>
       {client.package_type && (
         <View style={styles.packageBadge}>
           <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
+        </View>
+      )}
+
+      {client.plan_type && (
+        <View style={styles.planBox}>
+          <Text style={styles.planLabel}>{client.plan_type === 'intro_1mo' ? '1 Month' : client.plan_type === 'sub_6mo' ? '6 Month' : '12 Month'} Plan</Text>
+          {client.plan_started_at && (
+            <Text style={styles.planDate}>
+              Started: {new Date(client.plan_started_at).toLocaleDateString()}
+            </Text>
+          )}
+          {client.plan_expires_at && (
+            <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
+              Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
+            </Text>
+          )}
         </View>
       )}
 
@@ -230,6 +254,9 @@ export default function ClientDetailScreen({ route }: Props) {
 
       {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
       {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
+
+      <Text style={styles.sectionHeading}>Progress photos</Text>
+      <TrainerProgressPhotos clientId={client.id} clientName={client.name} shared={client.progress_photos_shared} />
 
       <Text style={styles.sectionHeading}>Intake form</Text>
       {Object.keys(client.intake_responses ?? {}).length === 0 ? (
@@ -349,6 +376,7 @@ export default function ClientDetailScreen({ route }: Props) {
           <Text style={styles.checkinDetail}>
             Sleep {c.sleep_quality ?? "-"}/5 · Water {c.water_litres}L · Alcohol {c.alcohol_units}u · High-GI{" "}
             {c.high_gi_count}
+            {c.wound_down !== null && ` · Wind-down ${c.wound_down ? "yes" : "no"}`}
           </Text>
         </View>
       ))}
@@ -373,6 +401,7 @@ export default function ClientDetailScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
   packageBadge: {
@@ -384,6 +413,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   packageBadgeText: { color: "#22C55E", fontSize: 12, fontWeight: "600" },
+  planBox: {
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#22C55E",
+  },
+  planLabel: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  planDate: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
+  expired: { color: "#EF4444" },
   resetBox: {
     flexDirection: "row",
     alignItems: "center",

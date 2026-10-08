@@ -1,4 +1,4 @@
-# ClintGymApp
+# ClintGymApp (Consistent Change)
 
 Coaching app for a solo online personal trainer (South Africa-based), built
 around daily client accountability first. See the full product brief for
@@ -24,11 +24,7 @@ What exists right now:
   "Supplements" 3x/day, or "Gym" 1x/day) from `ClientDetailScreen`; the
   client then picks whichever specific days and reminder time actually fit
   their own schedule, and logs reps each day. The reminder toggle/time is
-  saved but not yet delivered - `expo-notifications` was removed after Expo
-  Go dropped support for it in SDK 53 (importing it crashed the app for
-  every client on Expo Go, not just a dev-build edge case). Needs a real
-  push setup (Expo push tokens from a dev/production build + a server-side
-  send path) before reminders actually fire - see the gaps list below.
+  saved but not yet delivered - see the gaps list below.
 - **Training-proof video upload** (`VideoUploadScreen`) to Supabase Storage
   as an interim provider (`videos.storage_provider` also supports `mux` /
   `cloudflare_stream` for when that's wired up), with a 30-day
@@ -52,7 +48,9 @@ What exists right now:
   🟠orange / green traffic light the client sets any time from their Profile
   screen (not tied to the daily check-in), for signalling "I need guidance
   now" vs "I'd like feedback" vs "all good." Drives the dashboard sort order
-  above; the trainer can mark one resolved from `ClientDetailScreen`.
+  above; the trainer can mark one resolved from `ClientDetailScreen`. Every
+  change is logged to `client_status_flag_events` and timestamped server-side
+  (`0023`), so resolving a flag no longer erases what the client said.
 - **Admin client list** (`ClientsScreen`) sorted by plan expiry, with the
   manual access-status control.
 - **Client detail view** (`ClientDetailScreen`) with recent check-in history,
@@ -60,16 +58,25 @@ What exists right now:
 
 What's deliberately **not** built yet (tracked as gaps, not bugs):
 
-- No push notifications yet (daily trainer summary, renewal reminders, habit
-  reminders) — needs Expo push tokens from a dev/production build (Expo Go
-  no longer supports `expo-notifications` as of SDK 53) plus a server-side
-  send path. Habit `reminder_enabled`/`reminder_time` are captured and saved
-  already, just not delivered yet.
+- Phone notifications are live only for the 6-week progress photo reminder
+  (`src/lib/notifications.ts`): a local notification scheduled on the phone
+  for 9am on the due day, so no server or push tokens are involved. They work
+  in the installed app only; in Expo Go `expo-notifications` is never loaded
+  (importing it there crashed the app as of SDK 53) and the in-app banner is
+  the whole reminder. Habit reminders (`reminder_enabled`/`reminder_time`,
+  already saved) can use the same local approach next. Anything sent from the
+  server (daily trainer summary, renewal reminders) still needs Expo push
+  tokens and a send path.
 - Video auto-delete is now live — a daily `pg_cron` job
   (`delete_expired_videos`, `supabase/migrations/0009_video_auto_delete_job.sql`)
-  removes the Storage file and soft-deletes the row past `expires_at`. Still
-  missing: the active → expiring_soon → expired transition based on
-  `plan_expires_at` (see `docs/access-gating.md`) isn't automated yet.
+  removes the Storage file and soft-deletes the row past `expires_at`.
+- **Plan auto-expiry is now live** — when the trainer activates a client,
+  `plan_expires_at` is automatically calculated based on `plan_type` (30 days
+  for 1-month, 180 for 6-month, 365 for 12-month). A daily `pg_cron` job
+  (`auto_expire_plans`, `supabase/migrations/0021_plan_expiry_job.sql`)
+  auto-transitions clients to `expiring_soon` (7 days before expiry) and then
+  to `expired` on the actual expiry date. The trainer sees the expiry date on
+  the client detail screen.
 - Privacy policy is now real (`docs/privacy-policy.md`, rendered in-app via
   `PrivacyPolicyContent`/a modal on `SignupScreen`, linked before the
   consent checkbox so consent is actually informed) — drafted around
@@ -134,12 +141,35 @@ Run the app:
 npm run start     # then press i / a / w, or scan the QR code with Expo Go
 ```
 
+### Building the installable app
+
+Builds run on Expo's EAS Build service (`eas.json`). The public Supabase
+values are set per build profile there, so a build doesn't need a local
+`.env`. Icons and the splash image are PNGs in `assets/`.
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest init                                      # once: links this folder to an Expo project
+npx eas-cli@latest build --profile preview --platform android    # APK to install directly on Android phones
+npx eas-cli@latest build --profile production --platform all     # store builds (needs Apple/Google accounts)
+npx eas-cli@latest submit --platform ios                         # or android, to upload to the stores
+```
+
+App identifiers are `com.dominationgym.consistentchange` on both stores. They can't
+change once the app is published. Version numbers for store builds are kept by
+EAS (`appVersionSource: remote`, `autoIncrement`).
+
 ## Project layout
 
 ```
 App.tsx                     # provider + navigation root
 src/
   lib/supabase.ts           # Supabase client (env-configured)
+  lib/dates.ts              # local calendar dates (never use toISOString here)
+  lib/access.ts             # the access_status gating decision
+  lib/clientFlags.ts        # trainer dashboard priority + flag colours
+  lib/habitStreak.ts        # habit colour-tier streak counting
+  lib/*.test.ts             # unit tests for all of the above
   types/database.ts         # hand-written mirror of the SQL schema
   context/AuthContext.tsx   # session + role (trainer/client) resolution
   navigation/                # role-branching navigators
@@ -151,11 +181,35 @@ supabase/
   migrations/                # schema, seed data, storage policies
 docs/
   access-gating.md           # how the payment/access field is protected
+.github/workflows/ci.yml     # typecheck + tests on every push and PR
 ```
+
+## Automated checks
+
+```bash
+npm run typecheck   # tsc --noEmit
+npm test            # vitest run
+npm run test:watch  # vitest, watching for changes
+```
+
+These cover the logic that costs real money or trust when it breaks: the
+`access_status` gating decision, the trainer dashboard's flag priority, and
+habit streak counting. They are plain unit tests over `src/lib` with no
+React Native renderer, so the whole suite runs in well under a second.
+
+Tests run with `TZ=Africa/Johannesburg` (set in `vitest.config.mts`), because
+date bugs in this app only appear in timezones ahead of UTC and would
+otherwise stay invisible on a UTC CI runner. Build calendar dates with the
+helpers in `src/lib/dates.ts` - never `toISOString().slice(0, 10)`, which
+converts to UTC first and returns the previous day for South African users.
+
+GitHub Actions runs both commands on every push and pull request.
 
 ## Testing this phase before it touches real client data
 
-At minimum, before onboarding a real client: sign up as a test client,
+Automated tests cover the pure logic; the following still needs a human,
+because it involves real auth, RLS and storage. At minimum, before
+onboarding a real client: sign up as a test client,
 confirm they see `PendingAccessScreen` (not the app) until flipped to
 `active`; confirm a second test client can never see the first client's
 check-ins or videos (RLS); confirm a distress-flagged check-in shows up

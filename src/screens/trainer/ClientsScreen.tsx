@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { toIsoDate } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
+import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
 import type { AccessStatus, Client } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 
@@ -13,11 +15,10 @@ const STATUS_LABEL: Record<AccessStatus, string> = {
   expired: "Expired",
 };
 
-const STATUS_ORDER: AccessStatus[] = ["expired", "expiring_soon", "active"];
-
 export default function ClientsScreen({ navigation }: Props) {
   const { trainer } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
+  const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,6 +32,8 @@ export default function ClientsScreen({ navigation }: Props) {
       .order("plan_expires_at", { ascending: true, nullsFirst: true });
     const list = data ?? [];
     setClients(list);
+    // One request signs every photo on the list.
+    signAvatarUrls(list.map((c) => c.avatar_path ?? "")).then(setAvatarUrls);
 
     // This month's consistency score - only meaningful for active clients.
     const active = list.filter((c) => c.access_status === "active");
@@ -55,16 +58,75 @@ export default function ClientsScreen({ navigation }: Props) {
     setRefreshing(false);
   };
 
-  // Manual payment confirmation: this is the single field gating a client's
-  // access, per the brief. Cycling it here is the "admin screen" - the
-  // trainer only flips this after confirming EFT/PayPal payment themselves.
-  const cycleStatus = async (client: Client) => {
-    const currentIdx = STATUS_ORDER.indexOf(client.access_status);
-    const next = STATUS_ORDER[(currentIdx + 1) % STATUS_ORDER.length];
-    const { error } = await supabase.from("clients").update({ access_status: next }).eq("id", client.id);
-    if (!error) {
-      setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, access_status: next } : c)));
-    }
+  // Activate a client: confirm payment received, set dates, move to active status
+  const activateClient = async (client: Client) => {
+    Alert.alert(
+      "Activate client?",
+      `Confirm payment received for ${client.name}. Their access will activate now.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Activate",
+          style: "default",
+          onPress: async () => {
+            if (!client.plan_type) {
+              Alert.alert("Error", "No plan type selected for this client.");
+              return;
+            }
+
+            const today = new Date();
+            const planDays =
+              client.plan_type === "intro_1mo" ? 30 :
+              client.plan_type === "sub_6mo" ? 180 :
+              365; // sub_12mo
+
+            const expiryDate = new Date(today);
+            expiryDate.setDate(expiryDate.getDate() + planDays);
+
+            const updates = {
+              access_status: "active" as const,
+              plan_started_at: toIsoDate(today),
+              plan_expires_at: toIsoDate(expiryDate),
+            };
+
+            const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
+            if (!error) {
+              setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
+            } else {
+              Alert.alert("Error", "Failed to activate client.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Mark client as expired: revoke access, move to expired status
+  const markExpired = async (client: Client) => {
+    Alert.alert(
+      "Mark as expired?",
+      `This will revoke ${client.name}'s access. Are you sure?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Mark expired",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase
+              .from("clients")
+              .update({ access_status: "expired" })
+              .eq("id", client.id);
+            if (!error) {
+              setClients((prev) =>
+                prev.map((c) => (c.id === client.id ? { ...c, access_status: "expired" } : c))
+              );
+            } else {
+              Alert.alert("Error", "Failed to mark client as expired.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -80,7 +142,7 @@ export default function ClientsScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Clients</Text>
-      <Text style={styles.helper}>Tap the status pill to cycle it after confirming payment.</Text>
+      <Text style={styles.helper}>Use Activate/Mark expired to manage client access after confirming payment.</Text>
       <FlatList
         data={clients}
         keyExtractor={(c) => c.id}
@@ -90,6 +152,9 @@ export default function ClientsScreen({ navigation }: Props) {
           const isLeader = score !== undefined && score > 0 && score === topScore;
           return (
             <Pressable style={styles.row} onPress={() => navigation.navigate("ClientDetail", { clientId: item.id })}>
+              <View style={styles.avatar}>
+                <ClientAvatar name={item.name} url={item.avatar_path ? avatarUrls[item.avatar_path] : null} size={44} />
+              </View>
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
                   {item.status_flag === "red" && <Text style={styles.flagIcon}>🚩</Text>}
@@ -97,13 +162,24 @@ export default function ClientsScreen({ navigation }: Props) {
                   {isLeader && <Text style={styles.flagIcon}>🏆</Text>}
                   <Text style={styles.name}>{item.name}</Text>
                 </View>
-                {item.plan_expires_at && (
-                  <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
-                )}
+                <View style={styles.statusRow}>
+                  <View style={[styles.statusBadge, statusStyle(item.access_status)]}>
+                    <Text style={styles.statusLabel}>{STATUS_LABEL[item.access_status]}</Text>
+                  </View>
+                  {item.plan_expires_at && (
+                    <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
+                  )}
+                </View>
               </View>
-              <Pressable style={[styles.statusPill, statusStyle(item.access_status)]} onPress={() => cycleStatus(item)}>
-                <Text style={styles.statusText}>{STATUS_LABEL[item.access_status]}</Text>
-              </Pressable>
+              {item.access_status === "expired" ? (
+                <Pressable style={styles.actionButton} onPress={() => activateClient(item)}>
+                  <Text style={styles.actionButtonText}>Activate</Text>
+                </Pressable>
+              ) : (
+                <Pressable style={styles.dangerButton} onPress={() => markExpired(item)}>
+                  <Text style={styles.dangerButtonText}>Mark expired</Text>
+                </Pressable>
+              )}
             </Pressable>
           );
         }}
@@ -137,11 +213,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
   },
+  avatar: { marginRight: 12 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   flagIcon: { fontSize: 13 },
   flagDot: { width: 9, height: 9, borderRadius: 5 },
   name: { color: "#fff", fontWeight: "600" },
-  expiry: { color: "#64748B", fontSize: 12, marginTop: 2 },
-  statusPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
-  statusText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, alignSelf: "flex-start" },
+  statusLabel: { color: "#0F172A", fontWeight: "700", fontSize: 11 },
+  expiry: { color: "#64748B", fontSize: 12 },
+  actionButton: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 12 },
+  actionButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
+  dangerButton: { backgroundColor: "#EF4444", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 10 },
+  dangerButtonText: { color: "#fff", fontWeight: "700", fontSize: 12 },
 });
