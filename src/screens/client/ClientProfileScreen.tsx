@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { AVATAR_BUCKET, avatarContentType, avatarStoragePath } from "@/lib/avatars";
 import ClientAvatar from "@/components/ClientAvatar";
+import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import type { ClientStatusFlag } from "@/types/database";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -189,6 +190,8 @@ export default function ClientProfileScreen() {
           {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Update status</Text>}
         </Pressable>
       )}
+
+      <ProgressPhotosSection />
 
       <Text style={styles.sectionHeading}>Goals</Text>
       <Text style={styles.body}>{client.goals || "Not set yet - your trainer will add this."}</Text>

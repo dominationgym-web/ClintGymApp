@@ -26,8 +26,12 @@ export function avatarContentType(mimeType: string | null | undefined): string {
   return mime in EXT_BY_MIME ? mime : "image/jpeg";
 }
 
+export function imageExtension(mimeType: string | null | undefined): string {
+  return EXT_BY_MIME[avatarContentType(mimeType)];
+}
+
 // Each upload gets a fresh name so a phone that cached the old photo can't keep
 // showing it; the app deletes the previous file afterwards.
 export function avatarStoragePath(clientId: string, mimeType: string | null | undefined, now = Date.now()): string {
-  return `${clientId}/avatar-${now}.${EXT_BY_MIME[avatarContentType(mimeType)]}`;
+  return `${clientId}/avatar-${now}.${imageExtension(mimeType)}`;
 }

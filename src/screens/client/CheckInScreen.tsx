@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import ProgressPhotoReminder from "@/components/ProgressPhotoReminder";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -190,6 +191,7 @@ export default function CheckInScreen() {
     const missing = unansweredSections(formFromCheckin(saved));
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <ProgressPhotoReminder />
         <Text style={styles.title}>You're checked in for today ✅</Text>
         {missing.length > 0 && (
           <View style={styles.notice}>
@@ -226,6 +228,7 @@ export default function CheckInScreen() {
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
+        <ProgressPhotoReminder />
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>
 
         <Text style={styles.sectionHeading}>Alcohol (units last night)</Text>

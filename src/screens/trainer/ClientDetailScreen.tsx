@@ -6,6 +6,7 @@ import { toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
+import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -253,6 +254,9 @@ export default function ClientDetailScreen({ route }: Props) {
 
       {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
       {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
+
+      <Text style={styles.sectionHeading}>Progress photos</Text>
+      <TrainerProgressPhotos clientId={client.id} clientName={client.name} shared={client.progress_photos_shared} />
 
       <Text style={styles.sectionHeading}>Intake form</Text>
       {Object.keys(client.intake_responses ?? {}).length === 0 ? (

@@ -38,6 +38,19 @@ export type Client = {
   status_flag_updated_at: string | null;
   // Storage path in the client-avatars bucket (0026); null until a photo is set.
   avatar_path: string | null;
+  // Off by default; only the client can turn it on (0027). While off, the
+  // trainer can't see any of their progress photos.
+  progress_photos_shared: boolean;
+  created_at: string;
+}
+
+// Private progress photo (0027). Visible to the client, and to the trainer
+// only while clients.progress_photos_shared is on.
+export type ProgressPhoto = {
+  id: string;
+  client_id: string;
+  storage_path: string;
+  taken_on: string;
   created_at: string;
 }
 
@@ -163,6 +176,12 @@ export interface Database {
         Relationships: [];
       };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
+      progress_photos: {
+        Row: ProgressPhoto;
+        Insert: Partial<ProgressPhoto>;
+        Update: Partial<ProgressPhoto>;
+        Relationships: [];
+      };
       videos: { Row: Video; Insert: Partial<Video>; Update: Partial<Video>; Relationships: [] };
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
