@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { PROGRESS_BUCKET } from "@/lib/progressPhotos";
+import { PROGRESS_BUCKET, type ProgressPhotoAngle } from "@/lib/progressPhotos";
 import type { StripPhoto } from "@/components/PhotoStrip";
 
 // Kept short on purpose: once a client stops sharing, a link the trainer's
@@ -8,7 +8,9 @@ const SIGNED_URL_SECONDS = 5 * 60;
 
 /** A client's progress photos, oldest first, with signed URLs. RLS returns
  * nothing to the trainer unless the client is sharing. */
-export async function loadProgressPhotos(clientId: string): Promise<(StripPhoto & { path: string })[]> {
+export type LoadedProgressPhoto = StripPhoto & { path: string; angle: ProgressPhotoAngle };
+
+export async function loadProgressPhotos(clientId: string): Promise<LoadedProgressPhoto[]> {
   const { data } = await supabase
     .from("progress_photos")
     .select("*")
@@ -22,7 +24,7 @@ export async function loadProgressPhotos(clientId: string): Promise<(StripPhoto 
     .createSignedUrls(rows.map((r) => r.storage_path), SIGNED_URL_SECONDS);
   const urls: Record<string, string> = {};
   for (const s of signed ?? []) if (s.path && s.signedUrl) urls[s.path] = s.signedUrl;
-  return rows.map((r) => ({ id: r.id, path: r.storage_path, takenOn: r.taken_on, url: urls[r.storage_path] }));
+  return rows.map((r) => ({ id: r.id, path: r.storage_path, angle: r.angle, takenOn: r.taken_on, url: urls[r.storage_path] }));
 }
 
 /** Date of the client's latest progress photo, or null if they have none. */

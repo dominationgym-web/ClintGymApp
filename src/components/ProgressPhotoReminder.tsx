@@ -34,8 +34,8 @@ export default function ProgressPhotoReminder() {
   return (
     <Pressable style={styles.banner} onPress={() => navigation.navigate("Profile")}>
       <Text style={styles.text}>
-        📸 It's been 6 weeks. Time for a progress photo! Same place, lighting, time of day and outfit as before. Tap to
-        add it.
+        📸 It's been 6 weeks. Time for your progress photos: front, side and back, full body. Same place, lighting,
+        time of day and outfit as before. Tap to start.
       </Text>
     </Pressable>
   );

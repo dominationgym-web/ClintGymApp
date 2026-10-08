@@ -51,6 +51,8 @@ export type ProgressPhoto = {
   client_id: string;
   storage_path: string;
   taken_on: string;
+  // Each update is a set of front, side and back on the same date (0028).
+  angle: "front" | "side" | "back";
   created_at: string;
 }
 
