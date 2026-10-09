@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import { toIsoDate, todayIso } from "@/lib/dates";
+import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
@@ -207,6 +207,8 @@ export default function ClientDetailScreen({ route }: Props) {
     );
   }
 
+  const timeWithYou = describeTimeSince(new Date(client.created_at));
+
   return (
     <View style={styles.container}>
       <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
@@ -215,6 +217,10 @@ export default function ClientDetailScreen({ route }: Props) {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{client.name}</Text>
             <Text style={styles.helper}>{client.email}</Text>
+            <Text style={styles.memberSince}>
+              {timeWithYou === "Joined today" ? timeWithYou : `With you ${timeWithYou}`} · since{" "}
+              {new Date(client.created_at).toLocaleDateString()}
+            </Text>
           </View>
         </View>
         {tab === "overview" && (
@@ -483,6 +489,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
+  memberSince: { color: BRAND_GOLD, fontSize: 13, fontWeight: "600" },
   packageBadge: {
     alignSelf: "flex-start",
     backgroundColor: "#1E293B",
