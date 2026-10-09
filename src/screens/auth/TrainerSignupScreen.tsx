@@ -92,8 +92,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
         {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Apply as a trainer</Text>}
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
+      <Pressable onPress={() => navigation.navigate("Login", { coach: true })}>
+        <Text style={styles.link}>Already a coach? Log in</Text>
       </Pressable>
     </ScrollView>
   );
