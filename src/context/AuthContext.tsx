@@ -60,9 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setClient(null);
   };
 
+  // Reads the session fresh rather than from state: right after signup the
+  // caller's render can predate the new session landing in state.
   const refreshProfile = async () => {
-    if (session?.user.id) {
-      await loadProfile(session.user.id);
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+    if (userId) {
+      await loadProfile(userId);
     }
   };
 

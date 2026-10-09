@@ -43,6 +43,9 @@ export default function LoginScreen({ navigation }: Props) {
       <Pressable onPress={() => navigation.navigate("Signup")}>
         <Text style={styles.link}>New client? Sign up</Text>
       </Pressable>
+      <Pressable onPress={() => navigation.navigate("TrainerSignup")}>
+        <Text style={styles.link}>Are you a trainer? Apply to coach here</Text>
+      </Pressable>
     </View>
   );
 }

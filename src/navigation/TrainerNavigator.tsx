@@ -7,11 +7,15 @@ import type { TrainerStackParamList, TrainerTabParamList } from "@/navigation/ty
 import TrainerDashboardScreen from "@/screens/trainer/TrainerDashboardScreen";
 import ClientsScreen from "@/screens/trainer/ClientsScreen";
 import ClientDetailScreen from "@/screens/trainer/ClientDetailScreen";
+import TrainerProfileScreen from "@/screens/trainer/TrainerProfileScreen";
+import TrainersScreen from "@/screens/trainer/TrainersScreen";
+import { useAuth } from "@/context/AuthContext";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
 
 function TrainerTabs() {
+  const { trainer } = useAuth();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -24,6 +28,14 @@ function TrainerTabs() {
     >
       <Tab.Screen name="Dashboard" component={TrainerDashboardScreen} options={{ tabBarIcon: tabIcon("speedometer") }} />
       <Tab.Screen name="Clients" component={ClientsScreen} options={{ tabBarIcon: tabIcon("people") }} />
+      {trainer?.is_owner ? (
+        <Tab.Screen name="Trainers" component={TrainersScreen} options={{ tabBarIcon: tabIcon("ribbon") }} />
+      ) : null}
+      <Tab.Screen
+        name="TrainerProfile"
+        component={TrainerProfileScreen}
+        options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }}
+      />
     </Tab.Navigator>
   );
 }
