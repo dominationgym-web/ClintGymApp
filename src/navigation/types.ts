@@ -1,6 +1,7 @@
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { SectionKey } from "@/lib/sections";
 
 export type AuthStackParamList = {
   Login: undefined;
@@ -15,6 +16,11 @@ export type ClientTabParamList = {
   Training: undefined;
   Exercises: undefined;
   Profile: undefined;
+};
+
+export type ClientStackParamList = {
+  ClientTabs: undefined;
+  Section: { sectionKey: SectionKey };
 };
 
 export type TrainerTabParamList = {
