@@ -17,7 +17,11 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
-import type { Exercise, SetEffort, WorkoutLog } from "@/types/database";
+import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
+import RestTimer from "@/components/RestTimer";
+import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
+import { dayTitle, DEFAULT_REST_SECONDS, exercisesForDate, formatRest, needsWarmUp, warmUpReps } from "@/lib/programs";
+import { BRAND_GOLD } from "@/lib/brand";
 
 const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
   { key: "comfortable", label: "Comfortable" },
@@ -42,6 +46,13 @@ export default function ExerciseLibraryScreen() {
   const [effort, setEffort] = useState<SetEffort | null>(null);
   const [logging, setLogging] = useState(false);
   const [videoExpanded, setVideoExpanded] = useState(false);
+  const [program, setProgram] = useState<ActiveProgram | null>(null);
+  // Every set logged today, to tick off the program and spot warm-ups.
+  const [allTodaysSets, setAllTodaysSets] = useState<WorkoutLog[]>([]);
+  // The program line for the exercise that's open, if it came from the program.
+  const [target, setTarget] = useState<ProgramExercise | null>(null);
+  // Bumped after each logged set to (re)start the rest timer.
+  const [restRun, setRestRun] = useState(0);
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -49,12 +60,40 @@ export default function ExerciseLibraryScreen() {
 
   useEffect(() => {
     const load = async () => {
-      const { data, error } = await supabase.from("exercises").select("*").order("sort_order");
+      const [{ data, error }, active, { data: logged }] = await Promise.all([
+        supabase.from("exercises").select("*").order("sort_order"),
+        client ? loadClientProgram(client.id) : Promise.resolve(null),
+        client
+          ? supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso())
+          : Promise.resolve({ data: [] as WorkoutLog[] }),
+      ]);
       if (!error && data) setExercises(data);
+      setProgram(active);
+      setAllTodaysSets(logged ?? []);
       setLoading(false);
     };
     load();
-  }, []);
+  }, [client?.id]);
+
+  const todaysWorkout = program ? exercisesForDate(program.program, program.exercises, new Date()) : [];
+  const categoryById = new Map(exercises.map((e) => [e.id, e.category]));
+  const categoriesLoggedToday = allTodaysSets.map((s) => (s.exercise_id ? categoryById.get(s.exercise_id) ?? null : null));
+  const setsDoneFor = (row: ProgramExercise) =>
+    allTodaysSets.filter((s) => (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name))
+      .length;
+
+  const openProgramExercise = (row: ProgramExercise) => {
+    // Fall back to a name-only entry if the exercise was taken out of the library.
+    const exercise = exercises.find((e) => e.id === row.exercise_id) ?? {
+      id: "",
+      name: row.exercise_name,
+      category: null,
+      source: "own_library" as const,
+      external_url: null,
+      sort_order: 0,
+    };
+    openExercise(exercise, row);
+  };
 
   const player = useVideoPlayer(selected?.external_url ?? null, (p) => {
     p.loop = true;
@@ -75,19 +114,17 @@ export default function ExerciseLibraryScreen() {
     };
   }, [selected, player]);
 
-  const openExercise = async (exercise: Exercise) => {
+  const openExercise = async (exercise: Exercise, programRow: ProgramExercise | null = null) => {
     setSelected(exercise);
+    setTarget(programRow);
+    setRestRun(0);
     setVideoExpanded(false);
     setWeight("");
     setReps("");
     setEffort(null);
     if (!client) return;
-    const { data } = await supabase
-      .from("workout_logs")
-      .select("*")
-      .eq("client_id", client.id)
-      .eq("exercise_id", exercise.id)
-      .eq("log_date", todayIso())
+    const query = supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso());
+    const { data } = await (exercise.id ? query.eq("exercise_id", exercise.id) : query.eq("exercise_name", exercise.name))
       .order("set_number", { ascending: true });
     setTodaysSets(data ?? []);
   };
@@ -108,7 +145,7 @@ export default function ExerciseLibraryScreen() {
       .from("workout_logs")
       .insert({
         client_id: client.id,
-        exercise_id: selected.id,
+        exercise_id: selected.id || null,
         exercise_name: selected.name,
         log_date: todayIso(),
         set_number: todaysSets.length + 1,
@@ -124,6 +161,8 @@ export default function ExerciseLibraryScreen() {
       return;
     }
     setTodaysSets((prev) => [...prev, data]);
+    setAllTodaysSets((prev) => [...prev, data]);
+    setRestRun((n) => n + 1);
     setWeight("");
     setReps("");
     setEffort(null);
@@ -139,10 +178,40 @@ export default function ExerciseLibraryScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Exercise reference</Text>
       <FlatList
         data={exercises}
         keyExtractor={(e) => e.id}
+        ListHeaderComponent={
+          <>
+            {program && (
+              <View style={styles.programCard}>
+                <Text style={styles.programKicker}>{program.program.name.toUpperCase()}</Text>
+                <Text style={styles.programTitle}>{dayTitle(program.program, new Date())}</Text>
+                {todaysWorkout.length === 0 ? (
+                  <Text style={styles.helper}>Rest day. Recover well, you've earned it.</Text>
+                ) : (
+                  todaysWorkout.map((row) => {
+                    const done = setsDoneFor(row);
+                    return (
+                      <Pressable key={row.id} style={styles.programRow} onPress={() => openProgramExercise(row)}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.name}>{row.exercise_name}</Text>
+                          <Text style={styles.category}>
+                            {row.sets} sets x {row.reps} · rest {formatRest(row.rest_seconds)}
+                          </Text>
+                        </View>
+                        <Text style={[styles.setsDone, done >= row.sets && { color: "#22C55E" }]}>
+                          {done >= row.sets ? "Done ✓" : `${done}/${row.sets}`}
+                        </Text>
+                      </Pressable>
+                    );
+                  })
+                )}
+              </View>
+            )}
+            <Text style={styles.title}>Exercise reference</Text>
+          </>
+        }
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => openExercise(item)}>
             <View>
@@ -167,6 +236,25 @@ export default function ExerciseLibraryScreen() {
           </View>
 
           <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+            {target && (
+              <Text style={styles.targetText}>
+                Target: {target.sets} sets x {target.reps} reps · rest {formatRest(target.rest_seconds)}
+              </Text>
+            )}
+            {todaysSets.length === 0 &&
+              needsWarmUp(selected?.category ?? null, categoriesLoggedToday) &&
+              (() => {
+                const warmUp = target ? warmUpReps(target.reps) : null;
+                return (
+                  <View style={styles.warmUpBox}>
+                    <Text style={styles.warmUpTitle}>Warm-up set first</Text>
+                    <Text style={styles.warmUpText}>
+                      First {selected?.category?.toLowerCase()} exercise today: do 1 set with a lighter weight for
+                      double the reps{warmUp ? ` (${warmUp})` : ""}. Then start your working sets.
+                    </Text>
+                  </View>
+                );
+              })()}
             <Text style={[styles.sectionHeading, { marginTop: 0 }]}>Log a set</Text>
             <View style={styles.setRow}>
               <View style={{ flex: 1 }}>
@@ -211,6 +299,14 @@ export default function ExerciseLibraryScreen() {
             <Pressable style={styles.button} onPress={logSet} disabled={logging}>
               {logging ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Log set</Text>}
             </Pressable>
+
+            {restRun > 0 && (
+              <RestTimer
+                key={restRun}
+                seconds={target?.rest_seconds || DEFAULT_REST_SECONDS}
+                onClose={() => setRestRun(0)}
+              />
+            )}
 
             {todaysSets.length > 0 && (
               <>
@@ -299,4 +395,27 @@ const styles = StyleSheet.create({
   },
   loggedSetText: { color: "#fff", fontSize: 14 },
   loggedSetEffort: { color: "#64748B", fontSize: 12 },
+  programCard: {
+    backgroundColor: "#1E293B",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND_GOLD,
+  },
+  programKicker: { color: BRAND_GOLD, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  programTitle: { color: "#fff", fontSize: 18, fontWeight: "700", marginTop: 2, marginBottom: 10 },
+  programRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0F172A",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 6,
+  },
+  setsDone: { color: "#94A3B8", fontWeight: "700", fontSize: 13 },
+  targetText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14, marginBottom: 12 },
+  warmUpBox: { backgroundColor: "#2A2114", borderColor: "#F59E0B", borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 16 },
+  warmUpTitle: { color: "#FBBF24", fontWeight: "700", fontSize: 14 },
+  warmUpText: { color: "#E2E8F0", fontSize: 13, marginTop: 4 },
 });

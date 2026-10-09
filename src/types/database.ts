@@ -161,6 +161,40 @@ export type WorkoutLog = {
   created_at: string;
 }
 
+export type ProgramKind = "quick" | "weekly" | "custom";
+
+// 0035. trainer_id null = built into the app, usable by every trainer.
+export type Program = {
+  id: string;
+  trainer_id: string | null;
+  name: string;
+  kind: ProgramKind;
+  description: string | null;
+  // Weekly programs: index 0 = Monday.
+  day_titles: string[];
+  created_at: string;
+}
+
+export type ProgramExercise = {
+  id: string;
+  program_id: string;
+  // 1 = Monday ... 7 = Sunday for weekly programs; always 1 otherwise.
+  day_number: number;
+  sort_order: number;
+  exercise_id: string | null;
+  exercise_name: string;
+  sets: number;
+  reps: string;
+  rest_seconds: number;
+}
+
+export type ClientProgram = {
+  client_id: string;
+  program_id: string;
+  started_on: string;
+  assigned_at: string;
+}
+
 export type Habit = {
   id: string;
   client_id: string;
@@ -220,6 +254,19 @@ export interface Database {
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
       habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
       workout_logs: { Row: WorkoutLog; Insert: Partial<WorkoutLog>; Update: Partial<WorkoutLog>; Relationships: [] };
+      programs: { Row: Program; Insert: Partial<Program>; Update: Partial<Program>; Relationships: [] };
+      program_exercises: {
+        Row: ProgramExercise;
+        Insert: Partial<ProgramExercise>;
+        Update: Partial<ProgramExercise>;
+        Relationships: [];
+      };
+      client_programs: {
+        Row: ClientProgram;
+        Insert: Partial<ClientProgram>;
+        Update: Partial<ClientProgram>;
+        Relationships: [];
+      };
       lifestyle_reset_daily_logs: {
         Row: LifestyleResetDailyLog;
         Insert: Partial<LifestyleResetDailyLog>;

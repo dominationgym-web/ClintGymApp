@@ -9,6 +9,8 @@ import ClientsScreen from "@/screens/trainer/ClientsScreen";
 import ClientDetailScreen from "@/screens/trainer/ClientDetailScreen";
 import TrainerProfileScreen from "@/screens/trainer/TrainerProfileScreen";
 import TrainersScreen from "@/screens/trainer/TrainersScreen";
+import ProgramsScreen from "@/screens/trainer/ProgramsScreen";
+import ProgramBuilderScreen from "@/screens/trainer/ProgramBuilderScreen";
 import { useAuth } from "@/context/AuthContext";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
@@ -28,6 +30,7 @@ function TrainerTabs() {
     >
       <Tab.Screen name="Dashboard" component={TrainerDashboardScreen} options={{ tabBarIcon: tabIcon("speedometer") }} />
       <Tab.Screen name="Clients" component={ClientsScreen} options={{ tabBarIcon: tabIcon("people") }} />
+      <Tab.Screen name="Programs" component={ProgramsScreen} options={{ tabBarIcon: tabIcon("barbell") }} />
       {trainer?.is_owner ? (
         <Tab.Screen name="Trainers" component={TrainersScreen} options={{ tabBarIcon: tabIcon("ribbon") }} />
       ) : null}
@@ -45,6 +48,11 @@ export default function TrainerNavigator() {
     <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
       <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+      <Stack.Screen
+        name="ProgramBuilder"
+        component={ProgramBuilderScreen}
+        options={{ title: "Build a program", headerBackTitle: "Back" }}
+      />
     </Stack.Navigator>
   );
 }

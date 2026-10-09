@@ -9,6 +9,7 @@ import ClientAvatar from "@/components/ClientAvatar";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
+import { DailyQuoteCard } from "@/components/DailyQuote";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import { trainerDisplayName } from "@/lib/trainers";
 import type { ClientStatusFlag, Trainer } from "@/types/database";
@@ -157,6 +158,7 @@ export default function ClientProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+      <DailyQuoteCard />
       <Pressable style={styles.photoBlock} onPress={changePhoto} disabled={uploadingPhoto}>
         <ClientAvatar name={client.name} path={client.avatar_path} size={96} />
         {uploadingPhoto ? (

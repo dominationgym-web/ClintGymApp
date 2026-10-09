@@ -7,6 +7,7 @@ import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
+import ClientProgramPicker from "@/components/ClientProgramPicker";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -402,6 +403,7 @@ export default function ClientDetailScreen({ route }: Props) {
         )}
         {tab === "training" && (
           <>
+            <ClientProgramPicker clientId={client.id} clientName={client.name} />
             <Text style={styles.sectionHeading}>Recent training log</Text>
             {workoutLogs.length === 0 && <Text style={styles.helper}>No sets logged yet.</Text>}
             {workoutLogs.map((w) => (
