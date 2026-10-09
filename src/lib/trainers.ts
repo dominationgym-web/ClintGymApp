@@ -35,3 +35,17 @@ export function trainerDisplayName(trainer: { name: string; business_name?: stri
 export function logoStoragePath(trainerId: string, mimeType: string | null | undefined, now = Date.now()): string {
   return `${trainerId}/logo-${now}.${imageExtension(mimeType)}`;
 }
+
+// A trainer must sign the current agreement before using the app. The app
+// owner runs the app and is the other party to it, so never needs to.
+export function needsAgreement(
+  trainer: { is_owner: boolean; agreement_version: string | null },
+  currentVersion: string
+): boolean {
+  return !trainer.is_owner && trainer.agreement_version !== currentVersion;
+}
+
+// A typed signature must look like a real name: at least two characters.
+export function isValidSignature(name: string): boolean {
+  return name.trim().length > 1;
+}

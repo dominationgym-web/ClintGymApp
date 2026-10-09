@@ -10,7 +10,9 @@ import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import { supabase } from "@/lib/supabase";
-import { trainerDisplayName } from "@/lib/trainers";
+import { needsAgreement, trainerDisplayName } from "@/lib/trainers";
+import TrainerAgreementScreen from "@/screens/trainer/TrainerAgreementScreen";
+import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
 import type { Trainer } from "@/types/database";
 
 // A client's access is open unless their plan has actually expired.
@@ -33,7 +35,9 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {role === "trainer" && trainer?.approved ? (
+      {role === "trainer" && trainer && needsAgreement(trainer, TRAINER_AGREEMENT_VERSION) ? (
+        <TrainerAgreementScreen />
+      ) : role === "trainer" && trainer?.approved ? (
         <TrainerNavigator />
       ) : role === "trainer" ? (
         <PendingTrainerScreen />

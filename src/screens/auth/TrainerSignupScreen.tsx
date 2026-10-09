@@ -5,6 +5,9 @@ import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
+import AgreementSignFields from "@/components/AgreementSignFields";
+import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
+import { isValidSignature } from "@/lib/trainers";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "TrainerSignup">;
 
@@ -19,6 +22,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [signedName, setSignedName] = useState("");
+  const [agreed, setAgreed] = useState(false);
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -31,6 +36,14 @@ export default function TrainerSignupScreen({ navigation }: Props) {
     }
     if (password.length < 8) {
       Alert.alert("Weak password", "Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (!isValidSignature(signedName) || !agreed) {
+      Alert.alert(
+        "Sign the trainer agreement",
+        "Read the trainer agreement, type your full name to sign it, and tick the box to agree."
+      );
       return;
     }
 
@@ -48,6 +61,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       email: email.trim(),
       business_name: businessName.trim() || null,
       phone: phone.trim() || null,
+      agreement_version: TRAINER_AGREEMENT_VERSION,
+      agreement_signed_name: signedName.trim(),
     });
     if (error) {
       setLoading(false);
@@ -89,6 +104,12 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         onChangeText={setPhone}
       />
       <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
+      <AgreementSignFields
+        signedName={signedName}
+        onChangeSignedName={setSignedName}
+        agreed={agreed}
+        onToggleAgreed={() => setAgreed((a) => !a)}
+      />
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
         {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Apply as a trainer</Text>}
       </Pressable>
