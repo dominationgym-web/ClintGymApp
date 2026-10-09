@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { AVATAR_BUCKET, avatarContentType, avatarStoragePath } from "@/lib/avatars";
 import ClientAvatar from "@/components/ClientAvatar";
+import { CoachMessageHistory } from "@/components/CoachMessages";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
@@ -226,6 +227,8 @@ export default function ClientProfileScreen() {
           {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Update status</Text>}
         </Pressable>
       )}
+
+      <CoachMessageHistory />
 
       <ProgressPhotosSection />
 

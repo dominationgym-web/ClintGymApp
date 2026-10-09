@@ -100,6 +100,18 @@ export type ClientStatusFlagEvent = {
   created_at: string;
 }
 
+// A trainer's message to one of their clients, usually a reply to a red or
+// orange flag (0034). read_at is set by mark_coach_messages_read().
+export type CoachMessage = {
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  body: string;
+  reply_to_flag: ClientStatusFlag | null;
+  created_at: string;
+  read_at: string | null;
+}
+
 export type Checkin = {
   id: string;
   client_id: string;
@@ -208,6 +220,12 @@ export interface Database {
         Update: Partial<ClientStatusFlagEvent>;
         Relationships: [];
       };
+      coach_messages: {
+        Row: CoachMessage;
+        Insert: Partial<CoachMessage>;
+        Update: Partial<CoachMessage>;
+        Relationships: [];
+      };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       progress_photos: {
         Row: ProgressPhoto;
@@ -233,6 +251,9 @@ export interface Database {
         Args: { p_code: string };
         Returns: JoinableTrainer[];
       };
+      mark_coach_messages_read: { Args: Record<string, never>; Returns: undefined };
+      register_push_token: { Args: { p_token: string }; Returns: undefined };
+      clear_push_token: { Args: { p_token: string }; Returns: undefined };
       client_monthly_consistency: {
         Args: { p_client_id: string; p_month?: string };
         Returns: { checkin_rate: number; habit_rate: number | null; video_count: number; overall_score: number }[];

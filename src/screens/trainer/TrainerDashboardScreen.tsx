@@ -3,6 +3,9 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, Refresh
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { clientPriority, flagBorderColor } from "@/lib/clientFlags";
+import { needsReply } from "@/lib/coachMessages";
+import { BRAND_GOLD } from "@/lib/brand";
+import ReplyToClientModal from "@/components/ReplyToClientModal";
 import { useAuth } from "@/context/AuthContext";
 import type { Checkin, Client } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
@@ -27,6 +30,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   const [rows, setRows] = useState<ClientStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ClientStatus | null>(null);
 
   const load = useCallback(async () => {
     if (!trainer) return;
@@ -117,6 +121,11 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                   </Text>
                 )}
                 {item.distressFlag && <Text style={styles.distressText}>⚠ Distress/pain flagged today</Text>}
+                {needsReply(item.client.status_flag, item.distressFlag) && (
+                  <Pressable style={styles.replyButton} onPress={() => setReplyingTo(item)} hitSlop={6}>
+                    <Text style={styles.replyText}>💬 Reply</Text>
+                  </Pressable>
+                )}
               </View>
               <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
             </Pressable>
@@ -124,6 +133,17 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
         }}
         ListEmptyComponent={<Text style={styles.helper}>No active clients yet.</Text>}
       />
+      {trainer && (
+        <ReplyToClientModal
+          client={replyingTo?.client ?? null}
+          trainerId={trainer.id}
+          distressFlag={replyingTo?.distressFlag}
+          onClose={() => setReplyingTo(null)}
+          onSent={(resolved) => {
+            if (resolved) load();
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -148,6 +168,16 @@ const styles = StyleSheet.create({
   name: { color: "#fff", fontWeight: "600", fontSize: 15 },
   flagText: { fontSize: 12, marginTop: 4, fontWeight: "600" },
   distressText: { color: "#F87171", fontSize: 12, marginTop: 4, fontWeight: "600" },
+  replyButton: {
+    alignSelf: "flex-start",
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: BRAND_GOLD,
+  },
+  replyText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
   dotGreen: { backgroundColor: "#22C55E" },
   dotRed: { backgroundColor: "#EF4444" },

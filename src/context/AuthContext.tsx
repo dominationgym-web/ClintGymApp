@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { AppState } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import { cancelAllReminders } from "@/lib/notifications";
+import { cancelAllReminders, unregisterForCoachMessages } from "@/lib/notifications";
 import type { Client, Trainer } from "@/types/database";
 
 type Role = "trainer" | "client" | null;
@@ -143,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await cancelAllReminders();
+    await unregisterForCoachMessages();
     await supabase.auth.signOut();
   };
 
