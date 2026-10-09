@@ -25,7 +25,7 @@ model is licensing clips for exactly this use.
 GRIZZ moved to Supabase Pro and uploaded all ~410 MoveKit clips. 0040 adds every clip as an
 exercise (name and body part from the file name) except duplicate uploads ("name (1).mp4") and
 overhead pressing (overhead/push press, jerks, thrusters, clean and press, man maker, Cuban press,
-overhead squat), per the rule below. About 390 exercises in all. The client's Exercises tab has
+overhead squat), per the rule below. 0041 then added those 23 clips under their own "Overhead Press" body part for other trainers (GRIZZ, 2026-10-09); clients only see them if they are in their own program. About 390 exercises in all. The client's Exercises tab has
 search and body-part chips; the program builder's picker has search.
 
 ## Original list (21 rows, all with videos live, `source = 'movekit'`)

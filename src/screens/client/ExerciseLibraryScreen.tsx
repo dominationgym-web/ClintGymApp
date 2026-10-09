@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
-import { exerciseCategories, filterExercises } from "@/lib/exerciseFilter";
+import { clientBrowsable, exerciseCategories, filterExercises } from "@/lib/exerciseFilter";
 import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
@@ -111,6 +111,7 @@ export default function ExerciseLibraryScreen() {
         ? program.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order)
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
+  const browsable = clientBrowsable(exercises, program ? program.exercises.map((e) => e.exercise_id) : []);
   // The open exercise is the first half of a superset: no rest timer after it.
   const targetNext = target ? supersetNext(target, todaysWorkout) : null;
   const [savingProgress, setSavingProgress] = useState(false);
@@ -251,7 +252,7 @@ export default function ExerciseLibraryScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={filterExercises(exercises, search, category)}
+        data={filterExercises(browsable, search, category)}
         keyboardShouldPersistTaps="handled"
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
@@ -315,13 +316,13 @@ export default function ExerciseLibraryScreen() {
               style={[styles.input, { marginBottom: 10 }]}
               value={search}
               onChangeText={setSearch}
-              placeholder={`Search ${exercises.length} exercises`}
+              placeholder={`Search ${browsable.length} exercises`}
               placeholderTextColor="#64748B"
               autoCorrect={false}
               clearButtonMode="while-editing"
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              {[null, ...exerciseCategories(exercises)].map((c) => (
+              {[null, ...exerciseCategories(browsable)].map((c) => (
                 <Pressable
                   key={c ?? "all"}
                   style={[styles.effortChip, styles.categoryChip, category === c && styles.effortChipSelected]}
