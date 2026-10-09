@@ -6,6 +6,8 @@ import {
   progressPhotoPath,
   progressPhotoReminderAt,
   progressPhotoStatus,
+  setLabel,
+  weeksBetween,
   type ProgressPhotoAngle,
 } from "@/lib/progressPhotos";
 
@@ -81,5 +83,23 @@ describe("progressPhotoReminderAt", () => {
 
   it("schedules nothing once that moment has passed, since the banner takes over", () => {
     expect(progressPhotoReminderAt("2026-10-08", new Date(2026, 10, 19, 9, 30))).toBeNull();
+  });
+});
+
+describe("weeksBetween", () => {
+  it("counts whole weeks, rounding down", () => {
+    expect(weeksBetween("2026-01-01", "2026-01-01")).toBe(0);
+    expect(weeksBetween("2026-01-01", "2026-01-07")).toBe(0);
+    expect(weeksBetween("2026-01-01", "2026-01-08")).toBe(1);
+    expect(weeksBetween("2026-01-01", "2026-02-12")).toBe(6);
+  });
+});
+
+describe("setLabel", () => {
+  it("names the first set Before and later ones by week", () => {
+    const sets = groupIntoSets([...fullSet("2026-01-01"), ...fullSet("2026-01-03"), ...fullSet("2026-02-12")]);
+    expect(setLabel(sets, 0)).toBe("Before");
+    expect(setLabel(sets, 1)).toBe("Set 2");
+    expect(setLabel(sets, 2)).toBe("Week 6");
   });
 });
