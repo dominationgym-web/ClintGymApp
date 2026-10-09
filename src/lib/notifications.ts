@@ -5,9 +5,13 @@
 // does nothing and the in-app banners do the reminding instead.
 //
 // Reminders are scheduled on the phone itself (local notifications), so no
-// server, push token or Apple/Google push setup is involved.
+// server is involved. Messages from the trainer are the one exception: those
+// come from the server through Expo's push service (0034), using the token
+// registerForCoachMessages() saves.
 import { Platform } from "react-native";
 import { isRunningInExpoGo } from "expo";
+import Constants from "expo-constants";
+import { supabase } from "@/lib/supabase";
 import { progressPhotoReminderAt } from "@/lib/progressPhotos";
 import { upcomingSleepReminders } from "@/lib/sleep";
 
@@ -15,6 +19,8 @@ type NotificationsModule = typeof import("expo-notifications");
 
 const PROGRESS_PHOTO_ID = "progress-photo-reminder";
 const REMINDERS_CHANNEL = "reminders";
+// Must match channelId in notify_coach_message() (0034).
+const MESSAGES_CHANNEL = "messages";
 
 let loaded: NotificationsModule | null | undefined;
 
@@ -113,6 +119,47 @@ export async function scheduleSleepReminders(enabled: boolean): Promise<void> {
     }
   } catch (e) {
     console.warn("Couldn't schedule the sleep reminders", e);
+  }
+}
+
+// The token this phone registered, so sign-out can remove it.
+let registeredPushToken: string | null = null;
+
+/**
+ * Saves this phone's push token so messages from the trainer arrive as phone
+ * notifications. Safe to call on every app open. Quietly does nothing in Expo
+ * Go, or if the client said no to notifications, or if the build can't get a
+ * token (an Android build needs Firebase set up in Expo for that).
+ */
+export async function registerForCoachMessages(): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    if (Platform.OS === "android") {
+      await N.setNotificationChannelAsync(MESSAGES_CHANNEL, {
+        name: "Messages from your coach",
+        importance: N.AndroidImportance.HIGH,
+      });
+    }
+    if (!(await canNotify(N))) return;
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+    const { data: token } = await N.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+    const { error } = await supabase.rpc("register_push_token", { p_token: token });
+    if (error) throw error;
+    registeredPushToken = token;
+  } catch (e) {
+    console.warn("Couldn't register for message notifications", e);
+  }
+}
+
+/** Stops this phone getting the signed-in user's messages. Call before signing out. */
+export async function unregisterForCoachMessages(): Promise<void> {
+  if (!registeredPushToken) return;
+  try {
+    await supabase.from("push_tokens").delete().eq("expo_push_token", registeredPushToken);
+    registeredPushToken = null;
+  } catch (e) {
+    console.warn("Couldn't clear the message notification token", e);
   }
 }
 

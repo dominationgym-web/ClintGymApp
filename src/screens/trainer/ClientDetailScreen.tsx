@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Press
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
-import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
+import type { Checkin, Client, CoachMessage, Habit, WorkoutLog } from "@/types/database";
+import { useAuth } from "@/context/AuthContext";
+import ReplyToClientModal from "@/components/ReplyToClientModal";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
@@ -60,6 +62,7 @@ function formatIntakeLabel(key: string) {
 
 export default function ClientDetailScreen({ route }: Props) {
   const { clientId } = route.params;
+  const { trainer } = useAuth();
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -70,6 +73,8 @@ export default function ClientDetailScreen({ route }: Props) {
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<TabKey>("overview");
   const insets = useSafeAreaInsets();
+  const [messages, setMessages] = useState<CoachMessage[]>([]);
+  const [replying, setReplying] = useState(false);
 
   const [newHabitName, setNewHabitName] = useState("");
   const [newHabitReps, setNewHabitReps] = useState(1);
@@ -105,6 +110,16 @@ export default function ClientDetailScreen({ route }: Props) {
     }
   };
 
+  const loadMessages = async () => {
+    const { data } = await supabase
+      .from("coach_messages")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setMessages(data ?? []);
+  };
+
   useEffect(() => {
     const load = async () => {
       const [{ data: clientRow }, { data: checkinRows }, { data: workoutRows }] = await Promise.all([
@@ -129,7 +144,7 @@ export default function ClientDetailScreen({ route }: Props) {
       }
       setCheckins(checkinRows ?? []);
       setWorkoutLogs(workoutRows ?? []);
-      await loadHabits();
+      await Promise.all([loadHabits(), loadMessages()]);
       setLoading(false);
     };
     load();
@@ -275,10 +290,43 @@ export default function ClientDetailScreen({ route }: Props) {
                     Set {new Date(client.status_flag_updated_at).toLocaleString()}
                   </Text>
                 )}
-                <Pressable style={styles.resolveButton} onPress={markResolved}>
-                  <Text style={styles.resolveButtonText}>Mark as resolved</Text>
-                </Pressable>
+                <View style={styles.flagActions}>
+                  <Pressable style={[styles.resolveButton, styles.flex1]} onPress={() => setReplying(true)}>
+                    <Text style={styles.resolveButtonText}>💬 Reply</Text>
+                  </Pressable>
+                  <Pressable style={[styles.resolveButton, styles.flex1]} onPress={markResolved}>
+                    <Text style={styles.resolveButtonText}>Mark as resolved</Text>
+                  </Pressable>
+                </View>
               </View>
+            )}
+
+            <Text style={styles.sectionHeading}>Messages to {client.name}</Text>
+            {messages.length === 0 ? (
+              <Text style={styles.helper}>No messages sent yet.</Text>
+            ) : (
+              messages.map((m) => (
+                <View key={m.id} style={styles.messageRow}>
+                  <Text style={styles.body}>{m.body}</Text>
+                  <Text style={styles.helper}>
+                    {new Date(m.created_at).toLocaleString()} · {m.read_at ? "Seen" : "Not seen yet"}
+                  </Text>
+                </View>
+              ))
+            )}
+            <Pressable style={styles.button} onPress={() => setReplying(true)}>
+              <Text style={styles.buttonText}>Send a message</Text>
+            </Pressable>
+            {trainer && replying && (
+              <ReplyToClientModal
+                client={client}
+                trainerId={trainer.id}
+                onClose={() => setReplying(false)}
+                onSent={(resolved) => {
+                  if (resolved) setClient((c) => (c ? { ...c, status_flag: "green", status_flag_note: null } : c));
+                  loadMessages();
+                }}
+              />
             )}
 
             {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
@@ -538,6 +586,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
+  flagActions: { flexDirection: "row", gap: 8 },
+  flex1: { flex: 1 },
+  messageRow: { backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginBottom: 6 },
   resolveButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   intakeBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
   intakeRow: { marginBottom: 10 },
