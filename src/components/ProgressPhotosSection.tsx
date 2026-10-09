@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { parseIsoDate, todayIso } from "@/lib/dates";
 import { avatarContentType } from "@/lib/avatars";
+import { shrinkPhoto } from "@/lib/shrinkPhoto";
 import {
   ANGLE_LABEL,
   PROGRESS_ANGLES,
@@ -72,11 +73,12 @@ export default function ProgressPhotosSection() {
   const upload = async (angle: ProgressPhotoAngle, asset: ImagePicker.ImagePickerAsset) => {
     setUploadingAngle(angle);
     try {
-      const body = await new File(asset.uri).arrayBuffer();
-      const path = progressPhotoPath(client.id, angle, asset.mimeType);
+      const photo = await shrinkPhoto(asset.uri, asset.width, asset.height);
+      const body = await new File(photo.uri).arrayBuffer();
+      const path = progressPhotoPath(client.id, angle, photo.mimeType);
       const { error: uploadError } = await supabase.storage
         .from(PROGRESS_BUCKET)
-        .upload(path, body, { contentType: avatarContentType(asset.mimeType) });
+        .upload(path, body, { contentType: avatarContentType(photo.mimeType) });
       if (uploadError) throw uploadError;
 
       // Retaking an angle replaces the old photo in this set.
@@ -116,7 +118,8 @@ export default function ProgressPhotosSection() {
       return;
     }
     // No cropping: the whole body has to stay in the picture.
-    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.6 };
+    // Full quality here: shrinkPhoto compresses it once before upload.
+    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 1 };
     const result =
       source === "camera" ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
     if (result.canceled || !result.assets?.[0]) return;

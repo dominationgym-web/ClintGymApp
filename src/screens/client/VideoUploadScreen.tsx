@@ -5,6 +5,16 @@ import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import type { Video } from "@/types/database";
+import { MAX_VIDEO_SECONDS, videoProblem } from "@/lib/videoLimits";
+
+// 720p is plenty to check form and about half the size of full HD (iOS only;
+// Android records at the camera app's own quality).
+const VIDEO_OPTIONS: ImagePicker.ImagePickerOptions = {
+  mediaTypes: ["videos"],
+  quality: 0.7,
+  videoMaxDuration: MAX_VIDEO_SECONDS,
+  videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame1280x720,
+};
 
 export default function VideoUploadScreen() {
   const { client } = useAuth();
@@ -30,6 +40,11 @@ export default function VideoUploadScreen() {
 
   const uploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!client) return;
+    const problem = videoProblem(asset.duration, asset.fileSize);
+    if (problem) {
+      Alert.alert("Can't upload this video", problem);
+      return;
+    }
     setUploading(true);
     try {
       const body = await new File(asset.uri).arrayBuffer();
@@ -62,7 +77,7 @@ export default function VideoUploadScreen() {
       Alert.alert("Permission needed", "Allow camera access to record training proof.");
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["videos"], quality: 0.7 });
+    const result = await ImagePicker.launchCameraAsync(VIDEO_OPTIONS);
     if (result.canceled || !result.assets?.[0]) return;
     await uploadAsset(result.assets[0]);
   };
@@ -73,7 +88,7 @@ export default function VideoUploadScreen() {
       Alert.alert("Permission needed", "Allow access to your video library to upload training proof.");
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["videos"], quality: 0.7 });
+    const result = await ImagePicker.launchImageLibraryAsync(VIDEO_OPTIONS);
     if (result.canceled || !result.assets?.[0]) return;
     await uploadAsset(result.assets[0]);
   };
@@ -90,7 +105,7 @@ export default function VideoUploadScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Training proof</Text>
       <Text style={styles.helper}>
-        Videos are automatically removed 30 days after upload - your trainer's notes on them stay.
+        Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
       </Text>
       <View style={styles.row}>
         <Pressable style={[styles.button, styles.flex1]} onPress={handleRecord} disabled={uploading}>
