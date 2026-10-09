@@ -21,6 +21,16 @@ import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/d
 import RestTimer from "@/components/RestTimer";
 import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import { dayTitle, DEFAULT_REST_SECONDS, exercisesForDate, formatRest, needsWarmUp, warmUpReps } from "@/lib/programs";
+import {
+  currentSession,
+  isDue,
+  sessionAfterComplete,
+  sessionMovedToTomorrow,
+  sessionTitle,
+  trainingDays,
+  type ProgramSession,
+} from "@/lib/programSchedule";
+import { weekdayOf } from "@/lib/programSchedule";
 import { BRAND_GOLD } from "@/lib/brand";
 
 const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
@@ -75,7 +85,54 @@ export default function ExerciseLibraryScreen() {
     load();
   }, [client?.id]);
 
-  const todaysWorkout = program ? exercisesForDate(program.program, program.exercises, new Date()) : [];
+  // Weekly programs are worked through in order (0037): the current session
+  // shows from its day until it's completed or moved.
+  const today = todayIso();
+  const weekly = program?.program.kind === "weekly";
+  const days = program && weekly ? trainingDays(program.exercises) : [];
+  const session = program && weekly ? currentSession(program.assignment, days) : null;
+  const sessionDue = session ? isDue(session, today) : false;
+  const todaysWorkout = !program
+    ? []
+    : weekly
+      ? session && sessionDue
+        ? program.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order)
+        : []
+      : exercisesForDate(program.program, program.exercises, new Date());
+  const [savingProgress, setSavingProgress] = useState(false);
+
+  const saveProgress = async (next: ProgramSession, completed: boolean) => {
+    if (!program) return;
+    setSavingProgress(true);
+    const { error } = await supabase.rpc("set_my_program_progress", {
+      p_current_day: next.day,
+      p_due_on: next.dueOn,
+      p_completed: completed,
+    });
+    setSavingProgress(false);
+    if (error) {
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    setProgram({ ...program, assignment: { ...program.assignment, current_day: next.day, due_on: next.dueOn } });
+  };
+
+  const completeSession = () => {
+    if (!program || !session) return;
+    const title = sessionTitle(program.program, session.day);
+    Alert.alert(`Finished ${title}?`, "Your next workout unlocks on your next training day.", [
+      { text: "Not yet", style: "cancel" },
+      { text: "Complete", onPress: () => saveProgress(sessionAfterComplete(session, days, today), true) },
+    ]);
+  };
+
+  const moveSession = () => {
+    if (!session) return;
+    Alert.alert("Move this workout to tomorrow?", "It stays your next workout until you complete it.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Move it", onPress: () => saveProgress(sessionMovedToTomorrow(session, today), false) },
+    ]);
+  };
   const categoryById = new Map(exercises.map((e) => [e.id, e.category]));
   const categoriesLoggedToday = allTodaysSets.map((s) => (s.exercise_id ? categoryById.get(s.exercise_id) ?? null : null));
   const setsDoneFor = (row: ProgramExercise) =>
@@ -186,9 +243,25 @@ export default function ExerciseLibraryScreen() {
             {program && (
               <View style={styles.programCard}>
                 <Text style={styles.programKicker}>{program.program.name.toUpperCase()}</Text>
-                <Text style={styles.programTitle}>{dayTitle(program.program, new Date())}</Text>
+                <Text style={styles.programTitle}>
+                  {session ? (sessionDue ? sessionTitle(program.program, session.day) : "Rest day") : dayTitle(program.program, new Date())}
+                </Text>
+                {session && sessionDue && session.dueOn < today && (
+                  <Text style={styles.carried}>Carried over from {weekdayOf(session.dueOn)}. Complete it to unlock your next workout.</Text>
+                )}
+                {program.program.description ? (
+                  <View style={styles.howTo}>
+                    <Text style={styles.howToTitle}>How to do it</Text>
+                    <Text style={styles.howToText}>{program.program.description}</Text>
+                  </View>
+                ) : null}
                 {todaysWorkout.length === 0 ? (
-                  <Text style={styles.helper}>Rest day. Recover well, you've earned it.</Text>
+                  <Text style={styles.helper}>
+                    Rest day. Recover well, you've earned it.
+                    {session && !sessionDue
+                      ? ` Next up: ${sessionTitle(program.program, session.day)} on ${weekdayOf(session.dueOn)}.`
+                      : ""}
+                  </Text>
                 ) : (
                   todaysWorkout.map((row) => {
                     const done = setsDoneFor(row);
@@ -206,6 +279,16 @@ export default function ExerciseLibraryScreen() {
                       </Pressable>
                     );
                   })
+                )}
+                {session && sessionDue && (
+                  <View style={styles.sessionButtons}>
+                    <Pressable style={styles.completeButton} onPress={completeSession} disabled={savingProgress}>
+                      <Text style={styles.completeText}>Complete workout</Text>
+                    </Pressable>
+                    <Pressable style={styles.moveButton} onPress={moveSession} disabled={savingProgress}>
+                      <Text style={styles.moveText}>Move to tomorrow</Text>
+                    </Pressable>
+                  </View>
                 )}
               </View>
             )}
@@ -413,6 +496,15 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 6,
   },
+  carried: { color: "#FBBF24", fontSize: 13, marginBottom: 8 },
+  howTo: { backgroundColor: "#0F172A", borderRadius: 8, padding: 10, marginBottom: 10 },
+  howToTitle: { color: BRAND_GOLD, fontWeight: "700", fontSize: 12, marginBottom: 4 },
+  howToText: { color: "#E2E8F0", fontSize: 13 },
+  sessionButtons: { flexDirection: "row", gap: 8, marginTop: 10 },
+  completeButton: { flex: 1, backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 10, alignItems: "center" },
+  completeText: { color: "#0F172A", fontWeight: "800" },
+  moveButton: { flex: 1, borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 10, alignItems: "center" },
+  moveText: { color: "#E2E8F0", fontWeight: "600" },
   setsDone: { color: "#94A3B8", fontWeight: "700", fontSize: 13 },
   targetText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14, marginBottom: 12 },
   warmUpBox: { backgroundColor: "#2A2114", borderColor: "#F59E0B", borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 16 },

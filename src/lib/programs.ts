@@ -84,3 +84,28 @@ export function draftProblem(name: string, exercises: DraftExercise[]): string |
   if (noReps !== -1) return `Add the reps for ${exercises[noReps].exerciseName}.`;
   return null;
 }
+
+export interface DraftSession {
+  day: number; // 1 = Monday ... 7 = Sunday
+  title: string;
+  exercises: DraftExercise[];
+}
+
+/** Default session titles in week order: "Workout A", "Workout B", ... */
+export function defaultSessionTitle(index: number): string {
+  return `Workout ${String.fromCharCode(65 + index)}`;
+}
+
+/** What's wrong with a weekly program from the builder, or null when it can be saved. */
+export function weeklyDraftProblem(name: string, sessions: DraftSession[]): string | null {
+  if (!name.trim()) return "Give the program a name.";
+  if (sessions.length === 0) return "Pick at least one training day.";
+  for (const s of sessions) {
+    const day = WEEKDAY_NAMES[s.day - 1];
+    const missing = s.exercises.findIndex((e) => !e.exerciseName);
+    if (missing !== -1) return `${day}: pick an exercise for slot ${missing + 1}.`;
+    const noReps = s.exercises.findIndex((e) => !e.reps.trim());
+    if (noReps !== -1) return `${day}: add the reps for ${s.exercises[noReps].exerciseName}.`;
+  }
+  return null;
+}

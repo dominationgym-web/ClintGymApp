@@ -213,6 +213,11 @@ export type ClientProgram = {
   program_id: string;
   started_on: string;
   assigned_at: string;
+  // Where the client is up to in a weekly program (0037); null until they
+  // first complete or move a session.
+  current_day: number | null;
+  due_on: string | null;
+  last_completed_at: string | null;
 }
 
 export type Habit = {
@@ -306,6 +311,10 @@ export interface Database {
       trainer_for_join_code: {
         Args: { p_code: string };
         Returns: JoinableTrainer[];
+      };
+      set_my_program_progress: {
+        Args: { p_current_day: number; p_due_on: string; p_completed: boolean };
+        Returns: undefined;
       };
       mark_coach_messages_read: { Args: Record<string, never>; Returns: undefined };
       register_push_token: { Args: { p_token: string }; Returns: undefined };

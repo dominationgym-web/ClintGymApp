@@ -5,7 +5,20 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { loadAvailablePrograms, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import ProgramSummary from "@/components/ProgramSummary";
+import { currentSession, sessionTitle, trainingDays, weekdayOf } from "@/lib/programSchedule";
 import type { Program } from "@/types/database";
+
+// For a weekly program: which session the client is on, and when they last finished one.
+function progressLine(active: ActiveProgram): string | null {
+  if (active.program.kind !== "weekly") return null;
+  const session = currentSession(active.assignment, trainingDays(active.exercises));
+  if (!session) return null;
+  const next = `Up next: ${sessionTitle(active.program, session.day)}, due ${weekdayOf(session.dueOn)} ${session.dueOn}`;
+  const last = active.assignment.last_completed_at
+    ? ` · last workout completed ${new Date(active.assignment.last_completed_at).toLocaleDateString()}`
+    : " · no workouts completed yet";
+  return next + last;
+}
 
 // On the trainer's view of a client: the program they're on, and one tap to
 // switch them onto another (0035). The client sees it on their Exercises tab.
@@ -30,7 +43,16 @@ export default function ClientProgramPicker({ clientId, clientName }: { clientId
     setBusy(true);
     const { error } = await supabase
       .from("client_programs")
-      .upsert({ client_id: clientId, program_id: program.id, started_on: todayIso(), assigned_at: new Date().toISOString() });
+      .upsert({
+        client_id: clientId,
+        program_id: program.id,
+        started_on: todayIso(),
+        assigned_at: new Date().toISOString(),
+        // A new program starts from its first session (0037).
+        current_day: null,
+        due_on: null,
+        last_completed_at: null,
+      });
     if (error) Alert.alert("Couldn't switch program", error.message);
     setChoosing(false);
     await load();
@@ -62,6 +84,7 @@ export default function ClientProgramPicker({ clientId, clientName }: { clientId
         <View style={styles.card}>
           <Text style={styles.name}>{active.program.name}</Text>
           <Text style={styles.helper}>Since {active.assignment.started_on}</Text>
+          {progressLine(active) && <Text style={styles.progress}>{progressLine(active)}</Text>}
           <ProgramSummary program={active.program} exercises={active.exercises} />
         </View>
       ) : (
@@ -107,6 +130,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   name: { color: "#fff", fontWeight: "700", fontSize: 15 },
   helper: { color: "#64748B", fontSize: 13, marginTop: 2 },
+  progress: { color: BRAND_GOLD, fontSize: 13, marginTop: 4, fontWeight: "600" },
   buttonRow: { flexDirection: "row", gap: 10, marginTop: 10 },
   button: { flex: 1, backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center" },
   buttonText: { color: "#0F172A", fontWeight: "800" },

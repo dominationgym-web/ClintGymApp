@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   dayTitle,
+  defaultSessionTitle,
   draftProblem,
+  weeklyDraftProblem,
   exercisesForDate,
   formatClock,
   formatRest,
@@ -109,5 +111,27 @@ describe("draftProblem", () => {
     expect(draftProblem(" ", [ex])).toBe("Give the program a name.");
     expect(draftProblem("Leg day", [ex, { ...ex, exerciseName: "" }])).toBe("Pick an exercise for slot 2.");
     expect(draftProblem("Leg day", [{ ...ex, reps: " " }])).toBe("Add the reps for Squat.");
+  });
+});
+
+describe("weeklyDraftProblem", () => {
+  const ex = { exerciseId: "1", exerciseName: "Squat", sets: 3, reps: "8-12", restSeconds: 120 };
+
+  it("accepts a week with every slot filled", () => {
+    expect(weeklyDraftProblem("My week", [{ day: 1, title: "A", exercises: [ex] }, { day: 3, title: "B", exercises: [ex] }])).toBeNull();
+  });
+
+  it("names the day that's not ready", () => {
+    expect(weeklyDraftProblem("My week", [])).toBe("Pick at least one training day.");
+    expect(weeklyDraftProblem("My week", [{ day: 3, title: "B", exercises: [{ ...ex, exerciseName: "" }] }])).toBe(
+      "Wednesday: pick an exercise for slot 1."
+    );
+    expect(weeklyDraftProblem("My week", [{ day: 5, title: "C", exercises: [{ ...ex, reps: "" }] }])).toBe(
+      "Friday: add the reps for Squat."
+    );
+  });
+
+  it("titles sessions A, B, C", () => {
+    expect([0, 1, 2].map(defaultSessionTitle)).toEqual(["Workout A", "Workout B", "Workout C"]);
   });
 });
