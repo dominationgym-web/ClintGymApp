@@ -231,7 +231,8 @@ export default function SignupScreen({ navigation }: Props) {
         <View style={[styles.checkbox, consented && styles.checkboxChecked]} />
         <Text style={styles.consentText}>
           I consent to my health-related data (sleep, alcohol, training videos, check-ins) being
-          processed by my trainer in line with the privacy policy, per POPIA.
+          processed by {trainer ? trainer.display_name : "my trainer"} in line with the privacy policy, per
+          POPIA.
         </Text>
       </Pressable>
 
@@ -244,7 +245,9 @@ export default function SignupScreen({ navigation }: Props) {
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
-            <PrivacyPolicyContent />
+            <PrivacyPolicyContent
+              trainer={trainer ? { name: trainer.display_name, contact: trainer.pop_whatsapp } : null}
+            />
           </ScrollView>
         </SafeAreaView>
       </Modal>

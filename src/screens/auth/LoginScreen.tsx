@@ -7,7 +7,8 @@ import PasswordInput from "@/components/PasswordInput";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen({ navigation, route }: Props) {
+  const coach = route.params?.coach === true;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,7 @@ export default function LoginScreen({ navigation }: Props) {
     <View style={styles.container}>
       <Text style={styles.brand}>Consistent Change</Text>
       <Text style={styles.tagline}>Total Lifestyle Training & Accountability</Text>
-      <Text style={styles.title}>Welcome back</Text>
+      <Text style={styles.title}>{coach ? "Coach login" : "Welcome back"}</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -40,12 +41,25 @@ export default function LoginScreen({ navigation }: Props) {
       <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Signup")}>
-        <Text style={styles.link}>New client? Sign up</Text>
-      </Pressable>
-      <Pressable onPress={() => navigation.navigate("TrainerSignup")}>
-        <Text style={styles.link}>Are you a trainer? Apply to coach here</Text>
-      </Pressable>
+      {coach ? (
+        <>
+          <Pressable onPress={() => navigation.navigate("TrainerSignup")}>
+            <Text style={styles.link}>New coach? Apply to coach here</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.goBack()}>
+            <Text style={styles.link}>Back to client login</Text>
+          </Pressable>
+        </>
+      ) : (
+        <>
+          <Pressable onPress={() => navigation.navigate("Signup")}>
+            <Text style={styles.link}>New client? Sign up</Text>
+          </Pressable>
+          <Pressable onPress={() => navigation.push("Login", { coach: true })}>
+            <Text style={styles.link}>Coach Login</Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }
