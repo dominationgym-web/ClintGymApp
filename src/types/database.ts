@@ -112,6 +112,14 @@ export type CoachMessage = {
   read_at: string | null;
 }
 
+// One phone's Expo push token, held by whoever last signed in on it (0034).
+export type PushToken = {
+  id: string;
+  user_id: string;
+  expo_push_token: string;
+  created_at: string;
+}
+
 export type Checkin = {
   id: string;
   client_id: string;
@@ -226,6 +234,7 @@ export interface Database {
         Update: Partial<CoachMessage>;
         Relationships: [];
       };
+      push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       progress_photos: {
         Row: ProgressPhoto;
@@ -253,7 +262,6 @@ export interface Database {
       };
       mark_coach_messages_read: { Args: Record<string, never>; Returns: undefined };
       register_push_token: { Args: { p_token: string }; Returns: undefined };
-      clear_push_token: { Args: { p_token: string }; Returns: undefined };
       client_monthly_consistency: {
         Args: { p_client_id: string; p_month?: string };
         Returns: { checkin_rate: number; habit_rate: number | null; video_count: number; overall_score: number }[];

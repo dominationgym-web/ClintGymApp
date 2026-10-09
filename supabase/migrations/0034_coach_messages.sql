@@ -92,42 +92,28 @@ end $$;
 -- Push tokens
 -- ---------------------------------------------------------------------------
 -- public.push_tokens has existed since 0001 but nothing wrote to it until now.
--- A phone should only get the messages of whoever last signed in on it, so
--- registering a token takes it away from any other account first. That needs
--- to see other users' rows, which the "push tokens owned by user" policy
--- rightly hides, hence a function.
-create index if not exists push_tokens_expo_push_token_idx on public.push_tokens (expo_push_token);
+-- A phone should only get the messages of whoever last signed in on it, so a
+-- token belongs to one account at a time, and registering it moves it over to
+-- the account now signed in. Moving it means touching another user's row,
+-- which the "push tokens owned by user" policy rightly hides, hence a
+-- function. Sign-out removes the user's own row directly through that policy.
+alter table public.push_tokens
+  add constraint push_tokens_expo_push_token_key unique (expo_push_token);
 
 create or replace function public.register_push_token(p_token text)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if auth.uid() is null or p_token not like 'ExponentPushToken[%]' then
-    return;
-  end if;
-  delete from public.push_tokens where expo_push_token = p_token and user_id <> auth.uid();
-  insert into public.push_tokens (user_id, expo_push_token)
-  values (auth.uid(), p_token)
-  on conflict (user_id, expo_push_token) do nothing;
-end;
-$$;
-
-create or replace function public.clear_push_token(p_token text)
 returns void
 language sql
 security definer
 set search_path = public
 as $$
-  delete from public.push_tokens where expo_push_token = p_token and user_id = auth.uid();
+  insert into public.push_tokens (user_id, expo_push_token)
+  select auth.uid(), p_token
+  where auth.uid() is not null and p_token like 'ExponentPushToken[%]'
+  on conflict (expo_push_token) do update set user_id = excluded.user_id, created_at = now();
 $$;
 
 revoke execute on function public.register_push_token(text) from public, anon;
-revoke execute on function public.clear_push_token(text) from public, anon;
 grant execute on function public.register_push_token(text) to authenticated;
-grant execute on function public.clear_push_token(text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Phone notification for each new message

@@ -156,7 +156,7 @@ export async function registerForCoachMessages(): Promise<void> {
 export async function unregisterForCoachMessages(): Promise<void> {
   if (!registeredPushToken) return;
   try {
-    await supabase.rpc("clear_push_token", { p_token: registeredPushToken });
+    await supabase.from("push_tokens").delete().eq("expo_push_token", registeredPushToken);
     registeredPushToken = null;
   } catch (e) {
     console.warn("Couldn't clear the message notification token", e);
