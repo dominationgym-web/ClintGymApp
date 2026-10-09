@@ -34,7 +34,11 @@ export function loadProgramExercises(programId: string) {
 
 /** Built-in programs first (quick, then weekly), then the trainer's own. */
 export async function loadAvailablePrograms(): Promise<Program[]> {
-  const { data } = await supabase.from("programs").select("*").order("created_at", { ascending: true });
+  const { data } = await supabase
+    .from("programs")
+    .select("*")
+    .order("created_at", { ascending: true })
+    .order("name", { ascending: true });
   const rank = (p: Program) => (p.trainer_id ? 2 : p.kind === "quick" ? 0 : 1);
   return (data ?? []).slice().sort((a, b) => rank(a) - rank(b));
 }
