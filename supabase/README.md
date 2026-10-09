@@ -42,3 +42,9 @@ whoever reviews the privacy policy, not something this schema assumes.
   every `client_id` table. Refuses the trainer account. Deployed with
   `verify_jwt` on; it only ever acts on the user in the caller's token. Any new
   bucket holding client files under `<clientId>/` must be added to its list.
+- `functions/cleanup-expired-videos` — run nightly at 3 AM by the
+  `cleanup-expired-videos-daily` pg_cron job (`0029`). Deletes training-video
+  files past `expires_at` through the Storage API (Supabase blocks deleting
+  `storage.objects` rows from SQL) and soft-deletes their rows. Deployed with
+  `verify_jwt` off; the cron job authenticates with a Vault secret
+  (`video_cleanup_cron_secret`) checked by `video_cleanup_secret_ok()`.
