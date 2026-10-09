@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   dayTitle,
   defaultSessionTitle,
+  displayProgramName,
+  supersetNext,
   draftProblem,
   weeklyDraftProblem,
   exercisesForDate,
@@ -56,10 +58,31 @@ describe("exercisesForDate", () => {
 
 describe("dayTitle", () => {
   it("uses the weekday's title for weekly programs and the name otherwise", () => {
-    const week = { kind: "weekly" as const, name: "Full body week", day_titles: ["A", "B", "C", "A", "B", "C", "Rest day"] };
+    const week = { kind: "weekly" as const, name: "Full body week", trainer_id: null, day_titles: ["A", "B", "C", "A", "B", "C", "Rest day"] };
     expect(dayTitle(week, monday)).toBe("A");
     expect(dayTitle(week, sunday)).toBe("Rest day");
-    expect(dayTitle({ kind: "quick", name: "Quick", day_titles: [] }, sunday)).toBe("Quick");
+    expect(dayTitle({ kind: "quick", name: "Quick", trainer_id: null, day_titles: [] }, sunday)).toBe("Quick");
+    expect(dayTitle({ kind: "quick", name: "Chest & Bi 2", trainer_id: null, day_titles: [] }, sunday)).toBe("Chest & Bi");
+  });
+});
+
+describe("displayProgramName", () => {
+  it("drops the set number from built-in programs only", () => {
+    expect(displayProgramName({ name: "Chest & Bi 1", trainer_id: null })).toBe("Chest & Bi");
+    expect(displayProgramName({ name: "Legs 4", trainer_id: null })).toBe("Legs");
+    expect(displayProgramName({ name: "Quick full body (35 min)", trainer_id: null })).toBe("Quick full body (35 min)");
+    expect(displayProgramName({ name: "Phase 2", trainer_id: "t1" })).toBe("Phase 2");
+  });
+});
+
+describe("supersetNext", () => {
+  it("points a no-rest exercise at the one after it", () => {
+    const a1 = { ...row(1, 1, "Bench"), rest_seconds: 0 };
+    const a2 = { ...row(1, 2, "Curl"), rest_seconds: 120 };
+    const session = [a1, a2];
+    expect(supersetNext(a1, session)?.exercise_name).toBe("Curl");
+    expect(supersetNext(a2, session)).toBeNull();
+    expect(supersetNext({ ...a2, rest_seconds: 0 }, session)).toBeNull();
   });
 });
 

@@ -20,7 +20,16 @@ import { useAuth } from "@/context/AuthContext";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
 import RestTimer from "@/components/RestTimer";
 import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
-import { dayTitle, DEFAULT_REST_SECONDS, exercisesForDate, formatRest, needsWarmUp, warmUpReps } from "@/lib/programs";
+import {
+  dayTitle,
+  DEFAULT_REST_SECONDS,
+  displayProgramName,
+  exercisesForDate,
+  formatRest,
+  needsWarmUp,
+  supersetNext,
+  warmUpReps,
+} from "@/lib/programs";
 import {
   currentSession,
   isDue,
@@ -99,6 +108,8 @@ export default function ExerciseLibraryScreen() {
         ? program.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order)
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
+  // The open exercise is the first half of a superset: no rest timer after it.
+  const targetNext = target ? supersetNext(target, todaysWorkout) : null;
   const [savingProgress, setSavingProgress] = useState(false);
 
   const saveProgress = async (next: ProgramSession, completed: boolean) => {
@@ -141,7 +152,8 @@ export default function ExerciseLibraryScreen() {
 
   const openProgramExercise = (row: ProgramExercise) => {
     // Fall back to a name-only entry if the exercise was taken out of the library.
-    const exercise = exercises.find((e) => e.id === row.exercise_id) ?? {
+    const exercise = exercises.find((e) => e.id === row.exercise_id) ??
+      exercises.find((e) => e.name === row.exercise_name) ?? {
       id: "",
       name: row.exercise_name,
       category: null,
@@ -242,7 +254,7 @@ export default function ExerciseLibraryScreen() {
           <>
             {program && (
               <View style={styles.programCard}>
-                <Text style={styles.programKicker}>{program.program.name.toUpperCase()}</Text>
+                <Text style={styles.programKicker}>{displayProgramName(program.program).toUpperCase()}</Text>
                 <Text style={styles.programTitle}>
                   {session ? (sessionDue ? sessionTitle(program.program, session.day) : "Rest day") : dayTitle(program.program, new Date())}
                 </Text>
@@ -265,12 +277,14 @@ export default function ExerciseLibraryScreen() {
                 ) : (
                   todaysWorkout.map((row) => {
                     const done = setsDoneFor(row);
+                    const next = supersetNext(row, todaysWorkout);
                     return (
                       <Pressable key={row.id} style={styles.programRow} onPress={() => openProgramExercise(row)}>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.name}>{row.exercise_name}</Text>
                           <Text style={styles.category}>
-                            {row.sets} sets x {row.reps} · rest {formatRest(row.rest_seconds)}
+                            {row.sets} sets x {row.reps} ·{" "}
+                            {next ? `superset: straight into ${next.exercise_name}` : `rest ${formatRest(row.rest_seconds)}`}
                           </Text>
                         </View>
                         <Text style={[styles.setsDone, done >= row.sets && { color: "#22C55E" }]}>
@@ -321,7 +335,8 @@ export default function ExerciseLibraryScreen() {
           <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
             {target && (
               <Text style={styles.targetText}>
-                Target: {target.sets} sets x {target.reps} reps · rest {formatRest(target.rest_seconds)}
+                Target: {target.sets} sets x {target.reps} reps ·{" "}
+                {targetNext ? `superset: straight into ${targetNext.exercise_name}` : `rest ${formatRest(target.rest_seconds)}`}
               </Text>
             )}
             {todaysSets.length === 0 &&
@@ -383,7 +398,13 @@ export default function ExerciseLibraryScreen() {
               {logging ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Log set</Text>}
             </Pressable>
 
-            {restRun > 0 && (
+            {restRun > 0 && targetNext && (
+              <View style={styles.warmUpBox}>
+                <Text style={styles.warmUpTitle}>Superset: no rest</Text>
+                <Text style={styles.warmUpText}>Go straight into {targetNext.exercise_name}, then rest.</Text>
+              </View>
+            )}
+            {restRun > 0 && !targetNext && (
               <RestTimer
                 key={restRun}
                 seconds={target?.rest_seconds || DEFAULT_REST_SECONDS}

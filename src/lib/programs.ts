@@ -27,9 +27,29 @@ export function exercisesForDate(
   return exercises.filter((e) => e.day_number === dayNumber).sort((a, b) => a.sort_order - b.sort_order);
 }
 
+/**
+ * The program name a client sees. Built-in programs that come in numbered sets
+ * ("Chest & Bi 1" to "Chest & Bi 4") drop the number: it's only for the
+ * trainer to tell them apart.
+ */
+export function displayProgramName(program: Pick<Program, "name" | "trainer_id">): string {
+  if (program.trainer_id) return program.name;
+  return program.name.replace(/\s+\d+$/, "");
+}
+
+/**
+ * For a superset (rest 0 before the next exercise), the exercise to go
+ * straight into after this one; null otherwise.
+ */
+export function supersetNext(row: ProgramExercise, session: ProgramExercise[]): ProgramExercise | null {
+  if (row.rest_seconds !== 0) return null;
+  const i = session.findIndex((e) => e.id === row.id);
+  return i >= 0 ? session[i + 1] ?? null : null;
+}
+
 /** The title for the day's session, e.g. "Workout A" or "Rest day". */
-export function dayTitle(program: Pick<Program, "kind" | "name" | "day_titles">, date: Date): string {
-  if (program.kind !== "weekly") return program.name;
+export function dayTitle(program: Pick<Program, "kind" | "name" | "day_titles" | "trainer_id">, date: Date): string {
+  if (program.kind !== "weekly") return displayProgramName(program);
   return program.day_titles[programDayNumber(date) - 1] ?? WEEKDAY_NAMES[programDayNumber(date) - 1];
 }
 
