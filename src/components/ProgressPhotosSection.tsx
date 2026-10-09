@@ -18,7 +18,7 @@ import {
   progressPhotoStatus,
   type ProgressPhotoAngle,
 } from "@/lib/progressPhotos";
-import AngleCompare from "@/components/AngleCompare";
+import ProgressHistory from "@/components/ProgressHistory";
 import { loadProgressPhotos, type LoadedProgressPhoto } from "@/components/progressPhotoData";
 
 // Shown on screen and again before each photo, so every set is taken the same
@@ -267,9 +267,12 @@ export default function ProgressPhotosSection() {
 
           {photos.length > 0 && (
             <View style={{ marginTop: 16 }}>
-              <Text style={styles.subheading}>Compare your progress</Text>
-              <AngleCompare photos={photos} onLongPress={confirmDelete} />
-              <Text style={styles.helper}>Tap a photo to see it big. Press and hold to delete it.</Text>
+              <Text style={styles.subheading}>Your progress history</Text>
+              <ProgressHistory photos={photos} onLongPress={confirmDelete} />
+              <Text style={styles.helper}>
+                Tap a photo to see it big. Press and hold to delete it. Every photo stays here for as long as you have
+                an account; deleting your account removes them all.
+              </Text>
             </View>
           )}
         </>

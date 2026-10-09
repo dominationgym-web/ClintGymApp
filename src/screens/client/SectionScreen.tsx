@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
 import { findSection } from "@/lib/sections";
+import { BRAND_GOLD } from "@/lib/brand";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -32,7 +33,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   summary: { color: "#E2E8F0", fontSize: 16, lineHeight: 23, marginBottom: 20 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16 },
-  badge: { color: "#22C55E", fontSize: 12, fontWeight: "700", marginBottom: 8 },
+  badge: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 8 },
   cardText: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 10 },
   topic: { color: "#CBD5E1", fontSize: 14, lineHeight: 24 },
 });
