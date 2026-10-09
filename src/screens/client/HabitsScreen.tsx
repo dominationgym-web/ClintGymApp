@@ -9,12 +9,14 @@ import {
   Pressable,
   Alert,
   RefreshControl,
+  Keyboard,
 } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { toIsoDate, todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Habit } from "@/types/database";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
+import { parseReminderTime } from "@/lib/reminderTime";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const todayWeekday = () => new Date().getDay(); // 0 = Sunday .. 6 = Saturday
@@ -33,6 +35,8 @@ export default function HabitsScreen() {
   // for both today's reps counter and the streak calculation.
   const [logsByHabit, setLogsByHabit] = useState<Record<string, Record<string, number>>>({});
   const [reminderDrafts, setReminderDrafts] = useState<Record<string, string>>({});
+  // Which habit's time was just saved, to show a "Saved" tick next to it.
+  const [savedTimeFor, setSavedTimeFor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -104,17 +108,26 @@ export default function HabitsScreen() {
   };
 
   const saveReminderTime = async (habit: Habit) => {
-    const raw = (reminderDrafts[habit.id] ?? "").trim();
-    if (!/^\d{2}:\d{2}$/.test(raw)) {
-      Alert.alert("Use HH:MM", "Enter the reminder time like 08:00 or 18:30.");
+    const time = parseReminderTime(reminderDrafts[habit.id] ?? "");
+    if (!time) {
+      Alert.alert("Check the time", "Enter the reminder time like 08:00 or 18:30.");
       return;
     }
-    const { error } = await supabase.from("habits").update({ reminder_time: `${raw}:00` }).eq("id", habit.id);
-    if (error) {
-      Alert.alert("Couldn't update", error.message);
+    Keyboard.dismiss();
+    // .select() so a save that changed no rows shows as a failure instead of
+    // silently looking like it worked.
+    const { data, error } = await supabase
+      .from("habits")
+      .update({ reminder_time: `${time}:00` })
+      .eq("id", habit.id)
+      .select("id");
+    if (error || !data || data.length === 0) {
+      Alert.alert("Couldn't save the time", error?.message ?? "Please try again.");
       return;
     }
-    setHabits((prev) => prev.map((h) => (h.id === habit.id ? { ...h, reminder_time: `${raw}:00` } : h)));
+    setHabits((prev) => prev.map((h) => (h.id === habit.id ? { ...h, reminder_time: `${time}:00` } : h)));
+    setReminderDrafts((prev) => ({ ...prev, [habit.id]: time }));
+    setSavedTimeFor(habit.id);
   };
 
   const logReps = async (habit: Habit, delta: number) => {
@@ -142,6 +155,9 @@ export default function HabitsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ padding: 20 }}
+      // Without this, the first tap on "Save time" while the keyboard is open
+      // only closes the keyboard and the save never runs.
+      keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.title}>Habits</Text>
@@ -210,12 +226,20 @@ export default function HabitsScreen() {
                   style={styles.timeInput}
                   placeholder="HH:MM"
                   placeholderTextColor="#64748B"
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                  returnKeyType="done"
                   value={reminderDrafts[h.id] ?? ""}
-                  onChangeText={(v) => setReminderDrafts((prev) => ({ ...prev, [h.id]: v }))}
+                  onChangeText={(v) => {
+                    setReminderDrafts((prev) => ({ ...prev, [h.id]: v }));
+                    if (savedTimeFor === h.id) setSavedTimeFor(null);
+                  }}
+                  onSubmitEditing={() => saveReminderTime(h)}
                 />
                 <Pressable style={styles.saveTimeButton} onPress={() => saveReminderTime(h)}>
                   <Text style={styles.saveTimeButtonText}>Save time</Text>
                 </Pressable>
+                {savedTimeFor === h.id && <Text style={styles.savedText}>Saved ✓</Text>}
               </View>
             )}
           </View>
@@ -269,4 +293,5 @@ const styles = StyleSheet.create({
   timeInput: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, padding: 10, width: 90, fontSize: 14 },
   saveTimeButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   saveTimeButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
+  savedText: { color: "#22C55E", fontWeight: "700", fontSize: 13 },
 });
