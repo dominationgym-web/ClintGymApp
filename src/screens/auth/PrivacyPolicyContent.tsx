@@ -39,7 +39,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: "7. How long we keep it",
     body:
-      "Training videos are automatically deleted 14 days after upload, or sooner if your plan ends. Everything else is kept while you're an active client, and deleted within a reasonable time if you close your account or ask us to, except limited records we're legally required to keep.",
+      "Training videos are automatically deleted 7 days after upload, or sooner if your plan ends. Everything else is kept while you're an active client, and deleted within a reasonable time if you close your account or ask us to, except limited records we're legally required to keep.",
   },
   {
     heading: "8. Who else sees it",

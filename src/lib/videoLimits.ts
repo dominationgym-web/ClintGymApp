@@ -1,6 +1,6 @@
 // Limits on training-proof videos, so they fit the free plan's 1 GB of Storage
 // and its 50 MB per-file cap. The training-videos bucket enforces the size too
-// (0032); checking here gives the client a clear message instead of an error.
+// (0033); checking here gives the client a clear message instead of an error.
 export const MAX_VIDEO_SECONDS = 60;
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 

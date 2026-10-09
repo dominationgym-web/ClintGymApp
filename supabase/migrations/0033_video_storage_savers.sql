@@ -1,18 +1,18 @@
 -- Keeps training videos inside the free plan's 1 GB of Storage (GRIZZ chose
 -- this on 2026-10-09 rather than upgrading):
---   * videos are kept 14 days instead of 30,
+--   * videos are kept 7 days instead of 30,
 --   * a client's videos are removed as soon as their plan becomes "expired",
 --   * the training-videos bucket refuses files over 50 MB (the free plan's
 --     per-file cap, so the error is ours and clear rather than Storage's).
--- The 3 AM cleanup-expired-videos job (0031) does the actual deleting; this
+-- The 3 AM cleanup-expired-videos job (0032) does the actual deleting; this
 -- only moves expires_at earlier.
 
-alter table public.videos alter column expires_at set default (now() + interval '14 days');
+alter table public.videos alter column expires_at set default (now() + interval '7 days');
 
 update public.videos
-set expires_at = uploaded_at + interval '14 days'
+set expires_at = uploaded_at + interval '7 days'
 where deleted_at is null
-  and expires_at > uploaded_at + interval '14 days';
+  and expires_at > uploaded_at + interval '7 days';
 
 create or replace function public.expire_videos_when_plan_expires()
 returns trigger as $$

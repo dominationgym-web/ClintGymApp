@@ -105,7 +105,7 @@ export default function VideoUploadScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Training proof</Text>
       <Text style={styles.helper}>
-        Keep videos to 60 seconds. They're automatically removed 14 days after upload, or when your plan ends - your trainer's notes on them stay.
+        Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
       </Text>
       <View style={styles.row}>
         <Pressable style={[styles.button, styles.flex1]} onPress={handleRecord} disabled={uploading}>

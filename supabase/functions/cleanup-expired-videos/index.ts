@@ -1,5 +1,5 @@
-// Nightly clean-up of training videos past their expires_at (30 days after
-// upload). Called by the cleanup-expired-videos-daily pg_cron job (0031),
+// Nightly clean-up of training videos past their expires_at (7 days after
+// upload). Called by the cleanup-expired-videos-daily pg_cron job (0032),
 // because Supabase only lets files be deleted through the Storage API, not
 // from SQL. Removes the file, then soft-deletes the row so the trainer's notes
 // about the video survive.
