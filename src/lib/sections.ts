@@ -3,6 +3,7 @@
 // coach writes it: `topics` is what it will cover, shown to clients as "coming
 // soon" so the page isn't empty. The menu picks sections up from this list.
 import { SLEEP_GUIDELINES, type GuidelineGroup } from "@/lib/sleep";
+import { WOMENS_HEALTH_GUIDE } from "@/lib/cycle";
 
 export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset";
 
@@ -46,13 +47,9 @@ export const SECTIONS: Section[] = [
   {
     key: "womensHealthReset",
     title: "Women's Health Reset",
-    summary: "A dedicated program for women's health and hormones.",
-    topics: [
-      "How the program works",
-      "Training around your cycle",
-      "Nutrition for hormone health",
-      "Weekly check-ins and progress",
-    ],
+    summary: "Train, eat and supplement with your cycle, not against it. Log your period and the app guides you through each phase.",
+    topics: [],
+    content: WOMENS_HEALTH_GUIDE,
   },
 ];
 

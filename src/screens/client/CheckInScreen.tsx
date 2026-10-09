@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import ProgressPhotoReminder from "@/components/ProgressPhotoReminder";
 import SleepReminder from "@/components/SleepReminder";
+import { CycleTodayBanner } from "@/components/CycleTracker";
 import { CoachMessageCard } from "@/components/CoachMessages";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
@@ -195,6 +196,7 @@ export default function CheckInScreen() {
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <CoachMessageCard />
         <SleepReminder />
+        <CycleTodayBanner />
         <ProgressPhotoReminder />
         <Text style={styles.title}>You're checked in for today ✅</Text>
         {missing.length > 0 && (
@@ -234,6 +236,7 @@ export default function CheckInScreen() {
       >
         <CoachMessageCard />
         <SleepReminder />
+        <CycleTodayBanner />
         <ProgressPhotoReminder />
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>
 

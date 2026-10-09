@@ -120,6 +120,14 @@ export type PushToken = {
   created_at: string;
 }
 
+// The first day of one of the client's periods (0038). Private to her.
+export type CycleLog = {
+  id: string;
+  client_id: string;
+  period_start: string;
+  created_at: string;
+}
+
 export type Checkin = {
   id: string;
   client_id: string;
@@ -274,6 +282,7 @@ export interface Database {
         Relationships: [];
       };
       push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
+      cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       progress_photos: {
         Row: ProgressPhoto;
