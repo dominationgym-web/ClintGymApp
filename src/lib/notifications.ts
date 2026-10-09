@@ -14,6 +14,8 @@ import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
 import { progressPhotoReminderAt } from "@/lib/progressPhotos";
 import { upcomingSleepReminders } from "@/lib/sleep";
+import { upcomingPhases } from "@/lib/cycle";
+import { parseIsoDate, todayIso } from "@/lib/dates";
 
 type NotificationsModule = typeof import("expo-notifications");
 
@@ -160,6 +162,42 @@ export async function unregisterForCoachMessages(): Promise<void> {
     registeredPushToken = null;
   } catch (e) {
     console.warn("Couldn't clear the message notification token", e);
+  }
+}
+
+const CYCLE_ID_PREFIX = "cycle-reminder-";
+const CYCLE_DAYS_AHEAD = 14;
+const CYCLE_REMINDER_HOUR = 8;
+
+/**
+ * (Re)schedules the 8am Women's Health Reset nudge for the next two weeks,
+ * each one for the phase she'll be in that day, or clears them when
+ * `enabled` is false or she hasn't logged a period. Safe to call on every open.
+ */
+export async function scheduleCycleReminders(periodStarts: string[], enabled: boolean): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    const scheduled = await N.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(CYCLE_ID_PREFIX))
+        .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
+    );
+    if (!enabled || periodStarts.length === 0 || !(await canNotify(N))) return;
+    const now = new Date();
+    for (const { date, phase } of upcomingPhases(periodStarts, todayIso(), CYCLE_DAYS_AHEAD)) {
+      const at = parseIsoDate(date);
+      at.setHours(CYCLE_REMINDER_HOUR, 0, 0, 0);
+      if (at <= now) continue;
+      await N.scheduleNotificationAsync({
+        identifier: `${CYCLE_ID_PREFIX}${date}`,
+        content: { title: `${phase.emoji} ${phase.name}`, body: phase.reminder },
+        trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: at, channelId: REMINDERS_CHANNEL },
+      });
+    }
+  } catch (e) {
+    console.warn("Couldn't schedule the cycle reminders", e);
   }
 }
 
