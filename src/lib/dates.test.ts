@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { parseIsoDate, startOfLocalDay, toIsoDate, todayIso } from "@/lib/dates";
+import { describeTimeSince, parseIsoDate, startOfLocalDay, toIsoDate, todayIso } from "@/lib/dates";
 
 const originalTz = process.env.TZ;
 
@@ -61,5 +61,26 @@ describe("startOfLocalDay", () => {
     const start = startOfLocalDay(new Date(2026, 8, 21, 17, 42, 9, 500));
     expect(toIsoDate(start)).toBe("2026-09-21");
     expect([start.getHours(), start.getMinutes(), start.getSeconds(), start.getMilliseconds()]).toEqual([0, 0, 0, 0]);
+  });
+});
+
+describe("describeTimeSince", () => {
+  const now = new Date(2026, 9, 9, 13, 0);
+  const since = (y: number, m: number, d: number, h = 9) => describeTimeSince(new Date(y, m - 1, d, h), now);
+
+  it("counts calendar days, not 24-hour blocks", () => {
+    expect(since(2026, 10, 9, 8)).toBe("Joined today");
+    expect(since(2026, 10, 8, 23)).toBe("1 day");
+    expect(since(2026, 9, 30)).toBe("9 days");
+  });
+
+  it("switches to weeks, then months, then years", () => {
+    expect(since(2026, 9, 25)).toBe("2 weeks");
+    expect(since(2026, 8, 20)).toBe("7 weeks");
+    expect(since(2026, 8, 9)).toBe("2 months");
+    expect(since(2026, 8, 10)).toBe("8 weeks");
+    expect(since(2025, 11, 9)).toBe("11 months");
+    expect(since(2025, 10, 9)).toBe("1 year");
+    expect(since(2024, 7, 1)).toBe("2 years 3 months");
   });
 });
