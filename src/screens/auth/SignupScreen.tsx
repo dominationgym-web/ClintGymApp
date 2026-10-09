@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,15 @@ import {
   Alert,
   ScrollView,
   Modal,
-  Clipboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
-import type { PackageType, PlanType } from "@/types/database";
+import type { JoinableTrainer, PackageType, PlanType } from "@/types/database";
+import { normalizeJoinCode } from "@/lib/trainers";
+import TrainerLogo from "@/components/TrainerLogo";
+import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
 import PrivacyPolicyContent, { PRIVACY_POLICY_VERSION } from "@/screens/auth/PrivacyPolicyContent";
 
@@ -41,17 +43,8 @@ const PACKAGES: { key: PackageType; label: string; description: string }[] = [
   },
 ];
 
-const POP_WHATSAPP_NUMBER = "076 423 2075";
-
-const EFT_DETAILS = [
-  { label: "Account holder", value: "Viveshan Naidoo" },
-  { label: "Bank", value: "Discovery Bank" },
-  { label: "Account type", value: "Current Account" },
-  { label: "Branch code", value: "679000" },
-  { label: "Account number", value: "14374977427" },
-];
-
 export default function SignupScreen({ navigation }: Props) {
+  const { refreshProfile } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -60,16 +53,42 @@ export default function SignupScreen({ navigation }: Props) {
   const [pkg, setPkg] = useState<PackageType>("training_only");
   const [consented, setConsented] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [awaitingPayment, setAwaitingPayment] = useState(false);
   const [policyVisible, setPolicyVisible] = useState(false);
+  const [trainerCode, setTrainerCode] = useState("");
+  const [trainer, setTrainer] = useState<JoinableTrainer | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
 
-  const copyToClipboard = async (text: string, label: string) => {
-    try {
-      await Clipboard.setString(text);
-      Alert.alert("Copied", `${label} copied to clipboard.`);
-    } catch (error) {
-      Alert.alert("Error", "Failed to copy to clipboard.");
-    }
+  // Leaving the code box and tapping "Continue" can both look the code up at
+  // once; they share one request so the client sees at most one alert.
+  const pendingLookup = useRef<Promise<JoinableTrainer | null> | null>(null);
+  const latestCode = useRef("");
+
+  // Every client joins a specific trainer by the code that trainer gives them.
+  // The database only resolves codes of approved trainers (0029). Editing the
+  // code clears `trainer`, so a set `trainer` always matches the box.
+  const lookUpTrainer = (): Promise<JoinableTrainer | null> => {
+    if (trainer) return Promise.resolve(trainer);
+    const code = normalizeJoinCode(trainerCode);
+    if (!code) return Promise.resolve(null);
+    if (pendingLookup.current) return pendingLookup.current;
+
+    pendingLookup.current = (async () => {
+      setCheckingCode(true);
+      const { data, error } = await supabase.rpc("trainer_for_join_code", { p_code: code });
+      setCheckingCode(false);
+      pendingLookup.current = null;
+      // The client changed the code while this was in flight.
+      if (normalizeJoinCode(latestCode.current) !== code) return null;
+      if (error) {
+        Alert.alert("Couldn't check the code", "Check your internet connection and try again.");
+        return null;
+      }
+      const found = data?.[0] ?? null;
+      setTrainer(found);
+      if (!found) Alert.alert("Code not found", "Check the trainer code with your trainer and try again.");
+      return found;
+    })();
+    return pendingLookup.current;
   };
 
   const handleSignup = async () => {
@@ -99,9 +118,11 @@ export default function SignupScreen({ navigation }: Props) {
       return;
     }
 
-    const trainerId = process.env.EXPO_PUBLIC_DEFAULT_TRAINER_ID;
-    if (!trainerId) {
-      Alert.alert("Setup error", "No trainer configured for signup. Contact your trainer.");
+    const joined = await lookUpTrainer();
+    if (!joined) {
+      if (!normalizeJoinCode(trainerCode)) {
+        Alert.alert("Trainer code needed", "Enter the code your trainer gave you.");
+      }
       return;
     }
 
@@ -119,7 +140,7 @@ export default function SignupScreen({ navigation }: Props) {
     // trainer flips it to 'active' after confirming EFT/PayPal payment.
     const { error: clientError } = await supabase.from("clients").insert({
       id: authData.user.id,
-      trainer_id: trainerId,
+      trainer_id: joined.id,
       name,
       email,
       phone: phone || null,
@@ -128,62 +149,49 @@ export default function SignupScreen({ navigation }: Props) {
       consent_accepted_at: new Date().toISOString(),
       privacy_policy_version: PRIVACY_POLICY_VERSION,
     });
-    setLoading(false);
 
     if (clientError) {
+      setLoading(false);
       Alert.alert("Couldn't finish signup", clientError.message);
       return;
     }
 
-    setAwaitingPayment(true);
+    // Now that the client row exists, this swaps signup for the payment
+    // screen (PendingAccessScreen in RootNavigator), which shows this
+    // trainer's payment details until they activate the client.
+    await refreshProfile();
+    setLoading(false);
   };
-
-  if (awaitingPayment) {
-    return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>One last step</Text>
-        <Text style={styles.body}>
-          Your account is created but not active yet. Pay for your plan using the details below,
-          then let your trainer know - they'll confirm payment and switch on your access
-          personally.
-        </Text>
-        <Text style={styles.sectionHeading}>South Africa - EFT</Text>
-        <View style={styles.bankBox}>
-          {EFT_DETAILS.map(({ label, value }) => (
-            <Pressable
-              key={label}
-              style={styles.bankRow}
-              onPress={() => copyToClipboard(value, label)}
-              android_ripple={{ color: "rgba(34, 197, 94, 0.1)" }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.bankLabel}>{label}</Text>
-                <Text style={styles.bankValue}>{value}</Text>
-              </View>
-              <Text style={styles.copyIcon}>📋</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.body}>
-          Use your name as the payment reference so your trainer can match it to your account.
-        </Text>
-        <Text style={styles.body}>
-          Then send proof of payment to <Text style={styles.bankValueInline}>{POP_WHATSAPP_NUMBER}</Text> on
-          WhatsApp.
-        </Text>
-
-        <Text style={styles.sectionHeading}>International - PayPal</Text>
-        <Text style={styles.body}>PayPal details will be sent to you directly by your trainer.</Text>
-        <Pressable style={styles.button} onPress={() => navigation.replace("Login")}>
-          <Text style={styles.buttonText}>Done</Text>
-        </Pressable>
-      </ScrollView>
-    );
-  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create your account</Text>
+      <Text style={styles.label}>Trainer code</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="The code your trainer gave you"
+        autoCapitalize="characters"
+        autoCorrect={false}
+        value={trainerCode}
+        onChangeText={(text) => {
+          setTrainerCode(text);
+          latestCode.current = text;
+          if (trainer) setTrainer(null);
+        }}
+        onBlur={() => {
+          if (normalizeJoinCode(trainerCode) && !trainer) lookUpTrainer();
+        }}
+      />
+      {checkingCode ? (
+        <ActivityIndicator color="#22C55E" style={{ marginBottom: 12 }} />
+      ) : trainer ? (
+        <View style={styles.trainerRow}>
+          <TrainerLogo name={trainer.display_name} path={trainer.logo_path} size={44} />
+          <Text style={styles.body}>
+            You're joining <Text style={styles.trainerName}>{trainer.display_name}</Text>
+          </Text>
+        </View>
+      ) : null}
       <TextInput style={styles.input} placeholder="Full name" value={name} onChangeText={setName} />
       <TextInput
         style={styles.input}
@@ -256,12 +264,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 16 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, flexShrink: 1 },
-  bankBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 12 },
-  bankRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 6 },
-  bankLabel: { color: "#64748B", fontSize: 13, flexShrink: 0 },
-  bankValue: { color: "#fff", fontSize: 13, fontWeight: "600", textAlign: "right", flexShrink: 1 },
-  copyIcon: { fontSize: 16, paddingLeft: 8 },
-  bankValueInline: { color: "#22C55E", fontWeight: "700" },
+  label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6 },
+  trainerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
+  trainerName: { color: "#fff", fontWeight: "700" },
   input: {
     backgroundColor: "#1E293B",
     color: "#fff",

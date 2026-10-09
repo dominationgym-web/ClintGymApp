@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -8,7 +8,10 @@ import { AVATAR_BUCKET, avatarContentType, avatarStoragePath } from "@/lib/avata
 import ClientAvatar from "@/components/ClientAvatar";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
-import type { ClientStatusFlag } from "@/types/database";
+import TrainerLogo from "@/components/TrainerLogo";
+import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
+import { trainerDisplayName } from "@/lib/trainers";
+import type { ClientStatusFlag, Trainer } from "@/types/database";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Active",
@@ -32,6 +35,25 @@ export default function ClientProfileScreen() {
   const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [trainer, setTrainer] = useState<Trainer | null>(null);
+  const trainerId = client?.trainer_id;
+
+  // The client's own trainer, for their logo and payment details (0029).
+  useEffect(() => {
+    if (!trainerId) return;
+    let cancelled = false;
+    supabase
+      .from("trainers")
+      .select("*")
+      .eq("id", trainerId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setTrainer(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [trainerId]);
 
   if (!client) return null;
 
@@ -155,6 +177,19 @@ export default function ClientProfileScreen() {
         <Text style={styles.helper}>Plan renews/expires {new Date(client.plan_expires_at).toLocaleDateString()}</Text>
       )}
 
+      {trainer ? (
+        <View style={styles.trainerCard}>
+          <View style={styles.trainerRow}>
+            <TrainerLogo name={trainerDisplayName(trainer)} path={trainer.logo_path} size={48} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trainerLabel}>Your trainer</Text>
+              <Text style={styles.trainerName}>{trainerDisplayName(trainer)}</Text>
+            </View>
+          </View>
+          <TrainerPaymentDetails eftDetails={trainer.eft_details} popWhatsapp={trainer.pop_whatsapp} />
+        </View>
+      ) : null}
+
       <Text style={styles.sectionHeading}>How are you doing?</Text>
       <Text style={styles.body}>
         Let your trainer know if you need anything - they check this before anything else.
@@ -222,6 +257,10 @@ function statusStyle(status: string) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   photoBlock: { alignItems: "center", marginBottom: 16 },
+  trainerCard: { backgroundColor: "#111C33", borderRadius: 12, padding: 14, marginTop: 16 },
+  trainerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  trainerLabel: { color: "#64748B", fontSize: 12 },
+  trainerName: { color: "#fff", fontSize: 16, fontWeight: "700" },
   photoLink: { color: "#22C55E", fontWeight: "600", marginTop: 8 },
   title: { fontSize: 26, fontWeight: "700", color: "#fff" },
   email: { color: "#94A3B8", marginBottom: 12 },

@@ -6,6 +6,7 @@ import type { SectionKey } from "@/lib/sections";
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
+  TrainerSignup: undefined;
 };
 
 export type ClientTabParamList = {
@@ -25,6 +26,9 @@ export type ClientStackParamList = {
 export type TrainerTabParamList = {
   Dashboard: undefined;
   Clients: undefined;
+  TrainerProfile: undefined;
+  // Only for the app owner (0029).
+  Trainers: undefined;
 };
 
 export type TrainerStackParamList = {

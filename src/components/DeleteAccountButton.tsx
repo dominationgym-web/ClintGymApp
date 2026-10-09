@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 // Function, which removes the client's photos and videos and then the account,
 // taking every check-in, habit and log with it.
 export default function DeleteAccountButton() {
-  const { signOut } = useAuth();
+  const { signOut, role } = useAuth();
   const [deleting, setDeleting] = useState(false);
 
   const deleteAccount = async () => {
@@ -18,8 +18,20 @@ export default function DeleteAccountButton() {
       if (error) throw error;
       // The account is gone, so this just clears it off the phone.
       await signOut();
-    } catch {
-      Alert.alert("Couldn't delete your account", "Check your internet connection and try again. Nothing was deleted.");
+    } catch (err) {
+      // The function explains refusals it means (e.g. a trainer who still has
+      // clients); anything else is most likely the connection.
+      let message = "Check your internet connection and try again. Nothing was deleted.";
+      const response = (err as { context?: Response }).context;
+      if (response && typeof response.json === "function") {
+        try {
+          const body = await response.json();
+          if (typeof body?.error === "string" && response.status === 409) message = body.error;
+        } catch {
+          // Not JSON; keep the generic message.
+        }
+      }
+      Alert.alert("Couldn't delete your account", message);
       setDeleting(false);
     }
   };
@@ -27,7 +39,9 @@ export default function DeleteAccountButton() {
   const confirm = () =>
     Alert.alert(
       "Delete your account?",
-      "This permanently deletes your account, check-ins, habits, training log, progress photos and videos. It can't be undone.\n\nIf you're on a paid plan, talk to your trainer first: deleting your account doesn't cancel or refund it.",
+      role === "trainer"
+        ? "This permanently deletes your trainer account and logo. It can't be undone."
+        : "This permanently deletes your account, check-ins, habits, training log, progress photos and videos. It can't be undone.\n\nIf you're on a paid plan, talk to your trainer first: deleting your account doesn't cancel or refund it.",
       [
         { text: "Cancel", style: "cancel" },
         { text: "Delete everything", style: "destructive", onPress: deleteAccount },
