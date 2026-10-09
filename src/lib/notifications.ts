@@ -9,6 +9,7 @@
 import { Platform } from "react-native";
 import { isRunningInExpoGo } from "expo";
 import { progressPhotoReminderAt } from "@/lib/progressPhotos";
+import { upcomingSleepReminders } from "@/lib/sleep";
 
 type NotificationsModule = typeof import("expo-notifications");
 
@@ -79,6 +80,39 @@ export async function scheduleProgressPhotoReminder(lastTakenOn: string | null):
   } catch (e) {
     // A reminder failing to schedule must never break the screen it runs from.
     console.warn("Couldn't schedule the progress photo reminder", e);
+  }
+}
+
+const SLEEP_ID_PREFIX = "sleep-reminder-";
+// Each night is scheduled separately so each can carry its own tip. Two weeks
+// ahead, topped up every time the app opens, stays well inside iOS's limit of
+// 64 scheduled notifications.
+const SLEEP_NIGHTS_AHEAD = 14;
+
+/**
+ * (Re)schedules the 6pm sleep tip for the next two weeks, or clears them all
+ * when `enabled` is false. Safe to call on every app open.
+ */
+export async function scheduleSleepReminders(enabled: boolean): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    const scheduled = await N.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(SLEEP_ID_PREFIX))
+        .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
+    );
+    if (!enabled || !(await canNotify(N))) return;
+    for (const night of upcomingSleepReminders(new Date(), SLEEP_NIGHTS_AHEAD)) {
+      await N.scheduleNotificationAsync({
+        identifier: night.id,
+        content: { title: "Time to start winding down 🌙", body: night.tip },
+        trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: night.at, channelId: REMINDERS_CHANNEL },
+      });
+    }
+  } catch (e) {
+    console.warn("Couldn't schedule the sleep reminders", e);
   }
 }
 
