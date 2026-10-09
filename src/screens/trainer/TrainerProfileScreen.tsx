@@ -18,7 +18,17 @@ import { avatarContentType } from "@/lib/avatars";
 import { EFT_FIELDS, TRAINER_LOGO_BUCKET, logoStoragePath, trainerDisplayName } from "@/lib/trainers";
 import TrainerLogo from "@/components/TrainerLogo";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
+import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import type { EftDetails } from "@/types/database";
+
+type TabKey = "code" | "details" | "payments" | "account";
+
+const TABS: ScreenTab<TabKey>[] = [
+  { key: "code", label: "Code & logo", icon: "qr-code" },
+  { key: "details", label: "Details", icon: "person" },
+  { key: "payments", label: "Payments", icon: "card" },
+  { key: "account", label: "Account", icon: "settings" },
+];
 
 // A trainer's own setup (0029): the code their clients sign up with, the logo
 // their clients see, and the payment details shown after a client signs up.
@@ -30,6 +40,7 @@ export default function TrainerProfileScreen() {
   const [eft, setEft] = useState<EftDetails>(trainer?.eft_details ?? {});
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [tab, setTab] = useState<TabKey>("code");
 
   if (!trainer) return null;
   const displayName = trainerDisplayName(trainer);
@@ -107,59 +118,81 @@ export default function TrainerProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-      <Pressable style={styles.logoBlock} onPress={pickLogo} disabled={uploadingLogo}>
-        <TrainerLogo name={displayName} path={trainer.logo_path} size={96} />
-        {uploadingLogo ? (
-          <ActivityIndicator color="#22C55E" style={{ marginTop: 8 }} />
-        ) : (
-          <Text style={styles.link}>{trainer.logo_path ? "Change logo" : "Add your logo"}</Text>
+    <View style={styles.container}>
+      <ScreenTabBar tabs={TABS} current={tab} onChange={setTab} position="top" />
+      <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        {tab === "code" && (
+          <>
+            <Pressable style={styles.logoBlock} onPress={pickLogo} disabled={uploadingLogo}>
+              <TrainerLogo name={displayName} path={trainer.logo_path} size={96} />
+              {uploadingLogo ? (
+                <ActivityIndicator color="#22C55E" style={{ marginTop: 8 }} />
+              ) : (
+                <Text style={styles.link}>{trainer.logo_path ? "Change logo" : "Add your logo"}</Text>
+              )}
+              <Text style={styles.hint}>Your clients see this in their app.</Text>
+            </Pressable>
+
+            <View style={styles.codeBox}>
+              <Text style={styles.label}>Your trainer code</Text>
+              <Text style={styles.code}>{trainer.join_code}</Text>
+              <Text style={styles.hint}>New clients type this when they sign up, so they join you.</Text>
+              <Pressable style={styles.secondaryButton} onPress={shareCode}>
+                <Text style={styles.secondaryButtonText}>Share my code</Text>
+              </Pressable>
+            </View>
+          </>
         )}
-        <Text style={styles.hint}>Your clients see this in their app.</Text>
-      </Pressable>
+        {tab === "details" && (
+          <>
+            <Text style={styles.sectionHeading}>Your details</Text>
+            <Text style={styles.label}>Name</Text>
+            <Text style={styles.readOnly}>{trainer.name}</Text>
+            <Text style={styles.label}>Business name</Text>
+            <TextInput style={styles.input} placeholder="Optional" placeholderTextColor="#64748B" value={businessName} onChangeText={setBusinessName} />
+            <Text style={styles.label}>Phone</Text>
+            <TextInput style={styles.input} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
 
-      <View style={styles.codeBox}>
-        <Text style={styles.label}>Your trainer code</Text>
-        <Text style={styles.code}>{trainer.join_code}</Text>
-        <Text style={styles.hint}>New clients type this when they sign up, so they join you.</Text>
-        <Pressable style={styles.secondaryButton} onPress={shareCode}>
-          <Text style={styles.secondaryButtonText}>Share my code</Text>
-        </Pressable>
-      </View>
+            <Pressable style={styles.button} onPress={save} disabled={saving}>
+              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+            </Pressable>
+          </>
+        )}
+        {tab === "payments" && (
+          <>
+            <Text style={styles.sectionHeading}>How your clients pay you</Text>
+            <Text style={styles.hint}>Shown to a client right after they sign up with your code.</Text>
+            {EFT_FIELDS.map(({ key, label }) => (
+              <View key={key}>
+                <Text style={styles.label}>{label}</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType={key === "branch_code" || key === "account_number" ? "number-pad" : "default"}
+                  value={eft[key] ?? ""}
+                  onChangeText={(value) => setEft((prev) => ({ ...prev, [key]: value }))}
+                />
+              </View>
+            ))}
+            <Text style={styles.label}>WhatsApp number for proof of payment</Text>
+            <TextInput style={styles.input} keyboardType="phone-pad" value={popWhatsapp} onChangeText={setPopWhatsapp} />
 
-      <Text style={styles.sectionHeading}>Your details</Text>
-      <Text style={styles.label}>Name</Text>
-      <Text style={styles.readOnly}>{trainer.name}</Text>
-      <Text style={styles.label}>Business name</Text>
-      <TextInput style={styles.input} placeholder="Optional" placeholderTextColor="#64748B" value={businessName} onChangeText={setBusinessName} />
-      <Text style={styles.label}>Phone</Text>
-      <TextInput style={styles.input} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-
-      <Text style={styles.sectionHeading}>How your clients pay you</Text>
-      <Text style={styles.hint}>Shown to a client right after they sign up with your code.</Text>
-      {EFT_FIELDS.map(({ key, label }) => (
-        <View key={key}>
-          <Text style={styles.label}>{label}</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType={key === "branch_code" || key === "account_number" ? "number-pad" : "default"}
-            value={eft[key] ?? ""}
-            onChangeText={(value) => setEft((prev) => ({ ...prev, [key]: value }))}
-          />
-        </View>
-      ))}
-      <Text style={styles.label}>WhatsApp number for proof of payment</Text>
-      <TextInput style={styles.input} keyboardType="phone-pad" value={popWhatsapp} onChangeText={setPopWhatsapp} />
-
-      <Pressable style={styles.button} onPress={save} disabled={saving}>
-        {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
-      </Pressable>
-
-      <Pressable style={styles.logout} onPress={signOut}>
-        <Text style={styles.logoutText}>Log out</Text>
-      </Pressable>
-      {trainer.is_owner ? null : <DeleteAccountButton />}
-    </ScrollView>
+            <Pressable style={styles.button} onPress={save} disabled={saving}>
+              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+            </Pressable>
+          </>
+        )}
+        {tab === "account" && (
+          <>
+            <Text style={styles.sectionHeading}>Signed in as</Text>
+            <Text style={styles.readOnly}>{trainer.email}</Text>
+            <Pressable style={styles.logout} onPress={signOut}>
+              <Text style={styles.logoutText}>Log out</Text>
+            </Pressable>
+            {trainer.is_owner ? null : <DeleteAccountButton />}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
