@@ -92,3 +92,17 @@ export function progressPhotoPath(
 ): string {
   return `${clientId}/progress-${angle}-${now}.${imageExtension(mimeType)}`;
 }
+
+/** Whole weeks from one `YYYY-MM-DD` date to a later one, rounded down. */
+export function weeksBetween(from: string, to: string): number {
+  const days = Math.round((parseIsoDate(to).getTime() - parseIsoDate(from).getTime()) / 86_400_000);
+  return Math.max(0, Math.floor(days / 7));
+}
+
+/** How a set is named in the history: the first is the before set, every
+ * later one says how far into the journey it was taken. */
+export function setLabel(sets: ProgressPhotoSet<unknown>[], index: number): string {
+  if (index === 0) return "Before";
+  const weeks = weeksBetween(sets[0].takenOn, sets[index].takenOn);
+  return weeks === 0 ? `Set ${index + 1}` : `Week ${weeks}`;
+}

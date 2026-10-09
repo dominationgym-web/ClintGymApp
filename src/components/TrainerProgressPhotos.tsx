@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import AngleCompare from "@/components/AngleCompare";
+import ProgressHistory from "@/components/ProgressHistory";
 import { loadProgressPhotos, type LoadedProgressPhoto } from "@/components/progressPhotoData";
 
 type Props = { clientId: string; clientName: string; shared: boolean };
@@ -28,7 +28,7 @@ export default function TrainerProgressPhotos({ clientId, clientName, shared }: 
   if (photos.length === 0) return <Text style={styles.helper}>Shared, but no photos yet.</Text>;
   return (
     <View>
-      <AngleCompare photos={photos} />
+      <ProgressHistory photos={photos} />
     </View>
   );
 }
