@@ -12,8 +12,7 @@ import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -40,12 +39,11 @@ const EFFORT_LABEL: Record<string, string> = {
   failure: "Failure",
 };
 
-type IconName = keyof typeof Ionicons.glyphMap;
 type TabKey = "overview" | "checkins" | "habits" | "training" | "photos" | "notes";
 
 // Bottom bar so the trainer can jump straight to one kind of info instead of
-// scrolling past everything else. Every icon must have an "-outline" variant.
-const TABS: { key: TabKey; label: string; icon: IconName }[] = [
+// scrolling past everything else.
+const TABS: ScreenTab<TabKey>[] = [
   { key: "overview", label: "Overview", icon: "person" },
   { key: "checkins", label: "Check-ins", icon: "checkbox" },
   { key: "habits", label: "Habits", icon: "repeat" },
@@ -72,7 +70,6 @@ export default function ClientDetailScreen({ route }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<TabKey>("overview");
-  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [replying, setReplying] = useState(false);
 
@@ -491,50 +488,27 @@ export default function ClientDetailScreen({ route }: Props) {
         )}
       </ScrollView>
 
-      <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-        {TABS.map((t) => {
-          const focused = t.key === tab;
-          const showDot =
-            (t.key === "overview" && client.status_flag !== "green") ||
-            (t.key === "checkins" && checkins.some((c) => c.distress_flag));
-          return (
-            <Pressable key={t.key} style={styles.tabButton} onPress={() => setTab(t.key)}>
-              <View>
-                <Ionicons
-                  name={focused ? t.icon : (`${t.icon}-outline` as IconName)}
-                  size={22}
-                  color={focused ? BRAND_GOLD : "#64748B"}
-                />
-                {showDot && (
-                  <View
-                    style={[
-                      styles.tabDot,
-                      { backgroundColor: client.status_flag === "red" || t.key === "checkins" ? "#EF4444" : "#F59E0B" },
-                    ]}
-                  />
-                )}
-              </View>
-              <Text style={[styles.tabLabel, focused && { color: BRAND_GOLD }]}>{t.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <ScreenTabBar
+        current={tab}
+        onChange={setTab}
+        tabs={TABS.map((t) => ({
+          ...t,
+          dot:
+            t.key === "overview" && client.status_flag !== "green"
+              ? client.status_flag === "red"
+                ? "#EF4444"
+                : "#F59E0B"
+              : t.key === "checkins" && checkins.some((c) => c.distress_flag)
+                ? "#EF4444"
+                : null,
+        }))}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#0F172A",
-    borderTopWidth: 1,
-    borderTopColor: "#1E293B",
-    paddingTop: 8,
-  },
-  tabButton: { flex: 1, alignItems: "center", gap: 2 },
-  tabLabel: { color: "#64748B", fontSize: 10, fontWeight: "600" },
-  tabDot: { position: "absolute", top: -2, right: -4, width: 9, height: 9, borderRadius: 5 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
