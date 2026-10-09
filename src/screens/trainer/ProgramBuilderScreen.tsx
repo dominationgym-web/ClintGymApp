@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
+import { filterExercises } from "@/lib/exerciseFilter";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -98,9 +99,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     setSearch("");
   };
 
-  const filtered = search.trim()
-    ? library.filter((e) => `${e.name} ${e.category ?? ""}`.toLowerCase().includes(search.trim().toLowerCase()))
-    : library;
+  const filtered = filterExercises(library, search);
 
   const save = async () => {
     if (!trainer) return;

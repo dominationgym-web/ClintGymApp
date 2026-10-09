@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
+import { exerciseCategories, filterExercises } from "@/lib/exerciseFilter";
 import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
@@ -72,6 +73,8 @@ export default function ExerciseLibraryScreen() {
   const [target, setTarget] = useState<ProgramExercise | null>(null);
   // Bumped after each logged set to (re)start the rest timer.
   const [restRun, setRestRun] = useState(0);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<string | null>(null);
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -248,7 +251,8 @@ export default function ExerciseLibraryScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={exercises}
+        data={filterExercises(exercises, search, category)}
+        keyboardShouldPersistTaps="handled"
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
           <>
@@ -307,8 +311,29 @@ export default function ExerciseLibraryScreen() {
               </View>
             )}
             <Text style={styles.title}>Exercise reference</Text>
+            <TextInput
+              style={[styles.input, { marginBottom: 10 }]}
+              value={search}
+              onChangeText={setSearch}
+              placeholder={`Search ${exercises.length} exercises`}
+              placeholderTextColor="#64748B"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              {[null, ...exerciseCategories(exercises)].map((c) => (
+                <Pressable
+                  key={c ?? "all"}
+                  style={[styles.effortChip, styles.categoryChip, category === c && styles.effortChipSelected]}
+                  onPress={() => setCategory(c)}
+                >
+                  <Text style={[styles.effortChipText, category === c && styles.effortChipTextSelected]}>{c ?? "All"}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
           </>
         }
+        ListEmptyComponent={<Text style={styles.helper}>No exercises match that search.</Text>}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => openExercise(item)}>
             <View>
@@ -481,6 +506,7 @@ const styles = StyleSheet.create({
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 10 },
   setRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6 },
+  categoryChip: { flex: 0, paddingHorizontal: 14, marginRight: 8 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15 },
   effortRow: { flexDirection: "row", gap: 8, marginBottom: 16, flexWrap: "wrap" },
   effortChip: { backgroundColor: "#1E293B", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
