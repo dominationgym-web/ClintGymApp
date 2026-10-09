@@ -4,6 +4,7 @@
 // soon" so the page isn't empty. The menu picks sections up from this list.
 import { SLEEP_GUIDELINES, type GuidelineGroup } from "@/lib/sleep";
 import { WOMENS_HEALTH_GUIDE } from "@/lib/cycle";
+import { SUPPLEMENT_GUIDE } from "@/lib/supplements";
 
 export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset";
 
@@ -30,12 +31,9 @@ export const SECTIONS: Section[] = [
   {
     key: "supplementation",
     title: "Supplementation",
-    summary: "Which supplements are worth taking, and which aren't.",
-    topics: [
-      "The basics most people benefit from",
-      "When and how much to take",
-      "What to skip and save your money on",
-    ],
+    summary: "What's worth taking for energy, muscle, performance and recovery, and what to skip.",
+    topics: [],
+    content: SUPPLEMENT_GUIDE,
   },
   {
     key: "sleepRecovery",
