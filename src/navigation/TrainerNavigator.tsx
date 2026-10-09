@@ -1,5 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { tabIcon } from "@/navigation/tabIcon";
+import { BRAND_GOLD } from "@/lib/brand";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import type { TrainerStackParamList, TrainerTabParamList } from "@/navigation/types";
 import TrainerDashboardScreen from "@/screens/trainer/TrainerDashboardScreen";
@@ -16,12 +18,12 @@ function TrainerTabs() {
         headerStyle: { backgroundColor: "#0F172A" },
         headerTintColor: "#fff",
         tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
-        tabBarActiveTintColor: "#22C55E",
+        tabBarActiveTintColor: BRAND_GOLD,
         tabBarInactiveTintColor: "#64748B",
       }}
     >
-      <Tab.Screen name="Dashboard" component={TrainerDashboardScreen} />
-      <Tab.Screen name="Clients" component={ClientsScreen} />
+      <Tab.Screen name="Dashboard" component={TrainerDashboardScreen} options={{ tabBarIcon: tabIcon("speedometer") }} />
+      <Tab.Screen name="Clients" component={ClientsScreen} options={{ tabBarIcon: tabIcon("people") }} />
     </Tab.Navigator>
   );
 }

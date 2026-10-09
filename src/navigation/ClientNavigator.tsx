@@ -1,5 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { tabIcon } from "@/navigation/tabIcon";
+import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientTabParamList } from "@/navigation/types";
 import { useAuth } from "@/context/AuthContext";
 import CheckInScreen from "@/screens/client/CheckInScreen";
@@ -19,18 +21,18 @@ export default function ClientNavigator() {
         headerStyle: { backgroundColor: "#0F172A" },
         headerTintColor: "#fff",
         tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
-        tabBarActiveTintColor: "#22C55E",
+        tabBarActiveTintColor: BRAND_GOLD,
         tabBarInactiveTintColor: "#64748B",
       }}
     >
-      <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in" }} />
-      <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits" }} />
+      <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
+      <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
       {client?.lifestyle_reset_started_at && (
-        <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset" }} />
+        <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />
       )}
-      <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Training" }} />
-      <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Exercises" }} />
-      <Tab.Screen name="Profile" component={ClientProfileScreen} options={{ title: "Profile" }} />
+      <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
+      <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Exercises", tabBarIcon: tabIcon("library") }} />
+      <Tab.Screen name="Profile" component={ClientProfileScreen} options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }} />
     </Tab.Navigator>
   );
 }
