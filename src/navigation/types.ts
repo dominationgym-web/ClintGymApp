@@ -5,6 +5,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
+  TrainerSignup: undefined;
 };
 
 export type ClientTabParamList = {
@@ -19,6 +20,9 @@ export type ClientTabParamList = {
 export type TrainerTabParamList = {
   Dashboard: undefined;
   Clients: undefined;
+  TrainerProfile: undefined;
+  // Only for the app owner (0029).
+  Trainers: undefined;
 };
 
 export type TrainerStackParamList = {

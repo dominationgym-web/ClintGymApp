@@ -123,17 +123,10 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-Create the trainer's own account through Supabase Auth (email/password),
-then insert their `trainers` row manually (there's no trainer signup screen —
-there's only one trainer, created once):
-
-```sql
-insert into public.trainers (id, name, email)
-values ('<trainer-auth-uid>', 'Trainer Name', 'trainer@example.com');
-```
-
-Put that same UID in `.env` as `EXPO_PUBLIC_DEFAULT_TRAINER_ID` so client
-signups attach to it.
+Trainers sign up in the app ("Are you a trainer?" on the login screen) and
+start unapproved. The app owner (the trainer row with `is_owner`, set by
+migration 0029) approves them on the Trainers tab. Each trainer has a join
+code on their Profile tab, and clients type it at signup to join them.
 
 Run the app:
 
