@@ -14,6 +14,7 @@ import ClientProfileScreen from "@/screens/client/ClientProfileScreen";
 import SectionScreen from "@/screens/client/SectionScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
+import { DailyQuotePopup } from "@/components/DailyQuote";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -47,13 +48,16 @@ function ClientTabs() {
 // top of them, with a back button to return to the tab you were on.
 export default function ClientNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
-      <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} />
-      <Stack.Screen
-        name="Section"
-        component={SectionScreen}
-        options={({ route }) => ({ title: findSection(route.params.sectionKey)?.title ?? "", headerBackTitle: "Back" })}
-      />
-    </Stack.Navigator>
+    <>
+      <DailyQuotePopup />
+      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
+        <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Section"
+          component={SectionScreen}
+          options={({ route }) => ({ title: findSection(route.params.sectionKey)?.title ?? "", headerBackTitle: "Back" })}
+        />
+      </Stack.Navigator>
+    </>
   );
 }

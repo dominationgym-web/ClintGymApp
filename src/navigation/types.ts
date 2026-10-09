@@ -26,6 +26,7 @@ export type ClientStackParamList = {
 export type TrainerTabParamList = {
   Dashboard: undefined;
   Clients: undefined;
+  Programs: undefined;
   TrainerProfile: undefined;
   // Only for the app owner (0029).
   Trainers: undefined;
@@ -34,6 +35,7 @@ export type TrainerTabParamList = {
 export type TrainerStackParamList = {
   TrainerTabs: undefined;
   ClientDetail: { clientId: string };
+  ProgramBuilder: undefined;
 };
 
 export type TrainerTabScreenProps<T extends keyof TrainerTabParamList> = CompositeScreenProps<
