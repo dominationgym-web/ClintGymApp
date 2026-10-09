@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { exerciseCategories, filterExercises } from "@/lib/exerciseFilter";
+import { clientBrowsable, exerciseCategories, filterExercises } from "@/lib/exerciseFilter";
 
 const list = [
   { name: "Bench Press", category: "Push" },
@@ -26,5 +26,17 @@ describe("filterExercises", () => {
   it("narrows to one body part", () => {
     expect(filterExercises(list, "", "Pull").map((e) => e.name)).toEqual(["Lat Pulldown"]);
     expect(filterExercises(list, "press", "Biceps")).toEqual([]);
+  });
+});
+
+describe("clientBrowsable", () => {
+  const all = [
+    { id: "a", category: "Push" },
+    { id: "b", category: "Overhead Press" },
+    { id: "c", category: "Overhead Press" },
+  ];
+  it("hides overhead pressing unless it's in the client's program", () => {
+    expect(clientBrowsable(all, []).map((e) => e.id)).toEqual(["a"]);
+    expect(clientBrowsable(all, ["c", null]).map((e) => e.id)).toEqual(["a", "c"]);
   });
 });

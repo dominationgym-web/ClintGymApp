@@ -23,3 +23,14 @@ export function filterExercises<T extends Pick<Exercise, "name" | "category">>(
     return words.every((w) => text.includes(w));
   });
 }
+
+// Body parts only trainers browse (0041): GRIZZ keeps overhead pressing out
+// of his programs, but other trainers can use it.
+export const TRAINER_ONLY_CATEGORIES = ["Overhead Press"];
+
+/** The exercises a client browses: trainer-only body parts are hidden unless in their own program. */
+export function clientBrowsable<T extends Pick<Exercise, "id" | "category">>(exercises: T[], programExerciseIds: (string | null)[]): T[] {
+  return exercises.filter(
+    (e) => !e.category || !TRAINER_ONLY_CATEGORIES.includes(e.category) || programExerciseIds.includes(e.id),
+  );
+}
