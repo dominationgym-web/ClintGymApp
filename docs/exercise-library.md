@@ -20,7 +20,15 @@ model is licensing clips for exactly this use.
 4. `ExerciseLibraryScreen` plays the video inline (`expo-video`, in a modal)
    the moment `external_url` is set — no app code changes needed per video.
 
-## Current list (21 rows, all with videos live, `source = 'movekit'`)
+## 2026-10-09: the full library is live (migrations 0039 and 0040)
+
+GRIZZ moved to Supabase Pro and uploaded all ~410 MoveKit clips. 0040 adds every clip as an
+exercise (name and body part from the file name) except duplicate uploads ("name (1).mp4") and
+overhead pressing (overhead/push press, jerks, thrusters, clean and press, man maker, Cuban press,
+overhead squat), per the rule below. About 390 exercises in all. The client's Exercises tab has
+search and body-part chips; the program builder's picker has search.
+
+## Original list (21 rows, all with videos live, `source = 'movekit'`)
 
 No overhead pressing of any kind (barbell or dumbbell) - trainer's call,
 considers it too risky for most clients - shoulders are trained via lateral
