@@ -6,6 +6,7 @@ import { clientPriority, flagBorderColor } from "@/lib/clientFlags";
 import { needsReply } from "@/lib/coachMessages";
 import { BRAND_GOLD } from "@/lib/brand";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
+import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
 import type { Checkin, Client } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
@@ -31,6 +32,27 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ClientStatus | null>(null);
+  // The owner's suggestion box: a banner while there are unread ones, and a
+  // weekly phone reminder in the installed app (Expo Go only gets the banner).
+  const [newSuggestions, setNewSuggestions] = useState(0);
+  const isOwner = !!trainer?.is_owner;
+
+  useEffect(() => {
+    if (!isOwner) return;
+    scheduleSuggestionBoxReminder();
+  }, [isOwner]);
+
+  const loadSuggestionCount = useCallback(async () => {
+    if (!isOwner) return;
+    const { count } = await supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "new");
+    setNewSuggestions(count ?? 0);
+  }, [isOwner]);
+
+  useEffect(() => {
+    // Recount whenever the dashboard comes back into view, e.g. after reading them.
+    loadSuggestionCount();
+    return navigation.addListener("focus", loadSuggestionCount);
+  }, [navigation, loadSuggestionCount]);
 
   const load = useCallback(async () => {
     if (!trainer) return;
@@ -93,6 +115,14 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
           <Text style={styles.logoutLink}>Log out</Text>
         </Pressable>
       </View>
+      {newSuggestions > 0 && (
+        <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("SuggestionBox")}>
+          <Text style={styles.suggestionBannerText}>
+            💡 {newSuggestions} new suggestion{newSuggestions === 1 ? "" : "s"} in the suggestion box
+          </Text>
+          <Text style={styles.suggestionBannerLink}>Read ›</Text>
+        </Pressable>
+      )}
       <FlatList
         data={rows}
         keyExtractor={(r) => r.client.id}
@@ -149,6 +179,18 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  suggestionBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: BRAND_GOLD,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  suggestionBannerText: { color: "#fff", fontSize: 14, fontWeight: "600", flex: 1 },
+  suggestionBannerLink: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },

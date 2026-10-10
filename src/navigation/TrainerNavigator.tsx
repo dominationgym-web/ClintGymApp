@@ -12,7 +12,8 @@ import TrainersScreen from "@/screens/trainer/TrainersScreen";
 import ProgramsScreen from "@/screens/trainer/ProgramsScreen";
 import ProgramBuilderScreen from "@/screens/trainer/ProgramBuilderScreen";
 import TrainerSearchScreen from "@/screens/trainer/TrainerSearchScreen";
-import SearchButton from "@/components/SearchButton";
+import TrainerMenuButton from "@/components/TrainerMenuButton";
+import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import { useAuth } from "@/context/AuthContext";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
@@ -25,7 +26,7 @@ function TrainerTabs() {
       screenOptions={{
         headerStyle: { backgroundColor: "#0F172A" },
         headerTintColor: "#fff",
-        headerRight: () => <SearchButton />,
+        headerRight: () => <TrainerMenuButton />,
         tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
         tabBarActiveTintColor: BRAND_GOLD,
         tabBarInactiveTintColor: "#64748B",
@@ -52,6 +53,7 @@ export default function TrainerNavigator() {
       <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
       <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
+      <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
       <Stack.Screen
         name="ProgramBuilder"
         component={ProgramBuilderScreen}

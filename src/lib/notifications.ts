@@ -211,3 +211,37 @@ export async function cancelAllReminders(): Promise<void> {
     console.warn("Couldn't clear scheduled reminders", e);
   }
 }
+
+const SUGGESTION_BOX_ID = "suggestion-box-reminder";
+// Sunday is 1 in expo-notifications' weekly trigger, so Monday is 2.
+const SUGGESTION_BOX_WEEKDAY = 2;
+const SUGGESTION_BOX_HOUR = 9;
+
+/**
+ * The app owner's weekly nudge to read the suggestion box (0046): Mondays at
+ * 9am. Safe to call on every app open: it replaces the one already scheduled.
+ */
+export async function scheduleSuggestionBoxReminder(): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    await N.cancelScheduledNotificationAsync(SUGGESTION_BOX_ID);
+    if (!(await canNotify(N))) return;
+    await N.scheduleNotificationAsync({
+      identifier: SUGGESTION_BOX_ID,
+      content: {
+        title: "Suggestion box 💡",
+        body: "See what your clients and trainers have suggested this week. Menu > Suggestion box.",
+      },
+      trigger: {
+        type: N.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: SUGGESTION_BOX_WEEKDAY,
+        hour: SUGGESTION_BOX_HOUR,
+        minute: 0,
+        channelId: REMINDERS_CHANNEL,
+      },
+    });
+  } catch (e) {
+    console.warn("Couldn't schedule the suggestion box reminder", e);
+  }
+}

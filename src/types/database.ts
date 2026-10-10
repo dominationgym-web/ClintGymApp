@@ -269,6 +269,19 @@ export type LifestyleResetDailyLog = {
   created_at: string;
 }
 
+// Suggestion box (0046): anyone can suggest, the app owner reads them all.
+export type SuggestionStatus = "new" | "good_idea" | "not_now";
+
+export type Suggestion = {
+  id: string;
+  author_id: string;
+  author_role: "client" | "trainer";
+  author_name: string;
+  body: string;
+  status: SuggestionStatus;
+  created_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -288,6 +301,7 @@ export interface Database {
       };
       push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
       cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
+      suggestions: { Row: Suggestion; Insert: Partial<Suggestion>; Update: Partial<Suggestion>; Relationships: [] };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       progress_photos: {
         Row: ProgressPhoto;
