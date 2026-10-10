@@ -86,14 +86,13 @@ export const UNDERSTANDING_INSULIN = {
   steps: [
     { emoji: "🍬", title: "You eat carbs", text: "Sugar most of all, but any carb raises your insulin." },
     { emoji: "📈", title: "Insulin spikes", text: "The higher your insulin, the less fat your body can burn." },
-    { emoji: "⏸️", title: "Fat burning waits", text: "Your body first works to clear that sugar out of your blood and into the muscle before it touches fat." },
+    { emoji: "⏸️", title: "Fat burning slows", text: "For a while, your body burns less fat while it clears that sugar out of your blood and into the muscle." },
   ],
   oneSweet: {
     title: "“But I only had one sweet”",
     points: [
-      "Sometimes it's not about the calories.",
-      "That one sweet can spike your insulin massively, especially if you're overweight and insulin resistant.",
-      "Have it before the treadmill and your body spends the walk clearing that sugar instead of burning fat. If you're insulin resistant, that takes a while.",
+      "Calories still matter most for fat loss over the weeks. But that one sweet still raises your insulin, and if you're overweight and insulin resistant, it stays up for longer.",
+      "Have it before the treadmill and your body burns less fat on that walk, because it's busy clearing that sugar first.",
     ],
   },
   whoFor: [
@@ -104,11 +103,11 @@ export const UNDERSTANDING_INSULIN = {
     title: "Order matters",
     wrong: {
       label: "Run first, weights after",
-      text: "A 20 minute run before weights drains your muscles of glycogen (stored carbs). You can't move the weights you need to grow.",
+      text: "A 20 minute run before weights tires you out and uses up some of your muscles' glycogen (stored carbs). You can't move the weights you need to grow.",
     },
     right: {
       label: "Weights first, run after",
-      text: "Lift while your muscles are full of fuel, then run 20 minutes. You maximise muscle growth and fat burning.",
+      text: "Lift while you're fresh and fuelled, then run 20 minutes. You get the most out of your weights and still burn fat on the run.",
     },
     note: "If you're lifting weights, surely your aim is to gain muscle or strength?",
   },
