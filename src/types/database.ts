@@ -79,6 +79,8 @@ export type Client = {
   // Full exercise library (0043). Off by default: the client sees only their
   // own program's exercises until their trainer switches it on.
   library_access: boolean;
+  // Home or gym training (0052): picked at signup, the trainer can switch it.
+  training_place: "gym" | "home";
   created_at: string;
 }
 

@@ -73,3 +73,18 @@ export function bodyPartLabel(category: string | null): string {
   if (!category) return "similar";
   return labels[category] ?? category.toLowerCase().replace(/s$/, "");
 }
+
+/**
+ * Home training (0052): for a client who trains at home, the home exercise
+ * used in place of a gym-only one. Same body part, preferring one not already
+ * in the session; null when the exercise is fine at home or there's no match.
+ */
+export function homeAlternative<T extends Pick<Exercise, "id" | "category" | "home_friendly">>(
+  exercise: T,
+  exercises: T[],
+  usedIds: (string | null)[],
+): T | null {
+  if (exercise.home_friendly) return null;
+  const options = forPlace(swapOptions(exercises, exercise.category, [exercise.id]), "home");
+  return options.find((e) => !usedIds.includes(e.id)) ?? options[0] ?? null;
+}

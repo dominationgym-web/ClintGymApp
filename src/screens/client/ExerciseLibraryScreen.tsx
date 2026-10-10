@@ -21,6 +21,7 @@ import {
   exerciseCategories,
   filterExercises,
   forPlace,
+  homeAlternative,
   swapOptions,
   type ExercisePlace,
 } from "@/lib/exerciseFilter";
@@ -91,7 +92,10 @@ export default function ExerciseLibraryScreen() {
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
-  const [place, setPlace] = useState<ExercisePlace>("gym");
+  // Home training (0052): home clients start on the Home tab.
+  const atHome = client?.training_place === "home";
+  const [place, setPlace] = useState<ExercisePlace>(atHome ? "home" : "gym");
+  useEffect(() => setPlace(atHome ? "home" : "gym"), [atHome]);
   // Change exercise (0047): today's swaps, and the program line being swapped.
   const [swaps, setSwaps] = useState<ExerciseSwaps>({});
   const [swapping, setSwapping] = useState<ProgramExercise | null>(null);
@@ -138,18 +142,38 @@ export default function ExerciseLibraryScreen() {
         ? program.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order)
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
+  // Home training (0052): a client who trains at home gets a home exercise of
+  // the same body part in place of each gym-only one, automatically.
+  const homeIds: string[] = [];
+  const homePlan = !atHome
+    ? plannedWorkout
+    : plannedWorkout.map((row) => {
+        const exercise = exercises.find((e) => e.id === row.exercise_id);
+        if (row.kind === "cardio" || !exercise) return row;
+        const used = [...plannedWorkout.map((r) => r.exercise_id), ...homeIds];
+        const alt = homeAlternative(exercise, exercises, used);
+        if (!alt) return row;
+        homeIds.push(alt.id);
+        return { ...row, exercise_id: alt.id, exercise_name: alt.name };
+      });
+  const gymName = (row: ProgramExercise) => {
+    const original = plannedWorkout.find((r) => r.id === row.id);
+    return original && original.exercise_id !== homePlan.find((r) => r.id === row.id)?.exercise_id
+      ? original.exercise_name
+      : null;
+  };
   // Today's workout with any swaps in place, so logging, ticking off and the
   // next-exercise prompt all follow the exercise the client actually does.
-  const todaysWorkout = plannedWorkout.map((row) => {
+  const todaysWorkout = homePlan.map((row) => {
     const swap = swaps[row.id];
     return swap ? { ...row, exercise_id: swap.id, exercise_name: swap.name } : row;
   });
-  const plannedRow = (row: ProgramExercise) => plannedWorkout.find((r) => r.id === row.id) ?? row;
+  const plannedRow = (row: ProgramExercise) => homePlan.find((r) => r.id === row.id) ?? row;
   const categoryOf = (row: ProgramExercise) =>
     exercises.find((e) => e.id === row.exercise_id)?.category ??
     exercises.find((e) => e.name === row.exercise_name)?.category ??
     null;
-  const programExerciseIds = program ? program.exercises.map((e) => e.exercise_id) : [];
+  const programExerciseIds = program ? [...program.exercises.map((e) => e.exercise_id), ...homeIds] : [];
   // Without full library access the database also lets a client see other
   // exercises for their program's body parts (for Change exercise, 0047), but
   // the reference list still only shows their program's.
@@ -184,7 +208,10 @@ export default function ExerciseLibraryScreen() {
 
   const swapCategory = swapping ? categoryOf(swapping) : null;
   const swapChoices = swapping
-    ? filterExercises(swapOptions(exercises, swapCategory, [swapping.exercise_id, swaps[swapping.id]?.id ?? null]), swapSearch)
+    ? filterExercises(
+        forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, swaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym"),
+        swapSearch,
+      )
     : [];
 
   const saveProgress = async (next: ProgramSession, completed: boolean) => {
@@ -419,6 +446,7 @@ export default function ExerciseLibraryScreen() {
                             {next ? `superset: straight into ${next.exercise_name}` : `rest ${formatRest(row.rest_seconds)}`}
                           </Text>
                           {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
+                          {!swaps[row.id] && gymName(row) && <Text style={styles.swappedText}>🏠 Home version of {gymName(row)}</Text>}
                           <Pressable onPress={() => openSwap(row)} hitSlop={8} style={{ alignSelf: "flex-start" }}>
                             <Text style={styles.changeLink}>⇄ Change exercise</Text>
                           </Pressable>

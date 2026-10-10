@@ -9,6 +9,7 @@ import ReplyToClientModal from "@/components/ReplyToClientModal";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
+import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -214,6 +215,17 @@ export default function ClientDetailScreen({ route }: Props) {
       return;
     }
     setClient((c) => (c ? { ...c, ...changes } : c));
+  };
+
+  const setTrainingPlace = async (next: "gym" | "home") => {
+    if (!client || next === client.training_place) return;
+    const previous = client.training_place;
+    setClient((c) => (c ? { ...c, training_place: next } : c));
+    const { error } = await supabase.from("clients").update({ training_place: next }).eq("id", clientId);
+    if (error) {
+      setClient((c) => (c ? { ...c, training_place: previous } : c));
+      Alert.alert("Couldn't update", error.message);
+    }
   };
 
   const toggleLibraryAccess = async (next: boolean) => {
@@ -472,6 +484,15 @@ export default function ClientDetailScreen({ route }: Props) {
         {tab === "training" && (
           <>
             <ClientProgramPicker clientId={client.id} clientName={client.name} />
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.libraryTitle}>Trains at</Text>
+              <Text style={[styles.helper, { marginBottom: 8 }]}>
+                {client.training_place === "home"
+                  ? `Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part.`
+                  : `${client.name} does their program as written.`}
+              </Text>
+              <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
+            </View>
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Full exercise library</Text>
