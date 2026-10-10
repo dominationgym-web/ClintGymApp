@@ -7,6 +7,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { getSleepReminderEnabled, setSleepReminderEnabled } from "@/lib/sleepReminderSetting";
 import { scheduleSleepReminders } from "@/lib/notifications";
 import CycleTracker from "@/components/CycleTracker";
+import CalorieCalculator from "@/components/CalorieCalculator";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -17,7 +18,7 @@ export default function SectionScreen({ route }: Props) {
   if (!section) return <View style={styles.container} />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Text style={styles.summary}>{section.summary}</Text>
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
       {section.key === "womensHealthReset" && <CycleTracker />}
@@ -43,6 +44,7 @@ export default function SectionScreen({ route }: Props) {
           ))}
         </View>
       )}
+      {section.key === "nutrition" && <CalorieCalculator />}
     </ScrollView>
   );
 }
