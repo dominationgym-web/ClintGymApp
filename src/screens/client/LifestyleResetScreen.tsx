@@ -364,7 +364,7 @@ export default function LifestyleResetScreen() {
           <>
             <Pressable
               style={styles.cycleLink}
-              onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset" })}
+              onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" })}
             >
               <Text style={styles.cycleLinkText}>🌸 Your cycle: log your period and see your phase ›</Text>
             </Pressable>

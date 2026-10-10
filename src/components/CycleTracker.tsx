@@ -230,7 +230,7 @@ export function CycleTodayBanner() {
   const today = logs ? cycleToday(logs.map((l) => l.period_start), todayIso()) : null;
   if (!today) return null;
   return (
-    <Pressable onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset" })}>
+    <Pressable onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" })}>
       <TodayCard today={today} full={false} />
     </Pressable>
   );
