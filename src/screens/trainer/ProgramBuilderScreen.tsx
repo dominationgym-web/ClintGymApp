@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
-import GymHomeTabs from "@/components/GymHomeTabs";
+import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -147,6 +147,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
         description: howTo.trim() || null,
         day_titles: dayTitles,
         warm_up: warmUp.trim() || DEFAULT_WARM_UP,
+        place,
       })
       .select()
       .single();
@@ -184,6 +185,8 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+      <Text style={styles.label}>This program is for</Text>
+      <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} labels={PROGRAM_PLACE_LABELS} />
       <Text style={styles.label}>Program name</Text>
       <TextInput
         style={styles.input}

@@ -483,16 +483,16 @@ export default function ClientDetailScreen({ route }: Props) {
         )}
         {tab === "training" && (
           <>
-            <ClientProgramPicker clientId={client.id} clientName={client.name} />
             <View style={{ marginTop: 12 }}>
               <Text style={styles.libraryTitle}>Trains at</Text>
               <Text style={[styles.helper, { marginBottom: 8 }]}>
                 {client.training_place === "home"
-                  ? `Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part.`
-                  : `${client.name} does their program as written.`}
+                  ? `The program list shows home programs first. Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part.`
+                  : `The program list shows gym programs first. ${client.name} does their program as written.`}
               </Text>
               <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
             </View>
+            <ClientProgramPicker clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Full exercise library</Text>

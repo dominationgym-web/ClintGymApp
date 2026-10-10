@@ -211,6 +211,8 @@ export type Program = {
   day_titles: string[];
   // Shown before the first exercise of every session (0048).
   warm_up: string;
+  // Gym or home program (0053), so trainers pick the right kind for each client.
+  place: "gym" | "home";
   created_at: string;
 }
 
