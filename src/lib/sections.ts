@@ -5,6 +5,7 @@
 import { SLEEP_GUIDELINES, type GuidelineGroup } from "@/lib/sleep";
 import { WOMENS_HEALTH_GUIDE } from "@/lib/cycle";
 import { SUPPLEMENT_GUIDE } from "@/lib/supplements";
+import { NUTRITION_GUIDE } from "@/lib/nutrition";
 
 export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset";
 
@@ -20,13 +21,9 @@ export const SECTIONS: Section[] = [
   {
     key: "nutrition",
     title: "Nutrition",
-    summary: "How to eat to support your training and your goals.",
-    topics: [
-      "Your daily calorie and protein targets",
-      "Meal plans and meal ideas",
-      "Healthy food swaps",
-      "Eating out and social occasions",
-    ],
+    summary: "How to eat to support your training and your goals: simple hand portions, plus a calorie calculator if you like to count.",
+    topics: [],
+    content: NUTRITION_GUIDE,
   },
   {
     key: "supplementation",
