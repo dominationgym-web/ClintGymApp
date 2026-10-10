@@ -7,13 +7,14 @@ import MenuButton from "@/components/MenuButton";
 import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
 import { WELCOME_MENU_ITEM } from "@/lib/welcome";
 
-// The client app's menu: the coach's welcome, the extra sections (Nutrition,
-// Supplementation, ...) and the suggestion box.
+// The client app's menu: the suggestion box first (the coach wants it easy to
+// find), then the coach's welcome and the extra sections (Nutrition, ...).
 export default function SectionsMenuButton() {
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   return (
     <MenuButton
       items={[
+        { ...SUGGESTION_BOX_MENU_ITEM, onPress: () => navigation.navigate("SuggestionBox") },
         { ...WELCOME_MENU_ITEM, onPress: () => navigation.navigate("Welcome") },
         ...SECTIONS.map((section) => ({
           key: section.key,
@@ -21,7 +22,6 @@ export default function SectionsMenuButton() {
           summary: section.summary,
           onPress: () => navigation.navigate("Section", { sectionKey: section.key }),
         })),
-        { ...SUGGESTION_BOX_MENU_ITEM, onPress: () => navigation.navigate("SuggestionBox") },
       ]}
     />
   );
