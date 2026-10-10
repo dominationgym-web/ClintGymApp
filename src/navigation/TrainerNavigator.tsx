@@ -11,6 +11,8 @@ import TrainerProfileScreen from "@/screens/trainer/TrainerProfileScreen";
 import TrainersScreen from "@/screens/trainer/TrainersScreen";
 import ProgramsScreen from "@/screens/trainer/ProgramsScreen";
 import ProgramBuilderScreen from "@/screens/trainer/ProgramBuilderScreen";
+import TrainerSearchScreen from "@/screens/trainer/TrainerSearchScreen";
+import SearchButton from "@/components/SearchButton";
 import { useAuth } from "@/context/AuthContext";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
@@ -23,6 +25,7 @@ function TrainerTabs() {
       screenOptions={{
         headerStyle: { backgroundColor: "#0F172A" },
         headerTintColor: "#fff",
+        headerRight: () => <SearchButton />,
         tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
         tabBarActiveTintColor: BRAND_GOLD,
         tabBarInactiveTintColor: "#64748B",
@@ -48,6 +51,7 @@ export default function TrainerNavigator() {
     <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
       <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+      <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
       <Stack.Screen
         name="ProgramBuilder"
         component={ProgramBuilderScreen}
