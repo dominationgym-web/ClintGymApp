@@ -22,6 +22,7 @@ export type ClientStackParamList = {
   ClientTabs: NavigatorScreenParams<ClientTabParamList> | undefined;
   Section: { sectionKey: SectionKey };
   Search: undefined;
+  SuggestionBox: undefined;
 };
 
 export type TrainerTabParamList = {
@@ -36,6 +37,7 @@ export type TrainerTabParamList = {
 export type TrainerStackParamList = {
   TrainerTabs: NavigatorScreenParams<TrainerTabParamList> | undefined;
   Search: undefined;
+  SuggestionBox: undefined;
   ClientDetail: { clientId: string };
   ProgramBuilder: undefined;
 };

@@ -13,6 +13,7 @@ import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import ClientProfileScreen from "@/screens/client/ClientProfileScreen";
 import SectionScreen from "@/screens/client/SectionScreen";
 import ClientSearchScreen from "@/screens/client/ClientSearchScreen";
+import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
 import { DailyQuotePopup } from "@/components/DailyQuote";
@@ -59,6 +60,7 @@ export default function ClientNavigator() {
           options={({ route }) => ({ title: findSection(route.params.sectionKey)?.title ?? "", headerBackTitle: "Back" })}
         />
         <Stack.Screen name="Search" component={ClientSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
+        <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
       </Stack.Navigator>
     </>
   );
