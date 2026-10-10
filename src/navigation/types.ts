@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { SectionKey } from "@/lib/sections";
 
 export type AuthStackParamList = {
+  Welcome: undefined;
   Login: undefined;
   Signup: undefined;
   TrainerSignup: undefined;
@@ -23,6 +24,7 @@ export type ClientStackParamList = {
   Section: { sectionKey: SectionKey };
   Search: undefined;
   SuggestionBox: undefined;
+  Welcome: undefined;
 };
 
 export type TrainerTabParamList = {
