@@ -312,29 +312,41 @@ export default function ExerciseLibraryScreen() {
               </View>
             )}
             <Text style={styles.title}>Exercise reference</Text>
-            <TextInput
-              style={[styles.input, { marginBottom: 10 }]}
-              value={search}
-              onChangeText={setSearch}
-              placeholder={`Search ${browsable.length} exercises`}
-              placeholderTextColor="#64748B"
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-            />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              {[null, ...exerciseCategories(browsable)].map((c) => (
-                <Pressable
-                  key={c ?? "all"}
-                  style={[styles.effortChip, styles.categoryChip, category === c && styles.effortChipSelected]}
-                  onPress={() => setCategory(c)}
-                >
-                  <Text style={[styles.effortChipText, category === c && styles.effortChipTextSelected]}>{c ?? "All"}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+            {client?.library_access === false ? (
+              <Text style={styles.helper}>
+                These are the exercises in your program. Ask your coach if you'd like the full exercise library.
+              </Text>
+            ) : (
+              <>
+                <TextInput
+                  style={[styles.input, { marginBottom: 10 }]}
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder={`Search ${browsable.length} exercises`}
+                  placeholderTextColor="#64748B"
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
+                />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                  {[null, ...exerciseCategories(browsable)].map((c) => (
+                    <Pressable
+                      key={c ?? "all"}
+                      style={[styles.effortChip, styles.categoryChip, category === c && styles.effortChipSelected]}
+                      onPress={() => setCategory(c)}
+                    >
+                      <Text style={[styles.effortChipText, category === c && styles.effortChipTextSelected]}>{c ?? "All"}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </>
+            )}
           </>
         }
-        ListEmptyComponent={<Text style={styles.helper}>No exercises match that search.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.helper}>
+            {client?.library_access === false ? "Your coach hasn't set up your program yet." : "No exercises match that search."}
+          </Text>
+        }
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => openExercise(item)}>
             <View>

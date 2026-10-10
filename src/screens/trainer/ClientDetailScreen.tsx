@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert, Switch } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
@@ -210,6 +210,15 @@ export default function ClientDetailScreen({ route }: Props) {
       return;
     }
     setClient((c) => (c ? { ...c, lifestyle_reset_started_at: next } : c));
+  };
+
+  const toggleLibraryAccess = async (next: boolean) => {
+    setClient((c) => (c ? { ...c, library_access: next } : c));
+    const { error } = await supabase.from("clients").update({ library_access: next }).eq("id", clientId);
+    if (error) {
+      setClient((c) => (c ? { ...c, library_access: !next } : c));
+      Alert.alert("Couldn't update", error.message);
+    }
   };
 
   if (loading || !client) {
@@ -449,6 +458,22 @@ export default function ClientDetailScreen({ route }: Props) {
         {tab === "training" && (
           <>
             <ClientProgramPicker clientId={client.id} clientName={client.name} />
+            <View style={styles.libraryRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.libraryTitle}>Full exercise library</Text>
+                <Text style={styles.helper}>
+                  {client.library_access
+                    ? `${client.name} can browse every exercise.`
+                    : `${client.name} only sees the exercises in their program.`}
+                </Text>
+              </View>
+              <Switch
+                value={client.library_access}
+                onValueChange={toggleLibraryAccess}
+                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                accessibilityLabel="Full exercise library"
+              />
+            </View>
             <Text style={styles.sectionHeading}>Recent training log</Text>
             {workoutLogs.length === 0 && <Text style={styles.helper}>No sets logged yet.</Text>}
             {workoutLogs.map((w) => (
@@ -513,6 +538,8 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
+  libraryRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
+  libraryTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginBottom: 2 },
   memberSince: { color: BRAND_GOLD, fontSize: 13, fontWeight: "600" },
   packageBadge: {
     alignSelf: "flex-start",
