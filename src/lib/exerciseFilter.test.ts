@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientBrowsable, exerciseCategories, filterExercises, forPlace, swapOptions } from "@/lib/exerciseFilter";
+import { clientBrowsable, exerciseCategories, filterExercises, forPlace, homeAlternative, swapOptions } from "@/lib/exerciseFilter";
 
 const list = [
   { name: "Bench Press", category: "Push" },
@@ -73,5 +73,25 @@ describe("swapOptions", () => {
   it("never offers trainer-only exercises or anything for an unknown body part", () => {
     expect(swapOptions(lib, "Overhead Press", [])).toEqual([]);
     expect(swapOptions(lib, null, [])).toEqual([]);
+  });
+});
+
+describe("homeAlternative", () => {
+  const ex = (id: string, category: string, home_friendly: boolean) => ({ id, category, home_friendly });
+  const legPress = ex("lp", "Legs", false);
+  const goblet = ex("gs", "Legs", true);
+  const lunge = ex("lu", "Legs", true);
+  const curl = ex("lc", "Hamstrings", false);
+  const rdl = ex("rdl", "Posterior Chain", true);
+  const all = [legPress, goblet, lunge, curl, rdl];
+  it("swaps a gym-only exercise for a home one of the same body part", () => {
+    expect(homeAlternative(legPress, all, [])?.id).toBe("gs");
+    expect(homeAlternative(curl, all, [])?.id).toBe("rdl");
+  });
+  it("avoids exercises already in the session", () => {
+    expect(homeAlternative(legPress, all, ["gs"])?.id).toBe("lu");
+  });
+  it("leaves home exercises alone", () => {
+    expect(homeAlternative(goblet, all, [])).toBeNull();
   });
 });
