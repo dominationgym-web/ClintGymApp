@@ -21,7 +21,8 @@ export type ClientTabParamList = {
 
 export type ClientStackParamList = {
   ClientTabs: NavigatorScreenParams<ClientTabParamList> | undefined;
-  Section: { sectionKey: SectionKey };
+  // open: the heading to show opened on arrival, e.g. "Cycle tracker".
+  Section: { sectionKey: SectionKey; open?: string };
   Search: undefined;
   SuggestionBox: undefined;
   Welcome: undefined;

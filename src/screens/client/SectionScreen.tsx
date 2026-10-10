@@ -18,32 +18,63 @@ import { useAuth } from "@/context/AuthContext";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
-// One of the menu sections. A section with content shows it as headed lists;
-// one without shows what it will cover so clients know what's on the way.
+// One of the menu sections. A section with content shows each part as a
+// heading the client taps to open (one at a time), so they can jump to what
+// they want without scrolling; one without content shows what it will cover.
 export default function SectionScreen({ route }: Props) {
   const section = findSection(route.params.sectionKey);
+  const [open, setOpen] = useState<string | null>(route.params.open ?? null);
   if (!section) return <View style={styles.container} />;
+
+  const parts: { title: string; body: React.ReactNode }[] = [];
+  if (section.key === "nutrition") {
+    parts.push({ title: "Meal builder", body: <MealBuilder /> });
+    parts.push({ title: "Calorie calculator", body: <CalorieCalculator /> });
+    parts.push({ title: "Build your plate", body: <FoodGroupExamples /> });
+  }
+  if (section.key === "womensHealthReset") parts.push({ title: "Cycle tracker", body: <CycleTracker /> });
+  for (const group of section.content ?? []) {
+    parts.push({
+      title: group.heading,
+      body: (
+        <View style={styles.card}>
+          {group.points.map((point) => (
+            <Text key={point} style={styles.topic}>
+              {"•"} {point}
+            </Text>
+          ))}
+        </View>
+      ),
+    });
+  }
+  if (section.key === "nutrition") {
+    parts.push({ title: UNDERSTANDING_CARBS.title, body: <UnderstandingCarbs /> });
+    parts.push({ title: "Understanding Insulin", body: <InsulinGuide /> });
+  }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Text style={styles.summary}>{section.summary}</Text>
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
       {section.key === "womensHealthReset" && <ResetProgramLink />}
-      {section.key === "womensHealthReset" && <CycleTracker />}
-      {section.key === "nutrition" && <MealBuilder />}
-      {section.key === "nutrition" && <CalorieCalculator />}
-      {section.key === "nutrition" && <FoodGroupExamples />}
-      {section.content ? (
-        section.content.map((group) => (
-          <View key={group.heading} style={styles.card}>
-            <Text style={styles.heading}>{group.heading}</Text>
-            {group.points.map((point) => (
-              <Text key={point} style={styles.topic}>
-                {"•"} {point}
-              </Text>
-            ))}
-          </View>
-        ))
+      {parts.length > 0 ? (
+        parts.map((part) => {
+          const isOpen = open === part.title;
+          return (
+            <View key={part.title}>
+              <Pressable
+                style={[styles.partHeader, isOpen && styles.partHeaderOpen]}
+                onPress={() => setOpen(isOpen ? null : part.title)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: isOpen }}
+              >
+                <Text style={styles.partTitle}>{part.title}</Text>
+                <Text style={styles.partArrow}>{isOpen ? "▲" : "▼"}</Text>
+              </Pressable>
+              {isOpen ? part.body : null}
+            </View>
+          );
+        })
       ) : (
         <View style={styles.card}>
           <Text style={styles.badge}>Coming soon</Text>
@@ -55,8 +86,6 @@ export default function SectionScreen({ route }: Props) {
           ))}
         </View>
       )}
-      {section.key === "nutrition" && <UnderstandingCarbs />}
-      {section.key === "nutrition" && <InsulinGuide />}
     </ScrollView>
   );
 }
@@ -119,6 +148,21 @@ function SleepReminderToggle() {
 }
 
 const styles = StyleSheet.create({
+  partHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#1E293B",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND_GOLD,
+  },
+  partHeaderOpen: { backgroundColor: "#273449" },
+  partTitle: { color: "#fff", fontSize: 16, fontWeight: "700", flex: 1, marginRight: 10 },
+  partArrow: { color: BRAND_GOLD, fontSize: 13 },
   container: { flex: 1, backgroundColor: "#0F172A" },
   summary: { color: "#E2E8F0", fontSize: 16, lineHeight: 23, marginBottom: 20 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
