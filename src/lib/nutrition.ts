@@ -14,6 +14,15 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    heading: "Carbs and water weight",
+    points: [
+      "Your body stores carbs in your muscles and liver as glycogen, and every gram of stored carbs holds about 3 grams of water with it.",
+      "So 1 gram of carbs adds roughly 4 grams to the scale: the carb itself plus its water.",
+      "That's why the scale can jump the day after a higher-carb meal. It's only water weight, not fat.",
+      "It disappears again as you train and burn those carbs. Judge your progress over weeks, not one morning's weigh-in.",
+    ],
+  },
+  {
     heading: "Good to know",
     points: [
       "All foods should be certified organic where available.",
@@ -45,3 +54,14 @@ export function estimateCalories(grams: Macros): { total: number; parts: Macros 
   };
   return { total: parts.protein + parts.carbs + parts.fibre + parts.fat, parts };
 }
+
+// Picture examples for each portion, shown above the guide.
+export type FoodGroupExample = { title: string; portion: string; emojis: string; examples: string };
+
+export const FOOD_GROUP_EXAMPLES: FoodGroupExample[] = [
+  { title: "Protein", portion: "1–2 palms", emojis: "🍗 🐟 🥩 🥚", examples: "Chicken, fish, lean beef, eggs, ostrich, Greek yoghurt" },
+  { title: "Carbohydrates", portion: "1 cupped hand", emojis: "🍠 🍚 🥔 🌽", examples: "Sweet potato, brown rice, potatoes, beans, lentils, quinoa" },
+  { title: "Vegetables", portion: "1–2 fists or more", emojis: "🥦 🥬 🥕 🥒", examples: "Broccoli, spinach, carrots, peppers, green beans, cauliflower" },
+  { title: "Healthy fats", portion: "1 thumb", emojis: "🥑 🥜 🌰", examples: "Avocado, olive oil, nuts, seeds, nut butter" },
+  { title: "Fruit", portion: "1 piece or a small bowl of berries", emojis: "🍎 🍓 🍌 🍊", examples: "Apple, berries, banana, orange, pear" },
+];

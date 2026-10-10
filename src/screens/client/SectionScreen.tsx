@@ -8,6 +8,7 @@ import { getSleepReminderEnabled, setSleepReminderEnabled } from "@/lib/sleepRem
 import { scheduleSleepReminders } from "@/lib/notifications";
 import CycleTracker from "@/components/CycleTracker";
 import CalorieCalculator from "@/components/CalorieCalculator";
+import FoodGroupExamples from "@/components/FoodGroupExamples";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -22,6 +23,7 @@ export default function SectionScreen({ route }: Props) {
       <Text style={styles.summary}>{section.summary}</Text>
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
       {section.key === "womensHealthReset" && <CycleTracker />}
+      {section.key === "nutrition" && <FoodGroupExamples />}
       {section.content ? (
         section.content.map((group) => (
           <View key={group.heading} style={styles.card}>
