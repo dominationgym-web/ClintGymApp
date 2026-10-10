@@ -3,7 +3,7 @@ import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
 
-export type MenuItem = { key: string; title: string; summary: string; onPress: () => void };
+export type MenuItem = { key: string; title: string; summary: string; icon?: string; onPress: () => void };
 
 // The search button and the "three lines" menu button in the top right of
 // every tab. The menu drops down a list of extra pages that don't warrant
@@ -41,8 +41,15 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
                 }}
                 accessibilityRole="button"
               >
-                <Text style={styles.itemTitle}>{item.title}</Text>
-                <Text style={styles.itemSummary}>{item.summary}</Text>
+                {item.icon ? (
+                  <View style={styles.itemIcon}>
+                    <Text style={styles.itemIconText}>{item.icon}</Text>
+                  </View>
+                ) : null}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  <Text style={styles.itemSummary}>{item.summary}</Text>
+                </View>
               </Pressable>
             ))}
           </Pressable>
@@ -59,13 +66,23 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "flex-end" },
   menu: {
     marginRight: 12,
-    width: 280,
+    width: 300,
     backgroundColor: "#1E293B",
     borderRadius: 12,
     paddingVertical: 8,
   },
   menuHeading: { color: "#64748B", fontSize: 12, fontWeight: "700", paddingHorizontal: 16, paddingVertical: 8 },
-  item: { paddingHorizontal: 16, paddingVertical: 12 },
+  item: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
+  itemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#0F172A",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  itemIconText: { fontSize: 20 },
   itemPressed: { backgroundColor: "#334155" },
   itemTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
   itemSummary: { color: "#94A3B8", fontSize: 13, marginTop: 2 },

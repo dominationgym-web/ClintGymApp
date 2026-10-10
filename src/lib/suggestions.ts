@@ -4,6 +4,7 @@ import type { Suggestion, SuggestionStatus } from "@/types/database";
 export const SUGGESTION_BOX_MENU_ITEM = {
   key: "suggestionBox",
   title: "Suggestion box",
+  icon: "💡",
   summary: "Tell us how to make the app better.",
 };
 
