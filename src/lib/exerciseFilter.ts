@@ -43,3 +43,33 @@ export type ExercisePlace = "gym" | "home";
 export function forPlace<T extends Pick<Exercise, "home_friendly">>(exercises: T[], place: ExercisePlace): T[] {
   return place === "home" ? exercises.filter((e) => e.home_friendly) : exercises;
 }
+
+// Change exercise (0047): body parts that count as the same for a swap. Must
+// match public.swap_group(). Hamstring curls and Romanian deadlifts (Posterior
+// Chain) both work the hamstrings; everything else swaps within its category.
+export function swapGroup(category: string | null): string | null {
+  return category === "Posterior Chain" ? "Hamstrings" : category;
+}
+
+/** The exercises a program exercise can be swapped for: same body part, not trainer-only, not itself. */
+export function swapOptions<T extends Pick<Exercise, "id" | "category">>(
+  exercises: T[],
+  category: string | null,
+  excludeIds: (string | null)[],
+): T[] {
+  const group = swapGroup(category);
+  if (!group) return [];
+  return exercises.filter(
+    (e) =>
+      swapGroup(e.category) === group &&
+      !(e.category && TRAINER_ONLY_CATEGORIES.includes(e.category)) &&
+      !excludeIds.includes(e.id),
+  );
+}
+
+/** "chest", "back", "hamstring": how a body part reads in a sentence. */
+export function bodyPartLabel(category: string | null): string {
+  const labels: Record<string, string> = { Push: "chest", Pull: "back", Legs: "leg", "Posterior Chain": "hamstring" };
+  if (!category) return "similar";
+  return labels[category] ?? category.toLowerCase().replace(/s$/, "");
+}
