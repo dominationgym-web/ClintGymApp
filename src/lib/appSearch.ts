@@ -22,7 +22,7 @@ export const CLIENT_PAGES: AppPage<keyof ClientTabParamList>[] = [
   { tab: "CheckIn", title: "Check-in", keywords: "daily check in weight mood energy sleep water steps flag today" },
   { tab: "Habits", title: "Habits", keywords: "habits streaks daily goals" },
   { tab: "Reset", title: "Lifestyle Reset", keywords: "reset daily 6 weekly check-in" },
-  { tab: "Training", title: "Training", keywords: "training proof video upload form check record" },
+  { tab: "Training", title: "Video log", keywords: "video log training proof video upload form check record" },
   { tab: "Exercises", title: "Exercises", keywords: "workout program today's session rest timer log a set exercise library gym home" },
   { tab: "Profile", title: "Profile", keywords: "profile progress photos coach messages quote payment banking plan account delete" },
 ];
