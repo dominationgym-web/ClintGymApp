@@ -205,6 +205,8 @@ export type Program = {
   description: string | null;
   // Weekly programs: index 0 = Monday.
   day_titles: string[];
+  // Shown before the first exercise of every session (0048).
+  warm_up: string;
   created_at: string;
 }
 
@@ -219,6 +221,9 @@ export type ProgramExercise = {
   sets: number;
   reps: string;
   rest_seconds: number;
+  // A cardio block (0048): exercise_name is the machine or the trainer's own
+  // words, reps is how long, e.g. "30 sec".
+  kind: "exercise" | "cardio";
 }
 
 export type ClientProgram = {

@@ -19,6 +19,14 @@ import GymHomeTabs from "@/components/GymHomeTabs";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
+  blankCardio,
+  CARDIO_ALL,
+  CARDIO_CUSTOM,
+  CARDIO_OPTIONS,
+  CARDIO_SECONDS,
+  cardioDuration,
+  DEFAULT_WARM_UP,
+  resizeExercises,
   defaultSessionTitle,
   EXERCISE_COUNTS,
   formatRest,
@@ -47,6 +55,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const [library, setLibrary] = useState<Exercise[]>([]);
   const [name, setName] = useState("");
   const [howTo, setHowTo] = useState("");
+  const [warmUp, setWarmUp] = useState(DEFAULT_WARM_UP);
   // Monday, Wednesday and Friday to start with.
   const [sessions, setSessions] = useState<DraftSession[]>(() => [1, 3, 5].map(blankSession));
   const [activeDay, setActiveDay] = useState(1);
@@ -84,11 +93,25 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
 
   const setCount = (count: number) => {
     if (!session) return;
-    const slots = session.exercises;
-    updateSession({
-      exercises: count <= slots.length ? slots.slice(0, count) : [...slots, ...Array.from({ length: count - slots.length }, blankSlot)],
-    });
+    updateSession({ exercises: resizeExercises(session.exercises, count, blankSlot) });
   };
+
+  // Cardio blocks (0048) go between exercises or at the end of the session.
+  const addCardio = (at: number) => {
+    if (!session) return;
+    const next = [...session.exercises];
+    next.splice(at, 0, blankCardio());
+    updateSession({ exercises: next });
+  };
+
+  const removeSlot = (index: number) => {
+    if (!session) return;
+    updateSession({ exercises: session.exercises.filter((_, i) => i !== index) });
+  };
+
+  const exerciseCount = session ? session.exercises.filter((s) => s.kind !== "cardio").length : 0;
+  const exerciseNumber = (index: number) =>
+    session ? session.exercises.slice(0, index + 1).filter((s) => s.kind !== "cardio").length : 0;
 
   const update = (index: number, change: Partial<DraftExercise>) => {
     if (!session) return;
@@ -117,7 +140,14 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     });
     const { data: program, error } = await supabase
       .from("programs")
-      .insert({ trainer_id: trainer.id, name: name.trim(), kind: "weekly", description: howTo.trim() || null, day_titles: dayTitles })
+      .insert({
+        trainer_id: trainer.id,
+        name: name.trim(),
+        kind: "weekly",
+        description: howTo.trim() || null,
+        day_titles: dayTitles,
+        warm_up: warmUp.trim() || DEFAULT_WARM_UP,
+      })
       .select()
       .single();
     if (error || !program) {
@@ -136,6 +166,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
           sets: e.sets,
           reps: e.reps.trim(),
           rest_seconds: e.restSeconds,
+          kind: e.kind ?? "exercise",
         }))
       )
     );
@@ -172,6 +203,16 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
         onChangeText={setHowTo}
       />
 
+      <Text style={styles.label}>Warm-up before every session</Text>
+      <TextInput
+        style={[styles.input, styles.multiline]}
+        multiline
+        placeholder={DEFAULT_WARM_UP}
+        placeholderTextColor="#64748B"
+        value={warmUp}
+        onChangeText={setWarmUp}
+      />
+
       <Text style={styles.label}>Training days</Text>
       <View style={styles.chipRow}>
         {SHORT_DAYS.map((d, i) => {
@@ -206,15 +247,24 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
           <Text style={styles.label}>Number of exercises</Text>
           <View style={styles.chipRow}>
             {EXERCISE_COUNTS.map((n) => (
-              <Pressable key={n} style={[styles.chip, session.exercises.length === n && styles.chipOn]} onPress={() => setCount(n)}>
-                <Text style={[styles.chipText, session.exercises.length === n && styles.chipTextOn]}>{n}</Text>
+              <Pressable key={n} style={[styles.chip, exerciseCount === n && styles.chipOn]} onPress={() => setCount(n)}>
+                <Text style={[styles.chipText, exerciseCount === n && styles.chipTextOn]}>{n}</Text>
               </Pressable>
             ))}
           </View>
 
           {session.exercises.map((slot, i) => (
-            <View key={`${session.day}-${i}`} style={styles.slot}>
-              <Text style={styles.slotNumber}>Exercise {i + 1}</Text>
+            <React.Fragment key={`${session.day}-${i}`}>
+            {slot.kind === "cardio" ? (
+              <CardioSlot
+                slot={slot}
+                isLast={i === session.exercises.length - 1}
+                onChange={(change) => update(i, change)}
+                onRemove={() => removeSlot(i)}
+              />
+            ) : (
+            <View style={styles.slot}>
+              <Text style={styles.slotNumber}>Exercise {exerciseNumber(i)}</Text>
               <Pressable style={styles.picker} onPress={() => setPicking(i)}>
                 <Text style={slot.exerciseName ? styles.pickerText : styles.pickerPlaceholder}>
                   {slot.exerciseName || "Tap to pick from the exercise videos"}
@@ -259,6 +309,13 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                 ))}
               </View>
             </View>
+            )}
+            <Pressable onPress={() => addCardio(i + 1)} hitSlop={6} style={styles.addCardio}>
+              <Text style={styles.addCardioText}>
+                + Add cardio {i === session.exercises.length - 1 ? "at the end" : "here"}
+              </Text>
+            </Pressable>
+            </React.Fragment>
           ))}
         </>
       )}
@@ -320,7 +377,81 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   );
 }
 
+// A cardio block: pick the machine and 10 to 60 seconds. The block at the end
+// of the session can also be "All of the above" or the trainer's own words,
+// e.g. "Run 5km at speed 8, incline 6 on the treadmill".
+function CardioSlot({
+  slot,
+  isLast,
+  onChange,
+  onRemove,
+}: {
+  slot: DraftExercise;
+  isLast: boolean;
+  onChange: (change: Partial<DraftExercise>) => void;
+  onRemove: () => void;
+}) {
+  const custom = slot.exerciseName === CARDIO_CUSTOM;
+  const options = isLast ? [...CARDIO_OPTIONS, CARDIO_ALL] : CARDIO_OPTIONS;
+  return (
+    <View style={[styles.slot, styles.cardioSlot]}>
+      <View style={styles.cardioHeader}>
+        <Text style={styles.slotNumber}>🔥 Cardio</Text>
+        <Pressable onPress={onRemove} hitSlop={8}>
+          <Text style={styles.removeText}>Remove</Text>
+        </Pressable>
+      </View>
+      <View style={styles.chipRow}>
+        {options.map((o) => (
+          <Pressable
+            key={o}
+            style={[styles.chip, slot.exerciseName === o && styles.chipOn]}
+            onPress={() => onChange({ exerciseName: o, reps: custom ? cardioDuration(30) : slot.reps })}
+          >
+            <Text style={[styles.chipText, slot.exerciseName === o && styles.chipTextOn]}>{o}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {!custom && (
+        <>
+          <Text style={styles.label}>How long</Text>
+          <View style={styles.chipRow}>
+            {CARDIO_SECONDS.map((sec) => (
+              <Pressable
+                key={sec}
+                style={[styles.chip, slot.reps === cardioDuration(sec) && styles.chipOn]}
+                onPress={() => onChange({ reps: cardioDuration(sec) })}
+              >
+                <Text style={[styles.chipText, slot.reps === cardioDuration(sec) && styles.chipTextOn]}>{sec}s</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      )}
+      {isLast && (
+        <>
+          <Text style={styles.label}>Or type your own</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Run 5km at speed 8, incline 6 on the treadmill"
+            placeholderTextColor="#64748B"
+            value={custom ? slot.reps : ""}
+            onChangeText={(text) =>
+              onChange(text ? { exerciseName: CARDIO_CUSTOM, reps: text } : { exerciseName: CARDIO_OPTIONS[0], reps: cardioDuration(30) })
+            }
+          />
+        </>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  cardioSlot: { borderColor: "#F97316" },
+  cardioHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  removeText: { color: "#94A3B8", fontWeight: "600", fontSize: 13 },
+  addCardio: { alignSelf: "flex-start", marginTop: -4, marginBottom: 12 },
+  addCardioText: { color: "#F97316", fontWeight: "700", fontSize: 13 },
   container: { flex: 1, backgroundColor: "#0F172A" },
   label: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6, marginTop: 10 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 10, fontSize: 14 },

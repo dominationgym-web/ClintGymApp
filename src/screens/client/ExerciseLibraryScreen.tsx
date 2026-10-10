@@ -24,7 +24,7 @@ import {
   swapOptions,
   type ExercisePlace,
 } from "@/lib/exerciseFilter";
-import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
+import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso } from "@/lib/dates";
@@ -33,6 +33,7 @@ import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/d
 import RestTimer from "@/components/RestTimer";
 import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import {
+  cardioLabel,
   dayTitle,
   DEFAULT_REST_SECONDS,
   displayProgramName,
@@ -93,6 +94,8 @@ export default function ExerciseLibraryScreen() {
   const [swapping, setSwapping] = useState<ProgramExercise | null>(null);
   const [swapSearch, setSwapSearch] = useState("");
   const [swapPreview, setSwapPreview] = useState<string | null>(null);
+  // Cardio blocks (0048) ticked off today.
+  const [cardioDone, setCardioDone] = useState<string[]>([]);
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -109,6 +112,7 @@ export default function ExerciseLibraryScreen() {
         getExerciseSwaps(todayIso()),
       ]);
       setSwaps(todaysSwaps);
+      setCardioDone(await getCardioDone(todayIso()));
       if (!error && data) setExercises(data);
       setProgram(active);
       setAllTodaysSets(logged ?? []);
@@ -214,8 +218,15 @@ export default function ExerciseLibraryScreen() {
   };
   const categoryById = new Map(exercises.map((e) => [e.id, e.category]));
   const categoriesLoggedToday = allTodaysSets.map((s) => (s.exercise_id ? categoryById.get(s.exercise_id) ?? null : null));
+  const toggleCardio = (row: ProgramExercise) => {
+    const next = cardioDone.includes(row.id) ? cardioDone.filter((id) => id !== row.id) : [...cardioDone, row.id];
+    setCardioDone(next);
+    saveCardioDone(todayIso(), next);
+  };
   const setsDoneFor = (row: ProgramExercise) =>
-    allTodaysSets.filter((s) => (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name))
+    row.kind === "cardio"
+      ? cardioDone.includes(row.id) ? row.sets : 0
+      : allTodaysSets.filter((s) => (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name))
       .length;
 
   const openProgramExercise = (row: ProgramExercise) => {
@@ -308,7 +319,12 @@ export default function ExerciseLibraryScreen() {
     if (target && todaysSets.length + 1 >= target.sets) {
       const done = (row: ProgramExercise) => (row.id === target.id ? target.sets : setsDoneFor(row));
       const next = nextUnfinished(target, todaysWorkout, done);
-      if (next) {
+      if (next?.kind === "cardio") {
+        Alert.alert(`${target.exercise_name} done ✓`, `Next up: 🔥 ${cardioLabel(next)}. Tick it off on your workout when you're done.`, [
+          { text: "Not yet", style: "cancel" },
+          { text: "Go to cardio", onPress: () => setSelected(null) },
+        ]);
+      } else if (next) {
         Alert.alert(`${target.exercise_name} done ✓`, `Ready to move on to ${next.exercise_name}?`, [
           { text: "Not yet", style: "cancel" },
           { text: "Next exercise", onPress: () => openProgramExercise(next) },
@@ -359,8 +375,26 @@ export default function ExerciseLibraryScreen() {
                       : ""}
                   </Text>
                 ) : (
+                  <View style={styles.sessionWarmUp}>
+                    <Text style={styles.sessionWarmUpTitle}>Warm up first</Text>
+                    <Text style={styles.howToText}>{program.program.warm_up}</Text>
+                  </View>
+                )}
+                {todaysWorkout.length > 0 &&
                   todaysWorkout.map((row) => {
                     const done = setsDoneFor(row);
+                    if (row.kind === "cardio") {
+                      const ticked = done >= row.sets;
+                      return (
+                        <Pressable key={row.id} style={[styles.programRow, styles.cardioRow]} onPress={() => toggleCardio(row)}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.name}>🔥 Cardio</Text>
+                            <Text style={styles.category}>{cardioLabel(row)}</Text>
+                          </View>
+                          <Text style={[styles.setsDone, ticked && { color: "#22C55E" }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
+                        </Pressable>
+                      );
+                    }
                     const next = supersetNext(row, todaysWorkout);
                     return (
                       <Pressable key={row.id} style={styles.programRow} onPress={() => openProgramExercise(row)}>
@@ -380,8 +414,7 @@ export default function ExerciseLibraryScreen() {
                         </Text>
                       </Pressable>
                     );
-                  })
-                )}
+                  })}
                 {session && sessionDue && (
                   <View style={styles.sessionButtons}>
                     <Pressable style={styles.completeButton} onPress={completeSession} disabled={savingProgress}>
@@ -674,6 +707,16 @@ const styles = StyleSheet.create({
   },
   loggedSetText: { color: "#fff", fontSize: 14 },
   loggedSetEffort: { color: "#64748B", fontSize: 12 },
+  sessionWarmUp: {
+    backgroundColor: "#1E293B",
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND_GOLD,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+  },
+  sessionWarmUpTitle: { color: BRAND_GOLD, fontWeight: "700", marginBottom: 4 },
+  cardioRow: { borderLeftWidth: 3, borderLeftColor: "#F97316", paddingLeft: 8 },
   programCard: {
     backgroundColor: "#1E293B",
     borderRadius: 12,
