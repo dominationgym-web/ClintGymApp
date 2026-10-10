@@ -70,7 +70,7 @@ export const CYCLE_PHASES: Record<CyclePhaseKey, CyclePhase> = {
       "Learn new exercises now while your focus is sharp.",
     ],
     nutrition: [
-      "Your body handles carbs well now. Have oats, rice, potatoes or fruit around training.",
+      "Your body handles carbs well now. Have rice, potatoes, sweet potato or fruit around training.",
       "Keep protein high at every meal to build muscle: meat, fish, eggs, yoghurt.",
       "Fresh, light meals with lots of vegetables suit this phase.",
     ],
@@ -128,7 +128,7 @@ export const CYCLE_PHASES: Record<CyclePhaseKey, CyclePhase> = {
       "Have protein and fibre at every meal to keep cravings in check.",
       "Craving chocolate? Pick dark chocolate. It's rich in magnesium.",
       "Cut back on salt, alcohol and caffeine to ease bloating, sore breasts and poor sleep.",
-      "Complex carbs like oats, sweet potato and brown rice help mood and sleep.",
+      "Complex carbs like sweet potato, brown rice and beans help mood and sleep.",
     ],
     supplements: [
       "Magnesium every evening helps with PMS, mood and sleep.",
