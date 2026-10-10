@@ -1,142 +1,333 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, RefreshControl, Modal } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  Modal,
+  Alert,
+  Switch,
+  TextInput,
+  Keyboard,
+} from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { ClientStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
-import { toIsoDate, todayIso } from "@/lib/dates";
+import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { LifestyleResetDailyLog } from "@/types/database";
 import LifestyleResetContent from "@/screens/client/LifestyleResetContent";
 import { RESET_GUIDES, type ResetHabitKey } from "@/lib/resetGuides";
+import {
+  FEELINGS,
+  HELPED_OPTIONS,
+  RESET_HABITS,
+  RESET_PHASES,
+  RESET_REMINDER_TIMES,
+  RESET_WEEKS_TOTAL,
+  formatReminderTime,
+  newHabits,
+  resetWeek,
+  resetWeekDates,
+  resetWeekNumber,
+  type ResetHelped,
+} from "@/lib/resetProgram";
+import { getResetReminder, setResetReminder, type ResetReminderSetting } from "@/lib/resetReminderSetting";
+import { scheduleResetReminders } from "@/lib/notifications";
+import { BRAND_GOLD } from "@/lib/brand";
+import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
+import WeekBrowser from "@/components/reset/WeekBrowser";
+import ResetTraining from "@/components/reset/ResetTraining";
 
 type HabitKey = ResetHabitKey;
+type TabKey = "plan" | "training" | "guide";
 
-const HABITS: { key: HabitKey; label: string; target: string }[] = [
-  { key: "morning_daylight", label: "Morning daylight", target: "5-7 days" },
-  { key: "breathing", label: "Breathing", target: "5-7 days" },
-  { key: "daily_movement", label: "Daily movement", target: "5-7 days" },
-  { key: "protein_meals", label: "Protein-focused meals", target: "Most days" },
-  { key: "strength_training", label: "Strength training", target: "2-3 sessions" },
-  { key: "aerobic_exercise", label: "Aerobic exercise", target: "2-4 sessions" },
-  { key: "consistent_sleep", label: "Consistent sleep", target: "5-7 nights" },
-  { key: "evening_winddown", label: "Evening wind-down", target: "5+ nights" },
+// Reset Training sits right at the top, next to her plan, so it's one tap away.
+const TABS: ScreenTab<TabKey>[] = [
+  { key: "plan", label: "My Reset", icon: "leaf" },
+  { key: "training", label: "Reset Training", icon: "barbell" },
+  { key: "guide", label: "Full guide", icon: "book" },
 ];
 
-function currentWeekNumber(startedAt: string): number {
-  const start = new Date(`${startedAt}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  return Math.min(12, Math.max(1, Math.floor(days / 7) + 1));
-}
-
+// The Women's Health Reset tab. Her trainer switches it on; she browses the
+// 12 weeks, taps Start, then ticks off each day's habits, notes how she felt,
+// and can pick a daily reminder.
 export default function LifestyleResetScreen() {
-  const { client } = useAuth();
+  const { client, refreshProfile } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
+  const [tab, setTab] = useState<TabKey>("plan");
   const [todayLog, setTodayLog] = useState<Partial<LifestyleResetDailyLog>>({});
   const [weekLogs, setWeekLogs] = useState<LifestyleResetDailyLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [guideKey, setGuideKey] = useState<HabitKey | null>(null);
+  const [viewWeek, setViewWeek] = useState<number | null>(null);
+  const [reminder, setReminder] = useState<ResetReminderSetting | null>(null);
+
+  const startedOn = client?.reset_started_on ?? null;
+  const currentWeek = startedOn ? resetWeekNumber(startedOn, todayIso()) : null;
+  const inProgram = currentWeek !== null && currentWeek >= 1 && currentWeek <= RESET_WEEKS_TOTAL;
+  const finished = currentWeek !== null && currentWeek > RESET_WEEKS_TOTAL;
 
   const load = useCallback(async () => {
-    if (!client) return;
-    const since = new Date();
-    since.setDate(since.getDate() - 6);
+    if (!client || !startedOn || !inProgram) {
+      setWeekLogs([]);
+      setTodayLog({});
+      return;
+    }
+    const { from, to } = resetWeekDates(startedOn, currentWeek);
     const { data } = await supabase
       .from("lifestyle_reset_daily_logs")
       .select("*")
       .eq("client_id", client.id)
-      .gte("log_date", toIsoDate(since))
+      .gte("log_date", from)
+      .lte("log_date", to)
       .order("log_date", { ascending: true });
     const rows = data ?? [];
     setWeekLogs(rows);
     setTodayLog(rows.find((r) => r.log_date === todayIso()) ?? {});
-  }, [client]);
+  }, [client, startedOn, inProgram, currentWeek]);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, [load]);
 
+  // Tops up the phone reminders each time she opens the tab.
+  useFocusEffect(
+    useCallback(() => {
+      getResetReminder().then((r) => {
+        setReminder(r);
+        scheduleResetReminders(startedOn, r.enabled, r.time);
+      });
+    }, [startedOn])
+  );
+
   const onRefresh = async () => {
     setRefreshing(true);
+    await refreshProfile();
     await load();
     setRefreshing(false);
   };
 
-  const toggleHabit = async (key: HabitKey) => {
-    if (!client) return;
-    const next = !todayLog[key];
-    setTodayLog((prev) => ({ ...prev, [key]: next }));
-    const payload: Partial<LifestyleResetDailyLog> = { client_id: client.id, log_date: todayIso(), [key]: next };
+  const saveLog = async (changes: Partial<LifestyleResetDailyLog>): Promise<boolean> => {
+    if (!client) return false;
+    setTodayLog((prev) => ({ ...prev, ...changes }));
+    const payload: Partial<LifestyleResetDailyLog> = { client_id: client.id, log_date: todayIso(), ...changes };
     const { data, error } = await supabase
       .from("lifestyle_reset_daily_logs")
       .upsert(payload, { onConflict: "client_id,log_date" })
       .select()
       .single();
-    if (!error && data) {
-      setWeekLogs((prev) => {
-        const others = prev.filter((r) => r.log_date !== todayIso());
-        return [...others, data].sort((a, b) => a.log_date.localeCompare(b.log_date));
-      });
+    if (error || !data) {
+      Alert.alert("Couldn't save", error?.message ?? "Please try again.");
+      return false;
     }
+    setWeekLogs((prev) => {
+      const others = prev.filter((r) => r.log_date !== todayIso());
+      return [...others, data].sort((a, b) => a.log_date.localeCompare(b.log_date));
+    });
+    return true;
   };
 
-  const weekCount = (key: HabitKey) => weekLogs.filter((r) => r[key]).length;
+  const toggleHabit = (key: HabitKey) => {
+    if (!inProgram) {
+      Alert.alert("Start the program first", "Tap Start on the My Reset tab, then you can tick things off.");
+      return;
+    }
+    saveLog({ [key]: !todayLog[key] });
+  };
+
+  const changeReminder = (next: ResetReminderSetting) => {
+    setReminder(next);
+    setResetReminder(next);
+    scheduleResetReminders(startedOn, next.enabled, next.time);
+  };
+
+  const start = () => {
+    Alert.alert("Start the Reset today?", "Week 1 begins today. You'll get new steps each week.", [
+      { text: "Not yet", style: "cancel" },
+      {
+        text: "Start",
+        onPress: async () => {
+          if (!client) return;
+          const today = todayIso();
+          const { error } = await supabase.from("clients").update({ reset_started_on: today }).eq("id", client.id);
+          if (error) {
+            Alert.alert("Couldn't start", error.message);
+            return;
+          }
+          await refreshProfile();
+          setViewWeek(null);
+          Alert.alert("Want a daily reminder?", "We'll nudge you to tick off your habits. You can change this any time.", [
+            { text: "Not now", style: "cancel" },
+            { text: "7am", onPress: () => changeReminder({ enabled: true, time: "07:00" }) },
+            { text: "7pm", onPress: () => changeReminder({ enabled: true, time: "19:00" }) },
+          ]);
+          scheduleResetReminders(today, reminder?.enabled ?? false, reminder?.time ?? "07:00");
+        },
+      },
+    ]);
+  };
+
+  const restart = () => {
+    Alert.alert("Start again from week 1?", "Your ticks and notes so far are kept.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Start again",
+        style: "destructive",
+        onPress: async () => {
+          if (!client) return;
+          const { error } = await supabase.from("clients").update({ reset_started_on: todayIso() }).eq("id", client.id);
+          if (error) {
+            Alert.alert("Couldn't restart", error.message);
+            return;
+          }
+          await refreshProfile();
+          setViewWeek(null);
+        },
+      },
+    ]);
+  };
 
   if (loading || !client) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={BRAND_GOLD} />
       </View>
     );
   }
 
-  const week = client.lifestyle_reset_started_at ? currentWeekNumber(client.lifestyle_reset_started_at) : 1;
+  const shownWeek = viewWeek ?? (inProgram ? currentWeek : 1);
+  const plan = inProgram ? resetWeek(currentWeek) : null;
+  const weekCount = (key: HabitKey) => weekLogs.filter((r) => r[key]).length;
+  const todaysHabits = plan ? RESET_HABITS.filter((h) => plan.habits.includes(h.key)) : [];
+  const fresh = new Set(inProgram ? newHabits(currentWeek) : []);
+  const ticked = todaysHabits.filter((h) => todayLog[h.key]).length;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ padding: 20 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <Text style={styles.weekBadge}>Week {week} of 12</Text>
-      <Text style={styles.sectionTitle}>Today's Daily 6</Text>
-      <Text style={styles.hint}>Tap a habit to tick it off. Tap ? to see how to do it.</Text>
-      {HABITS.map((h) => (
-        <View key={h.key} style={styles.habitRow}>
-          <Pressable style={styles.habitToggle} onPress={() => toggleHabit(h.key)}>
-            <View style={[styles.checkbox, todayLog[h.key] && styles.checkboxChecked]} />
-            <Text style={styles.habitLabel}>{h.label}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.helpButton}
-            onPress={() => setGuideKey(h.key)}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={`How to do ${h.label}`}
-          >
-            <Text style={styles.helpButtonText}>?</Text>
-          </Pressable>
-        </View>
-      ))}
+    <View style={styles.container}>
+      <ScreenTabBar tabs={TABS} current={tab} onChange={setTab} position="top" />
+      <ScrollView
+        key={tab}
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {tab === "plan" && (
+          <>
+            {!startedOn && (
+              <>
+                <Text style={styles.heroTitle}>12-Week Women's Health Reset</Text>
+                <Text style={styles.heroText}>A few small steps each week. Tap a week or press Next to see it.</Text>
+                <Pressable style={[styles.startButton, styles.startButtonTop]} onPress={start}>
+                  <Text style={styles.startButtonText}>Start this program</Text>
+                </Pressable>
+              </>
+            )}
 
-      <Text style={styles.sectionTitle}>This Week's Check-in</Text>
-      <View style={styles.table}>
-        <View style={[styles.tableRow, styles.tableHeaderRow]}>
-          <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 2 }]}>Habit</Text>
-          <Text style={[styles.tableCell, styles.tableHeaderText]}>Target</Text>
-          <Text style={[styles.tableCell, styles.tableHeaderText]}>Done</Text>
-        </View>
-        {HABITS.map((h) => (
-          <View key={h.key} style={styles.tableRow}>
-            <Text style={[styles.tableCell, { flex: 2, color: "#E2E8F0" }]}>{h.label}</Text>
-            <Text style={[styles.tableCell, { color: "#94A3B8" }]}>{h.target}</Text>
-            <Text style={[styles.tableCell, { color: "#22C55E", fontWeight: "700" }]}>{weekCount(h.key)}/7</Text>
-          </View>
-        ))}
-      </View>
-      <Text style={styles.helper}>Don't chase 100%. 70-80% consistently is what builds something sustainable.</Text>
+            {inProgram && plan && (
+              <>
+                <View style={styles.weekHeader}>
+                  <Text style={[styles.weekBadge, { color: RESET_PHASES[plan.phase].color }]}>
+                    Week {currentWeek} of {RESET_WEEKS_TOTAL} · {RESET_PHASES[plan.phase].name}
+                  </Text>
+                  <Text style={styles.weekTitle}>{plan.title}</Text>
+                  <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${(currentWeek / RESET_WEEKS_TOTAL) * 100}%` }]} />
+                  </View>
+                </View>
 
-      <View style={styles.divider} />
-      <LifestyleResetContent />
+                <Text style={styles.sectionTitle}>
+                  Today · {ticked} of {todaysHabits.length} done
+                </Text>
+                <Text style={styles.hint}>Tap to tick off. Tap ? to see how to do it.</Text>
+                {todaysHabits.map((h) => (
+                  <View key={h.key} style={styles.habitRow}>
+                    <Pressable style={styles.habitToggle} onPress={() => toggleHabit(h.key)}>
+                      <View style={[styles.checkbox, todayLog[h.key] && styles.checkboxChecked]}>
+                        {todayLog[h.key] && <Text style={styles.checkmark}>✓</Text>}
+                      </View>
+                      <Text style={styles.habitLabel}>{h.label}</Text>
+                      {fresh.has(h.key) && <Text style={styles.newBadge}>NEW</Text>}
+                    </Pressable>
+                    <Pressable
+                      style={styles.helpButton}
+                      onPress={() => setGuideKey(h.key)}
+                      hitSlop={10}
+                      accessibilityRole="button"
+                      accessibilityLabel={`How to do ${h.label}`}
+                    >
+                      <Text style={styles.helpButtonText}>?</Text>
+                    </Pressable>
+                  </View>
+                ))}
+                <Text style={styles.weekLine}>
+                  {weekLogs.reduce((n, r) => n + todaysHabits.filter((h) => r[h.key]).length, 0)} ticks so far this week.
+                  Aim for 70-80%, not perfect.
+                </Text>
+
+                <DailyNote key={todayIso()} log={todayLog} onSave={saveLog} />
+              </>
+            )}
+
+            {finished && (
+              <View style={styles.finishedCard}>
+                <Text style={styles.finishedTitle}>🎉 You finished the 12 weeks!</Text>
+                <Text style={styles.heroText}>Keep the habits that helped most. Chat to your coach about what's next.</Text>
+                <Pressable style={styles.secondaryButton} onPress={restart}>
+                  <Text style={styles.secondaryButtonText}>Start again from week 1</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {startedOn && <Text style={styles.sectionTitle}>The 12 weeks</Text>}
+            <WeekBrowser week={shownWeek} onChange={setViewWeek} currentWeek={inProgram ? currentWeek : undefined} />
+
+            {!startedOn && (
+              <Pressable style={styles.startButton} onPress={start}>
+                <Text style={styles.startButtonText}>Start this program</Text>
+              </Pressable>
+            )}
+
+            {startedOn && reminder && <ReminderCard setting={reminder} onChange={changeReminder} />}
+
+            {inProgram && (
+              <Pressable onPress={restart} style={{ alignSelf: "center", marginTop: 16 }}>
+                <Text style={styles.restartLink}>Start again from week 1</Text>
+              </Pressable>
+            )}
+          </>
+        )}
+
+        {tab === "training" && (
+          <ResetTraining
+            currentWeek={inProgram ? currentWeek : null}
+            trainedToday={!!todayLog.strength_training}
+            cardioToday={!!todayLog.aerobic_exercise}
+            strengthThisWeek={weekCount("strength_training")}
+            cardioThisWeek={weekCount("aerobic_exercise")}
+            onToggleTrained={() => toggleHabit("strength_training")}
+            onToggleCardio={() => toggleHabit("aerobic_exercise")}
+          />
+        )}
+
+        {tab === "guide" && (
+          <>
+            <Pressable
+              style={styles.cycleLink}
+              onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset" })}
+            >
+              <Text style={styles.cycleLinkText}>🌸 Your cycle: log your period and see your phase ›</Text>
+            </Pressable>
+            <LifestyleResetContent />
+          </>
+        )}
+      </ScrollView>
 
       <HabitGuideSheet
         habitKey={guideKey}
@@ -144,7 +335,114 @@ export default function LifestyleResetScreen() {
         onToggleDone={() => guideKey && toggleHabit(guideKey)}
         onClose={() => setGuideKey(null)}
       />
-    </ScrollView>
+    </View>
+  );
+}
+
+function DailyNote({
+  log,
+  onSave,
+}: {
+  log: Partial<LifestyleResetDailyLog>;
+  onSave: (changes: Partial<LifestyleResetDailyLog>) => Promise<boolean>;
+}) {
+  const [draft, setDraft] = useState(log.note ?? "");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setDraft(log.note ?? "");
+  }, [log.note]);
+
+  const saveNote = async () => {
+    Keyboard.dismiss();
+    if (await onSave({ note: draft.trim() || null })) setSaved(true);
+  };
+
+  return (
+    <View style={styles.noteCard}>
+      <Text style={styles.noteTitle}>How did you feel today?</Text>
+      <View style={styles.feelingRow}>
+        {FEELINGS.map((f) => (
+          <Pressable
+            key={f.value}
+            style={[styles.feeling, log.feeling === f.value && styles.feelingOn]}
+            onPress={() => onSave({ feeling: f.value })}
+            accessibilityLabel={f.label}
+          >
+            <Text style={styles.feelingEmoji}>{f.emoji}</Text>
+            <Text style={styles.feelingLabel}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={styles.noteTitle}>Is it helping?</Text>
+      <View style={styles.helpedRow}>
+        {HELPED_OPTIONS.map((o) => (
+          <Pressable
+            key={o.value}
+            style={[styles.helpedChip, log.helped === o.value && styles.helpedChipOn]}
+            onPress={() => onSave({ helped: o.value as ResetHelped })}
+          >
+            <Text style={[styles.helpedText, log.helped === o.value && styles.helpedTextOn]}>{o.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <TextInput
+        style={styles.noteInput}
+        value={draft}
+        onChangeText={(t) => {
+          setDraft(t);
+          setSaved(false);
+        }}
+        placeholder="Anything you noticed? Energy, sleep, mood, cravings..."
+        placeholderTextColor="#64748B"
+        multiline
+        maxLength={1000}
+      />
+      <View style={styles.noteFooter}>
+        <Text style={styles.noteHint}>Your coach can see your notes.</Text>
+        <Pressable style={styles.saveButton} onPress={saveNote}>
+          <Text style={styles.saveButtonText}>{saved ? "Saved ✓" : "Save note"}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function ReminderCard({
+  setting,
+  onChange,
+}: {
+  setting: ResetReminderSetting;
+  onChange: (next: ResetReminderSetting) => void;
+}) {
+  return (
+    <View style={styles.reminderCard}>
+      <View style={styles.reminderRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.noteTitle}>Daily reminder</Text>
+          <Text style={styles.noteHint}>A nudge each day to tick off your Reset.</Text>
+        </View>
+        <Switch
+          value={setting.enabled}
+          onValueChange={(enabled) => onChange({ ...setting, enabled })}
+          trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+          accessibilityLabel="Daily reminder"
+        />
+      </View>
+      {setting.enabled && (
+        <View style={styles.helpedRow}>
+          {RESET_REMINDER_TIMES.map((t) => (
+            <Pressable
+              key={t}
+              style={[styles.helpedChip, setting.time === t && styles.helpedChipOn]}
+              onPress={() => onChange({ ...setting, time: t })}
+            >
+              <Text style={[styles.helpedText, setting.time === t && styles.helpedTextOn]}>{formatReminderTime(t)}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -210,18 +508,14 @@ function HabitGuideSheet({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
-  weekBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#1E293B",
-    color: "#22C55E",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 16,
-  },
-  sectionTitle: { color: "#fff", fontWeight: "700", fontSize: 17, marginTop: 8, marginBottom: 10 },
+  heroTitle: { color: "#fff", fontSize: 20, fontWeight: "800" },
+  heroText: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginTop: 4, marginBottom: 4 },
+  weekHeader: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 16 },
+  weekBadge: { fontSize: 12, fontWeight: "800", letterSpacing: 0.5 },
+  weekTitle: { color: "#fff", fontSize: 19, fontWeight: "800", marginTop: 4 },
+  progressTrack: { height: 6, backgroundColor: "#0F172A", borderRadius: 3, marginTop: 10, overflow: "hidden" },
+  progressFill: { height: 6, backgroundColor: BRAND_GOLD, borderRadius: 3 },
+  sectionTitle: { color: "#fff", fontWeight: "700", fontSize: 17, marginTop: 12, marginBottom: 10 },
   hint: { color: "#64748B", fontSize: 12, marginTop: -4, marginBottom: 10 },
   habitRow: {
     flexDirection: "row",
@@ -236,22 +530,73 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 13,
     borderWidth: 1.5,
-    borderColor: "#22C55E",
+    borderColor: BRAND_GOLD,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
-  helpButtonText: { color: "#22C55E", fontWeight: "700", fontSize: 14 },
-  checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 2, borderColor: "#64748B" },
+  helpButtonText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#64748B",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
-  habitLabel: { color: "#E2E8F0", fontSize: 14, fontWeight: "600" },
-  table: { backgroundColor: "#1E293B", borderRadius: 10, overflow: "hidden" },
-  tableRow: { flexDirection: "row", paddingVertical: 10, paddingHorizontal: 12, borderTopWidth: 1, borderTopColor: "#0F172A" },
-  tableHeaderRow: { borderTopWidth: 0 },
-  tableCell: { flex: 1, fontSize: 12.5 },
-  tableHeaderText: { color: "#64748B", fontWeight: "700", textTransform: "uppercase", fontSize: 10.5 },
-  helper: { color: "#64748B", fontSize: 12, marginTop: 10, fontStyle: "italic" },
-  divider: { height: 1, backgroundColor: "#1E293B", marginTop: 28, marginBottom: 20 },
+  checkmark: { color: "#0F172A", fontWeight: "900", fontSize: 13 },
+  habitLabel: { color: "#E2E8F0", fontSize: 14.5, fontWeight: "600", flexShrink: 1 },
+  newBadge: {
+    color: "#0F172A",
+    backgroundColor: BRAND_GOLD,
+    fontSize: 10,
+    fontWeight: "800",
+    borderRadius: 999,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    overflow: "hidden",
+  },
+  weekLine: { color: "#64748B", fontSize: 12, lineHeight: 18, marginTop: 2, marginBottom: 6 },
+  noteCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
+  noteTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginBottom: 8 },
+  feelingRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 14 },
+  feeling: { alignItems: "center", paddingVertical: 6, paddingHorizontal: 4, borderRadius: 10, flex: 1 },
+  feelingOn: { backgroundColor: "#334155" },
+  feelingEmoji: { fontSize: 26 },
+  feelingLabel: { color: "#94A3B8", fontSize: 11, marginTop: 2 },
+  helpedRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 4 },
+  helpedChip: { borderWidth: 1.5, borderColor: "#334155", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
+  helpedChipOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
+  helpedText: { color: "#CBD5E1", fontWeight: "600", fontSize: 13.5 },
+  helpedTextOn: { color: "#0F172A" },
+  noteInput: {
+    backgroundColor: "#0F172A",
+    color: "#fff",
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 70,
+    textAlignVertical: "top",
+    marginTop: 10,
+    fontSize: 14,
+  },
+  noteFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 },
+  noteHint: { color: "#64748B", fontSize: 12, flexShrink: 1 },
+  saveButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
+  saveButtonText: { color: "#0F172A", fontWeight: "700" },
+  startButton: { backgroundColor: BRAND_GOLD, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 16 },
+  startButtonTop: { marginTop: 8, marginBottom: 14, paddingVertical: 12 },
+  startButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 17 },
+  reminderCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 16, gap: 10 },
+  reminderRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  finishedCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 8 },
+  finishedTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  secondaryButton: { borderWidth: 1.5, borderColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 12 },
+  secondaryButtonText: { color: BRAND_GOLD, fontWeight: "700" },
+  restartLink: { color: "#64748B", fontSize: 13, textDecorationLine: "underline" },
+  cycleLink: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 16 },
+  cycleLinkText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
   sheet: {
     maxHeight: "85%",

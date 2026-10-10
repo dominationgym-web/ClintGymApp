@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import ProgressPhotoReminder from "@/components/ProgressPhotoReminder";
 import SleepReminder from "@/components/SleepReminder";
+import ResetReminderBanner from "@/components/reset/ResetReminderBanner";
 import { CycleTodayBanner } from "@/components/CycleTracker";
 import { CoachMessageCard } from "@/components/CoachMessages";
 import { useFocusEffect } from "@react-navigation/native";
@@ -197,6 +198,7 @@ export default function CheckInScreen() {
         <CoachMessageCard />
         <SleepReminder />
         <CycleTodayBanner />
+        <ResetReminderBanner />
         <ProgressPhotoReminder />
         <Text style={styles.title}>You're checked in for today ✅</Text>
         {missing.length > 0 && (
@@ -237,6 +239,7 @@ export default function CheckInScreen() {
         <CoachMessageCard />
         <SleepReminder />
         <CycleTodayBanner />
+        <ResetReminderBanner />
         <ProgressPhotoReminder />
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>
 

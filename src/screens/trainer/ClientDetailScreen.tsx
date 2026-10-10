@@ -13,6 +13,8 @@ import ClientProgramPicker from "@/components/ClientProgramPicker";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
+import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
+import { RESET_WEEKS_TOTAL, resetWeekNumber } from "@/lib/resetProgram";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -204,12 +206,14 @@ export default function ClientDetailScreen({ route }: Props) {
 
   const toggleLifestyleReset = async () => {
     const next = client?.lifestyle_reset_started_at ? null : todayIso();
-    const { error } = await supabase.from("clients").update({ lifestyle_reset_started_at: next }).eq("id", clientId);
+    // Ending clears her start date too, so a later enrolment starts at week 1.
+    const changes = next ? { lifestyle_reset_started_at: next } : { lifestyle_reset_started_at: null, reset_started_on: null };
+    const { error } = await supabase.from("clients").update(changes).eq("id", clientId);
     if (error) {
       Alert.alert("Couldn't update", error.message);
       return;
     }
-    setClient((c) => (c ? { ...c, lifestyle_reset_started_at: next } : c));
+    setClient((c) => (c ? { ...c, ...changes } : c));
   };
 
   const toggleLibraryAccess = async (next: boolean) => {
@@ -271,9 +275,13 @@ export default function ClientDetailScreen({ route }: Props) {
 
             <View style={styles.resetBox}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.resetTitle}>12-Week Lifestyle Reset</Text>
+                <Text style={styles.resetTitle}>12-Week Women's Health Reset</Text>
                 {client.lifestyle_reset_started_at ? (
-                  <Text style={styles.helper}>Started {client.lifestyle_reset_started_at}</Text>
+                  <Text style={styles.helper}>
+                    {client.reset_started_on
+                      ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)} (started ${client.reset_started_on})`
+                      : "Enrolled. Waiting for her to tap Start"}
+                  </Text>
                 ) : (
                   <Text style={styles.helper}>Not enrolled</Text>
                 )}
@@ -284,6 +292,12 @@ export default function ClientDetailScreen({ route }: Props) {
                 </Text>
               </Pressable>
             </View>
+            {client.reset_started_on && client.lifestyle_reset_started_at && (
+              <View style={styles.resetNotes}>
+                <Text style={styles.resetTitle}>Her Reset notes</Text>
+                <TrainerResetNotes clientId={client.id} />
+              </View>
+            )}
 
             {client.status_flag !== "green" && (
               <View style={[styles.flagBanner, client.status_flag === "red" ? styles.flagBannerRed : styles.flagBannerOrange]}>
@@ -570,6 +584,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   resetTitle: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  resetNotes: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8 },
   resetButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   resetButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },

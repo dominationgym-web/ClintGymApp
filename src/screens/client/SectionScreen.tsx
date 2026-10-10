@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, Switch } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Switch, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
 import { findSection } from "@/lib/sections";
@@ -11,6 +11,9 @@ import CalorieCalculator from "@/components/CalorieCalculator";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
 import InsulinGuide from "@/components/InsulinGuide";
 import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useAuth } from "@/context/AuthContext";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -24,6 +27,7 @@ export default function SectionScreen({ route }: Props) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Text style={styles.summary}>{section.summary}</Text>
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
+      {section.key === "womensHealthReset" && <ResetProgramLink />}
       {section.key === "womensHealthReset" && <CycleTracker />}
       {section.key === "nutrition" && <FoodGroupExamples />}
       {section.content ? (
@@ -66,6 +70,19 @@ function UnderstandingCarbs() {
       ))}
       <Text style={[styles.paragraph, styles.question]}>{UNDERSTANDING_CARBS.question}</Text>
     </View>
+  );
+}
+
+// Clients on the 12-week Reset get a shortcut to their Reset tab.
+function ResetProgramLink() {
+  const { client } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
+  if (!client?.lifestyle_reset_started_at) return null;
+  return (
+    <Pressable style={styles.card} onPress={() => navigation.navigate("ClientTabs", { screen: "Reset" })}>
+      <Text style={styles.toggleTitle}>🌿 Your 12-week Reset program ›</Text>
+      <Text style={[styles.cardText, { marginBottom: 0 }]}>Week by week plan, daily ticks and Reset Training.</Text>
+    </Pressable>
   );
 }
 
