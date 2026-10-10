@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { withExtraCardio } from "@/lib/programs";
 import type { ClientProgram, Program, ProgramExercise } from "@/types/database";
 
 export interface ActiveProgram {
@@ -7,7 +8,10 @@ export interface ActiveProgram {
   exercises: ProgramExercise[];
 }
 
-/** The program a client is on (0035), with all of its exercises, or null. */
+/**
+ * The program a client is on (0035), with all of its exercises and any cardio
+ * the trainer added just for them (0054), or null.
+ */
 export async function loadClientProgram(clientId: string): Promise<ActiveProgram | null> {
   const { data: assignment } = await supabase
     .from("client_programs")
@@ -20,7 +24,7 @@ export async function loadClientProgram(clientId: string): Promise<ActiveProgram
     loadProgramExercises(assignment.program_id),
   ]);
   if (!program) return null;
-  return { assignment, program, exercises: exercises ?? [] };
+  return { assignment, program, exercises: withExtraCardio(exercises ?? [], assignment.extra_cardio) };
 }
 
 export function loadProgramExercises(programId: string) {
