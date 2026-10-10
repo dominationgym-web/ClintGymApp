@@ -1,0 +1,54 @@
+name: Publish app update
+
+# Sends every change merged into the default branch straight to the installed
+# app (preview builds) as an instant update, so no new build is needed. Only
+# runs once the EXPO_TOKEN repository secret is set. Changes to native code
+# (new packages) can't go out this way: the fingerprint runtime version keeps
+# those away from older builds until a new build is installed.
+on:
+  push:
+    branches: ["claude/coaching-app-brief-tllivw"]
+
+concurrency:
+  group: app-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Publish update
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Public values, the same ones the builds use (eas.json).
+      EXPO_PUBLIC_SUPABASE_URL: https://vrasgqqubyurzoknsbgm.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyYXNncXF1Ynl1cnpva25zYmdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1MTU2MjEsImV4cCI6MjEwNTA5MTYyMX0.Kqp6vk5JrKN4Hzwz0juXMf-xNdqwHrOYkZRZa4LpdeM
+      COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+    steps:
+      - name: Skip until the Expo token is set
+        if: env.EXPO_TOKEN == ''
+        run: echo "Add the EXPO_TOKEN repository secret to publish app updates."
+
+      - uses: actions/checkout@v4
+        if: env.EXPO_TOKEN != ''
+
+      - uses: actions/setup-node@v4
+        if: env.EXPO_TOKEN != ''
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: env.EXPO_TOKEN != ''
+        run: npm ci
+
+      - if: env.EXPO_TOKEN != ''
+        run: npm run typecheck && npm test
+
+      - uses: expo/expo-github-action@v8
+        if: env.EXPO_TOKEN != ''
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish to the preview channel
+        if: env.EXPO_TOKEN != ''
+        run: eas update --channel preview --message "${COMMIT_MESSAGE%%$'\n'*}" --non-interactive
