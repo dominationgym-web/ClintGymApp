@@ -9,6 +9,7 @@ import { scheduleSleepReminders } from "@/lib/notifications";
 import CycleTracker from "@/components/CycleTracker";
 import CalorieCalculator from "@/components/CalorieCalculator";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
+import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -46,8 +47,23 @@ export default function SectionScreen({ route }: Props) {
           ))}
         </View>
       )}
+      {section.key === "nutrition" && <UnderstandingCarbs />}
       {section.key === "nutrition" && <CalorieCalculator />}
     </ScrollView>
+  );
+}
+
+function UnderstandingCarbs() {
+  return (
+    <View style={styles.card}>
+      <Text style={styles.bigHeading}>{UNDERSTANDING_CARBS.title}</Text>
+      {UNDERSTANDING_CARBS.paragraphs.map((p) => (
+        <Text key={p} style={styles.paragraph}>
+          {p}
+        </Text>
+      ))}
+      <Text style={[styles.paragraph, styles.question]}>{UNDERSTANDING_CARBS.question}</Text>
+    </View>
   );
 }
 
@@ -86,6 +102,9 @@ const styles = StyleSheet.create({
   summary: { color: "#E2E8F0", fontSize: 16, lineHeight: 23, marginBottom: 20 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   heading: { color: BRAND_GOLD, fontSize: 15, fontWeight: "700", marginBottom: 8 },
+  bigHeading: { color: BRAND_GOLD, fontSize: 26, fontWeight: "800", marginBottom: 12 },
+  paragraph: { color: "#E2E8F0", fontSize: 15, lineHeight: 22, marginBottom: 10 },
+  question: { color: "#fff", fontWeight: "800", marginBottom: 0 },
   badge: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 8 },
   cardText: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 10 },
   topic: { color: "#CBD5E1", fontSize: 14, lineHeight: 21, marginBottom: 6 },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimateCalories, FOOD_GROUP_EXAMPLES, NUTRITION_GUIDE, parseGrams } from "@/lib/nutrition";
+import { estimateCalories, FOOD_GROUP_EXAMPLES, NUTRITION_GUIDE, parseGrams, UNDERSTANDING_CARBS } from "@/lib/nutrition";
 
 describe("estimateCalories", () => {
   it("uses 4 kcal for protein and carbs, 2 for fibre and 9 for fat", () => {
@@ -25,6 +25,6 @@ describe("parseGrams", () => {
 
 describe("NUTRITION_GUIDE", () => {
   it("never recommends oats", () => {
-    expect(JSON.stringify([NUTRITION_GUIDE, FOOD_GROUP_EXAMPLES]).toLowerCase()).not.toMatch(/\boats?\b/);
+    expect(JSON.stringify([NUTRITION_GUIDE, FOOD_GROUP_EXAMPLES, UNDERSTANDING_CARBS]).toLowerCase()).not.toMatch(/\boats?\b/);
   });
 });

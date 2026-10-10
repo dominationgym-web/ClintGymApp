@@ -41,6 +41,40 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
   },
 ];
 
+// "Understanding Carbs": GRIZZ's own words (2026-10-10), shown in full under a
+// big heading in the Nutrition section. Each entry is a paragraph.
+export const UNDERSTANDING_CARBS = {
+  title: "Understanding Carbs",
+  paragraphs: [
+    "Eating carbs for gym performance is not the same as eating for long term health.",
+    "That distinction gets conveniently blurred.",
+    "“You need carbs for performance. You cannot train without carbs.”",
+    "Fine. If your goal is explosive output, marathons, bodybuilding, competition prep, or squeezing every last rep out of your body, carbohydrates can be used that way.",
+    "That is performance nutrition.",
+    "That is not automatically health nutrition.",
+    "Athletes and bodybuilders who load carbohydrates know exactly what they are doing. They are manipulating their metabolism to squeeze out more output.",
+    "More glycogen in the muscle. More fuel for explosive effort. More glucose available when the body needs fast energy.",
+    "It works for that purpose.",
+    "But carbs are not required to train.",
+    "The human body can adapt to lower carbohydrate intake. It can use fat for fuel. It can produce glucose when needed. You do not suddenly stop functioning because you stopped eating bowls of pasta before the gym.",
+    "And honestly, constantly pushing the body harder and harder just to chase output is not healthy either.",
+    "The body was built to move, lift, walk, sprint, recover, and repeat.",
+    "It was not built to live in a constant state of extreme output, extreme food intake, extreme recovery demand, and metabolic stress just so somebody can perform at the highest possible level for a few years.",
+    "There is a difference between training for health and training for performance.",
+    "Most people are not elite athletes. They are not running 100km a week or training twice a day.",
+    "They are sitting at desks for eight hours, sleeping badly, stressed out, then copying the diet of people whose entire lives revolve around performance.",
+    "Eating like a performance athlete when you are not one is not health.",
+    "It is just eating sugar and calling it fuel.",
+    "And what often gets left out is what that glucose is doing at the cellular level while it is being burned through.",
+    "Even when you think you have “burned it off,” glycation still happens. Glucose still binds to proteins and lipids during that spike. Your body still triggers an insulin response. The damage may be smaller when you are highly active, but it is not zero.",
+    "Working harder does not erase the biological process that happens the moment glucose enters your blood.",
+    "I eat for health.",
+    "For longevity.",
+    "For what my cells look like at 75, not for what I can lift in the gym.",
+  ],
+  question: "So the real question is: are you eating for long term health, or are you eating for short term output?",
+};
+
 // Energy per gram. Carbohydrate here is the figure on South African labels,
 // which leaves fibre out; fibre is counted separately at about 2 kcal a gram.
 export const KCAL_PER_GRAM = { protein: 4, carbs: 4, fibre: 2, fat: 9 } as const;
