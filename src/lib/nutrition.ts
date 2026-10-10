@@ -10,7 +10,7 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
       "If you're trying to lose weight, there will be adjustments to these guidelines.",
       "If you're trying to gain weight, there will be adjustments too.",
       "If you're looking to improve your health and wellbeing, you might need to increase your healthy fat intake.",
-      "So treat these as guidelines to support your health. Your coach will tailor them to your goals.",
+      "So these are guidelines to support your health, not your specific goals.",
     ],
   },
   {
