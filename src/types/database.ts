@@ -62,6 +62,8 @@ export type Client = {
   plan_expires_at: string | null;
   package_type: PackageType | null;
   lifestyle_reset_started_at: string | null;
+  // The day she tapped Start on the Reset (0050): her week 1 begins here.
+  reset_started_on: string | null;
   consent_accepted_at: string | null;
   privacy_policy_version: string | null;
   status_flag: ClientStatusFlag;
@@ -271,6 +273,10 @@ export type LifestyleResetDailyLog = {
   aerobic_exercise: boolean;
   consistent_sleep: boolean;
   evening_winddown: boolean;
+  // Her daily note (0050): 1-5, did it help, and a comment.
+  feeling: number | null;
+  helped: "yes" | "a_little" | "not_yet" | null;
+  note: string | null;
   created_at: string;
 }
 
@@ -349,6 +355,7 @@ export interface Database {
         Args: { p_current_day: number; p_due_on: string; p_completed: boolean };
         Returns: undefined;
       };
+      reset_exercise_videos: { Args: Record<string, never>; Returns: { name: string; external_url: string | null }[] };
       mark_coach_messages_read: { Args: Record<string, never>; Returns: undefined };
       register_push_token: { Args: { p_token: string }; Returns: undefined };
       client_monthly_consistency: {

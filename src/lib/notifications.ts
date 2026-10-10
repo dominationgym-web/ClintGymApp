@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { progressPhotoReminderAt } from "@/lib/progressPhotos";
 import { upcomingSleepReminders } from "@/lib/sleep";
 import { upcomingPhases } from "@/lib/cycle";
+import { upcomingResetReminders } from "@/lib/resetProgram";
 import { parseIsoDate, todayIso } from "@/lib/dates";
 
 type NotificationsModule = typeof import("expo-notifications");
@@ -198,6 +199,37 @@ export async function scheduleCycleReminders(periodStarts: string[], enabled: bo
     }
   } catch (e) {
     console.warn("Couldn't schedule the cycle reminders", e);
+  }
+}
+
+const RESET_ID_PREFIX = "reset-reminder-";
+const RESET_DAYS_AHEAD = 14;
+
+/**
+ * (Re)schedules the daily Women's Health Reset reminder at the time she
+ * picked for the next two weeks, each naming that day's week, or clears them
+ * when it's off or she hasn't started. Safe to call on every open.
+ */
+export async function scheduleResetReminders(startedOn: string | null, enabled: boolean, time: string): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    const scheduled = await N.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(RESET_ID_PREFIX))
+        .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
+    );
+    if (!enabled || !startedOn || !(await canNotify(N))) return;
+    for (const r of upcomingResetReminders(startedOn, time, new Date(), RESET_DAYS_AHEAD)) {
+      await N.scheduleNotificationAsync({
+        identifier: r.id,
+        content: { title: r.title, body: r.body },
+        trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: r.at, channelId: REMINDERS_CHANNEL },
+      });
+    }
+  } catch (e) {
+    console.warn("Couldn't schedule the Reset reminders", e);
   }
 }
 
