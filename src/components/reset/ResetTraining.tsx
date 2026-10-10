@@ -3,12 +3,24 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
-import { RESET_PHASES, RESET_TRAINING, RESET_WARM_UP, RESET_WEEKS_TOTAL, resetWeek } from "@/lib/resetProgram";
+import {
+  RESET_HOME_KIT,
+  RESET_HOME_WARM_UP,
+  RESET_LOCATIONS,
+  RESET_PHASES,
+  RESET_WARM_UP,
+  RESET_WEEKS_TOTAL,
+  resetTraining,
+  resetWeek,
+  type ResetLocation,
+} from "@/lib/resetProgram";
 
 // The Reset Training tab: the sessions for a week of the programme, with a
 // demo video under each exercise and a tick for "I trained today" and
 // "I did cardio today" (the same ticks as the daily checklist).
 export default function ResetTraining({
+  location,
+  onChangeLocation,
   currentWeek,
   trainedToday,
   cardioToday,
@@ -17,6 +29,8 @@ export default function ResetTraining({
   onToggleTrained,
   onToggleCardio,
 }: {
+  location: ResetLocation | null;
+  onChangeLocation: (location: ResetLocation) => void;
   // Null until she has started the programme: she can look, not tick.
   currentWeek: number | null;
   trainedToday: boolean;
@@ -38,7 +52,7 @@ export default function ResetTraining({
 
   const plan = resetWeek(week);
   const phase = RESET_PHASES[plan.phase];
-  const training = RESET_TRAINING[plan.phase];
+  const training = resetTraining(plan.phase, location);
   const isThisWeek = week === currentWeek;
 
   const exerciseName = (name: string, rowKey: string, prefix = "") => {
@@ -55,6 +69,18 @@ export default function ResetTraining({
 
   return (
     <View>
+      <View style={styles.switchRow}>
+        {RESET_LOCATIONS.map((l) => {
+          const on = (location ?? "gym") === l.value;
+          return (
+            <Pressable key={l.value} style={[styles.switchButton, on && styles.switchOn]} onPress={() => onChangeLocation(l.value)}>
+              <Text style={[styles.switchText, on && styles.switchTextOn]}>
+                {l.emoji} {l.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <View style={styles.weekRow}>
         <Pressable disabled={week === 1} onPress={() => setWeek(week - 1)} hitSlop={10} style={week === 1 && styles.dim}>
           <Text style={styles.arrow}>‹</Text>
@@ -114,8 +140,14 @@ export default function ResetTraining({
         </Text>
         <Text style={styles.line}>
           <Text style={styles.bold}>Warm-up: </Text>
-          {RESET_WARM_UP}
+          {location === "home" ? RESET_HOME_WARM_UP : RESET_WARM_UP}
         </Text>
+        {location === "home" && (
+          <Text style={styles.line}>
+            <Text style={styles.bold}>Kit: </Text>
+            {RESET_HOME_KIT}
+          </Text>
+        )}
       </View>
 
       <Text style={styles.hint}>Tap an exercise to watch how to do it.</Text>
@@ -148,6 +180,11 @@ export default function ResetTraining({
 }
 
 const styles = StyleSheet.create({
+  switchRow: { flexDirection: "row", backgroundColor: "#1E293B", borderRadius: 10, padding: 4, marginBottom: 14 },
+  switchButton: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: "center" },
+  switchOn: { backgroundColor: BRAND_GOLD },
+  switchText: { color: "#CBD5E1", fontWeight: "700", fontSize: 14 },
+  switchTextOn: { color: "#0F172A" },
   weekRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 8 },
   arrow: { color: BRAND_GOLD, fontSize: 34, fontWeight: "700", paddingHorizontal: 12 },
   dim: { opacity: 0.25 },

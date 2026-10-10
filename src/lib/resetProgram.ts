@@ -258,7 +258,18 @@ export type ResetTraining = {
   energyNote: string;
 };
 
+export type ResetLocation = "gym" | "home";
+
+export const RESET_LOCATIONS: { value: ResetLocation; emoji: string; label: string; line: string }[] = [
+  { value: "gym", emoji: "🏋️", label: "Gym", line: "Machines, barbells and dumbbells" },
+  { value: "home", emoji: "🏠", label: "Home", line: "Dumbbells, a band and a mat" },
+];
+
+export const RESET_HOME_KIT =
+  "You'll need a pair of dumbbells, a resistance band, a mat and a sturdy chair. No dumbbells yet? Filled water bottles or a backpack work to start.";
+
 export const RESET_WARM_UP = "5 minutes of brisk walking or easy cycling, then a light set of your first exercise.";
+export const RESET_HOME_WARM_UP = "5 minutes of marching on the spot or easy jumping jacks, then a light set of your first exercise.";
 
 export const RESET_TRAINING: Record<ResetPhaseKey, ResetTraining> = {
   calm: {
@@ -443,4 +454,123 @@ export function upcomingResetReminders(
     });
   }
   return out;
+}
+
+// The same phases and effort as the gym plan, with exercises that only need
+// dumbbells, a resistance band, a mat and a chair. No overhead pressing.
+export const RESET_HOME_TRAINING: Record<ResetPhaseKey, ResetTraining> = {
+  calm: {
+    ...RESET_TRAINING.calm,
+    sessions: [
+      {
+        key: "home-calm-a",
+        label: "Session A (do it twice this week)",
+        exercises: [
+          { name: "Bodyweight Box Squat", note: "sit back to a chair" },
+          { name: "Incline Push-Up", note: "hands on a table or kitchen counter" },
+          { name: "Band Row", or: "Dumbbell Row" },
+          { name: "Glute Bridge" },
+          { name: "Plank", note: "hold 20-40 seconds" },
+        ],
+      },
+    ],
+  },
+  rhythm: {
+    ...RESET_TRAINING.rhythm,
+    sessions: [
+      {
+        key: "home-rhythm-a",
+        label: "Session A (do it twice this week)",
+        exercises: [
+          { name: "Goblet Squat", or: "Bodyweight Squat" },
+          { name: "Dumbbell Deadlift", note: "light, slow and controlled" },
+          { name: "Bodyweight Knee Push-Up", or: "Incline Push-Up" },
+          { name: "Dumbbell Row" },
+          { name: "Dumbbell Lateral Raise" },
+          { name: "Plank", note: "hold 20-40 seconds" },
+        ],
+      },
+    ],
+  },
+  build: {
+    ...RESET_TRAINING.build,
+    sessions: [
+      {
+        key: "home-build-a",
+        label: "Day A · Lower body",
+        exercises: [
+          { name: "Goblet Squat" },
+          { name: "Dumbbell Deadlift" },
+          { name: "Dumbbell Goblet Reverse Lunge" },
+          { name: "Glute Bridge" },
+          { name: "Plank", note: "hold 20-40 seconds" },
+        ],
+      },
+      {
+        key: "home-build-b",
+        label: "Day B · Push",
+        exercises: [
+          { name: "Push-Up", or: "Bodyweight Knee Push-Up" },
+          { name: "Floor Press", note: "with dumbbells" },
+          { name: "Dumbbell Lateral Raise" },
+          { name: "Bench Dip", note: "off a sturdy chair" },
+        ],
+      },
+      {
+        key: "home-build-c",
+        label: "Day C · Pull",
+        exercises: [
+          { name: "Dumbbell Row" },
+          { name: "Band Row" },
+          { name: "Dumbbell Rear-Delt Fly" },
+          { name: "Hammer Curl" },
+        ],
+      },
+    ],
+  },
+  optimise: {
+    ...RESET_TRAINING.optimise,
+    summary: "3 sessions a week, fine-tuned with your coach",
+    sessions: [
+      {
+        key: "home-optimise-a",
+        label: "Day A · Lower body",
+        exercises: [
+          { name: "Goblet Squat" },
+          { name: "Dumbbell Bulgarian Split Squat", note: "back foot on a chair" },
+          { name: "Single-Leg Glute Bridge" },
+          { name: "Towel Slide Leg Curl" },
+          { name: "Band Hip Abduction" },
+          { name: "Dead Bug" },
+        ],
+      },
+      {
+        key: "home-optimise-b",
+        label: "Day B · Push",
+        exercises: [
+          { name: "Push-Up", or: "Bodyweight Knee Push-Up" },
+          { name: "Floor Press", note: "with dumbbells" },
+          { name: "Dumbbell Lateral Raise" },
+          { name: "Overhead Dumbbell Extension" },
+          { name: "Bench Dip", note: "off a sturdy chair" },
+        ],
+      },
+      {
+        key: "home-optimise-c",
+        label: "Day C · Pull",
+        exercises: [
+          { name: "Single-Leg Dumbbell Romanian Deadlift", or: "Dumbbell Deadlift" },
+          { name: "Dumbbell Row" },
+          { name: "Band Row" },
+          { name: "Dumbbell Rear-Delt Fly" },
+          { name: "Hammer Curl" },
+          { name: "Dumbbell Curl" },
+        ],
+      },
+    ],
+  },
+};
+
+export function resetTraining(phase: ResetPhaseKey, location: ResetLocation | null): ResetTraining {
+  return (location === "home" ? RESET_HOME_TRAINING : RESET_TRAINING)[phase];
 }

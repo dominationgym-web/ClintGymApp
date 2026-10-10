@@ -279,7 +279,7 @@ export default function ClientDetailScreen({ route }: Props) {
                 {client.lifestyle_reset_started_at ? (
                   <Text style={styles.helper}>
                     {client.reset_started_on
-                      ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)} (started ${client.reset_started_on})`
+                      ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)} (started ${client.reset_started_on})${client.reset_location === "home" ? " · training at home" : ""}`
                       : "Enrolled. Waiting for her to tap Start"}
                   </Text>
                 ) : (

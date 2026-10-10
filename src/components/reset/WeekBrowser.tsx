@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { RESET_HABITS, RESET_PHASES, RESET_TRAINING, RESET_WEEKS, RESET_WEEKS_TOTAL, newHabits, resetWeek } from "@/lib/resetProgram";
+import { RESET_HABITS, RESET_PHASES, RESET_WEEKS, RESET_WEEKS_TOTAL, newHabits, resetTraining, resetWeek, type ResetLocation } from "@/lib/resetProgram";
 
 const PHASE_ORDER = ["calm", "rhythm", "build", "optimise"] as const;
 
@@ -11,15 +11,17 @@ export default function WeekBrowser({
   week,
   onChange,
   currentWeek,
+  location = null,
 }: {
   week: number;
   onChange: (week: number) => void;
   // Her week if she has started, so it's highlighted and past weeks get a tick.
   currentWeek?: number;
+  location?: ResetLocation | null;
 }) {
   const plan = resetWeek(week);
   const phase = RESET_PHASES[plan.phase];
-  const training = RESET_TRAINING[plan.phase];
+  const training = resetTraining(plan.phase, location);
   const fresh = new Set(newHabits(week));
 
   return (
@@ -99,7 +101,7 @@ export default function WeekBrowser({
           ))}
         </View>
 
-        <Text style={styles.training}>🏋️ {training.summary}</Text>
+        <Text style={styles.training}>{location === "home" ? "🏠" : "🏋️"} {training.summary}{location === "home" ? " at home" : ""}</Text>
         <Text style={styles.tip}>💡 {plan.tip}</Text>
       </View>
 

@@ -26,6 +26,7 @@ import {
   FEELINGS,
   HELPED_OPTIONS,
   RESET_HABITS,
+  RESET_LOCATIONS,
   RESET_PHASES,
   RESET_REMINDER_TIMES,
   RESET_WEEKS_TOTAL,
@@ -35,6 +36,7 @@ import {
   resetWeekDates,
   resetWeekNumber,
   type ResetHelped,
+  type ResetLocation,
 } from "@/lib/resetProgram";
 import { getResetReminder, setResetReminder, type ResetReminderSetting } from "@/lib/resetReminderSetting";
 import { scheduleResetReminders } from "@/lib/notifications";
@@ -67,6 +69,7 @@ export default function LifestyleResetScreen() {
   const [guideKey, setGuideKey] = useState<HabitKey | null>(null);
   const [viewWeek, setViewWeek] = useState<number | null>(null);
   const [reminder, setReminder] = useState<ResetReminderSetting | null>(null);
+  const [location, setLocation] = useState<ResetLocation | null>(client?.reset_location ?? null);
 
   const startedOn = client?.reset_started_on ?? null;
   const currentWeek = startedOn ? resetWeekNumber(startedOn, todayIso()) : null;
@@ -147,7 +150,24 @@ export default function LifestyleResetScreen() {
     scheduleResetReminders(startedOn, next.enabled, next.time);
   };
 
+  const chooseLocation = async (next: ResetLocation) => {
+    if (!client) return;
+    const before = location;
+    setLocation(next);
+    const { error } = await supabase.from("clients").update({ reset_location: next }).eq("id", client.id);
+    if (error) {
+      setLocation(before);
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    refreshProfile();
+  };
+
   const start = () => {
+    if (!location) {
+      Alert.alert("Gym or home?", "Pick where you'll train first, then tap Start.");
+      return;
+    }
     Alert.alert("Start the Reset today?", "Week 1 begins today. You'll get new steps each week.", [
       { text: "Not yet", style: "cancel" },
       {
@@ -224,7 +244,23 @@ export default function LifestyleResetScreen() {
               <>
                 <Text style={styles.heroTitle}>12-Week Women's Health Reset</Text>
                 <Text style={styles.heroText}>A few small steps each week. Tap a week or press Next to see it.</Text>
-                <Pressable style={[styles.startButton, styles.startButtonTop]} onPress={start}>
+                <Text style={styles.chooseTitle}>Where will you train?</Text>
+                <View style={styles.chooseRow}>
+                  {RESET_LOCATIONS.map((l) => (
+                    <Pressable
+                      key={l.value}
+                      style={[styles.chooseCard, location === l.value && styles.chooseCardOn]}
+                      onPress={() => chooseLocation(l.value)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: location === l.value }}
+                    >
+                      <Text style={styles.chooseEmoji}>{l.emoji}</Text>
+                      <Text style={[styles.chooseLabel, location === l.value && styles.chooseLabelOn]}>{l.label}</Text>
+                      <Text style={[styles.chooseLine, location === l.value && styles.chooseLabelOn]}>{l.line}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Pressable style={[styles.startButton, styles.startButtonTop, !location && styles.startButtonOff]} onPress={start}>
                   <Text style={styles.startButtonText}>Start this program</Text>
                 </Pressable>
               </>
@@ -286,10 +322,15 @@ export default function LifestyleResetScreen() {
             )}
 
             {startedOn && <Text style={styles.sectionTitle}>The 12 weeks</Text>}
-            <WeekBrowser week={shownWeek} onChange={setViewWeek} currentWeek={inProgram ? currentWeek : undefined} />
+            <WeekBrowser
+              week={shownWeek}
+              onChange={setViewWeek}
+              currentWeek={inProgram ? currentWeek : undefined}
+              location={location}
+            />
 
             {!startedOn && (
-              <Pressable style={styles.startButton} onPress={start}>
+              <Pressable style={[styles.startButton, !location && styles.startButtonOff]} onPress={start}>
                 <Text style={styles.startButtonText}>Start this program</Text>
               </Pressable>
             )}
@@ -306,6 +347,8 @@ export default function LifestyleResetScreen() {
 
         {tab === "training" && (
           <ResetTraining
+            location={location}
+            onChangeLocation={chooseLocation}
             currentWeek={inProgram ? currentWeek : null}
             trainedToday={!!todayLog.strength_training}
             cardioToday={!!todayLog.aerobic_exercise}
@@ -586,6 +629,23 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
   saveButtonText: { color: "#0F172A", fontWeight: "700" },
   startButton: { backgroundColor: BRAND_GOLD, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 16 },
+  startButtonOff: { opacity: 0.45 },
+  chooseTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginTop: 12, marginBottom: 8 },
+  chooseRow: { flexDirection: "row", gap: 10 },
+  chooseCard: {
+    flex: 1,
+    backgroundColor: "#1E293B",
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#1E293B",
+    padding: 12,
+    alignItems: "center",
+  },
+  chooseCardOn: { borderColor: BRAND_GOLD, backgroundColor: "#2A2614" },
+  chooseEmoji: { fontSize: 26 },
+  chooseLabel: { color: "#fff", fontSize: 16, fontWeight: "800", marginTop: 4 },
+  chooseLabelOn: { color: BRAND_GOLD },
+  chooseLine: { color: "#94A3B8", fontSize: 12, textAlign: "center", marginTop: 2 },
   startButtonTop: { marginTop: 8, marginBottom: 14, paddingVertical: 12 },
   startButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 17 },
   reminderCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 16, gap: 10 },
