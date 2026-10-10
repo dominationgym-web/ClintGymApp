@@ -72,6 +72,9 @@ export type Client = {
   // Off by default; only the client can turn it on (0027). While off, the
   // trainer can't see any of their progress photos.
   progress_photos_shared: boolean;
+  // Full exercise library (0043). Off by default: the client sees only their
+  // own program's exercises until their trainer switches it on.
+  library_access: boolean;
   created_at: string;
 }
 
