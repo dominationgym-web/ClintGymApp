@@ -18,6 +18,7 @@ import {
   programDayNumber,
   warmUpReps,
   withExtraCardio,
+  programFamily,
 } from "@/lib/programs";
 import type { ProgramExercise } from "@/types/database";
 
@@ -255,5 +256,21 @@ describe("withExtraCardio", () => {
       { after: 9, name: "Sprint", reps: "10 sec" },
     ]);
     expect(names(out)).toEqual(["Curl", "Press", "[Cycle]", "Row", "[Sprint]"]);
+  });
+});
+
+describe("programFamily", () => {
+  const built = (name: string) => programFamily({ name, trainer_id: null });
+  it("groups built-in programs by name, gym and home alike", () => {
+    expect(built("Full body week")).toBe("fullBody");
+    expect(built("Home quick full body (35 min)")).toBe("fullBody");
+    expect(built("Quick upper body (30 min)")).toBe("upperLower");
+    expect(built("Home quick lower body (30 min)")).toBe("upperLower");
+    expect(built("Chest & Bi 3")).toBe("chestBi");
+    expect(built("Home Back & Tri 1")).toBe("backTri");
+    expect(built("Legs 4")).toBe("legs");
+  });
+  it("puts the trainer's own programs together, whatever their name", () => {
+    expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");
   });
 });
