@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   RESET_HABITS,
   RESET_TRAINING,
+  RESET_HOME_TRAINING,
+  resetTraining,
   RESET_WEEKS,
   formatReminderTime,
   newHabits,
@@ -35,10 +37,29 @@ describe("RESET_WEEKS", () => {
   });
 
   it("has no hack squats in any session", () => {
-    const names = Object.values(RESET_TRAINING).flatMap((t) =>
+    const names = [...Object.values(RESET_TRAINING), ...Object.values(RESET_HOME_TRAINING)].flatMap((t) =>
       t.sessions.flatMap((s) => s.exercises.flatMap((e) => [e.name, e.or ?? ""]))
     );
     expect(names.some((n) => /hack/i.test(n))).toBe(false);
+  });
+});
+
+describe("home training", () => {
+  it("has the same number of sessions as the gym plan in every phase", () => {
+    for (const phase of ["calm", "rhythm", "build", "optimise"] as const) {
+      expect(RESET_HOME_TRAINING[phase].sessions.length).toBe(RESET_TRAINING[phase].sessions.length);
+      expect(resetTraining(phase, "home")).toBe(RESET_HOME_TRAINING[phase]);
+      expect(resetTraining(phase, null)).toBe(RESET_TRAINING[phase]);
+    }
+  });
+
+  it("only uses exercises the video lookup knows", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sql = readFileSync("supabase/migrations/0051_reset_home_option.sql", "utf8");
+    const names = [...Object.values(RESET_TRAINING), ...Object.values(RESET_HOME_TRAINING)].flatMap((t) =>
+      t.sessions.flatMap((s) => s.exercises.flatMap((e) => (e.or ? [e.name, e.or] : [e.name])))
+    );
+    for (const n of names) expect(sql).toContain(`'${n}'`);
   });
 });
 
