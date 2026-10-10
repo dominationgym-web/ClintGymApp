@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -36,6 +36,7 @@ import {
   type DraftExercise,
   type DraftSession,
 } from "@/lib/programs";
+import { clearProgramDraft, loadProgramDraft, saveProgramDraft } from "@/lib/programDraft";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import type { Exercise } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
@@ -64,6 +65,55 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const [place, setPlace] = useState<ExercisePlace>("gym");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Work in progress is kept on the phone (programDraft.ts), so going back by
+  // mistake doesn't lose it. It's brought back on opening the builder.
+  const [draftReady, setDraftReady] = useState(false);
+  const [restored, setRestored] = useState(false);
+  const saved = useRef(false);
+
+  useEffect(() => {
+    if (!trainer) return;
+    loadProgramDraft(trainer.id).then((draft) => {
+      if (draft) {
+        setName(draft.name);
+        setHowTo(draft.howTo);
+        setWarmUp(draft.warmUp);
+        setSessions(draft.sessions);
+        setActiveDay(draft.activeDay);
+        setPlace(draft.place);
+        setRestored(true);
+      }
+      setDraftReady(true);
+    });
+  }, [trainer?.id]);
+
+  useEffect(() => {
+    if (!trainer || !draftReady || saved.current) return;
+    const timer = setTimeout(
+      () => !saved.current && saveProgramDraft(trainer.id, { name, howTo, warmUp, sessions, activeDay, place }),
+      400,
+    );
+    return () => clearTimeout(timer);
+  }, [trainer?.id, draftReady, name, howTo, warmUp, sessions, activeDay, place]);
+
+  const startOver = () =>
+    Alert.alert("Start over?", "This deletes the program you were building.", [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          if (trainer) await clearProgramDraft(trainer.id);
+          setName("");
+          setHowTo("");
+          setWarmUp(DEFAULT_WARM_UP);
+          setSessions([1, 3, 5].map(blankSession));
+          setActiveDay(1);
+          setPlace("gym");
+          setRestored(false);
+        },
+      },
+    ]);
 
   useEffect(() => {
     supabase
@@ -178,6 +228,8 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
       Alert.alert("Couldn't save", rowsError.message);
       return;
     }
+    saved.current = true;
+    await clearProgramDraft(trainer.id);
     setSaving(false);
     Alert.alert("Program saved", "Open a client and go to their Training tab to put them on it.");
     navigation.goBack();
@@ -185,6 +237,14 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+      <View style={styles.draftBar}>
+        <Text style={styles.draftText}>
+          {restored ? "📝 Carrying on where you left off." : "📝 Your work is kept if you go back."}
+        </Text>
+        <Pressable onPress={startOver} hitSlop={8}>
+          <Text style={styles.startOver}>Start over</Text>
+        </Pressable>
+      </View>
       <Text style={styles.label}>This program is for</Text>
       <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} labels={PROGRAM_PLACE_LABELS} />
       <Text style={styles.label}>Program name</Text>
@@ -450,6 +510,9 @@ function CardioSlot({
 }
 
 const styles = StyleSheet.create({
+  draftBar: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#1E293B", borderRadius: 10, padding: 10, marginBottom: 4 },
+  draftText: { color: "#CBD5E1", fontSize: 13, flex: 1 },
+  startOver: { color: "#F87171", fontWeight: "700", fontSize: 13 },
   cardioSlot: { borderColor: "#F97316" },
   cardioHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   removeText: { color: "#94A3B8", fontWeight: "600", fontSize: 13 },
