@@ -145,6 +145,7 @@ export const PHASE_ORDER: CyclePhaseKey[] = ["menstrual", "follicular", "ovulati
 /** The written guide shown on the Women's Health Reset page. */
 export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
   {
+    icon: "🔄",
     heading: "How it works",
     points: [
       "Your hormones change through the month, and so do your energy, strength, hunger and mood.",
@@ -162,6 +163,7 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
     };
   }),
   {
+    icon: "📅",
     heading: "Every day, all month",
     points: [
       "Protein at every meal, plenty of vegetables, and 2 to 3 litres of water.",
@@ -171,6 +173,7 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "💊",
     heading: "Supplements by phase",
     points: [
       "Most women do well on a simple base all month: vitamin D, omega-3 and magnesium.",
@@ -179,6 +182,7 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "🩺",
     heading: "When to see a doctor",
     points: [
       "Your period stops for 3 months or more and you're not pregnant.",

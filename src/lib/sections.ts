@@ -12,6 +12,9 @@ export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "wo
 export type Section = {
   key: SectionKey;
   title: string;
+  // Shown on the menu and the page header.
+  icon: string;
+  accent: string;
   summary: string;
   topics: string[];
   content?: GuidelineGroup[];
@@ -20,6 +23,8 @@ export type Section = {
 export const SECTIONS: Section[] = [
   {
     key: "nutrition",
+    icon: "🥗",
+    accent: "#22C55E",
     title: "Nutrition",
     summary: "How to eat to support your training and your goals: simple hand portions, plus a meal builder and calorie calculator if you like to count.",
     // Not shown (the section has content); here so search finds these pieces.
@@ -32,6 +37,8 @@ export const SECTIONS: Section[] = [
   },
   {
     key: "supplementation",
+    icon: "💊",
+    accent: "#A78BFA",
     title: "Supplementation",
     summary: "What's worth taking for energy, muscle, performance and recovery, and what to skip.",
     // Not shown (the section has content); here so search finds each supplement.
@@ -40,6 +47,8 @@ export const SECTIONS: Section[] = [
   },
   {
     key: "sleepRecovery",
+    icon: "🌙",
+    accent: "#60A5FA",
     title: "Sleep & Recovery",
     summary: "Simple habits for better sleep and faster recovery.",
     topics: [],
@@ -47,6 +56,8 @@ export const SECTIONS: Section[] = [
   },
   {
     key: "womensHealthReset",
+    icon: "🌸",
+    accent: "#F472B6",
     title: "Women's Health Reset",
     summary: "Train, eat and supplement with your cycle, not against it. Log your period and the app guides you through each phase.",
     topics: [],

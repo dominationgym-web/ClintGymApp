@@ -5,10 +5,12 @@
 // simply enough to follow without reading up on it.
 import { toIsoDate } from "@/lib/dates";
 
-export type GuidelineGroup = { heading: string; points: string[] };
+// icon: an emoji shown beside the heading on the section page.
+export type GuidelineGroup = { heading: string; points: string[]; icon?: string };
 
 export const SLEEP_GUIDELINES: GuidelineGroup[] = [
   {
+    icon: "⭐",
     heading: "The basics",
     points: [
       "Aim for 7 to 9 hours of sleep a night. Give yourself 8 to 9 hours in bed to get it.",
@@ -17,6 +19,7 @@ export const SLEEP_GUIDELINES: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "☀️",
     heading: "During the day",
     points: [
       "Get outside within an hour of waking: 5 to 10 minutes of daylight on a clear day, 15 to 30 when it's cloudy. No sunglasses if it's safe.",
@@ -26,6 +29,7 @@ export const SLEEP_GUIDELINES: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "🌆",
     heading: "In the evening",
     points: [
       "Finish your last big meal 2 to 3 hours before bed.",
@@ -36,6 +40,7 @@ export const SLEEP_GUIDELINES: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "🛏️",
     heading: "Your bedroom",
     points: [
       "Cool: around 18 to 20°C.",
@@ -45,6 +50,7 @@ export const SLEEP_GUIDELINES: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "😴",
     heading: "Can't fall asleep?",
     points: [
       "If you're still awake after about 20 minutes, get up. Do something calm in dim light, like reading, and go back to bed when you feel sleepy.",
@@ -53,6 +59,7 @@ export const SLEEP_GUIDELINES: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "🔋",
     heading: "Recovery",
     points: [
       "Sleep is your number one recovery tool. Muscle repair and most of your recovery happen while you sleep.",
@@ -62,6 +69,7 @@ export const SLEEP_GUIDELINES: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "🩺",
     heading: "When to see a doctor",
     points: [
       "Loud snoring, gasping or choking at night, or feeling exhausted even after a full night's sleep.",

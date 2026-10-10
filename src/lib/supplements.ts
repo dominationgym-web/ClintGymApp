@@ -8,6 +8,7 @@ import type { GuidelineGroup } from "@/lib/sleep";
 
 export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
   {
+    icon: "🥩",
     heading: "Food first",
     points: [
       "Supplements top up a good diet. They can't replace one. Get these right first and everything below works better.",
@@ -19,6 +20,7 @@ export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "⏰",
     heading: "Your daily routine, simply",
     points: [
       "Morning with breakfast: vitamin D, omega-3, multivitamin (if you take one), creatine.",
@@ -28,6 +30,7 @@ export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "🛡️",
     heading: "Stay safe",
     points: [
       "Start one new supplement at a time, so you know what's working and what doesn't agree with you.",
@@ -44,6 +47,7 @@ export type SupplementLevel = "Proven" | "Training days" | "Might help" | "Save 
 
 export type Supplement = {
   name: string;
+  icon: string;
   level: SupplementLevel;
   what: string;
   who: string;
@@ -63,6 +67,7 @@ export const SUPPLEMENT_LEVELS: { level: SupplementLevel; meaning: string }[] = 
 export const SUPPLEMENTS: Supplement[] = [
   {
     name: "Creatine monohydrate",
+    icon: "⚡",
     level: "Proven",
     what: "Tops up the quick energy your muscles use for short, hard efforts. You get a rep or two more per set, which builds more strength and muscle over time, and you recover faster between sets.",
     who: "Anyone who lifts weights or does sprint-type training, men and women, young and older. Vegetarians often notice the biggest difference because they eat little creatine in food.",
@@ -73,6 +78,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Protein powder",
+    icon: "🥤",
     level: "Proven",
     what: "Simply protein in an easy form. Protein repairs and builds muscle and keeps you full. Whey comes from milk; plant blends (pea, rice, soy) suit people who avoid dairy.",
     who: "People who struggle to reach their daily protein (about 1.6 to 2.2 g per kg of body weight) from meals, or who need a quick option after training or on the go.",
@@ -81,6 +87,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Vitamin D3",
+    icon: "☀️",
     level: "Proven",
     what: "Your body makes vitamin D from sunlight. It keeps bones and muscles strong and supports your mood and immune system.",
     who: "Anyone who works indoors, covers up in the sun, has darker skin, or trains through winter. Many people are low without knowing it.",
@@ -89,6 +96,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Omega-3 fish oil",
+    icon: "🐟",
     level: "Proven",
     what: "Healthy fats (EPA and DHA) that calm inflammation, ease stiff joints, and support your heart and brain.",
     who: "Anyone who eats oily fish (salmon, sardines, mackerel) less than twice a week.",
@@ -97,6 +105,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Magnesium",
+    icon: "😴",
     level: "Proven",
     what: "A mineral your muscles and nerves need to relax. It helps with sleep, cramps and recovery, and hard training uses more of it because you lose some in sweat.",
     who: "People who train hard, sweat a lot, sleep badly or get muscle cramps.",
@@ -105,6 +114,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Caffeine",
+    icon: "☕",
     level: "Training days",
     what: "Wakes up your brain and nervous system so training feels easier. You get more energy, focus and power, and you can push a little harder.",
     who: "Anyone who wants a boost before training, as long as it doesn't make them jittery.",
@@ -113,6 +123,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Electrolytes",
+    icon: "💧",
     level: "Training days",
     what: "Salts (sodium, potassium, magnesium) you lose in sweat. Replacing them helps stop cramps, headaches and the tired, flat feeling after a sweaty session.",
     who: "Anyone training for a long time, sweating heavily, or training in hot weather.",
@@ -121,6 +132,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Beta-alanine",
+    icon: "🔥",
     level: "Training days",
     what: "Helps your muscles cope with the burning feeling in hard efforts of 1 to 4 minutes, so you can keep going a little longer.",
     who: "People doing high-rep sets, circuits, CrossFit-style or interval training. Little benefit for heavy, low-rep lifting.",
@@ -129,6 +141,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Carbs during training",
+    icon: "🍌",
     level: "Training days",
     what: "A sports drink or a banana during long sessions keeps your energy up when your muscles' fuel starts running low.",
     who: "Sessions longer than about 75 minutes, or two sessions in one day.",
@@ -137,6 +150,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Glutamine",
+    icon: "🛡️",
     level: "Might help",
     what: "An amino acid that fuels your gut and immune cells. It doesn't build muscle in people who already eat enough protein.",
     who: "People in very hard training blocks who keep getting sick or have a sensitive gut.",
@@ -145,6 +159,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "CoQ10",
+    icon: "🔋",
     level: "Might help",
     what: "Helps your cells turn food into energy. Your body makes less of it as you age.",
     who: "Most useful if you're over 40 or take cholesterol medication (statins), which lowers CoQ10. Younger people often notice little.",
@@ -153,6 +168,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Zinc",
+    icon: "🦪",
     level: "Might help",
     what: "A mineral for your immune system, hormones and recovery. You lose some in sweat.",
     who: "People who sweat a lot, or eat little red meat or seafood.",
@@ -161,6 +177,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Multivitamin",
+    icon: "💊",
     level: "Might help",
     what: "A cheap safety net that fills small gaps in vitamins and minerals.",
     who: "Anyone whose diet isn't varied every day, or who eats few vegetables and fruit.",
@@ -169,6 +186,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Ashwagandha",
+    icon: "🌿",
     level: "Might help",
     what: "A herb that may lower stress hormones and help you sleep and recover better.",
     who: "People who feel stressed, wired or run down, or who sleep badly.",
@@ -177,6 +195,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Tart cherry juice",
+    icon: "🍒",
     level: "Might help",
     what: "Rich in plant compounds that may reduce muscle soreness. It holds a little natural melatonin, which may help sleep.",
     who: "People in hard training blocks with a lot of soreness, or who sleep badly.",
@@ -185,6 +204,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Collagen",
+    icon: "🦴",
     level: "Might help",
     what: "Building blocks for tendons, ligaments, joints and skin.",
     who: "People with sore tendons or joints, or coming back from a niggle.",
@@ -193,6 +213,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Probiotics",
+    icon: "🦠",
     level: "Might help",
     what: "Friendly gut bacteria that support digestion and your immune system.",
     who: "People with tummy trouble, or after a course of antibiotics.",
@@ -201,6 +222,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "BCAAs",
+    icon: "🚫",
     level: "Save your money",
     what: "Three amino acids sold for muscle building and recovery.",
     who: "Hardly anyone. Your protein from food and shakes already contains them.",
@@ -209,6 +231,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Testosterone boosters",
+    icon: "🚫",
     level: "Save your money",
     what: "Herbal blends that claim to raise testosterone.",
     who: "No one: there's no good evidence they work in healthy people.",
@@ -217,6 +240,7 @@ export const SUPPLEMENTS: Supplement[] = [
   },
   {
     name: "Fat burners",
+    icon: "🚫",
     level: "Save your money",
     what: "Pills that claim to melt fat. Most are mainly high-dose caffeine at a high price.",
     who: "No one. Fat loss comes from your eating, training, sleep and daily steps.",

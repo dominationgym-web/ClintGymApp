@@ -4,6 +4,7 @@ import type { GuidelineGroup } from "@/lib/sleep";
 
 export const NUTRITION_GUIDE: GuidelineGroup[] = [
   {
+    icon: "❤️",
     heading: "Guidelines for your health, not your goals",
     points: [
       "These portions are for general, everyday eating. Your meals will change as your needs change.",
@@ -14,6 +15,7 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "✋",
     heading: "Your portions at each meal",
     points: [
       "Protein: 1–2 palm-sized portions.",
@@ -24,6 +26,7 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "💧",
     heading: "Carbs and water weight",
     points: [
       "Your body stores carbs in your muscles and liver as glycogen, and every gram of stored carbs holds about 3 grams of water with it.",
@@ -33,6 +36,7 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
     ],
   },
   {
+    icon: "💡",
     heading: "Good to know",
     points: [
       "All foods should be certified organic where available.",

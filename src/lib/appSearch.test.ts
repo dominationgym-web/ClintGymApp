@@ -22,9 +22,11 @@ describe("searchPages", () => {
 
 describe("searchSections", () => {
   const sections: Section[] = [
-    { key: "nutrition", title: "Nutrition", summary: "How to eat.", topics: ["Meal plans and meal ideas"] },
+    { key: "nutrition", title: "Nutrition", icon: "x", accent: "#fff", summary: "How to eat.", topics: ["Meal plans and meal ideas"] },
     {
       key: "sleepRecovery",
+      icon: "x",
+      accent: "#fff",
       title: "Sleep & Recovery",
       summary: "Better sleep.",
       topics: [],
