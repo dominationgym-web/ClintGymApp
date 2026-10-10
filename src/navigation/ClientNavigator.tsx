@@ -40,7 +40,7 @@ function ClientTabs() {
       {client?.lifestyle_reset_started_at && (
         <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />
       )}
-      <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
+      <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Video log", tabBarIcon: tabIcon("videocam") }} />
       <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Exercises", tabBarIcon: tabIcon("library") }} />
       <Tab.Screen name="Profile" component={ClientProfileScreen} options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }} />
     </Tab.Navigator>
