@@ -4,6 +4,7 @@ import {
   defaultSessionTitle,
   displayProgramName,
   supersetNext,
+  supersetStep,
   nextUnfinished,
   resizeExercises,
   blankCardio,
@@ -199,5 +200,25 @@ describe("cardio blocks", () => {
   });
   it("won't save a cardio block with nothing chosen", () => {
     expect(draftProblem("Legs", [ex, { ...blankCardio(), reps: " " }])).toBe("Choose the cardio and how long for slot 2.");
+  });
+});
+
+describe("supersetStep", () => {
+  const a = { ...row(1, 1, "Leg Press"), id: "a", sets: 3, rest_seconds: 0 };
+  const b = { ...row(1, 2, "Lying Leg Curl"), id: "b", sets: 3, rest_seconds: 120 };
+  const c = { ...row(1, 3, "Step-Up"), id: "c", sets: 3 };
+  const session = [a, b, c];
+  it("goes straight from the first half to the second, with no rest", () => {
+    const done: Record<string, number> = { a: 1, b: 0, c: 0 };
+    expect(supersetStep(a, session, (e) => done[e.id])).toEqual({ go: b, restSeconds: 0 });
+  });
+  it("goes back to the first half after the second, with its rest", () => {
+    const done: Record<string, number> = { a: 1, b: 1, c: 0 };
+    expect(supersetStep(b, session, (e) => done[e.id])).toEqual({ go: a, restSeconds: 120 });
+  });
+  it("stops once the partner is finished, and ignores plain exercises", () => {
+    const done: Record<string, number> = { a: 3, b: 3, c: 0 };
+    expect(supersetStep(b, session, (e) => done[e.id])).toBeNull();
+    expect(supersetStep(c, session, () => 0)).toBeNull();
   });
 });

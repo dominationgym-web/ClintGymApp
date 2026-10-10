@@ -41,6 +41,7 @@ import {
   formatRest,
   needsWarmUp,
   supersetNext,
+  supersetStep,
   nextUnfinished,
   warmUpReps,
 } from "@/lib/programs";
@@ -86,6 +87,8 @@ export default function ExerciseLibraryScreen() {
   const [target, setTarget] = useState<ProgramExercise | null>(null);
   // Bumped after each logged set to (re)start the rest timer.
   const [restRun, setRestRun] = useState(0);
+  // Length of the rest timer that's showing.
+  const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [place, setPlace] = useState<ExercisePlace>("gym");
@@ -229,7 +232,8 @@ export default function ExerciseLibraryScreen() {
       : allTodaysSets.filter((s) => (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name))
       .length;
 
-  const openProgramExercise = (row: ProgramExercise) => {
+  // `rest`: start a rest timer on arrival (coming back to a superset's first half).
+  const openProgramExercise = (row: ProgramExercise, rest = 0) => {
     // Fall back to a name-only entry if the exercise was taken out of the library.
     const exercise = exercises.find((e) => e.id === row.exercise_id) ??
       exercises.find((e) => e.name === row.exercise_name) ?? {
@@ -241,7 +245,7 @@ export default function ExerciseLibraryScreen() {
       sort_order: 0,
       home_friendly: false,
     };
-    openExercise(exercise, row);
+    openExercise(exercise, row, rest);
   };
 
   const player = useVideoPlayer(selected?.external_url ?? null, (p) => {
@@ -263,10 +267,11 @@ export default function ExerciseLibraryScreen() {
     };
   }, [selected, player]);
 
-  const openExercise = async (exercise: Exercise, programRow: ProgramExercise | null = null) => {
+  const openExercise = async (exercise: Exercise, programRow: ProgramExercise | null = null, rest = 0) => {
     setSelected(exercise);
     setTarget(programRow);
-    setRestRun(0);
+    setRestSeconds(rest);
+    setRestRun(rest > 0 ? Date.now() : 0);
     setVideoExpanded(false);
     setWeight("");
     setReps("");
@@ -311,13 +316,22 @@ export default function ExerciseLibraryScreen() {
     }
     setTodaysSets((prev) => [...prev, data]);
     setAllTodaysSets((prev) => [...prev, data]);
-    setRestRun((n) => n + 1);
     setWeight("");
     setReps("");
     setEffort(null);
+    const done = (row: ProgramExercise) =>
+      target && row.id === target.id ? todaysSets.length + 1 : setsDoneFor(row);
+    // Supersets alternate: straight into the partner, or back to the first
+    // half with the rest timer running.
+    const step = target ? supersetStep(target, todaysWorkout, done) : null;
+    if (step) {
+      openProgramExercise(step.go, step.restSeconds);
+      return;
+    }
+    setRestSeconds(target?.rest_seconds || DEFAULT_REST_SECONDS);
+    setRestRun((n) => n + 1);
     // Last set of a program exercise: offer to go straight to the next one.
     if (target && todaysSets.length + 1 >= target.sets) {
-      const done = (row: ProgramExercise) => (row.id === target.id ? target.sets : setsDoneFor(row));
       const next = nextUnfinished(target, todaysWorkout, done);
       if (next?.kind === "cardio") {
         Alert.alert(`${target.exercise_name} done ✓`, `Next up: 🔥 ${cardioLabel(next)}. Tick it off on your workout when you're done.`, [
@@ -605,16 +619,16 @@ export default function ExerciseLibraryScreen() {
               {logging ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Log set</Text>}
             </Pressable>
 
-            {restRun > 0 && targetNext && (
+            {targetNext && restRun === 0 && (
               <View style={styles.warmUpBox}>
                 <Text style={styles.warmUpTitle}>Superset: no rest</Text>
-                <Text style={styles.warmUpText}>Go straight into {targetNext.exercise_name}, then rest.</Text>
+                <Text style={styles.warmUpText}>After each set, the app takes you straight to {targetNext.exercise_name}, then you rest.</Text>
               </View>
             )}
-            {restRun > 0 && !targetNext && (
+            {restRun > 0 && (
               <RestTimer
                 key={restRun}
-                seconds={target?.rest_seconds || DEFAULT_REST_SECONDS}
+                seconds={restSeconds}
                 onClose={() => setRestRun(0)}
               />
             )}
