@@ -41,7 +41,7 @@ const DAILY_SIX: DailySix[] = [
     subsections: [
       { label: "Protein", items: "Eggs · fish · chicken · lean meat · Greek yoghurt · cottage cheese · legumes" },
       { label: "Plants", items: "Vegetables · salads · berries · fruit · herbs" },
-      { label: "Carbohydrates", items: "Potatoes · oats · rice · fruit · beans · whole grains" },
+      { label: "Carbohydrates", items: "Potatoes · sweet potato · rice · fruit · beans · whole grains" },
       { label: "Healthy fats", items: "Olive oil · avocado · nuts · seeds · oily fish" },
     ],
     note: "Simple meal rule: start with protein, add vegetables or fruit, add the carbohydrate your body needs, add some healthy fat. Don't obsess over perfection - aim for 80-90% good choices, not 100%.",

@@ -12,7 +12,7 @@ export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
       "Protein: about 1.6 to 2.2 g per kg of body weight a day, spread over 3 to 5 meals. For a 70 kg person that's roughly 110 to 150 g.",
       "Vegetables and fruit: at least 5 handfuls a day, in different colours. They give you vitamins, minerals and fibre for recovery and gut health.",
       "Water: 2 to 3 litres a day, more when you sweat. Even being a little dehydrated cuts strength and energy.",
-      "Carbs around training (oats, rice, potatoes, fruit) fuel your sessions and refill your muscles afterwards.",
+      "Carbs around training (rice, potatoes, sweet potato, fruit) fuel your sessions and refill your muscles afterwards.",
       "Sleep 7 to 9 hours. No supplement comes close to what sleep does for recovery.",
     ],
   },
