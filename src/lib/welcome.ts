@@ -8,6 +8,7 @@ export const WELCOME_SEEN_KEY = "welcomeSeen";
 export const WELCOME_MENU_ITEM = {
   key: "welcome",
   title: "Welcome",
+  icon: "✨",
   summary: "Why this app exists and how it will guide you.",
 };
 

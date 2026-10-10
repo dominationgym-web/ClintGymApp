@@ -19,6 +19,7 @@ export default function SectionsMenuButton() {
         ...SECTIONS.map((section) => ({
           key: section.key,
           title: section.title,
+          icon: section.icon,
           summary: section.summary,
           onPress: () => navigation.navigate("Section", { sectionKey: section.key }),
         })),
