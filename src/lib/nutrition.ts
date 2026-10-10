@@ -91,7 +91,8 @@ export const UNDERSTANDING_INSULIN = {
   oneSweet: {
     title: "“But I only had one sweet”",
     points: [
-      "Calories still matter most for fat loss over the weeks. But that one sweet still raises your insulin, and if you're overweight and insulin resistant, it stays up for longer.",
+      "In that moment, it's not about the calories. One sweet's calories barely count, but the insulin spike slows your fat burning for a while.",
+      "If you're overweight and insulin resistant, that spike is bigger and lasts longer.",
       "Have it before the treadmill and your body burns less fat on that walk, because it's busy clearing that sugar first.",
     ],
   },
