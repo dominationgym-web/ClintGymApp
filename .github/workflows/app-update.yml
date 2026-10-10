@@ -8,6 +8,7 @@ name: Publish app update
 on:
   push:
     branches: ["claude/coaching-app-brief-tllivw"]
+  workflow_dispatch:
 
 concurrency:
   group: app-update
@@ -52,3 +53,9 @@ jobs:
       - name: Publish to the preview channel
         if: env.EXPO_TOKEN != ''
         run: eas update --channel preview --message "${COMMIT_MESSAGE%%$'\n'*}" --non-interactive
+
+      # Updates only reach a build with the same runtime version, so list the
+      # latest builds' versions next to the one just published.
+      - name: Show recent builds
+        if: env.EXPO_TOKEN != ''
+        run: eas build:list --platform android --limit 3 --non-interactive || true
