@@ -8,6 +8,7 @@ import { getSleepReminderEnabled, setSleepReminderEnabled } from "@/lib/sleepRem
 import { scheduleSleepReminders } from "@/lib/notifications";
 import CycleTracker from "@/components/CycleTracker";
 import CalorieCalculator from "@/components/CalorieCalculator";
+import MealBuilder from "@/components/MealBuilder";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
 import InsulinGuide from "@/components/InsulinGuide";
 import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
@@ -29,6 +30,8 @@ export default function SectionScreen({ route }: Props) {
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
       {section.key === "womensHealthReset" && <ResetProgramLink />}
       {section.key === "womensHealthReset" && <CycleTracker />}
+      {section.key === "nutrition" && <MealBuilder />}
+      {section.key === "nutrition" && <CalorieCalculator />}
       {section.key === "nutrition" && <FoodGroupExamples />}
       {section.content ? (
         section.content.map((group) => (
@@ -54,7 +57,6 @@ export default function SectionScreen({ route }: Props) {
       )}
       {section.key === "nutrition" && <UnderstandingCarbs />}
       {section.key === "nutrition" && <InsulinGuide />}
-      {section.key === "nutrition" && <CalorieCalculator />}
     </ScrollView>
   );
 }
