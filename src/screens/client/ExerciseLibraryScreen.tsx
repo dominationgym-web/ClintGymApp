@@ -30,6 +30,7 @@ import {
   formatRest,
   needsWarmUp,
   supersetNext,
+  nextUnfinished,
   warmUpReps,
 } from "@/lib/programs";
 import {
@@ -247,6 +248,20 @@ export default function ExerciseLibraryScreen() {
     setWeight("");
     setReps("");
     setEffort(null);
+    // Last set of a program exercise: offer to go straight to the next one.
+    if (target && todaysSets.length + 1 >= target.sets) {
+      const done = (row: ProgramExercise) => (row.id === target.id ? target.sets : setsDoneFor(row));
+      const next = nextUnfinished(target, todaysWorkout, done);
+      if (next) {
+        Alert.alert(`${target.exercise_name} done ✓`, `Ready to move on to ${next.exercise_name}?`, [
+          { text: "Not yet", style: "cancel" },
+          { text: "Next exercise", onPress: () => openProgramExercise(next) },
+        ]);
+      } else {
+        const finish = session && sessionDue ? " Tap Complete workout to unlock your next session." : " Great work.";
+        Alert.alert("Workout done 💪", `That's every exercise.${finish}`, [{ text: "OK", onPress: () => setSelected(null) }]);
+      }
+    }
   };
 
   if (loading) {

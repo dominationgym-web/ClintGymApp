@@ -47,6 +47,21 @@ export function supersetNext(row: ProgramExercise, session: ProgramExercise[]): 
   return i >= 0 ? session[i + 1] ?? null : null;
 }
 
+/**
+ * The exercise to go to once all sets of `row` are logged: the next one in the
+ * session that still has sets to do, else an earlier unfinished one, else null
+ * (the whole workout is done).
+ */
+export function nextUnfinished(
+  row: ProgramExercise,
+  session: ProgramExercise[],
+  setsDone: (row: ProgramExercise) => number,
+): ProgramExercise | null {
+  const i = session.findIndex((e) => e.id === row.id);
+  const ordered = [...session.slice(i + 1), ...session.slice(0, Math.max(i, 0))];
+  return ordered.find((e) => e.id !== row.id && setsDone(e) < e.sets) ?? null;
+}
+
 /** The title for the day's session, e.g. "Workout A" or "Rest day". */
 export function dayTitle(program: Pick<Program, "kind" | "name" | "day_titles" | "trainer_id">, date: Date): string {
   if (program.kind !== "weekly") return displayProgramName(program);

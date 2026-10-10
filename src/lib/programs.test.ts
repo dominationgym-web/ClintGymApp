@@ -4,6 +4,7 @@ import {
   defaultSessionTitle,
   displayProgramName,
   supersetNext,
+  nextUnfinished,
   draftProblem,
   weeklyDraftProblem,
   exercisesForDate,
@@ -83,6 +84,24 @@ describe("supersetNext", () => {
     expect(supersetNext(a1, session)?.exercise_name).toBe("Curl");
     expect(supersetNext(a2, session)).toBeNull();
     expect(supersetNext({ ...a2, rest_seconds: 0 }, session)).toBeNull();
+  });
+});
+
+describe("nextUnfinished", () => {
+  const a = { ...row(1, 1, "Bench"), sets: 3 };
+  const b = { ...row(1, 2, "Row"), id: "b", sets: 3 };
+  const c = { ...row(1, 3, "Squat"), id: "c", sets: 3 };
+  const session = [a, b, c];
+  it("goes to the next exercise with sets left", () => {
+    const done: Record<string, number> = { [a.id]: 3, b: 0, c: 0 };
+    expect(nextUnfinished(a, session, (e) => done[e.id])?.exercise_name).toBe("Row");
+  });
+  it("skips finished ones and wraps back to one that was skipped", () => {
+    const done: Record<string, number> = { [a.id]: 1, b: 3, c: 3 };
+    expect(nextUnfinished(c, session, (e) => done[e.id])?.exercise_name).toBe("Bench");
+  });
+  it("is null when the whole workout is done", () => {
+    expect(nextUnfinished(c, session, (e) => e.sets)).toBeNull();
   });
 });
 
