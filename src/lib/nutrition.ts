@@ -94,6 +94,7 @@ export const UNDERSTANDING_INSULIN = {
       "In that moment, it's not about the calories. One sweet's calories barely count, but the insulin spike slows your fat burning for a while.",
       "If you're overweight and insulin resistant, that spike is bigger and lasts longer.",
       "Have it before the treadmill and your body burns less fat on that walk, because it's busy clearing that sugar first.",
+      "The takeaway: rather skip sweets and carbs before your cardio, especially if you're overweight or insulin resistant.",
     ],
   },
   whoFor: [
