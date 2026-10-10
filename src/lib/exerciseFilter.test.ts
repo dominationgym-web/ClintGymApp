@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientBrowsable, exerciseCategories, filterExercises, forPlace } from "@/lib/exerciseFilter";
+import { clientBrowsable, exerciseCategories, filterExercises, forPlace, swapOptions } from "@/lib/exerciseFilter";
 
 const list = [
   { name: "Bench Press", category: "Push" },
@@ -51,5 +51,27 @@ describe("forPlace", () => {
   });
   it("shows only no-machine exercises on the Home tab", () => {
     expect(forPlace(places, "home").map((e) => e.name)).toEqual(["Goblet Squat"]);
+  });
+});
+
+describe("swapOptions", () => {
+  const lib = [
+    { id: "1", category: "Push" },
+    { id: "2", category: "Push" },
+    { id: "3", category: "Biceps" },
+    { id: "4", category: "Hamstrings" },
+    { id: "5", category: "Posterior Chain" },
+    { id: "6", category: "Overhead Press" },
+  ];
+  it("offers only the same body part, without the current exercise", () => {
+    expect(swapOptions(lib, "Push", ["1"]).map((e) => e.id)).toEqual(["2"]);
+  });
+  it("treats Romanian deadlifts and leg curls as the same body part", () => {
+    expect(swapOptions(lib, "Hamstrings", ["4"]).map((e) => e.id)).toEqual(["5"]);
+    expect(swapOptions(lib, "Posterior Chain", []).map((e) => e.id)).toEqual(["4", "5"]);
+  });
+  it("never offers trainer-only exercises or anything for an unknown body part", () => {
+    expect(swapOptions(lib, "Overhead Press", [])).toEqual([]);
+    expect(swapOptions(lib, null, [])).toEqual([]);
   });
 });

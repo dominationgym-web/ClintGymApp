@@ -15,7 +15,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
-import { clientBrowsable, exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import {
+  bodyPartLabel,
+  clientBrowsable,
+  exerciseCategories,
+  filterExercises,
+  forPlace,
+  swapOptions,
+  type ExercisePlace,
+} from "@/lib/exerciseFilter";
+import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
+import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
@@ -78,6 +88,11 @@ export default function ExerciseLibraryScreen() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [place, setPlace] = useState<ExercisePlace>("gym");
+  // Change exercise (0047): today's swaps, and the program line being swapped.
+  const [swaps, setSwaps] = useState<ExerciseSwaps>({});
+  const [swapping, setSwapping] = useState<ProgramExercise | null>(null);
+  const [swapSearch, setSwapSearch] = useState("");
+  const [swapPreview, setSwapPreview] = useState<string | null>(null);
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -85,13 +100,15 @@ export default function ExerciseLibraryScreen() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data, error }, active, { data: logged }] = await Promise.all([
+      const [{ data, error }, active, { data: logged }, todaysSwaps] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         client ? loadClientProgram(client.id) : Promise.resolve(null),
         client
           ? supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso())
           : Promise.resolve({ data: [] as WorkoutLog[] }),
+        getExerciseSwaps(todayIso()),
       ]);
+      setSwaps(todaysSwaps);
       if (!error && data) setExercises(data);
       setProgram(active);
       setAllTodaysSets(logged ?? []);
@@ -107,14 +124,32 @@ export default function ExerciseLibraryScreen() {
   const days = program && weekly ? trainingDays(program.exercises) : [];
   const session = program && weekly ? currentSession(program.assignment, days) : null;
   const sessionDue = session ? isDue(session, today) : false;
-  const todaysWorkout = !program
+  const plannedWorkout = !program
     ? []
     : weekly
       ? session && sessionDue
         ? program.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order)
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
-  const browsable = clientBrowsable(exercises, program ? program.exercises.map((e) => e.exercise_id) : []);
+  // Today's workout with any swaps in place, so logging, ticking off and the
+  // next-exercise prompt all follow the exercise the client actually does.
+  const todaysWorkout = plannedWorkout.map((row) => {
+    const swap = swaps[row.id];
+    return swap ? { ...row, exercise_id: swap.id, exercise_name: swap.name } : row;
+  });
+  const plannedRow = (row: ProgramExercise) => plannedWorkout.find((r) => r.id === row.id) ?? row;
+  const categoryOf = (row: ProgramExercise) =>
+    exercises.find((e) => e.id === row.exercise_id)?.category ??
+    exercises.find((e) => e.name === row.exercise_name)?.category ??
+    null;
+  const programExerciseIds = program ? program.exercises.map((e) => e.exercise_id) : [];
+  // Without full library access the database also lets a client see other
+  // exercises for their program's body parts (for Change exercise, 0047), but
+  // the reference list still only shows their program's.
+  const browsable =
+    client?.library_access === false
+      ? exercises.filter((e) => programExerciseIds.includes(e.id))
+      : clientBrowsable(exercises, programExerciseIds);
   const shown = forPlace(browsable, place);
   const choosePlace = (next: ExercisePlace) => {
     setPlace(next);
@@ -123,6 +158,27 @@ export default function ExerciseLibraryScreen() {
   // The open exercise is the first half of a superset: no rest timer after it.
   const targetNext = target ? supersetNext(target, todaysWorkout) : null;
   const [savingProgress, setSavingProgress] = useState(false);
+
+  const openSwap = (row: ProgramExercise) => {
+    setSwapping(plannedRow(row));
+    setSwapSearch("");
+    setSwapPreview(null);
+  };
+
+  const chooseSwap = (exercise: Exercise | null) => {
+    if (!swapping) return;
+    const next = { ...swaps };
+    if (exercise) next[swapping.id] = { id: exercise.id, name: exercise.name };
+    else delete next[swapping.id];
+    setSwaps(next);
+    saveExerciseSwaps(todayIso(), next);
+    setSwapping(null);
+  };
+
+  const swapCategory = swapping ? categoryOf(swapping) : null;
+  const swapChoices = swapping
+    ? filterExercises(swapOptions(exercises, swapCategory, [swapping.exercise_id, swaps[swapping.id]?.id ?? null]), swapSearch)
+    : [];
 
   const saveProgress = async (next: ProgramSession, completed: boolean) => {
     if (!program) return;
@@ -314,6 +370,10 @@ export default function ExerciseLibraryScreen() {
                             {row.sets} sets x {row.reps} ·{" "}
                             {next ? `superset: straight into ${next.exercise_name}` : `rest ${formatRest(row.rest_seconds)}`}
                           </Text>
+                          {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
+                          <Pressable onPress={() => openSwap(row)} hitSlop={8} style={{ alignSelf: "flex-start" }}>
+                            <Text style={styles.changeLink}>⇄ Change exercise</Text>
+                          </Pressable>
                         </View>
                         <Text style={[styles.setsDone, done >= row.sets && { color: "#22C55E" }]}>
                           {done >= row.sets ? "Done ✓" : `${done}/${row.sets}`}
@@ -381,6 +441,58 @@ export default function ExerciseLibraryScreen() {
           </Pressable>
         )}
       />
+
+      <Modal visible={!!swapping} animationType="slide" onRequestClose={() => setSwapping(null)}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>Change exercise</Text>
+              <Text style={styles.category}>
+                Gym busy? Swap {swapping?.exercise_name} for another {bodyPartLabel(swapCategory)} exercise, just for today.
+              </Text>
+            </View>
+            <Pressable onPress={() => setSwapping(null)}>
+              <Text style={styles.closeText}>Close</Text>
+            </Pressable>
+          </View>
+          <View style={{ paddingHorizontal: 20 }}>
+            {swapping && swaps[swapping.id] && (
+              <Pressable style={styles.swapBack} onPress={() => chooseSwap(null)}>
+                <Text style={styles.swapBackText}>↺ Back to {swapping.exercise_name}</Text>
+              </Pressable>
+            )}
+            <TextInput
+              style={[styles.input, { marginBottom: 10 }]}
+              value={swapSearch}
+              onChangeText={setSwapSearch}
+              placeholder="Search"
+              placeholderTextColor="#64748B"
+              autoCorrect={false}
+            />
+          </View>
+          <FlatList
+            data={swapChoices}
+            keyExtractor={(e) => e.id}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+            ListEmptyComponent={<Text style={styles.helper}>No other exercises for this body part.</Text>}
+            renderItem={({ item }) => (
+              <View style={styles.swapRow}>
+                <View style={styles.swapRowTop}>
+                  <Text style={[styles.name, { flex: 1 }]}>{item.name}</Text>
+                  <Pressable hitSlop={6} onPress={() => setSwapPreview((id) => (id === item.id ? null : item.id))}>
+                    <Text style={styles.swapWatch}>{swapPreview === item.id ? "Hide" : "▶ Watch"}</Text>
+                  </Pressable>
+                  <Pressable style={styles.swapUse} onPress={() => chooseSwap(item)}>
+                    <Text style={styles.swapUseText}>Use this</Text>
+                  </Pressable>
+                </View>
+                {swapPreview === item.id && <ExerciseVideoPreview url={item.external_url} />}
+              </View>
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
 
       <Modal visible={!!selected} animationType="slide" onRequestClose={() => setSelected(null)}>
         <SafeAreaView style={styles.modalContainer}>
@@ -570,6 +682,15 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     borderLeftColor: BRAND_GOLD,
   },
+  swappedText: { color: BRAND_GOLD, fontSize: 12, marginTop: 2 },
+  changeLink: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 6 },
+  swapBack: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, padding: 12, alignItems: "center", marginBottom: 10 },
+  swapBackText: { color: BRAND_GOLD, fontWeight: "700" },
+  swapRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
+  swapRowTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  swapWatch: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
+  swapUse: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
+  swapUseText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   programKicker: { color: BRAND_GOLD, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   programTitle: { color: "#fff", fontSize: 18, fontWeight: "700", marginTop: 2, marginBottom: 10 },
   programRow: {
