@@ -47,6 +47,31 @@ export function supersetNext(row: ProgramExercise, session: ProgramExercise[]): 
   return i >= 0 ? session[i + 1] ?? null : null;
 }
 
+/** For the second half of a superset, the exercise that goes straight into it; null otherwise. */
+export function supersetPrev(row: ProgramExercise, session: ProgramExercise[]): ProgramExercise | null {
+  const i = session.findIndex((e) => e.id === row.id);
+  const prev = i > 0 ? session[i - 1] : null;
+  return prev && prev.rest_seconds === 0 && prev.kind !== "cardio" ? prev : null;
+}
+
+/**
+ * What happens after a set of `row` is logged in a superset: go straight to
+ * the partner after the first half, or back to the first half (after resting)
+ * after the second half, while the partner still has sets left. Null when the
+ * row isn't in a superset or the partner is finished.
+ */
+export function supersetStep(
+  row: ProgramExercise,
+  session: ProgramExercise[],
+  setsDone: (row: ProgramExercise) => number,
+): { go: ProgramExercise; restSeconds: number } | null {
+  const next = supersetNext(row, session);
+  if (next && next.kind !== "cardio" && setsDone(next) < next.sets) return { go: next, restSeconds: 0 };
+  const prev = supersetPrev(row, session);
+  if (prev && setsDone(prev) < prev.sets) return { go: prev, restSeconds: row.rest_seconds };
+  return null;
+}
+
 /**
  * The exercise to go to once all sets of `row` are logged: the next one in the
  * session that still has sets to do, else an earlier unfinished one, else null
