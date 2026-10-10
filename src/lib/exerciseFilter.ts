@@ -34,3 +34,12 @@ export function clientBrowsable<T extends Pick<Exercise, "id" | "category">>(exe
     (e) => !e.category || !TRAINER_ONLY_CATEGORIES.includes(e.category) || programExerciseIds.includes(e.id),
   );
 }
+
+// Gym and Home tabs (0045): Gym is the whole library, Home only the exercises
+// done with dumbbells, a barbell, kettlebells, bands or bodyweight.
+export type ExercisePlace = "gym" | "home";
+
+/** The exercises for the chosen tab. */
+export function forPlace<T extends Pick<Exercise, "home_friendly">>(exercises: T[], place: ExercisePlace): T[] {
+  return place === "home" ? exercises.filter((e) => e.home_friendly) : exercises;
+}

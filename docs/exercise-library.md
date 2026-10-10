@@ -62,3 +62,11 @@ The `exercises` table takes any number of rows — adding more later is just
 more `insert` statements plus more uploaded files, no schema change. Per
 the brief, let real client usage (which movements actually get assigned
 most) drive what gets added next, rather than loading all 412 up front.
+
+## Gym and Home tabs (0045)
+
+`exercises.home_friendly` marks exercises that need no gym machine (dumbbells,
+barbell, kettlebells, bands, bench or bodyweight). The client exercise list and
+the program builder picker have a Gym tab (whole library) and a Home tab (only
+these). The flag was set from the exercise name; to fix one exercise, update
+its `home_friendly` in the database.
