@@ -62,7 +62,7 @@ export type Client = {
   plan_expires_at: string | null;
   package_type: PackageType | null;
   lifestyle_reset_started_at: string | null;
-  // The day she tapped Start on the Reset (0049): her week 1 begins here.
+  // The day she tapped Start on the Reset (0050): her week 1 begins here.
   reset_started_on: string | null;
   consent_accepted_at: string | null;
   privacy_policy_version: string | null;
@@ -273,7 +273,7 @@ export type LifestyleResetDailyLog = {
   aerobic_exercise: boolean;
   consistent_sleep: boolean;
   evening_winddown: boolean;
-  // Her daily note (0049): 1-5, did it help, and a comment.
+  // Her daily note (0050): 1-5, did it help, and a comment.
   feeling: number | null;
   helped: "yes" | "a_little" | "not_yet" | null;
   note: string | null;
