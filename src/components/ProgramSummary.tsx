@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { formatRest, WEEKDAY_NAMES } from "@/lib/programs";
+import { cardioLabel, formatRest, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
 
 // A program's exercises, grouped by weekday for weekly programs.
@@ -8,6 +8,7 @@ export default function ProgramSummary({ program, exercises }: { program: Progra
   const days = program.kind === "weekly" ? [1, 2, 3, 4, 5, 6, 7] : [1];
   return (
     <View>
+      {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
       {days.map((day) => {
         const rows = exercises.filter((e) => e.day_number === day).sort((a, b) => a.sort_order - b.sort_order);
         return (
@@ -22,7 +23,9 @@ export default function ProgramSummary({ program, exercises }: { program: Progra
             ) : (
               rows.map((r) => (
                 <Text key={r.id} style={styles.line}>
-                  {r.exercise_name}: {r.sets} x {r.reps}, rest {formatRest(r.rest_seconds)}
+                  {r.kind === "cardio"
+                    ? `🔥 Cardio: ${cardioLabel(r)}`
+                    : `${r.exercise_name}: ${r.sets} x ${r.reps}, rest ${formatRest(r.rest_seconds)}`}
                 </Text>
               ))
             )}

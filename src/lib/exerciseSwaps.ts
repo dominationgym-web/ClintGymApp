@@ -24,3 +24,23 @@ export async function saveExerciseSwaps(date: string, swaps: ExerciseSwaps): Pro
     console.warn("Couldn't save the exercise swap", e);
   }
 }
+
+// Cardio blocks (0048) the client ticked off today, by program_exercises row id.
+const cardioKey = (date: string) => `cardioDone:${date}`;
+
+export async function getCardioDone(date: string): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(cardioKey(date));
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveCardioDone(date: string, ids: string[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(cardioKey(date), JSON.stringify(ids));
+  } catch (e) {
+    console.warn("Couldn't save the cardio tick", e);
+  }
+}

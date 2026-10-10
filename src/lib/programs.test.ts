@@ -5,6 +5,9 @@ import {
   displayProgramName,
   supersetNext,
   nextUnfinished,
+  resizeExercises,
+  blankCardio,
+  cardioLabel,
   draftProblem,
   weeklyDraftProblem,
   exercisesForDate,
@@ -26,6 +29,7 @@ const row = (day_number: number, sort_order: number, exercise_name: string): Pro
   sets: 3,
   reps: "10",
   rest_seconds: 90,
+  kind: "exercise",
 });
 
 // 2026-10-05 is a Monday.
@@ -175,5 +179,25 @@ describe("weeklyDraftProblem", () => {
 
   it("titles sessions A, B, C", () => {
     expect([0, 1, 2].map(defaultSessionTitle)).toEqual(["Workout A", "Workout B", "Workout C"]);
+  });
+});
+
+describe("cardio blocks", () => {
+  const ex = { exerciseId: "e", exerciseName: "Squat", sets: 3, reps: "10", restSeconds: 90 };
+  const blank = () => ({ ...ex, exerciseName: "" });
+  it("keeps cardio in place when changing the number of exercises", () => {
+    const slots = [ex, blankCardio(), ex, ex, blankCardio()];
+    const fewer = resizeExercises(slots, 2, blank);
+    expect(fewer.map((s) => s.kind ?? "exercise")).toEqual(["exercise", "cardio", "exercise", "cardio"]);
+    const more = resizeExercises(slots, 4, blank);
+    expect(more.map((s) => s.exerciseName)).toEqual(["Squat", "Assault bike", "Squat", "Squat", "", "Assault bike"]);
+  });
+  it("reads naturally", () => {
+    expect(cardioLabel({ exercise_name: "Ski Erg", reps: "20 sec" })).toBe("Ski Erg · 20 sec");
+    expect(cardioLabel({ exercise_name: "All of the above", reps: "30 sec" })).toBe("All of the above · 30 sec each");
+    expect(cardioLabel({ exercise_name: "Cardio", reps: "Run 5km at speed 8, incline 6" })).toBe("Run 5km at speed 8, incline 6");
+  });
+  it("won't save a cardio block with nothing chosen", () => {
+    expect(draftProblem("Legs", [ex, { ...blankCardio(), reps: " " }])).toBe("Choose the cardio and how long for slot 2.");
   });
 });

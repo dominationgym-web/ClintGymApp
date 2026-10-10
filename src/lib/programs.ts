@@ -103,6 +103,8 @@ export function needsWarmUp(category: string | null, categoriesLoggedToday: Iter
 }
 
 export interface DraftExercise {
+  // Cardio blocks (0048) sit between exercises or at the end of a session.
+  kind?: "exercise" | "cardio";
   exerciseId: string | null;
   exerciseName: string;
   sets: number;
@@ -113,6 +115,8 @@ export interface DraftExercise {
 /** What's wrong with a program from the builder, or null when it can be saved. */
 export function draftProblem(name: string, exercises: DraftExercise[]): string | null {
   if (!name.trim()) return "Give the program a name.";
+  const cardio = exercises.findIndex((e) => e.kind === "cardio" && (!e.exerciseName.trim() || !e.reps.trim()));
+  if (cardio !== -1) return `Choose the cardio and how long for slot ${cardio + 1}.`;
   const missing = exercises.findIndex((e) => !e.exerciseName);
   if (missing !== -1) return `Pick an exercise for slot ${missing + 1}.`;
   const noReps = exercises.findIndex((e) => !e.reps.trim());
@@ -137,10 +141,63 @@ export function weeklyDraftProblem(name: string, sessions: DraftSession[]): stri
   if (sessions.length === 0) return "Pick at least one training day.";
   for (const s of sessions) {
     const day = WEEKDAY_NAMES[s.day - 1];
+    const cardio = s.exercises.findIndex((e) => e.kind === "cardio" && (!e.exerciseName.trim() || !e.reps.trim()));
+    if (cardio !== -1) return `${day}: choose the cardio and how long for slot ${cardio + 1}.`;
     const missing = s.exercises.findIndex((e) => !e.exerciseName);
     if (missing !== -1) return `${day}: pick an exercise for slot ${missing + 1}.`;
     const noReps = s.exercises.findIndex((e) => !e.reps.trim());
     if (noReps !== -1) return `${day}: add the reps for ${s.exercises[noReps].exerciseName}.`;
   }
   return null;
+}
+
+// Warm-up (0048): what every program starts with unless the trainer rewords it.
+export const DEFAULT_WARM_UP =
+  "5 minutes of light jogging or a brisk walk to get the blood flowing. Any easy cardio you enjoy works.";
+
+// Cardio blocks (0048).
+export const CARDIO_OPTIONS = ["Assault bike", "Ski Erg", "Treadmill", "Boxing", "Cycle", "Sprint"];
+export const CARDIO_SECONDS = [10, 20, 30, 40, 50, 60];
+// Only for the block at the very end of a session.
+export const CARDIO_ALL = "All of the above";
+// The name a cardio block gets when the trainer types their own.
+export const CARDIO_CUSTOM = "Cardio";
+
+export function cardioDuration(seconds: number): string {
+  return `${seconds} sec`;
+}
+
+export function blankCardio(): DraftExercise {
+  return { kind: "cardio", exerciseId: null, exerciseName: CARDIO_OPTIONS[0], sets: 1, reps: cardioDuration(30), restSeconds: 0 };
+}
+
+/** "Assault bike · 30 sec", "All of the above · 30 sec each", or the trainer's own words. */
+export function cardioLabel(row: { exercise_name: string; reps: string }): string {
+  if (row.exercise_name === CARDIO_CUSTOM) return row.reps;
+  return row.exercise_name === CARDIO_ALL ? `${CARDIO_ALL} · ${row.reps} each` : `${row.exercise_name} · ${row.reps}`;
+}
+
+/**
+ * Sets the number of exercises in a session to `count`, keeping its cardio
+ * blocks where they are: new exercises go before any cardio at the very end,
+ * and the last exercises go first when there are too many.
+ */
+export function resizeExercises(slots: DraftExercise[], count: number, blank: () => DraftExercise): DraftExercise[] {
+  const isExercise = (s: DraftExercise) => s.kind !== "cardio";
+  let current = slots.filter(isExercise).length;
+  const next = [...slots];
+  while (current > count) {
+    let i = next.length - 1;
+    while (!isExercise(next[i])) i--;
+    next.splice(i, 1);
+    current--;
+  }
+  let end = next.length;
+  while (end > 0 && !isExercise(next[end - 1])) end--;
+  while (current < count) {
+    next.splice(end, 0, blank());
+    end++;
+    current++;
+  }
+  return next;
 }
