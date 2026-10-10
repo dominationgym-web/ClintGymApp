@@ -7,16 +7,20 @@ const TABS: { key: ExercisePlace; label: string }[] = [
   { key: "home", label: "Home training" },
 ];
 
-// Switches an exercise list between the whole library (Gym) and only the
-// exercises that need no gym machine (Home).
+// Switches a list between Gym and Home: exercises (the whole library or only
+// those needing no gym machine) or, with other labels, programs.
+export const PROGRAM_PLACE_LABELS: Record<ExercisePlace, string> = { gym: "🏋️ Gym programs", home: "🏠 Home programs" };
+
 export default function GymHomeTabs({
   current,
   onChange,
   accent,
+  labels,
 }: {
   current: ExercisePlace;
   onChange: (place: ExercisePlace) => void;
   accent: string;
+  labels?: Record<ExercisePlace, string>;
 }) {
   return (
     <View style={styles.bar}>
@@ -24,7 +28,7 @@ export default function GymHomeTabs({
         const on = t.key === current;
         return (
           <Pressable key={t.key} style={[styles.tab, on && { backgroundColor: accent }]} onPress={() => onChange(t.key)}>
-            <Text style={[styles.text, on && styles.textOn]}>{t.label}</Text>
+            <Text style={[styles.text, on && styles.textOn]}>{labels?.[t.key] ?? t.label}</Text>
           </Pressable>
         );
       })}

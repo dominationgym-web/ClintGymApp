@@ -7,6 +7,8 @@ import { loadAvailablePrograms } from "@/lib/programQueries";
 import ProgramSummary from "@/components/ProgramSummary";
 import type { Program, ProgramExercise } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
+import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
+import type { ExercisePlace } from "@/lib/exerciseFilter";
 
 type Props = TrainerTabScreenProps<"Programs">;
 
@@ -25,6 +27,7 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [open, setOpen] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [place, setPlace] = useState<ExercisePlace>("gym");
 
   const load = useCallback(async () => {
     const list = await loadAvailablePrograms();
@@ -81,9 +84,12 @@ export default function ProgramsScreen({ navigation }: Props) {
         <Text style={styles.buildButtonText}>+ Build a program</Text>
       </Pressable>
       <Text style={styles.helper}>To put a client on a program, open the client and go to their Training tab.</Text>
+      <View style={{ marginTop: 8 }}>
+        <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} labels={PROGRAM_PLACE_LABELS} />
+      </View>
 
       {GROUPS.map((g) => {
-        const list = programs.filter(g.match);
+        const list = programs.filter((p) => p.place === place && g.match(p));
         return (
           <View key={g.title}>
             <Text style={styles.sectionHeading}>{g.title}</Text>

@@ -7,6 +7,8 @@ import { loadAvailablePrograms, loadClientProgram, type ActiveProgram } from "@/
 import ProgramSummary from "@/components/ProgramSummary";
 import { currentSession, sessionTitle, trainingDays, weekdayOf } from "@/lib/programSchedule";
 import type { Program } from "@/types/database";
+import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
+import type { ExercisePlace } from "@/lib/exerciseFilter";
 
 // For a weekly program: which session the client is on, and when they last finished one.
 function progressLine(active: ActiveProgram): string | null {
@@ -22,12 +24,24 @@ function progressLine(active: ActiveProgram): string | null {
 
 // On the trainer's view of a client: the program they're on, and one tap to
 // switch them onto another (0035). The client sees it on their Exercises tab.
-export default function ClientProgramPicker({ clientId, clientName }: { clientId: string; clientName: string }) {
+// The choices open on gym or home programs to match where the client trains.
+export default function ClientProgramPicker({
+  clientId,
+  clientName,
+  trainingPlace,
+}: {
+  clientId: string;
+  clientName: string;
+  trainingPlace: ExercisePlace;
+}) {
   const [active, setActive] = useState<ActiveProgram | null>(null);
   const [choices, setChoices] = useState<Program[]>([]);
   const [choosing, setChoosing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
+
+  useEffect(() => setPlace(trainingPlace), [trainingPlace]);
 
   const load = useCallback(async () => {
     const [current, available] = await Promise.all([loadClientProgram(clientId), loadAvailablePrograms()]);
@@ -102,8 +116,19 @@ export default function ClientProgramPicker({ clientId, clientName }: { clientId
         )}
       </View>
 
+      {choosing && (
+        <View style={{ marginTop: 12 }}>
+          <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} labels={PROGRAM_PLACE_LABELS} />
+          {place !== trainingPlace && (
+            <Text style={styles.warning}>
+              {clientName} trains at {trainingPlace === "home" ? "home" : "the gym"}. Gym-only exercises are swapped for home
+              ones automatically, but a {trainingPlace} program fits better.
+            </Text>
+          )}
+        </View>
+      )}
       {choosing &&
-        choices.map((p) => {
+        choices.filter((p) => p.place === place).map((p) => {
           const current = p.id === active?.program.id;
           return (
             <Pressable
@@ -137,5 +162,6 @@ const styles = StyleSheet.create({
   secondaryButton: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, paddingHorizontal: 16, alignItems: "center" },
   secondaryText: { color: "#F87171", fontWeight: "700" },
   choice: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8, borderWidth: 1.5, borderColor: "transparent" },
+  warning: { color: "#FBBF24", fontSize: 13, marginBottom: 4 },
   activate: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginTop: 6 },
 });
