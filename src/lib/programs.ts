@@ -281,3 +281,26 @@ function supersetRun(session: ProgramExercise[], index: number): number {
   for (let i = index - 1; i >= 0 && session[i].kind !== "cardio" && session[i].rest_seconds === 0; i--) run++;
   return run;
 }
+
+// The headings the program popup groups programs under, in order.
+export const PROGRAM_FAMILIES = [
+  { key: "fullBody", title: "Full body", icon: "💪" },
+  { key: "upperLower", title: "Quick upper & lower", icon: "⏱️" },
+  { key: "chestBi", title: "Chest & Bi", icon: "🏋️" },
+  { key: "backTri", title: "Back & Tri", icon: "🦾" },
+  { key: "legs", title: "Legs", icon: "🦵" },
+  { key: "own", title: "Your programs", icon: "⭐" },
+] as const;
+
+export type ProgramFamily = (typeof PROGRAM_FAMILIES)[number]["key"];
+
+/** Which heading a program sits under in the popup, from its name. */
+export function programFamily(program: Pick<Program, "name" | "trainer_id">): ProgramFamily {
+  if (program.trainer_id) return "own";
+  const name = program.name.toLowerCase();
+  if (name.includes("chest")) return "chestBi";
+  if (name.includes("back")) return "backTri";
+  if (name.includes("legs")) return "legs";
+  if (name.includes("upper") || name.includes("lower")) return "upperLower";
+  return "fullBody";
+}

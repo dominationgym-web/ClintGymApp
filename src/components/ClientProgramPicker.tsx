@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { TrainerStackParamList } from "@/navigation/types";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -8,7 +11,7 @@ import ProgramSummary from "@/components/ProgramSummary";
 import { currentSession, sessionTitle, trainingDays, weekdayOf } from "@/lib/programSchedule";
 import type { ExtraCardio, Program } from "@/types/database";
 import { CARDIO_ALL, CARDIO_OPTIONS, CARDIO_SECONDS, cardioDuration, cardioLabel } from "@/lib/programs";
-import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
+import ProgramChooserModal from "@/components/ProgramChooserModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 
 // For a weekly program: which session the client is on, and when they last finished one.
@@ -37,12 +40,11 @@ export default function ClientProgramPicker({
 }) {
   const [active, setActive] = useState<ActiveProgram | null>(null);
   const [choices, setChoices] = useState<Program[]>([]);
+  const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const [choosing, setChoosing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
-
-  useEffect(() => setPlace(trainingPlace), [trainingPlace]);
+  const [showWorkouts, setShowWorkouts] = useState(false);
 
   const load = useCallback(async () => {
     const [current, available] = await Promise.all([loadClientProgram(clientId), loadAvailablePrograms()]);
@@ -50,9 +52,12 @@ export default function ClientProgramPicker({
     setChoices(available);
   }, [clientId]);
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
+  // Reload on coming back, so a program just built shows up in the popup.
+  useFocusEffect(
+    useCallback(() => {
+      load().finally(() => setLoading(false));
+    }, [load]),
+  );
 
   // Cardio the trainer adds for this client on top of any program (0054),
   // ready-made ones included. Positions count exercises, so they fit every day.
@@ -130,13 +135,16 @@ export default function ClientProgramPicker({
           <Text style={styles.name}>{active.program.name}</Text>
           <Text style={styles.helper}>Since {active.assignment.started_on}</Text>
           {progressLine(active) && <Text style={styles.progress}>{progressLine(active)}</Text>}
-          <ProgramSummary program={active.program} exercises={active.exercises} />
+          <Pressable onPress={() => setShowWorkouts((v) => !v)} hitSlop={6}>
+            <Text style={styles.toggle}>{showWorkouts ? "Hide workouts ▴" : "Show workouts ▾"}</Text>
+          </Pressable>
+          {showWorkouts && <ProgramSummary program={active.program} exercises={active.exercises} />}
         </View>
       ) : (
         <Text style={styles.helper}>Not on a program yet.</Text>
       )}
 
-      {active && !choosing && (
+      {active && (
         <View style={styles.cardioBox}>
           <Text style={styles.cardioHeading}>🚴 Extra cardio for {clientName}</Text>
           <Text style={styles.helper}>Added to every workout in this program, ready-made ones too.</Text>
@@ -196,46 +204,30 @@ export default function ClientProgramPicker({
       )}
 
       <View style={styles.buttonRow}>
-        <Pressable style={styles.button} onPress={() => setChoosing((c) => !c)} disabled={busy}>
-          <Text style={styles.buttonText}>{choosing ? "Cancel" : active ? "Change program" : "Choose a program"}</Text>
+        <Pressable style={styles.button} onPress={() => setChoosing(true)} disabled={busy}>
+          <Text style={styles.buttonText}>{active ? "Change program" : "Choose a program"}</Text>
         </Pressable>
-        {active && !choosing && (
+        {active && (
           <Pressable style={styles.secondaryButton} onPress={stop} disabled={busy}>
             <Text style={styles.secondaryText}>Take off</Text>
           </Pressable>
         )}
       </View>
 
-      {choosing && (
-        <View style={{ marginTop: 12 }}>
-          <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} labels={PROGRAM_PLACE_LABELS} />
-          {place !== trainingPlace && (
-            <Text style={styles.warning}>
-              {clientName} trains at {trainingPlace === "home" ? "home" : "the gym"}. Gym-only exercises are swapped for home
-              ones automatically, but a {trainingPlace} program fits better.
-            </Text>
-          )}
-        </View>
-      )}
-      {choosing &&
-        choices.filter((p) => p.place === place).map((p) => {
-          const current = p.id === active?.program.id;
-          return (
-            <Pressable
-              key={p.id}
-              style={[styles.choice, current && { borderColor: BRAND_GOLD }]}
-              onPress={() => !current && activate(p)}
-              disabled={busy || current}
-            >
-              <Text style={styles.name}>
-                {p.name}
-                {current ? "  (current)" : ""}
-              </Text>
-              {p.description && <Text style={styles.helper}>{p.description}</Text>}
-              {!current && <Text style={styles.activate}>Tap to switch on</Text>}
-            </Pressable>
-          );
-        })}
+      <ProgramChooserModal
+        visible={choosing}
+        programs={choices}
+        currentId={active?.program.id ?? null}
+        clientName={clientName}
+        trainingPlace={trainingPlace}
+        busy={busy}
+        onChoose={activate}
+        onBuild={() => {
+          setChoosing(false);
+          navigation.navigate("ProgramBuilder");
+        }}
+        onClose={() => setChoosing(false)}
+      />
     </View>
   );
 }
@@ -259,8 +251,6 @@ const styles = StyleSheet.create({
   buttonText: { color: "#0F172A", fontWeight: "800" },
   secondaryButton: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, paddingHorizontal: 16, alignItems: "center" },
   secondaryText: { color: "#F87171", fontWeight: "700" },
-  choice: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8, borderWidth: 1.5, borderColor: "transparent" },
-  warning: { color: "#FBBF24", fontSize: 13, marginBottom: 4 },
   cardioBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 10 },
   cardioHeading: { color: "#fff", fontWeight: "700", fontSize: 15 },
   extraRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, gap: 8 },
@@ -274,5 +264,6 @@ const styles = StyleSheet.create({
   cancelText: { color: "#CBD5E1", fontWeight: "700" },
   addCardio: { marginTop: 10, borderRadius: 10, borderWidth: 1, borderColor: BRAND_GOLD, padding: 10, alignItems: "center" },
   addCardioText: { color: BRAND_GOLD, fontWeight: "700" },
+  toggle: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13, marginTop: 8 },
   activate: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginTop: 6 },
 });
