@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Consistent Change** (the "app"), operated by **Clint Walters, trading as Domination Gym** ("we", "us", "your trainer")
+**Consistent Change** (the "app"), operated by **Clint Walters, trading as Consistent Change** ("we", "us", "your trainer")
 
 **Last updated:** 18 September 2026
 **Policy version:** `2026-09-18`
@@ -13,7 +13,7 @@ party" for the personal information described below.
 
 ## 1. Who we are
 
-**Clint Walters**, trading as **Domination Gym**, based in South Africa.
+**Clint Walters**, trading as **Consistent Change**, based in South Africa.
 
 **Contact / Information Officer:** Clint Walters
 - WhatsApp: 076 423 2075

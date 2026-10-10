@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -17,7 +17,7 @@ const NAVY = "#0F172A";
 const CARD = "#1E293B";
 
 type Props = {
-  // The gold button pinned to the bottom of the screen.
+  // The gold button on the last page.
   buttonLabel: string;
   onPress: () => void;
   // Shown under the closing words, e.g. a link to the suggestion box once signed in.
@@ -26,86 +26,110 @@ type Props = {
   padTop?: boolean;
 };
 
-// The coach's introduction, laid out as a scrolling welcome page.
+// The coach's introduction, laid out as pages the reader taps through.
 export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionBox, padTop }: Props) {
   const insets = useSafeAreaInsets();
   const fade = useRef(new Animated.Value(0)).current;
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
-    Animated.timing(fade, { toValue: 1, duration: 700, useNativeDriver: true }).start();
-  }, [fade]);
+    fade.setValue(0);
+    Animated.timing(fade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+  }, [fade, page]);
 
   const rise = fade.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
 
-  return (
-    <View style={styles.screen}>
-      <ScrollView contentContainerStyle={[styles.content, padTop && { paddingTop: insets.top + 24 }]}>
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }] }}>
-          <Image source={require("../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" />
-
-          <Text style={styles.kicker}>WELCOME</Text>
-          <Text style={styles.heroQuestion}>{WELCOME_OPENING_QUESTION}</Text>
-          <Text style={styles.heroFollowUp}>{WELCOME_OPENING_FOLLOW_UP}</Text>
-
-          <View style={styles.becomeBox}>
-            <View style={styles.becomeBar} />
-            <Text style={styles.becomeText}>{WELCOME_BECOME}</Text>
+  const pages: React.ReactNode[] = [
+    <View key="opening" style={styles.centred}>
+      <Image source={require("../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.kicker}>WELCOME</Text>
+      <Text style={styles.heroQuestion}>{WELCOME_OPENING_QUESTION}</Text>
+      <Text style={styles.heroFollowUp}>{WELCOME_OPENING_FOLLOW_UP}</Text>
+    </View>,
+    <View key="become" style={styles.centred}>
+      <View style={styles.becomeBox}>
+        <View style={styles.becomeBar} />
+        <Text style={styles.becomeText}>{WELCOME_BECOME}</Text>
+      </View>
+      <Text style={styles.sectionLabel}>WHATEVER YOUR GOAL</Text>
+      <View style={styles.chips}>
+        {WELCOME_GOALS.map((goal) => (
+          <View key={goal} style={styles.chip}>
+            <Text style={styles.chipText}>{goal}</Text>
           </View>
-
-          <Text style={styles.sectionLabel}>WHATEVER YOUR GOAL</Text>
-          <View style={styles.chips}>
-            {WELCOME_GOALS.map((goal) => (
-              <View key={goal} style={styles.chip}>
-                <Text style={styles.chipText}>{goal}</Text>
-              </View>
-            ))}
+        ))}
+      </View>
+    </View>,
+    ...WELCOME_CARDS.map((card, index) => (
+      <View key={card.kicker} style={styles.centred}>
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardNumber}>{String(index + 1).padStart(2, "0")}</Text>
+            <Text style={styles.cardKicker}>{card.kicker}</Text>
           </View>
-
-          {WELCOME_CARDS.map((card, index) => (
-            <View key={card.kicker} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardNumber}>{String(index + 1).padStart(2, "0")}</Text>
-                <Text style={styles.cardKicker}>{card.kicker}</Text>
-              </View>
-              <Text style={styles.cardTitle}>{card.title}</Text>
-              {card.paragraphs.map((p) => (
-                <Text key={p} style={styles.cardBody}>
-                  {p}
-                </Text>
-              ))}
-            </View>
-          ))}
-
-          <View style={styles.discipline}>
-            <Text style={styles.quoteMark}>“</Text>
-            <Text style={styles.disciplineText}>{WELCOME_DISCIPLINE}</Text>
-          </View>
-
-          <Text style={styles.sectionLabel}>ALWAYS GROWING</Text>
-          {WELCOME_GROWING.map((p) => (
-            <Text key={p} style={styles.body}>
+          <Text style={styles.cardTitle}>{card.title}</Text>
+          {card.paragraphs.map((p) => (
+            <Text key={p} style={styles.cardBody}>
               {p}
             </Text>
           ))}
-          {onOpenSuggestionBox ? (
-            <Pressable style={styles.linkButton} onPress={onOpenSuggestionBox} accessibilityRole="button">
-              <Text style={styles.linkButtonText}>Open the Suggestion box</Text>
-            </Pressable>
-          ) : null}
+        </View>
+      </View>
+    )),
+    <View key="discipline" style={styles.centred}>
+      <View style={styles.discipline}>
+        <Text style={styles.quoteMark}>“</Text>
+        <Text style={styles.disciplineText}>{WELCOME_DISCIPLINE}</Text>
+      </View>
+    </View>,
+    <View key="growing" style={styles.centred}>
+      <Text style={styles.sectionLabel}>ALWAYS GROWING</Text>
+      {WELCOME_GROWING.map((p) => (
+        <Text key={p} style={styles.body}>
+          {p}
+        </Text>
+      ))}
+      {onOpenSuggestionBox ? (
+        <Pressable style={styles.linkButton} onPress={onOpenSuggestionBox} accessibilityRole="button">
+          <Text style={styles.linkButtonText}>Open the Suggestion box</Text>
+        </Pressable>
+      ) : null}
+      <View style={styles.divider} />
+      <Text style={styles.signOff}>{WELCOME_SIGN_OFF}</Text>
+    </View>,
+  ];
 
-          <View style={styles.divider} />
-          <Text style={styles.signOff}>{WELCOME_SIGN_OFF}</Text>
-        </Animated.View>
+  const last = page === pages.length - 1;
+
+  return (
+    <View style={styles.screen}>
+      <ScrollView
+        key={page}
+        contentContainerStyle={[styles.content, padTop && { paddingTop: insets.top + 24 }]}
+      >
+        <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }] }}>{pages[page]}</Animated.View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable
-          style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
-          onPress={onPress}
-          accessibilityRole="button"
-        >
-          <Text style={styles.buttonText}>{buttonLabel}</Text>
-        </Pressable>
+        <View style={styles.dots}>
+          {pages.map((_, i) => (
+            <View key={i} style={[styles.dot, i === page && styles.dotActive]} />
+          ))}
+        </View>
+        <View style={styles.buttonRow}>
+          {page > 0 ? (
+            <Pressable style={styles.backButton} onPress={() => setPage(page - 1)} accessibilityRole="button">
+              <Text style={styles.backButtonText}>Back</Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
+            onPress={last ? onPress : () => setPage(page + 1)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.buttonText}>{last ? buttonLabel : "Next"}</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -113,7 +137,8 @@ export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionB
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: NAVY },
-  content: { padding: 24, paddingBottom: 32 },
+  content: { flexGrow: 1, padding: 24, paddingBottom: 32 },
+  centred: { flexGrow: 1, justifyContent: "center" },
   logo: { width: 150, height: 150, alignSelf: "center", marginBottom: 8 },
   kicker: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", letterSpacing: 4, textAlign: "center", marginBottom: 14 },
   heroQuestion: { color: "#fff", fontSize: 28, fontWeight: "800", lineHeight: 36, textAlign: "center" },
@@ -177,6 +202,19 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#1E293B",
   },
-  button: { backgroundColor: BRAND_GOLD, borderRadius: 14, paddingVertical: 16, alignItems: "center" },
+  dots: { flexDirection: "row", justifyContent: "center", gap: 6, marginBottom: 12 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#334155" },
+  dotActive: { width: 20, backgroundColor: BRAND_GOLD },
+  buttonRow: { flexDirection: "row", gap: 10 },
+  backButton: {
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 22,
+    alignItems: "center",
+  },
+  backButtonText: { color: "#CBD5E1", fontSize: 17, fontWeight: "700" },
+  button: { flex: 1, backgroundColor: BRAND_GOLD, borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   buttonText: { color: NAVY, fontSize: 17, fontWeight: "800", letterSpacing: 0.5 },
 });
