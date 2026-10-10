@@ -9,6 +9,7 @@ import { scheduleSleepReminders } from "@/lib/notifications";
 import CycleTracker from "@/components/CycleTracker";
 import CalorieCalculator from "@/components/CalorieCalculator";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
+import InsulinGuide from "@/components/InsulinGuide";
 import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
@@ -48,6 +49,7 @@ export default function SectionScreen({ route }: Props) {
         </View>
       )}
       {section.key === "nutrition" && <UnderstandingCarbs />}
+      {section.key === "nutrition" && <InsulinGuide />}
       {section.key === "nutrition" && <CalorieCalculator />}
     </ScrollView>
   );

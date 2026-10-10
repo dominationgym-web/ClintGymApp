@@ -5,7 +5,7 @@
 import { SLEEP_GUIDELINES, type GuidelineGroup } from "@/lib/sleep";
 import { WOMENS_HEALTH_GUIDE } from "@/lib/cycle";
 import { SUPPLEMENT_GUIDE } from "@/lib/supplements";
-import { NUTRITION_GUIDE, UNDERSTANDING_CARBS } from "@/lib/nutrition";
+import { NUTRITION_GUIDE, UNDERSTANDING_CARBS, UNDERSTANDING_INSULIN } from "@/lib/nutrition";
 
 export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset";
 
@@ -22,8 +22,11 @@ export const SECTIONS: Section[] = [
     key: "nutrition",
     title: "Nutrition",
     summary: "How to eat to support your training and your goals: simple hand portions, plus a calorie calculator if you like to count.",
-    // Not shown (the section has content); here so search finds Understanding Carbs.
-    topics: [`${UNDERSTANDING_CARBS.title}: ${UNDERSTANDING_CARBS.paragraphs[0]}`],
+    // Not shown (the section has content); here so search finds these pieces.
+    topics: [
+      `${UNDERSTANDING_CARBS.title}: ${UNDERSTANDING_CARBS.paragraphs[0]}`,
+      `${UNDERSTANDING_INSULIN.title}: ${UNDERSTANDING_INSULIN.hook} Fat burning, insulin resistance, sugar.`,
+    ],
     content: NUTRITION_GUIDE,
   },
   {

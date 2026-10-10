@@ -75,6 +75,54 @@ export const UNDERSTANDING_CARBS = {
   question: "So the real question is: are you eating for long term health, or are you eating for short term output?",
 };
 
+// "Understanding Insulin": GRIZZ's talk on carbs, insulin and fat burning
+// (2026-10-10), tidied into short visual blocks. Shown by InsulinGuide.
+export const UNDERSTANDING_INSULIN = {
+  title: "Understanding Insulin",
+  subtitle: "Carbs, insulin and fat burning for your fitness goals",
+  hook: "Carbs don't make you fat. But they can stop you burning fat.",
+  intro:
+    "People think carbs are bad. They're not. Depending on who you are and what you do, carbs can be a necessity. What most people don't understand is what carbs do to your insulin.",
+  steps: [
+    { emoji: "🍬", title: "You eat carbs", text: "Sugar most of all, but any carb raises your insulin." },
+    { emoji: "📈", title: "Insulin spikes", text: "The higher your insulin, the less fat your body can burn." },
+    { emoji: "⏸️", title: "Fat burning waits", text: "Your body first works to clear that sugar out of your blood and into the muscle before it touches fat." },
+  ],
+  oneSweet: {
+    title: "“But I only had one sweet”",
+    points: [
+      "Sometimes it's not about the calories.",
+      "That one sweet can spike your insulin massively, especially if you're overweight and insulin resistant.",
+      "Have it before the treadmill and your body spends the walk clearing that sugar instead of burning fat. If you're insulin resistant, that takes a while.",
+    ],
+  },
+  whoFor: [
+    { emoji: "🐢", title: "Overweight or insulin resistant", text: "A sweet before training slows your fat burning right down." },
+    { emoji: "💪", title: "Big and muscular", text: "That same sweet can help: your goal is to fuel the muscle and use that insulin." },
+  ],
+  order: {
+    title: "Order matters",
+    wrong: {
+      label: "Run first, weights after",
+      text: "A 20 minute run before weights drains your muscles of glycogen (stored carbs). You can't move the weights you need to grow.",
+    },
+    right: {
+      label: "Weights first, run after",
+      text: "Lift while your muscles are full of fuel, then run 20 minutes. You maximise muscle growth and fat burning.",
+    },
+    note: "If you're lifting weights, surely your aim is to gain muscle or strength?",
+  },
+  goals: [
+    { emoji: "🏃", goal: "Want to get fit?" },
+    { emoji: "⚖️", goal: "Want to lose weight?" },
+    { emoji: "🏋️", goal: "Want to put on muscle?" },
+  ],
+  goalsLine: "There's a specific way to eat and train for each one. It's horses for courses: there is no one shoe fits all.",
+  warning:
+    "This is where people make a big mistake. They listen to influencers who have no clue what they're talking about. Don't listen to some muscle monkey saying “do this and you'll put on muscle”. If you're not a muscle monkey, it's not going to work for you.",
+  closing: "You are different. Do what helps you reach your goals, not someone else's.",
+};
+
 // Energy per gram. Carbohydrate here is the figure on South African labels,
 // which leaves fibre out; fibre is counted separately at about 2 kcal a gram.
 export const KCAL_PER_GRAM = { protein: 4, carbs: 4, fibre: 2, fat: 9 } as const;
