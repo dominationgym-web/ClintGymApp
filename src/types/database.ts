@@ -64,8 +64,6 @@ export type Client = {
   lifestyle_reset_started_at: string | null;
   // The day she tapped Start on the Reset (0050): her week 1 begins here.
   reset_started_on: string | null;
-  // Where she does the Reset workouts (0051).
-  reset_location: "gym" | "home" | null;
   consent_accepted_at: string | null;
   privacy_policy_version: string | null;
   status_flag: ClientStatusFlag;
