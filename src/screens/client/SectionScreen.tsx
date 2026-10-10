@@ -9,6 +9,8 @@ import { scheduleSleepReminders } from "@/lib/notifications";
 import CycleTracker from "@/components/CycleTracker";
 import CalorieCalculator from "@/components/CalorieCalculator";
 import MealBuilder from "@/components/MealBuilder";
+import SupplementCard, { LEVEL_COLOURS, SupplementLevelsKey } from "@/components/SupplementCard";
+import { SUPPLEMENTS, type SupplementLevel } from "@/lib/supplements";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
 import InsulinGuide from "@/components/InsulinGuide";
 import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
@@ -26,7 +28,7 @@ export default function SectionScreen({ route }: Props) {
   const [open, setOpen] = useState<string | null>(route.params.open ?? null);
   if (!section) return <View style={styles.container} />;
 
-  const parts: { title: string; body: React.ReactNode }[] = [];
+  const parts: { title: string; body: React.ReactNode; tag?: SupplementLevel }[] = [];
   if (section.key === "nutrition") {
     parts.push({ title: "Meal builder", body: <MealBuilder /> });
     parts.push({ title: "Calorie calculator", body: <CalorieCalculator /> });
@@ -46,6 +48,14 @@ export default function SectionScreen({ route }: Props) {
         </View>
       ),
     });
+  }
+  if (section.key === "supplementation") {
+    // Each supplement gets its own heading, after "Food first" and before the routine.
+    const supplementParts = [
+      { title: "What the labels mean", body: <SupplementLevelsKey /> },
+      ...SUPPLEMENTS.map((s) => ({ title: s.name, tag: s.level, body: <SupplementCard supplement={s} /> })),
+    ];
+    parts.splice(1, 0, ...supplementParts);
   }
   if (section.key === "nutrition") {
     parts.push({ title: UNDERSTANDING_CARBS.title, body: <UnderstandingCarbs /> });
@@ -69,6 +79,11 @@ export default function SectionScreen({ route }: Props) {
                 accessibilityState={{ expanded: isOpen }}
               >
                 <Text style={styles.partTitle}>{part.title}</Text>
+                {part.tag ? (
+                  <Text style={[styles.partTag, { color: LEVEL_COLOURS[part.tag], borderColor: LEVEL_COLOURS[part.tag] }]}>
+                    {part.tag}
+                  </Text>
+                ) : null}
                 <Text style={styles.partArrow}>{isOpen ? "▲" : "▼"}</Text>
               </Pressable>
               {isOpen ? part.body : null}
@@ -162,6 +177,7 @@ const styles = StyleSheet.create({
   },
   partHeaderOpen: { backgroundColor: "#273449" },
   partTitle: { color: "#fff", fontSize: 16, fontWeight: "700", flex: 1, marginRight: 10 },
+  partTag: { borderWidth: 1, borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8, fontSize: 11, fontWeight: "700", marginRight: 10 },
   partArrow: { color: BRAND_GOLD, fontSize: 13 },
   container: { flex: 1, backgroundColor: "#0F172A" },
   summary: { color: "#E2E8F0", fontSize: 16, lineHeight: 23, marginBottom: 20 },

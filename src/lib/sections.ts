@@ -4,7 +4,7 @@
 // soon" so the page isn't empty. The menu picks sections up from this list.
 import { SLEEP_GUIDELINES, type GuidelineGroup } from "@/lib/sleep";
 import { WOMENS_HEALTH_GUIDE } from "@/lib/cycle";
-import { SUPPLEMENT_GUIDE } from "@/lib/supplements";
+import { SUPPLEMENT_GUIDE, SUPPLEMENTS } from "@/lib/supplements";
 import { NUTRITION_GUIDE, UNDERSTANDING_CARBS, UNDERSTANDING_INSULIN } from "@/lib/nutrition";
 
 export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset";
@@ -34,7 +34,8 @@ export const SECTIONS: Section[] = [
     key: "supplementation",
     title: "Supplementation",
     summary: "What's worth taking for energy, muscle, performance and recovery, and what to skip.",
-    topics: [],
+    // Not shown (the section has content); here so search finds each supplement.
+    topics: SUPPLEMENTS.map((s) => `${s.name}: ${s.what}`),
     content: SUPPLEMENT_GUIDE,
   },
   {
