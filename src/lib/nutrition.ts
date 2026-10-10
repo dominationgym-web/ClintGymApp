@@ -4,6 +4,16 @@ import type { GuidelineGroup } from "@/lib/sleep";
 
 export const NUTRITION_GUIDE: GuidelineGroup[] = [
   {
+    heading: "Guidelines for your health, not your goals",
+    points: [
+      "These portions are for general, everyday eating. Your meals will change as your needs change.",
+      "If you're trying to lose weight, there will be adjustments to these guidelines.",
+      "If you're trying to gain weight, there will be adjustments too.",
+      "If you're looking to improve your health and wellbeing, you might need to increase your healthy fat intake.",
+      "So these are guidelines to support your health, not your specific goals.",
+    ],
+  },
+  {
     heading: "Your portions at each meal",
     points: [
       "Protein: 1–2 palm-sized portions.",
