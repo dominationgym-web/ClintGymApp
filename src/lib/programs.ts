@@ -1,4 +1,4 @@
-import type { Program, ProgramExercise } from "@/types/database";
+import type { ExtraCardio, Program, ProgramExercise } from "@/types/database";
 
 // How many exercises a trainer can put in a program from the builder.
 export const EXERCISE_COUNTS = [4, 6, 8] as const;
@@ -225,4 +225,59 @@ export function resizeExercises(slots: DraftExercise[], count: number, blank: ()
     current++;
   }
   return next;
+}
+
+/**
+ * A program's rows with the cardio the trainer added for one client (0054)
+ * slotted into every training day: after the `after`th exercise (never
+ * between the two halves of a superset), or at the end when `after` is null
+ * or the day has fewer exercises.
+ */
+export function withExtraCardio(rows: ProgramExercise[], extras: ExtraCardio[] | null | undefined): ProgramExercise[] {
+  if (!extras?.length) return rows;
+  const days = [...new Set(rows.map((r) => r.day_number))].sort((a, b) => a - b);
+  return days.flatMap((day) => {
+    const session = rows.filter((r) => r.day_number === day).sort((a, b) => a.sort_order - b.sort_order);
+    const exerciseCount = session.filter((r) => r.kind !== "cardio").length;
+    if (exerciseCount === 0) return session;
+    // Blocks for the same spot keep the order the trainer added them in.
+    const placed = extras.map((extra, i) => ({ extra, i, after: extra.after == null ? exerciseCount : Math.min(extra.after, exerciseCount) }));
+    const out: ProgramExercise[] = [];
+    let seen = 0;
+    const flush = (upTo: number) => {
+      for (const { extra, i } of placed.filter((p) => p.after === upTo)) {
+        out.push({
+          id: `extra-cardio-${i}-day-${day}`,
+          program_id: session[0].program_id,
+          day_number: day,
+          sort_order: (out[out.length - 1]?.sort_order ?? 0) + 0.001,
+          exercise_id: null,
+          exercise_name: extra.name,
+          sets: 1,
+          reps: extra.reps,
+          rest_seconds: 0,
+          kind: "cardio",
+        });
+      }
+    };
+    session.forEach((row, index) => {
+      out.push(row);
+      if (row.kind === "cardio") return;
+      seen++;
+      const next = session[index + 1];
+      const supersetContinues = row.rest_seconds === 0 && next && next.kind !== "cardio";
+      if (supersetContinues) return;
+      // Anything due inside the superset comes out after it.
+      const due = placed.filter((p) => p.after <= seen && p.after > seen - supersetRun(session, index)).map((p) => p.after);
+      for (const at of [...new Set(due)].sort((a, b) => a - b)) flush(at);
+    });
+    return out;
+  });
+}
+
+// How many exercises in a row end at `index` (1 unless it closes a superset).
+function supersetRun(session: ProgramExercise[], index: number): number {
+  let run = 1;
+  for (let i = index - 1; i >= 0 && session[i].kind !== "cardio" && session[i].rest_seconds === 0; i--) run++;
+  return run;
 }

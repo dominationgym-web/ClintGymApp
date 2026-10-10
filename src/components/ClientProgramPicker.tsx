@@ -6,7 +6,8 @@ import { todayIso } from "@/lib/dates";
 import { loadAvailablePrograms, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import ProgramSummary from "@/components/ProgramSummary";
 import { currentSession, sessionTitle, trainingDays, weekdayOf } from "@/lib/programSchedule";
-import type { Program } from "@/types/database";
+import type { ExtraCardio, Program } from "@/types/database";
+import { CARDIO_ALL, CARDIO_OPTIONS, CARDIO_SECONDS, cardioDuration, cardioLabel } from "@/lib/programs";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 
@@ -53,6 +54,34 @@ export default function ClientProgramPicker({
     load().finally(() => setLoading(false));
   }, [load]);
 
+  // Cardio the trainer adds for this client on top of any program (0054),
+  // ready-made ones included. Positions count exercises, so they fit every day.
+  const extras: ExtraCardio[] = active?.assignment.extra_cardio ?? [];
+  const mostExercises = active
+    ? Math.max(0, ...[...new Set(active.exercises.map((e) => e.day_number))].map(
+        (day) => active.exercises.filter((e) => e.day_number === day && e.kind !== "cardio").length,
+      ))
+    : 0;
+  const [addingCardio, setAddingCardio] = useState(false);
+  const [cardioAfter, setCardioAfter] = useState<number | null>(null);
+  const [cardioName, setCardioName] = useState(CARDIO_OPTIONS[0]);
+  const [cardioSeconds, setCardioSeconds] = useState(30);
+
+  const saveExtras = async (next: ExtraCardio[]) => {
+    setBusy(true);
+    const { error } = await supabase.from("client_programs").update({ extra_cardio: next }).eq("client_id", clientId);
+    if (error) Alert.alert("Couldn't save cardio", error.message);
+    await load();
+    setBusy(false);
+  };
+
+  const addCardio = async () => {
+    await saveExtras([...extras, { after: cardioAfter, name: cardioName, reps: cardioDuration(cardioSeconds) }]);
+    setAddingCardio(false);
+  };
+
+  const positionLabel = (after: number | null) => (after == null ? "At the end" : `After exercise ${after}`);
+
   const activate = async (program: Program) => {
     setBusy(true);
     const { error } = await supabase
@@ -66,6 +95,8 @@ export default function ClientProgramPicker({
         current_day: null,
         due_on: null,
         last_completed_at: null,
+        // Cardio added for the old program doesn't carry over.
+        extra_cardio: [],
       });
     if (error) Alert.alert("Couldn't switch program", error.message);
     setChoosing(false);
@@ -103,6 +134,65 @@ export default function ClientProgramPicker({
         </View>
       ) : (
         <Text style={styles.helper}>Not on a program yet.</Text>
+      )}
+
+      {active && !choosing && (
+        <View style={styles.cardioBox}>
+          <Text style={styles.cardioHeading}>🚴 Extra cardio for {clientName}</Text>
+          <Text style={styles.helper}>Added to every workout in this program, ready-made ones too.</Text>
+          {extras.map((extra, i) => (
+            <View key={i} style={styles.extraRow}>
+              <Text style={styles.extraText}>
+                {positionLabel(extra.after)}: {cardioLabel({ exercise_name: extra.name, reps: extra.reps })}
+              </Text>
+              <Pressable onPress={() => saveExtras(extras.filter((_, j) => j !== i))} disabled={busy} hitSlop={8}>
+                <Text style={styles.secondaryText}>Remove</Text>
+              </Pressable>
+            </View>
+          ))}
+          {addingCardio ? (
+            <View style={{ marginTop: 8 }}>
+              <Text style={styles.label}>Where</Text>
+              <View style={styles.chips}>
+                {[...Array.from({ length: Math.max(mostExercises - 1, 0) }, (_, i) => i + 1), null].map((after) => (
+                  <Chip
+                    key={String(after)}
+                    label={positionLabel(after)}
+                    on={cardioAfter === after}
+                    onPress={() => {
+                      setCardioAfter(after);
+                      if (after != null && cardioName === CARDIO_ALL) setCardioName(CARDIO_OPTIONS[0]);
+                    }}
+                  />
+                ))}
+              </View>
+              <Text style={styles.label}>Machine</Text>
+              <View style={styles.chips}>
+                {[...CARDIO_OPTIONS, ...(cardioAfter == null ? [CARDIO_ALL] : [])].map((name) => (
+                  <Chip key={name} label={name} on={cardioName === name} onPress={() => setCardioName(name)} />
+                ))}
+              </View>
+              <Text style={styles.label}>How long</Text>
+              <View style={styles.chips}>
+                {CARDIO_SECONDS.map((sec) => (
+                  <Chip key={sec} label={cardioDuration(sec)} on={cardioSeconds === sec} onPress={() => setCardioSeconds(sec)} />
+                ))}
+              </View>
+              <View style={styles.buttonRow}>
+                <Pressable style={styles.button} onPress={addCardio} disabled={busy}>
+                  <Text style={styles.buttonText}>Add</Text>
+                </Pressable>
+                <Pressable style={styles.secondaryButton} onPress={() => setAddingCardio(false)} disabled={busy}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable style={styles.addCardio} onPress={() => setAddingCardio(true)} disabled={busy}>
+              <Text style={styles.addCardioText}>+ Add cardio</Text>
+            </Pressable>
+          )}
+        </View>
       )}
 
       <View style={styles.buttonRow}>
@@ -150,6 +240,14 @@ export default function ClientProgramPicker({
   );
 }
 
+function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={[styles.chip, on && styles.chipOn]} onPress={onPress}>
+      <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   heading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
   card: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
@@ -163,5 +261,18 @@ const styles = StyleSheet.create({
   secondaryText: { color: "#F87171", fontWeight: "700" },
   choice: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8, borderWidth: 1.5, borderColor: "transparent" },
   warning: { color: "#FBBF24", fontSize: 13, marginBottom: 4 },
+  cardioBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 10 },
+  cardioHeading: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  extraRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, gap: 8 },
+  extraText: { color: "#E2E8F0", flex: 1 },
+  label: { color: "#94A3B8", fontWeight: "600", marginTop: 8, marginBottom: 4 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: { borderRadius: 16, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: "#0F172A" },
+  chipOn: { backgroundColor: BRAND_GOLD },
+  chipText: { color: "#CBD5E1", fontSize: 13 },
+  chipTextOn: { color: "#0F172A", fontWeight: "700" },
+  cancelText: { color: "#CBD5E1", fontWeight: "700" },
+  addCardio: { marginTop: 10, borderRadius: 10, borderWidth: 1, borderColor: BRAND_GOLD, padding: 10, alignItems: "center" },
+  addCardioText: { color: BRAND_GOLD, fontWeight: "700" },
   activate: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginTop: 6 },
 });

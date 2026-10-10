@@ -17,6 +17,7 @@ import {
   needsWarmUp,
   programDayNumber,
   warmUpReps,
+  withExtraCardio,
 } from "@/lib/programs";
 import type { ProgramExercise } from "@/types/database";
 
@@ -220,5 +221,39 @@ describe("supersetStep", () => {
     const done: Record<string, number> = { a: 3, b: 3, c: 0 };
     expect(supersetStep(b, session, (e) => done[e.id])).toBeNull();
     expect(supersetStep(c, session, () => 0)).toBeNull();
+  });
+});
+
+describe("withExtraCardio", () => {
+  const ex = (day: number, order: number, name: string, rest = 90): ProgramExercise => ({ ...row(day, order, name), rest_seconds: rest });
+  const names = (rows: ProgramExercise[]) => rows.map((r) => (r.kind === "cardio" ? `[${r.exercise_name}]` : r.exercise_name));
+
+  it("leaves the program alone with no extras", () => {
+    const rows = [ex(1, 1, "Squat")];
+    expect(withExtraCardio(rows, [])).toBe(rows);
+  });
+
+  it("puts blocks after the chosen exercise and at the end, on every day", () => {
+    const rows = [ex(1, 1, "Squat"), ex(1, 2, "Lunge"), ex(1, 3, "Calf raise"), ex(3, 1, "Bench"), ex(3, 2, "Row")];
+    const out = withExtraCardio(rows, [
+      { after: 1, name: "Ski Erg", reps: "30 sec" },
+      { after: null, name: "All of the above", reps: "20 sec" },
+    ]);
+    expect(names(out)).toEqual([
+      "Squat", "[Ski Erg]", "Lunge", "Calf raise", "[All of the above]",
+      "Bench", "[Ski Erg]", "Row", "[All of the above]",
+    ]);
+    const cardio = out.filter((r) => r.kind === "cardio");
+    expect(new Set(cardio.map((r) => r.id)).size).toBe(4);
+    expect(cardio[0]).toMatchObject({ sets: 1, reps: "30 sec", exercise_id: null, day_number: 1 });
+  });
+
+  it("moves a block past a superset instead of splitting it, and caps at the end", () => {
+    const rows = [ex(1, 1, "Curl", 0), ex(1, 2, "Press"), ex(1, 3, "Row")];
+    const out = withExtraCardio(rows, [
+      { after: 1, name: "Cycle", reps: "40 sec" },
+      { after: 9, name: "Sprint", reps: "10 sec" },
+    ]);
+    expect(names(out)).toEqual(["Curl", "Press", "[Cycle]", "Row", "[Sprint]"]);
   });
 });

@@ -242,7 +242,13 @@ export type ClientProgram = {
   current_day: number | null;
   due_on: string | null;
   last_completed_at: string | null;
+  // Cardio the trainer added for this client on top of the program (0054),
+  // so ready-made programs can have cardio too. `after` is how many
+  // exercises come before the block; null means at the end.
+  extra_cardio: ExtraCardio[];
 }
+
+export type ExtraCardio = { after: number | null; name: string; reps: string };
 
 export type Habit = {
   id: string;
