@@ -1,4 +1,4 @@
-import type { CompositeScreenProps } from "@react-navigation/native";
+import type { CompositeScreenProps, NavigatorScreenParams } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { SectionKey } from "@/lib/sections";
@@ -19,8 +19,9 @@ export type ClientTabParamList = {
 };
 
 export type ClientStackParamList = {
-  ClientTabs: undefined;
+  ClientTabs: NavigatorScreenParams<ClientTabParamList> | undefined;
   Section: { sectionKey: SectionKey };
+  Search: undefined;
 };
 
 export type TrainerTabParamList = {
@@ -33,7 +34,8 @@ export type TrainerTabParamList = {
 };
 
 export type TrainerStackParamList = {
-  TrainerTabs: undefined;
+  TrainerTabs: NavigatorScreenParams<TrainerTabParamList> | undefined;
+  Search: undefined;
   ClientDetail: { clientId: string };
   ProgramBuilder: undefined;
 };

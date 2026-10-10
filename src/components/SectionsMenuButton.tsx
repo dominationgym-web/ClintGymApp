@@ -5,17 +5,19 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ClientStackParamList } from "@/navigation/types";
 import { SECTIONS } from "@/lib/sections";
+import SearchButton from "@/components/SearchButton";
 
 // The "three lines" button in the top right of every client tab. It drops down
 // a list of the extra sections (Nutrition, Supplementation, ...) that don't
-// warrant their own tab at the bottom.
+// warrant their own tab at the bottom. The search button sits next to it.
 export default function SectionsMenuButton() {
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
 
   return (
-    <>
+    <View style={styles.row}>
+      <SearchButton />
       <Pressable
         onPress={() => setOpen(true)}
         hitSlop={10}
@@ -49,11 +51,12 @@ export default function SectionsMenuButton() {
           </Pressable>
         </Pressable>
       </Modal>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  row: { flexDirection: "row", alignItems: "center" },
   button: { marginRight: 16, paddingVertical: 4, gap: 4 },
   bar: { width: 22, height: 2.5, borderRadius: 2, backgroundColor: "#fff" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "flex-end" },
