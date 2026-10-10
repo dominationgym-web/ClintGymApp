@@ -15,7 +15,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
-import { clientBrowsable, exerciseCategories, filterExercises } from "@/lib/exerciseFilter";
+import { clientBrowsable, exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
@@ -75,6 +76,7 @@ export default function ExerciseLibraryScreen() {
   const [restRun, setRestRun] = useState(0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [place, setPlace] = useState<ExercisePlace>("gym");
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -112,6 +114,11 @@ export default function ExerciseLibraryScreen() {
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
   const browsable = clientBrowsable(exercises, program ? program.exercises.map((e) => e.exercise_id) : []);
+  const shown = forPlace(browsable, place);
+  const choosePlace = (next: ExercisePlace) => {
+    setPlace(next);
+    setCategory(null);
+  };
   // The open exercise is the first half of a superset: no rest timer after it.
   const targetNext = target ? supersetNext(target, todaysWorkout) : null;
   const [savingProgress, setSavingProgress] = useState(false);
@@ -164,6 +171,7 @@ export default function ExerciseLibraryScreen() {
       source: "own_library" as const,
       external_url: null,
       sort_order: 0,
+      home_friendly: false,
     };
     openExercise(exercise, row);
   };
@@ -252,7 +260,7 @@ export default function ExerciseLibraryScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={filterExercises(browsable, search, category)}
+        data={filterExercises(shown, search, category)}
         keyboardShouldPersistTaps="handled"
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
@@ -318,17 +326,18 @@ export default function ExerciseLibraryScreen() {
               </Text>
             ) : (
               <>
+                <GymHomeTabs current={place} onChange={choosePlace} accent="#22C55E" />
                 <TextInput
                   style={[styles.input, { marginBottom: 10 }]}
                   value={search}
                   onChangeText={setSearch}
-                  placeholder={`Search ${browsable.length} exercises`}
+                  placeholder={`Search ${shown.length} exercises`}
                   placeholderTextColor="#64748B"
                   autoCorrect={false}
                   clearButtonMode="while-editing"
                 />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                  {[null, ...exerciseCategories(browsable)].map((c) => (
+                  {[null, ...exerciseCategories(shown)].map((c) => (
                     <Pressable
                       key={c ?? "all"}
                       style={[styles.effortChip, styles.categoryChip, category === c && styles.effortChipSelected]}

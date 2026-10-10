@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import { filterExercises } from "@/lib/exerciseFilter";
+import { filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import GymHomeTabs from "@/components/GymHomeTabs";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -51,6 +52,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const [activeDay, setActiveDay] = useState(1);
   const [picking, setPicking] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [place, setPlace] = useState<ExercisePlace>("gym");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -99,7 +101,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     setSearch("");
   };
 
-  const filtered = filterExercises(library, search);
+  const filtered = filterExercises(forPlace(library, place), search);
 
   const save = async () => {
     if (!trainer) return;
@@ -272,6 +274,9 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
             <Pressable onPress={closePicker}>
               <Text style={styles.close}>Close</Text>
             </Pressable>
+          </View>
+          <View style={{ marginHorizontal: 20 }}>
+            <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} />
           </View>
           <TextInput
             style={[styles.input, { marginHorizontal: 20, marginBottom: 10 }]}

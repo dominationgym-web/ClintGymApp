@@ -175,6 +175,8 @@ export type Exercise = {
   source: "movekit" | "muscle_and_motion" | "own_library";
   external_url: string | null;
   sort_order: number;
+  // No gym machine needed: shown on the Home tab (0045).
+  home_friendly: boolean;
 }
 
 export type SetEffort = "comfortable" | "close_to_failure" | "failure";

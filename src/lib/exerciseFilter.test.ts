@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientBrowsable, exerciseCategories, filterExercises } from "@/lib/exerciseFilter";
+import { clientBrowsable, exerciseCategories, filterExercises, forPlace } from "@/lib/exerciseFilter";
 
 const list = [
   { name: "Bench Press", category: "Push" },
@@ -38,5 +38,18 @@ describe("clientBrowsable", () => {
   it("hides overhead pressing unless it's in the client's program", () => {
     expect(clientBrowsable(all, []).map((e) => e.id)).toEqual(["a"]);
     expect(clientBrowsable(all, ["c", null]).map((e) => e.id)).toEqual(["a", "c"]);
+  });
+});
+
+describe("forPlace", () => {
+  const places = [
+    { name: "Leg Press", home_friendly: false },
+    { name: "Goblet Squat", home_friendly: true },
+  ];
+  it("shows the whole library on the Gym tab", () => {
+    expect(forPlace(places, "gym")).toHaveLength(2);
+  });
+  it("shows only no-machine exercises on the Home tab", () => {
+    expect(forPlace(places, "home").map((e) => e.name)).toEqual(["Goblet Squat"]);
   });
 });
