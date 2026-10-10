@@ -69,7 +69,12 @@ export default function LifestyleResetScreen() {
   const [guideKey, setGuideKey] = useState<HabitKey | null>(null);
   const [viewWeek, setViewWeek] = useState<number | null>(null);
   const [reminder, setReminder] = useState<ResetReminderSetting | null>(null);
-  const [location, setLocation] = useState<ResetLocation | null>(client?.reset_location ?? null);
+  // The same Gym/Home setting as the rest of the app (picked at signup, the
+  // trainer can switch it), so changing it here changes it everywhere.
+  const [location, setLocation] = useState<ResetLocation>(client?.training_place ?? "gym");
+  useEffect(() => {
+    if (client?.training_place) setLocation(client.training_place);
+  }, [client?.training_place]);
 
   const startedOn = client?.reset_started_on ?? null;
   const currentWeek = startedOn ? resetWeekNumber(startedOn, todayIso()) : null;
@@ -154,7 +159,7 @@ export default function LifestyleResetScreen() {
     if (!client) return;
     const before = location;
     setLocation(next);
-    const { error } = await supabase.from("clients").update({ reset_location: next }).eq("id", client.id);
+    const { error } = await supabase.from("clients").update({ training_place: next }).eq("id", client.id);
     if (error) {
       setLocation(before);
       Alert.alert("Couldn't save", error.message);
@@ -164,10 +169,6 @@ export default function LifestyleResetScreen() {
   };
 
   const start = () => {
-    if (!location) {
-      Alert.alert("Gym or home?", "Pick where you'll train first, then tap Start.");
-      return;
-    }
     Alert.alert("Start the Reset today?", "Week 1 begins today. You'll get new steps each week.", [
       { text: "Not yet", style: "cancel" },
       {
@@ -260,7 +261,7 @@ export default function LifestyleResetScreen() {
                     </Pressable>
                   ))}
                 </View>
-                <Pressable style={[styles.startButton, styles.startButtonTop, !location && styles.startButtonOff]} onPress={start}>
+                <Pressable style={[styles.startButton, styles.startButtonTop]} onPress={start}>
                   <Text style={styles.startButtonText}>Start this program</Text>
                 </Pressable>
               </>
@@ -330,7 +331,7 @@ export default function LifestyleResetScreen() {
             />
 
             {!startedOn && (
-              <Pressable style={[styles.startButton, !location && styles.startButtonOff]} onPress={start}>
+              <Pressable style={[styles.startButton]} onPress={start}>
                 <Text style={styles.startButtonText}>Start this program</Text>
               </Pressable>
             )}
@@ -629,7 +630,6 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
   saveButtonText: { color: "#0F172A", fontWeight: "700" },
   startButton: { backgroundColor: BRAND_GOLD, borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 16 },
-  startButtonOff: { opacity: 0.45 },
   chooseTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginTop: 12, marginBottom: 8 },
   chooseRow: { flexDirection: "row", gap: 10 },
   chooseCard: {
