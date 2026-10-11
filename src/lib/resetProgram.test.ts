@@ -3,7 +3,9 @@ import {
   RESET_HABITS,
   RESET_TRAINING,
   RESET_HOME_TRAINING,
+  resetName,
   resetSetTarget,
+  resetWeek,
   resetTraining,
   RESET_WEEKS,
   formatReminderTime,
@@ -101,5 +103,32 @@ describe("resetSetTarget", () => {
     expect(resetSetTarget("2 sets of 10-12 reps, rest 1-2 minutes")).toEqual({ setsLabel: "2", sets: 2, reps: "10-12", restSeconds: 90 });
     expect(resetSetTarget("3-4 sets of 8-12 reps, rest 1-2 minutes")).toEqual({ setsLabel: "3-4", sets: 4, reps: "8-12", restSeconds: 90 });
     for (const t of Object.values(RESET_TRAINING)) expect(resetSetTarget(t.sets).reps).toMatch(/^\d+-\d+$/);
+  });
+});
+
+describe("Men's Health Reset", () => {
+  it("is named for men and women", () => {
+    expect(resetName("male")).toBe("Men's Health Reset");
+    expect(resetName("female")).toBe("Women's Health Reset");
+    expect(resetName(null)).toBe("Women's Health Reset");
+  });
+  it("replaces the period week for men and keeps the rest", () => {
+    expect(JSON.stringify(resetWeek(11, "male")).toLowerCase()).not.toMatch(/period|cycle|menstru/);
+    expect(resetWeek(11, "female").todo.join(" ")).toContain("period");
+    for (let w = 1; w <= 12; w++) {
+      if (w !== 11) expect(resetWeek(w, "male")).toEqual(resetWeek(w, "female"));
+      expect(resetWeek(w, "male").habits).toEqual(resetWeek(w, "female").habits);
+    }
+  });
+  it("swaps hip abduction and adduction for lunges, gym and home", () => {
+    for (const phase of ["calm", "rhythm", "build", "optimise"] as const) {
+      for (const place of ["gym", "home"] as const) {
+        const names = resetTraining(phase, place, "male").sessions.flatMap((s) => s.exercises.map((e) => e.name));
+        expect(names.some((n) => /abduction|adduction/i.test(n))).toBe(false);
+      }
+    }
+    const lower = resetTraining("optimise", "gym", "male").sessions[0].exercises.map((e) => e.name);
+    expect(lower).toContain("Walking Lunge");
+    expect(resetTraining("optimise", "gym", "female").sessions[0].exercises.map((e) => e.name)).toContain("Hip Abduction");
   });
 });

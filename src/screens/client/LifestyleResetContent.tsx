@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { resetName, type ResetSex } from "@/lib/resetProgram";
 
 type DailySix = {
   icon: string;
@@ -242,10 +243,18 @@ function Bullets({ items }: { items: string[] }) {
   );
 }
 
-export default function LifestyleResetContent() {
+// Women see menstrual questions; men see energy and drive instead.
+const forSex = (items: string[], sex: ResetSex) =>
+  sex === "male"
+    ? items.map((i) =>
+        i === "Menstrual symptoms/cycle patterns" ? "Drive and morning energy" : i === "Menstrual symptoms changing?" ? "Drive and morning energy better?" : i,
+      )
+    : items;
+
+export default function LifestyleResetContent({ sex }: { sex?: ResetSex }) {
   return (
     <View>
-      <Text style={styles.title}>The Women's Health Reset</Text>
+      <Text style={styles.title}>The {resetName(sex)}</Text>
       <Text style={styles.subtitle}>A 12-Week Lifestyle Programme</Text>
       <Text style={styles.intro}>
         Your goal isn't to punish your body into being healthy. It's to give your body the environment it needs to
@@ -281,7 +290,7 @@ export default function LifestyleResetContent() {
           <Text style={styles.cardTitle}>
             {p.range} · {p.name}
           </Text>
-          <Bullets items={p.bullets} />
+          <Bullets items={forSex(p.bullets, sex)} />
         </View>
       ))}
 
@@ -320,7 +329,7 @@ export default function LifestyleResetContent() {
 
       <Text style={styles.sectionTitle}>Monthly Check-in</Text>
       <Text style={styles.body}>Every month, ask how your body is responding:</Text>
-      <Bullets items={MONTHLY_CHECKIN} />
+      <Bullets items={forSex(MONTHLY_CHECKIN, sex)} />
       <Text style={styles.note}>
         Your programme should adapt to the person - it should not force everyone into exactly the same routine.
       </Text>

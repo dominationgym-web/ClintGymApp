@@ -1,5 +1,8 @@
-// The 12-week Women's Health Reset, laid out week by week so a client can
-// see the whole programme at a glance and step through it with Next.
+// The 12-week Health Reset (Women's and, since 2026-10-11, Men's), laid out
+// week by week so a client can see the whole programme at a glance and step
+// through it with Next. The two share everything except a few lines: the
+// name, week 11 (the menstrual cycle for women; sleep, stress and alcohol for
+// men) and the hip abduction/adduction work, which men swap for lunges.
 // Habits are added a few at a time (week 1 starts with four, week 5 has all
 // eight) so nobody has to change everything on day one.
 import type { ResetHabitKey } from "@/lib/resetGuides";
@@ -214,8 +217,27 @@ export const RESET_WEEKS: ResetWeek[] = [
   },
 ];
 
-export function resetWeek(week: number): ResetWeek {
-  return RESET_WEEKS[Math.min(RESET_WEEKS_TOTAL, Math.max(1, week)) - 1];
+export type ResetSex = "male" | "female" | null | undefined;
+
+/** "Men's Health Reset" for men, otherwise "Women's Health Reset". */
+export function resetName(sex: ResetSex): string {
+  return sex === "male" ? "Men's Health Reset" : "Women's Health Reset";
+}
+
+// Men's week 11: what changes a man's energy week to week.
+const MENS_WEEK_11: Pick<ResetWeek, "focus" | "todo" | "tip"> = {
+  focus: "Notice how sleep, stress and alcohol change your energy and strength.",
+  todo: [
+    "Keep alcohol to 2 nights or fewer this week and see how you sleep and train",
+    "Train harder on high-energy days, lighter on low ones",
+    "3 strength sessions, 3-4 cardio",
+  ],
+  tip: "Poor sleep, stress and drinking all pull your testosterone and recovery down. Your programme should fit you, not the other way round.",
+};
+
+export function resetWeek(week: number, sex?: ResetSex): ResetWeek {
+  const plan = RESET_WEEKS[Math.min(RESET_WEEKS_TOTAL, Math.max(1, week)) - 1];
+  return sex === "male" && plan.week === 11 ? { ...plan, ...MENS_WEEK_11 } : plan;
 }
 
 /** Habits that are new this week (not in the week before). */
@@ -585,6 +607,24 @@ export function resetSetTarget(line: string): { setsLabel: string; sets: number;
   };
 }
 
-export function resetTraining(phase: ResetPhaseKey, location: ResetLocation | null): ResetTraining {
-  return (location === "home" ? RESET_HOME_TRAINING : RESET_TRAINING)[phase];
+// Men swap the hip abduction/adduction work for lunges.
+const MENS_SWAPS: Record<string, ResetExercise | null> = {
+  "Hip Abduction": { name: "Walking Lunge" },
+  "Hip Adduction": null,
+  "Band Hip Abduction": { name: "Dumbbell Goblet Reverse Lunge" },
+};
+
+function forMen(training: ResetTraining): ResetTraining {
+  return {
+    ...training,
+    sessions: training.sessions.map((s) => ({
+      ...s,
+      exercises: s.exercises.flatMap((e) => (e.name in MENS_SWAPS ? (MENS_SWAPS[e.name] ? [MENS_SWAPS[e.name] as ResetExercise] : []) : [e])),
+    })),
+  };
+}
+
+export function resetTraining(phase: ResetPhaseKey, location: ResetLocation | null, sex?: ResetSex): ResetTraining {
+  const training = (location === "home" ? RESET_HOME_TRAINING : RESET_TRAINING)[phase];
+  return sex === "male" ? forMen(training) : training;
 }

@@ -77,9 +77,9 @@ export default function ResetTraining({
 
   const videos = Object.fromEntries(Object.entries(info).map(([name, e]) => [name, e.external_url]));
 
-  const plan = resetWeek(week);
+  const plan = resetWeek(week, client?.sex);
   const phase = RESET_PHASES[plan.phase];
-  const training = resetTraining(plan.phase, location);
+  const training = resetTraining(plan.phase, location, client?.sex);
   const isThisWeek = week === currentWeek;
   const target = resetSetTarget(training.sets);
 
