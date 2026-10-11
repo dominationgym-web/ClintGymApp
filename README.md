@@ -1,4 +1,4 @@
-# ClintGymApp (Consistent Change)
+# ClintGymApp (Daily Evolution)
 
 Coaching app for a solo online personal trainer (South Africa-based), built
 around daily client accountability first. See the full product brief for
