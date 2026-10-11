@@ -42,7 +42,95 @@ export type Trainer = {
   referred_by_code: string | null;
   referred_by: string | null;
   referral_credits_used: number;
+  // Billing (0064). Only the owner sets these. Client fees start 2 months
+  // after billing_started_on; paid_until moves on when he records a payment.
+  approved_at: string | null;
+  billing_plan: BillingPlan | null;
+  billing_currency: BillingCurrency | null;
+  billing_started_on: string | null;
+  paid_until: string | null;
 }
+
+export type BillingPlan = "monthly" | "six_months" | "yearly";
+export type BillingCurrency = "USD" | "ZAR";
+
+export type BillingPrices = Record<BillingCurrency, Record<BillingPlan | "client", number>>;
+
+export type BillingSettings = {
+  id: number;
+  prices: BillingPrices;
+  free_client_months: number;
+  free_clients: number;
+  client_fees_due_day: number;
+  lockout_enabled: boolean;
+  updated_at: string;
+};
+
+export type ClientActivation = {
+  id: number;
+  client_id: string | null;
+  client_name: string | null;
+  trainer_id: string;
+  activated_on: string;
+  created_at: string;
+};
+
+export type TrainerBillingMonth = {
+  trainer_id: string;
+  month: string;
+  active_clients: number;
+  new_activations: number;
+  currency: BillingCurrency | null;
+  free: boolean;
+  client_fee: number;
+  created_at: string;
+};
+
+export type TrainerPayment = {
+  id: string;
+  trainer_id: string;
+  kind: "subscription" | "client_fees";
+  amount: number;
+  currency: BillingCurrency;
+  months: 1 | 6 | 12 | null;
+  paid_on: string;
+  note: string | null;
+  created_at: string;
+};
+
+export type ReferralPayout = {
+  id: string;
+  trainer_id: string;
+  credits: number;
+  amount: number;
+  currency: BillingCurrency;
+  paid_on: string;
+  created_at: string;
+};
+
+export type TrainerBillingStatus = {
+  trainer_id: string;
+  billing_plan: BillingPlan | null;
+  billing_currency: BillingCurrency | null;
+  billing_started_on: string | null;
+  paid_until: string | null;
+  client_fees_from: string | null;
+  client_fees_billed: number;
+  client_fees_paid: number;
+  client_fees_owed: number;
+  client_fees_overdue: number;
+  plan_overdue: boolean;
+  locked: boolean;
+};
+
+export type BillingMonthRow = {
+  trainer_id: string;
+  active_clients: number;
+  new_activations: number;
+  currency: BillingCurrency | null;
+  free: boolean;
+  client_fee: number;
+};
 
 // What trainer_for_join_code() returns for a valid code (0029).
 export type JoinableTrainer = {
@@ -349,6 +437,11 @@ export interface Database {
         Update: Partial<ClientStatusFlagEvent>;
         Relationships: [];
       };
+      billing_settings: { Row: BillingSettings; Insert: Partial<BillingSettings>; Update: Partial<BillingSettings>; Relationships: [] };
+      client_activations: { Row: ClientActivation; Insert: Partial<ClientActivation>; Update: Partial<ClientActivation>; Relationships: [] };
+      trainer_billing_months: { Row: TrainerBillingMonth; Insert: Partial<TrainerBillingMonth>; Update: Partial<TrainerBillingMonth>; Relationships: [] };
+      trainer_payments: { Row: TrainerPayment; Insert: Partial<TrainerPayment>; Update: Partial<TrainerPayment>; Relationships: [] };
+      referral_payouts: { Row: ReferralPayout; Insert: Partial<ReferralPayout>; Update: Partial<ReferralPayout>; Relationships: [] };
       client_trainer_notes: {
         Row: ClientTrainerNotes;
         Insert: Partial<ClientTrainerNotes>;
@@ -412,6 +505,13 @@ export interface Database {
       client_monthly_consistency: {
         Args: { p_client_id: string; p_month?: string };
         Returns: { checkin_rate: number; habit_rate: number | null; video_count: number; overall_score: number }[];
+      };
+      trainer_billing_status: { Args: { p_trainer: string }; Returns: TrainerBillingStatus[] };
+      billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
+      am_i_locked: { Args: Record<string, never>; Returns: boolean };
+      owner_payment_details: {
+        Args: Record<string, never>;
+        Returns: { display_name: string; eft_details: EftDetails; pop_whatsapp: string | null }[];
       };
       my_referrals: {
         Args: Record<string, never>;

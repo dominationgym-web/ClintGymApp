@@ -10,6 +10,7 @@ import ClientsScreen from "@/screens/trainer/ClientsScreen";
 import ClientDetailScreen from "@/screens/trainer/ClientDetailScreen";
 import TrainerProfileScreen from "@/screens/trainer/TrainerProfileScreen";
 import TrainersScreen from "@/screens/trainer/TrainersScreen";
+import BillingScreen from "@/screens/trainer/BillingScreen";
 import ProgramsScreen from "@/screens/trainer/ProgramsScreen";
 import ProgramBuilderScreen from "@/screens/trainer/ProgramBuilderScreen";
 import TrainerSearchScreen from "@/screens/trainer/TrainerSearchScreen";
@@ -62,6 +63,7 @@ export default function TrainerNavigator() {
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
       <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
       <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
+      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
       <Stack.Screen
         name="ProgramBuilder"
         component={ProgramBuilderScreen}

@@ -11,6 +11,7 @@ import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
+import TrainerPlanCard from "@/components/TrainerPlanCard";
 import { supabase } from "@/lib/supabase";
 import { trainerDisplayName } from "@/lib/trainers";
 import type { Trainer } from "@/types/database";
@@ -22,8 +23,29 @@ import type { Trainer } from "@/types/database";
 // the app, and a client row we failed to load falls through to
 // PendingAccessScreen rather than being let in. Mirrored server-side by
 // public.client_has_access in 0022.
+// Is this trainer, or this client's trainer, locked out for not paying (0064)?
+// Re-checked whenever AuthContext reloads the profile (on opening the app).
+function useLockedOut(role: string | null, profile: unknown) {
+  const [locked, setLocked] = useState(false);
+  useEffect(() => {
+    if (!role) {
+      setLocked(false);
+      return;
+    }
+    let cancelled = false;
+    supabase.rpc("am_i_locked").then(({ data }) => {
+      if (!cancelled) setLocked(data === true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [role, profile]);
+  return locked;
+}
+
 export default function RootNavigator() {
   const { role, loading, client, trainer } = useAuth();
+  const locked = useLockedOut(role, role === "trainer" ? trainer : client);
 
   if (loading) {
     return (
@@ -35,7 +57,9 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {role === "trainer" && trainer?.approved ? (
+      {role === "trainer" && trainer?.approved && locked ? (
+        <TrainerLockedScreen />
+      ) : role === "trainer" && trainer?.approved ? (
         <TrainerNavigator />
       ) : role === "trainer" ? (
         <PendingTrainerScreen />
@@ -43,6 +67,8 @@ export default function RootNavigator() {
         // Straight after signing up, before payment and activation, so the
         // trainer has the client's details when they activate them.
         <IntakeFormScreen />
+      ) : role === "client" && client != null && client.access_status !== "expired" && locked ? (
+        <CoachPausedScreen />
       ) : role === "client" && client != null && client.access_status !== "expired" ? (
         <ClientNavigator />
       ) : role === "client" ? (
@@ -129,6 +155,42 @@ function PendingTrainerScreen() {
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
       <DeleteAccountButton />
+    </View>
+  );
+}
+
+// A trainer whose plan or client fees are unpaid, once the owner has switched
+// lockout on (0064). The owner records the payment and they're back in.
+function TrainerLockedScreen() {
+  const { signOut, trainer } = useAuth();
+  return (
+    <ScrollView style={{ backgroundColor: "#0F172A" }} contentContainerStyle={styles.pendingContainer}>
+      <Text style={styles.title}>Your account is paused</Text>
+      <Text style={[styles.body, { marginBottom: 16 }]}>
+        Your Daily Evolution payment is outstanding. Pay using the details below and send proof of payment. Your access
+        comes back as soon as it's confirmed. Your clients and their data are safe in the meantime.
+      </Text>
+      {trainer ? <TrainerPlanCard trainer={trainer} showPayment /> : null}
+      <Pressable style={styles.logoutButton} onPress={signOut}>
+        <Text style={styles.logoutText}>Log out</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+// A client whose trainer's account is paused for non-payment (0064).
+function CoachPausedScreen() {
+  const { signOut } = useAuth();
+  return (
+    <View style={styles.centered}>
+      <Text style={styles.title}>Your coach's account is paused</Text>
+      <Text style={styles.body}>
+        Your coach's app account needs attention. Nothing is lost: your plan, streaks and logs are all saved. Please
+        check in with your coach, and open the app again once they let you know it's back.
+      </Text>
+      <Pressable style={styles.logoutButton} onPress={signOut}>
+        <Text style={styles.logoutText}>Log out</Text>
+      </Pressable>
     </View>
   );
 }
