@@ -47,7 +47,7 @@ export default function TrainerProfileScreen() {
 
   const shareCode = () =>
     Share.share({
-      message: `Join me on the Consistent Change app. When you sign up, enter my trainer code: ${trainer.join_code}`,
+      message: `Join me on the Daily Evolution app. When you sign up, enter my trainer code: ${trainer.join_code}`,
     });
 
   const uploadLogo = async (asset: ImagePicker.ImagePickerAsset) => {

@@ -1,4 +1,4 @@
-// Daily motivation for Consistent Change clients.
+// Daily motivation for Daily Evolution clients.
 //
 // There is one quote per day of the year (365 in total). Every client sees the
 // same line on a given day, picked by quoteForDate() from the local date.

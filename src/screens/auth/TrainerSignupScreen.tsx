@@ -61,7 +61,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Coach on Consistent Change</Text>
+      <Text style={styles.title}>Coach on Daily Evolution</Text>
       <Text style={styles.body}>
         Sign up as a trainer to run your own clients on the app. Your account is checked and approved before
         clients can join you.
