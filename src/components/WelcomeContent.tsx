@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -41,9 +41,7 @@ export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionB
 
   const pages: React.ReactNode[] = [
     <View key="opening" style={styles.centred}>
-      {/* The name in words until the Daily Evolution logo is ready. */}
-      <Text style={styles.brandName}>Daily Evolution</Text>
-      <Text style={styles.brandTagline}>Building a better you</Text>
+      <Image source={require("../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" />
       <Text style={styles.kicker}>WELCOME</Text>
       <Text style={styles.heroQuestion}>{WELCOME_OPENING_QUESTION}</Text>
       <Text style={styles.heroFollowUp}>{WELCOME_OPENING_FOLLOW_UP}</Text>
@@ -141,8 +139,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: NAVY },
   content: { flexGrow: 1, padding: 24, paddingBottom: 32 },
   centred: { flexGrow: 1, justifyContent: "center" },
-  brandName: { color: BRAND_GOLD, fontSize: 30, fontWeight: "800", textAlign: "center" },
-  brandTagline: { color: "#CBD5E1", fontSize: 15, textAlign: "center", marginTop: 4, marginBottom: 28 },
+  logo: { width: 190, height: 190, alignSelf: "center", marginBottom: 8 },
   kicker: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", letterSpacing: 4, textAlign: "center", marginBottom: 14 },
   heroQuestion: { color: "#fff", fontSize: 28, fontWeight: "800", lineHeight: 36, textAlign: "center" },
   heroFollowUp: { color: "#CBD5E1", fontSize: 16, lineHeight: 24, textAlign: "center", marginTop: 16 },
