@@ -20,7 +20,7 @@ import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import WellbeingReports from "@/components/WellbeingReports";
 import { reportedTopics } from "@/lib/wellbeing";
-import { RESET_WEEKS_TOTAL, resetWeekNumber } from "@/lib/resetProgram";
+import { RESET_WEEKS_TOTAL, resetName, resetWeekNumber } from "@/lib/resetProgram";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -291,15 +291,14 @@ export default function ClientDetailScreen({ route }: Props) {
               </View>
             )}
 
-            {client.sex !== "male" && (
             <View style={styles.resetBox}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.resetTitle}>12-Week Women's Health Reset</Text>
+                <Text style={styles.resetTitle}>12-Week {resetName(client.sex)}</Text>
                 {client.lifestyle_reset_started_at ? (
                   <Text style={styles.helper}>
                     {client.reset_started_on
                       ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)} (started ${client.reset_started_on})`
-                      : "Enrolled. Waiting for her to tap Start"}
+                      : "Enrolled. Waiting for them to tap Start"}
                   </Text>
                 ) : (
                   <Text style={styles.helper}>Not enrolled</Text>
@@ -311,20 +310,19 @@ export default function ClientDetailScreen({ route }: Props) {
                 </Text>
               </Pressable>
             </View>
-            )}
             {client.intake_responses?.high_stress_or_anxiety === "Yes" && (
               <View style={styles.stressFlag}>
                 <Text style={styles.stressFlagText}>
                   ⚠️ On the intake form they said they often feel highly stressed or suffer with anxiety.
-                  {client.sex !== "male" && !client.lifestyle_reset_started_at
-                    ? " The Women's Health Reset could be a good fit: tap Enroll above."
+                  {!client.lifestyle_reset_started_at
+                    ? ` The ${resetName(client.sex)} could be a good fit: tap Enroll above.`
                     : " Ease them in and keep an eye on sleep and recovery."}
                 </Text>
               </View>
             )}
             {client.reset_started_on && client.lifestyle_reset_started_at && (
               <View style={styles.resetNotes}>
-                <Text style={styles.resetTitle}>Her Reset notes</Text>
+                <Text style={styles.resetTitle}>Reset notes</Text>
                 <TrainerResetNotes clientId={client.id} />
               </View>
             )}

@@ -45,7 +45,7 @@ export default function ResetReminderBanner() {
           .eq("client_id", client.id)
           .eq("log_date", todayIso())
           .maybeSingle();
-        const habits = resetWeek(week).habits;
+        const habits = resetWeek(week, client.sex).habits;
         const done = habits.filter((k) => data?.[k]).length;
         if (!cancelled && done < habits.length) setText(`${done} of ${habits.length} ticked so far. Tap to open your Reset.`);
       })();

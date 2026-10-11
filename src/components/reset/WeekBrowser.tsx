@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { RESET_HABITS, RESET_PHASES, RESET_WEEKS, RESET_WEEKS_TOTAL, newHabits, resetTraining, resetWeek, type ResetLocation } from "@/lib/resetProgram";
+import { useAuth } from "@/context/AuthContext";
 
 const PHASE_ORDER = ["calm", "rhythm", "build", "optimise"] as const;
 
@@ -19,9 +20,10 @@ export default function WeekBrowser({
   currentWeek?: number;
   location?: ResetLocation | null;
 }) {
-  const plan = resetWeek(week);
+  const { client } = useAuth();
+  const plan = resetWeek(week, client?.sex);
   const phase = RESET_PHASES[plan.phase];
-  const training = resetTraining(plan.phase, location);
+  const training = resetTraining(plan.phase, location, client?.sex);
   const fresh = new Set(newHabits(week));
 
   return (

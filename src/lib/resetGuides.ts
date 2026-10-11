@@ -1,4 +1,4 @@
-// How-to guidance for each habit in the Women's Health Reset daily checklist.
+// How-to guidance for each habit in the Health Reset daily checklist (women's and men's).
 // The client taps the "?" on a habit and gets this as a short coaching card:
 // why it matters, how to do it, and what to do on a day it feels hard.
 

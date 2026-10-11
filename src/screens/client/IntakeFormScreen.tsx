@@ -322,7 +322,7 @@ export default function IntakeFormScreen() {
           <Text style={styles.stressNoteText}>
             {sex === "Female"
               ? "Thanks for telling us. Our 12-week Women's Health Reset was made for this: it starts gently, calms your stress and sleep first, then builds your training up slowly. Your coach will talk to you about starting it."
-              : "Thanks for telling us. Your coach will build your plan with this in mind: steady training, good sleep and recovery all help bring stress down."}
+              : "Thanks for telling us. Our 12-week Men's Health Reset was made for this: it starts gently, calms your stress and sleep first, then builds your training up slowly. Your coach will talk to you about starting it."}
           </Text>
           <Text style={styles.stressNoteSmall}>
             If it's severe or getting worse, please also speak to your doctor. Training helps, but it isn't a replacement for proper care.

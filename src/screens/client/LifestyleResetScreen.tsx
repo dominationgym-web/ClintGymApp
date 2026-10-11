@@ -32,6 +32,7 @@ import {
   RESET_WEEKS_TOTAL,
   formatReminderTime,
   newHabits,
+  resetName,
   resetWeek,
   resetWeekDates,
   resetWeekNumber,
@@ -55,7 +56,7 @@ const TABS: ScreenTab<TabKey>[] = [
   { key: "guide", label: "Full guide", icon: "book" },
 ];
 
-// The Women's Health Reset tab. Her trainer switches it on; she browses the
+// The Women's (or Men's) Health Reset tab. Her trainer switches it on; she browses the
 // 12 weeks, taps Start, then ticks off each day's habits, notes how she felt,
 // and can pick a daily reminder.
 export default function LifestyleResetScreen() {
@@ -223,7 +224,7 @@ export default function LifestyleResetScreen() {
   }
 
   const shownWeek = viewWeek ?? (inProgram ? currentWeek : 1);
-  const plan = inProgram ? resetWeek(currentWeek) : null;
+  const plan = inProgram ? resetWeek(currentWeek, client?.sex) : null;
   const weekCount = (key: HabitKey) => weekLogs.filter((r) => r[key]).length;
   const todaysHabits = plan ? RESET_HABITS.filter((h) => plan.habits.includes(h.key)) : [];
   const fresh = new Set(inProgram ? newHabits(currentWeek) : []);
@@ -243,7 +244,7 @@ export default function LifestyleResetScreen() {
           <>
             {!startedOn && (
               <>
-                <Text style={styles.heroTitle}>12-Week Women's Health Reset</Text>
+                <Text style={styles.heroTitle}>12-Week {resetName(client?.sex)}</Text>
                 <Text style={styles.heroText}>A few small steps each week. Tap a week or press Next to see it.</Text>
                 <Text style={styles.chooseTitle}>Where will you train?</Text>
                 <View style={styles.chooseRow}>
@@ -362,13 +363,15 @@ export default function LifestyleResetScreen() {
 
         {tab === "guide" && (
           <>
-            <Pressable
-              style={styles.cycleLink}
-              onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" })}
-            >
-              <Text style={styles.cycleLinkText}>🌸 Your cycle: log your period and see your phase ›</Text>
-            </Pressable>
-            <LifestyleResetContent />
+            {client?.sex !== "male" && (
+              <Pressable
+                style={styles.cycleLink}
+                onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" })}
+              >
+                <Text style={styles.cycleLinkText}>🌸 Your cycle: log your period and see your phase ›</Text>
+              </Pressable>
+            )}
+            <LifestyleResetContent sex={client?.sex} />
           </>
         )}
       </ScrollView>
