@@ -17,6 +17,9 @@ import { useAuth } from "@/context/AuthContext";
 import type { Habit } from "@/types/database";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { parseReminderTime } from "@/lib/reminderTime";
+import { findHabit, isRunning } from "@/lib/habitLibrary";
+import { BRAND_GOLD } from "@/lib/brand";
+import ChooseHabitsModal from "@/components/ChooseHabitsModal";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const todayWeekday = () => new Date().getDay(); // 0 = Sunday .. 6 = Saturday
@@ -38,6 +41,7 @@ export default function HabitsScreen() {
   // Which habit's time was just saved, to show a "Saved" tick next to it.
   const [savedTimeFor, setSavedTimeFor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [choosing, setChoosing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -130,6 +134,56 @@ export default function HabitsScreen() {
     setSavedTimeFor(habit.id);
   };
 
+  // Add a habit the client picked, or start a stopped one of theirs again.
+  const addHabit = async (name: string, reps: number): Promise<boolean> => {
+    if (!client) return false;
+    const existing = findHabit(habits, name);
+    if (existing && isRunning(existing, todayIso())) return true;
+    if (existing?.chosen_by_client) {
+      const { error } = await supabase.from("habits").update({ end_date: null }).eq("id", existing.id);
+      if (error) {
+        Alert.alert("Couldn't add habit", error.message);
+        return false;
+      }
+      setHabits((prev) => prev.map((h) => (h.id === existing.id ? { ...h, end_date: null } : h)));
+      return true;
+    }
+    const { data, error } = await supabase
+      .from("habits")
+      .insert({ client_id: client.id, name: name.trim(), reps_target: reps, start_date: todayIso(), chosen_by_client: true })
+      .select()
+      .single();
+    if (error || !data) {
+      Alert.alert("Couldn't add habit", error?.message ?? "Please try again.");
+      return false;
+    }
+    setHabits((prev) => [...prev, data]);
+    setReminderDrafts((prev) => ({ ...prev, [data.id]: "" }));
+    return true;
+  };
+
+  // Stopping keeps the habit's history for the trainer; it just ends yesterday.
+  const stopHabit = (habit: Habit) => {
+    Alert.alert(`Stop "${habit.name}"?`, "It comes off your list. You can add it again any time.", [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Stop",
+        style: "destructive",
+        onPress: async () => {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const end = toIsoDate(yesterday);
+          const { error } = await supabase.from("habits").update({ end_date: end }).eq("id", habit.id);
+          if (error) {
+            Alert.alert("Couldn't stop habit", error.message);
+            return;
+          }
+          setHabits((prev) => prev.map((h) => (h.id === habit.id ? { ...h, end_date: end } : h)));
+        },
+      },
+    ]);
+  };
+
   const logReps = async (habit: Habit, delta: number) => {
     const current = logsByHabit[habit.id]?.[todayIso()] ?? 0;
     const next = Math.max(0, Math.min(habit.reps_target, current + delta));
@@ -142,6 +196,8 @@ export default function HabitsScreen() {
       .upsert({ habit_id: habit.id, log_date: todayIso(), reps_completed: next }, { onConflict: "habit_id,log_date" });
     if (error) Alert.alert("Couldn't save", error.message);
   };
+
+  const running = habits.filter((h) => isRunning(h, todayIso()));
 
   if (loading) {
     return (
@@ -161,10 +217,13 @@ export default function HabitsScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.title}>Habits</Text>
-      <Text style={styles.helper}>Pick whichever days and reminder time actually fit your schedule.</Text>
-      {habits.length === 0 && <Text style={styles.helper}>Your trainer hasn't set up any habits yet.</Text>}
+      <Text style={styles.helper}>Choose what you want to work on, then pick the days that fit your schedule.</Text>
+      <Pressable style={styles.chooseButton} onPress={() => setChoosing(true)}>
+        <Text style={styles.chooseButtonText}>+ Choose habits</Text>
+      </Pressable>
+      {running.length === 0 && <Text style={styles.helper}>No habits yet. Tap "Choose habits" to pick some.</Text>}
 
-      {habits.map((h) => {
+      {running.map((h) => {
         const activeToday = isActiveToday(h);
         const habitLogs = logsByHabit[h.id] ?? {};
         const completed = habitLogs[todayIso()] ?? 0;
@@ -242,9 +301,17 @@ export default function HabitsScreen() {
                 {savedTimeFor === h.id && <Text style={styles.savedText}>Saved ✓</Text>}
               </View>
             )}
+            {h.chosen_by_client ? (
+              <Pressable onPress={() => stopHabit(h)} hitSlop={8}>
+                <Text style={styles.stopText}>Stop this habit</Text>
+              </Pressable>
+            ) : (
+              <Text style={styles.coachSet}>Set by your coach</Text>
+            )}
           </View>
         );
       })}
+      <ChooseHabitsModal visible={choosing} habits={habits} onAdd={addHabit} onClose={() => setChoosing(false)} />
     </ScrollView>
   );
 }
@@ -294,4 +361,8 @@ const styles = StyleSheet.create({
   saveTimeButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   saveTimeButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   savedText: { color: "#22C55E", fontWeight: "700", fontSize: 13 },
+  chooseButton: { borderRadius: 12, borderWidth: 1.5, borderColor: BRAND_GOLD, borderStyle: "dashed", padding: 12, alignItems: "center", marginBottom: 14 },
+  chooseButtonText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15 },
+  stopText: { color: "#F87171", fontSize: 13, fontWeight: "600", marginTop: 14 },
+  coachSet: { color: "#64748B", fontSize: 12, marginTop: 14 },
 });

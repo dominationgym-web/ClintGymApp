@@ -385,6 +385,7 @@ export type Habit = {
   end_date: string | null;
   reminder_enabled: boolean;
   reminder_time: string | null;
+  chosen_by_client: boolean;
   created_at: string;
 }
 

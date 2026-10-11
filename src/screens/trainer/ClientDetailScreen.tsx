@@ -408,8 +408,8 @@ export default function ClientDetailScreen({ route }: Props) {
           <>
             <Text style={styles.sectionHeading}>Habits</Text>
             <Text style={styles.helper}>
-              You set what's needed and how often - the client picks which days and reminder time actually
-              fit their schedule.
+              Habits you set stay until you remove them. Clients can also choose their own habits from a list
+              (marked "Chosen by client") and stop those themselves.
             </Text>
             {habits.length === 0 && <Text style={styles.helper}>No habits set up yet.</Text>}
             {habits.map((h) => {
@@ -429,7 +429,8 @@ export default function ClientDetailScreen({ route }: Props) {
                     <Text style={styles.habitDetail}>
                       {h.reps_target}x/day · {describeDays(h.active_days)}
                       {h.reminder_enabled && h.reminder_time ? ` · Reminder ${h.reminder_time.slice(0, 5)}` : ""}
-                      {h.end_date ? ` · Ends ${h.end_date}` : ""}
+                      {h.end_date ? ` · ${h.end_date < todayIso() ? "Stopped" : "Ends"} ${h.end_date}` : ""}
+                      {h.chosen_by_client ? " · Chosen by client" : ""}
                     </Text>
                   </View>
                   <Pressable onPress={() => deleteHabit(h.id)}>
