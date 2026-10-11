@@ -27,6 +27,7 @@ import {
 } from "@/lib/exerciseFilter";
 import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import ExerciseGuideButton from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
@@ -450,7 +451,10 @@ export default function ExerciseLibraryScreen() {
                     return (
                       <Pressable key={row.id} style={styles.programRow} onPress={() => openProgramExercise(row)}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.name}>{row.exercise_name}</Text>
+                          <View style={styles.nameRow}>
+                            <Text style={styles.name}>{row.exercise_name}</Text>
+                            <ExerciseGuideButton name={row.exercise_name} category={categoryOf(row)} />
+                          </View>
                           <Text style={styles.category}>
                             {row.sets} sets x {row.reps} ·{" "}
                             {next ? `superset: straight into ${next.exercise_name}` : `rest ${formatRest(row.rest_seconds)}`}
@@ -520,8 +524,11 @@ export default function ExerciseLibraryScreen() {
         }
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => openExercise(item)}>
-            <View>
-              <Text style={styles.name}>{item.name}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{item.name}</Text>
+                <ExerciseGuideButton name={item.name} category={item.category} />
+              </View>
               {item.category && <Text style={styles.category}>{item.category}</Text>}
             </View>
             <Text style={styles.link}>{"Log a set >"}</Text>
@@ -584,8 +591,11 @@ export default function ExerciseLibraryScreen() {
       <Modal visible={!!selected} animationType="slide" onRequestClose={() => setSelected(null)}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <View>
-              <Text style={styles.name}>{selected?.name}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{selected?.name}</Text>
+                {selected && <ExerciseGuideButton name={selected.name} category={selected.category} />}
+              </View>
               {selected?.category && <Text style={styles.category}>{selected.category}</Text>}
             </View>
             <Pressable onPress={() => setSelected(null)}>
@@ -724,7 +734,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
   },
-  name: { color: "#fff", fontWeight: "600" },
+  name: { color: "#fff", fontWeight: "600", flexShrink: 1 },
+  nameRow: { flexDirection: "row", alignItems: "center" },
   category: { color: "#64748B", fontSize: 12, marginTop: 2 },
   link: { color: "#22C55E", fontSize: 13 },
   helper: { color: "#94A3B8", fontSize: 13, marginBottom: 12 },
