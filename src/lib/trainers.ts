@@ -35,3 +35,37 @@ export function trainerDisplayName(trainer: { name: string; business_name?: stri
 export function logoStoragePath(trainerId: string, mimeType: string | null | undefined, now = Date.now()): string {
   return `${trainerId}/logo-${now}.${imageExtension(mimeType)}`;
 }
+
+// Free trial and referral rewards (0060).
+export const TRIAL_DAYS = 14;
+export const REFERRAL_DISCOUNT_PERCENT = 25;
+export const REFERRALS_PER_FREE_MONTH = 100 / REFERRAL_DISCOUNT_PERCENT;
+
+/** Days left in a trial (0 on the last day), or null with no trial. Negative once it's over. */
+export function trialDaysLeft(trialEndsAt: string | null | undefined, today: string): number | null {
+  if (!trialEndsAt) return null;
+  const end = Date.UTC(+trialEndsAt.slice(0, 4), +trialEndsAt.slice(5, 7) - 1, +trialEndsAt.slice(8, 10));
+  const now = Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10));
+  return Math.round((end - now) / 86_400_000);
+}
+
+/** "Free trial: 5 days left", "Free trial ends today", "Free trial ended". */
+export function trialLabel(trialEndsAt: string | null | undefined, today: string): string | null {
+  const left = trialDaysLeft(trialEndsAt, today);
+  if (left === null) return null;
+  if (left < 0) return "Free trial ended";
+  if (left === 0) return "Free trial ends today";
+  return `Free trial: ${left} day${left === 1 ? "" : "s"} left`;
+}
+
+/** Referral rewards: each approved referral is 25% off a month; 4 make a free month. */
+export function referralRewards(approvedReferrals: number, creditsUsed: number) {
+  const unused = Math.max(0, approvedReferrals - creditsUsed);
+  return {
+    earned: approvedReferrals,
+    unused,
+    unusedPercent: unused * REFERRAL_DISCOUNT_PERCENT,
+    freeMonths: Math.floor(unused / REFERRALS_PER_FREE_MONTH),
+    toNextFreeMonth: REFERRALS_PER_FREE_MONTH - (unused % REFERRALS_PER_FREE_MONTH),
+  };
+}
