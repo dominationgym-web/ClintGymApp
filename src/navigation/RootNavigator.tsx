@@ -1,3 +1,4 @@
+import NotificationsPrompt from "@/components/NotificationsPrompt";
 import { registerForCoachMessages } from "@/lib/notifications";
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet } from "react-native";
@@ -84,6 +85,7 @@ function PendingAccessScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: "#0F172A" }} contentContainerStyle={styles.pendingContainer}>
+      <NotificationsPrompt who="client" />
       <Text style={styles.title}>{neverActivated ? "One last step" : "Your plan has ended"}</Text>
       <Text style={styles.body}>
         {neverActivated

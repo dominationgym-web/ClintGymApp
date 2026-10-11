@@ -277,3 +277,32 @@ export async function scheduleSuggestionBoxReminder(): Promise<void> {
     console.warn("Couldn't schedule the suggestion box reminder", e);
   }
 }
+
+export type NotificationPermission = "granted" | "ask" | "blocked" | "unavailable";
+
+/** Whether this phone lets the app send notifications ("unavailable" in Expo Go). */
+export async function notificationPermission(): Promise<NotificationPermission> {
+  const N = notifications();
+  if (!N) return "unavailable";
+  try {
+    const current = await N.getPermissionsAsync();
+    if (current.granted) return "granted";
+    return current.canAskAgain ? "ask" : "blocked";
+  } catch {
+    return "unavailable";
+  }
+}
+
+/** Asks for permission (the "Turn on" button), then registers for push. */
+export async function turnOnNotifications(): Promise<boolean> {
+  const N = notifications();
+  if (!N) return false;
+  try {
+    const granted = (await N.requestPermissionsAsync()).granted;
+    if (granted) await registerForCoachMessages();
+    return granted;
+  } catch (e) {
+    console.warn("Couldn't turn on notifications", e);
+    return false;
+  }
+}
