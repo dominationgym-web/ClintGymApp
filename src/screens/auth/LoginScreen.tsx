@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import PasswordInput from "@/components/PasswordInput";
+import SelfTrainingComingSoon from "@/components/SelfTrainingComingSoon";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
@@ -46,6 +47,7 @@ export default function LoginScreen({ navigation }: Props) {
       <Pressable onPress={() => navigation.navigate("TrainerSignup")}>
         <Text style={styles.link}>Are you a trainer? Apply to coach here</Text>
       </Pressable>
+      <SelfTrainingComingSoon />
     </View>
   );
 }
