@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
+import { clientsWhoTrainedYesterday, loadRecoveryCheck } from "@/lib/recoveryQueries";
+import { recoveryHandled } from "@/lib/recovery";
 import { clientPriority, flagBorderColor } from "@/lib/clientFlags";
 import { needsReply } from "@/lib/coachMessages";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -64,6 +66,29 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     return navigation.addListener("focus", loadWaitingSignups);
   }, [navigation, loadWaitingSignups]);
 
+  // Recovery check: clients whose session today works muscles they trained
+  // hard yesterday, and the trainer hasn't dealt with it yet.
+  const [recoveryClients, setRecoveryClients] = useState<{ id: string; name: string }[]>([]);
+
+  const loadRecoveryClients = useCallback(async () => {
+    if (!trainer) return;
+    const today = todayIso();
+    const { data: mine } = await supabase.from("clients").select("id, name").eq("trainer_id", trainer.id);
+    const trained = await clientsWhoTrainedYesterday((mine ?? []).map((c) => c.id), today);
+    const checks = await Promise.all(trained.map((id) => loadRecoveryCheck(id, today)));
+    setRecoveryClients(
+      (mine ?? []).filter((c) => {
+        const check = checks[trained.indexOf(c.id)];
+        return check && !recoveryHandled(check.active.assignment, today);
+      }),
+    );
+  }, [trainer]);
+
+  useEffect(() => {
+    loadRecoveryClients();
+    return navigation.addListener("focus", loadRecoveryClients);
+  }, [navigation, loadRecoveryClients]);
+
   const loadSuggestionCount = useCallback(async () => {
     if (!isOwner) return;
     const { count } = await supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "new");
@@ -118,6 +143,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   const onRefresh = async () => {
     setRefreshing(true);
     loadWaitingSignups();
+    loadRecoveryClients();
     await load();
     setRefreshing(false);
   };
@@ -143,6 +169,20 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
         <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("Clients")}>
           <Text style={styles.suggestionBannerText}>
             🆕 {waitingSignups} new client{waitingSignups === 1 ? "" : "s"} waiting to be activated
+          </Text>
+          <Text style={styles.suggestionBannerLink}>Open ›</Text>
+        </Pressable>
+      )}
+      {recoveryClients.length > 0 && (
+        <Pressable
+          style={styles.suggestionBanner}
+          onPress={() => navigation.navigate("ClientDetail", { clientId: recoveryClients[0].id, tab: "training" })}
+        >
+          <Text style={styles.suggestionBannerText}>
+            ⚠️ Recovery check:{" "}
+            {recoveryClients.length === 1
+              ? `${recoveryClients[0].name} is training the same muscles as yesterday`
+              : `${recoveryClients.map((c) => c.name.split(" ")[0]).join(", ")} are training the same muscles as yesterday`}
           </Text>
           <Text style={styles.suggestionBannerLink}>Open ›</Text>
         </Pressable>

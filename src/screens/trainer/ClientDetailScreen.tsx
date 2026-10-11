@@ -11,6 +11,7 @@ import ClientAvatar from "@/components/ClientAvatar";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
+import RecoveryCheckCard from "@/components/RecoveryCheckCard";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
@@ -74,7 +75,7 @@ export default function ClientDetailScreen({ route }: Props) {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<TabKey>("overview");
+  const [tab, setTab] = useState<TabKey>(route.params.tab ?? "overview");
   // Body-and-mind reports from the last week put a dot on the Notes tab (0055).
   const weekAgo = toIsoDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
   const [messages, setMessages] = useState<CoachMessage[]>([]);
@@ -489,6 +490,7 @@ export default function ClientDetailScreen({ route }: Props) {
         )}
         {tab === "training" && (
           <>
+            <RecoveryCheckCard clientId={client.id} clientName={client.name} />
             <View style={{ marginTop: 12 }}>
               <Text style={styles.libraryTitle}>Trains at</Text>
               <Text style={[styles.helper, { marginBottom: 8 }]}>
