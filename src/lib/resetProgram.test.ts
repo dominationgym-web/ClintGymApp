@@ -3,6 +3,7 @@ import {
   RESET_HABITS,
   RESET_TRAINING,
   RESET_HOME_TRAINING,
+  resetSetTarget,
   resetTraining,
   RESET_WEEKS,
   formatReminderTime,
@@ -92,5 +93,13 @@ describe("reminders", () => {
     expect(r.map((x) => x.id)).toEqual(["reset-reminder-2026-10-11", "reset-reminder-2026-10-12"]);
     expect(r[0].title).toContain("week 1");
     expect(upcomingResetReminders("2026-07-01", "07:00", now, 3)).toEqual([]);
+  });
+});
+
+describe("resetSetTarget", () => {
+  it("reads sets, reps and rest from every phase's sets line", () => {
+    expect(resetSetTarget("2 sets of 10-12 reps, rest 1-2 minutes")).toEqual({ setsLabel: "2", sets: 2, reps: "10-12", restSeconds: 90 });
+    expect(resetSetTarget("3-4 sets of 8-12 reps, rest 1-2 minutes")).toEqual({ setsLabel: "3-4", sets: 4, reps: "8-12", restSeconds: 90 });
+    for (const t of Object.values(RESET_TRAINING)) expect(resetSetTarget(t.sets).reps).toMatch(/^\d+-\d+$/);
   });
 });

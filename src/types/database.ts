@@ -514,6 +514,10 @@ export interface Database {
         Returns: undefined;
       };
       reset_exercise_videos: { Args: Record<string, never>; Returns: { name: string; external_url: string | null }[] };
+      reset_exercise_info: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; category: string | null; external_url: string | null }[];
+      };
       mark_coach_messages_read: { Args: Record<string, never>; Returns: undefined };
       register_push_token: { Args: { p_token: string }; Returns: undefined };
       client_monthly_consistency: {

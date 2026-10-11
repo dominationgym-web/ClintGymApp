@@ -24,6 +24,18 @@ type Rule = { match: RegExp; technique: ExerciseTechnique };
 export const MUSCLE_NOT_WEIGHT =
   "If you need to swing, jerk or bounce, the weight is too heavy. We're training to build muscle, not move weight. Focus on the muscle, not the weight.";
 
+// How to get the most from every rep: range of motion and muscle tension.
+// Shown, tap to open, when logging a set.
+export const EVERY_REP_TIPS: string[] = [
+  "Full range of motion: lower until you feel a good stretch in the working muscle, then come all the way back up. Half reps build half the muscle.",
+  "Control the way down: take 2 to 3 seconds to lower. That's where a lot of the muscle-building happens.",
+  "Pause in the stretch for a moment at the bottom instead of bouncing out of it.",
+  "Keep the tension on the muscle: don't rest at the top or lock out and relax between reps.",
+  "Squeeze the muscle hard at the top of each rep, and think about the muscle doing the work, not your hands moving the weight.",
+  "Breathe out as you lift and in as you lower. Brace your stomach on squats, lunges and deadlifts.",
+  "Finish each set 1 to 3 reps short of failure with good form. If the form breaks, the set is over.",
+];
+
 // Shown under every guide.
 export const SAFETY_NOTE =
   "A burn in the muscle is good. Sharp or pinching pain in a joint is not: stop, and tell your coach.";

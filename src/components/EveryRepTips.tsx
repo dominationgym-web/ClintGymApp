@@ -1,0 +1,28 @@
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { BRAND_GOLD } from "@/lib/brand";
+import { EVERY_REP_TIPS } from "@/lib/exerciseTechnique";
+
+// "Get the most from every rep": range of motion and muscle tension, tap to open.
+export default function EveryRepTips() {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={styles.box}>
+      <Pressable onPress={() => setOpen((o) => !o)} hitSlop={6}>
+        <Text style={styles.title}>💪 Get the most from every rep {open ? "▲" : "▼"}</Text>
+      </Pressable>
+      {open &&
+        EVERY_REP_TIPS.map((tip, i) => (
+          <Text key={i} style={styles.tip}>
+            • {tip}
+          </Text>
+        ))}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  box: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 12 },
+  title: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
+  tip: { color: "#CBD5E1", fontSize: 13, lineHeight: 19, marginTop: 6 },
+});

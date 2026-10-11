@@ -571,6 +571,20 @@ export const RESET_HOME_TRAINING: Record<ResetPhaseKey, ResetTraining> = {
   },
 };
 
+/** Sets, reps and rest from a phase's sets line, e.g. "3-4 sets of 8-12 reps, rest 1-2 minutes". */
+export function resetSetTarget(line: string): { setsLabel: string; sets: number; reps: string; restSeconds: number } {
+  const sets = line.match(/(\d+)(?:-(\d+))?\s*sets/);
+  const reps = line.match(/of\s*(\d+(?:-\d+)?)\s*reps/);
+  const rest = line.match(/rest\s*(\d+)(?:-(\d+))?\s*minute/);
+  const restMinutes = rest ? (Number(rest[1]) + Number(rest[2] ?? rest[1])) / 2 : 1.5;
+  return {
+    setsLabel: sets ? sets[0].replace(/\s*sets/, "") : "3",
+    sets: sets ? Number(sets[2] ?? sets[1]) : 3,
+    reps: reps ? reps[1] : "10-12",
+    restSeconds: Math.round(restMinutes * 60),
+  };
+}
+
 export function resetTraining(phase: ResetPhaseKey, location: ResetLocation | null): ResetTraining {
   return (location === "home" ? RESET_HOME_TRAINING : RESET_TRAINING)[phase];
 }
