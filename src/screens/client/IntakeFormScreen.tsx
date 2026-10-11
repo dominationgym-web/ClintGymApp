@@ -119,6 +119,7 @@ export default function IntakeFormScreen() {
   const [saving, setSaving] = useState(false);
 
   const [age, setAge] = useState("");
+  const [sex, setSex] = useState("");
 
   const [goals, setGoals] = useState<string[]>([]);
   const [trainingForDetail, setTrainingForDetail] = useState("");
@@ -160,6 +161,10 @@ export default function IntakeFormScreen() {
   const yn = (v: boolean | null) => (v === null ? "Not answered" : v ? "Yes" : "No");
 
   const handleSubmit = async () => {
+    if (!sex) {
+      Alert.alert("Male or female?", "Tap Male or Female under About you.");
+      return;
+    }
     if (!age.trim() || goals.length === 0 || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
       Alert.alert("Almost done", "Fill in at least your age, goals, occupation, breakfast, and training habits.");
       return;
@@ -167,6 +172,7 @@ export default function IntakeFormScreen() {
 
     const responses: Record<string, string> = {
       age: age.trim(),
+      sex,
       training_goals: goals.join(", "),
       occupation_type: occupationType === "Other" ? occupationOther.trim() || "Other" : occupationType,
       job_stress_level: jobStress || "Not answered",
@@ -205,7 +211,7 @@ export default function IntakeFormScreen() {
     }
 
     setSaving(true);
-    const { error } = await supabase.from("clients").update({ intake_responses: responses }).eq("id", client.id);
+    const { error } = await supabase.from("clients").update({ intake_responses: responses, sex: sex === "Male" ? "male" : "female" }).eq("id", client.id);
     setSaving(false);
     if (error) {
       Alert.alert("Couldn't save", error.message);
@@ -220,6 +226,7 @@ export default function IntakeFormScreen() {
       <Text style={styles.intro}>Quick taps, no essays. Two minutes and your trainer knows your routine.</Text>
 
       <Text style={styles.sectionHeading}>About you</Text>
+      <ChoiceField label="Are you male or female?" options={["Male", "Female"]} value={sex} onChange={setSex} />
       <View style={styles.field}>
         <Text style={styles.label}>Age</Text>
         <TextInput

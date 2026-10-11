@@ -38,12 +38,12 @@ export default function RootNavigator() {
         <TrainerNavigator />
       ) : role === "trainer" ? (
         <PendingTrainerScreen />
+      ) : role === "client" && client != null && Object.keys(client.intake_responses ?? {}).length === 0 ? (
+        // Straight after signing up, before payment and activation, so the
+        // trainer has the client's details when they activate them.
+        <IntakeFormScreen />
       ) : role === "client" && client != null && client.access_status !== "expired" ? (
-        Object.keys(client.intake_responses ?? {}).length === 0 ? (
-          <IntakeFormScreen />
-        ) : (
-          <ClientNavigator />
-        )
+        <ClientNavigator />
       ) : role === "client" ? (
         <PendingAccessScreen />
       ) : (

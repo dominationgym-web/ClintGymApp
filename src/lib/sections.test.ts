@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SECTIONS, findSection } from "@/lib/sections";
+import { SECTIONS, findSection, sectionsFor } from "@/lib/sections";
 
 describe("SECTIONS", () => {
   it("lists the sections in menu order", () => {
@@ -22,5 +22,13 @@ describe("SECTIONS", () => {
 
   it("finds a section by key", () => {
     expect(findSection("supplementation")?.title).toBe("Supplementation");
+  });
+});
+
+describe("sectionsFor", () => {
+  it("hides the Women's Health Reset from men only", () => {
+    expect(sectionsFor("male").some((s) => s.key === "womensHealthReset")).toBe(false);
+    expect(sectionsFor("female")).toEqual(SECTIONS);
+    expect(sectionsFor(null)).toEqual(SECTIONS);
   });
 });

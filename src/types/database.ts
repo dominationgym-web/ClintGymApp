@@ -62,6 +62,9 @@ export type Client = {
   plan_expires_at: string | null;
   package_type: PackageType | null;
   lifestyle_reset_started_at: string | null;
+  // Asked on the intake form (0057); null for clients from before. Men don't
+  // see the Women's Health Reset.
+  sex: "male" | "female" | null;
   // The day she tapped Start on the Reset (0050): her week 1 begins here.
   reset_started_on: string | null;
   consent_accepted_at: string | null;

@@ -289,6 +289,7 @@ export default function ClientDetailScreen({ route }: Props) {
               </View>
             )}
 
+            {client.sex !== "male" && (
             <View style={styles.resetBox}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.resetTitle}>12-Week Women's Health Reset</Text>
@@ -308,6 +309,7 @@ export default function ClientDetailScreen({ route }: Props) {
                 </Text>
               </Pressable>
             </View>
+            )}
             {client.reset_started_on && client.lifestyle_reset_started_at && (
               <View style={styles.resetNotes}>
                 <Text style={styles.resetTitle}>Her Reset notes</Text>
