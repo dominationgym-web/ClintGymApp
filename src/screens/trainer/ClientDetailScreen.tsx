@@ -495,18 +495,14 @@ export default function ClientDetailScreen({ route }: Props) {
             <ClientProgramPicker clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.libraryTitle}>Full exercise library</Text>
-                <Text style={styles.helper}>
-                  {client.library_access
-                    ? `${client.name} can browse every exercise.`
-                    : `${client.name} only sees the exercises in their program.`}
-                </Text>
+                <Text style={styles.libraryTitle}>Full workout video library</Text>
+                <Text style={styles.helper}>Switch this on to allow client access to full workout videos. Not suggested.</Text>
               </View>
               <Switch
                 value={client.library_access}
                 onValueChange={toggleLibraryAccess}
                 trackColor={{ true: BRAND_GOLD, false: "#334155" }}
-                accessibilityLabel="Full exercise library"
+                accessibilityLabel="Full workout video library"
               />
             </View>
             <Text style={styles.sectionHeading}>Recent training log</Text>
