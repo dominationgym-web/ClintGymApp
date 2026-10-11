@@ -56,6 +56,7 @@ import {
   type ProgramSession,
 } from "@/lib/programSchedule";
 import { weekdayOf } from "@/lib/programSchedule";
+import { applyRecoveryAdjustment } from "@/lib/recovery";
 import { BRAND_GOLD } from "@/lib/brand";
 
 const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
@@ -135,13 +136,16 @@ export default function ExerciseLibraryScreen() {
   const days = program && weekly ? trainingDays(program.exercises) : [];
   const session = program && weekly ? currentSession(program.assignment, days) : null;
   const sessionDue = session ? isDue(session, today) : false;
-  const plannedWorkout = !program
+  const fullPlan = !program
     ? []
     : weekly
       ? session && sessionDue
         ? program.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order)
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
+  // A lighter session the trainer set for today after a recovery check (0059).
+  const plannedWorkout = program ? applyRecoveryAdjustment(fullPlan, program.assignment, today) : fullPlan;
+  const lightened = !!program && program.assignment.recovery_adjustment?.date === today && fullPlan.length > 0;
   // Home training (0052): a client who trains at home gets a home exercise of
   // the same body part in place of each gym-only one, automatically.
   const homeIds: string[] = [];
@@ -404,6 +408,9 @@ export default function ExerciseLibraryScreen() {
                 </Text>
                 {session && sessionDue && session.dueOn < today && (
                   <Text style={styles.carried}>Carried over from {weekdayOf(session.dueOn)}. Complete it to unlock your next workout.</Text>
+                )}
+                {lightened && (
+                  <Text style={styles.carried}>Your coach made today's session lighter to give your muscles time to recover.</Text>
                 )}
                 {program.program.description ? (
                   <View style={styles.howTo}>

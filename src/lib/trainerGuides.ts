@@ -590,6 +590,7 @@ const RECOVERY: TrainerGuide = {
           points: [
             "Muscles work together. Chest pressing also trains the front delts and triceps; rows and pulldowns train the biceps.",
             "Arms the day after a chest or back day are not fully rested. Plan splits so that helper muscles get a break too.",
+            "The app's recovery check flags a client whose session today works muscles they trained hard yesterday, on your dashboard and their Training tab.",
           ],
         },
         {

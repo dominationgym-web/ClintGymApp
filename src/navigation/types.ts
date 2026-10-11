@@ -42,7 +42,8 @@ export type TrainerStackParamList = {
   TrainerTabs: NavigatorScreenParams<TrainerTabParamList> | undefined;
   Search: undefined;
   SuggestionBox: undefined;
-  ClientDetail: { clientId: string };
+  // `tab` opens the client on that tab, e.g. "training" from the recovery check.
+  ClientDetail: { clientId: string; tab?: "training" };
   ProgramBuilder: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
 };

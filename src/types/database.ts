@@ -259,7 +259,13 @@ export type ClientProgram = {
   // so ready-made programs can have cardio too. `after` is how many
   // exercises come before the block; null means at the end.
   extra_cardio: ExtraCardio[];
+  // Recovery check (0059): the date the trainer chose to leave a clash as it
+  // is, and a lighter session for one date (program exercise id → sets).
+  recovery_ignored_on: string | null;
+  recovery_adjustment: RecoveryAdjustment | null;
 }
+
+export type RecoveryAdjustment = { date: string; sets: Record<string, number> };
 
 export type ExtraCardio = { after: number | null; name: string; reps: string };
 
