@@ -182,6 +182,9 @@ export default function ExerciseLibraryScreen() {
       ? exercises.filter((e) => programExerciseIds.includes(e.id))
       : clientBrowsable(exercises, programExerciseIds);
   const shown = forPlace(browsable, place);
+  // The program card already lists today's exercises, so the reference list
+  // only shows for clients who aren't on a program yet.
+  const showReference = !program;
   const choosePlace = (next: ExercisePlace) => {
     setPlace(next);
     setCategory(null);
@@ -388,7 +391,7 @@ export default function ExerciseLibraryScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={filterExercises(shown, search, category)}
+        data={showReference ? filterExercises(shown, search, category) : []}
         keyboardShouldPersistTaps="handled"
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
@@ -469,8 +472,8 @@ export default function ExerciseLibraryScreen() {
                 )}
               </View>
             )}
-            <Text style={styles.title}>Exercise reference</Text>
-            {client?.library_access === false ? (
+            {showReference && <Text style={styles.title}>Exercise reference</Text>}
+            {!showReference ? null : client?.library_access === false ? (
               <Text style={styles.helper}>
                 These are the exercises in your program. Ask your coach if you'd like the full exercise library.
               </Text>
@@ -502,9 +505,11 @@ export default function ExerciseLibraryScreen() {
           </>
         }
         ListEmptyComponent={
+          !showReference ? null : (
           <Text style={styles.helper}>
             {client?.library_access === false ? "Your coach hasn't set up your program yet." : "No exercises match that search."}
           </Text>
+          )
         }
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => openExercise(item)}>
