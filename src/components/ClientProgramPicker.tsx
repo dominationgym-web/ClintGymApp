@@ -8,7 +8,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { loadAvailablePrograms, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import ProgramSummary from "@/components/ProgramSummary";
-import { currentSession, sessionTitle, trainingDays, weekdayOf } from "@/lib/programSchedule";
+import { currentSession, sessionTitle, slotOf, trainingDays, weekdayOf } from "@/lib/programSchedule";
 import type { ExtraCardio, Program } from "@/types/database";
 import { CARDIO_ALL, CARDIO_OPTIONS, CARDIO_SECONDS, cardioDuration, cardioLabel } from "@/lib/programs";
 import ProgramChooserModal from "@/components/ProgramChooserModal";
@@ -63,8 +63,8 @@ export default function ClientProgramPicker({
   // ready-made ones included. Positions count exercises, so they fit every day.
   const extras: ExtraCardio[] = active?.assignment.extra_cardio ?? [];
   const mostExercises = active
-    ? Math.max(0, ...[...new Set(active.exercises.map((e) => e.day_number))].map(
-        (day) => active.exercises.filter((e) => e.day_number === day && e.kind !== "cardio").length,
+    ? Math.max(0, ...trainingDays(active.exercises).map(
+        (day) => active.exercises.filter((e) => slotOf(e) === day && e.kind !== "cardio").length,
       ))
     : 0;
   const [addingCardio, setAddingCardio] = useState(false);
@@ -98,6 +98,7 @@ export default function ClientProgramPicker({
         assigned_at: new Date().toISOString(),
         // A new program starts from its first session (0037).
         current_day: null,
+        current_week: null,
         due_on: null,
         last_completed_at: null,
         // Cardio added for the old program doesn't carry over.

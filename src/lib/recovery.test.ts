@@ -25,6 +25,7 @@ const row = (id: string, exercise_id: string, sets = 4, kind: "exercise" | "card
   id,
   program_id: "p",
   day_number: 1,
+  week_number: 1,
   sort_order: 1,
   exercise_id,
   exercise_name: exercise_id,

@@ -28,7 +28,7 @@ create table if not exists public.billing_settings (
   id integer primary key default 1 check (id = 1),
   prices jsonb not null default '{
     "USD": {"monthly": 50, "six_months": 250, "yearly": 400, "client": 10},
-    "ZAR": {"monthly": 500, "six_months": 2500, "yearly": 4000, "client": 180}
+    "ZAR": {"monthly": 500, "six_months": 2500, "yearly": 4000, "client": 100}
   }'::jsonb,
   free_client_months integer not null default 2 check (free_client_months >= 0),
   -- Clients a trainer has before the per-client fee applies.

@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { loadRecoveryCheck, type RecoveryCheck } from "@/lib/recoveryQueries";
 import { groupList, lighterSets, recoveryHandled } from "@/lib/recovery";
-import { currentSession, sessionMovedToTomorrow, sessionTitle, trainingDays } from "@/lib/programSchedule";
+import { currentSession, sessionMovedToTomorrow, sessionTitle, slotParts, trainingDays } from "@/lib/programSchedule";
 import { displayProgramName } from "@/lib/programs";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientProgram } from "@/types/database";
@@ -80,7 +80,7 @@ export default function RecoveryCheckCard({ clientId, clientName }: { clientId: 
     if (!session) return;
     const next = sessionMovedToTomorrow(session, today);
     save(
-      { current_day: next.day, due_on: next.dueOn },
+      { current_week: slotParts(next.day).week, current_day: slotParts(next.day).day, due_on: next.dueOn },
       `${title} moved to tomorrow. ${firstName} gets a rest day today.`,
     );
   };

@@ -110,6 +110,7 @@ export default function ProgramsScreen({ navigation }: Props) {
                   {open === p.id && (
                     <>
                       {p.description && <Text style={styles.description}>{p.description}</Text>}
+                      {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
                       <ProgramSummary program={p} exercises={exercises.filter((e) => e.program_id === p.id)} />
                       {p.trainer_id && (
                         <Pressable onPress={() => remove(p)} hitSlop={8}>

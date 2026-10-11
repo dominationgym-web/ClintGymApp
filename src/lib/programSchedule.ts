@@ -1,22 +1,42 @@
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
-import { programDayNumber, WEEKDAY_NAMES } from "@/lib/programs";
-import type { ClientProgram, Program, ProgramExercise } from "@/types/database";
+import { programDayNumber, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
+
+export { slotOf };
+import type { ClientProgram, Program } from "@/types/database";
 
 // Working through a weekly program in order (0037). Each training day's
 // session waits for the client: it shows from its day until they complete
 // it, and only then does the next one unlock on the next training day. They
 // can also move it to tomorrow. Dates are local calendar dates (YYYY-MM-DD).
 
+// Multi-week programs (0065): a session is identified by its "slot",
+// (week - 1) * 7 + weekday, so week 1 Monday = 1 and week 2 Monday = 8.
+// One-week programs only have slots 1-7, the weekday itself.
+
 export interface ProgramSession {
-  /** Which of the program's days this session is, 1 = Monday ... 7 = Sunday. */
+  /** Which of the program's sessions this is: its slot (1 = week 1 Monday, 8 = week 2 Monday). */
   day: number;
   /** The first date it shows to the client. */
   dueOn: string;
 }
 
-/** The program's training days, 1 = Monday ... 7 = Sunday, in order. */
-export function trainingDays(exercises: Pick<ProgramExercise, "day_number">[]): number[] {
-  return [...new Set(exercises.map((e) => e.day_number))].sort((a, b) => a - b);
+/** 1 = Monday ... 7 = Sunday, for a slot. */
+export function weekdayOfSlot(slot: number): number {
+  return ((slot - 1) % 7) + 1;
+}
+
+export function weekOfSlot(slot: number): number {
+  return Math.floor((slot - 1) / 7) + 1;
+}
+
+/** The week and weekday to save for a slot. */
+export function slotParts(slot: number): { week: number; day: number } {
+  return { week: weekOfSlot(slot), day: weekdayOfSlot(slot) };
+}
+
+/** The program's sessions (slots), in order. */
+export function trainingDays(exercises: { day_number: number; week_number?: number | null }[]): number[] {
+  return [...new Set(exercises.map(slotOf))].sort((a, b) => a - b);
 }
 
 export function addDays(iso: string, days: number): string {
@@ -25,11 +45,12 @@ export function addDays(iso: string, days: number): string {
   return toIsoDate(date);
 }
 
-/** The first date on or after `iso` that falls on one of `days`. */
+/** The first date on or after `iso` that falls on the weekday of one of `days`. */
 export function firstTrainingDateFrom(iso: string, days: number[]): string {
+  const weekdays = days.map(weekdayOfSlot);
   for (let i = 0; i < 7; i++) {
     const candidate = addDays(iso, i);
-    if (days.includes(programDayNumber(parseIsoDate(candidate)))) return candidate;
+    if (weekdays.includes(programDayNumber(parseIsoDate(candidate)))) return candidate;
   }
   return iso;
 }
@@ -41,15 +62,17 @@ export function nextDayInCycle(day: number, days: number[]): number {
 
 /** Where the client is up to. Before they first complete or move anything, it's the first session from the day they started. */
 export function currentSession(
-  assignment: Pick<ClientProgram, "started_on" | "current_day" | "due_on">,
+  assignment: Pick<ClientProgram, "started_on" | "current_day" | "due_on"> & { current_week?: number | null },
   days: number[],
 ): ProgramSession | null {
   if (days.length === 0) return null;
-  if (assignment.current_day && assignment.due_on && days.includes(assignment.current_day)) {
-    return { day: assignment.current_day, dueOn: assignment.due_on };
+  if (assignment.current_day && assignment.due_on) {
+    const slot = slotOf({ day_number: assignment.current_day, week_number: assignment.current_week });
+    if (days.includes(slot)) return { day: slot, dueOn: assignment.due_on };
   }
   const dueOn = firstTrainingDateFrom(assignment.started_on, days);
-  return { day: programDayNumber(parseIsoDate(dueOn)), dueOn };
+  const weekday = programDayNumber(parseIsoDate(dueOn));
+  return { day: days.find((d) => weekdayOfSlot(d) === weekday) ?? days[0], dueOn };
 }
 
 /** After "Complete workout" today: the next session, on the next training day after today. */
@@ -66,9 +89,10 @@ export function isDue(session: ProgramSession, today: string): boolean {
   return session.dueOn <= today;
 }
 
-/** "Workout A" for a weekly program's day, or the weekday name if it has no title. */
-export function sessionTitle(program: Pick<Program, "day_titles">, day: number): string {
-  return program.day_titles[day - 1] || WEEKDAY_NAMES[day - 1];
+/** "Workout A" for a weekly program's session, or the weekday name if it has no title; "Week 2: Upper A" in multi-week programs. */
+export function sessionTitle(program: Pick<Program, "day_titles"> & { weeks?: number | null }, day: number): string {
+  const title = program.day_titles[day - 1] || WEEKDAY_NAMES[weekdayOfSlot(day) - 1];
+  return (program.weeks ?? 1) > 1 ? `Week ${weekOfSlot(day)}: ${title}` : title;
 }
 
 /** "Wednesday" for "2026-10-07". */
