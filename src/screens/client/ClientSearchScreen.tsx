@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { CLIENT_PAGES, searchPages, searchSections } from "@/lib/appSearch";
 import { clientBrowsable, filterExercises } from "@/lib/exerciseFilter";
 import { loadClientProgram } from "@/lib/programQueries";
-import { SECTIONS } from "@/lib/sections";
+import { sectionsFor } from "@/lib/sections";
 import { BRAND_GOLD } from "@/lib/brand";
 import SearchResults, { type SearchGroup } from "@/components/SearchResults";
 import type { Exercise } from "@/types/database";
@@ -42,7 +42,7 @@ export default function ClientSearchScreen({ navigation }: NativeStackScreenProp
     },
     {
       title: "Guides",
-      data: searchSections(SECTIONS, query).map((s) => ({
+      data: searchSections(sectionsFor(client?.sex), query).map((s) => ({
         key: `section-${s.key}`,
         title: s.title,
         subtitle: s.snippet,

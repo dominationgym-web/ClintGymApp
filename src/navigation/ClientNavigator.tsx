@@ -37,7 +37,7 @@ function ClientTabs() {
     >
       <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
       <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
-      {client?.lifestyle_reset_started_at && (
+      {client?.lifestyle_reset_started_at && client.sex !== "male" && (
         <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />
       )}
       <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Video log", tabBarIcon: tabIcon("videocam") }} />

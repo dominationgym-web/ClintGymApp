@@ -68,3 +68,8 @@ export const SECTIONS: Section[] = [
 export function findSection(key: SectionKey): Section | undefined {
   return SECTIONS.find((s) => s.key === key);
 }
+
+/** The sections a client sees: men don't get the Women's Health Reset (0057). */
+export function sectionsFor(sex: "male" | "female" | null | undefined): Section[] {
+  return sex === "male" ? SECTIONS.filter((s) => s.key !== "womensHealthReset") : SECTIONS;
+}
