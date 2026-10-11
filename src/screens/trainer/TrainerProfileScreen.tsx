@@ -28,6 +28,7 @@ import {
 import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
+import TrainerPlanCard from "@/components/TrainerPlanCard";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import type { EftDetails } from "@/types/database";
 
@@ -35,7 +36,7 @@ type TabKey = "code" | "refer" | "details" | "payments" | "account";
 
 const TABS: ScreenTab<TabKey>[] = [
   { key: "code", label: "Code & logo", icon: "qr-code" },
-  { key: "refer", label: "Refer", icon: "gift" },
+  { key: "refer", label: "Plan & refer", icon: "gift" },
   { key: "details", label: "Details", icon: "person" },
   { key: "payments", label: "Payments", icon: "card" },
   { key: "account", label: "Account", icon: "settings" },
@@ -173,6 +174,7 @@ export default function TrainerProfileScreen() {
         )}
         {tab === "refer" && (
           <>
+            <TrainerPlanCard trainer={trainer} />
             {trial ? (
               <View style={[styles.trialBox, trialLeft !== null && trialLeft < 0 && { borderColor: "#F59E0B" }]}>
                 <Text style={styles.trialTitle}>{trial}</Text>
@@ -189,7 +191,8 @@ export default function TrainerProfileScreen() {
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
                 Another trainer enters this when they sign up. For each one who joins, you get {REFERRAL_DISCOUNT_PERCENT}% off a
-                month. 4 referrals = a free month.
+                month, taken off your next plan payment. 4 referrals = a free month. If you cancel, unused referrals are paid out
+                to you.
               </Text>
               <Pressable style={styles.secondaryButton} onPress={shareReferral}>
                 <Text style={styles.secondaryButtonText}>Share with a trainer</Text>

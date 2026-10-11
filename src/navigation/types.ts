@@ -45,6 +45,7 @@ export type TrainerStackParamList = {
   // `tab` opens the client on that tab, e.g. "training" from the recovery check.
   ClientDetail: { clientId: string; tab?: "training" };
   ProgramBuilder: undefined;
+  Billing: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
 };
 

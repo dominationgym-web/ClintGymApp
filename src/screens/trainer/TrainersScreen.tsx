@@ -7,6 +7,9 @@ import { addDays } from "@/lib/programSchedule";
 import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
 import type { Trainer } from "@/types/database";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { TrainerStackParamList } from "@/navigation/types";
 
 // The app owner's list of every trainer (0029): approve new ones, or block one.
 // Also each trainer's free trial and referral rewards (0060): the owner can add
@@ -15,6 +18,7 @@ import type { Trainer } from "@/types/database";
 // database enforces both, this tab is only shown to the owner.
 export default function TrainersScreen() {
   const { trainer: me } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   // Every trainer including the owner, to count referrals and name referrers.
   const [everyone, setEveryone] = useState<Trainer[]>([]);
@@ -117,6 +121,12 @@ export default function TrainersScreen() {
       data={trainers}
       keyExtractor={(t) => t.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={
+        <Pressable style={styles.billingButton} onPress={() => navigation.navigate("Billing")} accessibilityRole="button">
+          <Text style={styles.billingTitle}>💰 Billing</Text>
+          <Text style={styles.detail}>Plans, client fees, payments owed, monthly and 6-month totals</Text>
+        </Pressable>
+      }
       ListEmptyComponent={
         <Text style={styles.empty}>No other trainers yet. When a trainer applies in the app, they'll show up here.</Text>
       }
@@ -204,4 +214,6 @@ const styles = StyleSheet.create({
   approveAction: { backgroundColor: "#22C55E" },
   blockAction: { backgroundColor: "#475569" },
   actionText: { color: "#fff", fontWeight: "700" },
+  billingButton: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 14, borderLeftWidth: 3, borderLeftColor: "#D4AF37" },
+  billingTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });
