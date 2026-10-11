@@ -22,6 +22,6 @@ export function needsReply(statusFlag: ClientStatusFlag, distressFlag: boolean):
 export function alertSummary(statusFlag: ClientStatusFlag, distressFlag: boolean): string | null {
   if (statusFlag === "red") return "🚩 Urgent - needs guidance";
   if (statusFlag === "orange") return "🟠 Wants feedback";
-  if (distressFlag) return "⚠ Distress/pain flagged today";
+  if (distressFlag) return "⚠ Pain, fatigue or mental exhaustion reported today";
   return null;
 }

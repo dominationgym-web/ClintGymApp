@@ -64,6 +64,15 @@ const savedCheckin: Checkin = {
   distress_flag: false,
   wound_down: true,
   distress_notes: null,
+  pain_status: "ok",
+  pain_area: null,
+  pain_notes: null,
+  fatigue_status: "reported",
+  fatigue_cause: "Lack of sleep",
+  fatigue_notes: "Baby up all night",
+  mental_status: "ok",
+  mental_cause: null,
+  mental_notes: null,
   created_at: "2026-10-08T05:00:00Z",
 };
 
@@ -89,14 +98,28 @@ describe("formFromCheckin", () => {
       meals_total: 3,
       high_gi_count: 1,
       wound_down: true,
-      distress_flag: false,
-      distress_notes: null,
+      pain_status: "ok",
+      pain_area: null,
+      pain_notes: null,
+      fatigue_status: "reported",
+      fatigue_cause: "Lack of sleep",
+      fatigue_notes: "Baby up all night",
+      mental_status: "ok",
+      mental_cause: null,
+      mental_notes: null,
+      distress_flag: true,
+      distress_notes: "Fatigue (Lack of sleep): Baby up all night",
     });
   });
 });
 
 describe("validateCheckinForm", () => {
-  const form = (changes: Partial<CheckinForm>): CheckinForm => ({ ...EMPTY_CHECKIN_FORM, ...changes });
+  const allOk = { status: "ok" as const, kind: "", notes: "" };
+  const form = (changes: Partial<CheckinForm>): CheckinForm => ({
+    ...EMPTY_CHECKIN_FORM,
+    wellbeing: { pain: allOk, fatigue: allOk, mental: allOk },
+    ...changes,
+  });
 
   it("saves water typed with a comma instead of silently saving 0", () => {
     const result = validateCheckinForm(form({ waterLitres: "2,5" }));
@@ -114,9 +137,8 @@ describe("validateCheckinForm", () => {
     expect(validateCheckinForm(form({ mealsTotal: "2.5" })).ok).toBe(false);
   });
 
-  it("asks for a note when distress is flagged", () => {
-    const result = validateCheckinForm(form({ distressFlag: true, distressNotes: " " }));
-    expect(result.ok).toBe(false);
+  it("needs pain, fatigue and mental exhaustion answered", () => {
+    expect(validateCheckinForm({ ...EMPTY_CHECKIN_FORM }).ok).toBe(false);
   });
 
   it("only saves the questions the trimmed check-in still asks", () => {
@@ -125,8 +147,17 @@ describe("validateCheckinForm", () => {
       "alcohol_units",
       "distress_flag",
       "distress_notes",
+      "fatigue_cause",
+      "fatigue_notes",
+      "fatigue_status",
       "high_gi_count",
       "meals_total",
+      "mental_cause",
+      "mental_notes",
+      "mental_status",
+      "pain_area",
+      "pain_notes",
+      "pain_status",
       "sleep_bed_time",
       "sleep_quality",
       "sleep_wake_time",
@@ -143,7 +174,7 @@ describe("validateCheckinForm", () => {
 
 describe("unansweredSections", () => {
   it("lists what is still blank", () => {
-    expect(unansweredSections(EMPTY_CHECKIN_FORM)).toEqual(["sleep times", "sleep quality", "water", "meals", "wind-down"]);
+    expect(unansweredSections(EMPTY_CHECKIN_FORM)).toEqual(["sleep times", "sleep quality", "water", "meals", "wind-down", "body and mind"]);
     expect(unansweredSections(formFromCheckin(savedCheckin))).toEqual(["sleep times"]);
   });
 });

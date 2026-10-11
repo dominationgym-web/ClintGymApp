@@ -15,6 +15,8 @@ import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStre
 import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
+import WellbeingReports from "@/components/WellbeingReports";
+import { reportedTopics } from "@/lib/wellbeing";
 import { RESET_WEEKS_TOTAL, resetWeekNumber } from "@/lib/resetProgram";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -73,6 +75,8 @@ export default function ClientDetailScreen({ route }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<TabKey>("overview");
+  // Body-and-mind reports from the last week put a dot on the Notes tab (0055).
+  const weekAgo = toIsoDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [replying, setReplying] = useState(false);
 
@@ -528,6 +532,7 @@ export default function ClientDetailScreen({ route }: Props) {
         )}
         {tab === "notes" && (
           <>
+            <WellbeingReports clientId={client.id} />
             <Text style={styles.sectionHeading}>Trainer notes</Text>
             <TextInput
               style={styles.notesInput}
@@ -556,7 +561,9 @@ export default function ClientDetailScreen({ route }: Props) {
                 : "#F59E0B"
               : t.key === "checkins" && checkins.some((c) => c.distress_flag)
                 ? "#EF4444"
-                : null,
+                : t.key === "notes" && checkins.some((c) => c.checkin_date >= weekAgo && reportedTopics(c).length > 0)
+                  ? "#F59E0B"
+                  : null,
         }))}
       />
     </View>

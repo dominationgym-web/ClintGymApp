@@ -1,3 +1,4 @@
+import { reportedTopics } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { supabase } from "@/lib/supabase";
@@ -150,7 +151,13 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                     🟠 Wants feedback{item.client.status_flag_note ? `: ${item.client.status_flag_note}` : ""}
                   </Text>
                 )}
-                {item.distressFlag && <Text style={styles.distressText}>⚠ Distress/pain flagged today</Text>}
+                {item.distressFlag && (
+                  <Text style={styles.distressText}>
+                    ⚠ Reported today: {item.todaysCheckin && reportedTopics(item.todaysCheckin).length
+                      ? reportedTopics(item.todaysCheckin).join(", ")
+                      : "distress or pain"}
+                  </Text>
+                )}
                 {needsReply(item.client.status_flag, item.distressFlag) && (
                   <Pressable style={styles.replyButton} onPress={() => setReplyingTo(item)} hitSlop={6}>
                     <Text style={styles.replyText}>💬 Reply</Text>

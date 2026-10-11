@@ -3,6 +3,7 @@
 // that conversion, and the reverse when a saved check-in is opened again.
 
 import type { Checkin } from "@/types/database";
+import { EMPTY_WELLBEING, validateWellbeing, wellbeingFromCheckin, type WellbeingForm, type WellbeingValues } from "@/lib/wellbeing";
 
 // The check-in was trimmed to these questions. "Asleep time", electrolytes,
 // high-GI timing, screen-time minutes, Kindle reading and breathing/stretching
@@ -17,8 +18,9 @@ export type CheckinForm = {
   mealsTotal: string;
   highGiCount: string;
   woundDown: boolean | null;
-  distressFlag: boolean;
-  distressNotes: string;
+  // Pain, fatigue and mental exhaustion (0055); these replace the old
+  // "flag distress or pain" switch and set distress_flag themselves.
+  wellbeing: WellbeingForm;
 };
 
 export type CheckinValues = Pick<
@@ -31,9 +33,8 @@ export type CheckinValues = Pick<
   | "meals_total"
   | "high_gi_count"
   | "wound_down"
-  | "distress_flag"
-  | "distress_notes"
->;
+> &
+  WellbeingValues;
 
 export const EMPTY_CHECKIN_FORM: CheckinForm = {
   alcoholUnits: "",
@@ -44,8 +45,7 @@ export const EMPTY_CHECKIN_FORM: CheckinForm = {
   mealsTotal: "",
   highGiCount: "",
   woundDown: null,
-  distressFlag: false,
-  distressNotes: "",
+  wellbeing: EMPTY_WELLBEING,
 };
 
 /**
@@ -97,8 +97,7 @@ export function formFromCheckin(row: Checkin): CheckinForm {
     mealsTotal: amountToText(row.meals_total),
     highGiCount: amountToText(row.high_gi_count),
     woundDown: row.wound_down,
-    distressFlag: row.distress_flag,
-    distressNotes: row.distress_notes ?? "",
+    wellbeing: wellbeingFromCheckin(row),
   };
 }
 
@@ -139,9 +138,8 @@ export function validateCheckinForm(form: CheckinForm): CheckinValidation {
   if (highGi > meals && form.mealsTotal.trim() !== "") {
     return fail("Check your meals", "You've logged more high-GI meals than meals in total.");
   }
-  if (form.distressFlag && !form.distressNotes.trim()) {
-    return fail("Add a note", "Since you've flagged distress or pain, add a quick note so your trainer has context.");
-  }
+  const wellbeing = validateWellbeing(form.wellbeing);
+  if (!wellbeing.ok) return fail(wellbeing.title, wellbeing.message);
 
   return {
     ok: true,
@@ -154,8 +152,7 @@ export function validateCheckinForm(form: CheckinForm): CheckinValidation {
       meals_total: meals,
       high_gi_count: highGi,
       wound_down: form.woundDown,
-      distress_flag: form.distressFlag,
-      distress_notes: form.distressFlag ? form.distressNotes.trim() : null,
+      ...wellbeing.values,
     },
   };
 }
@@ -168,5 +165,6 @@ export function unansweredSections(form: CheckinForm): string[] {
   if (!form.waterLitres.trim()) missing.push("water");
   if (!form.mealsTotal.trim()) missing.push("meals");
   if (form.woundDown === null) missing.push("wind-down");
+  if (Object.values(form.wellbeing).some((a) => a.status === null)) missing.push("body and mind");
   return missing;
 }

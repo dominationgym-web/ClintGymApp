@@ -33,7 +33,7 @@ describe("alertSummary", () => {
   it("names the most urgent thing first", () => {
     expect(alertSummary("red", true)).toContain("Urgent");
     expect(alertSummary("orange", true)).toContain("feedback");
-    expect(alertSummary("green", true)).toContain("Distress");
+    expect(alertSummary("green", true)).toContain("Pain, fatigue or mental exhaustion");
     expect(alertSummary("green", false)).toBeNull();
   });
 });
