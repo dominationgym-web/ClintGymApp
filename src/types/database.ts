@@ -157,6 +157,16 @@ export type Checkin = {
   wound_down: boolean | null;
   distress_flag: boolean;
   distress_notes: string | null;
+  // Body and mind (0055): answered every day; null on older check-ins.
+  pain_status: "ok" | "reported" | null;
+  pain_area: string | null;
+  pain_notes: string | null;
+  fatigue_status: "ok" | "reported" | null;
+  fatigue_cause: string | null;
+  fatigue_notes: string | null;
+  mental_status: "ok" | "reported" | null;
+  mental_cause: string | null;
+  mental_notes: string | null;
   created_at: string;
 }
 

@@ -1,3 +1,5 @@
+import WellbeingQuestions from "@/components/WellbeingQuestions";
+import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
@@ -31,17 +33,6 @@ import {
   type CheckinValues,
 } from "@/lib/checkinForm";
 import type { Checkin } from "@/types/database";
-
-function Toggle({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
-  return (
-    <Pressable style={styles.toggleRow} onPress={onToggle}>
-      <View style={[styles.checkbox, value && styles.checkboxChecked]}>
-        {value && <Text style={styles.checkmark}>✓</Text>}
-      </View>
-      <Text style={[styles.label, styles.flex1]}>{label}</Text>
-    </Pressable>
-  );
-}
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -216,7 +207,13 @@ export default function CheckInScreen() {
           <SummaryRow label="Meals yesterday" value={String(saved.meals_total)} />
           <SummaryRow label="High-GI meals" value={String(saved.high_gi_count)} />
           <SummaryRow label="Wound down without screens" value={yesNo(saved.wound_down)} />
-          <SummaryRow label="Distress or pain flagged" value={yesNo(saved.distress_flag)} />
+          {WELLBEING_TOPICS.map((t) => (
+            <SummaryRow
+              key={t.key}
+              label={`${t.icon} ${t.title}`}
+              value={saved[`${t.key}_status`] === "reported" ? "Reported" : saved[`${t.key}_status`] === "ok" ? "Okay" : "-"}
+            />
+          ))}
           {saved.distress_flag && saved.distress_notes && <Text style={styles.summaryNote}>{saved.distress_notes}</Text>}
         </View>
         <Pressable style={styles.button} onPress={() => setEditing(true)}>
@@ -242,6 +239,8 @@ export default function CheckInScreen() {
         <ResetReminderBanner />
         <ProgressPhotoReminder />
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>
+
+        <WellbeingQuestions value={form.wellbeing} onChange={(next) => set("wellbeing", next)} />
 
         <Text style={styles.sectionHeading}>Alcohol (units last night)</Text>
         <TextInput
@@ -335,23 +334,6 @@ export default function CheckInScreen() {
             </Pressable>
           ))}
         </View>
-
-        <Text style={styles.sectionHeading}>Anything wrong?</Text>
-        <Toggle
-          label="Flag real distress or pain (not just a rough day)"
-          value={form.distressFlag}
-          onToggle={() => set("distressFlag", !form.distressFlag)}
-        />
-        {form.distressFlag && (
-          <TextInput
-            style={[styles.input, styles.multiline]}
-            multiline
-            placeholder="Briefly describe what's going on - your trainer will follow up outside the app."
-            placeholderTextColor="#64748B"
-            value={form.distressNotes}
-            onChangeText={(v) => set("distressNotes", v)}
-          />
-        )}
 
         <Pressable style={[styles.button, saving && styles.buttonDisabled]} onPress={handleSubmit} disabled={saving}>
           {saving ? (

@@ -1,4 +1,5 @@
-import React from "react";
+import { registerForCoachMessages } from "@/lib/notifications";
+import React, { useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { tabIcon } from "@/navigation/tabIcon";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -48,6 +49,11 @@ function TrainerTabs() {
 }
 
 export default function TrainerNavigator() {
+  // So the trainer's phone gets a notification when a client reports pain,
+  // fatigue or mental exhaustion (0055). Installed app only.
+  useEffect(() => {
+    registerForCoachMessages();
+  }, []);
   return (
     <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
       <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
