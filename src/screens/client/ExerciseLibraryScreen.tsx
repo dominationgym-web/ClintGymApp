@@ -33,6 +33,7 @@ import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
 import RestTimer from "@/components/RestTimer";
+import { suggestNext, type Suggestion } from "@/lib/progression";
 import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import {
   cardioLabel,
@@ -51,6 +52,8 @@ import {
   currentSession,
   isDue,
   sessionAfterComplete,
+  slotOf,
+  slotParts,
   sessionMovedToTomorrow,
   sessionTitle,
   trainingDays,
@@ -78,6 +81,7 @@ export default function ExerciseLibraryScreen() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [todaysSets, setTodaysSets] = useState<WorkoutLog[]>([]);
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [effort, setEffort] = useState<SetEffort | null>(null);
@@ -105,6 +109,8 @@ export default function ExerciseLibraryScreen() {
   const [swapPreview, setSwapPreview] = useState<string | null>(null);
   // Cardio blocks (0048) ticked off today.
   const [cardioDone, setCardioDone] = useState<string[]>([]);
+  // The program's how-to and nutrition notes open on tap, so the workout stays near the top.
+  const [openInfo, setOpenInfo] = useState<"how" | "food" | null>(null);
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -141,7 +147,7 @@ export default function ExerciseLibraryScreen() {
     ? []
     : weekly
       ? session && sessionDue
-        ? program.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order)
+        ? program.exercises.filter((e) => slotOf(e) === session.day).sort((a, b) => a.sort_order - b.sort_order)
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
   // A lighter session the trainer set for today after a recovery check (0059).
@@ -225,8 +231,10 @@ export default function ExerciseLibraryScreen() {
   const saveProgress = async (next: ProgramSession, completed: boolean) => {
     if (!program) return;
     setSavingProgress(true);
-    const { error } = await supabase.rpc("set_my_program_progress", {
-      p_current_day: next.day,
+    const { week, day } = slotParts(next.day);
+    const { error } = await supabase.rpc("set_my_program_week_progress", {
+      p_current_week: week,
+      p_current_day: day,
       p_due_on: next.dueOn,
       p_completed: completed,
     });
@@ -235,7 +243,7 @@ export default function ExerciseLibraryScreen() {
       Alert.alert("Couldn't save", error.message);
       return;
     }
-    setProgram({ ...program, assignment: { ...program.assignment, current_day: next.day, due_on: next.dueOn } });
+    setProgram({ ...program, assignment: { ...program.assignment, current_week: week, current_day: day, due_on: next.dueOn } });
   };
 
   const completeSession = () => {
@@ -311,11 +319,23 @@ export default function ExerciseLibraryScreen() {
     setWeight("");
     setReps("");
     setEffort(null);
+    setSuggestion(null);
     if (!client) return;
     const query = supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso());
     const { data } = await (exercise.id ? query.eq("exercise_id", exercise.id) : query.eq("exercise_name", exercise.name))
       .order("set_number", { ascending: true });
     setTodaysSets(data ?? []);
+    // The last session before today, for "try this weight next".
+    const before = supabase.from("workout_logs").select("*").eq("client_id", client.id).lt("log_date", todayIso());
+    const { data: earlier } = await (exercise.id ? before.eq("exercise_id", exercise.id) : before.eq("exercise_name", exercise.name))
+      .order("log_date", { ascending: false })
+      .limit(20);
+    const lastDate = earlier?.[0]?.log_date;
+    const next = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
+    setSuggestion(next);
+    const lastToday = data?.[data.length - 1]?.weight_kg;
+    if (lastToday) setWeight(String(lastToday));
+    else if (next?.weight) setWeight(String(next.weight));
   };
 
   const logSet = async () => {
@@ -351,7 +371,8 @@ export default function ExerciseLibraryScreen() {
     }
     setTodaysSets((prev) => [...prev, data]);
     setAllTodaysSets((prev) => [...prev, data]);
-    setWeight("");
+    // Keep the weight for the next set; most sets use the same one.
+    setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
     setReps("");
     setEffort(null);
     const done = (row: ProgramExercise) =>
@@ -414,10 +435,16 @@ export default function ExerciseLibraryScreen() {
                   <Text style={styles.carried}>Your coach made today's session lighter to give your muscles time to recover.</Text>
                 )}
                 {program.program.description ? (
-                  <View style={styles.howTo}>
-                    <Text style={styles.howToTitle}>How to do it</Text>
-                    <Text style={styles.howToText}>{program.program.description}</Text>
-                  </View>
+                  <Pressable style={styles.howTo} onPress={() => setOpenInfo(openInfo === "how" ? null : "how")}>
+                    <Text style={styles.howToTitle}>How to do it {openInfo === "how" ? "▲" : "▼"}</Text>
+                    {openInfo === "how" ? <Text style={styles.howToText}>{program.program.description}</Text> : null}
+                  </Pressable>
+                ) : null}
+                {program.program.nutrition ? (
+                  <Pressable style={styles.howTo} onPress={() => setOpenInfo(openInfo === "food" ? null : "food")}>
+                    <Text style={styles.howToTitle}>🍽 Nutrition for this program {openInfo === "food" ? "▲" : "▼"}</Text>
+                    {openInfo === "food" ? <Text style={styles.howToText}>{program.program.nutrition}</Text> : null}
+                  </Pressable>
                 ) : null}
                 {todaysWorkout.length === 0 ? (
                   <Text style={styles.helper}>
@@ -624,6 +651,12 @@ export default function ExerciseLibraryScreen() {
                   </View>
                 );
               })()}
+            {suggestion && (
+              <View style={styles.warmUpBox}>
+                <Text style={styles.warmUpTitle}>📈 {suggestion.last}</Text>
+                <Text style={styles.warmUpText}>{suggestion.advice}</Text>
+              </View>
+            )}
             <Text style={[styles.sectionHeading, { marginTop: 0 }]}>Log a set</Text>
             <MuscleNotWeight />
             <View style={styles.setRow}>

@@ -32,6 +32,7 @@ export function loadProgramExercises(programId: string) {
     .from("program_exercises")
     .select("*")
     .eq("program_id", programId)
+    .order("week_number", { ascending: true })
     .order("day_number", { ascending: true })
     .order("sort_order", { ascending: true });
 }

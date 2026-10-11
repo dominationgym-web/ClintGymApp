@@ -323,6 +323,10 @@ export type Program = {
   warm_up: string;
   // Gym or home program (0053), so trainers pick the right kind for each client.
   place: "gym" | "home";
+  // Multi-week programs (0065): sessions repeat after this many weeks.
+  // day_titles then has 7 entries per week. nutrition is shown with it.
+  weeks: number;
+  nutrition: string | null;
   created_at: string;
 }
 
@@ -331,6 +335,9 @@ export type ProgramExercise = {
   program_id: string;
   // 1 = Monday ... 7 = Sunday for weekly programs; always 1 otherwise.
   day_number: number;
+  // Which week of a multi-week program (0065); 1 otherwise. The app works
+  // with a single "slot" per session: (week_number - 1) * 7 + day_number.
+  week_number: number;
   sort_order: number;
   exercise_id: string | null;
   exercise_name: string;
@@ -350,6 +357,8 @@ export type ClientProgram = {
   // Where the client is up to in a weekly program (0037); null until they
   // first complete or move a session.
   current_day: number | null;
+  // The week of a multi-week program (0065).
+  current_week: number | null;
   due_on: string | null;
   last_completed_at: string | null;
   // Cardio the trainer added for this client on top of the program (0054),
@@ -494,6 +503,10 @@ export interface Database {
       trainer_for_join_code: {
         Args: { p_code: string };
         Returns: JoinableTrainer[];
+      };
+      set_my_program_week_progress: {
+        Args: { p_current_week: number; p_current_day: number; p_due_on: string; p_completed: boolean };
+        Returns: undefined;
       };
       set_my_program_progress: {
         Args: { p_current_day: number; p_due_on: string; p_completed: boolean };

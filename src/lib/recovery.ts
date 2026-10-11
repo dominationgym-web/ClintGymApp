@@ -3,7 +3,7 @@
 // Plain rules from the recovery guide (about 48 hours before the same muscle
 // is trained hard again; arms count after chest or back days).
 import { exercisesForDate } from "@/lib/programs";
-import { currentSession, isDue, trainingDays, addDays } from "@/lib/programSchedule";
+import { currentSession, isDue, trainingDays, addDays, slotOf } from "@/lib/programSchedule";
 import { parseIsoDate } from "@/lib/dates";
 import type { ActiveProgram } from "@/lib/programQueries";
 import type { ClientProgram, ProgramExercise } from "@/types/database";
@@ -51,7 +51,7 @@ export function plannedRowsFor(active: ActiveProgram, today: string): ProgramExe
   if (active.program.kind === "weekly") {
     const session = currentSession(active.assignment, trainingDays(active.exercises));
     if (!session || !isDue(session, today)) return [];
-    return active.exercises.filter((e) => e.day_number === session.day).sort((a, b) => a.sort_order - b.sort_order);
+    return active.exercises.filter((e) => slotOf(e) === session.day).sort((a, b) => a.sort_order - b.sort_order);
   }
   return exercisesForDate(active.program, active.exercises, parseIsoDate(today));
 }

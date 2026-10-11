@@ -17,6 +17,11 @@ export function programDayNumber(date: Date): number {
   return day === 0 ? 7 : day;
 }
 
+/** A program row's session slot (0065): (week - 1) * 7 + weekday, so week 2 Monday = 8. */
+export function slotOf(row: { day_number: number; week_number?: number | null }): number {
+  return ((row.week_number ?? 1) - 1) * 7 + row.day_number;
+}
+
 /** The exercises the client should do on `date`, in order. */
 export function exercisesForDate(
   program: Pick<Program, "kind">,
@@ -235,9 +240,9 @@ export function resizeExercises(slots: DraftExercise[], count: number, blank: ()
  */
 export function withExtraCardio(rows: ProgramExercise[], extras: ExtraCardio[] | null | undefined): ProgramExercise[] {
   if (!extras?.length) return rows;
-  const days = [...new Set(rows.map((r) => r.day_number))].sort((a, b) => a - b);
+  const days = [...new Set(rows.map(slotOf))].sort((a, b) => a - b);
   return days.flatMap((day) => {
-    const session = rows.filter((r) => r.day_number === day).sort((a, b) => a.sort_order - b.sort_order);
+    const session = rows.filter((r) => slotOf(r) === day).sort((a, b) => a.sort_order - b.sort_order);
     const exerciseCount = session.filter((r) => r.kind !== "cardio").length;
     if (exerciseCount === 0) return session;
     // Blocks for the same spot keep the order the trainer added them in.
@@ -249,7 +254,8 @@ export function withExtraCardio(rows: ProgramExercise[], extras: ExtraCardio[] |
         out.push({
           id: `extra-cardio-${i}-day-${day}`,
           program_id: session[0].program_id,
-          day_number: day,
+          day_number: session[0].day_number,
+          week_number: session[0].week_number ?? 1,
           sort_order: (out[out.length - 1]?.sort_order ?? 0) + 0.001,
           exercise_id: null,
           exercise_name: extra.name,
@@ -284,6 +290,8 @@ function supersetRun(session: ProgramExercise[], index: number): number {
 
 // The headings the program popup groups programs under, in order.
 export const PROGRAM_FAMILIES = [
+  { key: "goalBlock", title: "3-week goal programs", icon: "🎯" },
+  { key: "hiit", title: "HIIT", icon: "🔥" },
   { key: "fullBody", title: "Full body", icon: "💪" },
   { key: "upperLower", title: "Quick upper & lower", icon: "⏱️" },
   { key: "chestBi", title: "Chest & Bi", icon: "🏋️" },
@@ -298,6 +306,8 @@ export type ProgramFamily = (typeof PROGRAM_FAMILIES)[number]["key"];
 export function programFamily(program: Pick<Program, "name" | "trainer_id">): ProgramFamily {
   if (program.trainer_id) return "own";
   const name = program.name.toLowerCase();
+  if (name.includes("3-week")) return "goalBlock";
+  if (name.startsWith("hiit")) return "hiit";
   if (name.includes("chest")) return "chestBi";
   if (name.includes("back")) return "backTri";
   if (name.includes("legs")) return "legs";

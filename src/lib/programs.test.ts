@@ -26,6 +26,7 @@ const row = (day_number: number, sort_order: number, exercise_name: string): Pro
   id: `${day_number}-${sort_order}`,
   program_id: "p",
   day_number,
+  week_number: 1,
   sort_order,
   exercise_id: null,
   exercise_name,
@@ -270,6 +271,9 @@ describe("programFamily", () => {
     expect(built("Chest & Bi 3")).toBe("chestBi");
     expect(built("Home Back & Tri 1")).toBe("backTri");
     expect(built("Legs 4")).toBe("legs");
+    expect(built("Bodybuilding 3-week block")).toBe("goalBlock");
+    expect(built("Strength 3-week block")).toBe("goalBlock");
+    expect(built("HIIT 7")).toBe("hiit");
   });
   it("puts the trainer's own programs together, whatever their name", () => {
     expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");
