@@ -37,6 +37,19 @@ export default function MealBuilder() {
         Tap the foods in your meal, set how much of each, and it works out the calories, protein, carbs and fat for you.
       </Text>
 
+      {/* The running total sits above the food options so it stays in view as foods are added. */}
+      <View style={styles.counter}>
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Meal total</Text>
+          <Text style={styles.total}>{totals.kcal} kcal</Text>
+        </View>
+        <View style={styles.macros}>
+          <Macro label="Protein" grams={totals.protein} />
+          <Macro label="Carbs" grams={totals.carbs} />
+          <Macro label="Fat" grams={totals.fat} />
+        </View>
+      </View>
+
       <View style={styles.chips}>
         {FOOD_GROUPS.map((g) => (
           <Pressable
@@ -101,15 +114,6 @@ export default function MealBuilder() {
             );
           })}
 
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Meal total</Text>
-            <Text style={styles.total}>{totals.kcal} kcal</Text>
-          </View>
-          <View style={styles.macros}>
-            <Macro label="Protein" grams={totals.protein} />
-            <Macro label="Carbs" grams={totals.carbs} />
-            <Macro label="Fat" grams={totals.fat} />
-          </View>
           <Pressable onPress={() => setRows([])} style={styles.clear} accessibilityRole="button">
             <Text style={styles.clearText}>Start a new meal</Text>
           </Pressable>
@@ -135,6 +139,7 @@ function Macro({ label, grams }: { label: string; grams: number }) {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
+  counter: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 12, paddingTop: 4, marginBottom: 14 },
   heading: { color: BRAND_GOLD, fontSize: 18, fontWeight: "800", marginBottom: 8 },
   text: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 12 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
