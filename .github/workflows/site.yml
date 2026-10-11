@@ -29,6 +29,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      # eas reads app.json, which needs the config plugins installed.
+      - run: npm ci
 
       - name: Build the pages
         run: node --experimental-strip-types scripts/build-site.mjs site-dist
