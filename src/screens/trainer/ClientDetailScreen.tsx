@@ -115,6 +115,11 @@ export default function ClientDetailScreen({ route }: Props) {
     }
   };
 
+  const loadNotes = async () => {
+    const { data } = await supabase.from("client_trainer_notes").select("notes").eq("client_id", clientId).maybeSingle();
+    setNotes(data?.notes ?? "");
+  };
+
   const loadMessages = async () => {
     const { data } = await supabase
       .from("coach_messages")
@@ -143,13 +148,10 @@ export default function ClientDetailScreen({ route }: Props) {
           .order("set_number", { ascending: true })
           .limit(30),
       ]);
-      if (clientRow) {
-        setClient(clientRow);
-        setNotes(clientRow.trainer_notes ?? "");
-      }
+      if (clientRow) setClient(clientRow);
       setCheckins(checkinRows ?? []);
       setWorkoutLogs(workoutRows ?? []);
-      await Promise.all([loadHabits(), loadMessages()]);
+      await Promise.all([loadHabits(), loadMessages(), loadNotes()]);
       setLoading(false);
     };
     load();
@@ -193,7 +195,9 @@ export default function ClientDetailScreen({ route }: Props) {
 
   const saveNotes = async () => {
     setSaving(true);
-    const { error } = await supabase.from("clients").update({ trainer_notes: notes }).eq("id", clientId);
+    const { error } = await supabase
+      .from("client_trainer_notes")
+      .upsert({ client_id: clientId, notes, updated_at: new Date().toISOString() }, { onConflict: "client_id" });
     setSaving(false);
     if (error) Alert.alert("Couldn't save notes", error.message);
   };

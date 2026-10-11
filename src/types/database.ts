@@ -61,6 +61,8 @@ export type Client = {
   phone: string | null;
   goals: string | null;
   injuries: string | null;
+  // Always null since 0061: notes live in client_trainer_notes, which only
+  // the trainer can read.
   trainer_notes: string | null;
   intake_responses: Record<string, string>;
   access_status: AccessStatus;
@@ -329,6 +331,13 @@ export type Suggestion = {
   created_at: string;
 };
 
+// 0061. The trainer's private notes on a client.
+export type ClientTrainerNotes = {
+  client_id: string;
+  notes: string;
+  updated_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -338,6 +347,12 @@ export interface Database {
         Row: ClientStatusFlagEvent;
         Insert: Partial<ClientStatusFlagEvent>;
         Update: Partial<ClientStatusFlagEvent>;
+        Relationships: [];
+      };
+      client_trainer_notes: {
+        Row: ClientTrainerNotes;
+        Insert: Partial<ClientTrainerNotes>;
+        Update: Partial<ClientTrainerNotes>;
         Relationships: [];
       };
       coach_messages: {
