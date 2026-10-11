@@ -35,6 +35,13 @@ export type Trainer = {
   pop_whatsapp: string | null;
   eft_details: EftDetails;
   created_at: string;
+  // Free trial and referrals (0060). trial_ends_at is set when the owner
+  // approves the trainer. referred_by is the trainer whose code they used;
+  // referral_credits_used counts the 25% discounts the owner has applied.
+  trial_ends_at: string | null;
+  referred_by_code: string | null;
+  referred_by: string | null;
+  referral_credits_used: number;
 }
 
 // What trainer_for_join_code() returns for a valid code (0029).
@@ -390,6 +397,10 @@ export interface Database {
       client_monthly_consistency: {
         Args: { p_client_id: string; p_month?: string };
         Returns: { checkin_rate: number; habit_rate: number | null; video_count: number; overall_score: number }[];
+      };
+      my_referrals: {
+        Args: Record<string, never>;
+        Returns: { name: string; approved: boolean; created_at: string }[];
       };
     };
   };

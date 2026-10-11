@@ -18,6 +18,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  // Another trainer's code (0060), so they get a referral reward.
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
@@ -48,6 +50,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       email: email.trim(),
       business_name: businessName.trim() || null,
       phone: phone.trim() || null,
+      referred_by_code: referralCode.trim() || null,
     });
     if (error) {
       setLoading(false);
@@ -64,7 +67,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       <Text style={styles.title}>Coach on Daily Evolution</Text>
       <Text style={styles.body}>
         Sign up as a trainer to run your own clients on the app. Your account is checked and approved before
-        clients can join you.
+        clients can join you, and then you get a free 2-week trial.
       </Text>
       <TextInput style={styles.input} placeholder="Your full name" value={name} onChangeText={setName} />
       <TextInput
@@ -89,6 +92,14 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         onChangeText={setPhone}
       />
       <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
+      <TextInput
+        style={styles.input}
+        placeholder="Referral code from another trainer (optional)"
+        autoCapitalize="characters"
+        autoCorrect={false}
+        value={referralCode}
+        onChangeText={setReferralCode}
+      />
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
         {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Apply as a trainer</Text>}
       </Pressable>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,16 +15,27 @@ import { File } from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { avatarContentType } from "@/lib/avatars";
-import { EFT_FIELDS, TRAINER_LOGO_BUCKET, logoStoragePath, trainerDisplayName } from "@/lib/trainers";
+import {
+  EFT_FIELDS,
+  REFERRAL_DISCOUNT_PERCENT,
+  TRAINER_LOGO_BUCKET,
+  logoStoragePath,
+  referralRewards,
+  trainerDisplayName,
+  trialDaysLeft,
+  trialLabel,
+} from "@/lib/trainers";
+import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import type { EftDetails } from "@/types/database";
 
-type TabKey = "code" | "details" | "payments" | "account";
+type TabKey = "code" | "refer" | "details" | "payments" | "account";
 
 const TABS: ScreenTab<TabKey>[] = [
   { key: "code", label: "Code & logo", icon: "qr-code" },
+  { key: "refer", label: "Refer", icon: "gift" },
   { key: "details", label: "Details", icon: "person" },
   { key: "payments", label: "Payments", icon: "card" },
   { key: "account", label: "Account", icon: "settings" },
@@ -41,8 +52,25 @@ export default function TrainerProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [tab, setTab] = useState<TabKey>("code");
+  // Trainers who signed up with this trainer's code (0060).
+  const [referrals, setReferrals] = useState<{ name: string; approved: boolean }[]>([]);
+
+  useEffect(() => {
+    if (!trainer || trainer.is_owner) return;
+    supabase.rpc("my_referrals").then(({ data }) => setReferrals(data ?? []));
+  }, [trainer?.id, tab]);
 
   if (!trainer) return null;
+  const tabs = trainer.is_owner ? TABS.filter((t) => t.key !== "refer") : TABS;
+  const today = todayIso();
+  const trial = trialLabel(trainer.trial_ends_at, today);
+  const trialLeft = trialDaysLeft(trainer.trial_ends_at, today);
+  const rewards = referralRewards(referrals.filter((r) => r.approved).length, trainer.referral_credits_used);
+
+  const shareReferral = () =>
+    Share.share({
+      message: `I coach my clients on the Daily Evolution app. Sign up as a trainer and enter my referral code ${trainer.join_code} to get a free 2-week trial.`,
+    });
   const displayName = trainerDisplayName(trainer);
 
   const shareCode = () =>
@@ -119,7 +147,7 @@ export default function TrainerProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenTabBar tabs={TABS} current={tab} onChange={setTab} position="top" />
+      <ScreenTabBar tabs={tabs} current={tab} onChange={setTab} position="top" />
       <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         {tab === "code" && (
           <>
@@ -141,6 +169,56 @@ export default function TrainerProfileScreen() {
                 <Text style={styles.secondaryButtonText}>Share my code</Text>
               </Pressable>
             </View>
+          </>
+        )}
+        {tab === "refer" && (
+          <>
+            {trial ? (
+              <View style={[styles.trialBox, trialLeft !== null && trialLeft < 0 && { borderColor: "#F59E0B" }]}>
+                <Text style={styles.trialTitle}>{trial}</Text>
+                <Text style={styles.hint}>
+                  {trialLeft !== null && trialLeft < 0
+                    ? "Your access stays on while we sort out your plan."
+                    : "Try everything free. We'll remind you before it ends."}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.codeBox}>
+              <Text style={styles.label}>Your referral code</Text>
+              <Text style={styles.code}>{trainer.join_code}</Text>
+              <Text style={[styles.hint, { textAlign: "center" }]}>
+                Another trainer enters this when they sign up. For each one who joins, you get {REFERRAL_DISCOUNT_PERCENT}% off a
+                month. 4 referrals = a free month.
+              </Text>
+              <Pressable style={styles.secondaryButton} onPress={shareReferral}>
+                <Text style={styles.secondaryButtonText}>Share with a trainer</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.rewardRow}>
+              <View style={styles.rewardStat}>
+                <Text style={styles.rewardNumber}>{rewards.earned}</Text>
+                <Text style={styles.hint}>referrals</Text>
+              </View>
+              <View style={styles.rewardStat}>
+                <Text style={styles.rewardNumber}>{rewards.unusedPercent}%</Text>
+                <Text style={styles.hint}>off to use</Text>
+              </View>
+              <View style={styles.rewardStat}>
+                <Text style={styles.rewardNumber}>{rewards.freeMonths}</Text>
+                <Text style={styles.hint}>free month{rewards.freeMonths === 1 ? "" : "s"}</Text>
+              </View>
+            </View>
+            {referrals.length > 0 ? <Text style={styles.sectionHeading}>Trainers you referred</Text> : null}
+            {referrals.map((r, i) => (
+              <View key={`${r.name}-${i}`} style={styles.referralRow}>
+                <Text style={styles.readOnly}>{r.name}</Text>
+                <Text style={[styles.hint, { color: r.approved ? "#22C55E" : "#F59E0B" }]}>
+                  {r.approved ? `+${REFERRAL_DISCOUNT_PERCENT}%` : "Waiting for approval"}
+                </Text>
+              </View>
+            ))}
           </>
         )}
         {tab === "details" && (
@@ -211,6 +289,12 @@ const styles = StyleSheet.create({
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   secondaryButton: { borderColor: "#22C55E", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   secondaryButtonText: { color: "#22C55E", fontWeight: "700" },
+  trialBox: { backgroundColor: "#1E293B", borderRadius: 12, borderWidth: 1, borderColor: "#22C55E", padding: 14, marginBottom: 14 },
+  trialTitle: { color: "#fff", fontSize: 17, fontWeight: "800" },
+  rewardRow: { flexDirection: "row", gap: 10, marginTop: 6 },
+  rewardStat: { flex: 1, backgroundColor: "#1E293B", borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  rewardNumber: { color: "#fff", fontSize: 22, fontWeight: "800" },
+  referralRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
   logout: { alignItems: "center", marginTop: 24 },
   logoutText: { color: "#64748B", fontSize: 14, fontWeight: "600" },
 });
