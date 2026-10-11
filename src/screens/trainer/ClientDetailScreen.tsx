@@ -12,6 +12,8 @@ import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
+import TrainerTrainingLog from "@/components/TrainerTrainingLog";
+import { trainingLogStart } from "@/lib/trainingLog";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
@@ -38,12 +40,6 @@ function describeDays(activeDays: number[]) {
     .map((d) => DAY_LABELS[d])
     .join(" ");
 }
-
-const EFFORT_LABEL: Record<string, string> = {
-  comfortable: "Comfortable",
-  close_to_failure: "Close to failure",
-  failure: "Failure",
-};
 
 type TabKey = "overview" | "checkins" | "habits" | "training" | "photos" | "notes";
 
@@ -144,9 +140,10 @@ export default function ClientDetailScreen({ route }: Props) {
           .from("workout_logs")
           .select("*")
           .eq("client_id", clientId)
+          .gte("log_date", trainingLogStart(todayIso()))
           .order("log_date", { ascending: false })
           .order("set_number", { ascending: true })
-          .limit(30),
+          .limit(1000),
       ]);
       if (clientRow) setClient(clientRow);
       setCheckins(checkinRows ?? []);
@@ -517,19 +514,8 @@ export default function ClientDetailScreen({ route }: Props) {
                 accessibilityLabel="Full workout video library"
               />
             </View>
-            <Text style={styles.sectionHeading}>Recent training log</Text>
-            {workoutLogs.length === 0 && <Text style={styles.helper}>No sets logged yet.</Text>}
-            {workoutLogs.map((w) => (
-              <View key={w.id} style={styles.workoutRow}>
-                <Text style={styles.workoutExercise}>
-                  {w.exercise_name} - Set {w.set_number}
-                </Text>
-                <Text style={styles.workoutDetail}>
-                  {w.log_date} · {w.weight_kg ? `${w.weight_kg}kg x ` : ""}
-                  {w.reps} reps · {EFFORT_LABEL[w.effort] ?? w.effort}
-                </Text>
-              </View>
-            ))}
+            <Text style={styles.sectionHeading}>Training log, last 2 weeks</Text>
+            <TrainerTrainingLog logs={workoutLogs} />
           </>
         )}
         {tab === "photos" && (
@@ -657,9 +643,6 @@ const styles = StyleSheet.create({
   checkinDate: { color: "#fff", fontWeight: "600" },
   distressText: { color: "#F87171", fontSize: 13, marginTop: 4, fontWeight: "600" },
   checkinDetail: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
-  workoutRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
-  workoutExercise: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  workoutDetail: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   habitRow: {
     flexDirection: "row",
     alignItems: "center",
