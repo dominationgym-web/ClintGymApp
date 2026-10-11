@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: NAVY },
   content: { flexGrow: 1, padding: 24, paddingBottom: 32 },
   centred: { flexGrow: 1, justifyContent: "center" },
-  logo: { width: 150, height: 150, alignSelf: "center", marginBottom: 8 },
+  logo: { width: 170, height: 170, alignSelf: "center", marginBottom: 8 },
   kicker: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", letterSpacing: 4, textAlign: "center", marginBottom: 14 },
   heroQuestion: { color: "#fff", fontSize: 28, fontWeight: "800", lineHeight: 36, textAlign: "center" },
   heroFollowUp: { color: "#CBD5E1", fontSize: 16, lineHeight: 24, textAlign: "center", marginTop: 16 },
