@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";
+import { MUSCLE_NOT_WEIGHT, SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";
 import { BRAND_GOLD } from "@/lib/brand";
 
 // The "how to do it properly" guide for one exercise: where to feel it, the
@@ -9,6 +9,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 export function ExerciseGuideContent({ technique }: { technique: ExerciseTechnique }) {
   return (
     <View>
+      <MuscleNotWeight />
       <Text style={styles.feel}>
         <Text style={styles.feelLabel}>Feel it in: </Text>
         {technique.feel}
@@ -33,6 +34,15 @@ export function ExerciseGuideContent({ technique }: { technique: ExerciseTechniq
         </Text>
       ))}
       <Text style={styles.safety}>{SAFETY_NOTE}</Text>
+    </View>
+  );
+}
+
+// GRIZZ's reminder for every set.
+export function MuscleNotWeight() {
+  return (
+    <View style={styles.rule}>
+      <Text style={styles.ruleText}>🎯 {MUSCLE_NOT_WEIGHT}</Text>
     </View>
   );
 }
@@ -110,5 +120,15 @@ const styles = StyleSheet.create({
   },
   text: { color: "#E2E8F0", fontSize: 15, lineHeight: 22, flex: 1 },
   bullet: { color: "#E2E8F0", fontSize: 15, lineHeight: 22, marginBottom: 6 },
+  rule: {
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND_GOLD,
+    backgroundColor: "#1E293B",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  ruleText: { color: "#F1F5F9", fontSize: 14, lineHeight: 20, fontWeight: "600" },
   safety: { color: "#94A3B8", fontSize: 13, lineHeight: 19, marginTop: 18, fontStyle: "italic" },
 });
