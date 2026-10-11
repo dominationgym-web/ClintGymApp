@@ -312,6 +312,16 @@ export default function ClientDetailScreen({ route }: Props) {
               </Pressable>
             </View>
             )}
+            {client.intake_responses?.high_stress_or_anxiety === "Yes" && (
+              <View style={styles.stressFlag}>
+                <Text style={styles.stressFlagText}>
+                  ⚠️ On the intake form they said they often feel highly stressed or suffer with anxiety.
+                  {client.sex !== "male" && !client.lifestyle_reset_started_at
+                    ? " The Women's Health Reset could be a good fit: tap Enroll above."
+                    : " Ease them in and keep an eye on sleep and recovery."}
+                </Text>
+              </View>
+            )}
             {client.reset_started_on && client.lifestyle_reset_started_at && (
               <View style={styles.resetNotes}>
                 <Text style={styles.resetTitle}>Her Reset notes</Text>
@@ -571,6 +581,8 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
+  stressFlag: { backgroundColor: "#422006", borderRadius: 10, padding: 12, marginBottom: 12 },
+  stressFlagText: { color: "#FDE68A", fontSize: 13, lineHeight: 18 },
   libraryRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
   libraryTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginBottom: 2 },
   memberSince: { color: BRAND_GOLD, fontSize: 13, fontWeight: "600" },

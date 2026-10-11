@@ -153,6 +153,7 @@ export default function IntakeFormScreen() {
   const [hasHealthCondition, setHasHealthCondition] = useState<boolean | null>(null);
   const [healthDetail, setHealthDetail] = useState("");
   const [smoker, setSmoker] = useState<boolean | null>(null);
+  const [stressed, setStressed] = useState<boolean | null>(null);
   const [caffeineAmount, setCaffeineAmount] = useState("");
   const [lastCaffeineTime, setLastCaffeineTime] = useState("");
 
@@ -193,6 +194,7 @@ export default function IntakeFormScreen() {
       caffeine_amount: caffeineAmount || "Not answered",
       last_caffeine_time: lastCaffeineTime.trim() || "Not answered",
       has_health_condition_or_medication: yn(hasHealthCondition),
+      high_stress_or_anxiety: yn(stressed),
     };
 
     if (!eatsBreakfast) {
@@ -314,6 +316,19 @@ export default function IntakeFormScreen() {
           />
         </View>
       )}
+      <YesNo label="Do you often feel highly stressed, or suffer with anxiety?" value={stressed} onChange={setStressed} />
+      {stressed && (
+        <View style={styles.stressNote}>
+          <Text style={styles.stressNoteText}>
+            {sex === "Female"
+              ? "Thanks for telling us. Our 12-week Women's Health Reset was made for this: it starts gently, calms your stress and sleep first, then builds your training up slowly. Your coach will talk to you about starting it."
+              : "Thanks for telling us. Your coach will build your plan with this in mind: steady training, good sleep and recovery all help bring stress down."}
+          </Text>
+          <Text style={styles.stressNoteSmall}>
+            If it's severe or getting worse, please also speak to your doctor. Training helps, but it isn't a replacement for proper care.
+          </Text>
+        </View>
+      )}
       <YesNo label="Do you smoke or vape?" value={smoker} onChange={setSmoker} />
       <ChoiceField label="Caffeine per day" options={CAFFEINE_AMOUNTS} value={caffeineAmount} onChange={setCaffeineAmount} />
       {caffeineAmount && caffeineAmount !== "None" && (
@@ -331,6 +346,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 8 },
   intro: { color: "#94A3B8", fontSize: 13, lineHeight: 19, marginBottom: 8 },
+  stressNote: { backgroundColor: "#1E293B", borderRadius: 10, borderLeftWidth: 3, borderLeftColor: "#D4AF37", padding: 12, marginBottom: 14 },
+  stressNoteText: { color: "#E2E8F0", fontSize: 13.5, lineHeight: 19 },
+  stressNoteSmall: { color: "#94A3B8", fontSize: 12, lineHeight: 17, marginTop: 6 },
   sectionHeading: { color: "#22C55E", fontWeight: "700", fontSize: 15, marginTop: 22, marginBottom: 10 },
   field: { marginBottom: 16 },
   label: { color: "#E2E8F0", fontSize: 14, marginBottom: 8, lineHeight: 19 },
