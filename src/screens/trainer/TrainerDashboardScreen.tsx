@@ -6,6 +6,7 @@ import { todayIso } from "@/lib/dates";
 import { clientPriority, flagBorderColor } from "@/lib/clientFlags";
 import { needsReply } from "@/lib/coachMessages";
 import { BRAND_GOLD } from "@/lib/brand";
+import NotificationsPrompt from "@/components/NotificationsPrompt";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
@@ -137,6 +138,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
           <Text style={styles.logoutLink}>Log out</Text>
         </Pressable>
       </View>
+      <NotificationsPrompt who="trainer" />
       {waitingSignups > 0 && (
         <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("Clients")}>
           <Text style={styles.suggestionBannerText}>

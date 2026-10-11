@@ -1,3 +1,4 @@
+import NotificationsPrompt from "@/components/NotificationsPrompt";
 import WellbeingQuestions from "@/components/WellbeingQuestions";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -186,6 +187,7 @@ export default function CheckInScreen() {
     const missing = unansweredSections(formFromCheckin(saved));
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <NotificationsPrompt who="client" />
         <CoachMessageCard />
         <SleepReminder />
         <CycleTodayBanner />
@@ -233,6 +235,7 @@ export default function CheckInScreen() {
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
+        <NotificationsPrompt who="client" />
         <CoachMessageCard />
         <SleepReminder />
         <CycleTodayBanner />
