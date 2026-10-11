@@ -21,6 +21,7 @@
     },
     "android": {
       "package": "com.dominationgym.consistentchange",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
@@ -68,7 +69,7 @@
         "projectId": "6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8"
       }
     },
-    "runtimeVersion": "30cf5ac3f228e21f44dd4af864d38e977332dd8d",
+    "runtimeVersion": "2026-10-11-firebase",
     "updates": {
       "url": "https://u.expo.dev/6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8",
       "checkAutomatically": "ON_LOAD",

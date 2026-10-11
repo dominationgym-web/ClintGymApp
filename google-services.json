@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "459929840073",
+    "project_id": "daily-evolution-27b08",
+    "storage_bucket": "daily-evolution-27b08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:459929840073:android:56bb71c1cf7e26eb28a018",
+        "android_client_info": {
+          "package_name": "com.dominationgym.consistentchange"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI49xVcCPlhqmfhbNKJrb7GsyaGGMhB-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
