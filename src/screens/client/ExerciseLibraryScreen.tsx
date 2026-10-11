@@ -33,6 +33,7 @@ import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
 import RestTimer from "@/components/RestTimer";
+import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
 import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import {
@@ -659,6 +660,7 @@ export default function ExerciseLibraryScreen() {
             )}
             <Text style={[styles.sectionHeading, { marginTop: 0 }]}>Log a set</Text>
             <MuscleNotWeight />
+            <EveryRepTips />
             <View style={styles.setRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Weight (kg)</Text>
