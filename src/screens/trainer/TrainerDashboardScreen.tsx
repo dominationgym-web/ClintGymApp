@@ -43,6 +43,26 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     scheduleSuggestionBoxReminder();
   }, [isOwner]);
 
+  // New clients who signed up and are waiting to be activated (0056 also sends
+  // the trainer a phone notification when one signs up).
+  const [waitingSignups, setWaitingSignups] = useState(0);
+
+  const loadWaitingSignups = useCallback(async () => {
+    if (!trainer) return;
+    const { count } = await supabase
+      .from("clients")
+      .select("id", { count: "exact", head: true })
+      .eq("trainer_id", trainer.id)
+      .eq("access_status", "expired")
+      .is("plan_started_at", null);
+    setWaitingSignups(count ?? 0);
+  }, [trainer]);
+
+  useEffect(() => {
+    loadWaitingSignups();
+    return navigation.addListener("focus", loadWaitingSignups);
+  }, [navigation, loadWaitingSignups]);
+
   const loadSuggestionCount = useCallback(async () => {
     if (!isOwner) return;
     const { count } = await supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "new");
@@ -96,6 +116,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    loadWaitingSignups();
     await load();
     setRefreshing(false);
   };
@@ -116,6 +137,14 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
           <Text style={styles.logoutLink}>Log out</Text>
         </Pressable>
       </View>
+      {waitingSignups > 0 && (
+        <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("Clients")}>
+          <Text style={styles.suggestionBannerText}>
+            🆕 {waitingSignups} new client{waitingSignups === 1 ? "" : "s"} waiting to be activated
+          </Text>
+          <Text style={styles.suggestionBannerLink}>Open ›</Text>
+        </Pressable>
+      )}
       {newSuggestions > 0 && (
         <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("SuggestionBox")}>
           <Text style={styles.suggestionBannerText}>

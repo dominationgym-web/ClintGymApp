@@ -40,7 +40,7 @@ export default function LoginScreen({ navigation }: Props) {
       <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Signup")}>
+      <Pressable onPress={() => navigation.navigate("Welcome")}>
         <Text style={styles.link}>New client? Sign up</Text>
       </Pressable>
       <Pressable onPress={() => navigation.navigate("TrainerSignup")}>

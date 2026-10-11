@@ -1,3 +1,4 @@
+import { registerForCoachMessages } from "@/lib/notifications";
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
@@ -56,6 +57,10 @@ export default function RootNavigator() {
 // trainer's payment details (0029) so they can pay and be switched on.
 function PendingAccessScreen() {
   const { signOut, client } = useAuth();
+  // So the client's phone hears the moment their trainer activates them (0056).
+  useEffect(() => {
+    registerForCoachMessages();
+  }, []);
   const [trainer, setTrainer] = useState<Trainer | null>(null);
   const trainerId = client?.trainer_id;
 
@@ -106,6 +111,10 @@ function PendingAccessScreen() {
 // them (0029). The foreground refresh in AuthContext picks up the approval.
 function PendingTrainerScreen() {
   const { signOut, trainer } = useAuth();
+  // So the trainer's phone hears the moment they're approved (0056).
+  useEffect(() => {
+    registerForCoachMessages();
+  }, []);
   return (
     <View style={styles.centered}>
       <Text style={styles.title}>Thanks for applying</Text>
