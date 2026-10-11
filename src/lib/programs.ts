@@ -29,12 +29,12 @@ export function exercisesForDate(
 
 /**
  * The program name a client sees. Built-in programs that come in numbered sets
- * ("Chest & Bi 1" to "Chest & Bi 4") drop the number: it's only for the
+ * ("Chest & Bi 1" to "Chest & Bi 4", "Full Body 3 x week option 1" to 5) drop the number: it's only for the
  * trainer to tell them apart.
  */
 export function displayProgramName(program: Pick<Program, "name" | "trainer_id">): string {
   if (program.trainer_id) return program.name;
-  return program.name.replace(/\s+\d+$/, "");
+  return program.name.replace(/\s+(option\s+)?\d+$/i, "");
 }
 
 /**

@@ -9,22 +9,19 @@ import type { Program, ProgramExercise } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
+import { PROGRAM_FAMILIES, programFamily, type ProgramFamily } from "@/lib/programs";
 
 type Props = TrainerTabScreenProps<"Programs">;
 
-const GROUPS: { title: string; hint: string; match: (p: Program) => boolean }[] = [
-  { title: "Quick programs", hint: "30-40 minutes, for clients short on time.", match: (p) => !p.trainer_id && p.kind === "quick" },
-  { title: "Weekly programs", hint: "A different session each day, repeating every week.", match: (p) => !p.trainer_id && p.kind === "weekly" },
-  { title: "Your programs", hint: "Programs you built. Only you and your clients see these.", match: (p) => !!p.trainer_id },
-];
-
-// Every program a trainer can switch on for a client. Switching one on happens
-// on the client's own screen (Training tab); this tab is for browsing and
-// building.
+// Every program a trainer can switch on for a client, as tap-to-open headings
+// (Full body, Chest & Bi, ...) holding just the program names; tap a name to
+// see its details. Switching one on happens on the client's own screen
+// (Training tab); this tab is for browsing and building.
 export default function ProgramsScreen({ navigation }: Props) {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [exercises, setExercises] = useState<ProgramExercise[]>([]);
   const [open, setOpen] = useState<string | null>(null);
+  const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [place, setPlace] = useState<ExercisePlace>("gym");
@@ -88,32 +85,41 @@ export default function ProgramsScreen({ navigation }: Props) {
         <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} labels={PROGRAM_PLACE_LABELS} />
       </View>
 
-      {GROUPS.map((g) => {
-        const list = programs.filter((p) => p.place === place && g.match(p));
+      {PROGRAM_FAMILIES.map((f) => {
+        const list = programs.filter((p) => p.place === place && programFamily(p) === f.key);
+        if (list.length === 0 && f.key !== "own") return null;
+        const familyOpen = openFamily === f.key;
         return (
-          <View key={g.title}>
-            <Text style={styles.sectionHeading}>{g.title}</Text>
-            <Text style={styles.helper}>{g.hint}</Text>
-            {list.length === 0 && <Text style={styles.helper}>None yet.</Text>}
-            {list.map((p) => (
-              <Pressable key={p.id} style={styles.card} onPress={() => setOpen(open === p.id ? null : p.id)}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.name}>{p.name}</Text>
-                  <Text style={styles.link}>{open === p.id ? "Hide" : "Show"}</Text>
-                </View>
-                {p.description && <Text style={styles.description}>{p.description}</Text>}
-                {open === p.id && (
-                  <>
-                    <ProgramSummary program={p} exercises={exercises.filter((e) => e.program_id === p.id)} />
-                    {p.trainer_id && (
-                      <Pressable onPress={() => remove(p)} hitSlop={8}>
-                        <Text style={styles.delete}>Delete program</Text>
-                      </Pressable>
-                    )}
-                  </>
-                )}
-              </Pressable>
-            ))}
+          <View key={f.key} style={styles.family}>
+            <Pressable style={styles.familyHeader} onPress={() => setOpenFamily(familyOpen ? null : f.key)}>
+              <Text style={styles.familyTitle}>
+                {f.icon} {f.title}
+              </Text>
+              <Text style={styles.count}>
+                {list.length} {familyOpen ? "▲" : "▼"}
+              </Text>
+            </Pressable>
+            {familyOpen && list.length === 0 && <Text style={styles.helper}>None yet. Tap "+ Build a program" above.</Text>}
+            {familyOpen &&
+              list.map((p) => (
+                <Pressable key={p.id} style={styles.card} onPress={() => setOpen(open === p.id ? null : p.id)}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.name}>{p.name}</Text>
+                    <Text style={styles.link}>{open === p.id ? "▲" : "▼"}</Text>
+                  </View>
+                  {open === p.id && (
+                    <>
+                      {p.description && <Text style={styles.description}>{p.description}</Text>}
+                      <ProgramSummary program={p} exercises={exercises.filter((e) => e.program_id === p.id)} />
+                      {p.trainer_id && (
+                        <Pressable onPress={() => remove(p)} hitSlop={8}>
+                          <Text style={styles.delete}>Delete program</Text>
+                        </Pressable>
+                      )}
+                    </>
+                  )}
+                </Pressable>
+              ))}
           </View>
         );
       })}
@@ -127,8 +133,21 @@ const styles = StyleSheet.create({
   buildButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 14, alignItems: "center", marginBottom: 8 },
   buildButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
-  sectionHeading: { color: "#fff", fontSize: 17, fontWeight: "700", marginTop: 16, marginBottom: 2 },
-  card: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 8 },
+  family: { marginTop: 10 },
+  familyHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND_GOLD,
+    padding: 14,
+    marginBottom: 6,
+  },
+  familyTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  count: { color: BRAND_GOLD, fontSize: 14, fontWeight: "700" },
+  card: { backgroundColor: "#0B1220", borderRadius: 10, padding: 12, marginBottom: 6, marginLeft: 10 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   name: { color: "#fff", fontWeight: "700", fontSize: 15, flex: 1 },
   link: { color: BRAND_GOLD, fontSize: 13, fontWeight: "600" },
