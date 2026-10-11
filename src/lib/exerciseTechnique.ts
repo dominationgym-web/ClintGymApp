@@ -19,6 +19,11 @@ export type ExerciseTechnique = {
 
 type Rule = { match: RegExp; technique: ExerciseTechnique };
 
+// GRIZZ's rule for every set, in his words. Shown when logging a set and at
+// the top of every guide.
+export const MUSCLE_NOT_WEIGHT =
+  "If you need to swing, jerk or bounce, the weight is too heavy. We're training to build muscle, not move weight. Focus on the muscle, not the weight.";
+
 // Shown under every guide.
 export const SAFETY_NOTE =
   "A burn in the muscle is good. Sharp or pinching pain in a joint is not: stop, and tell your coach.";

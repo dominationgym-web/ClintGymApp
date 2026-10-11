@@ -27,7 +27,7 @@ import {
 } from "@/lib/exerciseFilter";
 import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
-import ExerciseGuideButton from "@/components/ExerciseGuide";
+import ExerciseGuideButton, { MuscleNotWeight } from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
@@ -625,6 +625,7 @@ export default function ExerciseLibraryScreen() {
                 );
               })()}
             <Text style={[styles.sectionHeading, { marginTop: 0 }]}>Log a set</Text>
+            <MuscleNotWeight />
             <View style={styles.setRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Weight (kg)</Text>

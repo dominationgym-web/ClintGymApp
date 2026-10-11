@@ -51,3 +51,11 @@ describe("exercise technique guides", () => {
     expect(text).not.toContain("hack");
   });
 });
+
+describe("muscle not weight reminder", () => {
+  it("uses GRIZZ's rule", async () => {
+    const { MUSCLE_NOT_WEIGHT } = await import("./exerciseTechnique");
+    expect(MUSCLE_NOT_WEIGHT).toContain("swing, jerk or bounce");
+    expect(MUSCLE_NOT_WEIGHT).toContain("Focus on the muscle, not the weight.");
+  });
+});
