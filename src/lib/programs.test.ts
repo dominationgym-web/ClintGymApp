@@ -78,6 +78,7 @@ describe("displayProgramName", () => {
   it("drops the set number from built-in programs only", () => {
     expect(displayProgramName({ name: "Chest & Bi 1", trainer_id: null })).toBe("Chest & Bi");
     expect(displayProgramName({ name: "Legs 4", trainer_id: null })).toBe("Legs");
+    expect(displayProgramName({ name: "Full Body 3 x week option 2", trainer_id: null })).toBe("Full Body 3 x week");
     expect(displayProgramName({ name: "Quick full body (35 min)", trainer_id: null })).toBe("Quick full body (35 min)");
     expect(displayProgramName({ name: "Phase 2", trainer_id: "t1" })).toBe("Phase 2");
   });
