@@ -6,6 +6,7 @@ import { matchesAll, searchPages, searchWords, TRAINER_PAGES } from "@/lib/appSe
 import { filterExercises } from "@/lib/exerciseFilter";
 import { loadAvailablePrograms } from "@/lib/programQueries";
 import { BRAND_GOLD } from "@/lib/brand";
+import { TRAINER_GUIDES } from "@/lib/trainerGuides";
 import SearchResults, { type SearchGroup } from "@/components/SearchResults";
 import type { Client, Exercise, Program } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
@@ -66,6 +67,21 @@ export default function TrainerSearchScreen({ navigation }: NativeStackScreenPro
         subtitle: [e.category, e.home_friendly ? "Home" : null].filter(Boolean).join(" · "),
         videoUrl: e.external_url,
       })),
+    },
+    {
+      title: "Coaching guides",
+      data: (words.length > 0 ? TRAINER_GUIDES : []).flatMap((g) =>
+        g.topics
+          .filter((t) =>
+            matchesAll(`${g.title} ${t.title} ${t.intro ?? ""} ${t.groups.map((gr) => `${gr.heading} ${gr.points.join(" ")}`).join(" ")}`, words),
+          )
+          .map((t) => ({
+            key: `guide-${g.key}-${t.title}`,
+            title: `${t.icon} ${t.title}`,
+            subtitle: g.title,
+            onPress: () => navigation.navigate("TrainerGuide", { guideKey: g.key }),
+          })),
+      ),
     },
     {
       title: "Pages",

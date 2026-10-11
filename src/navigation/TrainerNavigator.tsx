@@ -13,6 +13,8 @@ import TrainersScreen from "@/screens/trainer/TrainersScreen";
 import ProgramsScreen from "@/screens/trainer/ProgramsScreen";
 import ProgramBuilderScreen from "@/screens/trainer/ProgramBuilderScreen";
 import TrainerSearchScreen from "@/screens/trainer/TrainerSearchScreen";
+import TrainerGuideScreen from "@/screens/trainer/TrainerGuideScreen";
+import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import { useAuth } from "@/context/AuthContext";
@@ -64,6 +66,11 @@ export default function TrainerNavigator() {
         name="ProgramBuilder"
         component={ProgramBuilderScreen}
         options={{ title: "Build a program", headerBackTitle: "Back" }}
+      />
+      <Stack.Screen
+        name="TrainerGuide"
+        component={TrainerGuideScreen}
+        options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
       />
     </Stack.Navigator>
   );
