@@ -4,12 +4,14 @@
 -- variation is one workout done on all three days; the trainer moves a client
 -- on to the next variation when they want a change.
 --
--- The old six-day "Full body week" becomes variation 1 (no client was on it).
+-- The old six-day "Full body week" becomes variation 1 (no client was on it),
+-- and its exercise rows are reused rather than deleted.
 -- Clients see the name without the number: "Full body 3-day".
 
 do $$
 declare
   old_id uuid := (select id from public.programs where trainer_id is null and name = 'Full body week');
+  spare uuid[];
   prog uuid;
   v integer;
   d integer;
@@ -24,19 +26,20 @@ declare
   ]';
   slot jsonb;
   ex_id uuid;
+  reuse uuid;
+  k integer := 0;
 begin
+  select coalesce(array_agg(id order by day_number, sort_order), '{}') into spare from public.program_exercises where program_id = old_id;
+
   for v in 1..5 loop
     if v = 1 and old_id is not null then
       prog := old_id;
-      delete from public.program_exercises where program_id = prog;
     else
       select id into prog from public.programs where trainer_id is null and name = 'Full body 3-day ' || v;
       if prog is null then
         insert into public.programs (trainer_id, name, kind, place)
         values (null, 'Full body 3-day ' || v, 'weekly', 'gym')
         returning id into prog;
-      else
-        delete from public.program_exercises where program_id = prog;
       end if;
     end if;
 
@@ -56,8 +59,17 @@ begin
         if ex_id is null then
           raise exception 'exercise % not in the library', slot ->> 0;
         end if;
-        insert into public.program_exercises (program_id, day_number, sort_order, exercise_id, exercise_name, sets, reps, rest_seconds, kind)
-        values (prog, d, i + 1, ex_id, slot ->> 0, (slot ->> 1)::smallint, slot ->> 2, (slot ->> 3)::smallint, 'exercise');
+        k := k + 1;
+        reuse := spare[k];
+        if reuse is not null then
+          update public.program_exercises
+          set program_id = prog, day_number = d, sort_order = i + 1, exercise_id = ex_id, exercise_name = slot ->> 0,
+              sets = (slot ->> 1)::smallint, reps = slot ->> 2, rest_seconds = (slot ->> 3)::smallint, kind = 'exercise'
+          where id = reuse;
+        else
+          insert into public.program_exercises (program_id, day_number, sort_order, exercise_id, exercise_name, sets, reps, rest_seconds, kind)
+          values (prog, d, i + 1, ex_id, slot ->> 0, (slot ->> 1)::smallint, slot ->> 2, (slot ->> 3)::smallint, 'exercise');
+        end if;
       end loop;
     end loop;
   end loop;

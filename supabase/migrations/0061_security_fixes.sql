@@ -112,7 +112,8 @@ create or replace trigger clients_redirect_trainer_notes
   before update of trainer_notes on public.clients
   for each row execute function public.redirect_trainer_notes();
 
-update public.clients set trainer_notes = null where trainer_notes is not null;
+update public.clients set trainer_notes = null
+where trainer_notes is not null and exists (select 1 from public.client_trainer_notes n where n.client_id = clients.id);
 
 -- 3. Unapproved trainers can't write --------------------------------------
 
@@ -144,7 +145,7 @@ end $$;
 
 -- 4. Clients sign themselves up -------------------------------------------
 
-drop policy if exists "trainer inserts own clients" on public.clients;
+alter policy "trainer inserts own clients" on public.clients with check (false);
 
 -- 5. Client-writable fields -----------------------------------------------
 
