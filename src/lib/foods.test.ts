@@ -29,6 +29,12 @@ describe("meal builder", () => {
     expect(mealTotals([item("Whey protein powder", 1, "scoop")]).protein).toBe(23);
   });
 
+  it("has lean biltong from wet to dry, with more protein the drier it is", () => {
+    const [wet, medium, dry] = ["wet", "medium", "dry"].map((k) => food(`Biltong, lean, ${k}`));
+    expect([wet.protein, medium.protein, dry.protein]).toEqual([35, 50, 70]);
+    expect(mealTotals([item("Biltong, lean, dry", 1, "handful")]).protein).toBe(21);
+  });
+
   it("is zero for an empty meal", () => {
     expect(mealTotals([])).toEqual({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
   });
