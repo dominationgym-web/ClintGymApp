@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
-import { DIET_WEEKDAYS, amountLabel, dailyTarget, dayTotals, normaliseWeek, sumTotals, weekdayIndex, type DietDay } from "@/lib/dietPlan";
+import { DIET_WEEKDAYS, INTAKE_ACTIVITY_LEVELS, intakeDetails, amountLabel, dailyTarget, dayTotals, normaliseWeek, sumTotals, weekdayIndex, type DietDay } from "@/lib/dietPlan";
 import type { ClientDietPlan } from "@/types/database";
 
 // The client's meal plan from their trainer (0071), read-only, in the
 // Nutrition section. Opens on today, one day at a time.
-export default function ClientDietPlanView() {
+function MealPlan() {
   const { client } = useAuth();
   const userId = client?.id;
   const [plan, setPlan] = useState<ClientDietPlan | null>(null);
@@ -90,7 +90,74 @@ export default function ClientDietPlanView() {
   );
 }
 
+// The client's meal plan, with a short form above it for clients who did
+// their intake before it asked height, weight and activity (GRIZZ,
+// 2026-10-12), so their coach's diet planner can work out their BMR.
+export default function ClientDietPlanView() {
+  const { client, refreshProfile } = useAuth();
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [activity, setActivity] = useState("");
+  const [saving, setSaving] = useState(false);
+  const missing = client != null && (() => {
+    const d = intakeDetails(client);
+    return d.height_cm == null || d.weight_kg == null || d.activity == null;
+  })();
+
+  const save = async () => {
+    if (!client) return;
+    const h = Number(height.replace(",", "."));
+    const w = Number(weight.replace(",", "."));
+    if (!(h >= 100 && h <= 250)) return Alert.alert("Your height", "Type your height in centimetres, for example 175.");
+    if (!(w >= 25 && w <= 400)) return Alert.alert("Your weight", "Type your weight in kilograms, for example 82.");
+    if (!activity) return Alert.alert("How active are you?", "Tap the option that fits you best.");
+    setSaving(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({ intake_responses: { ...(client.intake_responses ?? {}), height_cm: String(h), weight_kg: String(w), activity_level: activity } })
+      .eq("id", client.id);
+    setSaving(false);
+    if (error) return Alert.alert("Couldn't save", error.message);
+    await refreshProfile();
+  };
+
+  return (
+    <View>
+      {missing && (
+        <View style={styles.ask}>
+          <Text style={styles.askTitle}>Help your coach plan your meals</Text>
+          <Text style={styles.empty}>Your height, weight and how active you are let your coach work out your daily calories.</Text>
+          <View style={styles.askRow}>
+            <TextInput style={styles.askInput} value={height} onChangeText={setHeight} placeholder="Height (cm)" placeholderTextColor="#64748B" keyboardType="decimal-pad" maxLength={5} />
+            <TextInput style={styles.askInput} value={weight} onChangeText={setWeight} placeholder="Weight (kg)" placeholderTextColor="#64748B" keyboardType="decimal-pad" maxLength={5} />
+          </View>
+          <View style={styles.askChips}>
+            {INTAKE_ACTIVITY_LEVELS.map((a) => (
+              <Pressable key={a.label} style={[styles.dayTab, styles.askChip, activity === a.label && styles.dayTabOn]} onPress={() => setActivity(a.label)}>
+                <Text style={[styles.dayTabText, activity === a.label && styles.dayTabTextOn]}>{a.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {activity ? <Text style={styles.note}>{INTAKE_ACTIVITY_LEVELS.find((a) => a.label === activity)?.detail}</Text> : null}
+          <Pressable style={styles.askSave} onPress={save} disabled={saving}>
+            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.askSaveText}>Send to my coach</Text>}
+          </Pressable>
+        </View>
+      )}
+      <MealPlan />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  ask: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
+  askTitle: { color: "#fff", fontWeight: "800", marginBottom: 4 },
+  askRow: { flexDirection: "row", gap: 8, marginTop: 10 },
+  askInput: { flex: 1, backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 10, fontSize: 14 },
+  askChips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
+  askChip: { flex: 0, paddingHorizontal: 12, backgroundColor: "#1E293B" },
+  askSave: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  askSaveText: { color: "#0F172A", fontWeight: "800" },
   empty: { color: "#94A3B8", fontSize: 14, lineHeight: 20 },
   dayTabs: { flexDirection: "row", gap: 4, marginBottom: 10 },
   dayTab: { flex: 1, backgroundColor: "#0F172A", borderRadius: 8, paddingVertical: 8, alignItems: "center" },

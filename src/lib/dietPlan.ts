@@ -35,6 +35,30 @@ export const ACTIVITY_LEVELS: { factor: number; label: string; detail: string }[
   { factor: 1.725, label: "Very active", detail: "Training 6-7 days a week, or a physical job" },
 ];
 
+/** What the client picks on their intake: everything but "BMR only". */
+export const INTAKE_ACTIVITY_LEVELS = ACTIVITY_LEVELS.filter((a) => a.factor !== 1);
+
+/**
+ * The client's own answers from the intake (height, weight, age, sex and
+ * activity), for filling in the diet planner. Anything missing or out of
+ * range comes back null, for the trainer to type in.
+ */
+export function intakeDetails(client: { intake_responses?: Record<string, unknown> | null; sex?: string | null }) {
+  const answers = client.intake_responses ?? {};
+  const num = (key: string, min: number, max: number) => {
+    const n = Number(String(answers[key] ?? "").replace(",", "."));
+    return Number.isFinite(n) && n >= min && n <= max ? n : null;
+  };
+  const sex: DietSex | null = client.sex === "male" || client.sex === "female" ? client.sex : null;
+  return {
+    weight_kg: num("weight_kg", 25, 400),
+    height_cm: num("height_cm", 100, 250),
+    age: num("age", 12, 100),
+    sex,
+    activity: INTAKE_ACTIVITY_LEVELS.find((a) => a.label === answers.activity_level)?.factor ?? null,
+  };
+}
+
 /** Basal metabolic rate (Mifflin-St Jeor), in kcal a day, or null without the details. */
 export function bmr(plan: Pick<DietPlan, "weight_kg" | "height_cm" | "age" | "sex">): number | null {
   const { weight_kg, height_cm, age, sex } = plan;

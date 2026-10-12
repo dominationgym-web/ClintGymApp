@@ -10,6 +10,7 @@ import {
   dailyNeed,
   dayTotals,
   emptyWeek,
+  intakeDetails,
   normaliseWeek,
   sumTotals,
   targetStatus,
@@ -84,19 +85,25 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
           setLoading(false);
           return;
         }
-        const intakeAge = Number(client.intake_responses?.age);
+        // The client's intake answers fill in anything the trainer hasn't
+        // set; once the trainer changes a number and saves, theirs is used.
+        const intake = intakeDetails(client);
+        const text = (n: number | null | undefined) => (n ? String(n) : "");
         if (data) {
-          setWeight(data.weight_kg ? String(data.weight_kg) : "");
-          setHeight(data.height_cm ? String(data.height_cm) : "");
-          setAge(data.age ? String(data.age) : Number.isFinite(intakeAge) && intakeAge > 0 ? String(intakeAge) : "");
-          setSex(data.sex ?? client.sex ?? null);
+          setWeight(text(data.weight_kg ?? intake.weight_kg));
+          setHeight(text(data.height_cm ?? intake.height_cm));
+          setAge(text(data.age ?? intake.age));
+          setSex(data.sex ?? intake.sex);
           setActivity(Number(data.activity));
           setDirection(data.adjust_kcal > 0 ? "over" : data.adjust_kcal < 0 ? "under" : "same");
           if (data.adjust_kcal) setAdjust(String(Math.abs(data.adjust_kcal)));
           setDays(normaliseWeek(data.days));
         } else {
-          setAge(Number.isFinite(intakeAge) && intakeAge > 0 ? String(intakeAge) : "");
-          setSex(client.sex ?? null);
+          setWeight(text(intake.weight_kg));
+          setHeight(text(intake.height_cm));
+          setAge(text(intake.age));
+          setSex(intake.sex);
+          if (intake.activity) setActivity(intake.activity);
           setTargetOpen(true);
         }
         setLoading(false);
@@ -188,6 +195,11 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
         </Pressable>
         {targetOpen && (
           <View style={{ marginTop: 10 }}>
+            {intakeDetails(client).height_cm != null && (
+              <Text style={[styles.helper, { marginBottom: 8 }]}>
+                Filled in from {client.name}'s intake. Change anything here as they progress, then save.
+              </Text>
+            )}
             <View style={styles.fieldRow}>
               <Field label="Weight (kg)" value={weight} onChange={change(setWeight)} />
               <Field label="Height (cm)" value={height} onChange={change(setHeight)} />
