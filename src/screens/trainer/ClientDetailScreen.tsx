@@ -19,6 +19,7 @@ import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStre
 import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import DietPlanner from "@/components/DietPlanner";
+import WorkoutsSavedButton from "@/components/WorkoutsSavedButton";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import WellbeingReports from "@/components/WellbeingReports";
 import { reportedTopics } from "@/lib/wellbeing";
@@ -544,6 +545,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             </View>
             <ClientProgramPicker clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             <ClientCalendarCard clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
+            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Full workout video library</Text>
