@@ -100,7 +100,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Menu ☰ → Nutrition",
       points: [
         "Start with the hand portion guide: an easy way to eat well without counting.",
-        "Work out your own meal plan: choose your meal times, training time and goal, and the app builds a balanced day around your BMR. Don't like a food? Tap Swap and it keeps the same protein or carbs.",
+        "Work out your own meal plan: type your height, weight, age and activity, pick your goal, how many meals you eat, when you train and whether you eat meat, and the app builds your day around your BMR. Losing weight is low carb; otherwise the carbs sit around your training. A protein snack (biltong) is added to help you reach your protein. Don't like a food? Tap Swap and it keeps the same protein or carbs.",
         "If your coach builds you a diet, it shows here too.",
         "Read Understanding Carbs and Understanding Insulin to see why carbs are timed around training.",
         "The calorie calculator adds up any meal if you like to count.",
