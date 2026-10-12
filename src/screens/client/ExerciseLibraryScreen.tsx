@@ -31,9 +31,11 @@ import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, typ
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import ExerciseGuideButton, { MuscleNotWeight } from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
-import { todayIso } from "@/lib/dates";
+import { todayIso, toIsoDate } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
-import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
+import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession } from "@/types/database";
+import WorkoutReasonModal from "@/components/WorkoutReasonModal";
+import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
 import RestTimer from "@/components/RestTimer";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
@@ -98,6 +100,9 @@ export default function ExerciseLibraryScreen() {
   // A workout the trainer put on today's calendar (0069) replaces the program for the day.
   const [calendarToday, setCalendarToday] = useState(false);
   const [pace, setPace] = useState<WorkoutPace>("planned");
+  // How today's workout went, once the client has finished it (0076).
+  const [todaySession, setTodaySession] = useState<WorkoutSession | null>(null);
+  const [reasonFor, setReasonFor] = useState<"partial" | "missed" | null>(null);
   // Every set logged today, to tick off the program and spot warm-ups.
   const [allTodaysSets, setAllTodaysSets] = useState<WorkoutLog[]>([]);
   // The program line for the exercise that's open, if it came from the program.
@@ -146,7 +151,7 @@ export default function ExerciseLibraryScreen() {
   useEffect(() => {
     const load = async () => {
       loadedFor.current = todayIso();
-      const [{ data, error }, active, calendar, { data: logged }, todaysSwaps] = await Promise.all([
+      const [{ data, error }, active, calendar, { data: logged }, todaysSwaps, { data: sessionRow }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         client ? loadClientProgram(client.id) : Promise.resolve(null),
         client ? loadCalendarWorkoutFor(client.id, todayIso()) : Promise.resolve(null),
@@ -154,7 +159,11 @@ export default function ExerciseLibraryScreen() {
           ? supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso())
           : Promise.resolve({ data: [] as WorkoutLog[] }),
         getExerciseSwaps(todayIso()),
+        client
+          ? supabase.from("workout_sessions").select("*").eq("client_id", client.id).eq("session_date", todayIso()).maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
+      setTodaySession(sessionRow ?? null);
       setSwaps(todaysSwaps);
       setCardioDone(await getCardioDone(todayIso()));
       if (!error && data) setExercises(data);
@@ -300,21 +309,87 @@ export default function ExerciseLibraryScreen() {
     setProgram({ ...program, assignment: { ...program.assignment, current_week: week, current_day: day, due_on: next.dueOn } });
   };
 
-  const completeSession = () => {
-    if (!program || !session) return;
-    const title = sessionTitle(program.program, session.day);
-    Alert.alert(`Finished ${title}?`, "Your next workout unlocks on your next training day.", [
+  // Complete workout: green when every set and cardio block is done, else
+  // orange with a reason for the coach. Couldn't train: red with a reason.
+  // Either way a weekly program moves on as before (0037).
+  const workoutTitle = () =>
+    !program ? "" : session ? sessionTitle(program.program, session.day) : calendarToday ? displayProgramName(program.program) : dayTitle(program.program, new Date());
+
+  const recordSession = async (status: "complete" | "partial" | "missed", reason: string | null) => {
+    if (!client) return null;
+    const planned = todaysWorkout.reduce((t, r) => t + r.sets, 0);
+    const done = todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0);
+    let improvements: ReturnType<typeof findImprovements> = [];
+    if (status !== "missed" && allTodaysSets.length > 0) {
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+      const { data: earlier } = await supabase
+        .from("workout_logs")
+        .select("*")
+        .eq("client_id", client.id)
+        .gte("log_date", toIsoDate(since))
+        .lt("log_date", today)
+        .in("exercise_name", [...new Set(allTodaysSets.map((s) => s.exercise_name))])
+        .limit(2000);
+      improvements = findImprovements(allTodaysSets, earlier ?? []);
+    }
+    setSavingProgress(true);
+    const { data, error } = await supabase.rpc("record_workout_session", {
+      p_title: workoutTitle(),
+      p_status: status,
+      p_sets_done: done,
+      p_sets_planned: planned,
+      p_reason: reason,
+      p_improvements: improvements,
+    });
+    setSavingProgress(false);
+    if (error || !data) {
+      Alert.alert("Couldn't save", error?.message ?? "Please try again.");
+      return null;
+    }
+    setTodaySession(data);
+    return data;
+  };
+
+  const afterRecorded = async (saved: WorkoutSession) => {
+    if (session && sessionDue) {
+      if (saved.status === "missed") await saveProgress(sessionMovedToTomorrow(session, today), false);
+      else await saveProgress(sessionAfterComplete(session, days, today), true);
+    }
+    const star = saved.improvements.length
+      ? `\n\n⭐ Gold star! You pushed up: ${saved.improvements.map((i) => `${i.exercise} ${i.before} → ${i.after}`).join(", ")}.`
+      : "";
+    if (saved.status === "complete") Alert.alert("Workout complete ✅", `Great work.${star}`);
+    else Alert.alert("Thanks for letting your coach know", saved.status === "partial" ? `Every set counts.${star}` : "Rest up and look after yourself.");
+  };
+
+  const completeWorkout = () => {
+    if (!program) return;
+    const planned = todaysWorkout.reduce((t, r) => t + r.sets, 0);
+    const done = todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0);
+    if (sessionStatus(done, planned) === "partial") {
+      setReasonFor("partial");
+      return;
+    }
+    const next = session && sessionDue ? " Your next workout unlocks on your next training day." : "";
+    Alert.alert(`Finished ${workoutTitle()}?`, `Every set is done.${next}`, [
       { text: "Not yet", style: "cancel" },
-      { text: "Complete", onPress: () => saveProgress(sessionAfterComplete(session, days, today), true) },
+      {
+        text: "Complete",
+        onPress: async () => {
+          const saved = await recordSession("complete", null);
+          if (saved) afterRecorded(saved);
+        },
+      },
     ]);
   };
 
-  const moveSession = () => {
-    if (!session) return;
-    Alert.alert("Move this workout to tomorrow?", "It stays your next workout until you complete it.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Move it", onPress: () => saveProgress(sessionMovedToTomorrow(session, today), false) },
-    ]);
+  const sendReason = async (reason: string) => {
+    if (!reasonFor) return;
+    const saved = await recordSession(reasonFor, reason);
+    if (!saved) return;
+    setReasonFor(null);
+    afterRecorded(saved);
   };
   const categoryById = new Map(exercises.map((e) => [e.id, e.category]));
   const categoriesLoggedToday = allTodaysSets.map((s) => (s.exercise_id ? categoryById.get(s.exercise_id) ?? null : null));
@@ -454,7 +529,7 @@ export default function ExerciseLibraryScreen() {
           { text: "Next exercise", onPress: () => openProgramExercise(next) },
         ]);
       } else {
-        const finish = session && sessionDue ? " Tap Complete workout to unlock your next session." : " Great work.";
+        const finish = session && sessionDue ? " Tap Complete workout to unlock your next session." : " Tap Complete workout so your coach sees it.";
         Alert.alert("Workout done 💪", `That's every exercise.${finish}`, [{ text: "OK", onPress: () => setSelected(null) }]);
       }
     }
@@ -573,14 +648,33 @@ export default function ExerciseLibraryScreen() {
                       </Pressable>
                     );
                   })}
-                {session && sessionDue && (
+                {todaySession && (
+                  <View style={[styles.sessionResult, { borderColor: SESSION_COLORS[todaySession.status] }]}>
+                    <View style={styles.nameRow}>
+                      <View style={[styles.resultDot, { backgroundColor: SESSION_COLORS[todaySession.status] }]} />
+                      <Text style={styles.resultTitle}>
+                        {SESSION_LABELS[todaySession.status]} today
+                        {todaySession.status !== "missed" ? ` · ${todaySession.sets_done}/${todaySession.sets_planned} sets` : ""}
+                      </Text>
+                    </View>
+                    {todaySession.reason ? <Text style={styles.howToText}>{todaySession.reason}</Text> : null}
+                    {todaySession.improvements.map((i) => (
+                      <Text key={i.exercise} style={styles.starLine}>
+                        ⭐ {i.exercise}: {i.before} → {i.after}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+                {todaysWorkout.length > 0 && todaySession?.status !== "complete" && (
                   <View style={styles.sessionButtons}>
-                    <Pressable style={styles.completeButton} onPress={completeSession} disabled={savingProgress}>
+                    <Pressable style={styles.completeButton} onPress={completeWorkout} disabled={savingProgress}>
                       <Text style={styles.completeText}>Complete workout</Text>
                     </Pressable>
-                    <Pressable style={styles.moveButton} onPress={moveSession} disabled={savingProgress}>
-                      <Text style={styles.moveText}>Move to tomorrow</Text>
-                    </Pressable>
+                    {!todaySession && (
+                      <Pressable style={styles.moveButton} onPress={() => setReasonFor("missed")} disabled={savingProgress}>
+                        <Text style={styles.moveText}>{session && sessionDue ? "Move to tomorrow" : "Couldn't train today"}</Text>
+                      </Pressable>
+                    )}
                   </View>
                 )}
               </View>
@@ -638,6 +732,14 @@ export default function ExerciseLibraryScreen() {
         )}
       />
 
+      <WorkoutReasonModal
+        kind={reasonFor}
+        done={todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0)}
+        planned={todaysWorkout.reduce((t, r) => t + r.sets, 0)}
+        saving={savingProgress}
+        onCancel={() => setReasonFor(null)}
+        onSend={sendReason}
+      />
       <Modal visible={!!swapping} animationType="slide" onRequestClose={() => setSwapping(null)}>
         <KeyboardSafe>
         <SafeAreaView style={styles.modalContainer}>
@@ -935,6 +1037,10 @@ const styles = StyleSheet.create({
   howToTitle: { color: BRAND_GOLD, fontWeight: "700", fontSize: 12, marginBottom: 4 },
   howToText: { color: "#E2E8F0", fontSize: 13 },
   sessionButtons: { flexDirection: "row", gap: 8, marginTop: 10 },
+  sessionResult: { borderWidth: 1.5, borderRadius: 10, padding: 10, marginTop: 10, gap: 4 },
+  resultDot: { width: 12, height: 12, borderRadius: 6 },
+  resultTitle: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  starLine: { color: STAR_GOLD, fontWeight: "700", fontSize: 13 },
   completeButton: { flex: 1, backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 10, alignItems: "center" },
   completeText: { color: "#0F172A", fontWeight: "800" },
   moveButton: { flex: 1, borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 10, alignItems: "center" },

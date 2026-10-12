@@ -15,6 +15,8 @@ import {
   type CalendarMonth,
 } from "@/lib/trainingCalendar";
 import TrainingCalendar from "@/components/TrainingCalendar";
+import WorkoutSessionResult from "@/components/WorkoutSessionResult";
+import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import ProgramSummary from "@/components/ProgramSummary";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
@@ -102,9 +104,14 @@ export default function ClientCalendarCard({
     loadSelectedExercises();
   }, [loadSelectedExercises]);
 
+  // Dots and gold stars for how each day's workout went (0076).
+  const range = monthRange(month);
+  const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
+
   const pressDay = (date: string) => {
     setSelected(date);
-    if (!entryOn(date)) setPicking(date);
+    // A day the client already trained shows how it went instead of the picker.
+    if (!entryOn(date) && !sessions[date]) setPicking(date);
   };
 
   const choose = async (program: Program) => {
@@ -167,17 +174,33 @@ export default function ClientCalendarCard({
       <Text style={styles.title}>📅 Training calendar</Text>
       <Text style={styles.helper}>
         Tap a day to give {clientName} a workout. On those days it replaces their program. Used workouts show in red so you
-        don't repeat one by accident.
+        don't repeat one by accident. A green dot means they finished the workout, orange partly, red couldn't train, and ⭐
+        means they pushed their weights up. Tap the day to see.
       </Text>
       {loading ? (
         <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
       ) : (
-        <TrainingCalendar month={month} onChangeMonth={setMonth} labels={labels} today={today} selected={selected} onPressDay={pressDay} />
+        <TrainingCalendar
+          month={month}
+          onChangeMonth={setMonth}
+          labels={labels}
+          today={today}
+          selected={selected}
+          onPressDay={pressDay}
+          marks={marks}
+        />
+      )}
+      {selected && sessions[selected] && !(selectedEntry && selectedProgram) && (
+        <View style={styles.dayBox}>
+          <Text style={styles.dayTitle}>{dayHeading(selected)}</Text>
+          <WorkoutSessionResult session={sessions[selected]} />
+        </View>
       )}
       {selectedEntry && selectedProgram && (
         <View style={styles.dayBox}>
           <Text style={styles.dayTitle}>{dayHeading(selectedEntry.workout_date)}</Text>
           <Text style={styles.dayWorkout}>{selectedProgram.name}</Text>
+          {sessions[selectedEntry.workout_date] && <WorkoutSessionResult session={sessions[selectedEntry.workout_date]} />}
           <ProgramSummary program={selectedProgram} exercises={selectedExercises} onPressExercise={setChanging} />
           <View style={styles.dayButtons}>
             <Pressable style={styles.changeButton} onPress={() => setPicking(selectedEntry.workout_date)}>

@@ -14,6 +14,7 @@ import ClientProgramPicker from "@/components/ClientProgramPicker";
 import ClientCalendarCard from "@/components/ClientCalendarCard";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
+import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { trainingLogStart } from "@/lib/trainingLog";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -109,6 +110,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   // Problems not yet fixed (0075): red dot while one is open, orange while
   // they're all being fixed.
   const [problems, setProblems] = useState<ClientProblem[]>([]);
+  // How each workout in the training log went, with gold stars (0076).
+  const { byDate: workoutSessions } = useWorkoutSessions(clientId, trainingLogStart(todayIso()), todayIso());
   const reloadProblems = async () => {
     const { data } = await supabase
       .from("client_problems")
@@ -541,7 +544,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               />
             </View>
             <Text style={styles.sectionHeading}>Training log, last 2 weeks</Text>
-            <TrainerTrainingLog logs={workoutLogs} />
+            <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
           </>
         )}
         {tab === "diet" && <DietPlanner client={client} onDirtyChange={setDietDirty} />}

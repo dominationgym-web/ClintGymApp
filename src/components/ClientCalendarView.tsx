@@ -7,6 +7,8 @@ import { displayProgramName } from "@/lib/programs";
 import { loadCalendarWorkouts } from "@/lib/programQueries";
 import { monthOf, monthRange, shortWorkoutName, type CalendarMonth } from "@/lib/trainingCalendar";
 import TrainingCalendar from "@/components/TrainingCalendar";
+import WorkoutSessionResult from "@/components/WorkoutSessionResult";
+import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import type { ClientCalendarWorkout, Program } from "@/types/database";
 
 // The client's own training calendar (0069), read-only, under a tap-to-open
@@ -42,6 +44,9 @@ export default function ClientCalendarView({ clientId }: { clientId: string }) {
     });
   }, [clientId, month]);
 
+  const range = monthRange(month);
+  const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
+
   if (!hasAny) return null;
 
   const labels: Record<string, string> = {};
@@ -67,7 +72,9 @@ export default function ClientCalendarView({ clientId }: { clientId: string }) {
             today={today}
             selected={selected}
             onPressDay={setSelected}
+            marks={marks}
           />
+          {selected && sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
           <Text style={styles.helper}>
             {selected
               ? pickedProgram

@@ -223,6 +223,23 @@ export type CoachMessage = {
   read_at: string | null;
 }
 
+// How a client's workout went that day (0076): see src/lib/workoutSessions.ts.
+export type WorkoutSessionStatus = "complete" | "partial" | "missed";
+export type WorkoutSession = {
+  id: string;
+  client_id: string;
+  session_date: string;
+  title: string;
+  status: WorkoutSessionStatus;
+  sets_done: number;
+  sets_planned: number;
+  reason: string | null;
+  improvements: { exercise: string; before: string; after: string }[];
+  star: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // A problem a client raised: a body-and-mind report on a check-in or a red /
 // orange flag (0075). The trainer moves it open -> fixing -> fixed.
 export type ClientProblemTopic = "pain" | "fatigue" | "mental" | "flag";
@@ -537,6 +554,12 @@ export interface Database {
         Update: Partial<ClientTrainerNotes>;
         Relationships: [];
       };
+      workout_sessions: {
+        Row: WorkoutSession;
+        Insert: Partial<WorkoutSession>;
+        Update: Partial<WorkoutSession>;
+        Relationships: [];
+      };
       client_problems: {
         Row: ClientProblem;
         Insert: Partial<ClientProblem>;
@@ -610,6 +633,17 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      record_workout_session: {
+        Args: {
+          p_title: string;
+          p_status: WorkoutSessionStatus;
+          p_sets_done: number;
+          p_sets_planned: number;
+          p_reason?: string | null;
+          p_improvements?: { exercise: string; before: string; after: string }[];
+        };
+        Returns: WorkoutSession;
+      };
       set_client_problem_status: {
         Args: { p_client: string; p_status: "fixing" | "fixed"; p_problem?: string };
         Returns: undefined;
