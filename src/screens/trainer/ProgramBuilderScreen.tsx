@@ -23,7 +23,6 @@ import {
   CARDIO_ALL,
   CARDIO_CUSTOM,
   CARDIO_OPTIONS,
-  CARDIO_SECONDS,
   cardioDuration,
   DEFAULT_WARM_UP,
   resizeExercises,
@@ -38,6 +37,7 @@ import {
 } from "@/lib/programs";
 import { clearProgramDraft, loadProgramDraft, saveProgramDraft } from "@/lib/programDraft";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import CardioDurationPicker from "@/components/CardioDurationPicker";
 import type { Exercise } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 
@@ -478,17 +478,7 @@ function CardioSlot({
       {!custom && (
         <>
           <Text style={styles.label}>How long</Text>
-          <View style={styles.chipRow}>
-            {CARDIO_SECONDS.map((sec) => (
-              <Pressable
-                key={sec}
-                style={[styles.chip, slot.reps === cardioDuration(sec) && styles.chipOn]}
-                onPress={() => onChange({ reps: cardioDuration(sec) })}
-              >
-                <Text style={[styles.chipText, slot.reps === cardioDuration(sec) && styles.chipTextOn]}>{sec}s</Text>
-              </Pressable>
-            ))}
-          </View>
+          <CardioDurationPicker value={slot.reps} onChange={(reps) => onChange({ reps })} />
         </>
       )}
       {isLast && (
