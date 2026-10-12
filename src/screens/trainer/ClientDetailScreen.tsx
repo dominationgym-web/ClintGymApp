@@ -8,6 +8,7 @@ import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
 import { useAuth } from "@/context/AuthContext";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
+import ClientFormVideos from "@/components/ClientFormVideos";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
@@ -523,6 +524,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {tab === "training" && (
           <>
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
+            {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
             <View style={{ marginTop: 12 }}>
               <Text style={styles.libraryTitle}>Trains at</Text>
               <Text style={[styles.helper, { marginBottom: 8 }]}>
