@@ -1,18 +1,17 @@
-import { reportedTopics } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { clientsWhoTrainedYesterday, loadRecoveryCheck } from "@/lib/recoveryQueries";
 import { recoveryHandled } from "@/lib/recovery";
-import { clientPriority, flagBorderColor } from "@/lib/clientFlags";
-import { needsReply } from "@/lib/coachMessages";
+import { clientPriority } from "@/lib/clientFlags";
+import { problemColor, problemLevel, problemLine, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
 import { BRAND_GOLD } from "@/lib/brand";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
-import type { Checkin, Client } from "@/types/database";
+import type { Checkin, Client, ClientProblem } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 
 type Props = TrainerTabScreenProps<"Dashboard">;
@@ -21,11 +20,15 @@ interface ClientStatus {
   client: Client;
   todaysCheckin: Checkin | null;
   distressFlag: boolean;
+  // Problems not yet fixed (0075), and the dot they give: red while one is
+  // open, orange while they're all being fixed.
+  problems: ClientProblem[];
+  level: ProblemLevel;
 }
 
 const priority = (r: ClientStatus): number =>
   clientPriority({
-    statusFlag: r.client.status_flag,
+    statusFlag: r.level ?? "green",
     distressFlag: r.distressFlag,
     hasCheckedInToday: r.todaysCheckin !== null,
   });
@@ -124,11 +127,22 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       .eq("checkin_date", todayIso())
       .in("client_id", clients.map((c) => c.id));
 
+    const { data: problemRows } = await supabase
+      .from("client_problems")
+      .select("*")
+      .neq("status", "fixed")
+      .in("client_id", clients.map((c) => c.id))
+      .order("created_at", { ascending: true });
+
     const checkinByClient = new Map((checkins ?? []).map((c) => [c.client_id, c]));
+    const problemsByClient = unfixedByClient(problemRows ?? []);
 
     const result: ClientStatus[] = clients.map((client) => {
       const todaysCheckin = checkinByClient.get(client.id) ?? null;
-      return { client, todaysCheckin, distressFlag: todaysCheckin?.distress_flag ?? false };
+      const problems = problemsByClient.get(client.id) ?? [];
+      const level = problemLevel(problems);
+      // Today's report only lifts the client up the list while it's still new.
+      return { client, todaysCheckin, problems, level, distressFlag: level === "red" && (todaysCheckin?.distress_flag ?? false) };
     });
 
     result.sort((a, b) => priority(a) - priority(b));
@@ -139,6 +153,17 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, [load]);
+
+  // The row's buttons move all of the client's problems at once; the
+  // client's page has a button per problem.
+  const [updating, setUpdating] = useState<string | null>(null);
+  const setProblemStatus = async (clientId: string, status: "fixing" | "fixed") => {
+    setUpdating(clientId);
+    const { error } = await supabase.rpc("set_client_problem_status", { p_client: clientId, p_status: status });
+    if (error) Alert.alert("Couldn't update", error.message);
+    await load();
+    setUpdating(null);
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -200,7 +225,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
         keyExtractor={(r) => r.client.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => {
-          const borderColor = flagBorderColor(item.client.status_flag);
+          const borderColor = problemColor(item.level);
           return (
             <Pressable
               style={[styles.row, borderColor && { borderWidth: 1.5, borderColor }]}
@@ -208,31 +233,47 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
             >
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
-                  {item.client.status_flag === "red" && <Text style={styles.flagIcon}>🚩</Text>}
-                  {item.client.status_flag === "orange" && <View style={[styles.flagDot, { backgroundColor: borderColor }]} />}
+                  {borderColor && <View style={[styles.flagDot, { backgroundColor: borderColor }]} />}
                   <Text style={styles.name}>{item.client.name}</Text>
                 </View>
-                {item.client.status_flag === "red" && (
-                  <Text style={[styles.flagText, { color: "#F87171" }]}>
-                    Urgent - needs guidance{item.client.status_flag_note ? `: ${item.client.status_flag_note}` : ""}
+                {item.problems.map((p) => (
+                  <Text
+                    key={p.id}
+                    style={[styles.flagText, { color: p.status === "fixing" ? "#FBBF24" : "#F87171" }]}
+                    numberOfLines={2}
+                  >
+                    {problemLine(p)}
+                  </Text>
+                ))}
+                {item.problems.some((p) => p.client_reply) && (
+                  <Text style={styles.replyNote} numberOfLines={2}>
+                    💬 They replied: {item.problems.find((p) => p.client_reply)?.client_reply}
                   </Text>
                 )}
-                {item.client.status_flag === "orange" && (
-                  <Text style={[styles.flagText, { color: "#FBBF24" }]}>
-                    🟠 Wants feedback{item.client.status_flag_note ? `: ${item.client.status_flag_note}` : ""}
-                  </Text>
-                )}
-                {item.distressFlag && (
-                  <Text style={styles.distressText}>
-                    ⚠ Reported today: {item.todaysCheckin && reportedTopics(item.todaysCheckin).length
-                      ? reportedTopics(item.todaysCheckin).join(", ")
-                      : "distress or pain"}
-                  </Text>
-                )}
-                {needsReply(item.client.status_flag, item.distressFlag) && (
-                  <Pressable style={styles.replyButton} onPress={() => setReplyingTo(item)} hitSlop={6}>
-                    <Text style={styles.replyText}>💬 Reply</Text>
-                  </Pressable>
+                {item.problems.length > 0 && (
+                  <View style={styles.actions}>
+                    <Pressable style={styles.replyButton} onPress={() => setReplyingTo(item)} hitSlop={6}>
+                      <Text style={styles.replyText}>💬 Reply</Text>
+                    </Pressable>
+                    {item.level === "red" && (
+                      <Pressable
+                        style={[styles.replyButton, styles.fixingButton]}
+                        onPress={() => setProblemStatus(item.client.id, "fixing")}
+                        disabled={updating === item.client.id}
+                        hitSlop={6}
+                      >
+                        <Text style={styles.fixingText}>🟠 Busy fixing</Text>
+                      </Pressable>
+                    )}
+                    <Pressable
+                      style={[styles.replyButton, styles.fixedButton]}
+                      onPress={() => setProblemStatus(item.client.id, "fixed")}
+                      disabled={updating === item.client.id}
+                      hitSlop={6}
+                    >
+                      <Text style={styles.fixedText}>✅ Fixed</Text>
+                    </Pressable>
+                  </View>
                 )}
               </View>
               <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
@@ -247,9 +288,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
           trainerId={trainer.id}
           distressFlag={replyingTo?.distressFlag}
           onClose={() => setReplyingTo(null)}
-          onSent={(resolved) => {
-            if (resolved) load();
-          }}
+          onSent={() => load()}
         />
       )}
     </View>
@@ -283,11 +322,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  flagIcon: { fontSize: 14 },
   flagDot: { width: 10, height: 10, borderRadius: 5 },
   name: { color: "#fff", fontWeight: "600", fontSize: 15 },
   flagText: { fontSize: 12, marginTop: 4, fontWeight: "600" },
-  distressText: { color: "#F87171", fontSize: 12, marginTop: 4, fontWeight: "600" },
   replyButton: {
     alignSelf: "flex-start",
     marginTop: 8,
@@ -298,6 +335,12 @@ const styles = StyleSheet.create({
     borderColor: BRAND_GOLD,
   },
   replyText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  fixingButton: { borderColor: "#F59E0B" },
+  fixingText: { color: "#F59E0B", fontWeight: "700", fontSize: 13 },
+  fixedButton: { borderColor: "#22C55E" },
+  fixedText: { color: "#22C55E", fontWeight: "700", fontSize: 13 },
+  replyNote: { color: "#86EFAC", fontSize: 12, marginTop: 4 },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
   dotGreen: { backgroundColor: "#22C55E" },
   dotRed: { backgroundColor: "#EF4444" },

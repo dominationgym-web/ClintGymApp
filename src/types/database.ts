@@ -217,8 +217,31 @@ export type CoachMessage = {
   trainer_id: string;
   body: string;
   reply_to_flag: ClientStatusFlag | null;
+  // Set on the app's next-day check-in about a problem (0075).
+  problem_id: string | null;
   created_at: string;
   read_at: string | null;
+}
+
+// A problem a client raised: a body-and-mind report on a check-in or a red /
+// orange flag (0075). The trainer moves it open -> fixing -> fixed.
+export type ClientProblemTopic = "pain" | "fatigue" | "mental" | "flag";
+export type ClientProblemStatus = "open" | "fixing" | "fixed";
+export type ClientProblem = {
+  id: string;
+  client_id: string;
+  trainer_id: string | null;
+  topic: ClientProblemTopic;
+  detail: string;
+  reported_on: string;
+  last_reported_on: string;
+  status: ClientProblemStatus;
+  fixing_on: string | null;
+  fixed_at: string | null;
+  followup_sent_at: string | null;
+  client_reply: string | null;
+  client_replied_at: string | null;
+  created_at: string;
 }
 
 // One phone's Expo push token, held by whoever last signed in on it (0034).
@@ -514,6 +537,12 @@ export interface Database {
         Update: Partial<ClientTrainerNotes>;
         Relationships: [];
       };
+      client_problems: {
+        Row: ClientProblem;
+        Insert: Partial<ClientProblem>;
+        Update: Partial<ClientProblem>;
+        Relationships: [];
+      };
       coach_messages: {
         Row: CoachMessage;
         Insert: Partial<CoachMessage>;
@@ -581,6 +610,14 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      set_client_problem_status: {
+        Args: { p_client: string; p_status: "fixing" | "fixed"; p_problem?: string };
+        Returns: undefined;
+      };
+      reply_to_client_problem: {
+        Args: { p_problem: string; p_reply: string };
+        Returns: undefined;
+      };
       trainer_for_join_code: {
         Args: { p_code: string };
         Returns: JoinableTrainer[];
