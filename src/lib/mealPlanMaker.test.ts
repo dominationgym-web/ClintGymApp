@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
-import { carbShares, cleanTime, goalKcal, macroTargets, makeDay, mealLabel, mealRoles, swapItem, swapOptions } from "./mealPlanMaker";
+import { carbShares, cleanTime, dietAllows, goalKcal, macroTargets, makeDay, mealLabel, mealRoles, mealTimesFor, swapItem, swapOptions } from "./mealPlanMaker";
 
 const targets = macroTargets(2400, 80);
 
@@ -83,5 +83,50 @@ describe("goalKcal", () => {
   it("uses the coach's target when asked and there is one", () => {
     expect(goalKcal(2400, "coach", 2100)).toBe(2100);
     expect(goalKcal(2400, "coach", null)).toBe(2400);
+  });
+});
+
+describe("goals, snack and diets (GRIZZ, 2026-10-12)", () => {
+  it("is low carb for weight loss", () => {
+    const lose = macroTargets(1600, 70, "lose");
+    const keep = macroTargets(1600, 70, "maintain");
+    expect(lose.carbs).toBeLessThan(keep.carbs);
+    expect(lose.carbs).toBeLessThanOrEqual(150);
+    expect(lose.protein).toBe(154);
+  });
+  const settings = { meals: mealTimesFor(4, "17:30"), training: "17:30" };
+  it("adds a biltong snack for meat eaters", () => {
+    const day = makeDay(settings, targets, true);
+    const snack = day.meals.find((m) => m.name.includes("Protein snack"));
+    expect(snack?.items[0].food).toBe("Biltong, lean, medium");
+    expect(day.meals).toHaveLength(5);
+  });
+  it("keeps meat out for vegetarians and meat out but fish in for pescatarians", () => {
+    for (const variety of [0, 1, 2, 3]) {
+      const veg = makeDay({ ...settings, diet: "vegetarian" as const }, targets, true, variety);
+      const pesc = makeDay({ ...settings, diet: "pescatarian" as const }, targets, true, variety);
+      for (const m of veg.meals) for (const i of m.items) expect(dietAllows(i.food, "vegetarian")).toBe(true);
+      for (const m of pesc.meals) for (const i of m.items) expect(dietAllows(i.food, "pescatarian")).toBe(true);
+    }
+    expect(dietAllows("Biltong, lean, medium", "pescatarian")).toBe(false);
+    expect(dietAllows("Salmon (cooked)", "pescatarian")).toBe(true);
+    expect(dietAllows("Salmon (cooked)", "vegetarian")).toBe(false);
+    expect(swapOptions("Eggs", "vegetarian").some((f) => /chicken|tuna/i.test(f.name))).toBe(false);
+  });
+  it("sets meal times around training", () => {
+    expect(mealTimesFor(4, "06:30")[0]).toBe("05:45");
+    const evening = mealTimesFor(4, "17:30");
+    expect(evening).toContain("16:00");
+    expect(evening).toContain("18:45");
+    expect(mealTimesFor(3, null)).toEqual(["07:00", "13:00", "19:00"]);
+  });
+  it("splits a big carb meal over two foods", () => {
+    const big = makeDay(settings, macroTargets(3200, 70, "gain"), true);
+    const carbFoods = new Set(FOODS.filter((f) => f.group === "Carbs").map((f) => f.name));
+    for (const m of big.meals) {
+      const carbs = m.items.filter((i) => carbFoods.has(i.food));
+      if (carbs.length) expect(carbs[0].grams).toBeLessThanOrEqual(300);
+    }
+    expect(big.meals.some((m) => m.items.filter((i) => carbFoods.has(i.food)).length === 2)).toBe(true);
   });
 });
