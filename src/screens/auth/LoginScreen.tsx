@@ -19,9 +19,29 @@ export default function LoginScreen({ navigation }: Props) {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoading(false);
+      Alert.alert("Couldn't sign in", error.message);
+      return;
+    }
+    // A login with no client or trainer details means sign-up was cut off
+    // before it finished. Say so, instead of leaving them on this page.
+    const userId = data.user?.id;
+    if (userId) {
+      const [{ data: t, error: te }, { data: c, error: ce }] = await Promise.all([
+        supabase.from("trainers").select("id").eq("id", userId).maybeSingle(),
+        supabase.from("clients").select("id").eq("id", userId).maybeSingle(),
+      ]);
+      if (!te && !ce && !t && !c) {
+        await supabase.auth.signOut();
+        Alert.alert(
+          "Finish signing up",
+          "Your sign-up didn't finish last time. Tap \"New client? Sign up\" and use the same email and password to complete it."
+        );
+      }
+    }
     setLoading(false);
-    if (error) Alert.alert("Couldn't sign in", error.message);
   };
 
   return (

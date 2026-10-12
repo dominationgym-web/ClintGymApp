@@ -133,7 +133,23 @@ export default function SignupScreen({ navigation }: Props) {
     }
 
     setLoading(true);
-    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+    let { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+    if (authError && /already registered/i.test(authError.message)) {
+      // An earlier try made the login but dropped before the client details
+      // were saved (no signal, app closed). With the same password, sign them
+      // in and finish it, rather than locking them out of their own email.
+      const retry = await supabase.auth.signInWithPassword({ email, password });
+      if (!retry.error && retry.data.user) {
+        const { data: trainerRow } = await supabase.from("trainers").select("id").eq("id", retry.data.user.id).maybeSingle();
+        if (trainerRow) {
+          setLoading(false);
+          Alert.alert("Already a trainer", "This email is a trainer account. Log in instead.");
+          return;
+        }
+        authData = { user: retry.data.user, session: retry.data.session };
+        authError = null;
+      }
+    }
     if (authError || !authData.user) {
       setLoading(false);
       Alert.alert("Couldn't sign up", authError?.message ?? "Unknown error");
@@ -157,7 +173,8 @@ export default function SignupScreen({ navigation }: Props) {
       privacy_policy_version: PRIVACY_POLICY_VERSION,
     });
 
-    if (clientError) {
+    // 23505: the details were already saved on an earlier try, so carry on.
+    if (clientError && clientError.code !== "23505") {
       setLoading(false);
       Alert.alert("Couldn't finish signup", clientError.message);
       return;

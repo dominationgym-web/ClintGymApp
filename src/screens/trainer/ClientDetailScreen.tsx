@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert, Switch } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -63,7 +63,7 @@ function formatIntakeLabel(key: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function ClientDetailScreen({ route }: Props) {
+export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
   const [client, setClient] = useState<Client | null>(null);
@@ -75,6 +75,35 @@ export default function ClientDetailScreen({ route }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<TabKey>(route.params.tab ?? "overview");
+  // Unsaved diet plan changes: ask before leaving the Diet tab or the client.
+  // A ref, so "Leave" takes effect at once rather than on the next render.
+  const dietDirty = useRef(false);
+  const setDietDirty = (dirty: boolean) => {
+    dietDirty.current = dirty;
+  };
+  const confirmLeaveDiet = (leave: () => void) => {
+    if (!dietDirty.current) return leave();
+    Alert.alert("Leave without saving?", "Your changes to the diet plan haven't been saved.", [
+      { text: "Stay", style: "cancel" },
+      {
+        text: "Leave",
+        style: "destructive",
+        onPress: () => {
+          dietDirty.current = false;
+          leave();
+        },
+      },
+    ]);
+  };
+  useEffect(
+    () =>
+      navigation.addListener("beforeRemove", (e) => {
+        if (!dietDirty.current) return;
+        e.preventDefault();
+        confirmLeaveDiet(() => navigation.dispatch(e.data.action));
+      }),
+    [navigation]
+  );
   // Body-and-mind reports from the last week put a dot on the Notes tab (0055).
   const weekAgo = toIsoDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
   const [messages, setMessages] = useState<CoachMessage[]>([]);
@@ -531,7 +560,7 @@ export default function ClientDetailScreen({ route }: Props) {
             <TrainerTrainingLog logs={workoutLogs} />
           </>
         )}
-        {tab === "diet" && <DietPlanner client={client} />}
+        {tab === "diet" && <DietPlanner client={client} onDirtyChange={setDietDirty} />}
 
         {tab === "photos" && (
           <>
@@ -560,7 +589,7 @@ export default function ClientDetailScreen({ route }: Props) {
 
       <ScreenTabBar
         current={tab}
-        onChange={setTab}
+        onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => setTab(next)))}
         tabs={TABS.map((t) => ({
           ...t,
           dot:

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -17,13 +17,14 @@ export default function CardioDurationPicker({ value, onChange }: { value: strin
   const own = minutes != null && !CARDIO_MINUTES.includes(minutes);
   const [typed, setTyped] = useState(own ? String(minutes) : "");
 
-  // Picking a chip clears the typed minutes.
-  useEffect(() => {
-    if (!own) setTyped("");
-  }, [own]);
-
   const chip = (label: string, reps: string) => (
-    <Pressable key={reps} style={[styles.chip, value === reps && styles.chipOn]} onPress={() => onChange(reps)}>
+    <Pressable key={reps} style={[styles.chip, value === reps && styles.chipOn]} onPress={() => {
+        // Picking a chip clears the typed minutes. (Done here, not when the
+        // value matches a chip, so typing 50 isn't cut off at the 5.)
+        setTyped("");
+        onChange(reps);
+      }}
+    >
       <Text style={[styles.chipText, value === reps && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
@@ -37,7 +38,7 @@ export default function CardioDurationPicker({ value, onChange }: { value: strin
       <View style={styles.ownRow}>
         <Text style={styles.ownLabel}>Or your own:</Text>
         <TextInput
-          style={[styles.input, own && styles.inputOn]}
+          style={[styles.input, (own || typed !== "") && styles.inputOn]}
           value={typed}
           onChangeText={(text) => {
             const digits = text.replace(/[^0-9]/g, "").slice(0, 3);
