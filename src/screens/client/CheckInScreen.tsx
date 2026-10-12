@@ -1,3 +1,5 @@
+import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
+import { checkinFeedback } from "@/lib/checkinFeedback";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import WellbeingQuestions from "@/components/WellbeingQuestions";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
@@ -54,6 +56,8 @@ export default function CheckInScreen() {
   // Today's saved check-in, if there is one. While `editing` is false and this
   // is set, the client sees a summary with a button to go back and change it.
   const [saved, setSaved] = useState<Checkin | null>(null);
+  // The last week of check-ins, for the app's tips (checkinFeedback).
+  const [week, setWeek] = useState<Checkin[]>([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<CheckinForm>(EMPTY_CHECKIN_FORM);
   // The day the screen was loaded for. The tab stays mounted, so if the app is
@@ -62,6 +66,17 @@ export default function CheckInScreen() {
 
   const set = <K extends keyof CheckinForm>(key: K, value: CheckinForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const loadWeek = useCallback(async () => {
+    if (!client) return;
+    const { data } = await supabase
+      .from("checkins")
+      .select("*")
+      .eq("client_id", client.id)
+      .order("checkin_date", { ascending: false })
+      .limit(7);
+    setWeek(data ?? []);
+  }, [client]);
 
   const load = useCallback(async () => {
     if (!client) return;
@@ -81,9 +96,10 @@ export default function CheckInScreen() {
     }
     loadedFor.current = today;
     setSaved(data);
+    loadWeek();
     setEditing(false);
     setForm(data ? formFromCheckin(data) : EMPTY_CHECKIN_FORM);
-  }, [client]);
+  }, [client, loadWeek]);
 
   const reloadIfNewDay = useCallback(() => {
     if (loadedFor.current !== todayIso()) load();
@@ -193,6 +209,9 @@ export default function CheckInScreen() {
         <ResetReminderBanner />
         <ProgressPhotoReminder />
         <Text style={styles.title}>You're checked in for today ✅</Text>
+        <CheckinFeedbackCard
+          feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso())}
+        />
         {missing.length > 0 && (
           <View style={styles.notice}>
             <Text style={styles.noticeText}>

@@ -1,3 +1,5 @@
+import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
+import { checkinFeedback } from "@/lib/checkinFeedback";
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert, Switch } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -416,6 +418,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "checkins" && (
           <>
+            <CheckinFeedbackCard feedback={checkinFeedback(checkins, todayIso())} forTrainer />
             <Text style={styles.sectionHeading}>Last 14 check-ins</Text>
             {checkins.length === 0 && <Text style={styles.helper}>No check-ins yet.</Text>}
             {checkins.map((c) => (

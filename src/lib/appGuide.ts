@@ -38,6 +38,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Do it every morning. It takes a minute: your sleep, water, meals, alcohol and how you feel.",
         "Be honest. A bad day logged truthfully helps your coach far more than a perfect day that didn't happen.",
         "The body and mind check asks about pain, tiredness and stress. If you report a problem, your coach is told straight away and the app checks in with you the next morning.",
+        "After you check in, 📈 Your tips for this week reads your last 7 days and shows up to 3 things to work on, what to do and what it will do for you.",
         "Messages from your coach show at the top. You can reply right there.",
         "Your daily quote and the evening sleep tip also live here.",
       ],
@@ -191,7 +192,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Clients tab → tap a client",
       points: [
         "Overview: their problems with Reply, Busy fixing and Fixed, plus messages.",
-        "Check-ins and Habits: their daily answers and streaks. You can set habits for them.",
+        "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. You can set habits for them.",
         "Training: choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
