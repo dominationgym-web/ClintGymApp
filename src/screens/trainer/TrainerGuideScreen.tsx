@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
+import { useStepBack } from "@/hooks/useStepBack";
 import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";
@@ -11,6 +12,8 @@ type Props = NativeStackScreenProps<TrainerStackParamList, "TrainerGuide">;
 export default function TrainerGuideScreen({ route }: Props) {
   const guide = trainerGuide(route.params.guideKey);
   const [open, setOpen] = useState<string | null>(null);
+  const closeTopic = useCallback(() => setOpen(null), []);
+  useStepBack(open !== null, closeTopic);
   if (!guide) return <View style={styles.container} />;
 
   return (

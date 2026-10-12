@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
+import { useStepBack } from "@/hooks/useStepBack";
 import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { CLIENT_APP_GUIDE, TRAINER_APP_GUIDE } from "@/lib/appGuide";
@@ -11,6 +12,8 @@ export const TrainerAppGuideScreen = () => <AppGuideScreen who="trainer" />;
 export default function AppGuideScreen({ who }: { who: "client" | "trainer" }) {
   const guide = who === "client" ? CLIENT_APP_GUIDE : TRAINER_APP_GUIDE;
   const [open, setOpen] = useState<string | null>(null);
+  const closeTopic = useCallback(() => setOpen(null), []);
+  useStepBack(open !== null, closeTopic);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>

@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
 import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
+import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";
 
 export type MenuItem = { key: string; title: string; summary: string; icon?: string; onPress: () => void };
 
@@ -11,6 +13,17 @@ export type MenuItem = { key: string; title: string; summary: string; icon?: str
 export default function MenuButton({ items }: { items: MenuItem[] }) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
+  const navigation = useNavigation();
+
+  // Coming back from a page opened here shows the menu again, so back is one
+  // step at a time (GRIZZ, 2026-10-12). Pressing back again closes the menu.
+  useEffect(
+    () =>
+      navigation.addListener("focus", () => {
+        if (takeMenuReturn()) setOpen(true);
+      }),
+    [navigation],
+  );
 
   return (
     <View style={styles.row}>
@@ -37,6 +50,7 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
                 style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
                 onPress={() => {
                   setOpen(false);
+                  markOpenedFromMenu();
                   item.onPress();
                 }}
                 accessibilityRole="button"
