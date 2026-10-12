@@ -34,6 +34,12 @@ export const FOODS: Food[] = [
   { name: "Lean beef mince (cooked)", group: "Protein", kcal: 217, protein: 26, carbs: 0, fat: 12, fibre: 0, usual: 150 },
   { name: "Beef steak (cooked)", group: "Protein", kcal: 190, protein: 30, carbs: 0, fat: 7.5, fibre: 0, usual: 150 },
   { name: "Ostrich steak (cooked)", group: "Protein", kcal: 145, protein: 29, carbs: 0, fat: 2.5, fibre: 0, usual: 150 },
+  // Lean biltong (no fat), per 100 g. The drier it is, the more water has gone
+  // and the more protein each gram holds: wet about 35%, medium about 50%,
+  // dry about 70% (GRIZZ, 2026-10-12). A handful is about 30 g.
+  { name: "Biltong, lean, wet", group: "Protein", kcal: 175, protein: 35, carbs: 1.5, fat: 3, fibre: 0, units: [{ label: "handful", grams: 30 }], usual: 1 },
+  { name: "Biltong, lean, medium", group: "Protein", kcal: 240, protein: 50, carbs: 2, fat: 3.5, fibre: 0, units: [{ label: "handful", grams: 30 }], usual: 1 },
+  { name: "Biltong, lean, dry", group: "Protein", kcal: 330, protein: 70, carbs: 2.5, fat: 4, fibre: 0, units: [{ label: "handful", grams: 30 }], usual: 1 },
   { name: "Pork chop, lean (cooked)", group: "Protein", kcal: 196, protein: 29, carbs: 0, fat: 8, fibre: 0, usual: 150 },
   { name: "Lamb chop (cooked)", group: "Protein", kcal: 294, protein: 25, carbs: 0, fat: 21, fibre: 0, usual: 120 },
   { name: "Salmon (cooked)", group: "Protein", kcal: 206, protein: 22, carbs: 0, fat: 12, fibre: 0, usual: 150 },
