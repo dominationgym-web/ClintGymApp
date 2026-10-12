@@ -49,6 +49,8 @@ export type Trainer = {
   billing_currency: BillingCurrency | null;
   billing_started_on: string | null;
   paid_until: string | null;
+  // 0074: remind this trainer 2 days and 1 day before a client's planned workouts run out.
+  planning_reminders: boolean;
 }
 
 export type BillingPlan = "monthly" | "six_months" | "yearly";

@@ -6,6 +6,7 @@ import {
   ScrollView,
   Share,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -13,6 +14,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";
+import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { avatarContentType } from "@/lib/avatars";
 import {
@@ -146,6 +148,15 @@ export default function TrainerProfileScreen() {
     Alert.alert("Saved", "Your profile is up to date.");
   };
 
+  const togglePlanningReminders = async (on: boolean) => {
+    const { error } = await supabase.from("trainers").update({ planning_reminders: on }).eq("id", trainer.id);
+    if (error) {
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    await refreshProfile();
+  };
+
   return (
     <View style={styles.container}>
       <ScreenTabBar tabs={tabs} current={tab} onChange={setTab} position="top" />
@@ -237,6 +248,22 @@ export default function TrainerProfileScreen() {
             <Pressable style={styles.button} onPress={save} disabled={saving}>
               {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
             </Pressable>
+
+            <Text style={styles.sectionHeading}>Notifications</Text>
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <Text style={styles.switchTitle}>Planning reminders</Text>
+                <Text style={styles.hint}>
+                  A reminder 2 days and 1 day before a client's planned workouts on their training calendar run out, so you can plan their next week.
+                </Text>
+              </View>
+              <Switch
+                value={trainer.planning_reminders !== false}
+                onValueChange={togglePlanningReminders}
+                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                accessibilityLabel="Planning reminders"
+              />
+            </View>
           </>
         )}
         {tab === "payments" && (
@@ -284,6 +311,8 @@ const styles = StyleSheet.create({
   hint: { color: "#64748B", fontSize: 12, marginTop: 4, marginBottom: 8 },
   codeBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 8 },
   code: { color: "#fff", fontSize: 32, fontWeight: "800", letterSpacing: 4, marginVertical: 4 },
+  switchRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
+  switchTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
   sectionHeading: { color: "#fff", fontSize: 17, fontWeight: "700", marginTop: 20, marginBottom: 6 },
   label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6, marginTop: 6 },
   readOnly: { color: "#E2E8F0", fontSize: 15, marginBottom: 6 },
