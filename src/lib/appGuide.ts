@@ -66,6 +66,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Tap 📖 How to do it on any exercise to see what it works, the steps, and tips to get the most from it.",
         "The first exercise for each body part starts with one warm-up set at half your start weight. It's logged as a warm-up and doesn't count as a working set.",
         "Log the weight, the reps and how the set felt. The rest timer starts by itself, and supersets take you straight to the next exercise.",
+        "On workouts with abs between sets, the app shows an ab exercise after each set. Do the reps, then tap Complete and your rest timer starts.",
         "📈 Try this weight next tells you when you're ready to go heavier. Beat last time and you earn a gold star ⭐.",
         "Gym busy? Tap ⇄ Change exercise to swap for another exercise of the same body part, just for that day.",
         "When you finish, tap Complete workout. If you couldn't finish or couldn't train, say why. Your coach sees a green, orange or red dot.",
@@ -199,6 +200,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. You can set habits for them.",
         "Training: watch their 🎥 form videos (new ones are marked) and send feedback. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
+        "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
         "Photos and Notes: progress photos, and private notes only you can see.",
       ],
@@ -210,6 +212,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Programs tab",
       points: [
         "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT) or tap + Build a program to make your own.",
+        "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 20 ab reps between sets. When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
         "Clients can change an exercise when the gym is busy, always for the same body part.",
       ],

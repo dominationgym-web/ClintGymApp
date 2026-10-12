@@ -181,6 +181,8 @@ export type Client = {
   library_access: boolean;
   // Home or gym training (0052): picked at signup, the trainer can switch it.
   training_place: "gym" | "home";
+  // Abs between sets (0083): on unless the trainer switches it off.
+  abs_between_sets: boolean;
   created_at: string;
 }
 
@@ -374,6 +376,11 @@ export type Program = {
   // day_titles then has 7 entries per week. nutrition is shown with it.
   weeks: number;
   nutrition: string | null;
+  // 20 ab reps between sets on this workout (0083).
+  abs_between_sets: boolean;
+  // Reps per ab set, and the ab exercise (null = a different one each set).
+  abs_reps: number;
+  abs_exercise: string | null;
   created_at: string;
 }
 
