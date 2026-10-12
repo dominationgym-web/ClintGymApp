@@ -44,3 +44,26 @@ export async function saveCardioDone(date: string, ids: string[]): Promise<void>
     console.warn("Couldn't save the cardio tick", e);
   }
 }
+
+// Change exercise in the Health Reset workouts: like the program swaps, only
+// for today and kept on the phone, but with the whole exercise (video and
+// body part) since the Reset's exercises don't come from a program.
+export type ResetSwap = { id: string; name: string; category: string | null; external_url: string | null };
+const resetKey = (date: string) => `resetSwaps:${date}`;
+
+export async function getResetSwaps(date: string): Promise<Record<string, ResetSwap>> {
+  try {
+    const raw = await AsyncStorage.getItem(resetKey(date));
+    return raw ? (JSON.parse(raw) as Record<string, ResetSwap>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveResetSwaps(date: string, swaps: Record<string, ResetSwap>): Promise<void> {
+  try {
+    await AsyncStorage.setItem(resetKey(date), JSON.stringify(swaps));
+  } catch (e) {
+    console.warn("Couldn't save the exercise swap", e);
+  }
+}

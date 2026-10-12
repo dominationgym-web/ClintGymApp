@@ -682,6 +682,10 @@ export interface Database {
         Returns: undefined;
       };
       reset_exercise_videos: { Args: Record<string, never>; Returns: { name: string; external_url: string | null }[] };
+      swap_options_for: {
+        Args: { p_exercise: string; p_home?: boolean };
+        Returns: { id: string; name: string; category: string | null; external_url: string | null }[];
+      };
       reset_exercise_info: {
         Args: Record<string, never>;
         Returns: { id: string; name: string; category: string | null; external_url: string | null }[];

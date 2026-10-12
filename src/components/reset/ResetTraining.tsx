@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import KeyboardSafe from "@/components/KeyboardSafe";
+import { getResetSwaps, saveResetSwaps, type ResetSwap } from "@/lib/exerciseSwaps";
+import { bodyPartLabel, filterExercises } from "@/lib/exerciseFilter";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -52,6 +56,36 @@ export default function ResetTraining({
   const [logging, setLogging] = useState<{ exercise: LogExercise; note?: string } | null>(null);
   // Sets logged today per exercise name, for the "✓ 2 sets" next to each.
   const [setsToday, setSetsToday] = useState<Record<string, number>>({});
+  // Change exercise when the gym is busy: today's swaps by row, and the row
+  // being changed with its same-body-part options.
+  const [swaps, setSwaps] = useState<Record<string, ResetSwap>>({});
+  const [swapping, setSwapping] = useState<{ key: string; base: LogExercise } | null>(null);
+  const [options, setOptions] = useState<ResetSwap[] | null>(null);
+  const [swapSearch, setSwapSearch] = useState("");
+  const [swapPreview, setSwapPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    getResetSwaps(todayIso()).then(setSwaps);
+  }, []);
+
+  const openSwap = (key: string, base: LogExercise) => {
+    if (!base.id) return;
+    setSwapping({ key, base });
+    setOptions(null);
+    setSwapSearch("");
+    setSwapPreview(null);
+    supabase.rpc("swap_options_for", { p_exercise: base.id, p_home: location === "home" }).then(({ data }) => setOptions(data ?? []));
+  };
+
+  const chooseSwap = (choice: ResetSwap | null) => {
+    if (!swapping) return;
+    const next = { ...swaps };
+    if (choice) next[swapping.key] = choice;
+    else delete next[swapping.key];
+    setSwaps(next);
+    saveResetSwaps(todayIso(), next);
+    setSwapping(null);
+  };
 
   useEffect(() => {
     supabase.rpc("reset_exercise_info").then(({ data }) => {
@@ -75,7 +109,10 @@ export default function ResetTraining({
     loadSetsToday();
   }, [client]);
 
-  const videos = Object.fromEntries(Object.entries(info).map(([name, e]) => [name, e.external_url]));
+  const videos: Record<string, string | null> = {
+    ...Object.fromEntries(Object.entries(info).map(([name, e]) => [name, e.external_url])),
+    ...Object.fromEntries(Object.values(swaps).map((e) => [e.name, e.external_url])),
+  };
 
   const plan = resetWeek(week, client?.sex);
   const phase = RESET_PHASES[plan.phase];
@@ -83,8 +120,32 @@ export default function ResetTraining({
   const isThisWeek = week === currentWeek;
   const target = resetSetTarget(training.sets);
 
-  const openLog = (name: string, note?: string) =>
-    setLogging({ exercise: info[name] ?? { id: null, name, category: null, external_url: null }, note });
+  const exerciseFor = (name: string): LogExercise =>
+    info[name] ?? Object.values(swaps).find((e) => e.name === name) ?? { id: null, name, category: null, external_url: null };
+  const openLog = (name: string, note?: string) => setLogging({ exercise: exerciseFor(name), note });
+
+  // One exercise line: its name (tap for the video), Log sets, and Change
+  // exercise, showing today's swap in its place.
+  const exerciseLine = (planned: string, rowKey: string, note?: string, prefix = "") => {
+    const swapKey = `${rowKey}:${planned}`;
+    const swap = swaps[swapKey];
+    const name = swap?.name ?? planned;
+    const canSwap = !!info[planned]?.id;
+    return (
+      <View>
+        <View style={styles.nameLine}>
+          <View style={{ flex: 1 }}>{exerciseName(name, rowKey, prefix)}</View>
+          {logButton(name, note)}
+        </View>
+        {swap && <Text style={styles.swapped}>Swapped from {planned}</Text>}
+        {canSwap && (
+          <Pressable onPress={() => openSwap(swapKey, info[planned])} hitSlop={8} style={{ alignSelf: "flex-start" }}>
+            <Text style={styles.changeLink}>⇄ Change exercise</Text>
+          </Pressable>
+        )}
+      </View>
+    );
+  };
 
   const exerciseName = (name: string, rowKey: string, prefix = "") => {
     const key = `${rowKey}:${name}`;
@@ -199,16 +260,8 @@ export default function ResetTraining({
                 <View style={styles.exerciseLine}>
                   <Text style={styles.number}>{i + 1}</Text>
                   <View style={{ flex: 1 }}>
-                    <View style={styles.nameLine}>
-                      <View style={{ flex: 1 }}>{exerciseName(e.name, rowKey)}</View>
-                      {logButton(e.name, e.note)}
-                    </View>
-                    {e.or && (
-                      <View style={styles.nameLine}>
-                        <View style={{ flex: 1 }}>{exerciseName(e.or, rowKey, "or ")}</View>
-                        {logButton(e.or, e.note)}
-                      </View>
-                    )}
+                    {exerciseLine(e.name, rowKey, e.note)}
+                    {e.or && exerciseLine(e.or, rowKey, e.note, "or ")}
                     {e.note && <Text style={styles.note}>{e.note}</Text>}
                   </View>
                 </View>
@@ -220,6 +273,62 @@ export default function ResetTraining({
       ))}
 
       <Text style={styles.energy}>{training.energyNote}</Text>
+      <Modal visible={!!swapping} animationType="slide" onRequestClose={() => setSwapping(null)}>
+        <KeyboardSafe>
+          <SafeAreaView style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Change exercise</Text>
+                <Text style={styles.note}>
+                  Gym busy? Swap {swapping?.base.name} for another {bodyPartLabel(swapping?.base.category ?? null)} exercise, just for
+                  today.
+                </Text>
+              </View>
+              <Pressable onPress={() => setSwapping(null)} hitSlop={8}>
+                <Text style={styles.close}>Close</Text>
+              </Pressable>
+            </View>
+            {swapping && swaps[swapping.key] && (
+              <Pressable style={styles.swapBack} onPress={() => chooseSwap(null)}>
+                <Text style={styles.logText}>↺ Back to {swapping.base.name}</Text>
+              </Pressable>
+            )}
+            <TextInput
+              style={styles.search}
+              value={swapSearch}
+              onChangeText={setSwapSearch}
+              placeholder="Search"
+              placeholderTextColor="#64748B"
+              autoCorrect={false}
+            />
+            {options === null ? (
+              <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 20 }} />
+            ) : (
+              <FlatList
+                data={filterExercises(options, swapSearch)}
+                keyExtractor={(e) => e.id}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 20 }}
+                ListEmptyComponent={<Text style={styles.note}>No other exercises for this body part.</Text>}
+                renderItem={({ item }) => (
+                  <View style={styles.swapRow}>
+                    <View style={styles.nameLine}>
+                      <Text style={[styles.exercise, { flex: 1 }]}>{item.name}</Text>
+                      <Pressable hitSlop={6} onPress={() => setSwapPreview(swapPreview === item.id ? null : item.id)}>
+                        <Text style={styles.play}>{swapPreview === item.id ? "Hide" : "▶ Watch"}</Text>
+                      </Pressable>
+                      <Pressable style={styles.logButton} onPress={() => chooseSwap(item)}>
+                        <Text style={styles.logText}>Use this</Text>
+                      </Pressable>
+                    </View>
+                    {swapPreview === item.id && <ExerciseVideoPreview url={item.external_url} />}
+                  </View>
+                )}
+              />
+            )}
+          </SafeAreaView>
+        </KeyboardSafe>
+      </Modal>
       <LogSetModal
         exercise={logging?.exercise ?? null}
         target={target}
@@ -267,5 +376,14 @@ const styles = StyleSheet.create({
   nameLine: { flexDirection: "row", alignItems: "center", gap: 8 },
   logButton: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8 },
   logText: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700" },
+  swapped: { color: "#94A3B8", fontSize: 12, fontStyle: "italic" },
+  changeLink: { color: "#38BDF8", fontSize: 12.5, fontWeight: "700", marginTop: 2 },
+  modal: { flex: 1, backgroundColor: "#0F172A", paddingHorizontal: 20 },
+  modalHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 16 },
+  modalTitle: { color: "#fff", fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  close: { color: BRAND_GOLD, fontWeight: "700" },
+  swapBack: { alignSelf: "flex-start", borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, marginBottom: 10 },
+  search: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 10, marginBottom: 10 },
+  swapRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 10, marginBottom: 8 },
   energy: { color: "#94A3B8", fontSize: 13, lineHeight: 19, fontStyle: "italic", marginTop: 4, marginBottom: 12 },
 });
