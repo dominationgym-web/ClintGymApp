@@ -18,6 +18,7 @@ import { trainingLogStart } from "@/lib/trainingLog";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
+import DietPlanner from "@/components/DietPlanner";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import WellbeingReports from "@/components/WellbeingReports";
 import { reportedTopics } from "@/lib/wellbeing";
@@ -42,7 +43,7 @@ function describeDays(activeDays: number[]) {
     .join(" ");
 }
 
-type TabKey = "overview" | "checkins" | "habits" | "training" | "photos" | "notes";
+type TabKey = "overview" | "checkins" | "habits" | "training" | "diet" | "photos" | "notes";
 
 // Bottom bar so the trainer can jump straight to one kind of info instead of
 // scrolling past everything else.
@@ -51,6 +52,7 @@ const TABS: ScreenTab<TabKey>[] = [
   { key: "checkins", label: "Check-ins", icon: "checkbox" },
   { key: "habits", label: "Habits", icon: "repeat" },
   { key: "training", label: "Training", icon: "barbell" },
+  { key: "diet", label: "Diet", icon: "nutrition" },
   { key: "photos", label: "Photos", icon: "images" },
   { key: "notes", label: "Notes", icon: "create" },
 ];
@@ -529,6 +531,8 @@ export default function ClientDetailScreen({ route }: Props) {
             <TrainerTrainingLog logs={workoutLogs} />
           </>
         )}
+        {tab === "diet" && <DietPlanner client={client} />}
+
         {tab === "photos" && (
           <>
             <Text style={styles.sectionHeading}>Progress photos</Text>

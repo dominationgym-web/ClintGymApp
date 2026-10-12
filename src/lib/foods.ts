@@ -2,7 +2,7 @@
 // (per 100 ml for milk), rounded from standard food tables, and labelled
 // cooked or raw where it matters. Never add oats (the coach's rule).
 
-export type FoodGroup = "Protein" | "Carbs" | "Veg" | "Fats" | "Fruit & dairy";
+export type FoodGroup = "Protein" | "Carbs" | "Fibre" | "Veg" | "Fats" | "Fruit & dairy";
 
 export type FoodUnit = { label: string; grams: number };
 
@@ -13,30 +13,32 @@ export type Food = {
   protein: number;
   carbs: number;
   fat: number;
+  // Fibre per 100 g, used by the trainer's diet planner.
+  fibre?: number;
   // Handy measures besides grams, e.g. teaspoons of oil or whole eggs.
   units?: FoodUnit[];
   // The amount filled in when the food is added, in its first unit.
   usual: number;
 };
 
-export const FOOD_GROUPS: FoodGroup[] = ["Protein", "Carbs", "Veg", "Fats", "Fruit & dairy"];
+export const FOOD_GROUPS: FoodGroup[] = ["Protein", "Carbs", "Fibre", "Veg", "Fats", "Fruit & dairy"];
 
 const TSP_OIL = { label: "tsp", grams: 4.5 };
 const TBSP_OIL = { label: "tbsp", grams: 13.5 };
 
 export const FOODS: Food[] = [
   // Protein
-  { name: "Chicken breast (cooked)", group: "Protein", kcal: 165, protein: 31, carbs: 0, fat: 3.6, usual: 150 },
-  { name: "Chicken breast (raw)", group: "Protein", kcal: 120, protein: 22.5, carbs: 0, fat: 2.6, usual: 150 },
-  { name: "Chicken thigh, no skin (cooked)", group: "Protein", kcal: 209, protein: 26, carbs: 0, fat: 10.9, usual: 150 },
-  { name: "Lean beef mince (cooked)", group: "Protein", kcal: 217, protein: 26, carbs: 0, fat: 12, usual: 150 },
-  { name: "Beef steak (cooked)", group: "Protein", kcal: 190, protein: 30, carbs: 0, fat: 7.5, usual: 150 },
-  { name: "Ostrich steak (cooked)", group: "Protein", kcal: 145, protein: 29, carbs: 0, fat: 2.5, usual: 150 },
-  { name: "Pork chop, lean (cooked)", group: "Protein", kcal: 196, protein: 29, carbs: 0, fat: 8, usual: 150 },
-  { name: "Lamb chop (cooked)", group: "Protein", kcal: 294, protein: 25, carbs: 0, fat: 21, usual: 120 },
-  { name: "Salmon (cooked)", group: "Protein", kcal: 206, protein: 22, carbs: 0, fat: 12, usual: 150 },
-  { name: "Hake / white fish (cooked)", group: "Protein", kcal: 105, protein: 23, carbs: 0, fat: 1, usual: 150 },
-  { name: "Tuna in water (drained)", group: "Protein", kcal: 116, protein: 26, carbs: 0, fat: 0.8, usual: 120 },
+  { name: "Chicken breast (cooked)", group: "Protein", kcal: 165, protein: 31, carbs: 0, fat: 3.6, fibre: 0, usual: 150 },
+  { name: "Chicken breast (raw)", group: "Protein", kcal: 120, protein: 22.5, carbs: 0, fat: 2.6, fibre: 0, usual: 150 },
+  { name: "Chicken thigh, no skin (cooked)", group: "Protein", kcal: 209, protein: 26, carbs: 0, fat: 10.9, fibre: 0, usual: 150 },
+  { name: "Lean beef mince (cooked)", group: "Protein", kcal: 217, protein: 26, carbs: 0, fat: 12, fibre: 0, usual: 150 },
+  { name: "Beef steak (cooked)", group: "Protein", kcal: 190, protein: 30, carbs: 0, fat: 7.5, fibre: 0, usual: 150 },
+  { name: "Ostrich steak (cooked)", group: "Protein", kcal: 145, protein: 29, carbs: 0, fat: 2.5, fibre: 0, usual: 150 },
+  { name: "Pork chop, lean (cooked)", group: "Protein", kcal: 196, protein: 29, carbs: 0, fat: 8, fibre: 0, usual: 150 },
+  { name: "Lamb chop (cooked)", group: "Protein", kcal: 294, protein: 25, carbs: 0, fat: 21, fibre: 0, usual: 120 },
+  { name: "Salmon (cooked)", group: "Protein", kcal: 206, protein: 22, carbs: 0, fat: 12, fibre: 0, usual: 150 },
+  { name: "Hake / white fish (cooked)", group: "Protein", kcal: 105, protein: 23, carbs: 0, fat: 1, fibre: 0, usual: 150 },
+  { name: "Tuna in water (drained)", group: "Protein", kcal: 116, protein: 26, carbs: 0, fat: 0.8, fibre: 0, usual: 120 },
   {
     name: "Eggs",
     group: "Protein",
@@ -44,11 +46,12 @@ export const FOODS: Food[] = [
     protein: 12.6,
     carbs: 0.7,
     fat: 9.5,
+    fibre: 0,
     units: [{ label: "egg", grams: 50 }],
     usual: 2,
   },
-  { name: "Egg whites", group: "Protein", kcal: 52, protein: 10.9, carbs: 0.7, fat: 0.2, usual: 100 },
-  { name: "Biltong", group: "Protein", kcal: 290, protein: 55, carbs: 2, fat: 6, usual: 50 },
+  { name: "Egg whites", group: "Protein", kcal: 52, protein: 10.9, carbs: 0.7, fat: 0.2, fibre: 0, usual: 100 },
+  { name: "Biltong", group: "Protein", kcal: 290, protein: 55, carbs: 2, fat: 6, fibre: 0, usual: 50 },
   {
     name: "Whey protein powder",
     group: "Protein",
@@ -56,23 +59,30 @@ export const FOODS: Food[] = [
     protein: 78,
     carbs: 8,
     fat: 6,
+    fibre: 0,
     units: [{ label: "scoop", grams: 30 }],
     usual: 1,
   },
-  { name: "Tofu, firm", group: "Protein", kcal: 144, protein: 16, carbs: 3, fat: 8.7, usual: 150 },
+  { name: "Tofu, firm", group: "Protein", kcal: 144, protein: 16, carbs: 3, fat: 8.7, fibre: 2.3, usual: 150 },
+
+  { name: "Turkey breast (cooked)", group: "Protein", kcal: 135, protein: 30, carbs: 0, fat: 1, fibre: 0, usual: 150 },
+  { name: "Lean turkey mince (cooked)", group: "Protein", kcal: 190, protein: 27, carbs: 0, fat: 9, fibre: 0, usual: 150 },
+  { name: "Prawns (cooked)", group: "Protein", kcal: 99, protein: 24, carbs: 0.2, fat: 0.3, fibre: 0, usual: 150 },
+  { name: "Sardines in tomato sauce", group: "Protein", kcal: 180, protein: 18, carbs: 2, fat: 11, fibre: 0, usual: 100 },
+  { name: "Pilchards in tomato sauce", group: "Protein", kcal: 135, protein: 17, carbs: 2, fat: 6.5, fibre: 0, usual: 100 },
 
   // Carbs
-  { name: "Potatoes (boiled)", group: "Carbs", kcal: 87, protein: 1.9, carbs: 20, fat: 0.1, usual: 200 },
-  { name: "Sweet potato (cooked)", group: "Carbs", kcal: 90, protein: 2, carbs: 20.7, fat: 0.2, usual: 150 },
-  { name: "White rice (cooked)", group: "Carbs", kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, usual: 150 },
-  { name: "Brown rice (cooked)", group: "Carbs", kcal: 123, protein: 2.7, carbs: 25.6, fat: 1, usual: 150 },
-  { name: "Pasta (cooked)", group: "Carbs", kcal: 158, protein: 5.8, carbs: 31, fat: 0.9, usual: 150 },
-  { name: "Lentils (cooked)", group: "Carbs", kcal: 116, protein: 9, carbs: 20, fat: 0.4, usual: 100 },
-  { name: "Lentils (dry)", group: "Carbs", kcal: 352, protein: 24.6, carbs: 63, fat: 1.1, usual: 20 },
-  { name: "Chickpeas (cooked)", group: "Carbs", kcal: 164, protein: 8.9, carbs: 27.4, fat: 2.6, usual: 100 },
-  { name: "Kidney beans (cooked)", group: "Carbs", kcal: 127, protein: 8.7, carbs: 22.8, fat: 0.5, usual: 100 },
-  { name: "Quinoa (cooked)", group: "Carbs", kcal: 120, protein: 4.4, carbs: 21.3, fat: 1.9, usual: 150 },
-  { name: "Pap / maize porridge (cooked)", group: "Carbs", kcal: 72, protein: 1.7, carbs: 15.5, fat: 0.3, usual: 200 },
+  { name: "Potatoes (boiled)", group: "Carbs", kcal: 87, protein: 1.9, carbs: 20, fat: 0.1, fibre: 1.8, usual: 200 },
+  { name: "Sweet potato (cooked)", group: "Carbs", kcal: 90, protein: 2, carbs: 20.7, fat: 0.2, fibre: 3.3, usual: 150 },
+  { name: "White rice (cooked)", group: "Carbs", kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, fibre: 0.4, usual: 150 },
+  { name: "Brown rice (cooked)", group: "Carbs", kcal: 123, protein: 2.7, carbs: 25.6, fat: 1, fibre: 1.6, usual: 150 },
+  { name: "Pasta (cooked)", group: "Carbs", kcal: 158, protein: 5.8, carbs: 31, fat: 0.9, fibre: 1.8, usual: 150 },
+  { name: "Lentils (cooked)", group: "Carbs", kcal: 116, protein: 9, carbs: 20, fat: 0.4, fibre: 7.9, usual: 100 },
+  { name: "Lentils (dry)", group: "Carbs", kcal: 352, protein: 24.6, carbs: 63, fat: 1.1, fibre: 10.7, usual: 20 },
+  { name: "Chickpeas (cooked)", group: "Carbs", kcal: 164, protein: 8.9, carbs: 27.4, fat: 2.6, fibre: 7.6, usual: 100 },
+  { name: "Kidney beans (cooked)", group: "Carbs", kcal: 127, protein: 8.7, carbs: 22.8, fat: 0.5, fibre: 6.4, usual: 100 },
+  { name: "Quinoa (cooked)", group: "Carbs", kcal: 120, protein: 4.4, carbs: 21.3, fat: 1.9, fibre: 2.8, usual: 150 },
+  { name: "Pap / maize porridge (cooked)", group: "Carbs", kcal: 72, protein: 1.7, carbs: 15.5, fat: 0.3, fibre: 1.1, usual: 200 },
   {
     name: "Brown bread",
     group: "Carbs",
@@ -80,22 +90,44 @@ export const FOODS: Food[] = [
     protein: 13,
     carbs: 41,
     fat: 3.4,
+    fibre: 6,
     units: [{ label: "slice", grams: 35 }],
     usual: 2,
   },
+  { name: "Basmati rice (cooked)", group: "Carbs", kcal: 121, protein: 3.5, carbs: 25.2, fat: 0.4, fibre: 0.4, usual: 150 },
+  { name: "Wholewheat pasta (cooked)", group: "Carbs", kcal: 149, protein: 6, carbs: 30, fat: 1.7, fibre: 3.9, usual: 150 },
+  { name: "Corn on the cob (cooked)", group: "Carbs", kcal: 96, protein: 3.4, carbs: 21, fat: 1.5, fibre: 2.4, usual: 150 },
+  { name: "Rice cakes", group: "Carbs", kcal: 387, protein: 8, carbs: 81, fat: 2.8, fibre: 4.2, units: [{ label: "cake", grams: 9 }], usual: 2 },
+  { name: "Wholewheat wrap", group: "Carbs", kcal: 290, protein: 9, carbs: 48, fat: 7, fibre: 6, units: [{ label: "wrap", grams: 60 }], usual: 1 },
+  { name: "Baby potatoes (boiled)", group: "Carbs", kcal: 80, protein: 1.9, carbs: 17.5, fat: 0.1, fibre: 1.6, usual: 200 },
+
+  // Fibre
+  { name: "Chia seeds", group: "Fibre", kcal: 486, protein: 17, carbs: 42, fat: 31, fibre: 34, units: [{ label: "tbsp", grams: 12 }], usual: 1 },
+  { name: "Flaxseed, ground", group: "Fibre", kcal: 534, protein: 18, carbs: 29, fat: 42, fibre: 27, units: [{ label: "tbsp", grams: 7 }], usual: 1 },
+  { name: "Psyllium husk", group: "Fibre", kcal: 200, protein: 1.5, carbs: 85, fat: 0.6, fibre: 80, units: [{ label: "tsp", grams: 5 }], usual: 1 },
+  { name: "Black beans (cooked)", group: "Fibre", kcal: 132, protein: 8.9, carbs: 23.7, fat: 0.5, fibre: 8.7, usual: 100 },
+  { name: "Butter beans (cooked)", group: "Fibre", kcal: 115, protein: 7.8, carbs: 20.9, fat: 0.4, fibre: 7, usual: 100 },
+  { name: "Pear", group: "Fibre", kcal: 57, protein: 0.4, carbs: 15.2, fat: 0.1, fibre: 3.1, usual: 150 },
+  { name: "Raspberries", group: "Fibre", kcal: 52, protein: 1.2, carbs: 11.9, fat: 0.7, fibre: 6.5, usual: 100 },
 
   // Veg
-  { name: "Broccoli", group: "Veg", kcal: 35, protein: 2.4, carbs: 7.2, fat: 0.4, usual: 100 },
-  { name: "Spinach", group: "Veg", kcal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, usual: 80 },
-  { name: "Green beans", group: "Veg", kcal: 31, protein: 1.8, carbs: 7, fat: 0.2, usual: 100 },
-  { name: "Carrots", group: "Veg", kcal: 41, protein: 0.9, carbs: 9.6, fat: 0.2, usual: 80 },
-  { name: "Butternut", group: "Veg", kcal: 45, protein: 1, carbs: 11.7, fat: 0.1, usual: 150 },
-  { name: "Tomato", group: "Veg", kcal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, usual: 100 },
-  { name: "Mixed salad leaves", group: "Veg", kcal: 17, protein: 1.2, carbs: 3.3, fat: 0.2, usual: 80 },
+  { name: "Broccoli", group: "Veg", kcal: 35, protein: 2.4, carbs: 7.2, fat: 0.4, fibre: 3.3, usual: 100 },
+  { name: "Spinach", group: "Veg", kcal: 23, protein: 2.9, carbs: 3.6, fat: 0.4, fibre: 2.2, usual: 80 },
+  { name: "Green beans", group: "Veg", kcal: 31, protein: 1.8, carbs: 7, fat: 0.2, fibre: 3.4, usual: 100 },
+  { name: "Carrots", group: "Veg", kcal: 41, protein: 0.9, carbs: 9.6, fat: 0.2, fibre: 2.8, usual: 80 },
+  { name: "Butternut", group: "Veg", kcal: 45, protein: 1, carbs: 11.7, fat: 0.1, fibre: 2, usual: 150 },
+  { name: "Tomato", group: "Veg", kcal: 18, protein: 0.9, carbs: 3.9, fat: 0.2, fibre: 1.2, usual: 100 },
+  { name: "Mixed salad leaves", group: "Veg", kcal: 17, protein: 1.2, carbs: 3.3, fat: 0.2, fibre: 1.3, usual: 80 },
+  { name: "Cauliflower", group: "Veg", kcal: 25, protein: 1.9, carbs: 5, fat: 0.3, fibre: 2, usual: 100 },
+  { name: "Cabbage", group: "Veg", kcal: 25, protein: 1.3, carbs: 5.8, fat: 0.1, fibre: 2.5, usual: 100 },
+  { name: "Peppers", group: "Veg", kcal: 31, protein: 1, carbs: 6, fat: 0.3, fibre: 2.1, usual: 80 },
+  { name: "Mushrooms", group: "Veg", kcal: 22, protein: 3.1, carbs: 3.3, fat: 0.3, fibre: 1, usual: 80 },
+  { name: "Cucumber", group: "Veg", kcal: 15, protein: 0.7, carbs: 3.6, fat: 0.1, fibre: 0.5, usual: 80 },
+  { name: "Baby marrow", group: "Veg", kcal: 17, protein: 1.2, carbs: 3.1, fat: 0.3, fibre: 1, usual: 100 },
 
   // Fats
-  { name: "Olive oil", group: "Fats", kcal: 884, protein: 0, carbs: 0, fat: 100, units: [TSP_OIL, TBSP_OIL], usual: 2 },
-  { name: "Coconut oil", group: "Fats", kcal: 862, protein: 0, carbs: 0, fat: 100, units: [TSP_OIL, TBSP_OIL], usual: 1 },
+  { name: "Olive oil", group: "Fats", kcal: 884, protein: 0, carbs: 0, fat: 100, fibre: 0, units: [TSP_OIL, TBSP_OIL], usual: 2 },
+  { name: "Coconut oil", group: "Fats", kcal: 862, protein: 0, carbs: 0, fat: 100, fibre: 0, units: [TSP_OIL, TBSP_OIL], usual: 1 },
   {
     name: "Butter",
     group: "Fats",
@@ -103,10 +135,11 @@ export const FOODS: Food[] = [
     protein: 0.9,
     carbs: 0.1,
     fat: 81,
+    fibre: 0,
     units: [{ label: "tsp", grams: 5 }],
     usual: 1,
   },
-  { name: "Avocado", group: "Fats", kcal: 160, protein: 2, carbs: 8.5, fat: 14.7, usual: 50 },
+  { name: "Avocado", group: "Fats", kcal: 160, protein: 2, carbs: 8.5, fat: 14.7, fibre: 6.7, usual: 50 },
   {
     name: "Peanut butter",
     group: "Fats",
@@ -114,21 +147,27 @@ export const FOODS: Food[] = [
     protein: 25,
     carbs: 20,
     fat: 50,
+    fibre: 6,
     units: [{ label: "tbsp", grams: 16 }],
     usual: 1,
   },
-  { name: "Almonds", group: "Fats", kcal: 579, protein: 21, carbs: 21.6, fat: 49.9, usual: 30 },
-  { name: "Cheddar cheese", group: "Fats", kcal: 403, protein: 25, carbs: 1.3, fat: 33, usual: 30 },
-  { name: "Feta", group: "Fats", kcal: 264, protein: 14, carbs: 4, fat: 21, usual: 30 },
+  { name: "Almonds", group: "Fats", kcal: 579, protein: 21, carbs: 21.6, fat: 49.9, fibre: 12.5, usual: 30 },
+  { name: "Cheddar cheese", group: "Fats", kcal: 403, protein: 25, carbs: 1.3, fat: 33, fibre: 0, usual: 30 },
+  { name: "Feta", group: "Fats", kcal: 264, protein: 14, carbs: 4, fat: 21, fibre: 0, usual: 30 },
+  { name: "Walnuts", group: "Fats", kcal: 654, protein: 15, carbs: 14, fat: 65, fibre: 6.7, usual: 20 },
+  { name: "Cashews", group: "Fats", kcal: 553, protein: 18, carbs: 30, fat: 44, fibre: 3.3, usual: 25 },
+  { name: "Mixed nuts, unsalted", group: "Fats", kcal: 607, protein: 20, carbs: 21, fat: 54, fibre: 7, usual: 25 },
+  { name: "Olives", group: "Fats", kcal: 145, protein: 1, carbs: 3.8, fat: 15, fibre: 3.3, usual: 30 },
+  { name: "Pumpkin seeds", group: "Fats", kcal: 559, protein: 30, carbs: 11, fat: 49, fibre: 6, usual: 20 },
 
   // Fruit & dairy
-  { name: "Banana", group: "Fruit & dairy", kcal: 89, protein: 1.1, carbs: 22.8, fat: 0.3, usual: 120 },
-  { name: "Apple", group: "Fruit & dairy", kcal: 52, protein: 0.3, carbs: 13.8, fat: 0.2, usual: 150 },
-  { name: "Berries", group: "Fruit & dairy", kcal: 57, protein: 0.7, carbs: 14.5, fat: 0.3, usual: 100 },
-  { name: "Greek yoghurt, plain", group: "Fruit & dairy", kcal: 97, protein: 9, carbs: 4, fat: 5, usual: 150 },
-  { name: "Cottage cheese, low fat", group: "Fruit & dairy", kcal: 82, protein: 11, carbs: 3.4, fat: 2.3, usual: 100 },
-  { name: "Full cream milk (ml)", group: "Fruit & dairy", kcal: 61, protein: 3.2, carbs: 4.8, fat: 3.3, usual: 250 },
-  { name: "Low fat milk (ml)", group: "Fruit & dairy", kcal: 50, protein: 3.3, carbs: 4.8, fat: 2, usual: 250 },
+  { name: "Banana", group: "Fruit & dairy", kcal: 89, protein: 1.1, carbs: 22.8, fat: 0.3, fibre: 2.6, usual: 120 },
+  { name: "Apple", group: "Fruit & dairy", kcal: 52, protein: 0.3, carbs: 13.8, fat: 0.2, fibre: 2.4, usual: 150 },
+  { name: "Berries", group: "Fruit & dairy", kcal: 57, protein: 0.7, carbs: 14.5, fat: 0.3, fibre: 2.4, usual: 100 },
+  { name: "Greek yoghurt, plain", group: "Fruit & dairy", kcal: 97, protein: 9, carbs: 4, fat: 5, fibre: 0, usual: 150 },
+  { name: "Cottage cheese, low fat", group: "Fruit & dairy", kcal: 82, protein: 11, carbs: 3.4, fat: 2.3, fibre: 0, usual: 100 },
+  { name: "Full cream milk (ml)", group: "Fruit & dairy", kcal: 61, protein: 3.2, carbs: 4.8, fat: 3.3, fibre: 0, usual: 250 },
+  { name: "Low fat milk (ml)", group: "Fruit & dairy", kcal: 50, protein: 3.3, carbs: 4.8, fat: 2, fibre: 0, usual: 250 },
 ];
 
 /** The measures a food can be entered in: its own units first, then grams. */

@@ -352,6 +352,23 @@ export type ProgramExercise = {
   changed_from?: { exercise_id: string | null; exercise_name: string; sets: number; reps: string };
 }
 
+// The trainer's diet plan for a client (0071): 7 days of meals, foods by
+// name from src/lib/foods.ts, and the details for their calorie target.
+export type DietItem = { food: string; grams: number };
+export type DietMeal = { name: string; items: DietItem[] };
+export type DietDay = { meals: DietMeal[] };
+export type ClientDietPlan = {
+  client_id: string;
+  weight_kg: number | null;
+  height_cm: number | null;
+  age: number | null;
+  sex: "male" | "female" | null;
+  activity: number;
+  adjust_kcal: number;
+  days: DietDay[];
+  updated_at: string;
+};
+
 // A trainer's change to an exercise for one client (0070): one row of one
 // workout (program_exercise_id), or an exercise swapped out of every workout
 // (original_exercise_id). Null fields keep what the workout says.
@@ -533,6 +550,12 @@ export interface Database {
         Row: ClientCalendarWorkout;
         Insert: Partial<ClientCalendarWorkout>;
         Update: Partial<ClientCalendarWorkout>;
+        Relationships: [];
+      };
+      client_diet_plans: {
+        Row: ClientDietPlan;
+        Insert: Partial<ClientDietPlan>;
+        Update: Partial<ClientDietPlan>;
         Relationships: [];
       };
       client_exercise_changes: {
