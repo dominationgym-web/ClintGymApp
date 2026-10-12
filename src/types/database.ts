@@ -411,6 +411,17 @@ export type ClientDietPlan = {
   updated_at: string;
 };
 
+// The client's own meal plan, made by the app (0077, src/lib/mealPlanMaker.ts).
+export type ClientMealPlan = {
+  client_id: string;
+  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain" };
+  targets: { kcal: number; protein: number; carbs: number; fat: number };
+  training_day: DietDay;
+  rest_day: DietDay;
+  variety: number;
+  updated_at: string;
+};
+
 // A trainer's change to an exercise for one client (0070): one row of one
 // workout (program_exercise_id), or an exercise swapped out of every workout
 // (original_exercise_id). Null fields keep what the workout says.
@@ -552,6 +563,12 @@ export interface Database {
         Row: ClientTrainerNotes;
         Insert: Partial<ClientTrainerNotes>;
         Update: Partial<ClientTrainerNotes>;
+        Relationships: [];
+      };
+      client_meal_plans: {
+        Row: ClientMealPlan;
+        Insert: Partial<ClientMealPlan>;
+        Update: Partial<ClientMealPlan>;
         Relationships: [];
       };
       workout_sessions: {

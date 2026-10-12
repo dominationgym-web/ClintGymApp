@@ -20,6 +20,7 @@ import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStre
 import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import DietPlanner from "@/components/DietPlanner";
+import ClientOwnMealPlan from "@/components/ClientOwnMealPlan";
 import WorkoutsSavedButton from "@/components/WorkoutsSavedButton";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import WellbeingReports from "@/components/WellbeingReports";
@@ -547,7 +548,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
           </>
         )}
-        {tab === "diet" && <DietPlanner client={client} onDirtyChange={setDietDirty} />}
+        {tab === "diet" && (
+          <>
+            <DietPlanner client={client} onDirtyChange={setDietDirty} />
+            <ClientOwnMealPlan clientId={client.id} clientName={client.name} />
+          </>
+        )}
 
         {tab === "photos" && (
           <>
