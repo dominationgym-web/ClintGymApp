@@ -46,12 +46,14 @@ export default function DietFoodPicker({
   const choose = (f: Food, grams?: number) => {
     const by = setByFor(f);
     setFood(f);
-    setSetBy(by);
     if (grams != null) {
-      // Show what the saved weight gives in the food's main nutrient.
-      const totals = itemTotals({ food: f.name, grams });
-      setAmount(String(by === "weight" ? grams : Math.round(totals[by])));
+      // Changing a saved item opens on its exact weight, so opening it and
+      // tapping Save leaves it as it was (going via rounded protein grams
+      // used to nudge 100 g of eggs to 105 g).
+      setSetBy("weight");
+      setAmount(String(grams));
     } else {
+      setSetBy(by);
       setAmount(String(DEFAULT_TARGET[by]));
     }
   };
@@ -141,7 +143,8 @@ export default function DietFoodPicker({
                   style={[styles.chip, setBy === o && styles.chipOn]}
                   onPress={() => {
                     setSetBy(o);
-                    setAmount(String(o === "weight" ? grams || DEFAULT_TARGET.weight : DEFAULT_TARGET[o]));
+                    // Keep the same amount of food, shown the new way.
+                    setAmount(String(o === "weight" ? grams || DEFAULT_TARGET.weight : totals && grams > 0 ? Math.round(totals[o]) : DEFAULT_TARGET[o]));
                   }}
                 >
                   <Text style={[styles.chipText, setBy === o && styles.chipTextOn]}>{SET_BY_LABEL[o]}</Text>

@@ -13,22 +13,36 @@ export default function ClientDietPlanView() {
   const userId = client?.id;
   const [plan, setPlan] = useState<ClientDietPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [reload, setReload] = useState(0);
   const [day, setDay] = useState(weekdayIndex(new Date()));
 
   useEffect(() => {
     if (!userId) return;
+    setLoading(true);
+    setFailed(false);
     supabase
       .from("client_diet_plans")
       .select("*")
       .eq("client_id", userId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        setFailed(!!error);
         setPlan(data);
         setLoading(false);
       });
-  }, [userId]);
+  }, [userId, reload]);
 
   if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />;
+  if (failed) {
+    return (
+      <Pressable onPress={() => setReload((r) => r + 1)}>
+        <Text style={styles.empty}>
+          Couldn't load your meal plan. <Text style={styles.amount}>Tap to try again.</Text>
+        </Text>
+      </Pressable>
+    );
+  }
   const days: DietDay[] = plan ? normaliseWeek(plan.days) : [];
   if (!plan || days.every((d) => d.meals.every((m) => m.items.length === 0))) {
     return <Text style={styles.empty}>Your coach hasn't set a meal plan for you yet. When they do, it shows here.</Text>;

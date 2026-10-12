@@ -28,11 +28,26 @@ const toNumber = (text: string) => {
   return text.trim() && Number.isFinite(n) && n > 0 ? n : null;
 };
 
+// The ranges the database accepts (0071). Outside them a number counts as
+// not filled in, and saving says what to fix in plain words.
+const LIMITS = {
+  weight: { min: 25, max: 400, problem: "Weight should be in kg, between 25 and 400." },
+  height: { min: 100, max: 250, problem: "Height should be in cm, between 100 and 250 (for example 175, not 1.75)." },
+  age: { min: 12, max: 100, problem: "Age should be between 12 and 100." },
+  adjust: { min: 1, max: 2000, problem: "Over or under can be at most 2000 kcal a day." },
+};
+const inRange = (text: string, key: keyof typeof LIMITS) => {
+  const n = toNumber(text);
+  return n != null && n >= LIMITS[key].min && n <= LIMITS[key].max ? n : null;
+};
+
 // The trainer's diet planner on a client's Diet tab (0071): set the client's
 // calorie target from their BMR, then build each day of the week meal by
 // meal. Each day shows a red warning while it's over or under the target.
-export default function DietPlanner({ client }: { client: Client }) {
+export default function DietPlanner({ client, onDirtyChange }: { client: Client; onDirtyChange?: (dirty: boolean) => void }) {
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reload, setReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [weight, setWeight] = useState("");
@@ -49,12 +64,26 @@ export default function DietPlanner({ client }: { client: Client }) {
   const [editing, setEditing] = useState<{ meal: number; index: number } | null>(null);
 
   useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty]);
+  useEffect(() => () => onDirtyChange?.(false), []);
+
+  useEffect(() => {
+    setLoading(true);
+    setLoadFailed(false);
     supabase
       .from("client_diet_plans")
       .select("*")
       .eq("client_id", client.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        // A failed load is not "no plan yet": showing an empty week here
+        // would let one Save wipe the client's real plan.
+        if (error) {
+          setLoadFailed(true);
+          setLoading(false);
+          return;
+        }
         const intakeAge = Number(client.intake_responses?.age);
         if (data) {
           setWeight(data.weight_kg ? String(data.weight_kg) : "");
@@ -72,12 +101,23 @@ export default function DietPlanner({ client }: { client: Client }) {
         }
         setLoading(false);
       });
-  }, [client.id]);
+  }, [client.id, reload]);
 
   if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 20 }} />;
+  if (loadFailed) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Couldn't load the diet plan</Text>
+        <Text style={styles.helper}>Check your signal, then try again.</Text>
+        <Pressable style={styles.retry} onPress={() => setReload((r) => r + 1)}>
+          <Text style={styles.retryText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
-  const details = { weight_kg: toNumber(weight), height_cm: toNumber(height), age: toNumber(age), sex };
-  const adjustKcal = direction === "same" ? 0 : (direction === "over" ? 1 : -1) * Math.round(toNumber(adjust) ?? 0);
+  const details = { weight_kg: inRange(weight, "weight"), height_cm: inRange(height, "height"), age: inRange(age, "age"), sex };
+  const adjustKcal = direction === "same" ? 0 : (direction === "over" ? 1 : -1) * Math.round(inRange(adjust, "adjust") ?? 0);
   const base = bmr(details);
   const need = dailyNeed({ ...details, activity });
   const target = need == null ? null : need + adjustKcal;
@@ -94,6 +134,17 @@ export default function DietPlanner({ client }: { client: Client }) {
     updateDays(days.map((d, i) => (i !== day ? d : { meals: d.meals.map((m, j) => (j === meal ? { ...m, items } : m)) })));
 
   const save = async () => {
+    const problems = [
+      weight.trim() && details.weight_kg == null ? LIMITS.weight.problem : null,
+      height.trim() && details.height_cm == null ? LIMITS.height.problem : null,
+      age.trim() && details.age == null ? LIMITS.age.problem : null,
+      direction !== "same" && inRange(adjust, "adjust") == null ? LIMITS.adjust.problem : null,
+    ].filter(Boolean);
+    if (problems.length) {
+      setTargetOpen(true);
+      Alert.alert("Check the calorie target", problems.join("\n\n"));
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from("client_diet_plans").upsert({
       client_id: client.id,
@@ -158,7 +209,12 @@ export default function DietPlanner({ client }: { client: Client }) {
                 BMR {base.toLocaleString()} kcal{activity !== 1 ? ` · with activity ${need?.toLocaleString()} kcal` : ""}
               </Text>
             ) : (
-              <Text style={styles.helper}>Fill in weight, height, age and male or female to work out the BMR.</Text>
+              <Text style={styles.helper}>
+                {(weight.trim() && details.weight_kg == null && LIMITS.weight.problem) ||
+                  (height.trim() && details.height_cm == null && LIMITS.height.problem) ||
+                  (age.trim() && details.age == null && LIMITS.age.problem) ||
+                  "Fill in weight, height, age and male or female to work out the BMR."}
+              </Text>
             )}
             <Text style={styles.label}>Target</Text>
             <View style={styles.chips}>
@@ -325,4 +381,6 @@ const styles = StyleSheet.create({
   saveButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 10 },
   saved: { backgroundColor: "#1E293B" },
   saveText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
+  retry: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  retryText: { color: "#0F172A", fontWeight: "800" },
 });

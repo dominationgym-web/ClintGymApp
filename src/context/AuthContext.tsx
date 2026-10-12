@@ -26,27 +26,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Only the newest profile load may change state, so a slow "no row yet"
+  // answer from before signup finished can't overwrite the real one.
+  const loadSeq = useRef(0);
+  // Whose profile is on screen, so a token refresh reloads it quietly.
+  const loadedUserId = useRef<string | null>(null);
+
   const loadProfile = async (userId: string) => {
-    const { data: trainerRow } = await supabase
+    const seq = ++loadSeq.current;
+    const { data: trainerRow, error: trainerError } = await supabase
       .from("trainers")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
+    if (seq !== loadSeq.current) return;
+    // A failed request (no signal, phone just woke up) is not "no account":
+    // keep what's on screen rather than dropping the user to the login page.
+    if (trainerError) return;
 
     if (trainerRow) {
+      loadedUserId.current = userId;
       setRole("trainer");
       setTrainer(trainerRow);
       setClient(null);
       return;
     }
 
-    const { data: clientRow } = await supabase
+    const { data: clientRow, error: clientError } = await supabase
       .from("clients")
       .select("*")
       .eq("id", userId)
       .maybeSingle();
+    if (seq !== loadSeq.current || clientError) return;
 
     if (clientRow) {
+      loadedUserId.current = userId;
       setRole("client");
       setClient(clientRow);
       setTrainer(null);
@@ -55,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Authenticated but no trainer/client row yet (e.g. mid-signup, before
     // payment confirmation creates the client record).
+    loadedUserId.current = null;
     setRole(null);
     setTrainer(null);
     setClient(null);
@@ -82,10 +97,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
-      if (newSession?.user.id) {
+      if (newSession?.user.id && newSession.user.id === loadedUserId.current) {
+        // Hourly token refresh, or the same user again: reload quietly. The
+        // spinner would unmount every screen and lose what they were typing.
+        loadProfile(newSession.user.id);
+      } else if (newSession?.user.id) {
         setLoading(true);
         loadProfile(newSession.user.id).finally(() => setLoading(false));
       } else {
+        loadSeq.current++;
+        loadedUserId.current = null;
         setRole(null);
         setTrainer(null);
         setClient(null);

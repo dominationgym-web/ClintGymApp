@@ -11,7 +11,7 @@ import type { ClientCalendarWorkout, Program } from "@/types/database";
 
 // The client's own training calendar (0069), read-only, under a tap-to-open
 // heading on their workout screen. Only shows once their coach has planned
-// something this month.
+// something.
 export default function ClientCalendarView({ clientId }: { clientId: string }) {
   const today = todayIso();
   const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
@@ -20,6 +20,15 @@ export default function ClientCalendarView({ clientId }: { clientId: string }) {
   const [hasAny, setHasAny] = useState(false);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+
+  // Show the calendar as soon as anything is planned from today on, even
+  // when it's all next month.
+  useEffect(() => {
+    const yearOn = `${Number(today.slice(0, 4)) + 1}-12-31`;
+    loadCalendarWorkouts(clientId, today, yearOn).then((rows) => {
+      if (rows.length > 0) setHasAny(true);
+    });
+  }, [clientId, today]);
 
   useEffect(() => {
     const { from, to } = monthRange(month);

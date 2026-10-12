@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -10,6 +11,7 @@ import {
   Modal,
   ScrollView,
   Alert,
+  AppState,
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -123,8 +125,26 @@ export default function ExerciseLibraryScreen() {
   // the client can tap to make it bigger.
   const compactVideoHeight = Math.min(screenHeight * 0.28, 240);
 
+  // Bottom tabs stay mounted, so reload when the day changes (app left open
+  // overnight) and whenever the app comes back, which also picks up a
+  // workout or exercise change the trainer has just made.
+  const loadedFor = useRef<string | null>(null);
+  const [refresh, setRefresh] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      if (loadedFor.current && loadedFor.current !== todayIso()) setRefresh((r) => r + 1);
+    }, [])
+  );
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && loadedFor.current) setRefresh((r) => r + 1);
+    });
+    return () => subscription.remove();
+  }, []);
+
   useEffect(() => {
     const load = async () => {
+      loadedFor.current = todayIso();
       const [{ data, error }, active, calendar, { data: logged }, todaysSwaps] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         client ? loadClientProgram(client.id) : Promise.resolve(null),
@@ -160,11 +180,12 @@ export default function ExerciseLibraryScreen() {
       } else {
         setProgram(active);
       }
+      if (!calendar) setCalendarToday(false);
       setAllTodaysSets(logged ?? []);
       setLoading(false);
     };
     load();
-  }, [client?.id]);
+  }, [client?.id, refresh]);
 
   // Weekly programs are worked through in order (0037): the current session
   // shows from its day until it's completed or moved.
