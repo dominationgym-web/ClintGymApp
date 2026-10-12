@@ -277,6 +277,7 @@ describe("programFamily", () => {
     expect(built("Legs 4")).toBe("legs");
     expect(built("Bodybuilding 3-week block")).toBe("goalBlock");
     expect(built("Strength 3-week block")).toBe("goalBlock");
+    expect(built("Strength 12-week program")).toBe("goalBlock");
     expect(built("HIIT 7")).toBe("hiit");
     expect(built("Upper Body 3")).toBe("upperBody");
     expect(built("Upper Body Superset 4")).toBe("upperBody");

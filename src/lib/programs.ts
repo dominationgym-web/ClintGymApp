@@ -322,7 +322,7 @@ function supersetRun(session: ProgramExercise[], index: number): number {
 export const PROGRAM_FAMILIES = [
   { key: "upperBody", title: "Upper body workouts", icon: "💪" },
   { key: "lowerBody", title: "Lower body workouts", icon: "🦵" },
-  { key: "goalBlock", title: "3-week goal programs", icon: "🎯" },
+  { key: "goalBlock", title: "12-week goal programs", icon: "🎯" },
   { key: "hiit", title: "HIIT", icon: "🔥" },
   { key: "fullBody", title: "Full body", icon: "🏃" },
   { key: "upperLower", title: "Quick upper & lower", icon: "⏱️" },
@@ -341,7 +341,7 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   // The 15 + 15 calendar workouts (0069): "Upper Body 1", "Lower Body Superset 2".
   if (name.startsWith("upper body")) return "upperBody";
   if (name.startsWith("lower body")) return "lowerBody";
-  if (name.includes("3-week")) return "goalBlock";
+  if (name.includes("12-week") || name.includes("3-week")) return "goalBlock";
   if (name.startsWith("hiit")) return "hiit";
   if (name.includes("chest")) return "chestBi";
   if (name.includes("back")) return "backTri";
