@@ -80,8 +80,8 @@ export default function TrainerTrainingLog({
                   )}
                   {exercise.sets.map((s) => (
                     <Text key={s.id} style={styles.set}>
-                      Set {s.set_number}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
-                      {s.reps} reps · {EFFORT_LABEL[s.effort] ?? s.effort}
+                      {s.warm_up ? "Warm-up" : `Set ${s.set_number}`}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
+                      {s.reps} reps · {s.warm_up ? "not a working set" : EFFORT_LABEL[s.effort] ?? s.effort}
                     </Text>
                   ))}
                 </View>

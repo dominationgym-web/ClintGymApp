@@ -111,7 +111,7 @@ export default function LogSetModal({
         exercise_id: exercise.id,
         exercise_name: exercise.name,
         log_date: todayIso(),
-        set_number: todaysSets.length + 1,
+        set_number: todaysSets.filter((s) => !s.warm_up).length + 1,
         weight_kg: weight ? Number(weight) : null,
         reps: repsNum,
         effort,

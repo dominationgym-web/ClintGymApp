@@ -48,3 +48,19 @@ describe("findImprovements", () => {
     expect(findImprovements(today, earlier)).toEqual([{ exercise: "Push ups", before: "10 reps", after: "12 reps" }]);
   });
 });
+
+describe("findImprovements with warm-ups", () => {
+  it("ignores warm-up sets", () => {
+    const set = (log_date: string, weight_kg: number, warm_up = false) => ({
+      exercise_id: "e1",
+      exercise_name: "Bench",
+      weight_kg,
+      reps: 8,
+      log_date,
+      warm_up,
+    });
+    // A heavy warm-up last time doesn't hide today's progress, and today's warm-up isn't counted.
+    expect(findImprovements([set("2026-10-12", 20, true), set("2026-10-12", 42.5)], [set("2026-10-05", 50, true), set("2026-10-05", 40)])).toHaveLength(1);
+    expect(findImprovements([set("2026-10-12", 60, true), set("2026-10-12", 40)], [set("2026-10-05", 40)])).toHaveLength(0);
+  });
+});

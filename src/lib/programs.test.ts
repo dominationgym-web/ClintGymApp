@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  warmUpRepsToFill,
+  warmUpWeight,
   dayTitle,
   defaultSessionTitle,
   displayProgramName,
@@ -292,5 +294,27 @@ describe("cardio minutes", () => {
     expect(minutesOf("25 min")).toBe(25);
     expect(minutesOf("30 sec")).toBeNull();
     expect(minutesOf("Run 5km")).toBeNull();
+  });
+});
+
+describe("warmUpWeight", () => {
+  it("halves the start weight to the nearest 2.5kg", () => {
+    expect(warmUpWeight(60)).toBe(30);
+    expect(warmUpWeight(45)).toBe(22.5);
+    expect(warmUpWeight(25)).toBe(12.5);
+  });
+  it("uses 0.5kg steps for light dumbbells", () => {
+    expect(warmUpWeight(7)).toBe(3.5);
+  });
+  it("gives nothing without a start weight", () => {
+    expect(warmUpWeight(null)).toBeNull();
+    expect(warmUpWeight(0)).toBeNull();
+  });
+});
+
+describe("warmUpRepsToFill", () => {
+  it("fills the first number of double the reps", () => {
+    expect(warmUpRepsToFill("8-10")).toBe("16");
+    expect(warmUpRepsToFill("45 sec")).toBe("");
   });
 });

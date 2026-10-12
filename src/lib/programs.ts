@@ -123,6 +123,23 @@ export function warmUpReps(reps: string): string | null {
 }
 
 /**
+ * Warm-up weight: about half the starting weight, rounded to the nearest
+ * 2.5kg (to 0.5kg under 10kg, for light dumbbells). Null without a start.
+ */
+export function warmUpWeight(start: number | null | undefined): number | null {
+  if (!start || start <= 0) return null;
+  const half = start / 2;
+  const step = start < 10 ? 0.5 : 2.5;
+  return Math.max(step, Math.round(half / step) * step);
+}
+
+/** The first number of the warm-up reps, to fill in: "8-10" -> "16". */
+export function warmUpRepsToFill(reps: string): string {
+  const w = warmUpReps(reps);
+  return w ? (w.match(/\d+/)?.[0] ?? "") : "";
+}
+
+/**
  * A warm-up set comes first for each body part: due when nothing for this
  * exercise's category has been logged today.
  */
