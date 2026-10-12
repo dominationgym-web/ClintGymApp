@@ -9,16 +9,18 @@ import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
 import { WELCOME_MENU_ITEM } from "@/lib/welcome";
 import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 
-// The client app's menu: Women's Health Reset (with the cycle tracker) first
-// for women (GRIZZ, 2026-10-12), then the suggestion box (the coach wants it
-// easy to find), how to use the app, the coach's welcome and the other
-// sections (Nutrition, ...).
+// The client app's menu: Nutrition, Women's Health Reset (with the cycle
+// tracker, women only) and Sleep & Recovery first (GRIZZ, 2026-10-12), then
+// the suggestion box (the coach wants it easy to find), how to use the app,
+// the coach's welcome and the other sections.
+const TOP_SECTIONS = ["nutrition", "womensHealthReset", "sleepRecovery"];
+
 export default function SectionsMenuButton() {
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const { client } = useAuth();
   const sections = sectionsFor(client?.sex);
-  const first = sections.filter((s) => s.key === "womensHealthReset");
-  const rest = sections.filter((s) => s.key !== "womensHealthReset");
+  const first = TOP_SECTIONS.flatMap((key) => sections.filter((s) => s.key === key));
+  const rest = sections.filter((s) => !TOP_SECTIONS.includes(s.key));
   const item = (section: (typeof sections)[number]) => ({
     key: section.key,
     title: section.title,
