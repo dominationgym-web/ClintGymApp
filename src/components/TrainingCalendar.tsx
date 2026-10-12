@@ -5,7 +5,8 @@ import { CALENDAR_WEEKDAYS, monthLabel, monthWeeks, shiftMonth, type CalendarMon
 
 // A month grid, Monday first, with the workout on each day (0069). The
 // trainer taps a day to plan it; the client's copy is read-only, or opens a
-// day's details through onPressDay.
+// day's details through onPressDay. Days the client trained carry a green,
+// orange or red dot and any gold star (0076).
 export default function TrainingCalendar({
   month,
   onChangeMonth,
@@ -13,6 +14,7 @@ export default function TrainingCalendar({
   today,
   selected,
   onPressDay,
+  marks,
 }: {
   month: CalendarMonth;
   onChangeMonth: (month: CalendarMonth) => void;
@@ -21,6 +23,8 @@ export default function TrainingCalendar({
   today: string;
   selected?: string | null;
   onPressDay?: (date: string) => void;
+  /** Date → how the client's workout went (0076): a coloured dot, and a star. */
+  marks?: Record<string, { color: string; star: boolean }>;
 }) {
   return (
     <View>
@@ -45,7 +49,8 @@ export default function TrainingCalendar({
           {week.map((date, j) => {
             if (!date) return <View key={j} style={styles.cell} />;
             const label = labels[date];
-            const past = date < today;
+            const mark = marks?.[date];
+            const past = date < today && !mark;
             return (
               <Pressable
                 key={date}
@@ -62,7 +67,15 @@ export default function TrainingCalendar({
                 accessibilityRole={onPressDay ? "button" : undefined}
                 accessibilityLabel={`${Number(date.slice(8))} ${monthLabel(month)}${label ? `, ${label}` : ", nothing planned"}`}
               >
-                <Text style={[styles.dayNumber, label && styles.dayNumberPlanned]}>{Number(date.slice(8))}</Text>
+                <View style={styles.dayTop}>
+                  <Text style={[styles.dayNumber, label && styles.dayNumberPlanned]}>{Number(date.slice(8))}</Text>
+                  {mark && (
+                    <View style={styles.markRow}>
+                      {mark.star && <Text style={styles.star}>⭐</Text>}
+                      <View style={[styles.markDot, { backgroundColor: mark.color }]} />
+                    </View>
+                  )}
+                </View>
                 {label ? (
                   <Text style={styles.label} numberOfLines={2}>
                     {label}
@@ -89,6 +102,10 @@ const styles = StyleSheet.create({
   today: { borderColor: "#22C55E" },
   selected: { borderColor: BRAND_GOLD, borderWidth: 2 },
   past: { opacity: 0.5 },
+  dayTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  markRow: { flexDirection: "row", alignItems: "center", gap: 1 },
+  markDot: { width: 8, height: 8, borderRadius: 4 },
+  star: { fontSize: 8 },
   dayNumber: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },
   dayNumberPlanned: { color: "#fff" },
   label: { color: BRAND_GOLD, fontSize: 9.5, fontWeight: "700", marginTop: 2 },
