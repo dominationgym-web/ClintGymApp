@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { useStepBack } from "@/hooks/useStepBack";
 import { View, Text, ScrollView, StyleSheet, Switch, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -19,6 +20,7 @@ import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/context/AuthContext";
+import { cancelMenuReturn } from "@/lib/menuReturn";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -28,6 +30,8 @@ type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 export default function SectionScreen({ route }: Props) {
   const section = findSection(route.params.sectionKey);
   const [open, setOpen] = useState<string | null>(route.params.open ?? null);
+  const closeTopic = useCallback(() => setOpen(null), []);
+  useStepBack(open !== null, closeTopic);
   if (!section) return <View style={styles.container} />;
 
   const parts: { title: string; body: React.ReactNode; icon?: string; tag?: SupplementLevel }[] = [];
@@ -144,7 +148,10 @@ function ResetProgramLink() {
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   if (!client?.lifestyle_reset_started_at) return null;
   return (
-    <Pressable style={styles.card} onPress={() => navigation.navigate("ClientTabs", { screen: "Reset" })}>
+    <Pressable style={styles.card} onPress={() => {
+        cancelMenuReturn();
+        navigation.navigate("ClientTabs", { screen: "Reset" });
+      }}>
       <Text style={styles.toggleTitle}>🌿 Your 12-week Reset program ›</Text>
       <Text style={[styles.cardText, { marginBottom: 0 }]}>Week by week plan, daily ticks and Reset Training.</Text>
     </Pressable>
