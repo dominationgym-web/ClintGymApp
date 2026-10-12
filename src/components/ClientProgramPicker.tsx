@@ -9,10 +9,11 @@ import { todayIso } from "@/lib/dates";
 import { loadAvailablePrograms, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import ProgramSummary from "@/components/ProgramSummary";
 import { currentSession, sessionTitle, slotOf, trainingDays, weekdayOf } from "@/lib/programSchedule";
-import type { ExtraCardio, Program } from "@/types/database";
+import type { ExtraCardio, Program, ProgramExercise } from "@/types/database";
 import { CARDIO_ALL, CARDIO_OPTIONS, cardioDuration, cardioLabel } from "@/lib/programs";
 import CardioDurationPicker from "@/components/CardioDurationPicker";
 import ProgramChooserModal from "@/components/ProgramChooserModal";
+import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 
 // For a weekly program: which session the client is on, and when they last finished one.
@@ -46,6 +47,7 @@ export default function ClientProgramPicker({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [showWorkouts, setShowWorkouts] = useState(false);
+  const [changing, setChanging] = useState<ProgramExercise | null>(null);
 
   const load = useCallback(async () => {
     const [current, available] = await Promise.all([loadClientProgram(clientId), loadAvailablePrograms()]);
@@ -140,7 +142,9 @@ export default function ClientProgramPicker({
           <Pressable onPress={() => setShowWorkouts((v) => !v)} hitSlop={6}>
             <Text style={styles.toggle}>{showWorkouts ? "Hide workouts ▴" : "Show workouts ▾"}</Text>
           </Pressable>
-          {showWorkouts && <ProgramSummary program={active.program} exercises={active.exercises} />}
+          {showWorkouts && (
+            <ProgramSummary program={active.program} exercises={active.exercises} onPressExercise={setChanging} />
+          )}
         </View>
       ) : (
         <Text style={styles.helper}>Not on a program yet.</Text>
@@ -225,6 +229,17 @@ export default function ClientProgramPicker({
           navigation.navigate("ProgramBuilder");
         }}
         onClose={() => setChoosing(false)}
+      />
+      <ExerciseChangeModal
+        row={changing}
+        clientId={clientId}
+        clientName={clientName}
+        trainingPlace={trainingPlace}
+        onClose={() => setChanging(null)}
+        onSaved={() => {
+          setChanging(null);
+          load();
+        }}
       />
     </View>
   );

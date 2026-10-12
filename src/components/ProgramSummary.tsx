@@ -1,11 +1,20 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { Pressable, View, Text, StyleSheet } from "react-native";
 import { cardioLabel, formatRest, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
 
 // A program's exercises, grouped by weekday for weekly programs. Multi-week
-// programs (0065) list each week's training days under a week heading.
-export default function ProgramSummary({ program, exercises }: { program: Program; exercises: ProgramExercise[] }) {
+// programs (0065) list each week's training days under a week heading. On a
+// client's screen the trainer can tap an exercise to change it for them (0070).
+export default function ProgramSummary({
+  program,
+  exercises,
+  onPressExercise,
+}: {
+  program: Program;
+  exercises: ProgramExercise[];
+  onPressExercise?: (row: ProgramExercise) => void;
+}) {
   const weeks = program.weeks ?? 1;
   const days =
     program.kind !== "weekly"
@@ -16,6 +25,7 @@ export default function ProgramSummary({ program, exercises }: { program: Progra
   return (
     <View>
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
+      {onPressExercise ? <Text style={styles.tapHint}>✎ Tap an exercise to change it, or its sets and reps, for this client.</Text> : null}
       {days.map((day) => {
         const rows = exercises.filter((e) => slotOf(e) === day).sort((a, b) => a.sort_order - b.sort_order);
         const weekOf = (slot: number) => Math.floor((slot - 1) / 7) + 1;
@@ -32,13 +42,34 @@ export default function ProgramSummary({ program, exercises }: { program: Progra
             {rows.length === 0 && program.kind === "weekly" ? (
               <Text style={styles.line}>Rest</Text>
             ) : (
-              rows.map((r) => (
-                <Text key={r.id} style={styles.line}>
-                  {r.kind === "cardio"
-                    ? `🔥 Cardio: ${cardioLabel(r)}`
-                    : `${r.exercise_name}: ${r.sets} x ${r.reps}, rest ${formatRest(r.rest_seconds)}`}
-                </Text>
-              ))
+              rows.map((r) => {
+                if (r.kind === "cardio") {
+                  return (
+                    <Text key={r.id} style={styles.line}>
+                      🔥 Cardio: {cardioLabel(r)}
+                    </Text>
+                  );
+                }
+                const line = (
+                  <Text style={[styles.line, onPressExercise && styles.tappable, r.changed_from && styles.changed]}>
+                    {`${r.exercise_name}: ${r.sets} x ${r.reps}, rest ${formatRest(r.rest_seconds)}`}
+                    {r.changed_from ? (
+                      <Text style={styles.was}>
+                        {r.changed_from.exercise_name !== r.exercise_name
+                          ? `  ✎ changed, was ${r.changed_from.exercise_name}`
+                          : `  ✎ changed, was ${r.changed_from.sets} x ${r.changed_from.reps}`}
+                      </Text>
+                    ) : null}
+                  </Text>
+                );
+                return onPressExercise ? (
+                  <Pressable key={r.id} onPress={() => onPressExercise(r)} hitSlop={4} accessibilityRole="button">
+                    {line}
+                  </Pressable>
+                ) : (
+                  <React.Fragment key={r.id}>{line}</React.Fragment>
+                );
+              })
             )}
           </View>
         );
@@ -51,4 +82,8 @@ const styles = StyleSheet.create({
   day: { color: "#fff", fontWeight: "700", fontSize: 13, marginBottom: 2 },
   week: { color: "#D4AF37", fontWeight: "800", fontSize: 14, marginTop: 6, marginBottom: 2 },
   line: { color: "#94A3B8", fontSize: 13, marginBottom: 2 },
+  tappable: { color: "#CBD5E1", paddingVertical: 3 },
+  changed: { color: "#fff" },
+  was: { color: "#D4AF37", fontSize: 12, fontWeight: "600" },
+  tapHint: { color: "#D4AF37", fontSize: 12, marginTop: 6 },
 });
