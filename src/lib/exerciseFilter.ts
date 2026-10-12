@@ -88,3 +88,25 @@ export function homeAlternative<T extends Pick<Exercise, "id" | "category" | "ho
   const options = forPlace(swapOptions(exercises, exercise.category, [exercise.id]), "home");
   return options.find((e) => !usedIds.includes(e.id)) ?? options[0] ?? null;
 }
+
+/**
+ * Home training (0052): a workout with each gym-only exercise replaced by its
+ * home alternative, plus the ids brought in, so the same swap shows wherever
+ * the workout appears.
+ */
+export function withHomeAlternatives<
+  R extends { kind: string; exercise_id: string | null; exercise_name: string },
+  T extends Pick<Exercise, "id" | "name" | "category" | "home_friendly">,
+>(rows: R[], exercises: T[]): { rows: R[]; homeIds: string[] } {
+  const homeIds: string[] = [];
+  const out = rows.map((row) => {
+    const exercise = exercises.find((e) => e.id === row.exercise_id);
+    if (row.kind === "cardio" || !exercise) return row;
+    const used = [...rows.map((r) => r.exercise_id), ...homeIds];
+    const alt = homeAlternative(exercise, exercises, used);
+    if (!alt) return row;
+    homeIds.push(alt.id);
+    return { ...row, exercise_id: alt.id, exercise_name: alt.name };
+  });
+  return { rows: out, homeIds };
+}
