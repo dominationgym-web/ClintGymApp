@@ -10,6 +10,7 @@ import CycleTracker from "@/components/CycleTracker";
 import CalorieCalculator from "@/components/CalorieCalculator";
 import MealBuilder from "@/components/MealBuilder";
 import ClientDietPlanView from "@/components/ClientDietPlanView";
+import MealPlanMaker from "@/components/MealPlanMaker";
 import SupplementCard, { LEVEL_COLOURS, SupplementLevelsKey } from "@/components/SupplementCard";
 import { SUPPLEMENTS, type SupplementLevel } from "@/lib/supplements";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
@@ -32,6 +33,7 @@ export default function SectionScreen({ route }: Props) {
   const parts: { title: string; body: React.ReactNode; icon?: string; tag?: SupplementLevel }[] = [];
   if (section.key === "nutrition") {
     parts.push({ title: "Your meal plan from your coach", icon: "🥗", body: <ClientDietPlanView /> });
+    parts.push({ title: "Make my own meal plan", icon: "🤖", body: <MealPlanMaker /> });
     parts.push({ title: "Meal builder", icon: "🍽️", body: <MealBuilder /> });
     parts.push({ title: "Calorie calculator", icon: "🔢", body: <CalorieCalculator /> });
     parts.push({ title: "Build your plate", icon: "🥦", body: <FoodGroupExamples /> });
