@@ -36,6 +36,9 @@ export default function SectionScreen({ route }: Props) {
     parts.push({ title: "Work out your own meal plan and diet", icon: "🤖", body: <MealPlanMaker /> });
     parts.push({ title: "Meal builder", icon: "🍽️", body: <MealBuilder /> });
     parts.push({ title: "Calorie calculator", icon: "🔢", body: <CalorieCalculator /> });
+    // Right under the calorie calculator (GRIZZ, 2026-10-12).
+    parts.push({ title: "Understanding Insulin", icon: "📈", body: <InsulinGuide /> });
+    parts.push({ title: UNDERSTANDING_CARBS.title, icon: "🍚", body: <UnderstandingCarbs /> });
     parts.push({ title: "Build your plate", icon: "🥦", body: <FoodGroupExamples /> });
   }
   if (section.key === "womensHealthReset") parts.push({ title: "Cycle tracker", icon: "🗓️", body: <CycleTracker /> });
@@ -64,10 +67,6 @@ export default function SectionScreen({ route }: Props) {
       ...SUPPLEMENTS.map((s) => ({ title: s.name, icon: s.icon, tag: s.level, body: <SupplementCard supplement={s} /> })),
     ];
     parts.splice(1, 0, ...supplementParts);
-  }
-  if (section.key === "nutrition") {
-    parts.push({ title: UNDERSTANDING_CARBS.title, icon: "🍚", body: <UnderstandingCarbs /> });
-    parts.push({ title: "Understanding Insulin", icon: "📈", body: <InsulinGuide /> });
   }
 
   return (
