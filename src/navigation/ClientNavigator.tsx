@@ -15,6 +15,7 @@ import SectionScreen from "@/screens/client/SectionScreen";
 import ClientSearchScreen from "@/screens/client/ClientSearchScreen";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import ClientWelcomeScreen from "@/screens/client/ClientWelcomeScreen";
+import { ClientAppGuideScreen } from "@/screens/AppGuideScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
 import { DailyQuotePopup } from "@/components/DailyQuote";
@@ -65,6 +66,7 @@ export default function ClientNavigator() {
         <Stack.Screen name="Search" component={ClientSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
         <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
         <Stack.Screen name="Welcome" component={ClientWelcomeScreen} options={{ title: "Welcome", headerBackTitle: "Back" }} />
+        <Stack.Screen name="AppGuide" component={ClientAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
       </Stack.Navigator>
     </>
   );

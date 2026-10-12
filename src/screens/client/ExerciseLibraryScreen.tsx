@@ -667,14 +667,12 @@ export default function ExerciseLibraryScreen() {
                     return (
                       <Pressable key={row.id} style={styles.programRow} onPress={() => openProgramExercise(row)}>
                         <View style={{ flex: 1 }}>
-                          <View style={styles.nameRow}>
-                            <Text style={styles.name}>{row.exercise_name}</Text>
-                            <ExerciseGuideButton name={row.exercise_name} category={categoryOf(row)} />
-                          </View>
+                          <Text style={styles.name}>{row.exercise_name}</Text>
                           <Text style={styles.category}>
                             {row.sets} sets x {row.reps} ·{" "}
                             {next ? `superset: straight into ${next.exercise_name}` : `rest ${formatRest(row.rest_seconds)}`}
                           </Text>
+                          <ExerciseGuideButton name={row.exercise_name} category={categoryOf(row)} variant="bar" />
                           {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
                           {!swaps[row.id] && gymName(row) && <Text style={styles.swappedText}>🏠 Home version of {gymName(row)}</Text>}
                           <Pressable onPress={() => openSwap(row)} hitSlop={8} style={{ alignSelf: "flex-start" }}>
@@ -794,11 +792,9 @@ export default function ExerciseLibraryScreen() {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={{ flex: 1 }}>
-              <View style={styles.nameRow}>
-                <Text style={styles.name}>{selected?.name}</Text>
-                {selected && <ExerciseGuideButton name={selected.name} category={selected.category} />}
-              </View>
+              <Text style={styles.name}>{selected?.name}</Text>
               {selected?.category && <Text style={styles.category}>{selected.category}</Text>}
+              {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" />}
             </View>
             <Pressable onPress={() => setSelected(null)}>
               <Text style={styles.closeText}>Close</Text>

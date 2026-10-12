@@ -27,6 +27,7 @@ export type ClientStackParamList = {
   Search: undefined;
   SuggestionBox: undefined;
   Welcome: undefined;
+  AppGuide: undefined;
 };
 
 export type TrainerTabParamList = {
@@ -47,6 +48,7 @@ export type TrainerStackParamList = {
   ProgramBuilder: undefined;
   Billing: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
+  AppGuide: undefined;
 };
 
 export type TrainerTabScreenProps<T extends keyof TrainerTabParamList> = CompositeScreenProps<

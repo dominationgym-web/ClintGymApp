@@ -5,6 +5,7 @@ import type { TrainerStackParamList } from "@/navigation/types";
 import MenuButton from "@/components/MenuButton";
 import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
 import { TRAINER_GUIDES } from "@/lib/trainerGuides";
+import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 
 // The trainer app's menu (top right of every trainer tab).
 export default function TrainerMenuButton() {
@@ -12,6 +13,7 @@ export default function TrainerMenuButton() {
   return (
     <MenuButton
       items={[
+        { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
         ...TRAINER_GUIDES.map((g) => ({
           key: g.key,
           title: g.title,

@@ -1,0 +1,245 @@
+// "How to use the app" (GRIZZ, 2026-10-12): everything the app can do, so
+// clients and trainers know what's at their disposal and how to get the most
+// from it. Shown as tap-to-open headings (AppGuideScreen) from the menu.
+
+export type GuideTopic = {
+  key: string;
+  icon: string;
+  title: string;
+  // Where to find it in the app.
+  where: string;
+  points: string[];
+};
+
+export type AppGuide = {
+  intro: string;
+  topics: GuideTopic[];
+  // The one-line habit that ties it together.
+  bottomLine: string;
+};
+
+export const APP_GUIDE_MENU_ITEM = {
+  key: "appGuide",
+  title: "How to use the app",
+  icon: "📘",
+  summary: "Everything the app can do for you, and how to get the most from it.",
+};
+
+export const CLIENT_APP_GUIDE: AppGuide = {
+  intro:
+    "This app is your coach in your pocket. The more honestly you use it, the better your coach can guide you. Tap a heading to see what it does and how to get the most from it.",
+  topics: [
+    {
+      key: "daily",
+      icon: "✅",
+      title: "Your daily check-in",
+      where: "Check-in tab",
+      points: [
+        "Do it every morning. It takes a minute: your sleep, water, meals, alcohol and how you feel.",
+        "Be honest. A bad day logged truthfully helps your coach far more than a perfect day that didn't happen.",
+        "The body and mind check asks about pain, tiredness and stress. If you report a problem, your coach is told straight away and the app checks in with you the next morning.",
+        "Messages from your coach show at the top. You can reply right there.",
+        "Your daily quote and the evening sleep tip also live here.",
+      ],
+    },
+    {
+      key: "habits",
+      icon: "🔥",
+      title: "Habits and streaks",
+      where: "Habits tab",
+      points: [
+        "Tick off each habit as you do it. Your streak grows every day you keep it going.",
+        "Your coach can set habits for you. You can also add your own from the list (nutrition, movement, sleep, mindset) or write your own, up to 15 at a time.",
+        "Set a reminder time on a habit so the app nudges you.",
+        "Start small. Two habits you never miss beat ten you forget.",
+      ],
+    },
+    {
+      key: "training",
+      icon: "🏋️",
+      title: "Today's workout",
+      where: "Exercises tab",
+      points: [
+        "Your workout for today is at the top. Tap an exercise to open it and log your sets.",
+        "Tap 📖 How to do it on any exercise to see what it works, the steps, and tips to get the most from it.",
+        "The first exercise for each body part starts with one warm-up set at half your start weight. It's logged as a warm-up and doesn't count as a working set.",
+        "Log the weight, the reps and how the set felt. The rest timer starts by itself, and supersets take you straight to the next exercise.",
+        "📈 Try this weight next tells you when you're ready to go heavier. Beat last time and you earn a gold star ⭐.",
+        "Gym busy? Tap ⇄ Change exercise to swap for another exercise of the same body part, just for that day.",
+        "When you finish, tap Complete workout. If you couldn't finish or couldn't train, say why. Your coach sees a green, orange or red dot.",
+      ],
+    },
+    {
+      key: "calendar",
+      icon: "📅",
+      title: "Your training calendar",
+      where: "Exercises tab",
+      points: [
+        "When your coach plans workouts on days, open 📅 Your training calendar to see what's coming.",
+        "Tap a day to see its exercises. You can change an exercise ahead of time if you know the gym will be busy.",
+        "Green, orange and red dots show how each workout went, and a gold star shows where you improved.",
+      ],
+    },
+    {
+      key: "videos",
+      icon: "🎥",
+      title: "Video log",
+      where: "Video log tab",
+      points: [
+        "Film a set (up to 60 seconds) so your coach can check your form.",
+        "Videos clear themselves after 7 days, so send them while they're fresh.",
+      ],
+    },
+    {
+      key: "nutrition",
+      icon: "🥗",
+      title: "Nutrition",
+      where: "Menu ☰ → Nutrition",
+      points: [
+        "Start with the hand portion guide: an easy way to eat well without counting.",
+        "Work out your own meal plan: choose your meal times, training time and goal, and the app builds a balanced day around your BMR. Don't like a food? Tap Swap and it keeps the same protein or carbs.",
+        "If your coach builds you a diet, it shows here too.",
+        "Read Understanding Carbs and Understanding Insulin to see why carbs are timed around training.",
+        "The calorie calculator adds up any meal if you like to count.",
+      ],
+    },
+    {
+      key: "supplements",
+      icon: "💊",
+      title: "Supplementation",
+      where: "Menu ☰ → Supplementation",
+      points: [
+        "What's worth taking for energy, muscle and recovery, and what to skip.",
+        "Food comes first. Supplements fill the gaps.",
+      ],
+    },
+    {
+      key: "reset",
+      icon: "🌸",
+      title: "Health Reset and cycle tracker",
+      where: "Menu ☰ → Women's Health Reset, and the Reset tab",
+      points: [
+        "Women: log your period and the app shows which phase you're in, with how to train, eat and supplement in each one. Your period log is private. Your coach can't see it.",
+        "The Health Reset is a week-by-week plan. Tap Start, tick off each day and add a note on how you feel. Men have their own version.",
+      ],
+    },
+    {
+      key: "sleep",
+      icon: "🌙",
+      title: "Sleep and recovery",
+      where: "Menu ☰ → Sleep & Recovery",
+      points: [
+        "Simple habits for deeper sleep and faster recovery.",
+        "A wind-down tip shows each evening. You can switch it off on that page.",
+      ],
+    },
+    {
+      key: "profile",
+      icon: "👤",
+      title: "Profile and progress photos",
+      where: "Profile tab",
+      points: [
+        "Add progress photos every 6 weeks. The app reminds you. Photos show change the scale can't.",
+        "Set your flag so your coach knows how you're doing: All good, I'd like some feedback, or Urgent, I need guidance.",
+        "Your coach's messages and payment details are here too.",
+      ],
+    },
+    {
+      key: "more",
+      icon: "🔎",
+      title: "Search and the suggestion box",
+      where: "Search 🔍 and Menu ☰",
+      points: [
+        "Search finds any exercise, guide or tip in the app.",
+        "The suggestion box sends ideas straight to the team. We read every one.",
+      ],
+    },
+  ],
+  bottomLine: "Check in every morning, tick your habits, log every workout, and be honest. That's how you get results.",
+};
+
+export const TRAINER_APP_GUIDE: AppGuide = {
+  intro:
+    "Everything you need to coach your clients well, in one place. Tap a heading to see what it does and how to get the most from it.",
+  topics: [
+    {
+      key: "dashboard",
+      icon: "📊",
+      title: "Your dashboard",
+      where: "Dashboard tab",
+      points: [
+        "Start every day here. It shows today's compliance: who checked in, who trained and who needs you.",
+        "Problems show in red: pain, fatigue, stress or an urgent flag. Tap Busy fixing (orange) while you deal with it, then Fixed to clear it. The app checks in with the client the next morning on your behalf.",
+        "The recovery check warns you when a client is training the same muscles two days running, and lets you make the session lighter or move it.",
+      ],
+    },
+    {
+      key: "clients",
+      icon: "👥",
+      title: "Clients and payments",
+      where: "Clients tab",
+      points: [
+        "New signups land here. Activate a client once they've paid. Only an expired plan locks the app.",
+        "Dots show who needs attention. Tap a client to open everything about them.",
+        "Share your trainer code (Profile tab) so new clients join you when they sign up.",
+      ],
+    },
+    {
+      key: "clientDetail",
+      icon: "🗂",
+      title: "Inside a client",
+      where: "Clients tab → tap a client",
+      points: [
+        "Overview: their problems with Reply, Busy fixing and Fixed, plus messages.",
+        "Check-ins and Habits: their daily answers and streaks. You can set habits for them.",
+        "Training: choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
+        "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
+        "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
+        "Photos and Notes: progress photos, and private notes only you can see.",
+      ],
+    },
+    {
+      key: "programs",
+      icon: "🏋️",
+      title: "Programs and workouts",
+      where: "Programs tab",
+      points: [
+        "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT) or tap + Build a program to make your own.",
+        "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
+        "Clients can change an exercise when the gym is busy, always for the same body part.",
+      ],
+    },
+    {
+      key: "results",
+      icon: "⭐",
+      title: "Reading their workouts",
+      where: "Client → Training",
+      points: [
+        "Green: they finished. Orange: partly done, with their reason. Red: they couldn't train, with their reason.",
+        "A gold star means they beat their last session. Tap the day to see exactly where.",
+        "Warm-up sets are labelled, so you only judge the working sets.",
+      ],
+    },
+    {
+      key: "guides",
+      icon: "📚",
+      title: "Coaching guides",
+      where: "Menu ☰",
+      points: [
+        "Client retention, nutrition for coaches, training each body part, and recovery, written for trainers.",
+        "Clients have their own guides on nutrition, supplements, sleep and the Health Reset, so you can point them there.",
+      ],
+    },
+    {
+      key: "profile",
+      icon: "👤",
+      title: "Your profile, logo and billing",
+      where: "Profile tab",
+      points: [
+        "Add your logo. Your clients see it in their app.",
+        "Your trainer code for new clients, your referral code for other trainers, your EFT details and your plan all live here.",
+      ],
+    },
+  ],
+  bottomLine: "Check the dashboard daily, clear the red, reply fast, and celebrate the gold stars with your clients.",
+};
