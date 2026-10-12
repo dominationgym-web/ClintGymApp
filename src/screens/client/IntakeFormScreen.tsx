@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
 
 function YesNo({
   label,
@@ -120,6 +121,10 @@ export default function IntakeFormScreen() {
 
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("");
+  // For the trainer's diet planner (0071): fills in the client's BMR.
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [activity, setActivity] = useState("");
 
   const [goals, setGoals] = useState<string[]>([]);
   const [trainingForDetail, setTrainingForDetail] = useState("");
@@ -166,6 +171,20 @@ export default function IntakeFormScreen() {
       Alert.alert("Male or female?", "Tap Male or Female under About you.");
       return;
     }
+    const height = Number(heightCm.replace(",", "."));
+    const weight = Number(weightKg.replace(",", "."));
+    if (!(height >= 100 && height <= 250)) {
+      Alert.alert("Your height", "Type your height in centimetres, for example 175.");
+      return;
+    }
+    if (!(weight >= 25 && weight <= 400)) {
+      Alert.alert("Your weight", "Type your weight in kilograms, for example 82.");
+      return;
+    }
+    if (!activity) {
+      Alert.alert("How active are you?", "Tap the option under About you that fits you best.");
+      return;
+    }
     if (!age.trim() || goals.length === 0 || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
       Alert.alert("Almost done", "Fill in at least your age, goals, occupation, breakfast, and training habits.");
       return;
@@ -174,6 +193,9 @@ export default function IntakeFormScreen() {
     const responses: Record<string, string> = {
       age: age.trim(),
       sex,
+      height_cm: String(height),
+      weight_kg: String(weight),
+      activity_level: activity,
       training_goals: goals.join(", "),
       occupation_type: occupationType === "Other" ? occupationOther.trim() || "Other" : occupationType,
       job_stress_level: jobStress || "Not answered",
@@ -240,6 +262,40 @@ export default function IntakeFormScreen() {
           keyboardType="number-pad"
         />
       </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Height (cm)</Text>
+        <TextInput
+          style={styles.timeInput}
+          value={heightCm}
+          onChangeText={setHeightCm}
+          placeholder="e.g. 175"
+          placeholderTextColor="#64748B"
+          keyboardType="decimal-pad"
+          maxLength={5}
+        />
+      </View>
+      <View style={styles.field}>
+        <Text style={styles.label}>Weight (kg)</Text>
+        <TextInput
+          style={styles.timeInput}
+          value={weightKg}
+          onChangeText={setWeightKg}
+          placeholder="e.g. 82"
+          placeholderTextColor="#64748B"
+          keyboardType="decimal-pad"
+          maxLength={5}
+        />
+      </View>
+      <ChoiceField
+        label="How active are you?"
+        options={INTAKE_ACTIVITY_LEVELS.map((a) => a.label)}
+        value={activity}
+        onChange={setActivity}
+      />
+      {activity ? (
+        <Text style={styles.activityHint}>{INTAKE_ACTIVITY_LEVELS.find((a) => a.label === activity)?.detail}</Text>
+      ) : null}
 
       <Text style={styles.sectionHeading}>Your goals</Text>
       <MultiChoiceField
@@ -352,6 +408,7 @@ const styles = StyleSheet.create({
   sectionHeading: { color: "#22C55E", fontWeight: "700", fontSize: 15, marginTop: 22, marginBottom: 10 },
   field: { marginBottom: 16 },
   label: { color: "#E2E8F0", fontSize: 14, marginBottom: 8, lineHeight: 19 },
+  activityHint: { color: "#94A3B8", fontSize: 12, marginTop: -8, marginBottom: 14 },
   timeInput: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, maxWidth: 160 },
   textInput: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12 },
   multiline: { minHeight: 70, textAlignVertical: "top" },

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   amountLabel,
   bmr,
+  intakeDetails,
   dailyTarget,
   dayTotals,
   emptyWeek,
@@ -67,5 +68,26 @@ describe("day totals and the target warning", () => {
     expect(amountLabel({ food: "Olive oil", grams: 10 })).toBe("10 g");
     expect(normaliseWeek(null)).toHaveLength(7);
     expect(normaliseWeek([{ meals: [] }])[0].meals).toEqual([]);
+  });
+});
+
+describe("intakeDetails", () => {
+  it("reads height, weight, age and activity from the intake", () => {
+    expect(
+      intakeDetails({
+        intake_responses: { age: "34", height_cm: "180", weight_kg: "85,5", activity_level: "Active" },
+        sex: "male",
+      }),
+    ).toEqual({ weight_kg: 85.5, height_cm: 180, age: 34, sex: "male", activity: 1.55 });
+  });
+
+  it("leaves out missing or impossible answers", () => {
+    expect(intakeDetails({ intake_responses: { age: "34", height_cm: "1.75" }, sex: null })).toEqual({
+      weight_kg: null,
+      height_cm: null,
+      age: 34,
+      sex: null,
+      activity: null,
+    });
   });
 });
