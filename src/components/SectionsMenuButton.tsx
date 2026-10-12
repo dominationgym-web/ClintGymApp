@@ -7,9 +7,10 @@ import { useAuth } from "@/context/AuthContext";
 import MenuButton from "@/components/MenuButton";
 import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
 import { WELCOME_MENU_ITEM } from "@/lib/welcome";
+import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 
 // The client app's menu: the suggestion box first (the coach wants it easy to
-// find), then the coach's welcome and the extra sections (Nutrition, ...).
+// find), then how to use the app, the coach's welcome and the extra sections (Nutrition, ...).
 export default function SectionsMenuButton() {
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const { client } = useAuth();
@@ -17,6 +18,7 @@ export default function SectionsMenuButton() {
     <MenuButton
       items={[
         { ...SUGGESTION_BOX_MENU_ITEM, onPress: () => navigation.navigate("SuggestionBox") },
+        { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
         { ...WELCOME_MENU_ITEM, onPress: () => navigation.navigate("Welcome") },
         ...sectionsFor(client?.sex).map((section) => ({
           key: section.key,

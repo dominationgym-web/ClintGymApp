@@ -11,7 +11,7 @@ export function ExerciseGuideContent({ technique }: { technique: ExerciseTechniq
     <View>
       <MuscleNotWeight />
       <Text style={styles.feel}>
-        <Text style={styles.feelLabel}>Feel it in: </Text>
+        <Text style={styles.feelLabel}>Works and feel it in: </Text>
         {technique.feel}
       </Text>
       <Text style={styles.heading}>How to do it</Text>
@@ -47,23 +47,49 @@ export function MuscleNotWeight() {
   );
 }
 
-// A small ? button that opens the guide. Shows nothing when there's no guide
-// for the exercise (a trainer's own exercise with no body part).
-export default function ExerciseGuideButton({ name, category }: { name: string; category?: string | null }) {
+// Opens the guide: a small ? button, or (variant "bar", GRIZZ 2026-10-12) a
+// full-width "How to do it" button that also says what the exercise works,
+// so it's easy to spot on a workout. Shows nothing when there's no guide for
+// the exercise (a trainer's own exercise with no body part).
+export default function ExerciseGuideButton({
+  name,
+  category,
+  variant = "icon",
+}: {
+  name: string;
+  category?: string | null;
+  variant?: "icon" | "bar";
+}) {
   const [open, setOpen] = useState(false);
   const technique = techniqueFor(name, category);
   if (!technique) return null;
   return (
     <>
-      <Pressable
-        style={styles.button}
-        onPress={() => setOpen(true)}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel={`How to do ${name}`}
-      >
-        <Text style={styles.buttonText}>?</Text>
-      </Pressable>
+      {variant === "bar" ? (
+        <Pressable
+          style={styles.bar}
+          onPress={() => setOpen(true)}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel={`How to do ${name}`}
+        >
+          <Text style={styles.barTitle}>📖 How to do it ›</Text>
+          <Text style={styles.barWorks}>
+            <Text style={styles.barWorksLabel}>Works: </Text>
+            {technique.feel}
+          </Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          style={styles.button}
+          onPress={() => setOpen(true)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={`How to do ${name}`}
+        >
+          <Text style={styles.buttonText}>?</Text>
+        </Pressable>
+      )}
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <SafeAreaView style={styles.modal}>
           <View style={styles.header}>
@@ -96,6 +122,19 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   buttonText: { color: BRAND_GOLD, fontSize: 15, fontWeight: "800" },
+  bar: {
+    borderWidth: 1.5,
+    borderColor: BRAND_GOLD,
+    backgroundColor: "#2A2414",
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    alignSelf: "stretch",
+  },
+  barTitle: { color: BRAND_GOLD, fontSize: 14, fontWeight: "800" },
+  barWorks: { color: "#E2E8F0", fontSize: 13, marginTop: 2 },
+  barWorksLabel: { color: "#94A3B8", fontWeight: "700" },
   modal: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", alignItems: "flex-start", padding: 20, paddingBottom: 8 },
   title: { color: "#fff", fontSize: 20, fontWeight: "700" },

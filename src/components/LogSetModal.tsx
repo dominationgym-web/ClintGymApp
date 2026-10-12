@@ -142,10 +142,8 @@ export default function LogSetModal({
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>{exercise?.name}</Text>
-              {exercise && <ExerciseGuideButton name={exercise.name} category={exercise.category} />}
-            </View>
+            <Text style={styles.name}>{exercise?.name}</Text>
+            {exercise && <ExerciseGuideButton name={exercise.name} category={exercise.category} variant="bar" />}
             {note ? <Text style={styles.note}>{note}</Text> : null}
           </View>
           <Pressable onPress={() => onClose(todaysSets.length)} hitSlop={10}>
@@ -251,7 +249,6 @@ export default function LogSetModal({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", alignItems: "flex-start", padding: 20, gap: 10 },
-  nameRow: { flexDirection: "row", alignItems: "center" },
   name: { color: "#fff", fontWeight: "700", fontSize: 17, flexShrink: 1 },
   note: { color: "#94A3B8", fontSize: 13, marginTop: 2 },
   close: { color: BRAND_GOLD, fontWeight: "700", fontSize: 15 },
