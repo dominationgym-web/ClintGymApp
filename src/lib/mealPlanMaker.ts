@@ -11,12 +11,33 @@ import { findFood, gramsFor, itemTotals, type DietDay, type DietItem, type DietM
 
 export type MealRole = "pre" | "post" | "meal";
 
+export type MealGoal = "coach" | "lose" | "maintain" | "gain";
+
 export type MealPlanSettings = {
   /** Meal times as "HH:MM", in order. */
   meals: string[];
   /** When they usually train, "HH:MM", or null if they don't. */
   training: string | null;
+  goal?: MealGoal;
 };
+
+// The goal moves the day's calories off what the body uses (BMR plus
+// activity): eat less to lose weight, more to build muscle.
+export const MEAL_GOALS: { key: Exclude<MealGoal, "coach">; label: string; adjust: number; detail: string }[] = [
+  { key: "lose", label: "Lose weight", adjust: -400, detail: "About 400 kcal a day under what your body uses" },
+  { key: "maintain", label: "Stay the same", adjust: 0, detail: "Eat what your body uses" },
+  { key: "gain", label: "Build muscle", adjust: 300, detail: "About 300 kcal a day over what your body uses" },
+];
+
+// Never plan a day lower than this, whatever the goal.
+export const MIN_KCAL = 1200;
+
+/** The day's calories for a goal; "coach" uses the coach's own target. */
+export function goalKcal(need: number, goal: MealGoal, coachKcal: number | null): number {
+  if (goal === "coach" && coachKcal) return coachKcal;
+  const adjust = MEAL_GOALS.find((g) => g.key === goal)?.adjust ?? 0;
+  return Math.max(MIN_KCAL, need + adjust);
+}
 
 export type MacroTargets = { kcal: number; protein: number; carbs: number; fat: number };
 

@@ -414,7 +414,7 @@ export type ClientDietPlan = {
 // The client's own meal plan, made by the app (0077, src/lib/mealPlanMaker.ts).
 export type ClientMealPlan = {
   client_id: string;
-  settings: { meals: string[]; training: string | null };
+  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain" };
   targets: { kcal: number; protein: number; carbs: number; fat: number };
   training_day: DietDay;
   rest_day: DietDay;

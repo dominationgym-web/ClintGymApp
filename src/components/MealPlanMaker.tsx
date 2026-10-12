@@ -4,11 +4,14 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
-import { amountLabel, dailyTarget, dayTotals, intakeDetails, sumTotals, targetStatus, type DietDay, type DietItem } from "@/lib/dietPlan";
+import { amountLabel, bmr, dailyNeed, dailyTarget, dayTotals, intakeDetails, sumTotals, targetStatus, type DietDay, type DietItem } from "@/lib/dietPlan";
 import {
   cleanTime,
   DEFAULT_TIMES,
+  goalKcal,
   macroTargets,
+  MEAL_GOALS,
+  type MealGoal,
   makeDay,
   MAX_MEALS,
   MIN_MEALS,
@@ -78,7 +81,11 @@ export function MealDayView({
 export default function MealPlanMaker() {
   const { client } = useAuth();
   const [plan, setPlan] = useState<ClientMealPlan | null>(null);
-  const [target, setTarget] = useState<{ kcal: number; weight: number } | null>(null);
+  // What the body uses a day (BMR times activity), the coach's own target if
+  // they set one, and body weight for the protein.
+  const [target, setTarget] = useState<{ bmr: number; need: number; coachKcal: number | null; weight: number } | null>(null);
+  const [goal, setGoal] = useState<MealGoal>("maintain");
+  const [explain, setExplain] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [count, setCount] = useState(4);
@@ -96,18 +103,22 @@ export default function MealPlanMaker() {
       supabase.from("client_diet_plans").select("*").eq("client_id", client.id).maybeSingle(),
     ]).then(([{ data: mine }, { data: coach }]) => {
       // The coach's numbers first (they include any over or under they set), then the intake.
-      const fromCoach = coach ? dailyTarget({ ...coach, activity: Number(coach.activity) }) : null;
+      const coachDetails = coach ? { ...coach, activity: Number(coach.activity) } : null;
+      const coachKcal = coachDetails ? dailyTarget(coachDetails) : null;
       const intake = intakeDetails(client);
-      const fromIntake = intake.activity ? dailyTarget({ ...intake, activity: intake.activity, adjust_kcal: 0 }) : null;
-      const kcal = fromCoach ?? fromIntake;
-      const weight = (fromCoach ? coach?.weight_kg : null) ?? intake.weight_kg;
-      setTarget(kcal && weight ? { kcal, weight: Number(weight) } : null);
+      const details = coachKcal && coachDetails ? coachDetails : intake.activity ? { ...intake, activity: intake.activity } : null;
+      const need = details ? dailyNeed(details) : null;
+      const base = details ? bmr(details) : null;
+      const weight = details?.weight_kg;
+      setTarget(need && base && weight ? { bmr: base, need, coachKcal, weight: Number(weight) } : null);
+      if (coachKcal) setGoal("coach");
       if (mine?.settings?.meals?.length) {
         setPlan(mine);
         setCount(mine.settings.meals.length);
         setTimes(mine.settings.meals);
         setTrains(!!mine.settings.training);
         if (mine.settings.training) setTraining(mine.settings.training);
+        if (mine.settings.goal) setGoal(mine.settings.goal);
         if (!mine.settings.training) setDayKind("rest");
       } else {
         setEditing(true);
@@ -126,6 +137,54 @@ export default function MealPlanMaker() {
     );
   }
 
+  const header = (
+    <View style={styles.headerRow}>
+      <Text style={styles.headerTitle}>Work out your own meal plan and diet based on your BMR and goals.</Text>
+      <Pressable style={styles.help} onPress={() => setExplain(true)} accessibilityLabel="How it works" hitSlop={8}>
+        <Text style={styles.helpText}>?</Text>
+      </Pressable>
+    </View>
+  );
+  const explainer = (
+    <Modal visible={explain} animationType="slide" transparent onRequestClose={() => setExplain(false)}>
+      <View style={styles.backdrop}>
+        <View style={[styles.sheet, { maxHeight: "85%" }]}>
+          <ScrollView>
+            <Text style={styles.sheetTitle}>How it works</Text>
+            <Text style={styles.explainHead}>1. Your BMR</Text>
+            <Text style={styles.explain}>
+              BMR is what your body burns at rest, just to keep you alive. The app works it out from your height, weight, age and
+              sex, then adds your activity to get what your body uses in a day.
+            </Text>
+            <Text style={styles.explainHead}>2. Your goal</Text>
+            <Text style={styles.explain}>
+              • To lose weight, eat a bit less than your body uses. It then takes the difference from your stored fat.{"\n"}• To
+              stay the same, eat what your body uses.{"\n"}• To build muscle, eat a bit more than your body uses, and train
+              hard. The extra food gives your body what it needs to build new muscle.{"\n"}The app keeps your day under, on or
+              over what you use, depending on the goal you pick.
+            </Text>
+            <Text style={styles.explainHead}>3. Your meals</Text>
+            <Text style={styles.explain}>
+              Pick how many meals you want and at what times, and when you train. The app builds your day from the foods in the
+              app: plenty of protein, healthy fats and medium carbs. Most of the carbs go in the meal before training and the
+              reload meal after it, when your body uses them best. Your other meals stay lower in carbs to keep insulin spikes
+              small. You get a training-day plan and a rest-day plan.
+            </Text>
+            <Text style={styles.explainHead}>4. Don't like a food?</Text>
+            <Text style={styles.explain}>
+              Tap ⇄ Swap next to it and pick something you like. The app changes the weight so you still get the same amount of
+              protein, carbs or fat. Tap New ideas for a fresh set of foods, or Change my meals to change your times or goal.
+            </Text>
+            <Text style={styles.explain}>Your coach can see your plan. If your coach makes you a diet plan, follow theirs first.</Text>
+          </ScrollView>
+          <Pressable style={[styles.button, styles.primary, { marginTop: 12, flex: 0 }]} onPress={() => setExplain(false)}>
+            <Text style={styles.primaryText}>Got it</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const save = async (next: ClientMealPlan) => {
     setPlan(next);
     if (!client) return;
@@ -141,8 +200,8 @@ export default function MealPlanMaker() {
     if (cleaned.some((t) => !t)) return Alert.alert("Meal times", "Type each time like 07:00 or 13:30.");
     const trainingTime = trains ? cleanTime(training) : null;
     if (trains && !trainingTime) return Alert.alert("Training time", "Type it like 17:30, or tap I don't train.");
-    const settings: MealPlanSettings = { meals: cleaned as string[], training: trainingTime };
-    const targets = macroTargets(target.kcal, target.weight);
+    const settings: MealPlanSettings = { meals: cleaned as string[], training: trainingTime, goal };
+    const targets = macroTargets(goalKcal(target.need, goal, target.coachKcal), target.weight);
     save({
       client_id: client.id,
       settings,
@@ -164,9 +223,28 @@ export default function MealPlanMaker() {
   if (editing || !plan) {
     return (
       <View>
+        {header}
         <Text style={styles.helper}>
-          Tell the app how you like to eat and it builds your day: balanced meals with medium carbs, most of them before and
-          after training to keep insulin spikes low. Your target is {target.kcal.toLocaleString()} kcal a day.
+          Your BMR is {target.bmr.toLocaleString()} kcal. With your activity your body uses about {target.need.toLocaleString()} kcal a
+          day.
+        </Text>
+        <Text style={styles.label}>Your goal</Text>
+        <View style={styles.chips}>
+          {target.coachKcal && (
+            <Pressable style={[styles.chip, goal === "coach" && styles.chipOn]} onPress={() => setGoal("coach")}>
+              <Text style={[styles.chipText, goal === "coach" && styles.chipTextOn]}>My coach's target</Text>
+            </Pressable>
+          )}
+          {MEAL_GOALS.map((g) => (
+            <Pressable key={g.key} style={[styles.chip, goal === g.key && styles.chipOn]} onPress={() => setGoal(g.key)}>
+              <Text style={[styles.chipText, goal === g.key && styles.chipTextOn]}>{g.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.note}>
+          {goal === "coach"
+            ? `${target.coachKcal?.toLocaleString()} kcal a day, as your coach set it.`
+            : `${MEAL_GOALS.find((g) => g.key === goal)?.detail}: ${goalKcal(target.need, goal, target.coachKcal).toLocaleString()} kcal a day.`}
         </Text>
         <Text style={styles.label}>How many meals a day?</Text>
         <View style={styles.chips}>
@@ -208,6 +286,7 @@ export default function MealPlanMaker() {
             <Text style={[styles.chipText, !trains && styles.chipTextOn]}>I don't train</Text>
           </Pressable>
         </View>
+        {explainer}
         <View style={styles.buttons}>
           {plan && (
             <Pressable style={[styles.button, styles.secondary]} onPress={() => setEditing(false)}>
@@ -235,6 +314,8 @@ export default function MealPlanMaker() {
 
   return (
     <View>
+      {header}
+      {explainer}
       {plan.settings.training && (
         <View style={styles.chips}>
           {(["training", "rest"] as const).map((k) => (
@@ -285,6 +366,12 @@ export default function MealPlanMaker() {
 
 const styles = StyleSheet.create({
   helper: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 8 },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+  headerTitle: { color: "#fff", fontWeight: "800", fontSize: 15, flex: 1 },
+  help: { width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND_GOLD, alignItems: "center", justifyContent: "center" },
+  helpText: { color: "#0F172A", fontSize: 26, fontWeight: "900" },
+  explainHead: { color: BRAND_GOLD, fontWeight: "800", marginTop: 12, marginBottom: 4 },
+  explain: { color: "#E2E8F0", fontSize: 14, lineHeight: 21 },
   label: { color: "#fff", fontWeight: "700", marginTop: 12, marginBottom: 6 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 },
   chip: { backgroundColor: "#0F172A", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },

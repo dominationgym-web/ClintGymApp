@@ -33,7 +33,7 @@ export default function SectionScreen({ route }: Props) {
   const parts: { title: string; body: React.ReactNode; icon?: string; tag?: SupplementLevel }[] = [];
   if (section.key === "nutrition") {
     parts.push({ title: "Your meal plan from your coach", icon: "🥗", body: <ClientDietPlanView /> });
-    parts.push({ title: "Make my own meal plan", icon: "🤖", body: <MealPlanMaker /> });
+    parts.push({ title: "Work out your own meal plan and diet", icon: "🤖", body: <MealPlanMaker /> });
     parts.push({ title: "Meal builder", icon: "🍽️", body: <MealBuilder /> });
     parts.push({ title: "Calorie calculator", icon: "🔢", body: <CalorieCalculator /> });
     parts.push({ title: "Build your plate", icon: "🥦", body: <FoodGroupExamples /> });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
-import { carbShares, cleanTime, macroTargets, makeDay, mealLabel, mealRoles, swapItem, swapOptions } from "./mealPlanMaker";
+import { carbShares, cleanTime, goalKcal, macroTargets, makeDay, mealLabel, mealRoles, swapItem, swapOptions } from "./mealPlanMaker";
 
 const targets = macroTargets(2400, 80);
 
@@ -70,5 +70,18 @@ describe("swaps", () => {
     expect(cleanTime("7")).toBe("07:00");
     expect(cleanTime("17:30")).toBe("17:30");
     expect(cleanTime("25:00")).toBeNull();
+  });
+});
+
+describe("goalKcal", () => {
+  it("eats under for weight loss and over for muscle, never below the floor", () => {
+    expect(goalKcal(2400, "lose", null)).toBe(2000);
+    expect(goalKcal(2400, "maintain", null)).toBe(2400);
+    expect(goalKcal(2400, "gain", null)).toBe(2700);
+    expect(goalKcal(1450, "lose", null)).toBe(1200);
+  });
+  it("uses the coach's target when asked and there is one", () => {
+    expect(goalKcal(2400, "coach", 2100)).toBe(2100);
+    expect(goalKcal(2400, "coach", null)).toBe(2400);
   });
 });
