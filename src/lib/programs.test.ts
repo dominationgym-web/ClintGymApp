@@ -274,6 +274,10 @@ describe("programFamily", () => {
     expect(built("Bodybuilding 3-week block")).toBe("goalBlock");
     expect(built("Strength 3-week block")).toBe("goalBlock");
     expect(built("HIIT 7")).toBe("hiit");
+    expect(built("Upper Body 3")).toBe("upperBody");
+    expect(built("Upper Body Superset 4")).toBe("upperBody");
+    expect(built("Lower Body Superset 2")).toBe("lowerBody");
+    expect(built("Lower Body 15")).toBe("lowerBody");
   });
   it("puts the trainer's own programs together, whatever their name", () => {
     expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");

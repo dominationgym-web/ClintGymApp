@@ -11,6 +11,7 @@ import ClientAvatar from "@/components/ClientAvatar";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
+import ClientCalendarCard from "@/components/ClientCalendarCard";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import { trainingLogStart } from "@/lib/trainingLog";
@@ -511,6 +512,7 @@ export default function ClientDetailScreen({ route }: Props) {
               <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
             </View>
             <ClientProgramPicker clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
+            <ClientCalendarCard clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Full workout video library</Text>
