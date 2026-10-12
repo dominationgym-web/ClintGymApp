@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Tex
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";
-import { loadAvailablePrograms, loadCalendarWorkouts, loadProgramExercises } from "@/lib/programQueries";
+import { loadAvailablePrograms, loadCalendarWorkouts, loadExerciseChanges, loadProgramExercises } from "@/lib/programQueries";
 import { PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily } from "@/lib/programs";
 import {
   monthLabel,
@@ -16,6 +16,8 @@ import {
 } from "@/lib/trainingCalendar";
 import TrainingCalendar from "@/components/TrainingCalendar";
 import ProgramSummary from "@/components/ProgramSummary";
+import ExerciseChangeModal from "@/components/ExerciseChangeModal";
+import { applyExerciseChanges } from "@/lib/exerciseChanges";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
@@ -51,6 +53,7 @@ export default function ClientCalendarCard({
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedExercises, setSelectedExercises] = useState<ProgramExercise[]>([]);
   const [picking, setPicking] = useState<string | null>(null);
+  const [changing, setChanging] = useState<ProgramExercise | null>(null);
   const [busy, setBusy] = useState(false);
 
   const loadMonth = useCallback(async () => {
@@ -87,11 +90,17 @@ export default function ClientCalendarCard({
   const selectedEntry = selected ? entryOn(selected) : null;
   const selectedProgram = selectedEntry ? byId.get(selectedEntry.program_id) ?? null : null;
 
-  useEffect(() => {
+  // The day's workout with this client's exercise changes in place (0070).
+  const loadSelectedExercises = useCallback(async () => {
     setSelectedExercises([]);
     if (!selectedProgram) return;
-    loadProgramExercises(selectedProgram.id).then(({ data }) => setSelectedExercises(data ?? []));
-  }, [selectedProgram?.id]);
+    const [{ data }, changes] = await Promise.all([loadProgramExercises(selectedProgram.id), loadExerciseChanges(clientId)]);
+    setSelectedExercises(applyExerciseChanges(data ?? [], changes));
+  }, [selectedProgram?.id, clientId]);
+
+  useEffect(() => {
+    loadSelectedExercises();
+  }, [loadSelectedExercises]);
 
   const pressDay = (date: string) => {
     setSelected(date);
@@ -169,7 +178,7 @@ export default function ClientCalendarCard({
         <View style={styles.dayBox}>
           <Text style={styles.dayTitle}>{dayHeading(selectedEntry.workout_date)}</Text>
           <Text style={styles.dayWorkout}>{selectedProgram.name}</Text>
-          <ProgramSummary program={selectedProgram} exercises={selectedExercises} />
+          <ProgramSummary program={selectedProgram} exercises={selectedExercises} onPressExercise={setChanging} />
           <View style={styles.dayButtons}>
             <Pressable style={styles.changeButton} onPress={() => setPicking(selectedEntry.workout_date)}>
               <Text style={styles.changeText}>Change workout</Text>
@@ -192,6 +201,17 @@ export default function ClientCalendarCard({
         onChoose={choose}
         onReset={resetBatch}
         onClose={() => setPicking(null)}
+      />
+      <ExerciseChangeModal
+        row={changing}
+        clientId={clientId}
+        clientName={clientName}
+        trainingPlace={trainingPlace}
+        onClose={() => setChanging(null)}
+        onSaved={() => {
+          setChanging(null);
+          loadSelectedExercises();
+        }}
       />
     </View>
   );

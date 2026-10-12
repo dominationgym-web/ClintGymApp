@@ -347,7 +347,26 @@ export type ProgramExercise = {
   // A cardio block (0048): exercise_name is the machine or the trainer's own
   // words, reps is how long, e.g. "30 sec".
   kind: "exercise" | "cardio";
+  // Set in the app when the client's trainer changed this row for them
+  // (0070): what the workout itself says.
+  changed_from?: { exercise_id: string | null; exercise_name: string; sets: number; reps: string };
 }
+
+// A trainer's change to an exercise for one client (0070): one row of one
+// workout (program_exercise_id), or an exercise swapped out of every workout
+// (original_exercise_id). Null fields keep what the workout says.
+export type ClientExerciseChange = {
+  id: string;
+  client_id: string;
+  program_exercise_id: string | null;
+  original_exercise_id: string | null;
+  exercise_id: string | null;
+  exercise_name: string | null;
+  sets: number | null;
+  reps: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export type ClientProgram = {
   client_id: string;
@@ -514,6 +533,12 @@ export interface Database {
         Row: ClientCalendarWorkout;
         Insert: Partial<ClientCalendarWorkout>;
         Update: Partial<ClientCalendarWorkout>;
+        Relationships: [];
+      };
+      client_exercise_changes: {
+        Row: ClientExerciseChange;
+        Insert: Partial<ClientExerciseChange>;
+        Update: Partial<ClientExerciseChange>;
         Relationships: [];
       };
       client_workout_resets: {

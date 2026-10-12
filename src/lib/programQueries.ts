@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { withExtraCardio } from "@/lib/programs";
-import type { ClientProgram, Program, ProgramExercise } from "@/types/database";
+import { applyExerciseChanges, type ChangeWrites } from "@/lib/exerciseChanges";
+import type { ClientExerciseChange, ClientProgram, Program, ProgramExercise } from "@/types/database";
 
 export interface ActiveProgram {
   assignment: ClientProgram;
@@ -19,12 +20,35 @@ export async function loadClientProgram(clientId: string): Promise<ActiveProgram
     .eq("client_id", clientId)
     .maybeSingle();
   if (!assignment) return null;
-  const [{ data: program }, { data: exercises }] = await Promise.all([
+  const [{ data: program }, { data: exercises }, changes] = await Promise.all([
     supabase.from("programs").select("*").eq("id", assignment.program_id).maybeSingle(),
     loadProgramExercises(assignment.program_id),
+    loadExerciseChanges(clientId),
   ]);
   if (!program) return null;
-  return { assignment, program, exercises: withExtraCardio(exercises ?? [], assignment.extra_cardio) };
+  return {
+    assignment,
+    program,
+    exercises: withExtraCardio(applyExerciseChanges(exercises ?? [], changes), assignment.extra_cardio),
+  };
+}
+
+/** The exercises, sets and reps a client's trainer changed for them (0070). */
+export async function loadExerciseChanges(clientId: string): Promise<ClientExerciseChange[]> {
+  const { data } = await supabase.from("client_exercise_changes").select("*").eq("client_id", clientId);
+  return data ?? [];
+}
+
+/** Saves a trainer's change to one exercise for a client. Returns an error message, or null. */
+export async function saveExerciseChanges({ upserts, removes }: ChangeWrites): Promise<string | null> {
+  const ownRows = upserts.filter((u) => u.program_exercise_id);
+  const everyRows = upserts.filter((u) => u.original_exercise_id);
+  const results = await Promise.all([
+    ownRows.length ? supabase.from("client_exercise_changes").upsert(ownRows, { onConflict: "client_id,program_exercise_id" }) : null,
+    everyRows.length ? supabase.from("client_exercise_changes").upsert(everyRows, { onConflict: "client_id,original_exercise_id" }) : null,
+    removes.length ? supabase.from("client_exercise_changes").delete().in("id", removes) : null,
+  ]);
+  return results.find((r) => r?.error)?.error?.message ?? null;
 }
 
 export function loadProgramExercises(programId: string) {
@@ -74,9 +98,10 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
     .eq("workout_date", date)
     .maybeSingle();
   if (!entry) return null;
-  const [{ data: program }, { data: exercises }] = await Promise.all([
+  const [{ data: program }, { data: exercises }, changes] = await Promise.all([
     supabase.from("programs").select("*").eq("id", entry.program_id).maybeSingle(),
     loadProgramExercises(entry.program_id),
+    loadExerciseChanges(clientId),
   ]);
-  return program ? { program, exercises: exercises ?? [] } : null;
+  return program ? { program, exercises: applyExerciseChanges(exercises ?? [], changes) } : null;
 }
