@@ -61,11 +61,15 @@ export function loadProgramExercises(programId: string) {
     .order("sort_order", { ascending: true });
 }
 
+// Holds the exercises taken out of the built-in workouts (0073). Never listed.
+export const RETIRED_PROGRAM_NAME = "Retired workout exercises";
+
 /** Built-in programs first (quick, then weekly), then the trainer's own. */
 export async function loadAvailablePrograms(): Promise<Program[]> {
   const { data } = await supabase
     .from("programs")
     .select("*")
+    .neq("name", RETIRED_PROGRAM_NAME)
     .order("created_at", { ascending: true })
     .order("name", { ascending: true });
   const rank = (p: Program) => (p.trainer_id ? 2 : p.kind === "quick" ? 0 : 1);
