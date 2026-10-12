@@ -12,6 +12,7 @@ import {
   type DietItem,
   type SetBy,
 } from "@/lib/dietPlan";
+import KeyboardSafe from "@/components/KeyboardSafe";
 
 const SET_BY_LABEL: Record<SetBy, string> = {
   protein: "Protein",
@@ -87,6 +88,7 @@ export default function DietFoodPicker({
 
   return (
     <Modal visible animationType="slide" onRequestClose={food && !editing ? () => setFood(null) : close}>
+      <KeyboardSafe>
       <SafeAreaView style={styles.modal}>
         <View style={styles.header}>
           <Text style={styles.title}>{food ? food.name : `Add to ${mealName}`}</Text>
@@ -196,6 +198,7 @@ export default function DietFoodPicker({
           </ScrollView>
         )}
       </SafeAreaView>
+      </KeyboardSafe>
     </Modal>
   );
 }

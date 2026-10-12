@@ -31,6 +31,8 @@ function ClientTabs() {
         headerTintColor: "#fff",
         headerRight: () => <SectionsMenuButton />,
         tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
+        // So the typing box sits right on the keyboard, not above the tab bar.
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: BRAND_GOLD,
         tabBarInactiveTintColor: "#64748B",
       }}

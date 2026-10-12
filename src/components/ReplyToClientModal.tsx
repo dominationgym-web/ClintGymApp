@@ -82,7 +82,7 @@ export default function ReplyToClientModal({
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={styles.backdrop} behavior="padding">
         <View style={styles.sheet}>
           <Text style={styles.title}>Reply to {client.name}</Text>
           {summary && <Text style={[styles.summary, client.status_flag === "orange" && styles.summaryOrange]}>{summary}</Text>}

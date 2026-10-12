@@ -5,6 +5,7 @@ import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet } from
 import { NavigationContainer } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
 import AuthNavigator from "@/navigation/AuthNavigator";
+import KeyboardSafe from "@/components/KeyboardSafe";
 import ClientNavigator from "@/navigation/ClientNavigator";
 import TrainerNavigator from "@/navigation/TrainerNavigator";
 import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
@@ -56,6 +57,7 @@ export default function RootNavigator() {
   }
 
   return (
+    <KeyboardSafe>
     <NavigationContainer>
       {role === "trainer" && trainer?.approved && locked ? (
         <TrainerLockedScreen />
@@ -77,6 +79,7 @@ export default function RootNavigator() {
         <AuthNavigator />
       )}
     </NavigationContainer>
+    </KeyboardSafe>
   );
 }
 

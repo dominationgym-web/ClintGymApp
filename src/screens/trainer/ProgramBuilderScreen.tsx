@@ -40,6 +40,7 @@ import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import CardioDurationPicker from "@/components/CardioDurationPicker";
 import type { Exercise } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
+import KeyboardSafe from "@/components/KeyboardSafe";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ProgramBuilder">;
 
@@ -388,6 +389,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
       </Pressable>
 
       <Modal visible={picking !== null} animationType="slide" onRequestClose={closePicker}>
+        <KeyboardSafe>
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Pick an exercise</Text>
@@ -435,6 +437,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
             )}
           />
         </SafeAreaView>
+        </KeyboardSafe>
       </Modal>
     </ScrollView>
   );
