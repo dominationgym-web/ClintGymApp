@@ -41,6 +41,10 @@ import CardioDurationPicker from "@/components/CardioDurationPicker";
 import type { Exercise } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import { AB_EXERCISES, AB_REP_OPTIONS, AB_REPS } from "@/lib/absBetweenSets";
+
+// Abs between sets (0083), chosen when the program is saved.
+type AbsChoice = { on: boolean; reps: number; exercise: string | null };
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ProgramBuilder">;
 
@@ -66,6 +70,9 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const [place, setPlace] = useState<ExercisePlace>("gym");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Save asks about abs between sets first (GRIZZ, 2026-10-12).
+  const [askAbs, setAskAbs] = useState(false);
+  const [abs, setAbs] = useState<AbsChoice>({ on: false, reps: AB_REPS, exercise: null });
   // Work in progress is kept on the phone (programDraft.ts), so going back by
   // mistake doesn't lose it. It's brought back on opening the builder.
   const [draftReady, setDraftReady] = useState(false);
@@ -177,13 +184,18 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
 
   const filtered = filterExercises(forPlace(library, place), search);
 
-  const save = async () => {
-    if (!trainer) return;
+  const askToSave = () => {
     const problem = weeklyDraftProblem(name, sessions);
     if (problem) {
       Alert.alert("Not quite ready", problem);
       return;
     }
+    setAskAbs(true);
+  };
+
+  const save = async (absChoice: AbsChoice) => {
+    if (!trainer) return;
+    setAskAbs(false);
     setSaving(true);
     const dayTitles = WEEKDAY_NAMES.map((_, i) => {
       const s = sessions.find((x) => x.day === i + 1);
@@ -199,6 +211,9 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
         day_titles: dayTitles,
         warm_up: warmUp.trim() || DEFAULT_WARM_UP,
         place,
+        abs_between_sets: absChoice.on,
+        abs_reps: absChoice.reps,
+        abs_exercise: absChoice.exercise,
       })
       .select()
       .single();
@@ -384,7 +399,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
         </>
       )}
 
-      <Pressable style={styles.saveButton} onPress={save} disabled={saving}>
+      <Pressable style={styles.saveButton} onPress={askToSave} disabled={saving}>
         {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>Complete and save program</Text>}
       </Pressable>
 
@@ -438,6 +453,58 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
           />
         </SafeAreaView>
         </KeyboardSafe>
+      </Modal>
+
+      <Modal visible={askAbs} transparent animationType="fade" onRequestClose={() => setAskAbs(false)}>
+        <View style={styles.absBackdrop}>
+          <View style={styles.absCard}>
+            <ScrollView contentContainerStyle={{ padding: 18 }}>
+              <Text style={styles.modalTitle}>Add abs between each set?</Text>
+              <Text style={styles.absHelp}>
+                After every set the client does the ab exercise, then taps Complete to start their rest timer.
+              </Text>
+              <View style={[styles.chipRow, { marginTop: 12 }]}>
+                <Pressable style={[styles.chip, !abs.on && styles.chipOn]} onPress={() => setAbs({ ...abs, on: false })}>
+                  <Text style={[styles.chipText, !abs.on && styles.chipTextOn]}>No thanks</Text>
+                </Pressable>
+                <Pressable style={[styles.chip, abs.on && styles.chipOn]} onPress={() => setAbs({ ...abs, on: true })}>
+                  <Text style={[styles.chipText, abs.on && styles.chipTextOn]}>Yes, add abs</Text>
+                </Pressable>
+              </View>
+              {abs.on && (
+                <>
+                  <Text style={styles.label}>How many reps</Text>
+                  <View style={styles.chipRow}>
+                    {AB_REP_OPTIONS.map((n) => (
+                      <Pressable key={n} style={[styles.chip, abs.reps === n && styles.chipOn]} onPress={() => setAbs({ ...abs, reps: n })}>
+                        <Text style={[styles.chipText, abs.reps === n && styles.chipTextOn]}>{n}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={styles.label}>Which exercise</Text>
+                  <View style={styles.chipRow}>
+                    {[null, ...AB_EXERCISES].map((e) => (
+                      <Pressable
+                        key={e ?? "mix"}
+                        style={[styles.chip, abs.exercise === e && styles.chipOn]}
+                        onPress={() => setAbs({ ...abs, exercise: e })}
+                      >
+                        <Text style={[styles.chipText, abs.exercise === e && styles.chipTextOn]}>{e ?? "Mix it up"}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {abs.exercise === null && <Text style={styles.category}>Mix it up gives a different ab exercise each set.</Text>}
+                </>
+              )}
+              <Pressable style={styles.saveButton} onPress={() => save(abs)}>
+                <Text style={styles.saveText}>Save program</Text>
+              </Pressable>
+              <Pressable onPress={() => setAskAbs(false)} hitSlop={8} style={{ alignSelf: "center", marginTop: 12 }}>
+                <Text style={styles.close}>Back to editing</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </ScrollView>
   );
@@ -546,4 +613,7 @@ const styles = StyleSheet.create({
   dayTabOn: { backgroundColor: BRAND_GOLD },
   dayTabText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
   category: { color: "#64748B", fontSize: 12, marginTop: 2 },
+  absBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 16 },
+  absCard: { backgroundColor: "#0F172A", borderRadius: 14, borderWidth: 1.5, borderColor: BRAND_GOLD, maxHeight: "90%" },
+  absHelp: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginTop: 6 },
 });

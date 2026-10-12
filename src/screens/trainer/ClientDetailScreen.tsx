@@ -285,6 +285,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     }
   };
 
+  const toggleAbs = async (next: boolean) => {
+    setClient((c) => (c ? { ...c, abs_between_sets: next } : c));
+    const { error } = await supabase.from("clients").update({ abs_between_sets: next }).eq("id", clientId);
+    if (error) {
+      setClient((c) => (c ? { ...c, abs_between_sets: !next } : c));
+      Alert.alert("Couldn't update", error.message);
+    }
+  };
+
   if (loading || !client) {
     return (
       <View style={styles.centered}>
@@ -537,6 +546,20 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <ClientProgramPicker clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             <ClientCalendarCard clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
+            <View style={styles.libraryRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.libraryTitle}>Abs between sets</Text>
+                <Text style={styles.helper}>
+                  Ab reps after every set on the upper body, lower body, full body, Chest & Bi and Back & Tri workouts, and on your own programs where you added abs. The rest timer starts when {client.name} taps Complete.
+                </Text>
+              </View>
+              <Switch
+                value={client.abs_between_sets !== false}
+                onValueChange={toggleAbs}
+                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                accessibilityLabel="Abs between sets"
+              />
+            </View>
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Full workout video library</Text>

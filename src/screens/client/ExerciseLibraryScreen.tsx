@@ -35,6 +35,7 @@ import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession }
 import WorkoutReasonModal from "@/components/WorkoutReasonModal";
 import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
 import RestTimer from "@/components/RestTimer";
+import { AB_REPS, abExerciseFor, absBetweenSets } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
@@ -117,6 +118,9 @@ export default function ExerciseLibraryScreen() {
   const [restRun, setRestRun] = useState(0);
   // Length of the rest timer that's showing.
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
+  // Abs between sets (0083): after a working set the client does 20 ab reps
+  // and taps Complete, which starts the rest timer. `rest` is that timer's length.
+  const [absDue, setAbsDue] = useState<{ rest: number; count: number } | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   // Home training (0052): home clients start on the Home tab.
@@ -238,6 +242,11 @@ export default function ExerciseLibraryScreen() {
     return swap ? { ...row, exercise_id: swap.id, exercise_name: swap.name } : row;
   });
   const plannedRow = (row: ProgramExercise) => homePlan.find((r) => r.id === row.id) ?? row;
+  // 20 ab reps between sets on this workout, unless the trainer switched it off (0083).
+  const absOn = absBetweenSets(program?.program, client);
+  const abReps = program?.program.abs_reps || AB_REPS;
+  const abName = (count: number) => abExerciseFor(count - 1, program?.program.abs_exercise);
+  const workingSetsToday = () => allTodaysSets.filter((s) => !s.warm_up).length;
   const categoryOf = (row: ProgramExercise) =>
     exercises.find((e) => e.id === row.exercise_id)?.category ??
     exercises.find((e) => e.name === row.exercise_name)?.category ??
@@ -443,8 +452,11 @@ export default function ExerciseLibraryScreen() {
   const openExercise = async (exercise: Exercise, programRow: ProgramExercise | null = null, rest = 0) => {
     setSelected(exercise);
     setTarget(programRow);
+    // Rest after a set waits for the ab reps when the workout has them.
+    const abs = rest > 0 && absOn;
+    setAbsDue(abs ? { rest, count: workingSetsToday() } : null);
     setRestSeconds(rest);
-    setRestRun(rest > 0 ? Date.now() : 0);
+    setRestRun(rest > 0 && !abs ? Date.now() : 0);
     setVideoExpanded(false);
     setWeight("");
     setReps("");
@@ -478,6 +490,13 @@ export default function ExerciseLibraryScreen() {
     } else {
       setWeight(start);
     }
+  };
+
+  const finishAbs = () => {
+    if (!absDue) return;
+    setRestSeconds(absDue.rest);
+    setRestRun(Date.now());
+    setAbsDue(null);
   };
 
   const skipWarmUp = () => {
@@ -543,11 +562,17 @@ export default function ExerciseLibraryScreen() {
       openProgramExercise(step.go, step.restSeconds);
       return;
     }
-    setRestSeconds(target?.rest_seconds || DEFAULT_REST_SECONDS);
-    setRestRun((n) => n + 1);
+    const rest = target?.rest_seconds || DEFAULT_REST_SECONDS;
+    const next = target && workingDone + 1 >= target.sets ? nextUnfinished(target, todaysWorkout, done) : null;
+    // Abs between sets, except after the very last set of the workout.
+    if (target && absOn && (workingDone + 1 < target.sets || next)) {
+      setAbsDue({ rest, count: workingSetsToday() + 1 });
+    } else {
+      setRestSeconds(rest);
+      setRestRun((n) => n + 1);
+    }
     // Last set of a program exercise: offer to go straight to the next one.
     if (target && workingDone + 1 >= target.sets) {
-      const next = nextUnfinished(target, todaysWorkout, done);
       if (next?.kind === "cardio") {
         Alert.alert(`${target.exercise_name} done ✓`, `Next up: 🔥 ${cardioLabel(next)}. Tick it off on your workout when you're done.`, [
           { text: "Not yet", style: "cancel" },
@@ -556,7 +581,8 @@ export default function ExerciseLibraryScreen() {
       } else if (next) {
         Alert.alert(`${target.exercise_name} done ✓`, `Ready to move on to ${next.exercise_name}?`, [
           { text: "Not yet", style: "cancel" },
-          { text: "Next exercise", onPress: () => openProgramExercise(next) },
+          // With abs between sets, the abs and rest come along to the next exercise.
+          { text: "Next exercise", onPress: () => openProgramExercise(next, absOn ? rest : 0) },
         ]);
       } else {
         const finish = session && sessionDue ? " Tap Complete workout to unlock your next session." : " Tap Complete workout so your coach sees it.";
@@ -627,6 +653,16 @@ export default function ExerciseLibraryScreen() {
                   <View style={styles.sessionWarmUp}>
                     <Text style={styles.sessionWarmUpTitle}>Warm up first</Text>
                     <Text style={styles.howToText}>{program.program.warm_up}</Text>
+                  </View>
+                )}
+                {absOn && todaysWorkout.length > 0 && (
+                  <View style={styles.sessionWarmUp}>
+                    <Text style={styles.sessionWarmUpTitle}>Abs between sets</Text>
+                    <Text style={styles.howToText}>
+                      After each set, do {abReps} reps of{" "}
+                      {program.program.abs_exercise ? program.program.abs_exercise.toLowerCase() : "the ab exercise the app shows you"}, then tap
+                      Complete to start your rest.
+                    </Text>
                   </View>
                 )}
                 {calendarToday && todaysWorkout.length > 0 && (
@@ -888,7 +924,20 @@ export default function ExerciseLibraryScreen() {
               )}
             </Pressable>
 
-            {targetNext && restRun === 0 && (
+            {absDue && (
+              <View style={styles.absBox}>
+                <Text style={styles.warmUpTitle}>
+                  Abs: {abReps} x {abName(absDue.count)}
+                </Text>
+                <Text style={styles.warmUpText}>
+                  Do {abReps} reps of {abName(absDue.count).toLowerCase()} now, then tap Complete to start your rest.
+                </Text>
+                <Pressable style={styles.absButton} onPress={finishAbs} accessibilityRole="button">
+                  <Text style={styles.buttonText}>Complete</Text>
+                </Pressable>
+              </View>
+            )}
+            {targetNext && restRun === 0 && !absDue && (
               <View style={styles.warmUpBox}>
                 <Text style={styles.warmUpTitle}>Superset: no rest</Text>
                 <Text style={styles.warmUpText}>After each set, the app takes you straight to {targetNext.exercise_name}, then you rest.</Text>
@@ -942,6 +991,8 @@ export default function ExerciseLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  absBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
+  absButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },
   fromCalendar: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 6 },
   paceBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 10 },
   paceChips: { flexDirection: "row", gap: 6, marginVertical: 8 },
