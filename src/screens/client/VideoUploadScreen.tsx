@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert, TextInput } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +21,8 @@ export default function VideoUploadScreen() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  // Which exercise the video shows, so the coach knows what to look at (0081).
+  const [exerciseName, setExerciseName] = useState("");
 
   const loadVideos = async () => {
     if (!client) return;
@@ -60,9 +62,12 @@ export default function VideoUploadScreen() {
         client_id: client.id,
         storage_provider: "supabase",
         storage_path: storagePath,
+        exercise_name: exerciseName.trim() || null,
       });
       if (insertError) throw insertError;
 
+      setExerciseName("");
+      Alert.alert("Sent to your coach ✅", "Your coach has been told and will watch it.");
       await loadVideos();
     } catch (err) {
       Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
@@ -107,6 +112,15 @@ export default function VideoUploadScreen() {
       <Text style={styles.helper}>
         Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
       </Text>
+      <Text style={styles.fieldLabel}>Which exercise is it? (optional)</Text>
+      <TextInput
+        style={styles.input}
+        value={exerciseName}
+        onChangeText={setExerciseName}
+        placeholder="e.g. Barbell squat"
+        placeholderTextColor="#64748B"
+        maxLength={80}
+      />
       <View style={styles.row}>
         <Pressable style={[styles.button, styles.flex1]} onPress={handleRecord} disabled={uploading}>
           <Text style={styles.buttonText}>Record video</Text>
@@ -122,7 +136,13 @@ export default function VideoUploadScreen() {
         keyExtractor={(v) => v.id}
         renderItem={({ item }) => (
           <View style={styles.videoRow}>
-            <Text style={styles.label}>{new Date(item.uploaded_at).toLocaleDateString()}</Text>
+            <View style={styles.flex1}>
+              <Text style={styles.label}>{item.exercise_name || "Form video"}</Text>
+              <Text style={styles.expiry}>
+                {new Date(item.uploaded_at).toLocaleDateString()}
+                {item.viewed_at ? " · Coach watched ✓" : " · Sent to your coach"}
+              </Text>
+            </View>
             <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString()}</Text>
           </View>
         )}
@@ -149,6 +169,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 8,
   },
-  label: { color: "#fff" },
+  label: { color: "#fff", fontWeight: "600" },
+  fieldLabel: { color: "#CBD5E1", fontSize: 13, fontWeight: "600", marginBottom: 6 },
+  input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15, marginBottom: 12 },
   expiry: { color: "#64748B", fontSize: 12 },
 });

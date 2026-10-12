@@ -53,6 +53,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Your coach can set habits for you. You can also add your own from the list (nutrition, movement, sleep, mindset) or write your own, up to 15 at a time.",
         "Set a reminder time on a habit so the app nudges you.",
         "Start small. Two habits you never miss beat ten you forget.",
+        "Keep a habit 5 days out of 7 and your coach is told, so expect a message from them.",
       ],
     },
     {
@@ -87,7 +88,8 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       title: "Video log",
       where: "Video log tab",
       points: [
-        "Film a set (up to 60 seconds) so your coach can check your form.",
+        "Film a set (up to 60 seconds) so your coach can check your form. Type which exercise it is first.",
+        "Your coach is told straight away. You'll see \"Coach watched ✓\" once they've seen it, and their feedback comes as a message.",
         "Videos clear themselves after 7 days, so send them while they're fresh.",
       ],
     },
@@ -171,6 +173,8 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Start every day here. It shows today's compliance: who checked in, who trained and who needs you.",
         "Problems show in red: pain, fatigue, stress or an urgent flag. Tap Busy fixing (orange) while you deal with it, then Fixed to clear it. The app checks in with the client the next morning on your behalf.",
+        "🎥 New form videos and 🏆 habit wins show at the top. You get a phone notification for both.",
+        "Habit wins list each habit a client kept 5 of 7 days. Tap Write to send them a message in your own words.",
         "The recovery check warns you when a client is training the same muscles two days running, and lets you make the session lighter or move it.",
       ],
     },
@@ -193,7 +197,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Overview: their problems with Reply, Busy fixing and Fixed, plus messages.",
         "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. You can set habits for them.",
-        "Training: choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
+        "Training: watch their 🎥 form videos (new ones are marked) and send feedback. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
         "Photos and Notes: progress photos, and private notes only you can see.",

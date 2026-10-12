@@ -9,6 +9,7 @@ import { problemColor, problemLevel, problemLine, unfixedByClient, type ProblemL
 import { BRAND_GOLD } from "@/lib/brand";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
+import HabitWinsCard from "@/components/HabitWinsCard";
 import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
 import type { Checkin, Client, ClientProblem } from "@/types/database";
@@ -91,6 +92,30 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     loadRecoveryClients();
     return navigation.addListener("focus", loadRecoveryClients);
   }, [navigation, loadRecoveryClients]);
+
+  // Form videos the trainer hasn't watched yet (0081).
+  const [newVideos, setNewVideos] = useState<{ clientId: string; name: string }[]>([]);
+
+  const loadNewVideos = useCallback(async () => {
+    if (!trainer) return;
+    const { data: mine } = await supabase.from("clients").select("id, name").eq("trainer_id", trainer.id);
+    const ids = (mine ?? []).map((c) => c.id);
+    if (ids.length === 0) return setNewVideos([]);
+    const { data } = await supabase
+      .from("videos")
+      .select("client_id")
+      .in("client_id", ids)
+      .is("viewed_at", null)
+      .is("deleted_at", null)
+      .order("uploaded_at", { ascending: false });
+    const names = new Map((mine ?? []).map((c) => [c.id, c.name]));
+    setNewVideos((data ?? []).map((v) => ({ clientId: v.client_id, name: names.get(v.client_id) ?? "" })));
+  }, [trainer]);
+
+  useEffect(() => {
+    loadNewVideos();
+    return navigation.addListener("focus", loadNewVideos);
+  }, [navigation, loadNewVideos]);
 
   const loadSuggestionCount = useCallback(async () => {
     if (!isOwner) return;
@@ -212,6 +237,19 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
           <Text style={styles.suggestionBannerLink}>Open ›</Text>
         </Pressable>
       )}
+      {newVideos.length > 0 && (
+        <Pressable
+          style={styles.suggestionBanner}
+          onPress={() => navigation.navigate("ClientDetail", { clientId: newVideos[0].clientId, tab: "training" })}
+        >
+          <Text style={styles.suggestionBannerText}>
+            🎥 {newVideos.length} new form video{newVideos.length === 1 ? "" : "s"} from{" "}
+            {[...new Set(newVideos.map((v) => v.name.split(" ")[0]))].join(", ")}
+          </Text>
+          <Text style={styles.suggestionBannerLink}>Watch ›</Text>
+        </Pressable>
+      )}
+      {trainer && <HabitWinsCard trainerId={trainer.id} />}
       {newSuggestions > 0 && (
         <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("SuggestionBox")}>
           <Text style={styles.suggestionBannerText}>

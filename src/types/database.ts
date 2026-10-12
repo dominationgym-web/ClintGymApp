@@ -322,6 +322,9 @@ export type Video = {
   uploaded_at: string;
   expires_at: string;
   deleted_at: string | null;
+  // Form videos (0081): which exercise it shows, and when the trainer watched it.
+  exercise_name?: string | null;
+  viewed_at?: string | null;
 }
 
 export type Exercise = {
@@ -498,6 +501,17 @@ export type Habit = {
   created_at: string;
 }
 
+export type HabitWinRow = {
+  id: string;
+  client_id: string;
+  trainer_id: string | null;
+  week_start: string;
+  habits: { habit_id: string; name: string; days: number }[];
+  acknowledged_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type HabitLog = {
   id: string;
   habit_id: string;
@@ -605,6 +619,7 @@ export interface Database {
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
       habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
+      habit_wins: { Row: HabitWinRow; Insert: Partial<HabitWinRow>; Update: Partial<HabitWinRow>; Relationships: [] };
       workout_logs: { Row: WorkoutLog; Insert: Partial<WorkoutLog>; Update: Partial<WorkoutLog>; Relationships: [] };
       programs: { Row: Program; Insert: Partial<Program>; Update: Partial<Program>; Relationships: [] };
       program_exercises: {
@@ -652,6 +667,8 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      acknowledge_habit_win: { Args: { p_win: string; p_message: string }; Returns: undefined };
+      mark_video_viewed: { Args: { p_video: string }; Returns: undefined };
       record_workout_session: {
         Args: {
           p_title: string;
