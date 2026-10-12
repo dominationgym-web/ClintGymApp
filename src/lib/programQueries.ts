@@ -47,3 +47,36 @@ export async function loadAvailablePrograms(): Promise<Program[]> {
   const rank = (p: Program) => (p.trainer_id ? 2 : p.kind === "quick" ? 0 : 1);
   return (data ?? []).slice().sort((a, b) => rank(a) - rank(b));
 }
+
+/** A client's calendar workouts between two dates (0069), oldest first. */
+export async function loadCalendarWorkouts(clientId: string, from: string, to: string) {
+  const { data } = await supabase
+    .from("client_calendar_workouts")
+    .select("*")
+    .eq("client_id", clientId)
+    .gte("workout_date", from)
+    .lte("workout_date", to)
+    .order("workout_date", { ascending: true });
+  return data ?? [];
+}
+
+export interface CalendarDayWorkout {
+  program: Program;
+  exercises: ProgramExercise[];
+}
+
+/** The workout on a client's calendar for `date` (0069), with its exercises, or null. */
+export async function loadCalendarWorkoutFor(clientId: string, date: string): Promise<CalendarDayWorkout | null> {
+  const { data: entry } = await supabase
+    .from("client_calendar_workouts")
+    .select("*")
+    .eq("client_id", clientId)
+    .eq("workout_date", date)
+    .maybeSingle();
+  if (!entry) return null;
+  const [{ data: program }, { data: exercises }] = await Promise.all([
+    supabase.from("programs").select("*").eq("id", entry.program_id).maybeSingle(),
+    loadProgramExercises(entry.program_id),
+  ]);
+  return program ? { program, exercises: exercises ?? [] } : null;
+}

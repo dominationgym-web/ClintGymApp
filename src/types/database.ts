@@ -371,6 +371,24 @@ export type ClientProgram = {
   recovery_adjustment: RecoveryAdjustment | null;
 }
 
+// Training calendar (0069): the workout (a quick program) a client does on
+// one date, chosen by their trainer.
+export type ClientCalendarWorkout = {
+  id: string;
+  client_id: string;
+  workout_date: string;
+  program_id: string;
+  created_at: string;
+}
+
+// When the trainer last tapped Reset on a batch of workouts for a client
+// (0069); workouts on the calendar from before then no longer count as used.
+export type ClientWorkoutReset = {
+  client_id: string;
+  batch: string;
+  reset_at: string;
+}
+
 export type RecoveryAdjustment = { date: string; sets: Record<string, number> };
 
 export type ExtraCardio = { after: number | null; name: string; reps: string };
@@ -490,6 +508,18 @@ export interface Database {
         Row: ClientProgram;
         Insert: Partial<ClientProgram>;
         Update: Partial<ClientProgram>;
+        Relationships: [];
+      };
+      client_calendar_workouts: {
+        Row: ClientCalendarWorkout;
+        Insert: Partial<ClientCalendarWorkout>;
+        Update: Partial<ClientCalendarWorkout>;
+        Relationships: [];
+      };
+      client_workout_resets: {
+        Row: ClientWorkoutReset;
+        Insert: Partial<ClientWorkoutReset>;
+        Update: Partial<ClientWorkoutReset>;
         Relationships: [];
       };
       lifestyle_reset_daily_logs: {

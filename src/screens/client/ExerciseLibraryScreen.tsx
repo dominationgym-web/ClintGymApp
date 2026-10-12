@@ -35,10 +35,13 @@ import type { Exercise, ProgramExercise, SetEffort, WorkoutLog } from "@/types/d
 import RestTimer from "@/components/RestTimer";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
-import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
+import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
+import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
+import ClientCalendarView from "@/components/ClientCalendarView";
 import {
   cardioLabel,
   dayTitle,
+  withExtraCardio,
   DEFAULT_REST_SECONDS,
   displayProgramName,
   exercisesForDate,
@@ -89,6 +92,9 @@ export default function ExerciseLibraryScreen() {
   const [logging, setLogging] = useState(false);
   const [videoExpanded, setVideoExpanded] = useState(false);
   const [program, setProgram] = useState<ActiveProgram | null>(null);
+  // A workout the trainer put on today's calendar (0069) replaces the program for the day.
+  const [calendarToday, setCalendarToday] = useState(false);
+  const [pace, setPace] = useState<WorkoutPace>("planned");
   // Every set logged today, to tick off the program and spot warm-ups.
   const [allTodaysSets, setAllTodaysSets] = useState<WorkoutLog[]>([]);
   // The program line for the exercise that's open, if it came from the program.
@@ -119,9 +125,10 @@ export default function ExerciseLibraryScreen() {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data, error }, active, { data: logged }, todaysSwaps] = await Promise.all([
+      const [{ data, error }, active, calendar, { data: logged }, todaysSwaps] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         client ? loadClientProgram(client.id) : Promise.resolve(null),
+        client ? loadCalendarWorkoutFor(client.id, todayIso()) : Promise.resolve(null),
         client
           ? supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso())
           : Promise.resolve({ data: [] as WorkoutLog[] }),
@@ -130,7 +137,29 @@ export default function ExerciseLibraryScreen() {
       setSwaps(todaysSwaps);
       setCardioDone(await getCardioDone(todayIso()));
       if (!error && data) setExercises(data);
-      setProgram(active);
+      if (calendar && client) {
+        const assignment = active?.assignment ?? {
+          client_id: client.id,
+          program_id: calendar.program.id,
+          started_on: todayIso(),
+          assigned_at: todayIso(),
+          current_day: null,
+          current_week: null,
+          due_on: null,
+          last_completed_at: null,
+          extra_cardio: [],
+          recovery_ignored_on: null,
+          recovery_adjustment: null,
+        };
+        setProgram({
+          assignment,
+          program: calendar.program,
+          exercises: withExtraCardio(calendar.exercises, assignment.extra_cardio),
+        });
+        setCalendarToday(true);
+      } else {
+        setProgram(active);
+      }
       setAllTodaysSets(logged ?? []);
       setLoading(false);
     };
@@ -152,7 +181,9 @@ export default function ExerciseLibraryScreen() {
         : []
       : exercisesForDate(program.program, program.exercises, new Date());
   // A lighter session the trainer set for today after a recovery check (0059).
-  const plannedWorkout = program ? applyRecoveryAdjustment(fullPlan, program.assignment, today) : fullPlan;
+  const adjusted = program ? applyRecoveryAdjustment(fullPlan, program.assignment, today) : fullPlan;
+  // Calendar workouts can be done faster or slower, which changes the rests.
+  const plannedWorkout = calendarToday ? withPace(adjusted, pace) : adjusted;
   const lightened = !!program && program.assignment.recovery_adjustment?.date === today && fullPlan.length > 0;
   // Home training (0052): a client who trains at home gets a home exercise of
   // the same body part in place of each gym-only one, automatically.
@@ -423,8 +454,10 @@ export default function ExerciseLibraryScreen() {
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
           <>
+            {client && <ClientCalendarView clientId={client.id} />}
             {program && (
               <View style={styles.programCard}>
+                {calendarToday && <Text style={styles.fromCalendar}>📅 Today's workout from your training calendar</Text>}
                 <Text style={styles.programKicker}>{displayProgramName(program.program).toUpperCase()}</Text>
                 <Text style={styles.programTitle}>
                   {session ? (sessionDue ? sessionTitle(program.program, session.day) : "Rest day") : dayTitle(program.program, new Date())}
@@ -458,6 +491,25 @@ export default function ExerciseLibraryScreen() {
                   <View style={styles.sessionWarmUp}>
                     <Text style={styles.sessionWarmUpTitle}>Warm up first</Text>
                     <Text style={styles.howToText}>{program.program.warm_up}</Text>
+                  </View>
+                )}
+                {calendarToday && todaysWorkout.length > 0 && (
+                  <View style={styles.paceBox}>
+                    <Text style={styles.sessionWarmUpTitle}>Your pace today</Text>
+                    <View style={styles.paceChips}>
+                      {PACE_OPTIONS.map((o) => (
+                        <Pressable
+                          key={o.key}
+                          onPress={() => setPace(o.key)}
+                          style={[styles.paceChip, pace === o.key && styles.paceChipOn]}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: pace === o.key }}
+                        >
+                          <Text style={[styles.paceChipText, pace === o.key && styles.paceChipTextOn]}>{o.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <Text style={styles.howToText}>{PACE_OPTIONS.find((o) => o.key === pace)?.guide}</Text>
                   </View>
                 )}
                 {todaysWorkout.length > 0 &&
@@ -758,6 +810,13 @@ export default function ExerciseLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  fromCalendar: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 6 },
+  paceBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 10 },
+  paceChips: { flexDirection: "row", gap: 6, marginVertical: 8 },
+  paceChip: { flex: 1, borderWidth: 1, borderColor: "#334155", borderRadius: 8, paddingVertical: 8, alignItems: "center" },
+  paceChipOn: { borderColor: BRAND_GOLD, backgroundColor: "#2A2410" },
+  paceChipText: { color: "#94A3B8", fontWeight: "700", fontSize: 13 },
+  paceChipTextOn: { color: BRAND_GOLD },
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 16 },
