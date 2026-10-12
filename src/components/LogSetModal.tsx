@@ -13,6 +13,7 @@ import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import EveryRepTips from "@/components/EveryRepTips";
 import RestTimer from "@/components/RestTimer";
 import type { SetEffort, WorkoutLog } from "@/types/database";
+import KeyboardSafe from "@/components/KeyboardSafe";
 
 export type LogExercise = { id: string | null; name: string; category: string | null; external_url: string | null };
 export type LogTarget = { setsLabel: string; sets: number; reps: string; restSeconds: number };
@@ -137,6 +138,7 @@ export default function LogSetModal({
 
   return (
     <Modal visible={!!exercise} animationType="slide" onRequestClose={() => onClose(todaysSets.length)}>
+      <KeyboardSafe>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
@@ -241,6 +243,7 @@ export default function LogSetModal({
           </View>
         </ScrollView>
       </SafeAreaView>
+      </KeyboardSafe>
     </Modal>
   );
 }

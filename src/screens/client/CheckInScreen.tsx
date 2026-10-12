@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
-  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import ProgressPhotoReminder from "@/components/ProgressPhotoReminder";
@@ -228,8 +227,9 @@ export default function CheckInScreen() {
     );
   }
 
+  // The whole app keeps typing above the keyboard (KeyboardSafe in RootNavigator).
   return (
-    <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <View style={styles.flex1}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
@@ -351,7 +351,7 @@ export default function CheckInScreen() {
           </Pressable>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

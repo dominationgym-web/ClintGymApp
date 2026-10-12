@@ -68,6 +68,7 @@ import {
 import { weekdayOf } from "@/lib/programSchedule";
 import { applyRecoveryAdjustment } from "@/lib/recovery";
 import { BRAND_GOLD } from "@/lib/brand";
+import KeyboardSafe from "@/components/KeyboardSafe";
 
 const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
   { key: "comfortable", label: "Comfortable" },
@@ -638,6 +639,7 @@ export default function ExerciseLibraryScreen() {
       />
 
       <Modal visible={!!swapping} animationType="slide" onRequestClose={() => setSwapping(null)}>
+        <KeyboardSafe>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={{ flex: 1 }}>
@@ -687,9 +689,11 @@ export default function ExerciseLibraryScreen() {
             )}
           />
         </SafeAreaView>
+        </KeyboardSafe>
       </Modal>
 
       <Modal visible={!!selected} animationType="slide" onRequestClose={() => setSelected(null)}>
+        <KeyboardSafe>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={{ flex: 1 }}>
@@ -825,6 +829,7 @@ export default function ExerciseLibraryScreen() {
             )}
           </ScrollView>
         </SafeAreaView>
+        </KeyboardSafe>
       </Modal>
     </View>
   );

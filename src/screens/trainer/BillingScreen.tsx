@@ -48,6 +48,7 @@ import type {
   TrainerBillingStatus,
   TrainerPayment,
 } from "@/types/database";
+import KeyboardSafe from "@/components/KeyboardSafe";
 
 // The owner's billing view (0064): who owes what, this month's client count
 // and fees per trainer, the monthly log, 6-month totals, each trainer's plan
@@ -512,6 +513,7 @@ function RecordPaymentModal({
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
+      <KeyboardSafe>
       <SafeAreaView style={styles.modal}>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
           <Text style={styles.modalTitle}>Payment from {trainerDisplayName(trainer)}</Text>
@@ -571,6 +573,7 @@ function RecordPaymentModal({
           </Pressable>
         </ScrollView>
       </SafeAreaView>
+      </KeyboardSafe>
     </Modal>
   );
 }

@@ -4,6 +4,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { findHabit, HABIT_GROUPS, isRunning } from "@/lib/habitLibrary";
 import type { Habit } from "@/types/database";
+import KeyboardSafe from "@/components/KeyboardSafe";
 
 // The client picks habits to work on: suggested ones under tap-to-open
 // headings, or one they type themselves.
@@ -47,6 +48,7 @@ export default function ChooseHabitsModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardSafe>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
           <View style={styles.header}>
@@ -135,6 +137,7 @@ export default function ChooseHabitsModal({
           </Pressable>
         </View>
       </View>
+      </KeyboardSafe>
     </Modal>
   );
 }

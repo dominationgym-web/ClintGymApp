@@ -9,6 +9,7 @@ import { loadExerciseChanges, saveExerciseChanges } from "@/lib/programQueries";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import type { ClientExerciseChange, Exercise, ProgramExercise } from "@/types/database";
+import KeyboardSafe from "@/components/KeyboardSafe";
 
 const SETS = [1, 2, 3, 4, 5, 6];
 
@@ -132,6 +133,7 @@ export default function ExerciseChangeModal({
 
   return (
     <Modal visible animationType="slide" onRequestClose={choosing ? () => setChoosing(false) : onClose}>
+      <KeyboardSafe>
       <SafeAreaView style={styles.modal}>
         <View style={styles.header}>
           <Text style={styles.title}>{choosing ? "Pick an exercise" : `Change for ${clientName}`}</Text>
@@ -251,6 +253,7 @@ export default function ExerciseChangeModal({
           </ScrollView>
         )}
       </SafeAreaView>
+      </KeyboardSafe>
     </Modal>
   );
 }
