@@ -27,7 +27,7 @@ export function sessionStatus(done: number, planned: number): "complete" | "part
 
 export type Improvement = { exercise: string; before: string; after: string };
 
-type SetLike = Pick<WorkoutLog, "exercise_id" | "exercise_name" | "weight_kg" | "reps" | "log_date">;
+type SetLike = Pick<WorkoutLog, "exercise_id" | "exercise_name" | "weight_kg" | "reps" | "log_date" | "warm_up">;
 
 const kg = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)}kg`;
 const keyOf = (s: SetLike) => s.exercise_id ?? `name:${s.exercise_name}`;
@@ -51,7 +51,10 @@ const describe = (b: ReturnType<typeof best>) =>
  * weight, or more reps at the same top weight (more reps for bodyweight work).
  * `earlier` holds sets from before today; only each exercise's latest day counts.
  */
-export function findImprovements(today: SetLike[], earlier: SetLike[]): Improvement[] {
+export function findImprovements(allToday: SetLike[], allEarlier: SetLike[]): Improvement[] {
+  // Warm-up sets (0079) never count.
+  const today = allToday.filter((s) => !s.warm_up);
+  const earlier = allEarlier.filter((s) => !s.warm_up);
   const result: Improvement[] = [];
   const todayBy = new Map<string, SetLike[]>();
   for (const s of today) todayBy.set(keyOf(s), [...(todayBy.get(keyOf(s)) ?? []), s]);

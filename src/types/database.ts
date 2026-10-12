@@ -347,6 +347,8 @@ export type WorkoutLog = {
   weight_kg: number | null;
   reps: number;
   effort: SetEffort;
+  /** A warm-up set (0079): not a working set, set_number 0. */
+  warm_up?: boolean;
   created_at: string;
 }
 

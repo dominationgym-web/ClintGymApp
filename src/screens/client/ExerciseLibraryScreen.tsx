@@ -54,6 +54,8 @@ import {
   supersetStep,
   nextUnfinished,
   warmUpReps,
+  warmUpRepsToFill,
+  warmUpWeight,
 } from "@/lib/programs";
 import {
   currentSession,
@@ -89,6 +91,11 @@ export default function ExerciseLibraryScreen() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [todaysSets, setTodaysSets] = useState<WorkoutLog[]>([]);
+  // Warm-up set (0079): the open exercise is the body part's first today, so
+  // the next set logged is the warm-up unless the client skips it. The start
+  // weight goes back in once the warm-up is done.
+  const [warmUpDue, setWarmUpDue] = useState(false);
+  const [startWeight, setStartWeight] = useState("");
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
@@ -382,6 +389,10 @@ export default function ExerciseLibraryScreen() {
   };
   const categoryById = new Map(exercises.map((e) => [e.id, e.category]));
   const categoriesLoggedToday = allTodaysSets.map((s) => (s.exercise_id ? categoryById.get(s.exercise_id) ?? null : null));
+  // Read when an exercise opens, which can be from an older render (the
+  // next-exercise prompt), so it always sees the latest sets.
+  const categoriesRef = useRef(categoriesLoggedToday);
+  categoriesRef.current = categoriesLoggedToday;
   const toggleCardio = (row: ProgramExercise) => {
     const next = cardioDone.includes(row.id) ? cardioDone.filter((id) => id !== row.id) : [...cardioDone, row.id];
     setCardioDone(next);
@@ -390,8 +401,9 @@ export default function ExerciseLibraryScreen() {
   const setsDoneFor = (row: ProgramExercise) =>
     row.kind === "cardio"
       ? cardioDone.includes(row.id) ? row.sets : 0
-      : allTodaysSets.filter((s) => (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name))
-      .length;
+      : allTodaysSets.filter(
+          (s) => !s.warm_up && (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name),
+        ).length;
 
   // `rest`: start a rest timer on arrival (coming back to a superset's first half).
   const openProgramExercise = (row: ProgramExercise, rest = 0) => {
@@ -438,6 +450,8 @@ export default function ExerciseLibraryScreen() {
     setReps("");
     setEffort(null);
     setSuggestion(null);
+    setWarmUpDue(false);
+    setStartWeight("");
     if (!client) return;
     const query = supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso());
     const { data } = await (exercise.id ? query.eq("exercise_id", exercise.id) : query.eq("exercise_name", exercise.name))
@@ -451,9 +465,25 @@ export default function ExerciseLibraryScreen() {
     const lastDate = earlier?.[0]?.log_date;
     const next = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
     setSuggestion(next);
-    const lastToday = data?.[data.length - 1]?.weight_kg;
-    if (lastToday) setWeight(String(lastToday));
-    else if (next?.weight) setWeight(String(next.weight));
+    const working = (data ?? []).filter((s) => !s.warm_up);
+    const lastToday = working[working.length - 1]?.weight_kg;
+    const start = lastToday ? String(lastToday) : next?.weight ? String(next.weight) : "";
+    setStartWeight(start);
+    const due = (data ?? []).length === 0 && needsWarmUp(exercise.category, categoriesRef.current);
+    setWarmUpDue(due);
+    if (due) {
+      const half = warmUpWeight(start ? Number(start) : null);
+      setWeight(half ? String(half) : "");
+      setReps(programRow ? warmUpRepsToFill(programRow.reps) : "");
+    } else {
+      setWeight(start);
+    }
+  };
+
+  const skipWarmUp = () => {
+    setWarmUpDue(false);
+    setWeight(startWeight);
+    setReps("");
   };
 
   const logSet = async () => {
@@ -463,10 +493,12 @@ export default function ExerciseLibraryScreen() {
       Alert.alert("Missing reps", "Enter how many reps you did.");
       return;
     }
-    if (!effort) {
+    const warmUp = warmUpDue;
+    if (!effort && !warmUp) {
       Alert.alert("Missing effort", "Pick how the set felt.");
       return;
     }
+    const workingDone = todaysSets.filter((s) => !s.warm_up).length;
     setLogging(true);
     const { data, error } = await supabase
       .from("workout_logs")
@@ -475,10 +507,11 @@ export default function ExerciseLibraryScreen() {
         exercise_id: selected.id || null,
         exercise_name: selected.name,
         log_date: todayIso(),
-        set_number: todaysSets.length + 1,
+        set_number: warmUp ? 0 : workingDone + 1,
         weight_kg: weight ? Number(weight) : null,
         reps: repsNum,
-        effort,
+        effort: warmUp ? "comfortable" : effort!,
+        warm_up: warmUp,
       })
       .select()
       .single();
@@ -489,12 +522,20 @@ export default function ExerciseLibraryScreen() {
     }
     setTodaysSets((prev) => [...prev, data]);
     setAllTodaysSets((prev) => [...prev, data]);
-    // Keep the weight for the next set; most sets use the same one.
-    setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
     setReps("");
     setEffort(null);
+    if (warmUp) {
+      // Warm-up done: back to the start weight for the working sets, after a short breather.
+      setWarmUpDue(false);
+      setWeight(startWeight);
+      setRestSeconds(60);
+      setRestRun((n) => n + 1);
+      return;
+    }
+    // Keep the weight for the next set; most sets use the same one.
+    setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
     const done = (row: ProgramExercise) =>
-      target && row.id === target.id ? todaysSets.length + 1 : setsDoneFor(row);
+      target && row.id === target.id ? workingDone + 1 : setsDoneFor(row);
     // Supersets alternate: straight into the partner, or back to the first
     // half with the rest timer running.
     const step = target ? supersetStep(target, todaysWorkout, done) : null;
@@ -505,7 +546,7 @@ export default function ExerciseLibraryScreen() {
     setRestSeconds(target?.rest_seconds || DEFAULT_REST_SECONDS);
     setRestRun((n) => n + 1);
     // Last set of a program exercise: offer to go straight to the next one.
-    if (target && todaysSets.length + 1 >= target.sets) {
+    if (target && workingDone + 1 >= target.sets) {
       const next = nextUnfinished(target, todaysWorkout, done);
       if (next?.kind === "cardio") {
         Alert.alert(`${target.exercise_name} done ✓`, `Next up: 🔥 ${cardioLabel(next)}. Tick it off on your workout when you're done.`, [
@@ -771,22 +812,26 @@ export default function ExerciseLibraryScreen() {
                 {targetNext ? `superset: straight into ${targetNext.exercise_name}` : `rest ${formatRest(target.rest_seconds)}`}
               </Text>
             )}
-            {target && target.kind !== "cardio" && todaysSets.length === 0 && (
+            {target && target.kind !== "cardio" && todaysSets.every((s) => s.warm_up) && (
               <Pressable onPress={() => changeFromLog(target)} hitSlop={8} style={{ alignSelf: "flex-start", marginBottom: 10 }}>
                 <Text style={styles.changeLink}>⇄ Gym busy? Change exercise</Text>
               </Pressable>
             )}
-            {todaysSets.length === 0 &&
-              needsWarmUp(selected?.category ?? null, categoriesLoggedToday) &&
+            {warmUpDue &&
               (() => {
-                const warmUp = target ? warmUpReps(target.reps) : null;
+                const warmUpRepsText = target ? warmUpReps(target.reps) : null;
+                const half = warmUpWeight(startWeight ? Number(startWeight) : null);
                 return (
                   <View style={styles.warmUpBox}>
                     <Text style={styles.warmUpTitle}>Warm-up set first</Text>
                     <Text style={styles.warmUpText}>
-                      First {selected?.category?.toLowerCase()} exercise today: do 1 set with a lighter weight for
-                      double the reps{warmUp ? ` (${warmUp})` : ""}. Then start your working sets.
+                      First {selected?.category?.toLowerCase()} exercise today: do 1 warm-up set at half your start weight
+                      {half ? ` (${half}kg)` : ""} for double the reps{warmUpRepsText ? ` (${warmUpRepsText})` : ""}. It's logged as a
+                      warm-up and doesn't count as one of your working sets.
                     </Text>
+                    <Pressable onPress={skipWarmUp} hitSlop={8} style={{ alignSelf: "flex-start" }}>
+                      <Text style={styles.changeLink}>Already warmed up? Skip it</Text>
+                    </Pressable>
                   </View>
                 );
               })()}
@@ -796,7 +841,7 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.warmUpText}>{suggestion.advice}</Text>
               </View>
             )}
-            <Text style={[styles.sectionHeading, { marginTop: 0 }]}>Log a set</Text>
+            <Text style={[styles.sectionHeading, { marginTop: 0 }]}>{warmUpDue ? "Log your warm-up set" : "Log a set"}</Text>
             <MuscleNotWeight />
             <EveryRepTips />
             <View style={styles.setRow}>
@@ -824,8 +869,8 @@ export default function ExerciseLibraryScreen() {
               </View>
             </View>
 
-            <Text style={styles.fieldLabel}>How did it feel?</Text>
-            <View style={styles.effortRow}>
+            {!warmUpDue && <Text style={styles.fieldLabel}>How did it feel?</Text>}
+            {!warmUpDue && <View style={styles.effortRow}>
               {EFFORT_OPTIONS.map((o) => (
                 <Pressable
                   key={o.key}
@@ -837,10 +882,14 @@ export default function ExerciseLibraryScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </View>
+            </View>}
 
             <Pressable style={styles.button} onPress={logSet} disabled={logging}>
-              {logging ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Log set</Text>}
+              {logging ? (
+                <ActivityIndicator color="#0F172A" />
+              ) : (
+                <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : "Log set"}</Text>
+              )}
             </Pressable>
 
             {targetNext && restRun === 0 && (
@@ -863,10 +912,10 @@ export default function ExerciseLibraryScreen() {
                 {todaysSets.map((s) => (
                   <View key={s.id} style={styles.loggedSetRow}>
                     <Text style={styles.loggedSetText}>
-                      Set {s.set_number}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
+                      {s.warm_up ? "Warm-up" : `Set ${s.set_number}`}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
                       {s.reps} reps
                     </Text>
-                    <Text style={styles.loggedSetEffort}>{EFFORT_LABEL[s.effort]}</Text>
+                    <Text style={styles.loggedSetEffort}>{s.warm_up ? "Not a working set" : EFFORT_LABEL[s.effort]}</Text>
                   </View>
                 ))}
               </>
