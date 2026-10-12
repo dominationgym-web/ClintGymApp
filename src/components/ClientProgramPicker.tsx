@@ -10,7 +10,8 @@ import { loadAvailablePrograms, loadClientProgram, type ActiveProgram } from "@/
 import ProgramSummary from "@/components/ProgramSummary";
 import { currentSession, sessionTitle, slotOf, trainingDays, weekdayOf } from "@/lib/programSchedule";
 import type { ExtraCardio, Program } from "@/types/database";
-import { CARDIO_ALL, CARDIO_OPTIONS, CARDIO_SECONDS, cardioDuration, cardioLabel } from "@/lib/programs";
+import { CARDIO_ALL, CARDIO_OPTIONS, cardioDuration, cardioLabel } from "@/lib/programs";
+import CardioDurationPicker from "@/components/CardioDurationPicker";
 import ProgramChooserModal from "@/components/ProgramChooserModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 
@@ -70,7 +71,7 @@ export default function ClientProgramPicker({
   const [addingCardio, setAddingCardio] = useState(false);
   const [cardioAfter, setCardioAfter] = useState<number | null>(null);
   const [cardioName, setCardioName] = useState(CARDIO_OPTIONS[0]);
-  const [cardioSeconds, setCardioSeconds] = useState(30);
+  const [cardioReps, setCardioReps] = useState(cardioDuration(30));
 
   const saveExtras = async (next: ExtraCardio[]) => {
     setBusy(true);
@@ -81,7 +82,7 @@ export default function ClientProgramPicker({
   };
 
   const addCardio = async () => {
-    await saveExtras([...extras, { after: cardioAfter, name: cardioName, reps: cardioDuration(cardioSeconds) }]);
+    await saveExtras([...extras, { after: cardioAfter, name: cardioName, reps: cardioReps }]);
     setAddingCardio(false);
   };
 
@@ -182,11 +183,7 @@ export default function ClientProgramPicker({
                 ))}
               </View>
               <Text style={styles.label}>How long</Text>
-              <View style={styles.chips}>
-                {CARDIO_SECONDS.map((sec) => (
-                  <Chip key={sec} label={cardioDuration(sec)} on={cardioSeconds === sec} onPress={() => setCardioSeconds(sec)} />
-                ))}
-              </View>
+              <CardioDurationPicker value={cardioReps} onChange={setCardioReps} />
               <View style={styles.buttonRow}>
                 <Pressable style={styles.button} onPress={addCardio} disabled={busy}>
                   <Text style={styles.buttonText}>Add</Text>

@@ -19,6 +19,8 @@ import {
   warmUpReps,
   withExtraCardio,
   programFamily,
+  cardioMinutes,
+  minutesOf,
 } from "@/lib/programs";
 import type { ProgramExercise } from "@/types/database";
 
@@ -281,5 +283,14 @@ describe("programFamily", () => {
   });
   it("puts the trainer's own programs together, whatever their name", () => {
     expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");
+  });
+});
+
+describe("cardio minutes", () => {
+  it("reads minutes back from a duration", () => {
+    expect(cardioMinutes(20)).toBe("20 min");
+    expect(minutesOf("25 min")).toBe(25);
+    expect(minutesOf("30 sec")).toBeNull();
+    expect(minutesOf("Run 5km")).toBeNull();
   });
 });

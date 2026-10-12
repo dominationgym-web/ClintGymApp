@@ -188,6 +188,9 @@ export const DEFAULT_WARM_UP =
 // Cardio blocks (0048).
 export const CARDIO_OPTIONS = ["Assault bike", "Ski Erg", "Treadmill", "Boxing", "Cycle", "Sprint"];
 export const CARDIO_SECONDS = [10, 20, 30, 40, 50, 60];
+// Longer blocks in minutes (GRIZZ, 2026-10-12), or the trainer types their own.
+export const CARDIO_MINUTES = [5, 10, 15, 20, 30, 45];
+export const MAX_CARDIO_MINUTES = 180;
 // Only for the block at the very end of a session.
 export const CARDIO_ALL = "All of the above";
 // The name a cardio block gets when the trainer types their own.
@@ -195,6 +198,16 @@ export const CARDIO_CUSTOM = "Cardio";
 
 export function cardioDuration(seconds: number): string {
   return `${seconds} sec`;
+}
+
+export function cardioMinutes(minutes: number): string {
+  return `${minutes} min`;
+}
+
+/** The minutes in a "25 min" duration, or null for seconds and the trainer's own words. */
+export function minutesOf(reps: string): number | null {
+  const m = reps.match(/^(\d+) min$/);
+  return m ? Number(m[1]) : null;
 }
 
 export function blankCardio(): DraftExercise {
