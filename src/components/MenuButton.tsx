@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
+import { View, Text, Pressable, Modal, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
 import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";
@@ -13,6 +13,7 @@ export type MenuItem = { key: string; title: string; summary: string; icon?: str
 export default function MenuButton({ items }: { items: MenuItem[] }) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
+  const { height, width } = useWindowDimensions();
   const navigation = useNavigation();
 
   // Coming back from a page opened here shows the menu again, so back is one
@@ -42,30 +43,38 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Close menu">
           {/* A Pressable with no onPress, so taps on the menu itself don't close it. */}
-          <Pressable style={[styles.menu, { marginTop: insets.top + 52 }]}>
+          {/* Scrolls when it doesn't fit, for example with large phone fonts (GRIZZ, 2026-10-12). */}
+          <Pressable
+            style={[
+              styles.menu,
+              { marginTop: insets.top + 52, maxHeight: height - insets.top - insets.bottom - 72, width: Math.min(340, width - 24) },
+            ]}
+          >
             <Text style={styles.menuHeading}>More</Text>
-            {items.map((item) => (
-              <Pressable
-                key={item.key}
-                style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
-                onPress={() => {
-                  setOpen(false);
-                  markOpenedFromMenu();
-                  item.onPress();
-                }}
-                accessibilityRole="button"
-              >
-                {item.icon ? (
-                  <View style={styles.itemIcon}>
-                    <Text style={styles.itemIconText}>{item.icon}</Text>
+            <ScrollView bounces={false}>
+              {items.map((item) => (
+                <Pressable
+                  key={item.key}
+                  style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+                  onPress={() => {
+                    setOpen(false);
+                    markOpenedFromMenu();
+                    item.onPress();
+                  }}
+                  accessibilityRole="button"
+                >
+                  {item.icon ? (
+                    <View style={styles.itemIcon}>
+                      <Text style={styles.itemIconText}>{item.icon}</Text>
+                    </View>
+                  ) : null}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.itemTitle}>{item.title}</Text>
+                    <Text style={styles.itemSummary}>{item.summary}</Text>
                   </View>
-                ) : null}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
-                  <Text style={styles.itemSummary}>{item.summary}</Text>
-                </View>
-              </Pressable>
-            ))}
+                </Pressable>
+              ))}
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -80,7 +89,6 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "flex-end" },
   menu: {
     marginRight: 12,
-    width: 300,
     backgroundColor: "#1E293B",
     borderRadius: 12,
     paddingVertical: 8,
