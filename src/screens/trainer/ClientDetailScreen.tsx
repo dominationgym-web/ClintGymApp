@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Press
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
-import type { Checkin, Client, CoachMessage, Habit, WorkoutLog } from "@/types/database";
+import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
 import { useAuth } from "@/context/AuthContext";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import type { TrainerStackParamList } from "@/navigation/types";
@@ -22,7 +22,8 @@ import DietPlanner from "@/components/DietPlanner";
 import WorkoutsSavedButton from "@/components/WorkoutsSavedButton";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import WellbeingReports from "@/components/WellbeingReports";
-import { reportedTopics } from "@/lib/wellbeing";
+import ClientProblems from "@/components/ClientProblems";
+import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetWeekNumber } from "@/lib/resetProgram";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -105,8 +106,21 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       }),
     [navigation]
   );
-  // Body-and-mind reports from the last week put a dot on the Notes tab (0055).
-  const weekAgo = toIsoDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+  // Problems not yet fixed (0075): red dot while one is open, orange while
+  // they're all being fixed.
+  const [problems, setProblems] = useState<ClientProblem[]>([]);
+  const reloadProblems = async () => {
+    const { data } = await supabase
+      .from("client_problems")
+      .select("*")
+      .eq("client_id", clientId)
+      .neq("status", "fixed")
+      .order("created_at", { ascending: true });
+    setProblems(data ?? []);
+    // Fixing the last flag problem turns the client's flag green.
+    const { data: row } = await supabase.from("clients").select("*").eq("id", clientId).single();
+    if (row) setClient(row);
+  };
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [replying, setReplying] = useState(false);
 
@@ -181,7 +195,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       if (clientRow) setClient(clientRow);
       setCheckins(checkinRows ?? []);
       setWorkoutLogs(workoutRows ?? []);
-      await Promise.all([loadHabits(), loadMessages(), loadNotes()]);
+      await Promise.all([loadHabits(), loadMessages(), loadNotes(), reloadProblems()]);
       setLoading(false);
     };
     load();
@@ -230,18 +244,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       .upsert({ client_id: clientId, notes, updated_at: new Date().toISOString() }, { onConflict: "client_id" });
     setSaving(false);
     if (error) Alert.alert("Couldn't save notes", error.message);
-  };
-
-  const markResolved = async () => {
-    const { error } = await supabase
-      .from("clients")
-      .update({ status_flag: "green", status_flag_note: null, status_flag_updated_at: new Date().toISOString() })
-      .eq("id", clientId);
-    if (error) {
-      Alert.alert("Couldn't update", error.message);
-      return;
-    }
-    setClient((c) => (c ? { ...c, status_flag: "green", status_flag_note: null } : c));
   };
 
   const toggleLifestyleReset = async () => {
@@ -302,6 +304,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         </View>
         {tab === "overview" && (
           <>
+            <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
             {client.package_type && (
               <View style={styles.packageBadge}>
                 <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
@@ -360,28 +363,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               </View>
             )}
 
-            {client.status_flag !== "green" && (
-              <View style={[styles.flagBanner, client.status_flag === "red" ? styles.flagBannerRed : styles.flagBannerOrange]}>
-                <Text style={styles.flagBannerTitle}>
-                  {client.status_flag === "red" ? "🚩 Urgent - needs guidance" : "🟠 Wants feedback"}
-                </Text>
-                {client.status_flag_note && <Text style={styles.flagBannerNote}>{client.status_flag_note}</Text>}
-                {client.status_flag_updated_at && (
-                  <Text style={styles.flagBannerTime}>
-                    Set {new Date(client.status_flag_updated_at).toLocaleString()}
-                  </Text>
-                )}
-                <View style={styles.flagActions}>
-                  <Pressable style={[styles.resolveButton, styles.flex1]} onPress={() => setReplying(true)}>
-                    <Text style={styles.resolveButtonText}>💬 Reply</Text>
-                  </Pressable>
-                  <Pressable style={[styles.resolveButton, styles.flex1]} onPress={markResolved}>
-                    <Text style={styles.resolveButtonText}>Mark as resolved</Text>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-
             <Text style={styles.sectionHeading}>Messages to {client.name}</Text>
             {messages.length === 0 ? (
               <Text style={styles.helper}>No messages sent yet.</Text>
@@ -406,6 +387,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 onSent={(resolved) => {
                   if (resolved) setClient((c) => (c ? { ...c, status_flag: "green", status_flag_note: null } : c));
                   loadMessages();
+                  reloadProblems();
                 }}
               />
             )}
@@ -595,15 +577,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         tabs={TABS.map((t) => ({
           ...t,
           dot:
-            t.key === "overview" && client.status_flag !== "green"
-              ? client.status_flag === "red"
-                ? "#EF4444"
-                : "#F59E0B"
-              : t.key === "checkins" && checkins.some((c) => c.distress_flag)
-                ? "#EF4444"
-                : t.key === "notes" && checkins.some((c) => c.checkin_date >= weekAgo && reportedTopics(c).length > 0)
-                  ? "#F59E0B"
-                  : null,
+            t.key === "overview"
+              ? (problemColor(problemLevel(problems)) ?? null)
+              : t.key === "checkins" || t.key === "notes"
+                ? (problemColor(problemLevel(problems.filter((p) => p.topic !== "flag"))) ?? null)
+                : null,
         }))}
       />
     </View>
@@ -655,23 +633,8 @@ const styles = StyleSheet.create({
   resetButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
-  flagBanner: { borderRadius: 10, padding: 14, marginTop: 12, marginBottom: 4, borderWidth: 1.5 },
-  flagBannerRed: { backgroundColor: "#2A1414", borderColor: "#EF4444" },
-  flagBannerOrange: { backgroundColor: "#2A2114", borderColor: "#F59E0B" },
-  flagBannerTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  flagBannerNote: { color: "#E2E8F0", fontSize: 14, marginTop: 6 },
-  flagBannerTime: { color: "#94A3B8", fontSize: 11, marginTop: 6 },
-  resolveButton: {
-    backgroundColor: "#22C55E",
-    borderRadius: 8,
-    paddingVertical: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  flagActions: { flexDirection: "row", gap: 8 },
   flex1: { flex: 1 },
   messageRow: { backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginBottom: 6 },
-  resolveButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   intakeBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
   intakeRow: { marginBottom: 10 },
   intakeLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 2 },
