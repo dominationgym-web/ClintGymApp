@@ -112,6 +112,10 @@ export default function ProgramsScreen({ navigation }: Props) {
                       {p.description && <Text style={styles.description}>{p.description}</Text>}
                       {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
                       <ProgramSummary program={p} exercises={exercises.filter((e) => e.program_id === p.id)} />
+                      <Text style={styles.description}>
+                        ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
+                        workout screen. To change it for one client, tap it on that client's Training tab.
+                      </Text>
                       {p.trainer_id && (
                         <Pressable onPress={() => remove(p)} hitSlop={8}>
                           <Text style={styles.delete}>Delete program</Text>

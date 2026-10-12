@@ -4,17 +4,33 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { displayProgramName } from "@/lib/programs";
-import { loadCalendarWorkouts } from "@/lib/programQueries";
+import { loadCalendarWorkoutFor, loadCalendarWorkouts } from "@/lib/programQueries";
+import { forPlace, swapOptions, withHomeAlternatives } from "@/lib/exerciseFilter";
+import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
+import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import { monthOf, monthRange, shortWorkoutName, type CalendarMonth } from "@/lib/trainingCalendar";
 import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
-import type { ClientCalendarWorkout, Program } from "@/types/database";
+import type { ClientCalendarWorkout, Exercise, Program, ProgramExercise } from "@/types/database";
 
-// The client's own training calendar (0069), read-only, under a tap-to-open
-// heading on their workout screen. Only shows once their coach has planned
-// something.
-export default function ClientCalendarView({ clientId }: { clientId: string }) {
+// The client's own training calendar (0069), under a tap-to-open heading on
+// their workout screen. Only shows once their coach has planned something.
+// Tapping a day lists its exercises, and from today on each can be changed
+// for that day if the gym will be busy (0047).
+export default function ClientCalendarView({
+  clientId,
+  exercises,
+  atHome,
+  onSwapsChanged,
+}: {
+  clientId: string;
+  /** The exercises the client can see, for the swap choices. */
+  exercises: Exercise[];
+  atHome: boolean;
+  /** A swap was made for this date, so the workout screen can pick it up. */
+  onSwapsChanged?: (date: string) => void;
+}) {
   const today = todayIso();
   const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
   const [entries, setEntries] = useState<ClientCalendarWorkout[]>([]);
@@ -22,6 +38,25 @@ export default function ClientCalendarView({ clientId }: { clientId: string }) {
   const [hasAny, setHasAny] = useState(false);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  // The selected day's workout and any swaps made for it.
+  const [dayRows, setDayRows] = useState<ProgramExercise[]>([]);
+  const [daySwaps, setDaySwaps] = useState<ExerciseSwaps>({});
+  const [swapping, setSwapping] = useState<ProgramExercise | null>(null);
+
+  useEffect(() => {
+    setDayRows([]);
+    setDaySwaps({});
+    if (!selected) return;
+    let live = true;
+    Promise.all([loadCalendarWorkoutFor(clientId, selected), getExerciseSwaps(selected)]).then(([workout, swaps]) => {
+      if (!live) return;
+      setDayRows(workout ? [...workout.exercises].sort((a, b) => a.sort_order - b.sort_order) : []);
+      setDaySwaps(swaps);
+    });
+    return () => {
+      live = false;
+    };
+  }, [clientId, selected, entries]);
 
   // Show the calendar as soon as anything is planned from today on, even
   // when it's all next month.
@@ -56,6 +91,25 @@ export default function ClientCalendarView({ clientId }: { clientId: string }) {
   }
   const picked = selected ? entries.find((e) => e.workout_date === selected) : null;
   const pickedProgram = picked ? names[picked.program_id] : null;
+  const canChange = !!selected && selected >= today;
+  const planned = atHome ? withHomeAlternatives(dayRows, exercises).rows : dayRows;
+  const categoryOf = (row: ProgramExercise) =>
+    exercises.find((e) => e.id === row.exercise_id)?.category ??
+    exercises.find((e) => e.name === row.exercise_name)?.category ??
+    null;
+  const swapCategory = swapping ? categoryOf(swapping) : null;
+  const swapChoices = swapping
+    ? forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, daySwaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym")
+    : [];
+  const chooseSwap = (exercise: Exercise | null) => {
+    if (!swapping || !selected) return;
+    const next = { ...daySwaps };
+    if (exercise) next[swapping.id] = { id: exercise.id, name: exercise.name };
+    else delete next[swapping.id];
+    setDaySwaps(next);
+    setSwapping(null);
+    saveExerciseSwaps(selected, next).then(() => onSwapsChanged?.(selected));
+  };
 
   return (
     <View style={styles.card}>
@@ -82,8 +136,43 @@ export default function ClientCalendarView({ clientId }: { clientId: string }) {
                 : "Nothing planned on this day."
               : "Your coach plans your workouts here. Tap a day to see what's on."}
           </Text>
+          {pickedProgram &&
+            planned.map((row) => {
+              if (row.kind === "cardio") {
+                return (
+                  <View key={row.id} style={styles.row}>
+                    <Text style={styles.rowName}>🔥 Cardio</Text>
+                  </View>
+                );
+              }
+              const swap = daySwaps[row.id];
+              return (
+                <View key={row.id} style={styles.row}>
+                  <Text style={styles.rowName}>{swap ? swap.name : row.exercise_name}</Text>
+                  <Text style={styles.rowSets}>
+                    {row.sets} sets x {row.reps}
+                  </Text>
+                  {swap && <Text style={styles.swapped}>Swapped from {row.exercise_name}</Text>}
+                  {canChange && (
+                    <Pressable onPress={() => setSwapping(row)} hitSlop={8} style={{ alignSelf: "flex-start" }}>
+                      <Text style={styles.changeLink}>⇄ Change exercise</Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })}
         </View>
       )}
+      <ExerciseSwapModal
+        visible={!!swapping}
+        exerciseName={swapping?.exercise_name ?? null}
+        category={swapCategory}
+        choices={swapChoices}
+        swapped={!!swapping && !!daySwaps[swapping.id]}
+        when={selected === today ? "just for today" : "just for that day"}
+        onChoose={chooseSwap}
+        onClose={() => setSwapping(null)}
+      />
     </View>
   );
 }
@@ -94,4 +183,9 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 16, fontWeight: "800" },
   chevron: { color: BRAND_GOLD, fontSize: 14 },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 8 },
+  row: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 8 },
+  rowName: { color: "#fff", fontWeight: "600" },
+  rowSets: { color: "#64748B", fontSize: 12, marginTop: 2 },
+  swapped: { color: BRAND_GOLD, fontSize: 12, marginTop: 2 },
+  changeLink: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 6 },
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientBrowsable, exerciseCategories, filterExercises, forPlace, homeAlternative, swapOptions } from "@/lib/exerciseFilter";
+import { clientBrowsable, exerciseCategories, filterExercises, forPlace, homeAlternative, swapOptions, withHomeAlternatives } from "@/lib/exerciseFilter";
 
 const list = [
   { name: "Bench Press", category: "Push" },
@@ -93,5 +93,25 @@ describe("homeAlternative", () => {
   });
   it("leaves home exercises alone", () => {
     expect(homeAlternative(goblet, all, [])).toBeNull();
+  });
+});
+
+describe("withHomeAlternatives", () => {
+  const all = [
+    { id: "lp", name: "Leg Press", category: "Legs", home_friendly: false },
+    { id: "gs", name: "Goblet Squat", category: "Legs", home_friendly: true },
+    { id: "lu", name: "Lunge", category: "Legs", home_friendly: true },
+    { id: "pu", name: "Push-up", category: "Push", home_friendly: true },
+  ];
+  it("swaps gym-only exercises for different home ones and keeps the rest", () => {
+    const rows = [
+      { kind: "exercise", exercise_id: "lp", exercise_name: "Leg Press" },
+      { kind: "exercise", exercise_id: "gs", exercise_name: "Goblet Squat" },
+      { kind: "exercise", exercise_id: "pu", exercise_name: "Push-up" },
+      { kind: "cardio", exercise_id: null, exercise_name: "" },
+    ];
+    const { rows: out, homeIds } = withHomeAlternatives(rows, all);
+    expect(out.map((r) => r.exercise_id)).toEqual(["lu", "gs", "pu", null]);
+    expect(homeIds).toEqual(["lu"]);
   });
 });
