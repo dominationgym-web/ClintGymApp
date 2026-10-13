@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert, TextInput } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import type { Video } from "@/types/database";
+import type { CoachMessage, Video } from "@/types/database";
 import { MAX_VIDEO_SECONDS, videoProblem } from "@/lib/videoLimits";
 
 // 720p is plenty to check form and about half the size of full HD (iOS only;
@@ -23,6 +24,8 @@ export default function VideoUploadScreen() {
   const [uploading, setUploading] = useState(false);
   // Which exercise the video shows, so the coach knows what to look at (0081).
   const [exerciseName, setExerciseName] = useState("");
+  // The coach's feedback on each video (0084).
+  const [feedback, setFeedback] = useState<Record<string, CoachMessage[]>>({});
 
   const loadVideos = async () => {
     if (!client) return;
@@ -32,13 +35,25 @@ export default function VideoUploadScreen() {
       .eq("client_id", client.id)
       .is("deleted_at", null)
       .order("uploaded_at", { ascending: false });
-    if (!error && data) setVideos(data);
+    if (!error && data) {
+      setVideos(data);
+      const ids = data.map((v) => v.id);
+      const { data: sent } = ids.length
+        ? await supabase.from("coach_messages").select("*").in("video_id", ids).order("created_at", { ascending: true })
+        : { data: [] as CoachMessage[] };
+      const byVideo: Record<string, CoachMessage[]> = {};
+      for (const m of sent ?? []) if (m.video_id) (byVideo[m.video_id] ??= []).push(m);
+      setFeedback(byVideo);
+    }
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadVideos();
-  }, [client]);
+  // Reload on each visit, so the coach's latest feedback shows.
+  useFocusEffect(
+    useCallback(() => {
+      loadVideos();
+    }, [client]),
+  );
 
   const uploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!client) return;
@@ -135,15 +150,23 @@ export default function VideoUploadScreen() {
         data={videos}
         keyExtractor={(v) => v.id}
         renderItem={({ item }) => (
-          <View style={styles.videoRow}>
-            <View style={styles.flex1}>
-              <Text style={styles.label}>{item.exercise_name || "Form video"}</Text>
-              <Text style={styles.expiry}>
-                {new Date(item.uploaded_at).toLocaleDateString()}
-                {item.viewed_at ? " · Coach watched ✓" : " · Sent to your coach"}
-              </Text>
+          <View style={styles.videoCard}>
+            <View style={styles.videoRow}>
+              <View style={styles.flex1}>
+                <Text style={styles.label}>{item.exercise_name || "Form video"}</Text>
+                <Text style={styles.expiry}>
+                  {new Date(item.uploaded_at).toLocaleDateString()}
+                  {item.viewed_at ? " · Coach watched ✓" : " · Sent to your coach"}
+                </Text>
+              </View>
+              <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString()}</Text>
             </View>
-            <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString()}</Text>
+            {(feedback[item.id] ?? []).map((m) => (
+              <View key={m.id} style={styles.feedback}>
+                <Text style={styles.feedbackTitle}>💬 Your coach's feedback</Text>
+                <Text style={styles.feedbackText}>{m.body}</Text>
+              </View>
+            ))}
           </View>
         )}
         ListEmptyComponent={<Text style={styles.helper}>No videos uploaded yet.</Text>}
@@ -161,14 +184,11 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center" },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
-  videoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#1E293B",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
+  videoCard: { backgroundColor: "#1E293B", padding: 12, borderRadius: 10, marginBottom: 8 },
+  videoRow: { flexDirection: "row", justifyContent: "space-between" },
+  feedback: { backgroundColor: "#0F172A", borderRadius: 8, padding: 10, marginTop: 8 },
+  feedbackTitle: { color: "#22C55E", fontWeight: "700", fontSize: 13, marginBottom: 2 },
+  feedbackText: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },
   label: { color: "#fff", fontWeight: "600" },
   fieldLabel: { color: "#CBD5E1", fontSize: 13, fontWeight: "600", marginBottom: 6 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15, marginBottom: 12 },

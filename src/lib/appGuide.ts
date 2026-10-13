@@ -90,7 +90,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Video log tab",
       points: [
         "Film a set (up to 60 seconds) so your coach can check your form. Type which exercise it is first.",
-        "Your coach is told straight away. You'll see \"Coach watched ✓\" once they've seen it, and their feedback comes as a message.",
+        "Your coach is told straight away. You'll see \"Coach watched ✓\" once they've seen it. Their feedback comes as a message and also shows under that video here.",
         "Videos clear themselves after 7 days, so send them while they're fresh.",
       ],
     },
@@ -198,7 +198,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Overview: their problems with Reply, Busy fixing and Fixed, plus messages.",
         "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. You can set habits for them.",
-        "Training: watch their 🎥 form videos (new ones are marked) and send feedback. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
+        "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
