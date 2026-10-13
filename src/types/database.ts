@@ -183,6 +183,10 @@ export type Client = {
   training_place: "gym" | "home";
   // Abs between sets (0083): on unless the trainer switches it off.
   abs_between_sets: boolean;
+  // Training experience from the intake form, and whether the trainer has
+  // dealt with the foundation program offer (0087).
+  training_level: "never" | "beginner" | "intermediate" | "advanced" | null;
+  foundation_status: "suggested" | "approved" | "declined" | null;
   created_at: string;
 }
 

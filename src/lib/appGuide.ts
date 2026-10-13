@@ -203,6 +203,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
+        "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
         "Photos and Notes: progress photos, and private notes only you can see.",
       ],
@@ -214,6 +215,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Programs tab",
       points: [
         "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT) or tap + Build a program to make your own.",
+        "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Weight loss, Strength and Fitness, building joint stability, core strength and tendons before real training.",
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 20 ab reps between sets. When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
         "Clients can change an exercise when the gym is busy, always for the same body part.",

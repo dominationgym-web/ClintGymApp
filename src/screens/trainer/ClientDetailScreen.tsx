@@ -8,6 +8,7 @@ import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
 import { useAuth } from "@/context/AuthContext";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
+import FoundationOfferCard from "@/components/FoundationOfferCard";
 import ClientFormVideos from "@/components/ClientFormVideos";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
@@ -73,6 +74,8 @@ function formatIntakeLabel(key: string) {
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
+  // Bumped when a foundation program is approved, so the program card reloads.
+  const [programKey, setProgramKey] = useState(0);
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -533,6 +536,16 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {tab === "training" && (
           <>
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
+            {trainer && (
+              <FoundationOfferCard
+                client={client}
+                trainerId={trainer.id}
+                onChanged={(change) => {
+                  setClient((c) => (c ? { ...c, ...change } : c));
+                  if (change.foundation_status === "approved") setProgramKey((k) => k + 1);
+                }}
+              />
+            )}
             {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
             <View style={{ marginTop: 12 }}>
               <Text style={styles.libraryTitle}>Trains at</Text>
@@ -543,7 +556,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               </Text>
               <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
             </View>
-            <ClientProgramPicker clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
+            <ClientProgramPicker key={programKey} clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             <ClientCalendarCard clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
             <View style={styles.libraryRow}>

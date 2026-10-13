@@ -283,6 +283,8 @@ describe("programFamily", () => {
     expect(built("Upper Body Superset 4")).toBe("upperBody");
     expect(built("Lower Body Superset 2")).toBe("lowerBody");
     expect(built("Lower Body 15")).toBe("lowerBody");
+    expect(built("Beginner Foundation - Strength")).toBe("foundation");
+    expect(built("Intermediate Foundation - Bodybuilding")).toBe("foundation");
   });
   it("puts the trainer's own programs together, whatever their name", () => {
     expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");

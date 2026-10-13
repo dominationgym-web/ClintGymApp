@@ -117,6 +117,25 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     return navigation.addListener("focus", loadNewVideos);
   }, [navigation, loadNewVideos]);
 
+  // Clients waiting on a foundation program decision (0087).
+  const [foundationWaiting, setFoundationWaiting] = useState<{ id: string; name: string }[]>([]);
+
+  const loadFoundationWaiting = useCallback(async () => {
+    if (!trainer) return;
+    const { data } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("trainer_id", trainer.id)
+      .eq("foundation_status", "suggested")
+      .order("created_at", { ascending: false });
+    setFoundationWaiting(data ?? []);
+  }, [trainer]);
+
+  useEffect(() => {
+    loadFoundationWaiting();
+    return navigation.addListener("focus", loadFoundationWaiting);
+  }, [navigation, loadFoundationWaiting]);
+
   const loadSuggestionCount = useCallback(async () => {
     if (!isOwner) return;
     const { count } = await supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "new");
@@ -247,6 +266,17 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
             {[...new Set(newVideos.map((v) => v.name.split(" ")[0]))].join(", ")}
           </Text>
           <Text style={styles.suggestionBannerLink}>Watch ›</Text>
+        </Pressable>
+      )}
+      {foundationWaiting.length > 0 && (
+        <Pressable
+          style={styles.suggestionBanner}
+          onPress={() => navigation.navigate("ClientDetail", { clientId: foundationWaiting[0].id, tab: "training" })}
+        >
+          <Text style={styles.suggestionBannerText}>
+            🌱 Approve a foundation program for {foundationWaiting.map((c) => c.name.split(" ")[0]).join(", ")}
+          </Text>
+          <Text style={styles.suggestionBannerLink}>Open ›</Text>
         </Pressable>
       )}
       {trainer && <HabitWinsCard trainerId={trainer.id} />}
