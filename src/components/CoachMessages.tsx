@@ -64,6 +64,7 @@ export function CoachMessageCard() {
       <Text style={styles.title}>💬 {unread.length === 1 ? "Message from your coach" : "Messages from your coach"}</Text>
       {unread.map((m) => (
         <View key={m.id} style={styles.message}>
+          {m.video_id ? <Text style={styles.time}>🎥 Feedback on your form video</Text> : null}
           <Text style={styles.text}>{m.body}</Text>
           <Text style={styles.time}>{new Date(m.created_at).toLocaleString()}</Text>
           {m.problem_id && <ProblemReplyBox problemId={m.problem_id} />}
@@ -159,6 +160,7 @@ export function CoachMessageHistory() {
       <Text style={styles.heading}>Messages from your coach</Text>
       {messages.map((m) => (
         <View key={m.id} style={styles.historyRow}>
+          {m.video_id ? <Text style={styles.time}>🎥 Feedback on your form video</Text> : null}
           <Text style={styles.text}>{m.body}</Text>
           <Text style={styles.time}>{new Date(m.created_at).toLocaleString()}</Text>
           {m.problem_id && <ProblemReplyBox problemId={m.problem_id} />}

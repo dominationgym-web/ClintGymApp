@@ -221,6 +221,8 @@ export type CoachMessage = {
   reply_to_flag: ClientStatusFlag | null;
   // Set on the app's next-day check-in about a problem (0075).
   problem_id: string | null;
+  // Feedback on a form video (0084).
+  video_id?: string | null;
   created_at: string;
   read_at: string | null;
 }
