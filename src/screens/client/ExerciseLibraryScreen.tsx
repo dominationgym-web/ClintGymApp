@@ -27,7 +27,7 @@ import {
   type ExercisePlace,
 } from "@/lib/exerciseFilter";
 import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
-import ExerciseGuideButton, { MuscleNotWeight } from "@/components/ExerciseGuide";
+import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
@@ -709,12 +709,20 @@ export default function ExerciseLibraryScreen() {
                     return (
                       <Pressable key={row.id} style={styles.programRow} onPress={() => openProgramExercise(row)}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.name}>{row.exercise_name}</Text>
+                          <View style={styles.doSetRow}>
+                            <Text style={[styles.name, { flex: 1 }]}>{row.exercise_name}</Text>
+                            <DoSetButton name={row.exercise_name} onPress={() => openProgramExercise(row)} />
+                          </View>
                           <Text style={styles.category}>
                             {row.sets} sets x {row.reps} ·{" "}
                             {next ? `superset: straight into ${next.exercise_name}` : `rest ${formatRest(row.rest_seconds)}`}
                           </Text>
-                          <ExerciseGuideButton name={row.exercise_name} category={categoryOf(row)} variant="bar" />
+                          <ExerciseGuideButton
+                            name={row.exercise_name}
+                            category={categoryOf(row)}
+                            variant="bar"
+                            onDoSet={() => openProgramExercise(row)}
+                          />
                           {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
                           {!swaps[row.id] && gymName(row) && <Text style={styles.swappedText}>🏠 Home version of {gymName(row)}</Text>}
                           <Pressable onPress={() => openSwap(row)} hitSlop={8} style={{ alignSelf: "flex-start" }}>
@@ -802,7 +810,7 @@ export default function ExerciseLibraryScreen() {
             <View style={{ flex: 1 }}>
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{item.name}</Text>
-                <ExerciseGuideButton name={item.name} category={item.category} />
+                <ExerciseGuideButton name={item.name} category={item.category} onDoSet={() => openExercise(item)} />
               </View>
               {item.category && <Text style={styles.category}>{item.category}</Text>}
             </View>
@@ -860,7 +868,7 @@ export default function ExerciseLibraryScreen() {
             ) : (
               <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
             )}
-            {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" />}
+            {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" onDoSet={() => {}} />}
             <View style={{ height: 10 }} />
             {target && (
               <Text style={styles.targetText}>
@@ -1000,6 +1008,7 @@ export default function ExerciseLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  doSetRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   absBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
   absButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },
   fromCalendar: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 6 },

@@ -63,7 +63,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Exercises tab",
       points: [
         "Your workout for today is at the top. Tap an exercise to open it and log your sets.",
-        "Tap 📖 How to do it on any exercise to see what it works, the steps, and tips to get the most from it.",
+        "Tap 📖 How to do it on any exercise to see what it works, the steps, and tips to get the most from it. Tap the green Do set button beside the exercise, or at the bottom of the guide, to log your set.",
         "The first exercise for each body part starts with one warm-up set at half your start weight. It's logged as a warm-up and doesn't count as a working set.",
         "Log the weight, the reps and how the set felt. The rest timer starts by itself, and supersets take you straight to the next exercise.",
         "🏅 Lift 10% more on an exercise for at least the same reps and you earn a gold achievement badge. Your coach is told too.",
