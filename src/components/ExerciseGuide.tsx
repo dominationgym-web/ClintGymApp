@@ -50,15 +50,19 @@ export function MuscleNotWeight() {
 // Opens the guide: a small ? button, or (variant "bar", GRIZZ 2026-10-12) a
 // full-width "How to do it" button that also says what the exercise works,
 // so it's easy to spot on a workout. Shows nothing when there's no guide for
-// the exercise (a trainer's own exercise with no body part).
+// the exercise (a trainer's own exercise with no body part). With onDoSet, a
+// green "Do set" button at the bottom of the guide closes it and goes to the
+// set log (GRIZZ 2026-10-13).
 export default function ExerciseGuideButton({
   name,
   category,
   variant = "icon",
+  onDoSet,
 }: {
   name: string;
   category?: string | null;
   variant?: "icon" | "bar";
+  onDoSet?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const technique = techniqueFor(name, category);
@@ -103,12 +107,55 @@ export default function ExerciseGuideButton({
           </View>
           <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 4 }}>
             <ExerciseGuideContent technique={technique} />
+            {onDoSet && (
+              <Pressable
+                style={[doSetStyles.button, doSetStyles.big]}
+                onPress={() => {
+                  setOpen(false);
+                  onDoSet();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Do a set of ${name}`}
+              >
+                <Text style={[doSetStyles.text, doSetStyles.bigText]}>Do set ›</Text>
+              </Pressable>
+            )}
           </ScrollView>
         </SafeAreaView>
       </Modal>
     </>
   );
 }
+
+// The green "Do set" button, beside an exercise name on a workout and at the
+// bottom of the guide.
+export function DoSetButton({ onPress, name }: { onPress: () => void; name: string }) {
+  return (
+    <Pressable
+      style={doSetStyles.button}
+      onPress={onPress}
+      hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={`Do a set of ${name}`}
+    >
+      <Text style={doSetStyles.text}>Do set</Text>
+    </Pressable>
+  );
+}
+
+const doSetStyles = StyleSheet.create({
+  button: {
+    backgroundColor: "#16A34A",
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  text: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  big: { marginTop: 22, paddingVertical: 14, borderRadius: 12 },
+  bigText: { fontSize: 17 },
+});
 
 const styles = StyleSheet.create({
   button: {

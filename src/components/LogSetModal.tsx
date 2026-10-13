@@ -164,7 +164,7 @@ export default function LogSetModal({
           ) : (
             <Text style={styles.note}>No demo video yet - ask your coach.</Text>
           )}
-          {exercise && <ExerciseGuideButton name={exercise.name} category={exercise.category} variant="bar" />}
+          {exercise && <ExerciseGuideButton name={exercise.name} category={exercise.category} variant="bar" onDoSet={() => {}} />}
           <View style={{ height: 8 }} />
           {technique && (
             <View style={styles.box}>
