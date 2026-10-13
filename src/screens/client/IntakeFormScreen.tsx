@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndic
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
+import { TRAINING_LEVELS } from "@/lib/foundation";
 
 function YesNo({
   label,
@@ -127,6 +128,8 @@ export default function IntakeFormScreen() {
   const [activity, setActivity] = useState("");
 
   const [goals, setGoals] = useState<string[]>([]);
+  // Training experience (0087): the trainer is offered a foundation program.
+  const [experience, setExperience] = useState("");
   const [trainingForDetail, setTrainingForDetail] = useState("");
   const toggleGoal = (opt: string) =>
     setGoals((prev) => (prev.includes(opt) ? prev.filter((g) => g !== opt) : [...prev, opt]));
@@ -185,6 +188,10 @@ export default function IntakeFormScreen() {
       Alert.alert("How active are you?", "Tap the option under About you that fits you best.");
       return;
     }
+    if (!experience) {
+      Alert.alert("Your training experience", "Tap the option under Your goals that fits you best.");
+      return;
+    }
     if (!age.trim() || goals.length === 0 || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
       Alert.alert("Almost done", "Fill in at least your age, goals, occupation, breakfast, and training habits.");
       return;
@@ -197,6 +204,7 @@ export default function IntakeFormScreen() {
       weight_kg: String(weight),
       activity_level: activity,
       training_goals: goals.join(", "),
+      training_experience: experience,
       occupation_type: occupationType === "Other" ? occupationOther.trim() || "Other" : occupationType,
       job_stress_level: jobStress || "Not answered",
       work_setting: workSetting || "Not answered",
@@ -235,7 +243,11 @@ export default function IntakeFormScreen() {
     }
 
     setSaving(true);
-    const { error } = await supabase.from("clients").update({ intake_responses: responses, sex: sex === "Male" ? "male" : "female" }).eq("id", client.id);
+    const { error } = await supabase.from("clients").update({
+        intake_responses: responses,
+        sex: sex === "Male" ? "male" : "female",
+        training_level: TRAINING_LEVELS.find((l) => l.label === experience)?.key ?? null,
+      }).eq("id", client.id);
     setSaving(false);
     if (error) {
       Alert.alert("Couldn't save", error.message);
@@ -315,6 +327,16 @@ export default function IntakeFormScreen() {
           />
         </View>
       )}
+
+      <ChoiceField
+        label="What's your training experience?"
+        options={TRAINING_LEVELS.map((l) => l.label)}
+        value={experience}
+        onChange={setExperience}
+      />
+      {experience ? (
+        <Text style={styles.activityHint}>{TRAINING_LEVELS.find((l) => l.label === experience)?.detail}</Text>
+      ) : null}
 
       <Text style={styles.sectionHeading}>Work</Text>
       <ChoiceField label="What kind of work do you do?" options={OCCUPATION_TYPES} value={occupationType} onChange={setOccupationType} />

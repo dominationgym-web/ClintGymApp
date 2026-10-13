@@ -320,6 +320,7 @@ function supersetRun(session: ProgramExercise[], index: number): number {
 
 // The headings the program popup groups programs under, in order.
 export const PROGRAM_FAMILIES = [
+  { key: "foundation", title: "Beginner & Intermediate", icon: "🌱" },
   { key: "upperBody", title: "Upper body workouts", icon: "💪" },
   { key: "lowerBody", title: "Lower body workouts", icon: "🦵" },
   { key: "goalBlock", title: "12-week goal programs", icon: "🎯" },
@@ -338,6 +339,8 @@ export type ProgramFamily = (typeof PROGRAM_FAMILIES)[number]["key"];
 export function programFamily(program: Pick<Program, "name" | "trainer_id">): ProgramFamily {
   if (program.trainer_id) return "own";
   const name = program.name.toLowerCase();
+  // 6-week foundation programs (0086): "Beginner Foundation - Strength".
+  if (name.includes("foundation")) return "foundation";
   // The 15 + 15 calendar workouts (0069): "Upper Body 1", "Lower Body Superset 2".
   if (name.startsWith("upper body")) return "upperBody";
   if (name.startsWith("lower body")) return "lowerBody";

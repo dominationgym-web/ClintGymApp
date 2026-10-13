@@ -12,6 +12,9 @@ import ExerciseGuideButton, { ExerciseGuideContent, MuscleNotWeight } from "@/co
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import EveryRepTips from "@/components/EveryRepTips";
 import RestTimer from "@/components/RestTimer";
+import AchievementBadge from "@/components/AchievementBadge";
+import { checkAchievement } from "@/lib/achievementQueries";
+import type { ClientAchievement } from "@/types/database";
 import type { SetEffort, WorkoutLog } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
 
@@ -52,6 +55,8 @@ export default function LogSetModal({
   const [effort, setEffort] = useState<SetEffort | null>(null);
   const [logging, setLogging] = useState(false);
   const [restRun, setRestRun] = useState(0);
+  // Gold achievement badge (0085) earned by the set just logged.
+  const [badge, setBadge] = useState<ClientAchievement | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
@@ -123,6 +128,7 @@ export default function LogSetModal({
     }
     const count = todaysSets.length + 1;
     setTodaysSets((prev) => [...prev, data]);
+    checkAchievement(client.id, data).then((b) => b && setBadge(b));
     setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
     setReps("");
     setEffort(null);
@@ -244,6 +250,7 @@ export default function LogSetModal({
         </ScrollView>
       </SafeAreaView>
       </KeyboardSafe>
+      <AchievementBadge badge={badge} onClose={() => setBadge(null)} />
     </Modal>
   );
 }
