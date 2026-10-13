@@ -510,6 +510,20 @@ export type Habit = {
   created_at: string;
 }
 
+// A gold achievement badge (0085): 10% more weight for at least the same reps.
+export type ClientAchievement = {
+  id: string;
+  client_id: string;
+  exercise_id: string | null;
+  exercise_name: string;
+  from_weight: number;
+  from_reps: number;
+  weight: number;
+  reps: number;
+  achieved_on: string;
+  created_at: string;
+};
+
 export type HabitWinRow = {
   id: string;
   client_id: string;
@@ -628,6 +642,12 @@ export interface Database {
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
       habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
+      client_achievements: {
+        Row: ClientAchievement;
+        Insert: Partial<ClientAchievement>;
+        Update: Partial<ClientAchievement>;
+        Relationships: [];
+      };
       habit_wins: { Row: HabitWinRow; Insert: Partial<HabitWinRow>; Update: Partial<HabitWinRow>; Relationships: [] };
       workout_logs: { Row: WorkoutLog; Insert: Partial<WorkoutLog>; Update: Partial<WorkoutLog>; Relationships: [] };
       programs: { Row: Program; Insert: Partial<Program>; Update: Partial<Program>; Relationships: [] };

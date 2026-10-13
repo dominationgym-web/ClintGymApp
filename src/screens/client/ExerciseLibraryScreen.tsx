@@ -35,6 +35,9 @@ import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession }
 import WorkoutReasonModal from "@/components/WorkoutReasonModal";
 import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
 import RestTimer from "@/components/RestTimer";
+import AchievementBadge from "@/components/AchievementBadge";
+import { checkAchievement } from "@/lib/achievementQueries";
+import type { ClientAchievement } from "@/types/database";
 import { AB_REPS, abExerciseFor, absBetweenSets } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
@@ -120,6 +123,8 @@ export default function ExerciseLibraryScreen() {
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
   // Abs between sets (0083): after a working set the client does 20 ab reps
   // and taps Complete, which starts the rest timer. `rest` is that timer's length.
+  // Gold achievement badge (0085) earned by the set just logged.
+  const [badge, setBadge] = useState<ClientAchievement | null>(null);
   const [absDue, setAbsDue] = useState<{ rest: number; count: number } | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -541,6 +546,7 @@ export default function ExerciseLibraryScreen() {
     }
     setTodaysSets((prev) => [...prev, data]);
     setAllTodaysSets((prev) => [...prev, data]);
+    if (!warmUp) checkAchievement(client.id, data).then((b) => b && setBadge(b));
     setReps("");
     setEffort(null);
     if (warmUp) {
@@ -987,6 +993,7 @@ export default function ExerciseLibraryScreen() {
           </ScrollView>
         </SafeAreaView>
         </KeyboardSafe>
+        <AchievementBadge badge={badge} onClose={() => setBadge(null)} />
       </Modal>
     </View>
   );
