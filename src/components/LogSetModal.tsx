@@ -53,7 +53,6 @@ export default function LogSetModal({
   const [logging, setLogging] = useState(false);
   const [restRun, setRestRun] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     setTodaysSets([]);
@@ -63,7 +62,6 @@ export default function LogSetModal({
     setEffort(null);
     setRestRun(0);
     setShowGuide(false);
-    setShowVideo(false);
     if (!client || !exercise) return;
     let live = true;
     const forExercise = <T extends { eq: (col: string, v: string) => T }>(q: T) =>
@@ -143,7 +141,6 @@ export default function LogSetModal({
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>{exercise?.name}</Text>
-            {exercise && <ExerciseGuideButton name={exercise.name} category={exercise.category} variant="bar" />}
             {note ? <Text style={styles.note}>{note}</Text> : null}
           </View>
           <Pressable onPress={() => onClose(todaysSets.length)} hitSlop={10}>
@@ -152,6 +149,29 @@ export default function LogSetModal({
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+          {/* GRIZZ 2026-10-13: the video first, then how to do it, and last time's
+              weights and reps just above Log a set. */}
+          {exercise?.external_url ? (
+            <View style={{ marginBottom: 8 }}>
+              <ExerciseVideoPreview url={exercise.external_url} />
+            </View>
+          ) : (
+            <Text style={styles.note}>No demo video yet - ask your coach.</Text>
+          )}
+          {exercise && <ExerciseGuideButton name={exercise.name} category={exercise.category} variant="bar" />}
+          <View style={{ height: 8 }} />
+          {technique && (
+            <View style={styles.box}>
+              <Pressable onPress={() => setShowGuide((o) => !o)} hitSlop={6}>
+                <Text style={styles.boxTitle}>📋 How to do it properly {showGuide ? "▲" : "▼"}</Text>
+              </Pressable>
+              {showGuide && (
+                <View style={{ marginTop: 8 }}>
+                  <ExerciseGuideContent technique={technique} />
+                </View>
+              )}
+            </View>
+          )}
           {target && (
             <Text style={styles.target}>
               Target: {target.setsLabel} sets x {target.reps} reps · rest {formatRest(target.restSeconds)}
@@ -221,24 +241,6 @@ export default function LogSetModal({
 
           <View style={{ height: 16 }} />
           <EveryRepTips />
-          {technique && (
-            <View style={styles.box}>
-              <Pressable onPress={() => setShowGuide((o) => !o)} hitSlop={6}>
-                <Text style={styles.boxTitle}>📋 How to do it properly {showGuide ? "▲" : "▼"}</Text>
-              </Pressable>
-              {showGuide && (
-                <View style={{ marginTop: 8 }}>
-                  <ExerciseGuideContent technique={technique} />
-                </View>
-              )}
-            </View>
-          )}
-          <View style={styles.box}>
-            <Pressable onPress={() => setShowVideo((o) => !o)} hitSlop={6}>
-              <Text style={styles.boxTitle}>▶ Demo video {showVideo ? "▲" : "▼"}</Text>
-            </Pressable>
-            {showVideo && <ExerciseVideoPreview url={exercise?.external_url ?? null} />}
-          </View>
         </ScrollView>
       </SafeAreaView>
       </KeyboardSafe>

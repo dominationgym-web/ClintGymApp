@@ -830,7 +830,6 @@ export default function ExerciseLibraryScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{selected?.name}</Text>
               {selected?.category && <Text style={styles.category}>{selected.category}</Text>}
-              {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" />}
             </View>
             <Pressable onPress={() => setSelected(null)}>
               <Text style={styles.closeText}>Close</Text>
@@ -838,6 +837,25 @@ export default function ExerciseLibraryScreen() {
           </View>
 
           <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+            {/* GRIZZ 2026-10-13: the video first so the client sees the movement straight away,
+                then How to do it, and last time's weights and reps just above Log a set. */}
+            {selected?.external_url ? (
+              <>
+                <VideoView
+                  style={[styles.video, videoExpanded ? styles.videoExpanded : { height: compactVideoHeight }]}
+                  player={player}
+                  contentFit="contain"
+                  nativeControls
+                />
+                <Pressable onPress={() => setVideoExpanded((v) => !v)} hitSlop={8}>
+                  <Text style={styles.expandText}>{videoExpanded ? "Make video smaller" : "Make video bigger"}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
+            )}
+            {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" />}
+            <View style={{ height: 10 }} />
             {target && (
               <Text style={styles.targetText}>
                 Target: {target.sets} sets x {target.reps} reps ·{" "}
@@ -966,22 +984,6 @@ export default function ExerciseLibraryScreen() {
               </>
             )}
 
-            <Text style={styles.sectionHeading}>Demo video</Text>
-            {selected?.external_url ? (
-              <>
-                <VideoView
-                  style={[styles.video, videoExpanded ? styles.videoExpanded : { height: compactVideoHeight }]}
-                  player={player}
-                  contentFit="contain"
-                  nativeControls
-                />
-                <Pressable onPress={() => setVideoExpanded((v) => !v)} hitSlop={8}>
-                  <Text style={styles.expandText}>{videoExpanded ? "Make video smaller" : "Make video bigger"}</Text>
-                </Pressable>
-              </>
-            ) : (
-              <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
-            )}
           </ScrollView>
         </SafeAreaView>
         </KeyboardSafe>
