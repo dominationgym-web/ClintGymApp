@@ -111,8 +111,9 @@ export default function ExerciseGuideButton({
               <Pressable
                 style={[doSetStyles.button, doSetStyles.big]}
                 onPress={() => {
+                  // Close the guide first: iOS can't open the set log while it's still closing.
                   setOpen(false);
-                  onDoSet();
+                  setTimeout(onDoSet, 400);
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Do a set of ${name}`}

@@ -64,7 +64,7 @@ export default function FoundationOfferCard({
       Alert.alert("Couldn't start the program", error.message);
       return;
     }
-    await supabase.from("coach_messages").insert({
+    const { error: messageError } = await supabase.from("coach_messages").insert({
       client_id: client.id,
       trainer_id: trainerId,
       body: foundationMessage(firstName, client.training_level ?? (level === "Beginner" ? "beginner" : "intermediate"), programName),
@@ -73,7 +73,12 @@ export default function FoundationOfferCard({
     setBusy(false);
     setOpen(false);
     onChanged({ foundation_status: "approved" });
-    Alert.alert("Program started", `${firstName} is on ${programName} and has been sent a note explaining why.`);
+    Alert.alert(
+      "Program started",
+      messageError
+        ? `${firstName} is on ${programName}, but the note explaining why didn't send. Send them a message yourself.`
+        : `${firstName} is on ${programName} and has been sent a note explaining why.`,
+    );
   };
 
   const notNow = async () => {

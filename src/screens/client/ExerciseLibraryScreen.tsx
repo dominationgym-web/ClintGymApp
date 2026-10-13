@@ -552,6 +552,7 @@ export default function ExerciseLibraryScreen() {
     if (warmUp) {
       // Warm-up done: back to the start weight for the working sets, after a short breather.
       setWarmUpDue(false);
+      setAbsDue(null);
       setWeight(startWeight);
       setRestSeconds(60);
       setRestRun((n) => n + 1);
@@ -572,6 +573,8 @@ export default function ExerciseLibraryScreen() {
     const next = target && workingDone + 1 >= target.sets ? nextUnfinished(target, todaysWorkout, done) : null;
     // Abs between sets, except after the very last set of the workout.
     if (target && absOn && (workingDone + 1 < target.sets || next)) {
+      // Any rest still counting from the last set stops: abs come first.
+      setRestRun(0);
       setAbsDue({ rest, count: workingSetsToday() + 1 });
     } else {
       setRestSeconds(rest);
