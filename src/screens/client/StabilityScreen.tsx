@@ -50,10 +50,12 @@ function Fold({ title, icon, open, onPress, children }: { title: string; icon?: 
 
 const Bullet = ({ children }: { children: React.ReactNode }) => <Text style={styles.text}>•  {children}</Text>;
 
-// Stability & injury prevention (GRIZZ, 2026-10-14): pick a body area and a
-// level, start a 4-8 week program, and log each exercise as seconds held or
-// reps done before losing control. Runs alongside the client's main program.
-export default function StabilityScreen() {
+// Stability & injury prevention (GRIZZ, 2026-10-14). The trainer browses the
+// 7 areas and 4 levels here (from their menu) and gives a client a program on
+// the client's Training tab. The client only sees the programs their coach
+// gave them: they do them and log each exercise as seconds held or reps done
+// before losing control. Runs alongside the client's main program.
+export default function StabilityScreen({ role = "client" }: { role?: "client" | "trainer" }) {
   const { client } = useAuth();
   const [step, setStep] = useState<Step>({ kind: "home" });
   const [fold, setFold] = useState<string | null>(null);
@@ -62,7 +64,6 @@ export default function StabilityScreen() {
   const [enrollments, setEnrollments] = useState<ClientStabilityProgram[] | null>(null);
   const [logs, setLogs] = useState<StabilityLog[]>([]);
   const [videos, setVideos] = useState<Record<string, string | null>>({});
-  const [busy, setBusy] = useState(false);
 
   const go = (next: Step) => {
     setFold(null);
@@ -78,6 +79,7 @@ export default function StabilityScreen() {
   useStepBack(step.kind !== "home" || openEx !== null, stepBack);
 
   const loadEnrollments = useCallback(async () => {
+    if (role === "trainer") return setEnrollments([]);
     if (!client) return;
     const { data } = await supabase
       .from("client_stability_programs")
@@ -86,7 +88,7 @@ export default function StabilityScreen() {
       .is("ended_at", null)
       .order("created_at");
     setEnrollments(data ?? []);
-  }, [client]);
+  }, [client, role]);
 
   useEffect(() => {
     loadEnrollments();
@@ -106,60 +108,6 @@ export default function StabilityScreen() {
     setLogs([]);
     loadLogs();
   }, [loadLogs]);
-
-  const start = async (area: StabilityArea, level: StabilityLevel) => {
-    if (!client) return;
-    setBusy(true);
-    const current = enrollments?.find((e) => e.area === area);
-    if (current) {
-      const { error } = await supabase.from("client_stability_programs").update({ ended_at: new Date().toISOString() }).eq("id", current.id);
-      if (error) {
-        setBusy(false);
-        return Alert.alert("Couldn't switch program", error.message);
-      }
-    }
-    const { data, error } = await supabase
-      .from("client_stability_programs")
-      .insert({ client_id: client.id, area, level, started_on: todayIso() })
-      .select()
-      .single();
-    setBusy(false);
-    if (error || !data) return Alert.alert("Couldn't start the program", error?.message ?? "Please try again.");
-    await loadEnrollments();
-    setMode("full");
-    go({ kind: "session", enrollmentId: data.id });
-  };
-
-  const confirmStart = (area: StabilityArea, level: StabilityLevel) => {
-    const current = enrollments?.find((e) => e.area === area);
-    if (!current) return start(area, level);
-    const same = current.level === level;
-    Alert.alert(
-      same ? "Start again from week 1?" : `Switch to ${levelInfo(level).label}?`,
-      same
-        ? "Your logs so far are kept, and the program starts again from week 1 today."
-        : `This ends your ${levelInfo(current.level).label} ${findArea(area).title.toLowerCase()} program (your logs are kept) and starts ${levelInfo(level).label} from week 1 today.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: same ? "Start again" : "Switch", onPress: () => start(area, level) },
-      ],
-    );
-  };
-
-  const stop = (e: ClientStabilityProgram) => {
-    Alert.alert("Stop this program?", "Your logs are kept. You can start it again any time.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Stop",
-        style: "destructive",
-        onPress: async () => {
-          await supabase.from("client_stability_programs").update({ ended_at: new Date().toISOString() }).eq("id", e.id);
-          await loadEnrollments();
-          go({ kind: "home" });
-        },
-      },
-    ]);
-  };
 
   const saveSets = async (e: ClientStabilityProgram, week: number, exerciseKey: string, measure: "hold" | "reps", entries: StabilityEntry[]) => {
     if (!client) return false;
@@ -208,11 +156,16 @@ export default function StabilityScreen() {
           <Text style={styles.heroIcon}>{STABILITY_MENU_ITEM.icon}</Text>
           <Text style={styles.heroTitle}>Stability & injury prevention</Text>
           <Text style={styles.heroText}>
-            Programs from the ground up to keep your joints strong and controlled. Do the short ⚡ version before a workout, or the full session to go deeper.
+            {role === "trainer"
+              ? "28 programs from the ground up: 7 areas, each at Rehab, Beginner, Intermediate and Advanced. Browse them here, then give a client one on their Training tab."
+              : "Programs from your coach to keep your joints strong and controlled. Do the short ⚡ version before a workout, or the full session to go deeper."}
           </Text>
         </View>
 
-        {enrollments.length > 0 && <Text style={styles.section}>Your programs</Text>}
+        {role === "client" && <Text style={styles.section}>Your programs</Text>}
+        {role === "client" && enrollments.length === 0 && (
+          <Text style={styles.text}>Your coach hasn't given you a stability program yet. Ask them if you'd like one for a joint that's sore or weak.</Text>
+        )}
         {enrollments.map((e) => {
           const area = findArea(e.area);
           const program = findProgram(e.area, e.level);
@@ -233,19 +186,19 @@ export default function StabilityScreen() {
           );
         })}
 
-        <Text style={styles.section}>{enrollments.length > 0 ? "Add another area" : "Choose an area to start"}</Text>
-        <View style={styles.grid}>
-          {STABILITY_AREAS.map((a) => {
-            const on = enrollments.find((e) => e.area === a.area);
-            return (
-              <Pressable key={a.area} style={[styles.tile, { borderTopColor: a.accent }]} onPress={() => go({ kind: "area", area: a.area })}>
-                <Text style={styles.tileIcon}>{a.icon}</Text>
-                <Text style={styles.tileTitle}>{a.title}</Text>
-                {on && <Text style={styles.tileOn}>{levelInfo(on.level).label} ✓</Text>}
-              </Pressable>
-            );
-          })}
-        </View>
+        {role === "trainer" && (
+          <>
+            <Text style={styles.section}>The 7 areas</Text>
+            <View style={styles.grid}>
+              {STABILITY_AREAS.map((a) => (
+                <Pressable key={a.area} style={[styles.tile, { borderTopColor: a.accent }]} onPress={() => go({ kind: "area", area: a.area })}>
+                  <Text style={styles.tileIcon}>{a.icon}</Text>
+                  <Text style={styles.tileTitle}>{a.title}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
 
         <Text style={styles.section}>The basics</Text>
         {STABILITY_BASICS.map((b) => (
@@ -262,7 +215,6 @@ export default function StabilityScreen() {
   // ---- An area: why it matters, which level, red flags, the 4 programs ----
   if (step.kind === "area") {
     const area = findArea(step.area);
-    const current = enrollments.find((e) => e.area === step.area);
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={[styles.hero, { borderTopColor: area.accent }]}>
@@ -298,7 +250,6 @@ export default function StabilityScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.levelTitle}>
                   {l.icon} {l.label} · {program.weeks} weeks
-                  {current?.level === l.level ? "  ✓ yours" : ""}
                 </Text>
                 <Text style={styles.levelWho}>{program.who}</Text>
               </View>
@@ -315,8 +266,6 @@ export default function StabilityScreen() {
     const area = findArea(step.area);
     const program = findProgram(step.area, step.level);
     const info = levelInfo(step.level);
-    const current = enrollments.find((e) => e.area === step.area);
-    const label = !current ? "Start this program" : current.level === step.level ? "Start again from week 1" : `Switch to ${info.label}`;
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={[styles.hero, { borderTopColor: info.colour }]}>
@@ -327,11 +276,6 @@ export default function StabilityScreen() {
           <Text style={[styles.heroText, { color: info.colour, fontWeight: "700" }]}>{program.weeks} weeks</Text>
           <Text style={styles.heroText}>{program.goal}</Text>
         </View>
-        {current?.level === step.level && (
-          <Pressable style={styles.primary} onPress={() => go({ kind: "session", enrollmentId: current.id })}>
-            <Text style={styles.primaryText}>Open my program</Text>
-          </Pressable>
-        )}
         <Fold title="Who it's for" icon="🙋" open={fold === "who"} onPress={() => toggle("who")}>
           <Text style={styles.text}>{program.who}</Text>
         </Fold>
@@ -369,9 +313,7 @@ export default function StabilityScreen() {
         <Fold title="The finish test" icon="🏁" open={fold === "test"} onPress={() => toggle("test")}>
           <Text style={styles.text}>Pass this to move up a level: {program.finishTest}</Text>
         </Fold>
-        <Pressable style={[styles.primary, busy && { opacity: 0.6 }]} onPress={() => confirmStart(step.area, step.level)} disabled={busy}>
-          {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>{label}</Text>}
-        </Pressable>
+        <Text style={styles.hint}>To give a client this program, open the client, go to their Training tab, and tap 🛡️ Stability programs.</Text>
       </ScrollView>
     );
   }
@@ -412,16 +354,8 @@ export default function StabilityScreen() {
           <Text style={styles.finishedTitle}>🏁 Program finished. Well done!</Text>
           <Text style={styles.text}>Take the finish test: {program.finishTest}</Text>
           <Text style={[styles.text, { marginTop: 4 }]}>
-            Passed it? {nextLevel ? `Move up to ${nextLevel.label}.` : "Keep the advanced program going 2 times a week to hold onto it."} Not yet? Repeat this program.
+            Tell your coach how you did. {nextLevel ? `If you passed, they'll move you up to ${nextLevel.label}; if not, you'll repeat this program.` : "They may keep the advanced program going 2 times a week so you hold onto it."} Until then, keep going with the last phase.
           </Text>
-          {nextLevel && (
-            <Pressable style={styles.primary} onPress={() => start(enrollment.area, nextLevel.level)} disabled={busy}>
-              <Text style={styles.primaryText}>Move up to {nextLevel.label}</Text>
-            </Pressable>
-          )}
-          <Pressable style={styles.secondary} onPress={() => start(enrollment.area, enrollment.level)} disabled={busy}>
-            <Text style={styles.secondaryText}>Repeat this program</Text>
-          </Pressable>
         </View>
       )}
 
@@ -467,10 +401,6 @@ export default function StabilityScreen() {
           <Bullet key={i}>{r}</Bullet>
         ))}
       </Fold>
-
-      <Pressable style={styles.stop} onPress={() => stop(enrollment)}>
-        <Text style={styles.stopText}>Stop this program</Text>
-      </Pressable>
     </ScrollView>
   );
 }

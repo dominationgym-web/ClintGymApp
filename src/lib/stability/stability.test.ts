@@ -8,6 +8,7 @@ import {
   phaseFor,
   setsFor,
   STABILITY_AREAS,
+  stabilityStartMessage,
   stabilityVideoNames,
   stabilityWeek,
   targetText,
@@ -148,5 +149,13 @@ describe("assessExercise", () => {
     const reps = (log_date: string, n: number): StabilityLogLite => ({ log_date, side: null, seconds: null, reps: n, mode: "primer" });
     const logs = [reps("2026-10-14", 12), reps("2026-10-14", 12), reps("2026-10-15", 13), reps("2026-10-15", 12)];
     expect(assessExercise(logs, { ex: "x", sets: 3, target: 12 }, { sided: false }).status).toBe("ready");
+  });
+});
+
+describe("stabilityStartMessage", () => {
+  it("names the program and where to find it", () => {
+    const msg = stabilityStartMessage("Thandi Mokoena", "knee", "rehab");
+    expect(msg).toMatch(/^Thandi, I've started you on the Knee stability program \(Rehab, 8 weeks\)/);
+    expect(msg).toContain("My stability program");
   });
 });

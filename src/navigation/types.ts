@@ -50,6 +50,7 @@ export type TrainerStackParamList = {
   Billing: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
   AppGuide: undefined;
+  Stability: undefined;
 };
 
 export type TrainerTabScreenProps<T extends keyof TrainerTabParamList> = CompositeScreenProps<
