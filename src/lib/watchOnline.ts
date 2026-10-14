@@ -2,7 +2,9 @@
 // A YouTube search rather than one video: it is short, opens in the YouTube
 // app, and never breaks when a video is taken down.
 
-/** youtube.com/results?search_query=copenhagen+plank */
+// Spaces are %20, not +: the YouTube app on Android reads a + as a plus sign
+// and searches for "copenhagen+plank" (GRIZZ, 2026-10-14: links not working).
+/** youtube.com/results?search_query=copenhagen%20plank */
 export function youtubeSearchUrl(term: string): string {
   const words = term
     .toLowerCase()
@@ -11,5 +13,5 @@ export function youtubeSearchUrl(term: string): string {
     .trim()
     .split(" ")
     .filter(Boolean);
-  return `https://www.youtube.com/results?search_query=${words.join("+")}`;
+  return `https://www.youtube.com/results?search_query=${words.join("%20")}`;
 }

@@ -45,10 +45,10 @@ describe("Sports Performance guides", () => {
   });
   it("links to examples online", () => {
     expect(watchOnlineUrl("World's Greatest Stretch")).toBe(
-      "https://www.youtube.com/results?search_query=worlds+greatest+stretch",
+      "https://www.youtube.com/results?search_query=worlds%20greatest%20stretch",
     );
-    expect(watchOnlineUrl("90/90 Hip Switch")).toBe("https://www.youtube.com/results?search_query=90+90+hip+switch");
-    expect(watchOnlineUrl("Cat-Cow")).toBe("https://www.youtube.com/results?search_query=cat+cow+stretch");
+    expect(watchOnlineUrl("90/90 Hip Switch")).toBe("https://www.youtube.com/results?search_query=90%2090%20hip%20switch");
+    expect(watchOnlineUrl("Cat-Cow")).toBe("https://www.youtube.com/results?search_query=cat%20cow%20stretch");
     for (const name of Object.keys(SPORTS_SEARCH)) expect(SPORTS_GUIDES[name], name).toBeDefined();
   });
 });

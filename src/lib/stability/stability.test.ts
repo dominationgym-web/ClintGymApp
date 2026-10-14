@@ -70,7 +70,7 @@ describe("stability programs", () => {
         if (e.video) continue;
         expect(e.search, e.key).toBeDefined();
         expect(e.search!.split(" ").length, e.key).toBeLessThanOrEqual(6);
-        expect(youtubeSearchUrl(e.search!), e.key).toMatch(/^https:\/\/www\.youtube\.com\/results\?search_query=[a-z0-9]+(\+[a-z0-9]+)*$/);
+        expect(youtubeSearchUrl(e.search!), e.key).toMatch(/^https:\/\/www\.youtube\.com\/results\?search_query=[a-z0-9]+(%20[a-z0-9]+)*$/);
       }
     }
   });
