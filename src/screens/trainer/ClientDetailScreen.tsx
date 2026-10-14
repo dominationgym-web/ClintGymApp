@@ -33,7 +33,7 @@ import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import WellbeingReports from "@/components/WellbeingReports";
 import ClientProblems from "@/components/ClientProblems";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
-import { RESET_WEEKS_TOTAL, resetName, resetWeekNumber } from "@/lib/resetProgram";
+import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -575,8 +575,19 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 onChanged={(items) => setClient((c) => (c ? { ...c, home_equipment: items } : c))}
               />
             )}
-            <ClientProgramPicker key={programKey} clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
-            <ClientCalendarCard clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
+            <ClientProgramPicker
+              key={programKey}
+              clientId={client.id}
+              clientName={client.name}
+              trainingPlace={client.training_place}
+              resetNotice={resetNotice(client, todayIso())}
+            />
+            <ClientCalendarCard
+              clientId={client.id}
+              clientName={client.name}
+              trainingPlace={client.training_place}
+              resetNotice={resetNotice(client, todayIso())}
+            />
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
