@@ -199,7 +199,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Clients tab → tap a client",
       points: [
         "Overview: their training level (Beginner, Intermediate or Advanced) at the top, then their problems with Reply, Busy fixing and Fixed, plus messages.",
-        "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. You can set habits for them.",
+        "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. To add a habit, open a heading (Nutrition, Movement, Sleep & recovery, Mindset) and tap one, or type your own.",
         "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",

@@ -13,6 +13,7 @@ import FoundationOfferCard from "@/components/FoundationOfferCard";
 import ClientFormVideos from "@/components/ClientFormVideos";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
+import HabitOptionsPicker from "@/components/HabitOptionsPicker";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
@@ -487,6 +488,14 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
 
             <View style={styles.addHabitBox}>
               <Text style={styles.addHabitTitle}>Add a habit</Text>
+              <HabitOptionsPicker
+                habits={habits}
+                selected={newHabitName}
+                onPick={(name, reps) => {
+                  setNewHabitName(name);
+                  setNewHabitReps(reps);
+                }}
+              />
               <TextInput
                 style={styles.textInput}
                 placeholder="e.g. Take supplements"
