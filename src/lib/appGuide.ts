@@ -139,6 +139,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Menu ☰ → Women's Health Reset, and the Reset tab",
       points: [
         "Women: log your period and the app shows which phase you're in, with how to train, eat and supplement in each one. Your period log is private. Your coach can't see it.",
+        "🛒 A week before your period is due, the app reminds you to check you have your supplements ready (magnesium, omega-3, vitamin B6 and calcium), on your phone and on your Check-in.",
         "The Health Reset is a week-by-week plan. Tap Start, tick off each day and add a note on how you feel. Men have their own version.",
       ],
     },

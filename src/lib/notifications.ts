@@ -14,7 +14,7 @@ import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
 import { progressPhotoReminderAt } from "@/lib/progressPhotos";
 import { upcomingSleepReminders } from "@/lib/sleep";
-import { upcomingPhases } from "@/lib/cycle";
+import { SUPPLEMENT_PREP_BODY, SUPPLEMENT_PREP_TITLE, supplementPrepDates, upcomingPhases } from "@/lib/cycle";
 import { upcomingResetReminders } from "@/lib/resetProgram";
 import { parseIsoDate, todayIso } from "@/lib/dates";
 
@@ -169,10 +169,13 @@ export async function unregisterForCoachMessages(): Promise<void> {
 const CYCLE_ID_PREFIX = "cycle-reminder-";
 const CYCLE_DAYS_AHEAD = 14;
 const CYCLE_REMINDER_HOUR = 8;
+// An hour after the phase reminder, so the two don't land together.
+const SUPPLEMENT_PREP_HOUR = 9;
 
 /**
  * (Re)schedules the 8am Women's Health Reset nudge for the next two weeks,
- * each one for the phase she'll be in that day, or clears them when
+ * each one for the phase she'll be in that day, plus a supplement check a
+ * week before each of her next three periods, or clears them all when
  * `enabled` is false or she hasn't logged a period. Safe to call on every open.
  */
 export async function scheduleCycleReminders(periodStarts: string[], enabled: boolean): Promise<void> {
@@ -194,6 +197,17 @@ export async function scheduleCycleReminders(periodStarts: string[], enabled: bo
       await N.scheduleNotificationAsync({
         identifier: `${CYCLE_ID_PREFIX}${date}`,
         content: { title: `${phase.emoji} ${phase.name}`, body: phase.reminder },
+        trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: at, channelId: REMINDERS_CHANNEL },
+      });
+    }
+    // A week before each of her next three periods: check her supplements.
+    for (const date of supplementPrepDates(periodStarts, todayIso(), 3)) {
+      const at = parseIsoDate(date);
+      at.setHours(SUPPLEMENT_PREP_HOUR, 0, 0, 0);
+      if (at <= now) continue;
+      await N.scheduleNotificationAsync({
+        identifier: `${CYCLE_ID_PREFIX}supplements-${date}`,
+        content: { title: SUPPLEMENT_PREP_TITLE, body: SUPPLEMENT_PREP_BODY },
         trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: at, channelId: REMINDERS_CHANNEL },
       });
     }

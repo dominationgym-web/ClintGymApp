@@ -6,6 +6,9 @@ import {
   daysBetween,
   phaseForDay,
   PHASE_ORDER,
+  nextPeriodStarts,
+  supplementPrepDates,
+  supplementPrepDaysLeft,
   upcomingPhases,
   WOMENS_HEALTH_GUIDE,
 } from "@/lib/cycle";
@@ -92,5 +95,29 @@ describe("content", () => {
 
   it("counts days across a month end", () => {
     expect(daysBetween("2026-10-30", "2026-11-02")).toBe(3);
+  });
+});
+
+describe("supplement check a week before her period", () => {
+  it("predicts her next periods from her usual length", () => {
+    expect(nextPeriodStarts(["2026-09-01", "2026-09-29"], "2026-10-05", 2)).toEqual(["2026-10-27", "2026-11-24"]);
+    expect(nextPeriodStarts([], "2026-10-05", 2)).toEqual([]);
+  });
+  it("reminds her 7 days before each one, skipping a day already gone", () => {
+    expect(supplementPrepDates(["2026-09-01", "2026-09-29"], "2026-10-05", 3)).toEqual([
+      "2026-10-20",
+      "2026-11-17",
+      "2026-12-15",
+    ]);
+    // Period due in 3 days: this month's reminder has passed, so the next one is first.
+    expect(supplementPrepDates(["2026-09-01", "2026-09-29"], "2026-10-24", 1)).toEqual(["2026-11-17"]);
+  });
+  it("shows the in-app list only in the week before", () => {
+    const starts = ["2026-09-01", "2026-09-29"];
+    expect(supplementPrepDaysLeft(cycleToday(starts, "2026-10-20"), "2026-10-20")).toBe(7);
+    expect(supplementPrepDaysLeft(cycleToday(starts, "2026-10-26"), "2026-10-26")).toBe(1);
+    expect(supplementPrepDaysLeft(cycleToday(starts, "2026-10-19"), "2026-10-19")).toBeNull();
+    // Late: the due notice covers it instead.
+    expect(supplementPrepDaysLeft(cycleToday(starts, "2026-10-28"), "2026-10-28")).toBeNull();
   });
 });

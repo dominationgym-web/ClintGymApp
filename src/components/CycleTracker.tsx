@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso, toIsoDate } from "@/lib/dates";
-import { cycleToday, type CycleToday } from "@/lib/cycle";
+import { cycleToday, SUPPLEMENT_PREP_LIST, supplementPrepDaysLeft, type CycleToday } from "@/lib/cycle";
 import { scheduleCycleReminders } from "@/lib/notifications";
 import { getCycleReminderEnabled, setCycleReminderEnabled } from "@/lib/cycleReminderSetting";
 import { useAuth } from "@/context/AuthContext";
@@ -53,6 +53,8 @@ const prettyDate = (iso: string) =>
 
 function TodayCard({ today, full }: { today: CycleToday; full: boolean }) {
   const p = today.phase;
+  // The week before her period: make sure she has her supplements.
+  const prepLeft = supplementPrepDaysLeft(today, todayIso());
   return (
     <View style={styles.todayCard}>
       <Text style={styles.kicker}>
@@ -64,6 +66,18 @@ function TodayCard({ today, full }: { today: CycleToday; full: boolean }) {
       <Text style={styles.body}>{p.tagline}</Text>
       {today.periodDue && (
         <Text style={styles.due}>Your period is due. Log it below when it starts and the app will catch up.</Text>
+      )}
+      {prepLeft !== null && (
+        <View style={styles.prepBox}>
+          <Text style={styles.blockTitle}>
+            🛒 Period due in about {prepLeft} day{prepLeft === 1 ? "" : "s"}: check your supplements
+          </Text>
+          {SUPPLEMENT_PREP_LIST.map((l) => (
+            <Text key={l} style={styles.line}>
+              • {l}
+            </Text>
+          ))}
+        </View>
       )}
       {full ? (
         <>
@@ -209,7 +223,7 @@ export default function CycleTracker() {
       <View style={[styles.card, styles.toggleRow]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>Daily phase reminder</Text>
-          <Text style={styles.small}>An 8am note on what to focus on for your phase (in the installed app).</Text>
+          <Text style={styles.small}>An 8am note on what to focus on for your phase, and a supplement check a week before your period (in the installed app).</Text>
         </View>
         <Switch
           value={remindersOn ?? true}
@@ -243,6 +257,7 @@ const styles = StyleSheet.create({
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },
   due: { color: "#FBBF24", fontSize: 13, marginTop: 8 },
   reminder: { color: "#CBD5E1", fontSize: 13, marginTop: 6 },
+  prepBox: { backgroundColor: "#0F172A", borderRadius: 8, padding: 10, marginTop: 10 },
   blockTitle: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginBottom: 4 },
   line: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 3 },
   small: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
