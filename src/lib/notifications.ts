@@ -292,6 +292,41 @@ export async function scheduleSuggestionBoxReminder(): Promise<void> {
   }
 }
 
+const CYCLE_NUDGE_ID = "cycle-tracker-nudge";
+// Sunday is 1, so Saturday is 7.
+const CYCLE_NUDGE_WEEKDAY = 7;
+const CYCLE_NUDGE_HOUR = 9;
+export const CYCLE_NUDGE_TITLE = "🌸 Your cycle tracker";
+export const CYCLE_NUDGE_BODY =
+  "Log the first day of your last period and the app will guide your training, food and supplements through every phase. Menu ☰ → Women's Health Reset.";
+
+/**
+ * Saturdays at 9am, a nudge for women who haven't used the cycle tracker yet
+ * (GRIZZ, 2026-10-14). `wanted` is false once she has logged a period (or for
+ * men), which cancels it for good. Safe to call on every open.
+ */
+export async function scheduleCycleTrackerNudge(wanted: boolean): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    await N.cancelScheduledNotificationAsync(CYCLE_NUDGE_ID);
+    if (!wanted || !(await canNotify(N))) return;
+    await N.scheduleNotificationAsync({
+      identifier: CYCLE_NUDGE_ID,
+      content: { title: CYCLE_NUDGE_TITLE, body: CYCLE_NUDGE_BODY },
+      trigger: {
+        type: N.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: CYCLE_NUDGE_WEEKDAY,
+        hour: CYCLE_NUDGE_HOUR,
+        minute: 0,
+        channelId: REMINDERS_CHANNEL,
+      },
+    });
+  } catch (e) {
+    console.warn("Couldn't schedule the cycle tracker nudge", e);
+  }
+}
+
 export type NotificationPermission = "granted" | "ask" | "blocked" | "unavailable";
 
 /** Whether this phone lets the app send notifications ("unavailable" in Expo Go). */

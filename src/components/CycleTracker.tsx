@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso, toIsoDate } from "@/lib/dates";
 import { cycleToday, SUPPLEMENT_PREP_LIST, supplementPrepDaysLeft, type CycleToday } from "@/lib/cycle";
-import { scheduleCycleReminders } from "@/lib/notifications";
+import { CYCLE_NUDGE_BODY, CYCLE_NUDGE_TITLE, scheduleCycleReminders, scheduleCycleTrackerNudge } from "@/lib/notifications";
 import { getCycleReminderEnabled, setCycleReminderEnabled } from "@/lib/cycleReminderSetting";
 import { useAuth } from "@/context/AuthContext";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -31,7 +31,9 @@ function useCycleLogs() {
     const rows = data ?? [];
     setLogs(rows);
     getCycleReminderEnabled().then((enabled) => scheduleCycleReminders(rows.map((r) => r.period_start), enabled));
-  }, [client?.id]);
+    // Women who haven't logged a period yet get a Saturday nudge; logging one ends it.
+    scheduleCycleTrackerNudge(client.sex === "female" && rows.length === 0);
+  }, [client?.id, client?.sex]);
 
   useFocusEffect(
     useCallback(() => {
@@ -39,7 +41,7 @@ function useCycleLogs() {
     }, [load])
   );
 
-  return { logs, reload: load, clientId: client?.id };
+  return { logs, reload: load, clientId: client?.id, sex: client?.sex ?? null };
 }
 
 const daysAgoIso = (n: number) => {
@@ -239,12 +241,24 @@ export default function CycleTracker() {
 
 /** A small card on the Check-in screen once she's logged a period; tap for the full guide. */
 export function CycleTodayBanner() {
-  const { logs } = useCycleLogs();
+  const { logs, sex } = useCycleLogs();
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const today = logs ? cycleToday(logs.map((l) => l.period_start), todayIso()) : null;
+  const openTracker = () => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" });
+  // Saturdays, until she logs her first period: the same nudge as the phone
+  // reminder, so it also shows in Expo Go.
+  if (!today && logs && logs.length === 0 && sex === "female" && parseIsoDate(todayIso()).getDay() === 6) {
+    return (
+      <Pressable style={styles.todayCard} onPress={openTracker}>
+        <Text style={styles.phaseName}>{CYCLE_NUDGE_TITLE}</Text>
+        <Text style={styles.body}>{CYCLE_NUDGE_BODY.replace(" Menu ☰ → Women's Health Reset.", "")}</Text>
+        <Text style={styles.reminder}>Tap to open it ›</Text>
+      </Pressable>
+    );
+  }
   if (!today) return null;
   return (
-    <Pressable onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" })}>
+    <Pressable onPress={openTracker}>
       <TodayCard today={today} full={false} />
     </Pressable>
   );
