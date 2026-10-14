@@ -6,6 +6,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
 import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
+import { TRAINING_LEVELS, levelLabel } from "@/lib/foundation";
 import { useAuth } from "@/context/AuthContext";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import FoundationOfferCard from "@/components/FoundationOfferCard";
@@ -323,6 +324,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         </View>
         {tab === "overview" && (
           <>
+            <TrainingLevelBanner level={client.training_level} />
             <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
             {client.package_type && (
               <View style={styles.packageBadge}>
@@ -638,7 +640,46 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   );
 }
 
+const LEVEL_LOOK: Record<string, { emoji: string; color: string }> = {
+  never: { emoji: "🌱", color: "#22C55E" },
+  beginner: { emoji: "🌱", color: "#22C55E" },
+  intermediate: { emoji: "💪", color: "#F59E0B" },
+  advanced: { emoji: "🔥", color: "#EF4444" },
+};
+
+// The client's training experience from their intake form, at the top of the
+// Overview so the trainer is reminded every time they open the client
+// (GRIZZ, 2026-10-14).
+function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
+  const look = (level && LEVEL_LOOK[level]) || { emoji: "❔", color: "#64748B" };
+  const detail = TRAINING_LEVELS.find((l) => l.key === level)?.detail;
+  return (
+    <View style={[styles.levelBanner, { borderColor: look.color }]}>
+      <Text style={styles.levelEmoji}>{look.emoji}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.levelKicker}>TRAINING LEVEL</Text>
+        <Text style={[styles.levelName, { color: look.color }]}>{levelLabel(level)}</Text>
+        {detail ? <Text style={styles.levelDetail}>{detail}</Text> : null}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  levelBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#1E293B",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 12,
+  },
+  levelEmoji: { fontSize: 30 },
+  levelKicker: { color: "#94A3B8", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  levelName: { fontSize: 20, fontWeight: "800", marginTop: 1 },
+  levelDetail: { color: "#CBD5E1", fontSize: 13, marginTop: 2 },
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
