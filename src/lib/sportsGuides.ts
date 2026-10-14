@@ -438,19 +438,24 @@ export const SPORTS_GUIDES: Record<string, ExerciseTechnique> = {
 // Search terms for names that alone find the wrong videos or too few
 // (checked 2026-10-14). Every other move searches by its name.
 export const SPORTS_SEARCH: Record<string, string> = {
-  "Single-Leg Hop": "single leg hop and stick",
+  "Single-Leg Hop": "single leg hop plyometric",
+  "A-Skip": "a skip sprint drill",
+  "B-Skip": "b skip sprint drill",
   "High Knees": "high knees drill",
   "Wall Drive Drill": "wall drive sprint drill",
   "Acceleration Sprint": "sprint acceleration drill",
   "Pro Agility Shuttle": "5 10 5 pro agility drill",
   "Lateral Shuffle": "lateral shuffle drill",
-  "Crossover Run": "crossover run drill",
+  "Crossover Run": "crossover run speed drill",
   "Ladder Quick Feet": "agility ladder quick feet",
   "Ankle Knee-to-Wall Rock": "knee to wall ankle mobility",
+  "Hip CARs": "hip CARs mobility",
+  "Shoulder CARs": "shoulder CARs mobility",
   "Leg Swings": "leg swings warm up",
   "Cat-Cow": "cat cow stretch",
   "Thread the Needle": "thread the needle stretch",
-  "Wall Slide": "wall slides shoulder",
+  "Wall Slide": "wall slide shoulder mobility",
+  "Band Shoulder Dislocate": "band shoulder pass through",
 };
 
 /** A short YouTube search for examples of a move with no demo video. */
