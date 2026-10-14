@@ -326,6 +326,7 @@ export const PROGRAM_FAMILIES = [
   { key: "goalBlock", title: "12-week goal programs", icon: "🎯" },
   { key: "hiit", title: "HIIT", icon: "🔥" },
   { key: "sprint", title: "Sprint & threshold intervals", icon: "⚡" },
+  { key: "fight", title: "Fight sports: 8-week conditioning", icon: "🥊" },
   { key: "fullBody", title: "Full body", icon: "🏃" },
   { key: "upperLower", title: "Quick upper & lower", icon: "⏱️" },
   { key: "chestBi", title: "Chest & Bi", icon: "🏋️" },
@@ -349,6 +350,8 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   if (name.startsWith("hiit")) return "hiit";
   // 10 cardio interval sessions (0090): "Sprint Intervals 3".
   if (name.startsWith("sprint intervals")) return "sprint";
+  // 8-week combat sport programs (0091): "Fight Conditioning – Boxing".
+  if (name.startsWith("fight conditioning")) return "fight";
   if (name.includes("chest")) return "chestBi";
   if (name.includes("back")) return "backTri";
   if (name.includes("legs")) return "legs";
