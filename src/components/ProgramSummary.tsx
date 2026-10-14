@@ -1,11 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, View, Text, StyleSheet } from "react-native";
 import { cardioLabel, formatRest, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
+import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 
 // A program's exercises, grouped by weekday for weekly programs. Multi-week
 // programs (0065) list each week's training days under a week heading. On a
 // client's screen the trainer can tap an exercise to change it for them (0070).
+// ▶ beside each exercise opens its demo video and How to do it (2026-10-14);
+// where there's nothing to change, tapping the exercise opens it too.
 export default function ProgramSummary({
   program,
   exercises,
@@ -15,6 +18,7 @@ export default function ProgramSummary({
   exercises: ProgramExercise[];
   onPressExercise?: (row: ProgramExercise) => void;
 }) {
+  const [info, setInfo] = useState<ProgramExercise | null>(null);
   const weeks = program.weeks ?? 1;
   const days =
     program.kind !== "weekly"
@@ -25,7 +29,11 @@ export default function ProgramSummary({
   return (
     <View>
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
-      {onPressExercise ? <Text style={styles.tapHint}>✎ Tap an exercise to change it, or its sets and reps, for this client.</Text> : null}
+      {onPressExercise ? (
+        <Text style={styles.tapHint}>✎ Tap an exercise to change it, or its sets and reps, for this client. Tap ▶ to watch it.</Text>
+      ) : (
+        <Text style={styles.tapHint}>▶ Tap an exercise to watch its video and how to do it.</Text>
+      )}
       {days.map((day) => {
         const rows = exercises.filter((e) => slotOf(e) === day).sort((a, b) => a.sort_order - b.sort_order);
         const weekOf = (slot: number) => Math.floor((slot - 1) / 7) + 1;
@@ -62,18 +70,27 @@ export default function ProgramSummary({
                     ) : null}
                   </Text>
                 );
-                return onPressExercise ? (
-                  <Pressable key={r.id} onPress={() => onPressExercise(r)} hitSlop={4} accessibilityRole="button">
-                    {line}
-                  </Pressable>
-                ) : (
-                  <React.Fragment key={r.id}>{line}</React.Fragment>
+                return (
+                  <View key={r.id} style={styles.row}>
+                    <Pressable
+                      style={{ flex: 1 }}
+                      onPress={() => (onPressExercise ? onPressExercise(r) : setInfo(r))}
+                      hitSlop={4}
+                      accessibilityRole="button"
+                    >
+                      {line}
+                    </Pressable>
+                    <Pressable onPress={() => setInfo(r)} hitSlop={8} accessibilityLabel={`Watch ${r.exercise_name}`}>
+                      <Text style={styles.watch}>▶</Text>
+                    </Pressable>
+                  </View>
                 );
               })
             )}
           </View>
         );
       })}
+      <ExerciseInfoModal exercise={info} onClose={() => setInfo(null)} />
     </View>
   );
 }
@@ -86,4 +103,6 @@ const styles = StyleSheet.create({
   changed: { color: "#fff" },
   was: { color: "#D4AF37", fontSize: 12, fontWeight: "600" },
   tapHint: { color: "#D4AF37", fontSize: 12, marginTop: 6 },
+  row: { flexDirection: "row", alignItems: "center", gap: 8 },
+  watch: { color: "#D4AF37", fontSize: 14, fontWeight: "800", paddingHorizontal: 6, paddingVertical: 3 },
 });

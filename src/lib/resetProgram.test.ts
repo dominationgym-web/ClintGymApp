@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resetNotice,
   RESET_HABITS,
   RESET_TRAINING,
   RESET_HOME_TRAINING,
@@ -130,5 +131,18 @@ describe("Men's Health Reset", () => {
     const lower = resetTraining("optimise", "gym", "male").sessions[0].exercises.map((e) => e.name);
     expect(lower).toContain("Walking Lunge");
     expect(resetTraining("optimise", "gym", "female").sessions[0].exercises.map((e) => e.name)).toContain("Hip Abduction");
+  });
+});
+
+describe("resetNotice", () => {
+  const base = { name: "Melanie Walters", sex: "female" as const, lifestyle_reset_started_at: "2026-10-01", reset_started_on: "2026-10-01" };
+  it("says which Reset and which week", () => {
+    expect(resetNotice(base, "2026-10-15")).toBe(
+      "Melanie is on the 12-Week Women's Health Reset: week 3 of 12 (started 2026-10-01). The Reset has its own training.",
+    );
+  });
+  it("covers enrolled-not-started and not enrolled", () => {
+    expect(resetNotice({ ...base, reset_started_on: null }, "2026-10-15")).toMatch(/hasn't tapped Start/);
+    expect(resetNotice({ ...base, lifestyle_reset_started_at: null }, "2026-10-15")).toBeNull();
   });
 });

@@ -213,7 +213,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Overview: their training level (Beginner, Intermediate or Advanced) at the top, then their problems with Reply, Busy fixing and Fixed, plus messages.",
         "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. To add a habit, open a heading (Nutrition, Movement, Sleep & recovery, Mindset) and tap one, or type your own.",
-        "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. For home clients, 🏠 Home equipment shows what they own, with photos; tap Edit on a multi station to load the exercises it can do. The app then picks home exercises their equipment covers, and you can still change any of them. Gold stars show where they improved.",
+        "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar (if they're on the Health Reset, the app warns you and shows which week they're on), switch Gym/Home, and see their training log. For home clients, 🏠 Home equipment shows what they own, with photos; tap Edit on a multi station to load the exercises it can do. The app then picks home exercises their equipment covers, and you can still change any of them. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",
@@ -228,6 +228,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Programs tab",
       points: [
         "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT, sprint and threshold intervals, 8-week fight sport conditioning, and 15 Sports Performance programs for power, speed, strength, mobility and flexibility) or tap + Build a program to make your own.",
+        "Open any program and tap an exercise, or ▶ beside it, to watch its demo video and read how to do it.",
         "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Weight loss, Strength and Fitness, building joint stability, core strength and tendons before real training.",
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 20 ab reps between sets. When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
