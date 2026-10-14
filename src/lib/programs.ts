@@ -327,6 +327,11 @@ export const PROGRAM_FAMILIES = [
   { key: "hiit", title: "HIIT", icon: "🔥" },
   { key: "sprint", title: "Sprint & threshold intervals", icon: "⚡" },
   { key: "fight", title: "Fight sports: 8-week conditioning", icon: "🥊" },
+  { key: "sportsPower", title: "Sports Performance: Explosive Power", icon: "💥" },
+  { key: "sportsSpeed", title: "Sports Performance: Speed", icon: "🚀" },
+  { key: "sportsStrength", title: "Sports Performance: Strength", icon: "🏆" },
+  { key: "sportsMobility", title: "Sports Performance: Mobility", icon: "🔄" },
+  { key: "sportsFlexibility", title: "Sports Performance: Flexibility", icon: "🧘" },
   { key: "fullBody", title: "Full body", icon: "🏃" },
   { key: "upperLower", title: "Quick upper & lower", icon: "⏱️" },
   { key: "chestBi", title: "Chest & Bi", icon: "🏋️" },
@@ -341,6 +346,13 @@ export type ProgramFamily = (typeof PROGRAM_FAMILIES)[number]["key"];
 export function programFamily(program: Pick<Program, "name" | "trainer_id">): ProgramFamily {
   if (program.trainer_id) return "own";
   const name = program.name.toLowerCase();
+  // Sports Performance programs (0093): "Speed 2 – Top Speed". Checked first,
+  // since some of their names say "strength" or "lower body".
+  if (name.startsWith("explosive power ")) return "sportsPower";
+  if (name.startsWith("speed ")) return "sportsSpeed";
+  if (name.startsWith("sports strength ")) return "sportsStrength";
+  if (name.startsWith("mobility ")) return "sportsMobility";
+  if (name.startsWith("flexibility ")) return "sportsFlexibility";
   // 6-week foundation programs (0086): "Beginner Foundation - Strength".
   if (name.includes("foundation")) return "foundation";
   // The 15 + 15 calendar workouts (0069): "Upper Body 1", "Lower Body Superset 2".

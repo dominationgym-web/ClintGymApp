@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { techniqueFor } from "@/lib/exerciseTechnique";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
-import { ExerciseGuideContent } from "@/components/ExerciseGuide";
+import { ExerciseGuideContent, WatchOnlineLink } from "@/components/ExerciseGuide";
 import type { Exercise } from "@/types/database";
 
 // An exercise's demo video and How to do it, for the trainer checking a
@@ -56,7 +56,11 @@ export default function ExerciseInfoModal({
             <ActivityIndicator color="#D4AF37" style={{ marginVertical: 20 }} />
           ) : (
             <>
-              <ExerciseVideoPreview url={info?.external_url ?? null} />
+              {info?.external_url || !exercise ? (
+                <ExerciseVideoPreview url={info?.external_url ?? null} />
+              ) : (
+                <WatchOnlineLink name={exercise.exercise_name} />
+              )}
               {technique ? <ExerciseGuideContent technique={technique} /> : null}
             </>
           )}

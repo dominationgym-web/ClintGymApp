@@ -11,11 +11,12 @@ import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 import { STABILITY_MENU_ITEM } from "@/lib/stability";
 
 // The client app's menu: Nutrition, Women's Health Reset (with the cycle
-// tracker, women only) and Sleep & Recovery first (GRIZZ, 2026-10-12), then
-// Stability & injury prevention (2026-10-14), then
+// tracker, women only), Sleep & Recovery (GRIZZ, 2026-10-12) and Sports
+// Performance (2026-10-14) first, then Stability & injury prevention
+// (2026-10-14), then
 // the suggestion box (the coach wants it easy to find), how to use the app,
 // the coach's welcome and the other sections.
-const TOP_SECTIONS = ["nutrition", "womensHealthReset", "sleepRecovery"];
+const TOP_SECTIONS = ["nutrition", "womensHealthReset", "sleepRecovery", "sportsPerformance"];
 
 export default function SectionsMenuButton() {
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();

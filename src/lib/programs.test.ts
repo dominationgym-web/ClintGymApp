@@ -287,6 +287,9 @@ describe("programFamily", () => {
     expect(built("Lower Body 15")).toBe("lowerBody");
     expect(built("Beginner Foundation - Strength")).toBe("foundation");
     expect(built("Intermediate Foundation - Bodybuilding")).toBe("foundation");
+    expect(built("Sports Strength 1 – Base Strength")).toBe("sportsStrength");
+    expect(built("Mobility 2 – Spine & Shoulders")).toBe("sportsMobility");
+    expect(built("Speed 3 – Agility & Change of Direction")).toBe("sportsSpeed");
   });
   it("puts the trainer's own programs together, whatever their name", () => {
     expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");
