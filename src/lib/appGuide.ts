@@ -214,7 +214,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "Programs and workouts",
       where: "Programs tab",
       points: [
-        "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT) or tap + Build a program to make your own.",
+        "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT, sprint and threshold intervals) or tap + Build a program to make your own.",
         "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Weight loss, Strength and Fitness, building joint stability, core strength and tendons before real training.",
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 20 ab reps between sets. When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
