@@ -229,8 +229,11 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "Programs and workouts",
       where: "Programs tab",
       points: [
-        "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT, sprint and threshold intervals, 8-week fight sport conditioning, and 15 Sports Performance programs for power, speed, strength, mobility and flexibility) or tap + Build a program to make your own.",
-        "🏅 Menu ☰ → Sports Performance explains each of the 15 programs and who it suits.",
+        "Programs sit in three groups. Tap one to open it, then tap a heading inside to see its programs.",
+        "🏋️ Gym (🏠 Home on the Home tab): beginner & intermediate foundations, 12-week goal programs, full body, upper and lower body, Chest & Bi, Back & Tri, Legs, and your own programs.",
+        "⚡ Performance: explosive power, speed and sports strength programs, HIIT, sprint and threshold intervals, and 8-week fight sport conditioning. 🏅 A link inside (and Menu ☰ → Sports Performance) explains who each one suits.",
+        "🧘 Functional: mobility and flexibility programs, plus a link to the 🛡️ stability & injury prevention programs, which run alongside a client's main program.",
+        "The same three groups show when you choose a client's program or put a workout on their calendar. Tap + Build a program to make your own.",
         "Open any program and tap an exercise, or ▶ beside it, to watch its demo video and read how to do it.",
         "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Weight loss, Strength and Fitness, building joint stability, core strength and tendons before real training.",
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 20 ab reps between sets. When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",

@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";
 import { loadAvailablePrograms, loadCalendarWorkouts, loadExerciseChanges, loadProgramExercises } from "@/lib/programQueries";
-import { PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily } from "@/lib/programs";
+import { PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
+import ProgramGroups from "@/components/ProgramGroups";
 import {
   monthLabel,
   monthOf,
@@ -289,11 +290,13 @@ function WorkoutPicker({
 }) {
   const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
   const [open, setOpen] = useState<ProgramFamily | null>(null);
+  const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
 
   useEffect(() => {
     if (date) {
       setPlace(trainingPlace);
       setOpen(null);
+      setOpenGroup(null);
     }
   }, [date, trainingPlace]);
 
@@ -319,6 +322,7 @@ function WorkoutPicker({
             onChange={(next) => {
               setPlace(next);
               setOpen(null);
+              setOpenGroup(null);
             }}
             accent={BRAND_GOLD}
             labels={PROGRAM_PLACE_LABELS}
@@ -334,53 +338,62 @@ function WorkoutPicker({
             </Text>
           )}
           <ScrollView style={{ marginTop: 8 }} contentContainerStyle={{ paddingBottom: 4 }}>
-            {families.map((f) => {
-              const isOpen = open === f.key;
-              const usedCount = usedInBatch(f.key, f.programs, used);
-              return (
-                <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
-                  <Pressable style={styles.familyHeader} onPress={() => setOpen(isOpen ? null : f.key)}>
-                    <Text style={styles.familyIcon}>{f.icon}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.familyTitle}>{f.title}</Text>
-                      <Text style={[styles.usedCount, usedCount > 0 && { color: RED }]}>
-                        {usedCount} of {f.programs.length} used
-                      </Text>
-                    </View>
-                    <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
-                  </Pressable>
-                  {isOpen && usedCount > 0 && (
-                    <Pressable style={styles.reset} onPress={() => onReset(f.key, f.title)}>
-                      <Text style={styles.resetText}>↺ Reset this batch</Text>
+            <ProgramGroups
+              place={place}
+              families={families}
+              open={openGroup}
+              onToggle={(g) => {
+                setOpenGroup(g);
+                setOpen(null);
+              }}
+              renderFamily={(f) => {
+                const isOpen = open === f.key;
+                const usedCount = usedInBatch(f.key, f.programs, used);
+                return (
+                  <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
+                    <Pressable style={styles.familyHeader} onPress={() => setOpen(isOpen ? null : f.key)}>
+                      <Text style={styles.familyIcon}>{f.icon}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.familyTitle}>{f.title}</Text>
+                        <Text style={[styles.usedCount, usedCount > 0 && { color: RED }]}>
+                          {usedCount} of {f.programs.length} used
+                        </Text>
+                      </View>
+                      <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
                     </Pressable>
-                  )}
-                  {isOpen &&
-                    f.programs.map((p) => {
-                      const current = p.id === currentId;
-                      const isUsed = used.has(p.id) && !current;
-                      return (
-                        <Pressable
-                          key={p.id}
-                          style={[styles.choice, current && { borderColor: BRAND_GOLD }, isUsed && styles.choiceUsed]}
-                          onPress={() => onChoose(p)}
-                          disabled={busy || current || isUsed}
-                        >
-                          <View style={styles.choiceTop}>
-                            <Text style={[styles.name, isUsed && { color: "#94A3B8" }]}>{p.name}</Text>
-                            {isUsed && <Text style={styles.usedTag}>Used</Text>}
-                            {current && <Text style={styles.currentTag}>On this day</Text>}
-                          </View>
-                          {p.description ? (
-                            <Text style={styles.description} numberOfLines={2}>
-                              {p.description}
-                            </Text>
-                          ) : null}
-                        </Pressable>
-                      );
-                    })}
-                </View>
-              );
-            })}
+                    {isOpen && usedCount > 0 && (
+                      <Pressable style={styles.reset} onPress={() => onReset(f.key, f.title)}>
+                        <Text style={styles.resetText}>↺ Reset this batch</Text>
+                      </Pressable>
+                    )}
+                    {isOpen &&
+                      f.programs.map((p) => {
+                        const current = p.id === currentId;
+                        const isUsed = used.has(p.id) && !current;
+                        return (
+                          <Pressable
+                            key={p.id}
+                            style={[styles.choice, current && { borderColor: BRAND_GOLD }, isUsed && styles.choiceUsed]}
+                            onPress={() => onChoose(p)}
+                            disabled={busy || current || isUsed}
+                          >
+                            <View style={styles.choiceTop}>
+                              <Text style={[styles.name, isUsed && { color: "#94A3B8" }]}>{p.name}</Text>
+                              {isUsed && <Text style={styles.usedTag}>Used</Text>}
+                              {current && <Text style={styles.currentTag}>On this day</Text>}
+                            </View>
+                            {p.description ? (
+                              <Text style={styles.description} numberOfLines={2}>
+                                {p.description}
+                              </Text>
+                            ) : null}
+                          </Pressable>
+                        );
+                      })}
+                  </View>
+                );
+              }}
+            />
             {families.length === 0 && <Text style={styles.description}>No {place} workouts yet.</Text>}
           </ScrollView>
         </View>

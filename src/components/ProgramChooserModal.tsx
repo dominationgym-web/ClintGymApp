@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { PROGRAM_FAMILIES, programFamily, type ProgramFamily } from "@/lib/programs";
+import { PROGRAM_FAMILIES, programFamily, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
+import ProgramGroups from "@/components/ProgramGroups";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
 
-// A popup with every program a trainer can switch a client onto, grouped
-// under tap-to-open headings (Full body, Chest & Bi, ...) so there's no long
-// list to scroll. It opens on gym or home programs to match the client.
+// A popup with every program a trainer can switch a client onto, in three
+// tap-to-open groups (Gym, Performance, Functional), each holding its own
+// tap-to-open headings (Full body, Chest & Bi, ...) so there's no long list
+// to scroll. It opens on gym or home programs to match the client.
 export default function ProgramChooserModal({
   visible,
   programs,
@@ -35,12 +37,14 @@ export default function ProgramChooserModal({
 }) {
   const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
   const [open, setOpen] = useState<ProgramFamily | null>(null);
+  const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
 
   // Each time it opens: the client's own place, every heading closed.
   useEffect(() => {
     if (visible) {
       setPlace(trainingPlace);
       setOpen(null);
+      setOpenGroup(null);
     }
   }, [visible, trainingPlace]);
 
@@ -64,6 +68,7 @@ export default function ProgramChooserModal({
             onChange={(next) => {
               setPlace(next);
               setOpen(null);
+              setOpenGroup(null);
             }}
             accent={BRAND_GOLD}
             labels={PROGRAM_PLACE_LABELS}
@@ -82,38 +87,55 @@ export default function ProgramChooserModal({
             <Pressable style={styles.build} onPress={onBuild}>
               <Text style={styles.buildText}>+ Build your own program</Text>
             </Pressable>
-            {families.map((f) => {
-              const isOpen = open === f.key;
-              return (
-                <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
-                  <Pressable style={styles.familyHeader} onPress={() => setOpen(isOpen ? null : f.key)}>
-                    <Text style={styles.familyIcon}>{f.icon}</Text>
-                    <Text style={styles.familyTitle}>{f.title}</Text>
-                    <Text style={styles.count}>{f.programs.length}</Text>
-                    <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
-                  </Pressable>
-                  {isOpen &&
-                    f.programs.map((p) => {
-                      const current = p.id === currentId;
-                      return (
-                        <Pressable
-                          key={p.id}
-                          style={[styles.choice, current && { borderColor: BRAND_GOLD }]}
-                          onPress={() => !current && onChoose(p)}
-                          disabled={busy || current}
-                        >
-                          <Text style={styles.name}>
-                            {p.name}
-                            {current ? "  (current)" : ""}
-                          </Text>
-                          {p.description ? <Text style={styles.helper} numberOfLines={2}>{p.description}</Text> : null}
-                          {!current && <Text style={styles.activate}>Tap to switch on</Text>}
-                        </Pressable>
-                      );
-                    })}
-                </View>
-              );
-            })}
+            <ProgramGroups
+              place={place}
+              families={families}
+              open={openGroup}
+              onToggle={(g) => {
+                setOpenGroup(g);
+                setOpen(null);
+              }}
+              extra={{
+                functional: (
+                  <Text style={styles.note}>
+                    🛡️ Stability programs run alongside the main program. Give one from the Stability card on this
+                    Training tab.
+                  </Text>
+                ),
+              }}
+              renderFamily={(f) => {
+                const isOpen = open === f.key;
+                return (
+                  <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
+                    <Pressable style={styles.familyHeader} onPress={() => setOpen(isOpen ? null : f.key)}>
+                      <Text style={styles.familyIcon}>{f.icon}</Text>
+                      <Text style={styles.familyTitle}>{f.title}</Text>
+                      <Text style={styles.count}>{f.programs.length}</Text>
+                      <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
+                    </Pressable>
+                    {isOpen &&
+                      f.programs.map((p) => {
+                        const current = p.id === currentId;
+                        return (
+                          <Pressable
+                            key={p.id}
+                            style={[styles.choice, current && { borderColor: BRAND_GOLD }]}
+                            onPress={() => !current && onChoose(p)}
+                            disabled={busy || current}
+                          >
+                            <Text style={styles.name}>
+                              {p.name}
+                              {current ? "  (current)" : ""}
+                            </Text>
+                            {p.description ? <Text style={styles.helper} numberOfLines={2}>{p.description}</Text> : null}
+                            {!current && <Text style={styles.activate}>Tap to switch on</Text>}
+                          </Pressable>
+                        );
+                      })}
+                  </View>
+                );
+              }}
+            />
             {families.length === 0 && <Text style={styles.helper}>No {place} programs yet.</Text>}
           </ScrollView>
         </View>
@@ -143,5 +165,6 @@ const styles = StyleSheet.create({
   choice: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, margin: 6, marginTop: 0, borderWidth: 1.5, borderColor: "transparent" },
   name: { color: "#fff", fontWeight: "700", fontSize: 14 },
   helper: { color: "#64748B", fontSize: 13, marginTop: 2 },
+  note: { color: "#94A3B8", fontSize: 13, lineHeight: 18, margin: 8 },
   activate: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginTop: 4 },
 });
