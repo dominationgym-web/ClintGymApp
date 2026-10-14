@@ -78,17 +78,33 @@ export function halfYearLabel(key: string): string {
   return half === "1" ? `Jan - Jun ${year}` : `Jul - Dec ${year}`;
 }
 
+/**
+ * The day a free-use trainer's per-client fees begin (0096): the 1st of the
+ * month on or after 6 months from the start, because fees are worked out per
+ * calendar month. 14 Oct -> 1 May, 1 Oct -> 1 Apr. Same as free_use_fees_start.
+ */
+export function freeUseFeesStart(fromIso: string): string {
+  const y = +fromIso.slice(0, 4);
+  const m = +fromIso.slice(5, 7) - 1 + 6;
+  const d = +fromIso.slice(8, 10);
+  const start = new Date(Date.UTC(y, m, 1));
+  if (d > 1) start.setUTCMonth(start.getUTCMonth() + 1);
+  return start.toISOString().slice(0, 10);
+}
+
 export type PlanState =
   | { kind: "none" }
+  | { kind: "freeUse"; feesFrom: string }
   | { kind: "trial"; until: string }
   | { kind: "paid"; until: string; daysLeft: number }
   | { kind: "overdue"; since: string };
 
 /** Where a trainer's plan stands today. */
 export function planState(
-  t: { billing_started_on: string | null; paid_until: string | null; trial_ends_at?: string | null },
+  t: { billing_started_on: string | null; paid_until: string | null; trial_ends_at?: string | null; free_use_from?: string | null },
   today: string,
 ): PlanState {
+  if (t.free_use_from) return { kind: "freeUse", feesFrom: freeUseFeesStart(t.free_use_from) };
   if (!t.billing_started_on) {
     const left = trialDaysLeft(t.trial_ends_at ?? null, today);
     return left !== null && left >= 0 ? { kind: "trial", until: t.trial_ends_at! } : { kind: "none" };
@@ -106,6 +122,8 @@ export function planStateLabel(state: PlanState): string {
   switch (state.kind) {
     case "none":
       return "No plan set";
+    case "freeUse":
+      return `🎁 Free use: no subscription. Per-client fees from ${shortDate(state.feesFrom)}`;
     case "trial":
       return `Free until ${shortDate(state.until)}`;
     case "paid":

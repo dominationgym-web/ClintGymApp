@@ -23,6 +23,7 @@ import {
   creditsUsable,
   CURRENCIES,
   CURRENCY_LABEL,
+  freeUseFeesStart,
   halfYearTotals,
   money,
   monthLabel,
@@ -49,6 +50,7 @@ import type {
   TrainerPayment,
 } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import { countryName } from "@/lib/phoneCountry";
 
 // The owner's billing view (0064): who owes what, this month's client count
 // and fees per trainer, the monthly log, 6-month totals, each trainer's plan
@@ -67,6 +69,7 @@ export default function BillingScreen() {
   const [open, setOpen] = useState<string | null>("outstanding");
   const [planFor, setPlanFor] = useState<Trainer | null>(null);
   const [payFor, setPayFor] = useState<Trainer | null>(null);
+  const [freeUseFor, setFreeUseFor] = useState<Trainer | null>(null);
   const today = todayIso();
 
   const load = useCallback(async () => {
@@ -128,6 +131,24 @@ export default function BillingScreen() {
   );
 
   const monthKeys = [...new Set(months.map((m) => m.month))];
+
+  const endFreeUse = (t: Trainer) =>
+    Alert.alert(
+      `End ${trainerDisplayName(t)}'s free use?`,
+      "They go back to a normal plan. Set their plan straight after, and they'll be told.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "End free use",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase.from("trainers").update({ free_use_from: null }).eq("id", t.id);
+            if (error) Alert.alert("Couldn't save", error.message);
+            await load();
+          },
+        },
+      ],
+    );
 
   const toggleLockout = async (value: boolean) => {
     const go = async () => {
@@ -296,8 +317,16 @@ export default function BillingScreen() {
               <View key={t.id} style={styles.line}>
                 <Text style={styles.lineName}>{trainerDisplayName(t)}</Text>
                 <Text style={styles.lineDetail}>
-                  {t.billing_plan ? `${PLAN_LABEL[t.billing_plan]} · ${t.billing_currency}` : "No plan set yet"}
+                  📍{" "}
+                  {t.signup_country
+                    ? `Applied from ${countryName(t.signup_country)} (${t.signup_country === "ZA" ? "rand" : "dollar"} prices)`
+                    : "Country not checked (applied before the location check)"}
                 </Text>
+                {t.free_use_from ? null : (
+                  <Text style={styles.lineDetail}>
+                    {t.billing_plan ? `${PLAN_LABEL[t.billing_plan]} · ${t.billing_currency}` : "No plan set yet"}
+                  </Text>
+                )}
                 <Text style={state.kind === "overdue" ? styles.warn : styles.lineDetail}>{planStateLabel(state)}</Text>
                 {s?.client_fees_from ? (
                   <Text style={styles.lineDetail}>Client fees from {shortDate(s.client_fees_from)}</Text>
@@ -307,11 +336,23 @@ export default function BillingScreen() {
                     Referral credit: {unused} × 25% = {money(referralCreditValue(settings.prices, t.billing_currency ?? "USD", unused), t.billing_currency ?? "USD")}
                   </Text>
                 ) : null}
+                {t.free_use_from ? (
+                  <Text style={styles.lineDetail}>
+                    Free use since {shortDate(t.free_use_from)} ·{" "}
+                    {money(settings?.prices[t.billing_currency ?? "ZAR"].client ?? 0, t.billing_currency ?? "ZAR")} per active client a
+                    month from {shortDate(freeUseFeesStart(t.free_use_from))}
+                  </Text>
+                ) : null}
                 <View style={styles.actions}>
-                  <Pressable onPress={() => setPlanFor(t)} hitSlop={8}>
-                    <Text style={styles.link}>{t.billing_plan ? "Change plan" : "Set plan"}</Text>
+                  {t.free_use_from ? null : (
+                    <Pressable onPress={() => setPlanFor(t)} hitSlop={8}>
+                      <Text style={styles.link}>{t.billing_plan ? "Change plan" : "Set plan"}</Text>
+                    </Pressable>
+                  )}
+                  <Pressable onPress={() => (t.free_use_from ? endFreeUse(t) : setFreeUseFor(t))} hitSlop={8}>
+                    <Text style={styles.link}>{t.free_use_from ? "End free use" : "Give free use"}</Text>
                   </Pressable>
-                  {t.billing_plan ? (
+                  {t.billing_plan || t.free_use_from ? (
                     <Pressable onPress={() => setPayFor(t)} hitSlop={8}>
                       <Text style={styles.link}>Record payment</Text>
                     </Pressable>
@@ -369,6 +410,9 @@ export default function BillingScreen() {
       )}
 
       {planFor ? <SetPlanModal trainer={planFor} onClose={() => setPlanFor(null)} onSaved={load} /> : null}
+      {freeUseFor && settings ? (
+        <FreeUseModal trainer={freeUseFor} settings={settings} onClose={() => setFreeUseFor(null)} onSaved={load} />
+      ) : null}
       {payFor && settings ? (
         <RecordPaymentModal
           trainer={payFor}
@@ -399,7 +443,9 @@ function SetPlanModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose
   const today = todayIso();
   const trialEnd = trainer.trial_ends_at && trainer.trial_ends_at >= today ? trainer.trial_ends_at : null;
   const [plan, setPlan] = useState<BillingPlan>(trainer.billing_plan ?? "monthly");
-  const [currency, setCurrency] = useState<BillingCurrency>(trainer.billing_currency ?? "ZAR");
+  const [currency, setCurrency] = useState<BillingCurrency>(
+    trainer.billing_currency ?? (trainer.signup_country && trainer.signup_country !== "ZA" ? "USD" : "ZAR"),
+  );
   const [start, setStart] = useState<"trial" | "today">(trialEnd ? "trial" : "today");
   const [saving, setSaving] = useState(false);
   const keepStart = trainer.billing_started_on != null;
@@ -453,6 +499,69 @@ function SetPlanModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose
   );
 }
 
+// Free use (0096): only the owner gives it. No subscription; per-client fees
+// on every active client start 6 months on (the next 1st), and the trainer
+// and owner are reminded before then.
+function FreeUseModal({
+  trainer,
+  settings,
+  onClose,
+  onSaved,
+}: {
+  trainer: Trainer;
+  settings: BillingSettings;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const today = todayIso();
+  const [currency, setCurrency] = useState<BillingCurrency>(
+    trainer.billing_currency ?? (trainer.signup_country && trainer.signup_country !== "ZA" ? "USD" : "ZAR"),
+  );
+  const [saving, setSaving] = useState(false);
+  const feesFrom = freeUseFeesStart(today);
+
+  const save = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("trainers")
+      .update({ free_use_from: today, billing_currency: currency })
+      .eq("id", trainer.id);
+    setSaving(false);
+    if (error) {
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    await onSaved();
+    onClose();
+  };
+
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose}>
+      <SafeAreaView style={styles.modal}>
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
+          <Text style={styles.modalTitle}>Free use for {trainerDisplayName(trainer)}</Text>
+          <Text style={styles.lineDetail}>
+            No monthly subscription from today. From {shortDate(feesFrom)} they pay{" "}
+            {money(settings.prices[currency].client, currency)} a month for every active client.
+          </Text>
+          <Text style={styles.muted}>
+            The app reminds them and you 30 days and 7 days before, and on the day. Fees are worked out on the 1st of
+            each month, so they start on the 1st after the 6 months are up.
+          </Text>
+          <Text style={styles.fieldLabel}>Currency</Text>
+          <Choice options={CURRENCIES} value={currency} onChange={setCurrency} label={(c) => (c === "USD" ? "US dollars" : "Rand")} />
+          <Pressable style={styles.primary} onPress={save} disabled={saving}>
+            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Give free use</Text>}
+          </Pressable>
+          <Pressable style={styles.secondary} onPress={onClose}>
+            <Text style={styles.secondaryText}>Cancel</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 function RecordPaymentModal({
   trainer,
   settings,
@@ -470,7 +579,9 @@ function RecordPaymentModal({
 }) {
   const currency = trainer.billing_currency ?? "USD";
   const owed = Number(status?.client_fees_owed ?? 0);
-  const [kind, setKind] = useState<"subscription" | "client_fees">(status?.plan_overdue || owed === 0 ? "subscription" : "client_fees");
+  const [kind, setKind] = useState<"subscription" | "client_fees">(
+    trainer.free_use_from ? "client_fees" : status?.plan_overdue || owed === 0 ? "subscription" : "client_fees",
+  );
   const [plan, setPlan] = useState<BillingPlan>(trainer.billing_plan ?? "monthly");
   const usable = creditsUsable(settings.prices, currency, plan, unusedCredits);
   const [useCredit, setUseCredit] = useState(usable > 0);

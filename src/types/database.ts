@@ -53,6 +53,12 @@ export type Trainer = {
   paid_until: string | null;
   // 0074: remind this trainer 2 days and 1 day before a client's planned workouts run out.
   planning_reminders: boolean;
+  // 0096: the country their phone was in when they applied ("ZA" = rand
+  // prices), and free use: no plan, with per-client fees on every active
+  // client from free_use_fees_start (6 months on). Only the owner sets it.
+  signup_country: string | null;
+  signup_location_checked_at: string | null;
+  free_use_from: string | null;
 }
 
 export type BillingPlan = "monthly" | "six_months" | "yearly";
