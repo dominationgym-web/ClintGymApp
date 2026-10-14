@@ -35,10 +35,13 @@ export default function ClientProgramPicker({
   clientId,
   clientName,
   trainingPlace,
+  resetNotice = null,
 }: {
   clientId: string;
   clientName: string;
   trainingPlace: ExercisePlace;
+  // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
+  resetNotice?: string | null;
 }) {
   const [active, setActive] = useState<ActiveProgram | null>(null);
   const [choices, setChoices] = useState<Program[]>([]);
@@ -206,7 +209,18 @@ export default function ClientProgramPicker({
       )}
 
       <View style={styles.buttonRow}>
-        <Pressable style={styles.button} onPress={() => setChoosing(true)} disabled={busy}>
+        <Pressable
+          style={styles.button}
+          onPress={() =>
+            resetNotice
+              ? Alert.alert("On the Health Reset", `${resetNotice} Do you still want to give them a program?`, [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Choose a program", onPress: () => setChoosing(true) },
+                ])
+              : setChoosing(true)
+          }
+          disabled={busy}
+        >
           <Text style={styles.buttonText}>{active ? "Change program" : "Choose a program"}</Text>
         </Pressable>
         {active && (
@@ -222,6 +236,7 @@ export default function ClientProgramPicker({
         currentId={active?.program.id ?? null}
         clientName={clientName}
         trainingPlace={trainingPlace}
+        resetNotice={resetNotice}
         busy={busy}
         onChoose={activate}
         onBuild={() => {

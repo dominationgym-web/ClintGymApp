@@ -628,3 +628,20 @@ export function resetTraining(phase: ResetPhaseKey, location: ResetLocation | nu
   const training = (location === "home" ? RESET_HOME_TRAINING : RESET_TRAINING)[phase];
   return sex === "male" ? forMen(training) : training;
 }
+
+/**
+ * A warning for the trainer when they go to give a Health Reset client a
+ * program or calendar workout (GRIZZ, 2026-10-14): which Reset, and how far
+ * along they are. Null when the client isn't enrolled.
+ */
+export function resetNotice(
+  client: { name: string; sex: ResetSex; lifestyle_reset_started_at: string | null; reset_started_on: string | null },
+  today: string,
+): string | null {
+  if (!client.lifestyle_reset_started_at) return null;
+  const first = client.name.split(" ")[0];
+  const program = `the 12-Week ${resetName(client.sex)}`;
+  if (!client.reset_started_on) return `${first} is enrolled on ${program} but hasn't tapped Start yet.`;
+  const week = Math.min(Math.max(resetWeekNumber(client.reset_started_on, today), 1), RESET_WEEKS_TOTAL);
+  return `${first} is on ${program}: week ${week} of ${RESET_WEEKS_TOTAL} (started ${client.reset_started_on}). The Reset has its own training.`;
+}

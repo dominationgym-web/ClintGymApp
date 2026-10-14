@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -40,12 +40,17 @@ export default function ClientCalendarCard({
   clientId,
   clientName,
   trainingPlace,
+  resetNotice = null,
 }: {
   clientId: string;
   clientName: string;
   trainingPlace: ExercisePlace;
+  // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
+  resetNotice?: string | null;
 }) {
   const today = todayIso();
+  // The Reset warning pops up once per visit, then stays as a banner in the picker.
+  const resetWarned = useRef(false);
   const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
   const [monthEntries, setMonthEntries] = useState<ClientCalendarWorkout[]>([]);
   const [allEntries, setAllEntries] = useState<Pick<ClientCalendarWorkout, "program_id" | "created_at">[]>([]);
@@ -111,7 +116,19 @@ export default function ClientCalendarCard({
   const pressDay = (date: string) => {
     setSelected(date);
     // A day the client already trained shows how it went instead of the picker.
-    if (!entryOn(date) && !sessions[date]) setPicking(date);
+    if (!entryOn(date) && !sessions[date]) openPicker(date);
+  };
+
+  const openPicker = (date: string) => {
+    if (resetNotice && !resetWarned.current) {
+      resetWarned.current = true;
+      Alert.alert("On the Health Reset", `${resetNotice} Do you still want to add a workout?`, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Add a workout", onPress: () => setPicking(date) },
+      ]);
+      return;
+    }
+    setPicking(date);
   };
 
   const choose = async (program: Program) => {
@@ -203,7 +220,7 @@ export default function ClientCalendarCard({
           {sessions[selectedEntry.workout_date] && <WorkoutSessionResult session={sessions[selectedEntry.workout_date]} />}
           <ProgramSummary program={selectedProgram} exercises={selectedExercises} onPressExercise={setChanging} />
           <View style={styles.dayButtons}>
-            <Pressable style={styles.changeButton} onPress={() => setPicking(selectedEntry.workout_date)}>
+            <Pressable style={styles.changeButton} onPress={() => openPicker(selectedEntry.workout_date)}>
               <Text style={styles.changeText}>Change workout</Text>
             </Pressable>
             <Pressable style={styles.clearButton} onPress={() => clearDay(selectedEntry)}>
@@ -220,6 +237,7 @@ export default function ClientCalendarCard({
         currentId={picking ? entryOn(picking)?.program_id ?? null : null}
         clientName={clientName}
         trainingPlace={trainingPlace}
+        resetNotice={resetNotice}
         busy={busy}
         onChoose={choose}
         onReset={resetBatch}
@@ -250,6 +268,7 @@ function WorkoutPicker({
   currentId,
   clientName,
   trainingPlace,
+  resetNotice,
   busy,
   onChoose,
   onReset,
@@ -262,6 +281,7 @@ function WorkoutPicker({
   currentId: string | null;
   clientName: string;
   trainingPlace: ExercisePlace;
+  resetNotice: string | null;
   busy: boolean;
   onChoose: (program: Program) => void;
   onReset: (batch: ProgramFamily, title: string) => void;
@@ -303,6 +323,11 @@ function WorkoutPicker({
             accent={BRAND_GOLD}
             labels={PROGRAM_PLACE_LABELS}
           />
+          {resetNotice ? (
+            <View style={styles.resetBanner}>
+              <Text style={styles.resetBannerText}>🌿 {resetNotice}</Text>
+            </View>
+          ) : null}
           {place !== trainingPlace && (
             <Text style={styles.warning}>
               {clientName} trains at {trainingPlace === "home" ? "home" : "the gym"}. A {trainingPlace} workout fits better.
@@ -382,6 +407,8 @@ const styles = StyleSheet.create({
   sheetTitle: { color: "#fff", fontWeight: "800", fontSize: 17, flex: 1 },
   close: { color: "#94A3B8", fontSize: 20, fontWeight: "700" },
   warning: { color: "#FBBF24", fontSize: 13, marginTop: 4 },
+  resetBanner: { backgroundColor: "#422006", borderColor: "#F59E0B", borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 8 },
+  resetBannerText: { color: "#FDE68A", fontSize: 14, fontWeight: "700", lineHeight: 20 },
   family: { backgroundColor: "#1E293B", borderRadius: 12, marginTop: 8, padding: 4 },
   familyOpen: { borderWidth: 1, borderColor: BRAND_GOLD },
   familyHeader: { flexDirection: "row", alignItems: "center", padding: 10, gap: 10 },

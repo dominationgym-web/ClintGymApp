@@ -15,6 +15,7 @@ export default function ProgramChooserModal({
   currentId,
   clientName,
   trainingPlace,
+  resetNotice,
   busy,
   onChoose,
   onBuild,
@@ -25,6 +26,8 @@ export default function ProgramChooserModal({
   currentId: string | null;
   clientName: string;
   trainingPlace: ExercisePlace;
+  // The client is on the Health Reset (2026-10-14).
+  resetNotice?: string | null;
   busy: boolean;
   onChoose: (program: Program) => void;
   onBuild: () => void;
@@ -65,6 +68,11 @@ export default function ProgramChooserModal({
             accent={BRAND_GOLD}
             labels={PROGRAM_PLACE_LABELS}
           />
+          {resetNotice ? (
+            <View style={styles.resetBanner}>
+              <Text style={styles.resetBannerText}>🌿 {resetNotice}</Text>
+            </View>
+          ) : null}
           {place !== trainingPlace && (
             <Text style={styles.warning}>
               {clientName} trains at {trainingPlace === "home" ? "home" : "the gym"}. A {trainingPlace} program fits better.
@@ -121,6 +129,8 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontWeight: "800", fontSize: 17, flex: 1 },
   close: { color: "#94A3B8", fontSize: 20, fontWeight: "700" },
   warning: { color: "#FBBF24", fontSize: 13, marginTop: 4 },
+  resetBanner: { backgroundColor: "#422006", borderColor: "#F59E0B", borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 8 },
+  resetBannerText: { color: "#FDE68A", fontSize: 14, fontWeight: "700", lineHeight: 20 },
   build: { borderRadius: 12, borderWidth: 1.5, borderColor: BRAND_GOLD, borderStyle: "dashed", padding: 12, alignItems: "center" },
   buildText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15 },
   family: { backgroundColor: "#1E293B", borderRadius: 12, marginTop: 8, padding: 4 },
