@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-nati
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MUSCLE_NOT_WEIGHT, SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";
 import { BRAND_GOLD } from "@/lib/brand";
+import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 
 // The "how to do it properly" guide for one exercise: where to feel it, the
 // steps, how to get the most from it and how to make it fit your body.
@@ -58,11 +59,15 @@ export default function ExerciseGuideButton({
   category,
   variant = "icon",
   onDoSet,
+  videoUrl,
 }: {
   name: string;
   category?: string | null;
   variant?: "icon" | "bar";
   onDoSet?: () => void;
+  // The exercise's demo clip, played at the top of the guide (2026-10-14),
+  // so the steps and the movement are in one place.
+  videoUrl?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const technique = techniqueFor(name, category);
@@ -106,6 +111,7 @@ export default function ExerciseGuideButton({
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 4 }}>
+            {open && videoUrl ? <ExerciseVideoPreview url={videoUrl} /> : null}
             <ExerciseGuideContent technique={technique} />
             {onDoSet && (
               <Pressable

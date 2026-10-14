@@ -30,6 +30,16 @@ describe("exercise technique guides", () => {
     expect(pattern("Rowing Machine Steady State", "Cardio")).toBe("Rowing and ski machine");
     expect(pattern("Seated Cable Row", "Pull")).toBe("Row");
   });
+  it("gives the fight conditioning moves their own steps", () => {
+    const steps = (name: string, category: string) => techniqueFor(name, category)?.steps[0] ?? "";
+    expect(steps("Bird Dog", "Core")).toMatch(/all fours/);
+    expect(steps("Dead Bug", "Core")).toMatch(/on your back/);
+    expect(steps("Neck Curl", "Neck")).toMatch(/on your back/);
+    expect(steps("Neck Extension", "Neck")).toMatch(/face down/);
+    expect(pattern("Shadow Boxing", "Cardio")).toBe("Shadow boxing");
+    expect(pattern("Battle Ropes", "Cardio")).toBe("Battle ropes");
+    expect(pattern("Jump Rope", "Cardio")).toBe("Skipping");
+  });
 
   it("falls back on the body part for a trainer's own exercise", () => {
     expect(pattern("Grizz special", "Biceps")).toBe("Biceps curl");
