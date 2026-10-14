@@ -53,8 +53,10 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
         "stability_program_id",
         rows.map((r) => r.id),
       )
-      .order("log_date");
-    setLogs(logRows ?? []);
+      // Newest first, then flipped, so the 1000-row limit drops the oldest logs.
+      .order("log_date", { ascending: false })
+      .order("set_number", { ascending: false });
+    setLogs((logRows ?? []).reverse());
   }, [clientId]);
 
   useEffect(() => {

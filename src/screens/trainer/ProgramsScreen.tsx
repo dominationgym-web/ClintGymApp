@@ -23,6 +23,8 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [exercises, setExercises] = useState<Record<string, ProgramExercise[]>>({});
   const [open, setOpen] = useState<string | null>(null);
+  // The program whose exercises didn't load (no signal), so it shows a retry instead of spinning.
+  const [loadFailed, setLoadFailed] = useState<string | null>(null);
   const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
   const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,8 +42,13 @@ export default function ProgramsScreen({ navigation }: Props) {
   useEffect(() => {
     if (!open || exercises[open]) return;
     let cancelled = false;
-    loadProgramExercises(open).then(({ data }) => {
-      if (!cancelled && data) setExercises((prev) => ({ ...prev, [open]: data }));
+    loadProgramExercises(open).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        setLoadFailed(open);
+        return;
+      }
+      setExercises((prev) => ({ ...prev, [open]: data ?? [] }));
     });
     return () => {
       cancelled = true;
@@ -167,6 +174,16 @@ export default function ProgramsScreen({ navigation }: Props) {
                         {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
                         {exercises[p.id] ? (
                           <ProgramSummary program={p} exercises={exercises[p.id]} collapsible />
+                        ) : loadFailed === p.id ? (
+                          <Pressable
+                            onPress={() => {
+                              setLoadFailed(null);
+                              setExercises((prev) => ({ ...prev }));
+                            }}
+                            hitSlop={8}
+                          >
+                            <Text style={styles.delete}>Couldn't load the exercises. Tap to try again.</Text>
+                          </Pressable>
                         ) : (
                           <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 10 }} />
                         )}

@@ -94,6 +94,8 @@ export default function HabitsScreen() {
       Alert.alert("Keep at least one day", "A habit needs to apply on at least one day.");
       return;
     }
+    // A habit with no days opens on its days; keep it open while she picks more.
+    if (habit.active_days.length === 0) setSettingsFor(habit.id);
     const { error } = await supabase.from("habits").update({ active_days: nextDays }).eq("id", habit.id);
     if (error) {
       Alert.alert("Couldn't update", error.message);

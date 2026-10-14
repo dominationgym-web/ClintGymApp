@@ -417,8 +417,8 @@ export default function ExerciseLibraryScreen() {
   categoriesRef.current = categoriesLoggedToday;
   // Interval timer finished (2026-10-14): each finished effort becomes a set
   // (reps = its seconds, or 1 for a distance), and cardio blocks tick off.
-  const saveIntervals = async (efforts: { row: ProgramExercise; seconds: number | null }[], cardioIds: string[]) => {
-    if (!client) return;
+  const saveIntervals = async (efforts: { row: ProgramExercise; seconds: number | null }[], cardioIds: string[]): Promise<boolean> => {
+    if (!client) return false;
     const counts: Record<string, number> = {};
     const inserts = efforts.map(({ row, seconds }) => {
       const key = row.exercise_id ?? row.exercise_name;
@@ -439,7 +439,7 @@ export default function ExerciseLibraryScreen() {
       const { data, error } = await supabase.from("workout_logs").insert(inserts).select();
       if (error) {
         Alert.alert("Couldn't save", error.message);
-        return;
+        return false;
       }
       setAllTodaysSets((prev) => [...prev, ...(data ?? [])]);
     }
@@ -448,6 +448,7 @@ export default function ExerciseLibraryScreen() {
       setCardioDone(next);
       saveCardioDone(todayIso(), next);
     }
+    return true;
   };
 
   const toggleCardio = (row: ProgramExercise) => {

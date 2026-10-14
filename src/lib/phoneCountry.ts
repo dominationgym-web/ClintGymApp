@@ -23,7 +23,14 @@ export async function phoneCountry(): Promise<CountryCheck> {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (permission.status !== "granted") return { ok: false, reason: "denied" };
     if (!(await Location.hasServicesEnabledAsync())) return { ok: false, reason: "off" };
-    const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low });
+    // A recent fix is enough for the country; a fresh one can take ages indoors, so it gets 15 seconds.
+    const position =
+      (await Location.getLastKnownPositionAsync().catch(() => null)) ??
+      (await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000)),
+      ]));
+    if (!position) return { ok: false, reason: "failed" };
     const [place] = await Location.reverseGeocodeAsync({
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,

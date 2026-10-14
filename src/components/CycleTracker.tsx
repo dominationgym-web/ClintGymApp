@@ -22,12 +22,17 @@ function useCycleLogs() {
 
   const load = useCallback(async () => {
     if (!client) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("cycle_logs")
       .select("*")
       .eq("client_id", client.id)
       .order("period_start", { ascending: false })
       .limit(24);
+    // No signal: keep what's shown and leave her reminders alone, rather than treat it as "no periods".
+    if (error) {
+      setLogs((prev) => prev ?? []);
+      return;
+    }
     const rows = data ?? [];
     setLogs(rows);
     getCycleReminderEnabled().then((enabled) => scheduleCycleReminders(rows.map((r) => r.period_start), enabled));

@@ -26,6 +26,7 @@ export default function ExerciseInfoModal({
     setLoading(true);
     const query = supabase.from("exercises").select("external_url, category");
     (exercise.exercise_id ? query.eq("id", exercise.exercise_id) : query.eq("name", exercise.exercise_name))
+      .limit(1)
       .maybeSingle()
       .then(({ data }) => {
         if (!live) return;

@@ -38,7 +38,7 @@ export default function IntervalTimerModal({
   warmUp: string | null;
   rows: ProgramExercise[];
   // Finished efforts per row (seconds each, null for open ones), and cardio blocks done.
-  onSave: (efforts: { row: ProgramExercise; seconds: number | null }[], cardioIds: string[]) => Promise<void>;
+  onSave: (efforts: { row: ProgramExercise; seconds: number | null }[], cardioIds: string[]) => Promise<boolean>;
   onClose: () => void;
 }) {
   const phases = useMemo(() => buildIntervals(rows), [rows]);
@@ -123,9 +123,10 @@ export default function IntervalTimerModal({
       .map((p) => ({ row: rows.find((r) => r.id === p.rowId)!, seconds: p.seconds }))
       .filter((e) => e.row);
     const cardioIds = Array.from(new Set(finished.filter((p) => rows.find((r) => r.id === p.rowId)?.kind === "cardio").map((p) => p.rowId)));
-    await onSave(efforts, cardioIds);
+    const saved = await onSave(efforts, cardioIds);
     setSaving(false);
-    onClose();
+    // On a failed save the timer stays open so the efforts aren't lost.
+    if (saved) onClose();
   };
 
   const color = phase?.kind === "work" ? WORK : EASY;

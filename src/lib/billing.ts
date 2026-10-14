@@ -180,7 +180,7 @@ export function amountsLabel(amounts: Amounts): string {
  */
 export function halfYearTotals(input: {
   months: Pick<TrainerBillingMonth, "month" | "client_fee" | "currency">[];
-  payments: Pick<TrainerPayment, "paid_on" | "amount" | "currency" | "kind">[];
+  payments: (Pick<TrainerPayment, "paid_on" | "amount" | "currency" | "kind"> & { note?: string | null })[];
   activations: Pick<ClientActivation, "activated_on">[];
   referralApprovals: string[];
 }): HalfYearTotals[] {
@@ -195,7 +195,8 @@ export function halfYearTotals(input: {
     return row;
   };
   for (const m of input.months) add(get(m.month).clientFees, m.currency, m.client_fee);
-  for (const p of input.payments) add(p.kind === "subscription" ? get(p.paid_on).planPayments : get(p.paid_on).feePayments, p.currency, p.amount);
+  // Referral credit rows lower what's owed but aren't money received.
+  for (const p of input.payments.filter((x) => !isReferralCredit(x.note))) add(p.kind === "subscription" ? get(p.paid_on).planPayments : get(p.paid_on).feePayments, p.currency, p.amount);
   for (const a of input.activations) get(a.activated_on).activations += 1;
   for (const r of input.referralApprovals) get(r).referrals += 1;
   return [...byKey.values()].sort((a, b) => b.key.localeCompare(a.key));
@@ -218,4 +219,9 @@ export function referralPopupDue(lastShownIso: string | null, todayIso: string):
   if (!lastShownIso) return true;
   const days = (Date.parse(`${todayIso}T00:00:00Z`) - Date.parse(`${lastShownIso}T00:00:00Z`)) / 86400000;
   return !(days < 7);
+}
+
+/** A client-fee row that is referral credit, not money received (see RecordPaymentModal). */
+export function isReferralCredit(note: string | null | undefined): boolean {
+  return !!note?.startsWith("Referral credit");
 }
