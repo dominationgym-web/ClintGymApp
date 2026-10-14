@@ -590,7 +590,8 @@ function RecordPaymentModal({
   // Referral credit can also come off client fees (free-use trainers have no plan).
   const feeCredits = feeCreditsUsable(settings.prices, currency, owed, unusedCredits);
   const feeCreditValue = referralCreditValue(settings.prices, currency, feeCredits);
-  const [useFeeCredit, setUseFeeCredit] = useState(feeCredits > 0);
+  // On by default only for free-use trainers: everyone else was told it comes off their plan payment.
+  const [useFeeCredit, setUseFeeCredit] = useState(feeCredits > 0 && !!trainer.free_use_from);
   const suggested =
     kind === "subscription"
       ? planAmountDue(settings.prices, currency, plan, useCredit ? usable : 0)
@@ -649,6 +650,13 @@ function RecordPaymentModal({
       if (res.error) Alert.alert("Payment saved, but the referral credit wasn't marked used", res.error.message);
     }
     setSaving(false);
+    if (error && creditingFees) {
+      // The credit is already stored, so close rather than let a retry add it twice.
+      Alert.alert("Referral credit saved, payment not saved", `${error.message}\n\nOpen Record payment again to add the payment.`);
+      await onSaved();
+      onClose();
+      return;
+    }
     if (error) {
       Alert.alert("Couldn't save", error.message);
       return;

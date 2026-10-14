@@ -100,8 +100,14 @@ export default function StabilityScreen({ role = "client" }: { role?: "client" |
   const enrollmentId = step.kind === "session" ? step.enrollmentId : null;
   const loadLogs = useCallback(async () => {
     if (!enrollmentId) return;
-    const { data } = await supabase.from("stability_logs").select("*").eq("stability_program_id", enrollmentId).order("log_date");
-    setLogs(data ?? []);
+    // Newest first, then flipped, so the 1000-row limit drops the oldest logs, never today's.
+    const { data } = await supabase
+      .from("stability_logs")
+      .select("*")
+      .eq("stability_program_id", enrollmentId)
+      .order("log_date", { ascending: false })
+      .order("set_number", { ascending: false });
+    setLogs((data ?? []).reverse());
   }, [enrollmentId]);
 
   useEffect(() => {

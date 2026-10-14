@@ -73,6 +73,7 @@ describe("billing helpers", () => {
       payments: [
         { paid_on: "2026-08-03", amount: 50, currency: "USD", kind: "subscription" },
         { paid_on: "2026-09-05", amount: 20, currency: "USD", kind: "client_fees" },
+        { paid_on: "2026-09-06", amount: 12.5, currency: "USD", kind: "client_fees", note: "Referral credit: 1 × 25%" },
       ],
       activations: [{ activated_on: "2026-08-10" }, { activated_on: "2026-09-10" }],
       referralApprovals: ["2026-07-15"],
