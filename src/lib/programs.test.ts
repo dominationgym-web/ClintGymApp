@@ -21,6 +21,9 @@ import {
   warmUpReps,
   withExtraCardio,
   programFamily,
+  PROGRAM_FAMILIES,
+  PROGRAM_GROUPS,
+  programGroupHeading,
   cardioMinutes,
   minutesOf,
 } from "@/lib/programs";
@@ -290,6 +293,23 @@ describe("programFamily", () => {
     expect(built("Sports Strength 1 – Base Strength")).toBe("sportsStrength");
     expect(built("Mobility 2 – Spine & Shoulders")).toBe("sportsMobility");
     expect(built("Speed 3 – Agility & Change of Direction")).toBe("sportsSpeed");
+  });
+  it("puts every heading in one of the three groups", () => {
+    const groups = new Set(PROGRAM_GROUPS.map((g) => g.key));
+    for (const f of PROGRAM_FAMILIES) expect(groups.has(f.group)).toBe(true);
+    const groupOf = (name: string) => PROGRAM_FAMILIES.find((f) => f.key === built(name))?.group;
+    expect(groupOf("Full body week")).toBe("gym");
+    expect(groupOf("Beginner Foundation - Strength")).toBe("gym");
+    expect(groupOf("Explosive Power 1 – Jump Base")).toBe("performance");
+    expect(groupOf("HIIT 7")).toBe("performance");
+    expect(groupOf("Fight Conditioning – Boxing")).toBe("performance");
+    expect(groupOf("Mobility 2 – Spine & Shoulders")).toBe("functional");
+    expect(groupOf("Flexibility 1 – Hips")).toBe("functional");
+  });
+  it("calls the Gym group Home on the home tab", () => {
+    expect(programGroupHeading(PROGRAM_GROUPS[0], "home").title).toBe("Home");
+    expect(programGroupHeading(PROGRAM_GROUPS[0], "gym").title).toBe("Gym");
+    expect(programGroupHeading(PROGRAM_GROUPS[1], "home").title).toBe("Performance");
   });
   it("puts the trainer's own programs together, whatever their name", () => {
     expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");

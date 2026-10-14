@@ -318,26 +318,60 @@ function supersetRun(session: ProgramExercise[], index: number): number {
   return run;
 }
 
-// The headings the program popup groups programs under, in order.
+// The three groups every program list is split into (GRIZZ, 2026-10-14:
+// "Performance, Gym, Functional" to declutter). Each holds tap-to-open
+// family headings below.
+export const PROGRAM_GROUPS = [
+  {
+    key: "gym",
+    title: "Gym",
+    homeTitle: "Home",
+    icon: "🏋️",
+    homeIcon: "🏠",
+    summary: "Foundations, 12-week goals, full body, splits and your own",
+  },
+  {
+    key: "performance",
+    title: "Performance",
+    icon: "⚡",
+    summary: "Power, speed, sports strength, HIIT, sprints and fight conditioning",
+  },
+  {
+    key: "functional",
+    title: "Functional",
+    icon: "🧘",
+    summary: "Stability, mobility and flexibility",
+  },
+] as const;
+
+export type ProgramGroup = (typeof PROGRAM_GROUPS)[number]["key"];
+
+/** A group's heading for the gym or home tab ("Gym" becomes "Home"). */
+export function programGroupHeading(group: (typeof PROGRAM_GROUPS)[number], place: "gym" | "home") {
+  if (place === "home" && "homeTitle" in group) return { title: group.homeTitle, icon: group.homeIcon };
+  return { title: group.title, icon: group.icon };
+}
+
+// The headings programs sit under, in order, each inside one group.
 export const PROGRAM_FAMILIES = [
-  { key: "foundation", title: "Beginner & Intermediate", icon: "🌱" },
-  { key: "upperBody", title: "Upper body workouts", icon: "💪" },
-  { key: "lowerBody", title: "Lower body workouts", icon: "🦵" },
-  { key: "goalBlock", title: "12-week goal programs", icon: "🎯" },
-  { key: "hiit", title: "HIIT", icon: "🔥" },
-  { key: "sprint", title: "Sprint & threshold intervals", icon: "⚡" },
-  { key: "fight", title: "Fight sports: 8-week conditioning", icon: "🥊" },
-  { key: "sportsPower", title: "Sports Performance: Explosive Power", icon: "💥" },
-  { key: "sportsSpeed", title: "Sports Performance: Speed", icon: "🚀" },
-  { key: "sportsStrength", title: "Sports Performance: Strength", icon: "🏆" },
-  { key: "sportsMobility", title: "Sports Performance: Mobility", icon: "🔄" },
-  { key: "sportsFlexibility", title: "Sports Performance: Flexibility", icon: "🧘" },
-  { key: "fullBody", title: "Full body", icon: "🏃" },
-  { key: "upperLower", title: "Quick upper & lower", icon: "⏱️" },
-  { key: "chestBi", title: "Chest & Bi", icon: "🏋️" },
-  { key: "backTri", title: "Back & Tri", icon: "🦾" },
-  { key: "legs", title: "Legs", icon: "🦵" },
-  { key: "own", title: "Your programs", icon: "⭐" },
+  { key: "foundation", group: "gym", title: "Beginner & Intermediate", icon: "🌱" },
+  { key: "goalBlock", group: "gym", title: "12-week goal programs", icon: "🎯" },
+  { key: "fullBody", group: "gym", title: "Full body", icon: "🏃" },
+  { key: "upperBody", group: "gym", title: "Upper body workouts", icon: "💪" },
+  { key: "lowerBody", group: "gym", title: "Lower body workouts", icon: "🦵" },
+  { key: "upperLower", group: "gym", title: "Quick upper & lower", icon: "⏱️" },
+  { key: "chestBi", group: "gym", title: "Chest & Bi", icon: "🏋️" },
+  { key: "backTri", group: "gym", title: "Back & Tri", icon: "🦾" },
+  { key: "legs", group: "gym", title: "Legs", icon: "🦵" },
+  { key: "own", group: "gym", title: "Your programs", icon: "⭐" },
+  { key: "sportsPower", group: "performance", title: "Explosive power", icon: "💥" },
+  { key: "sportsSpeed", group: "performance", title: "Speed", icon: "🚀" },
+  { key: "sportsStrength", group: "performance", title: "Sports strength", icon: "🏆" },
+  { key: "hiit", group: "performance", title: "HIIT", icon: "🔥" },
+  { key: "sprint", group: "performance", title: "Sprint & threshold intervals", icon: "⚡" },
+  { key: "fight", group: "performance", title: "Fight sports: 8-week conditioning", icon: "🥊" },
+  { key: "sportsMobility", group: "functional", title: "Mobility", icon: "🔄" },
+  { key: "sportsFlexibility", group: "functional", title: "Flexibility", icon: "🧘" },
 ] as const;
 
 export type ProgramFamily = (typeof PROGRAM_FAMILIES)[number]["key"];

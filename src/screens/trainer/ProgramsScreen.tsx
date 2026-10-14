@@ -9,12 +9,14 @@ import type { Program, ProgramExercise } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
-import { PROGRAM_FAMILIES, programFamily, type ProgramFamily } from "@/lib/programs";
+import { PROGRAM_FAMILIES, programFamily, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
+import ProgramGroups from "@/components/ProgramGroups";
 
 type Props = TrainerTabScreenProps<"Programs">;
 
-// Every program a trainer can switch on for a client, as tap-to-open headings
-// (Full body, Chest & Bi, ...) holding just the program names; tap a name to
+// Every program a trainer can switch on for a client, in three tap-to-open
+// groups (Gym, Performance, Functional), each holding tap-to-open headings
+// (Full body, Chest & Bi, ...) with just the program names; tap a name to
 // see its details. Switching one on happens on the client's own screen
 // (Training tab); this tab is for browsing and building.
 export default function ProgramsScreen({ navigation }: Props) {
@@ -22,6 +24,7 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [exercises, setExercises] = useState<ProgramExercise[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
+  const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [place, setPlace] = useState<ExercisePlace>("gym");
@@ -63,6 +66,12 @@ export default function ProgramsScreen({ navigation }: Props) {
     ]);
   };
 
+  const here = programs.filter((p) => p.place === place);
+  // "Your programs" shows even when empty, so trainers see where theirs go.
+  const families = PROGRAM_FAMILIES.map((f) => ({ ...f, programs: here.filter((p) => programFamily(p) === f.key) })).filter(
+    (f) => f.programs.length > 0 || f.key === "own",
+  );
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -82,52 +91,88 @@ export default function ProgramsScreen({ navigation }: Props) {
       </Pressable>
       <Text style={styles.helper}>To put a client on a program, open the client and go to their Training tab.</Text>
       <View style={{ marginTop: 8 }}>
-        <GymHomeTabs current={place} onChange={setPlace} accent={BRAND_GOLD} labels={PROGRAM_PLACE_LABELS} />
+        <GymHomeTabs
+          current={place}
+          onChange={(next) => {
+            setPlace(next);
+            setOpenGroup(null);
+            setOpenFamily(null);
+          }}
+          accent={BRAND_GOLD}
+          labels={PROGRAM_PLACE_LABELS}
+        />
       </View>
 
-      {PROGRAM_FAMILIES.map((f) => {
-        const list = programs.filter((p) => p.place === place && programFamily(p) === f.key);
-        if (list.length === 0 && f.key !== "own") return null;
-        const familyOpen = openFamily === f.key;
-        return (
-          <View key={f.key} style={styles.family}>
-            <Pressable style={styles.familyHeader} onPress={() => setOpenFamily(familyOpen ? null : f.key)}>
-              <Text style={styles.familyTitle}>
-                {f.icon} {f.title}
-              </Text>
-              <Text style={styles.count}>
-                {list.length} {familyOpen ? "▲" : "▼"}
+      <ProgramGroups
+        place={place}
+        families={families}
+        open={openGroup}
+        onToggle={(g) => {
+          setOpenGroup(g);
+          setOpenFamily(null);
+        }}
+        extra={{
+          performance: (
+            <Pressable
+              style={styles.shortcut}
+              onPress={() => navigation.navigate("TrainerGuide", { guideKey: "sportsPerformance" })}
+            >
+              <Text style={styles.shortcutText}>🏅 Who each Sports Performance program suits ›</Text>
+            </Pressable>
+          ),
+          functional: (
+            <Pressable style={styles.shortcut} onPress={() => navigation.navigate("Stability")}>
+              <Text style={styles.shortcutText}>🛡️ Stability & injury prevention programs ›</Text>
+              <Text style={styles.description}>
+                Ankle to neck, Rehab to Advanced. They run alongside the main program; give one from the client's
+                Training tab.
               </Text>
             </Pressable>
-            {familyOpen && list.length === 0 && <Text style={styles.helper}>None yet. Tap "+ Build a program" above.</Text>}
-            {familyOpen &&
-              list.map((p) => (
-                <Pressable key={p.id} style={styles.card} onPress={() => setOpen(open === p.id ? null : p.id)}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.name}>{p.name}</Text>
-                    <Text style={styles.link}>{open === p.id ? "▲" : "▼"}</Text>
-                  </View>
-                  {open === p.id && (
-                    <>
-                      {p.description && <Text style={styles.description}>{p.description}</Text>}
-                      {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
-                      <ProgramSummary program={p} exercises={exercises.filter((e) => e.program_id === p.id)} />
-                      <Text style={styles.description}>
-                        ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
-                        workout screen. To change it for one client, tap it on that client's Training tab.
-                      </Text>
-                      {p.trainer_id && (
-                        <Pressable onPress={() => remove(p)} hitSlop={8}>
-                          <Text style={styles.delete}>Delete program</Text>
-                        </Pressable>
-                      )}
-                    </>
-                  )}
-                </Pressable>
-              ))}
-          </View>
-        );
-      })}
+          ),
+        }}
+        renderFamily={(f) => {
+          const list = f.programs;
+          const familyOpen = openFamily === f.key;
+          return (
+            <View key={f.key} style={styles.family}>
+              <Pressable style={styles.familyHeader} onPress={() => setOpenFamily(familyOpen ? null : f.key)}>
+                <Text style={styles.familyTitle}>
+                  {f.icon} {f.title}
+                </Text>
+                <Text style={styles.count}>
+                  {list.length} {familyOpen ? "▲" : "▼"}
+                </Text>
+              </Pressable>
+              {familyOpen && list.length === 0 && <Text style={styles.helper}>None yet. Tap "+ Build a program" above.</Text>}
+              {familyOpen &&
+                list.map((p) => (
+                  <Pressable key={p.id} style={styles.card} onPress={() => setOpen(open === p.id ? null : p.id)}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.name}>{p.name}</Text>
+                      <Text style={styles.link}>{open === p.id ? "▲" : "▼"}</Text>
+                    </View>
+                    {open === p.id && (
+                      <>
+                        {p.description && <Text style={styles.description}>{p.description}</Text>}
+                        {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
+                        <ProgramSummary program={p} exercises={exercises.filter((e) => e.program_id === p.id)} />
+                        <Text style={styles.description}>
+                          ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
+                          workout screen. To change it for one client, tap it on that client's Training tab.
+                        </Text>
+                        {p.trainer_id && (
+                          <Pressable onPress={() => remove(p)} hitSlop={8}>
+                            <Text style={styles.delete}>Delete program</Text>
+                          </Pressable>
+                        )}
+                      </>
+                    )}
+                  </Pressable>
+                ))}
+            </View>
+          );
+        }}
+      />
     </ScrollView>
   );
 }
@@ -157,5 +202,7 @@ const styles = StyleSheet.create({
   name: { color: "#fff", fontWeight: "700", fontSize: 15, flex: 1 },
   link: { color: BRAND_GOLD, fontSize: 13, fontWeight: "600" },
   description: { color: "#94A3B8", fontSize: 13, marginTop: 4 },
+  shortcut: { backgroundColor: "#0B1220", borderRadius: 10, padding: 12, marginTop: 8 },
+  shortcutText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   delete: { color: "#F87171", fontSize: 13, fontWeight: "600", marginTop: 10 },
 });
