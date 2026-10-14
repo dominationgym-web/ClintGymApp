@@ -551,6 +551,34 @@ export type HabitLog = {
   created_at: string;
 }
 
+// Stability & injury prevention (0094). Programs are defined in src/lib/stability.
+export type ClientStabilityProgram = {
+  id: string;
+  client_id: string;
+  area: "ankle" | "knee" | "hip" | "core" | "shoulder" | "wrist" | "neck";
+  level: "rehab" | "beginner" | "intermediate" | "advanced";
+  started_on: string;
+  ended_at: string | null;
+  created_at: string;
+};
+
+export type StabilityLog = {
+  id: string;
+  client_id: string;
+  stability_program_id: string;
+  area: ClientStabilityProgram["area"];
+  level: ClientStabilityProgram["level"];
+  week: number;
+  mode: "primer" | "full";
+  exercise_key: string;
+  set_number: number;
+  side: "left" | "right" | null;
+  seconds: number | null;
+  reps: number | null;
+  log_date: string;
+  created_at: string;
+};
+
 export type LifestyleResetDailyLog = {
   id: string;
   client_id: string;
@@ -701,6 +729,18 @@ export interface Database {
         Update: Partial<LifestyleResetDailyLog>;
         Relationships: [];
       };
+      client_stability_programs: {
+        Row: ClientStabilityProgram;
+        Insert: Partial<ClientStabilityProgram>;
+        Update: Partial<ClientStabilityProgram>;
+        Relationships: [];
+      };
+      stability_logs: {
+        Row: StabilityLog;
+        Insert: Partial<StabilityLog>;
+        Update: Partial<StabilityLog>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -741,6 +781,10 @@ export interface Database {
       swap_options_for: {
         Args: { p_exercise: string; p_home?: boolean };
         Returns: { id: string; name: string; category: string | null; external_url: string | null }[];
+      };
+      stability_exercise_videos: {
+        Args: Record<string, never>;
+        Returns: { name: string; external_url: string | null }[];
       };
       reset_exercise_info: {
         Args: Record<string, never>;
