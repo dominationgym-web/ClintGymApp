@@ -145,7 +145,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Profile tab",
       points: [
         "Add progress photos every 6 weeks. The app reminds you. Photos show change the scale can't.",
-        "Set your flag so your coach knows how you're doing: All good, I'd like some feedback, or Urgent, I need guidance.",
+        "Set your flag so your coach knows how you're doing: All good, I'd like some feedback, or Urgent, I need guidance. The app also asks you this the first time you open it each day.",
         "Your coach's messages and payment details are here too.",
       ],
     },

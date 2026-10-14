@@ -13,6 +13,7 @@ import TrainerLogo from "@/components/TrainerLogo";
 import { DailyQuoteCard } from "@/components/DailyQuote";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import { trainerDisplayName } from "@/lib/trainers";
+import { STATUS_FLAGS } from "@/lib/statusFlags";
 import type { ClientStatusFlag, Trainer } from "@/types/database";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -21,11 +22,6 @@ const STATUS_LABEL: Record<string, string> = {
   expired: "Expired",
 };
 
-const FLAGS: { key: ClientStatusFlag; label: string; color: string }[] = [
-  { key: "red", label: "Urgent - I need guidance", color: "#EF4444" },
-  { key: "orange", label: "I'd like some feedback", color: "#F59E0B" },
-  { key: "green", label: "All good, no feedback needed", color: "#22C55E" },
-];
 
 export default function ClientProfileScreen() {
   const { client, signOut, refreshProfile } = useAuth();
@@ -197,7 +193,7 @@ export default function ClientProfileScreen() {
       <Text style={styles.body}>
         Let your trainer know if you need anything - they check this before anything else.
       </Text>
-      {FLAGS.map((f) =>
+      {STATUS_FLAGS.map((f) =>
         f.key === "red" ? (
           <Pressable key={f.key} style={styles.flagRow} onPress={() => setSelectedFlag(f.key)}>
             <Text style={styles.flagIcon}>🚩</Text>

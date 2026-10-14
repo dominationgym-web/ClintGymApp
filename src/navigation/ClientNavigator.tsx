@@ -18,7 +18,7 @@ import ClientWelcomeScreen from "@/screens/client/ClientWelcomeScreen";
 import { ClientAppGuideScreen } from "@/screens/AppGuideScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
-import { DailyQuotePopup } from "@/components/DailyQuote";
+import DailyStartPopup from "@/components/DailyStartPopup";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -55,7 +55,7 @@ function ClientTabs() {
 export default function ClientNavigator() {
   return (
     <>
-      <DailyQuotePopup />
+      <DailyStartPopup />
       <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
         <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} />
         <Stack.Screen
