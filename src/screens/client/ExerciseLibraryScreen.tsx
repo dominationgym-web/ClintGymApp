@@ -27,6 +27,7 @@ import {
   type ExercisePlace,
 } from "@/lib/exerciseFilter";
 import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
+import WatchOnlineLink from "@/components/WatchOnlineLink";
 import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
@@ -779,7 +780,7 @@ export default function ExerciseLibraryScreen() {
                             onDoSet={() => openProgramExercise(row)}
                             videoUrl={
                               (exercises.find((e) => e.id === row.exercise_id) ?? exercises.find((e) => e.name === row.exercise_name))
-                                ?.external_url
+                                ?.external_url ?? null
                             }
                           />
                           {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
@@ -936,7 +937,7 @@ export default function ExerciseLibraryScreen() {
                 </Pressable>
               </>
             ) : (
-              <Text style={styles.helper}>No demo video yet - ask your trainer.</Text>
+              selected && <WatchOnlineLink name={selected.name} />
             )}
             {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" onDoSet={() => {}} />}
             <View style={{ height: 10 }} />

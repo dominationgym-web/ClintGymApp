@@ -80,7 +80,7 @@ export default function SearchResults({
                   </View>
                   <Text style={[styles.action, { color: accent }]}>{isVideo ? (open ? "Hide" : "▶ Watch") : "Open ›"}</Text>
                 </View>
-                {isVideo && open && <ExerciseVideoPreview url={item.videoUrl ?? null} />}
+                {isVideo && open && <ExerciseVideoPreview url={item.videoUrl ?? null} name={item.title} />}
               </Pressable>
             );
           }}

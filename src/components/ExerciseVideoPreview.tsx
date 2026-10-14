@@ -1,10 +1,12 @@
 import React, { useEffect } from "react";
 import { StyleSheet, Text } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
+import WatchOnlineLink from "@/components/WatchOnlineLink";
 
 // A small looping demo video, for the trainer to check an exercise before
 // putting it in a program. Mounted only while it's open, so one plays at a time.
-export default function ExerciseVideoPreview({ url }: { url: string | null }) {
+// With no clip, name gives a link to examples online instead.
+export default function ExerciseVideoPreview({ url, name }: { url: string | null; name?: string }) {
   const player = useVideoPlayer(url, (p) => {
     p.loop = true;
     p.muted = true;
@@ -14,6 +16,7 @@ export default function ExerciseVideoPreview({ url }: { url: string | null }) {
     if (url) player.play();
   }, [url, player]);
 
+  if (!url && name) return <WatchOnlineLink name={name} />;
   if (!url) return <Text style={styles.none}>No demo video for this one yet.</Text>;
   return <VideoView style={styles.video} player={player} contentFit="contain" nativeControls />;
 }

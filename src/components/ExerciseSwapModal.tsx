@@ -88,7 +88,7 @@ export default function ExerciseSwapModal({
                     <Text style={styles.swapUseText}>Use this</Text>
                   </Pressable>
                 </View>
-                {preview === item.id && <ExerciseVideoPreview url={item.external_url} />}
+                {preview === item.id && <ExerciseVideoPreview url={item.external_url} name={item.name} />}
               </View>
             )}
           />

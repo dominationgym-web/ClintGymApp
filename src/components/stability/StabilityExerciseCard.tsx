@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { WatchOnlineLink } from "@/components/ExerciseGuide";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import WatchOnlineLink from "@/components/WatchOnlineLink";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
   assessExercise,
