@@ -5,6 +5,7 @@ import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
+import { countryCheckMessage, phoneCountry } from "@/lib/phoneCountry";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "TrainerSignup">;
 
@@ -37,6 +38,16 @@ export default function TrainerSignupScreen({ navigation }: Props) {
     }
 
     setLoading(true);
+    // Location must be on: the country sets rand or dollar pricing (0096).
+    // Builds without the location module can still apply; the owner then
+    // picks their currency.
+    const check = await phoneCountry();
+    if (!check.ok && check.reason !== "unavailable") {
+      setLoading(false);
+      const { title, message } = countryCheckMessage(check.reason);
+      Alert.alert(title, message);
+      return;
+    }
     const { data: authData, error: authError } = await supabase.auth.signUp({ email: email.trim(), password });
     if (authError || !authData.user) {
       setLoading(false);
@@ -51,6 +62,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       business_name: businessName.trim() || null,
       phone: phone.trim() || null,
       referred_by_code: referralCode.trim() || null,
+      signup_country: check.ok ? check.country : null,
     });
     if (error) {
       setLoading(false);
@@ -68,6 +80,10 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       <Text style={styles.body}>
         Sign up as a trainer to run your own clients on the app. Your account is checked and approved before
         clients can join you, and then you get a free 2-week trial.
+      </Text>
+      <Text style={styles.body}>
+        📍 Please have your location on. We check your country once so you're charged the right prices. Only your
+        country is saved.
       </Text>
       <TextInput style={styles.input} placeholder="Your full name" value={name} onChangeText={setName} />
       <TextInput

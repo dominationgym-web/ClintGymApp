@@ -273,6 +273,8 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Add your logo. Your clients see it in their app.",
         "Your trainer code for new clients, your referral code for other trainers, your EFT details and your plan all live here.",
+        "Your plan's prices depend on the country you applied from: rand in South Africa, dollars elsewhere. That's why location must be on when you apply.",
+        "🎁 On free use? You pay no monthly subscription. Six months in, a per-client fee starts for each active client. Your plan card shows the date, and the app reminds you 30 days and 7 days before.",
       ],
     },
   ],

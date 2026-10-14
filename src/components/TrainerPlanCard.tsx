@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
-import { money, PLAN_LABEL, planPrice, planState, planStateLabel, shortDate } from "@/lib/billing";
+import { freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, shortDate } from "@/lib/billing";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import type { BillingSettings, EftDetails, Trainer, TrainerBillingStatus } from "@/types/database";
 
@@ -32,23 +32,38 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
     return () => {
       cancelled = true;
     };
-  }, [trainer.id, trainer.paid_until]);
+  }, [trainer.id, trainer.paid_until, trainer.free_use_from]);
 
   if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />;
-  if (!status?.billing_plan || !status.billing_currency || !settings) return null;
+  const freeUse = trainer.free_use_from;
+  if (!status || !settings || (!freeUse && (!status.billing_plan || !status.billing_currency))) return null;
 
-  const currency = status.billing_currency;
-  const state = planState({ ...status, trial_ends_at: trainer.trial_ends_at }, todayIso());
+  const currency = status.billing_currency ?? "ZAR";
+  const state = planState({ ...status, trial_ends_at: trainer.trial_ends_at, free_use_from: freeUse }, todayIso());
   const owed = Number(status.client_fees_owed);
   const due = state.kind === "overdue" || owed > 0;
 
   return (
     <View style={[styles.box, due && styles.boxDue]}>
-      <Text style={styles.title}>
-        Your plan: {PLAN_LABEL[status.billing_plan]} · {money(planPrice(settings.prices, currency, status.billing_plan), currency)}
-      </Text>
-      <Text style={[styles.line, state.kind === "overdue" && styles.warn]}>{planStateLabel(state)}</Text>
-      {status.client_fees_from ? (
+      {freeUse ? (
+        <>
+          <Text style={styles.title}>🎁 You're on free use</Text>
+          <Text style={styles.line}>No monthly subscription.</Text>
+          <Text style={styles.line}>
+            From {shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))} you pay{" "}
+            {money(settings.prices[currency].client, currency)} a month for each active client. The app reminds you
+            before then.
+          </Text>
+        </>
+      ) : (
+        <>
+          <Text style={styles.title}>
+            Your plan: {PLAN_LABEL[status.billing_plan!]} · {money(planPrice(settings.prices, currency, status.billing_plan!), currency)}
+          </Text>
+          <Text style={[styles.line, state.kind === "overdue" && styles.warn]}>{planStateLabel(state)}</Text>
+        </>
+      )}
+      {status.client_fees_from && !freeUse ? (
         <Text style={styles.line}>
           Client fees from {shortDate(status.client_fees_from)}: {money(settings.prices[currency].client, currency)} a month for
           each active client above {settings.free_clients}.

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   amountsLabel,
   creditsUsable,
+  freeUseFeesStart,
   halfYearKey,
   halfYearLabel,
   halfYearTotals,
@@ -78,5 +79,19 @@ describe("billing helpers", () => {
     expect(totals[0].referrals).toBe(1);
     expect(amountsLabel(totals[0].planPayments)).toBe("$50");
     expect(amountsLabel(totals[1].planPayments)).toBe("-");
+  });
+});
+
+describe("free use (0096)", () => {
+  it("starts per-client fees on the 1st on or after 6 months", () => {
+    expect(freeUseFeesStart("2026-10-14")).toBe("2027-05-01");
+    expect(freeUseFeesStart("2026-10-01")).toBe("2027-04-01");
+    expect(freeUseFeesStart("2026-08-31")).toBe("2027-03-01");
+    expect(freeUseFeesStart("2026-12-20")).toBe("2027-07-01");
+  });
+  it("shows free use instead of a plan", () => {
+    const state = planState({ billing_started_on: "2026-01-01", paid_until: null, free_use_from: "2026-10-14" }, "2026-11-01");
+    expect(state).toEqual({ kind: "freeUse", feesFrom: "2027-05-01" });
+    expect(planStateLabel(state)).toContain("Free use");
   });
 });

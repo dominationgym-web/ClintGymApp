@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { countryName } from "@/lib/phoneCountry";
 import { useAuth } from "@/context/AuthContext";
 import { REFERRAL_DISCOUNT_PERCENT, referralRewards, trainerDisplayName, trialDaysLeft, trialLabel } from "@/lib/trainers";
 import { addDays } from "@/lib/programSchedule";
@@ -148,6 +149,9 @@ export default function TrainersScreen() {
               {item.business_name ? <Text style={styles.detail}>{item.name}</Text> : null}
               <Text style={styles.detail}>{item.email}</Text>
               {item.phone ? <Text style={styles.detail}>{item.phone}</Text> : null}
+              <Text style={styles.detail}>
+                📍 {item.signup_country ? `Applied from ${countryName(item.signup_country)}` : "Country not checked"}
+              </Text>
               <Text style={[styles.status, { color: item.approved ? "#22C55E" : "#F59E0B" }]}>
                 {item.approved ? `Approved · code ${item.join_code}` : "Waiting for your approval"}
               </Text>

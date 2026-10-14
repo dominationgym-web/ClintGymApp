@@ -61,6 +61,12 @@
           "icon": "./assets/notification-icon.png",
           "color": "#D4AF37"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Checks which country you're in once, when you apply as a trainer, so you're charged the right prices. Only your country is saved."
+        }
       ]
     ],
     "owner": "grizzly75",
