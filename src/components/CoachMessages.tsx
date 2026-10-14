@@ -137,7 +137,8 @@ function ProblemReplyBox({ problemId }: { problemId: string }) {
 }
 
 /** Every recent message, read or not, for the client's profile page. */
-export function CoachMessageHistory() {
+// `bare` drops the heading, for use inside a tap-to-open heading.
+export function CoachMessageHistory({ bare = false }: { bare?: boolean }) {
   const { client } = useAuth();
   const [messages, setMessages] = useState<CoachMessage[]>([]);
 
@@ -154,10 +155,10 @@ export function CoachMessageHistory() {
     }, [client?.id])
   );
 
-  if (messages.length === 0) return null;
+  if (messages.length === 0) return bare ? <Text style={styles.time}>No messages yet.</Text> : null;
   return (
     <View>
-      <Text style={styles.heading}>Messages from your coach</Text>
+      {!bare && <Text style={styles.heading}>Messages from your coach</Text>}
       {messages.map((m) => (
         <View key={m.id} style={styles.historyRow}>
           {m.video_id ? <Text style={styles.time}>🎥 Feedback on your form video</Text> : null}

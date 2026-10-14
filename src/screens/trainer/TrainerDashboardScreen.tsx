@@ -35,7 +35,7 @@ const priority = (r: ClientStatus): number =>
   });
 
 export default function TrainerDashboardScreen({ navigation }: Props) {
-  const { trainer, signOut } = useAuth();
+  const { trainer } = useAuth();
   const [rows, setRows] = useState<ClientStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -225,69 +225,58 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     );
   }
 
+  // Everything waiting on the trainer, in one card instead of a banner each.
+  const needsYou = [
+    waitingSignups > 0 && {
+      key: "signups",
+      text: `🆕 ${waitingSignups} new client${waitingSignups === 1 ? "" : "s"} to activate`,
+      link: "Open",
+      onPress: () => navigation.navigate("Clients"),
+    },
+    recoveryClients.length > 0 && {
+      key: "recovery",
+      text: `⚠️ ${recoveryClients.map((c) => c.name.split(" ")[0]).join(", ")}: same muscles as yesterday`,
+      link: "Open",
+      onPress: () => navigation.navigate("ClientDetail", { clientId: recoveryClients[0].id, tab: "training" }),
+    },
+    newVideos.length > 0 && {
+      key: "videos",
+      text: `🎥 ${newVideos.length} new form video${newVideos.length === 1 ? "" : "s"} from ${[
+        ...new Set(newVideos.map((v) => v.name.split(" ")[0])),
+      ].join(", ")}`,
+      link: "Watch",
+      onPress: () => navigation.navigate("ClientDetail", { clientId: newVideos[0].clientId, tab: "training" }),
+    },
+    foundationWaiting.length > 0 && {
+      key: "foundation",
+      text: `🌱 Approve a foundation program for ${foundationWaiting.map((c) => c.name.split(" ")[0]).join(", ")}`,
+      link: "Open",
+      onPress: () => navigation.navigate("ClientDetail", { clientId: foundationWaiting[0].id, tab: "training" }),
+    },
+    newSuggestions > 0 && {
+      key: "suggestions",
+      text: `💡 ${newSuggestions} new suggestion${newSuggestions === 1 ? "" : "s"}`,
+      link: "Read",
+      onPress: () => navigation.navigate("SuggestionBox"),
+    },
+  ].filter((item): item is { key: string; text: string; link: string; onPress: () => void } => !!item);
+
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Today's compliance</Text>
-        <Pressable onPress={signOut}>
-          <Text style={styles.logoutLink}>Log out</Text>
-        </Pressable>
-      </View>
+      <Text style={styles.title}>Today's compliance</Text>
       <NotificationsPrompt who="trainer" />
-      {waitingSignups > 0 && (
-        <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("Clients")}>
-          <Text style={styles.suggestionBannerText}>
-            🆕 {waitingSignups} new client{waitingSignups === 1 ? "" : "s"} waiting to be activated
-          </Text>
-          <Text style={styles.suggestionBannerLink}>Open ›</Text>
-        </Pressable>
-      )}
-      {recoveryClients.length > 0 && (
-        <Pressable
-          style={styles.suggestionBanner}
-          onPress={() => navigation.navigate("ClientDetail", { clientId: recoveryClients[0].id, tab: "training" })}
-        >
-          <Text style={styles.suggestionBannerText}>
-            ⚠️ Recovery check:{" "}
-            {recoveryClients.length === 1
-              ? `${recoveryClients[0].name} is training the same muscles as yesterday`
-              : `${recoveryClients.map((c) => c.name.split(" ")[0]).join(", ")} are training the same muscles as yesterday`}
-          </Text>
-          <Text style={styles.suggestionBannerLink}>Open ›</Text>
-        </Pressable>
-      )}
-      {newVideos.length > 0 && (
-        <Pressable
-          style={styles.suggestionBanner}
-          onPress={() => navigation.navigate("ClientDetail", { clientId: newVideos[0].clientId, tab: "training" })}
-        >
-          <Text style={styles.suggestionBannerText}>
-            🎥 {newVideos.length} new form video{newVideos.length === 1 ? "" : "s"} from{" "}
-            {[...new Set(newVideos.map((v) => v.name.split(" ")[0]))].join(", ")}
-          </Text>
-          <Text style={styles.suggestionBannerLink}>Watch ›</Text>
-        </Pressable>
-      )}
-      {foundationWaiting.length > 0 && (
-        <Pressable
-          style={styles.suggestionBanner}
-          onPress={() => navigation.navigate("ClientDetail", { clientId: foundationWaiting[0].id, tab: "training" })}
-        >
-          <Text style={styles.suggestionBannerText}>
-            🌱 Approve a foundation program for {foundationWaiting.map((c) => c.name.split(" ")[0]).join(", ")}
-          </Text>
-          <Text style={styles.suggestionBannerLink}>Open ›</Text>
-        </Pressable>
+      {needsYou.length > 0 && (
+        <View style={styles.needsCard}>
+          <Text style={styles.needsTitle}>Needs you</Text>
+          {needsYou.map((item, i) => (
+            <Pressable key={item.key} style={[styles.needsRow, i > 0 && styles.needsRowLine]} onPress={item.onPress}>
+              <Text style={styles.suggestionBannerText}>{item.text}</Text>
+              <Text style={styles.suggestionBannerLink}>{item.link} ›</Text>
+            </Pressable>
+          ))}
+        </View>
       )}
       {trainer && <HabitWinsCard trainerId={trainer.id} />}
-      {newSuggestions > 0 && (
-        <Pressable style={styles.suggestionBanner} onPress={() => navigation.navigate("SuggestionBox")}>
-          <Text style={styles.suggestionBannerText}>
-            💡 {newSuggestions} new suggestion{newSuggestions === 1 ? "" : "s"} in the suggestion box
-          </Text>
-          <Text style={styles.suggestionBannerLink}>Read ›</Text>
-        </Pressable>
-      )}
       <FlatList
         data={rows}
         keyExtractor={(r) => r.client.id}
@@ -378,9 +367,19 @@ const styles = StyleSheet.create({
   suggestionBannerLink: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
-  title: { fontSize: 24, fontWeight: "700", color: "#fff" },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  logoutLink: { color: "#64748B", fontSize: 13, fontWeight: "600" },
+  title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 16 },
+  needsCard: {
+    backgroundColor: "#1E293B",
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND_GOLD,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  needsTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 13, marginBottom: 4 },
+  needsRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8 },
+  needsRowLine: { borderTopWidth: 1, borderTopColor: "#334155" },
   row: {
     flexDirection: "row",
     alignItems: "center",
