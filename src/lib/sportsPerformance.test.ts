@@ -23,7 +23,7 @@ describe("Sports Performance programs", () => {
     const family = { power: "sportsPower", speed: "sportsSpeed", strength: "sportsStrength", mobility: "sportsMobility", flexibility: "sportsFlexibility" };
     for (const p of SPORTS_PROGRAMS) expect(programFamily({ name: p.name, trainer_id: null })).toBe(family[p.category]);
   });
-  it("shows every program on the menu page", () => {
+  it("describes every program in the trainer menu", () => {
     const text = JSON.stringify(SPORTS_PERFORMANCE_GUIDE);
     for (const p of SPORTS_PROGRAMS) expect(text).toContain(p.name);
   });
