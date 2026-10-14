@@ -153,17 +153,6 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
-      key: "sportsPerformance",
-      icon: "🏅",
-      title: "Sports Performance",
-      where: "Menu ☰ → Sports Performance",
-      points: [
-        "15 programs of 6 to 8 weeks: 3 each for explosive power, speed, strength, mobility and flexibility.",
-        "Read what each one is for, then ask your coach to start you on it.",
-        "Moves with no video in the app have a link in their How to do it guide to watch examples online.",
-      ],
-    },
-    {
       key: "profile",
       icon: "👤",
       title: "Profile and progress photos",
@@ -241,6 +230,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Programs tab",
       points: [
         "Use the ready-made programs (full body, upper/lower, supersets, goal blocks, HIIT, sprint and threshold intervals, 8-week fight sport conditioning, and 15 Sports Performance programs for power, speed, strength, mobility and flexibility) or tap + Build a program to make your own.",
+        "🏅 Menu ☰ → Sports Performance explains each of the 15 programs and who it suits.",
         "Open any program and tap an exercise, or ▶ beside it, to watch its demo video and read how to do it.",
         "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Weight loss, Strength and Fitness, building joint stability, core strength and tendons before real training.",
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 20 ab reps between sets. When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",

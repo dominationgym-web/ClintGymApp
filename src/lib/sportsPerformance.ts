@@ -1,9 +1,9 @@
 // Sports Performance (GRIZZ, 2026-10-14): 15 short programs of 6-8 weeks,
 // three each for explosive power, speed, strength, mobility and flexibility.
 // The programs themselves are built-ins in the database (0093); the trainer
-// puts a client on one from the program picker. This file describes them on
-// the client's Sports Performance menu page.
-import type { GuidelineGroup } from "@/lib/sleep";
+// puts a client on one from the program picker. This file describes them in
+// the trainer's menu (GRIZZ: trainer side only, not the client menu).
+import type { TrainerGuide } from "@/lib/trainerGuides";
 
 export type SportsCategory = "power" | "speed" | "strength" | "mobility" | "flexibility";
 
@@ -36,29 +36,44 @@ const CATEGORIES: { category: SportsCategory; icon: string; heading: string; hoo
   { category: "flexibility", icon: "🧘", heading: "Flexibility", hook: "Hold, breathe, relax: a little range gained every session." },
 ];
 
-const PROGRAM_EMOJI = ["1️⃣", "2️⃣", "3️⃣"];
-
-export const SPORTS_PERFORMANCE_GUIDE: GuidelineGroup[] = [
-  {
-    icon: "🏅",
-    heading: "How it works",
-    hook: "Short, focused programs to make you a better athlete.",
-    points: [
-      { emoji: "📅", title: "6 to 8 weeks", text: "Each program runs for 6 or 8 weeks, three sessions a week (Monday, Wednesday and Friday), and gets harder as you go." },
-      { emoji: "🙋", title: "Ask your coach", text: "Tell your coach which one you'd like. They'll put it on your Training page, and you'll see each day's session like any other workout." },
-      { emoji: "▶️", title: "Videos and guides", text: "Every exercise has a How to do it guide. Most stretches, mobility moves and sprint drills don't have a video in the app yet, so their guide has a link to watch examples online." },
-      { emoji: "🔥", title: "Warm up first", text: "Each program has its own warm-up. Never jump, sprint or stretch cold." },
-      { emoji: "⏱️", title: "Quality over tiredness", text: "For power and speed, every rep is all-out with full rest. If you slow down, stop the set. For stretches, the interval timer counts your holds." },
-    ],
-  },
-  ...CATEGORIES.map(({ category, icon, heading, hook }) => ({
-    icon,
-    heading,
-    hook,
-    points: SPORTS_PROGRAMS.filter((p) => p.category === category).map((p, i) => ({
-      emoji: PROGRAM_EMOJI[i] ?? "•",
-      title: p.name,
-      text: `${p.weeks} weeks · ${p.level}. ${p.summary}`,
+export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
+  key: "sportsPerformance",
+  title: "Sports Performance",
+  icon: "🏅",
+  accent: "#F59E0B",
+  summary: "15 programs of 6-8 weeks for explosive power, speed, strength, mobility and flexibility, and who each one suits.",
+  topics: [
+    {
+      title: "How the programs work",
+      icon: "🏅",
+      intro: "Short, focused programs to make your clients better athletes. Put a client on one from the program picker, under the Sports Performance headings.",
+      groups: [
+        {
+          heading: "The basics",
+          points: [
+            "Each program runs 6 or 8 weeks, three sessions a week (Monday, Wednesday and Friday), and builds as it goes.",
+            "8-week programs have an easy week 4 and a test week 8 at half the sets.",
+            "Mobility and Flexibility are in the picker for home clients too; the others need a gym, a field or both.",
+            "Each program has its own warm-up and nutrition notes, shown to the client with the workout.",
+          ],
+        },
+        {
+          heading: "Videos",
+          points: [
+            "Every exercise has a How to do it guide. Most stretches, mobility moves and sprint drills have no MoveKit clip, so their guide has a link to examples online.",
+            "Upload your own clip and it can be linked to the move by name.",
+          ],
+        },
+      ],
+    },
+    ...CATEGORIES.map(({ category, icon, heading, hook }) => ({
+      title: heading,
+      icon,
+      intro: hook,
+      groups: SPORTS_PROGRAMS.filter((p) => p.category === category).map((p) => ({
+        heading: p.name,
+        points: [`${p.weeks} weeks. Best for: ${p.level}.`, p.summary],
+      })),
     })),
-  })),
-];
+  ],
+};

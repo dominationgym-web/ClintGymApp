@@ -8,7 +8,6 @@ describe("SECTIONS", () => {
       "Supplementation",
       "Sleep & Recovery",
       "Women's Health Reset",
-      "Sports Performance",
     ]);
   });
 
