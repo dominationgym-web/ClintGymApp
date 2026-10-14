@@ -98,6 +98,18 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "stability",
+      icon: "🛡️",
+      title: "Stability & injury prevention",
+      where: "Menu ☰ → Stability & injury prevention",
+      points: [
+        "4-8 week programs for your ankle, knee, hip, core, shoulder, wrist and neck, each at Rehab, Beginner, Intermediate or Advanced level. Each area tells you which level fits you.",
+        "Do the short ⚡ version before a workout, or the full session on rest days or after training. You can run one program per area at the same time as your normal training.",
+        "Log every set as seconds held or reps done before you lost control. Holds have a Start/Stop clock. One-sided exercises have a left and a right box.",
+        "When you hit the target two sessions in a row, the app tells you it's time to make it harder. Your coach sees what you log.",
+      ],
+    },
+    {
       key: "nutrition",
       icon: "🥗",
       title: "Nutrition",
@@ -217,6 +229,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",
+        "🛡️ Stability: on their Training tab, see which stability programs they're doing (ankle to neck), the week they're on, their last logged holds and reps for each exercise, and where they're ready to progress.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
         "Photos and Notes: progress photos, and private notes only you can see.",
       ],

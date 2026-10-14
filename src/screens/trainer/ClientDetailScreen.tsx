@@ -30,6 +30,7 @@ import DietPlanner from "@/components/DietPlanner";
 import ClientOwnMealPlan from "@/components/ClientOwnMealPlan";
 import WorkoutsSavedButton from "@/components/WorkoutsSavedButton";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
+import TrainerStabilityCard from "@/components/stability/TrainerStabilityCard";
 import WellbeingReports from "@/components/WellbeingReports";
 import ClientProblems from "@/components/ClientProblems";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
@@ -589,6 +590,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               resetNotice={resetNotice(client, todayIso())}
             />
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
+            <TrainerStabilityCard clientId={client.id} clientName={client.name} />
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Abs between sets</Text>

@@ -28,6 +28,7 @@ export type ClientStackParamList = {
   SuggestionBox: undefined;
   Welcome: undefined;
   AppGuide: undefined;
+  Stability: undefined;
 };
 
 export type TrainerTabParamList = {
