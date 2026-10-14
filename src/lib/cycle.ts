@@ -147,50 +147,57 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
   {
     icon: "🔄",
     heading: "How it works",
+    hook: "Work with your cycle, not against it.",
     points: [
-      "Your hormones change through the month, and so do your energy, strength, hunger and mood.",
-      "Rather than fighting that, we work with it: push hard when your body is ready, and ease off when it isn't.",
-      "Log the first day of each period below. The app works out which phase you're in and shows you what to do each day.",
-      "A typical cycle is 21 to 35 days. The app learns your own length as you log more periods.",
-      "Go by how you feel. The phases are a guide, not a rule.",
+      { emoji: "🌊", title: "Your body changes all month", text: "Your hormones change through the month, and so do your energy, strength, hunger and mood." },
+      { emoji: "🤝", title: "Work with it", text: "Rather than fighting that, we work with it: push hard when your body is ready, and ease off when it isn't." },
+      { emoji: "🗓️", title: "Log your period", text: "Log the first day of each period below. The app works out which phase you're in and shows you what to do each day." },
+      { emoji: "📏", title: "Your own length", text: "A typical cycle is 21 to 35 days. The app learns your own length as you log more periods." },
     ],
+    closing: "Go by how you feel. The phases are a guide, not a rule.",
   },
-  ...PHASE_ORDER.map((key) => {
+  ...PHASE_ORDER.map((key): GuidelineGroup => {
     const p = CYCLE_PHASES[key];
     return {
       heading: `${p.emoji} ${p.name}`,
-      points: [p.tagline, ...p.feel, ...p.training.map((t) => `Training: ${t}`), ...p.nutrition.map((n) => `Food: ${n}`)],
+      hook: p.tagline,
+      points: [
+        ...p.feel.map((text) => ({ emoji: "💭", title: "How you may feel", text })),
+        ...p.training.map((text) => ({ emoji: "🏋️", title: "Training", text })),
+        ...p.nutrition.map((text) => ({ emoji: "🥗", title: "Food", text })),
+      ],
     };
   }),
   {
     icon: "📅",
     heading: "Every day, all month",
+    hook: "The basics matter in every phase.",
     points: [
-      "Protein at every meal, plenty of vegetables, and 2 to 3 litres of water.",
-      "Sleep 7 to 9 hours. Poor sleep throws hormones off more than almost anything else.",
-      "Manage stress: walks outside, breathing, time off your phone. High stress can upset your cycle.",
-      "Don't crash diet. Eating too little can make periods irregular or stop them altogether.",
+      { emoji: "🥗", title: "Eat well", text: "Protein at every meal, plenty of vegetables, and 2 to 3 litres of water." },
+      { emoji: "😴", title: "Sleep 7 to 9 hours", text: "Poor sleep throws hormones off more than almost anything else." },
+      { emoji: "🧘", title: "Manage stress", text: "Walks outside, breathing, time off your phone. High stress can upset your cycle." },
+      { emoji: "🚫", title: "Don't crash diet", text: "Eating too little can make periods irregular or stop them altogether." },
     ],
   },
   {
     icon: "💊",
     heading: "Supplements by phase",
-    points: [
-      "Most women do well on a simple base all month: vitamin D, omega-3 and magnesium.",
-      ...PHASE_ORDER.flatMap((key) => CYCLE_PHASES[key].supplements.map((s) => `${CYCLE_PHASES[key].name}: ${s}`)),
-      "Check with your doctor before starting supplements if you're pregnant, trying to fall pregnant, breastfeeding or on any medication.",
-    ],
+    hook: "Most women do well on a simple base all month: vitamin D, omega-3 and magnesium.",
+    points: PHASE_ORDER.flatMap((key) =>
+      CYCLE_PHASES[key].supplements.map((text) => ({ emoji: CYCLE_PHASES[key].emoji, title: CYCLE_PHASES[key].name, text }))
+    ),
+    closing: "Check with your doctor before starting supplements if you're pregnant, trying to fall pregnant, breastfeeding or on any medication.",
   },
   {
     icon: "🩺",
     heading: "When to see a doctor",
     points: [
-      "Your period stops for 3 months or more and you're not pregnant.",
-      "Very heavy bleeding (soaking a pad or tampon every hour or two), or bleeding between periods.",
-      "Pain that stops you from getting through your day.",
-      "Cycles shorter than 21 days or longer than 35 days, again and again.",
-      "This guide is general information, not medical advice. If you're on hormonal contraception, your natural phases may not apply.",
+      { emoji: "⏸️", title: "No period for 3 months", text: "Your period stops for 3 months or more and you're not pregnant." },
+      { emoji: "🩸", title: "Very heavy bleeding", text: "Soaking a pad or tampon every hour or two, or bleeding between periods." },
+      { emoji: "😣", title: "Pain that stops your day", text: "Pain that stops you from getting through your day." },
+      { emoji: "📆", title: "Irregular cycles", text: "Cycles shorter than 21 days or longer than 35 days, again and again." },
     ],
+    closing: "This guide is general information, not medical advice. If you're on hormonal contraception, your natural phases may not apply.",
   },
 ];
 

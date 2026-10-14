@@ -30,7 +30,7 @@ describe("searchSections", () => {
       title: "Sleep & Recovery",
       summary: "Better sleep.",
       topics: [],
-      content: [{ heading: "The basics", points: ["Aim for 7 to 9 hours.", "Keep caffeine before noon."] }],
+      content: [{ heading: "The basics", points: [{ emoji: "⏱️", title: "7 to 9 hours", text: "Aim for 7 to 9 hours." }, { emoji: "☕", title: "Caffeine", text: "Keep caffeine before noon." }] }],
     },
   ];
   it("matches a title or summary", () => {
@@ -38,7 +38,7 @@ describe("searchSections", () => {
   });
   it("shows the matching line from inside a guide", () => {
     expect(searchSections(sections, "caffeine")).toEqual([
-      { key: "sleepRecovery", title: "Sleep & Recovery", snippet: "The basics: Keep caffeine before noon." },
+      { key: "sleepRecovery", title: "Sleep & Recovery", snippet: "The basics: Caffeine. Keep caffeine before noon." },
     ]);
     expect(searchSections(sections, "meal")[0].key).toBe("nutrition");
   });
