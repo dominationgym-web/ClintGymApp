@@ -52,6 +52,17 @@ export function creditsUsable(prices: BillingPrices, currency: BillingCurrency, 
   return Math.min(unused, Math.ceil(planPrice(prices, currency, plan) / perCredit));
 }
 
+/**
+ * Referral credits that can come off client fees (free-use trainers pay no
+ * plan, GRIZZ 2026-10-14): whole credits, each worth 25% of a month's plan,
+ * never more than what's owed.
+ */
+export function feeCreditsUsable(prices: BillingPrices, currency: BillingCurrency, owed: number, unused: number): number {
+  const perCredit = referralCreditValue(prices, currency, 1);
+  if (perCredit <= 0 || owed <= 0) return 0;
+  return Math.min(unused, Math.floor(owed / perCredit));
+}
+
 /** "12 Nov 2026" */
 export function shortDate(iso: string): string {
   return `${Number(iso.slice(8, 10))} ${SHORT_MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
@@ -188,4 +199,23 @@ export function halfYearTotals(input: {
   for (const a of input.activations) get(a.activated_on).activations += 1;
   for (const r of input.referralApprovals) get(r).referrals += 1;
   return [...byKey.values()].sort((a, b) => b.key.localeCompare(a.key));
+}
+
+/** The currency a trainer is billed in: their set one, else from the country their phone was in at signup (0096). */
+export function trainerCurrency(trainer: { billing_currency: BillingCurrency | null; signup_country?: string | null }): BillingCurrency {
+  return trainer.billing_currency ?? (trainer.signup_country === "ZA" ? "ZAR" : "USD");
+}
+
+/** Where banked referral credit comes off: the plan payment, or client fees on free use. */
+export function referralCreditUseLine(freeUse: boolean): string {
+  return freeUse
+    ? "You're on free use, so your banked referrals come off your monthly client fees."
+    : "Your banked referrals come off your next plan payment.";
+}
+
+/** Whether the weekly referral pop-up is due: never shown, or shown 7 or more days ago. */
+export function referralPopupDue(lastShownIso: string | null, todayIso: string): boolean {
+  if (!lastShownIso) return true;
+  const days = (Date.parse(`${todayIso}T00:00:00Z`) - Date.parse(`${lastShownIso}T00:00:00Z`)) / 86400000;
+  return !(days < 7);
 }

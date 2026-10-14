@@ -22,6 +22,7 @@ import {
   amountsLabel,
   creditsUsable,
   CURRENCIES,
+  feeCreditsUsable,
   CURRENCY_LABEL,
   freeUseFeesStart,
   halfYearTotals,
@@ -370,6 +371,7 @@ export default function BillingScreen() {
                     <Text key={p.id} style={styles.small}>
                       {shortDate(p.paid_on)}: {money(Number(p.amount), p.currency)}{" "}
                       {p.kind === "subscription" ? `plan (${p.months} month${p.months === 1 ? "" : "s"})` : "client fees"}
+                      {p.note?.startsWith("Referral credit") ? ` (${p.note})` : ""}
                     </Text>
                   ))}
               </View>
@@ -585,8 +587,14 @@ function RecordPaymentModal({
   const [plan, setPlan] = useState<BillingPlan>(trainer.billing_plan ?? "monthly");
   const usable = creditsUsable(settings.prices, currency, plan, unusedCredits);
   const [useCredit, setUseCredit] = useState(usable > 0);
+  // Referral credit can also come off client fees (free-use trainers have no plan).
+  const feeCredits = feeCreditsUsable(settings.prices, currency, owed, unusedCredits);
+  const feeCreditValue = referralCreditValue(settings.prices, currency, feeCredits);
+  const [useFeeCredit, setUseFeeCredit] = useState(feeCredits > 0);
   const suggested =
-    kind === "subscription" ? planAmountDue(settings.prices, currency, plan, useCredit ? usable : 0) : owed;
+    kind === "subscription"
+      ? planAmountDue(settings.prices, currency, plan, useCredit ? usable : 0)
+      : owed - (useFeeCredit ? feeCreditValue : 0);
   const [amount, setAmount] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const shown = amount ?? String(suggested);
@@ -598,14 +606,41 @@ function RecordPaymentModal({
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("trainer_payments").insert({
-      trainer_id: trainer.id,
-      kind,
-      amount: value,
-      currency,
-      months: kind === "subscription" ? PLAN_MONTHS[plan] : null,
-      paid_on: todayIso(),
-    });
+    const creditingFees = kind === "client_fees" && useFeeCredit && feeCredits > 0;
+    // The referral credit is logged as its own client-fee payment, so what they owe goes down by it.
+    if (creditingFees) {
+      const credit = await supabase.from("trainer_payments").insert({
+        trainer_id: trainer.id,
+        kind: "client_fees",
+        amount: feeCreditValue,
+        currency,
+        months: null,
+        paid_on: todayIso(),
+        note: `Referral credit: ${feeCredits} × 25%`,
+      });
+      if (!credit.error) {
+        const used = await supabase
+          .from("trainers")
+          .update({ referral_credits_used: trainer.referral_credits_used + feeCredits })
+          .eq("id", trainer.id);
+        if (used.error) Alert.alert("Credit saved, but the referral credit wasn't marked used", used.error.message);
+      } else {
+        setSaving(false);
+        Alert.alert("Couldn't save the referral credit", credit.error.message);
+        return;
+      }
+    }
+    const { error } =
+      creditingFees && value === 0
+        ? { error: null }
+        : await supabase.from("trainer_payments").insert({
+            trainer_id: trainer.id,
+            kind,
+            amount: value,
+            currency,
+            months: kind === "subscription" ? PLAN_MONTHS[plan] : null,
+            paid_on: todayIso(),
+          });
     if (!error && kind === "subscription" && useCredit && usable > 0) {
       const res = await supabase
         .from("trainers")
@@ -672,7 +707,24 @@ function RecordPaymentModal({
               </Text>
             </>
           ) : (
-            <Text style={styles.muted}>They owe {money(owed, currency)} in client fees.</Text>
+            <>
+              <Text style={styles.muted}>They owe {money(owed, currency)} in client fees.</Text>
+              {feeCredits > 0 ? (
+                <View style={styles.switchRow}>
+                  <Text style={[styles.lineDetail, { flex: 1 }]}>
+                    Use referral credit ({feeCredits} × 25% = {money(feeCreditValue, currency)} off)
+                  </Text>
+                  <Switch
+                    value={useFeeCredit}
+                    onValueChange={(v) => {
+                      setUseFeeCredit(v);
+                      setAmount(null);
+                    }}
+                    trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                  />
+                </View>
+              ) : null}
+            </>
           )}
           <Text style={styles.fieldLabel}>Amount received ({currency === "ZAR" ? "rand" : "US dollars"})</Text>
           <TextInput style={styles.input} keyboardType="decimal-pad" value={shown} onChangeText={setAmount} />

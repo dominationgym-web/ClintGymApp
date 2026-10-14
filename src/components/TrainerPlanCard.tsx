@@ -54,6 +54,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
             {money(settings.prices[currency].client, currency)} a month for each active client. The app reminds you
             before then.
           </Text>
+          <Text style={styles.line}>Banked referrals come off your client fees.</Text>
         </>
       ) : (
         <>

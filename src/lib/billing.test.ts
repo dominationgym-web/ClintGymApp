@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   amountsLabel,
   creditsUsable,
+  feeCreditsUsable,
   freeUseFeesStart,
   halfYearKey,
   halfYearLabel,
@@ -10,7 +11,10 @@ import {
   planAmountDue,
   planState,
   planStateLabel,
+  referralCreditUseLine,
   referralCreditValue,
+  referralPopupDue,
+  trainerCurrency,
 } from "@/lib/billing";
 import type { BillingPrices } from "@/types/database";
 
@@ -93,5 +97,32 @@ describe("free use (0096)", () => {
     const state = planState({ billing_started_on: "2026-01-01", paid_until: null, free_use_from: "2026-10-14" }, "2026-11-01");
     expect(state).toEqual({ kind: "freeUse", feesFrom: "2027-05-01" });
     expect(planStateLabel(state)).toContain("Free use");
+  });
+});
+
+describe("referral credit off client fees", () => {
+  const prices = { USD: { monthly: 50, six_months: 250, yearly: 400, client: 10 }, ZAR: { monthly: 500, six_months: 2500, yearly: 4000, client: 100 } };
+  it("uses whole R125 credits, never more than is owed", () => {
+    expect(feeCreditsUsable(prices, "ZAR", 300, 5)).toBe(2);
+    expect(feeCreditsUsable(prices, "ZAR", 1000, 3)).toBe(3);
+    expect(feeCreditsUsable(prices, "ZAR", 100, 3)).toBe(0);
+    expect(feeCreditsUsable(prices, "ZAR", 0, 3)).toBe(0);
+  });
+});
+
+describe("weekly referral pop-up", () => {
+  it("shows the first time, then once every 7 days", () => {
+    expect(referralPopupDue(null, "2026-10-14")).toBe(true);
+    expect(referralPopupDue("2026-10-14", "2026-10-14")).toBe(false);
+    expect(referralPopupDue("2026-10-08", "2026-10-14")).toBe(false);
+    expect(referralPopupDue("2026-10-07", "2026-10-14")).toBe(true);
+    expect(referralPopupDue("garbage", "2026-10-14")).toBe(true);
+  });
+  it("picks the currency and where credit comes off", () => {
+    expect(trainerCurrency({ billing_currency: null, signup_country: "ZA" })).toBe("ZAR");
+    expect(trainerCurrency({ billing_currency: null, signup_country: "GB" })).toBe("USD");
+    expect(trainerCurrency({ billing_currency: "USD", signup_country: "ZA" })).toBe("USD");
+    expect(referralCreditUseLine(true)).toContain("client fees");
+    expect(referralCreditUseLine(false)).toContain("plan payment");
   });
 });
