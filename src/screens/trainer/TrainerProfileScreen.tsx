@@ -32,7 +32,8 @@ import TrainerLogo from "@/components/TrainerLogo";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
-import type { EftDetails } from "@/types/database";
+import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
+import type { BillingPrices, EftDetails } from "@/types/database";
 
 type TabKey = "code" | "refer" | "details" | "payments" | "account";
 
@@ -57,10 +58,17 @@ export default function TrainerProfileScreen() {
   const [tab, setTab] = useState<TabKey>("code");
   // Trainers who signed up with this trainer's code (0060).
   const [referrals, setReferrals] = useState<{ name: string; approved: boolean }[]>([]);
+  const [prices, setPrices] = useState<BillingPrices | null>(null);
 
   useEffect(() => {
     if (!trainer || trainer.is_owner) return;
     supabase.rpc("my_referrals").then(({ data }) => setReferrals(data ?? []));
+    supabase
+      .from("billing_settings")
+      .select("prices")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => setPrices((data?.prices as BillingPrices | undefined) ?? null));
   }, [trainer?.id, tab]);
 
   if (!trainer) return null;
@@ -201,9 +209,9 @@ export default function TrainerProfileScreen() {
               <Text style={styles.label}>Your referral code</Text>
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
-                Another trainer enters this when they sign up. For each one who joins, you get {REFERRAL_DISCOUNT_PERCENT}% off a
-                month, taken off your next plan payment. 4 referrals = a free month. If you cancel, unused referrals are paid out
-                to you.
+                Another trainer enters this when they sign up. For each one who's approved, you get {REFERRAL_DISCOUNT_PERCENT}% off
+                a month. 4 referrals = a free month. {referralCreditUseLine(!!trainer.free_use_from)} If you cancel, unused
+                referrals are paid out to you.
               </Text>
               <Pressable style={styles.secondaryButton} onPress={shareReferral}>
                 <Text style={styles.secondaryButtonText}>Share with a trainer</Text>
@@ -213,15 +221,17 @@ export default function TrainerProfileScreen() {
             <View style={styles.rewardRow}>
               <View style={styles.rewardStat}>
                 <Text style={styles.rewardNumber}>{rewards.earned}</Text>
-                <Text style={styles.hint}>referrals</Text>
+                <Text style={styles.hint}>earned</Text>
               </View>
               <View style={styles.rewardStat}>
-                <Text style={styles.rewardNumber}>{rewards.unusedPercent}%</Text>
+                <Text style={styles.rewardNumber}>{rewards.unused}</Text>
+                <Text style={styles.hint}>banked</Text>
+              </View>
+              <View style={styles.rewardStat}>
+                <Text style={styles.rewardNumber}>
+                  {prices ? money(referralCreditValue(prices, trainerCurrency(trainer), rewards.unused), trainerCurrency(trainer)) : `${rewards.unusedPercent}%`}
+                </Text>
                 <Text style={styles.hint}>off to use</Text>
-              </View>
-              <View style={styles.rewardStat}>
-                <Text style={styles.rewardNumber}>{rewards.freeMonths}</Text>
-                <Text style={styles.hint}>free month{rewards.freeMonths === 1 ? "" : "s"}</Text>
               </View>
             </View>
             {referrals.length > 0 ? <Text style={styles.sectionHeading}>Trainers you referred</Text> : null}

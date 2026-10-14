@@ -21,6 +21,7 @@ import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
+import ReferralPopup from "@/components/ReferralPopup";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
@@ -62,26 +63,29 @@ export default function TrainerNavigator() {
     registerForCoachMessages();
   }, []);
   return (
-    <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
-      <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
-      <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
-      <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
-      <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
-      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
-      <Stack.Screen
-        name="ProgramBuilder"
-        component={ProgramBuilderScreen}
-        options={{ title: "Build a program", headerBackTitle: "Back" }}
-      />
-      <Stack.Screen
-        name="TrainerGuide"
-        component={TrainerGuideScreen}
-        options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
-      />
-      <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
-      <Stack.Screen name="Stability" options={{ title: "Stability", headerBackTitle: "Back" }}>
-        {() => <StabilityScreen role="trainer" />}
-      </Stack.Screen>
-    </Stack.Navigator>
+    <>
+      <ReferralPopup />
+      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
+        <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
+        <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+        <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
+        <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
+        <Stack.Screen
+          name="ProgramBuilder"
+          component={ProgramBuilderScreen}
+          options={{ title: "Build a program", headerBackTitle: "Back" }}
+        />
+        <Stack.Screen
+          name="TrainerGuide"
+          component={TrainerGuideScreen}
+          options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
+        />
+        <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Stability" options={{ title: "Stability", headerBackTitle: "Back" }}>
+          {() => <StabilityScreen role="trainer" />}
+        </Stack.Screen>
+      </Stack.Navigator>
+    </>
   );
 }
