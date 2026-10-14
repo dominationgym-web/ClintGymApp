@@ -13,12 +13,16 @@ export default function ProgramSummary({
   program,
   exercises,
   onPressExercise,
+  collapsible = false,
 }: {
   program: Program;
   exercises: ProgramExercise[];
   onPressExercise?: (row: ProgramExercise) => void;
+  /** Programs tab: the list stays shut until the trainer taps to check it (GRIZZ, 2026-10-14). */
+  collapsible?: boolean;
 }) {
   const [info, setInfo] = useState<ProgramExercise | null>(null);
+  const [shown, setShown] = useState(!collapsible);
   const weeks = program.weeks ?? 1;
   const days =
     program.kind !== "weekly"
@@ -31,10 +35,19 @@ export default function ProgramSummary({
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
       {onPressExercise ? (
         <Text style={styles.tapHint}>✎ Tap an exercise to change it, or its sets and reps, for this client. Tap ▶ to watch it.</Text>
+      ) : collapsible ? (
+        <Pressable onPress={() => setShown(!shown)} hitSlop={6} accessibilityRole="button" style={styles.checkButton}>
+          <Text style={styles.checkText}>
+            {shown
+              ? "▲ Hide exercises"
+              : `▶ Check all ${exercises.filter((e) => e.kind !== "cardio").length} exercises before you give it out`}
+          </Text>
+        </Pressable>
       ) : (
         <Text style={styles.tapHint}>▶ Tap an exercise to watch its video and how to do it.</Text>
       )}
-      {days.map((day) => {
+      {collapsible && shown ? <Text style={styles.tapHint}>Tap an exercise or ▶ to watch its video and how to do it.</Text> : null}
+      {shown && days.map((day) => {
         const rows = exercises.filter((e) => slotOf(e) === day).sort((a, b) => a.sort_order - b.sort_order);
         const weekOf = (slot: number) => Math.floor((slot - 1) / 7) + 1;
         const i = days.indexOf(day);
@@ -103,6 +116,8 @@ const styles = StyleSheet.create({
   changed: { color: "#fff" },
   was: { color: "#D4AF37", fontSize: 12, fontWeight: "600" },
   tapHint: { color: "#D4AF37", fontSize: 12, marginTop: 6 },
+  checkButton: { borderWidth: 1, borderColor: "#D4AF37", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: 8 },
+  checkText: { color: "#D4AF37", fontSize: 14, fontWeight: "700", textAlign: "center" },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
   watch: { color: "#D4AF37", fontSize: 14, fontWeight: "800", paddingHorizontal: 6, paddingVertical: 3 },
 });

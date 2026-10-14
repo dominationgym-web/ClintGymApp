@@ -1,9 +1,9 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
-import { loadAvailablePrograms } from "@/lib/programQueries";
+import { loadAvailablePrograms, loadProgramExercises } from "@/lib/programQueries";
 import ProgramSummary from "@/components/ProgramSummary";
 import type { Program, ProgramExercise } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
@@ -21,7 +21,7 @@ type Props = TrainerTabScreenProps<"Programs">;
 // (Training tab); this tab is for browsing and building.
 export default function ProgramsScreen({ navigation }: Props) {
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [exercises, setExercises] = useState<ProgramExercise[]>([]);
+  const [exercises, setExercises] = useState<Record<string, ProgramExercise[]>>({});
   const [open, setOpen] = useState<string | null>(null);
   const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
   const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
@@ -29,14 +29,24 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [place, setPlace] = useState<ExercisePlace>("gym");
 
+  // Exercises load one program at a time, when it's opened. Loading them all at
+  // once hit the database's 1000-row limit, so most programs showed none.
   const load = useCallback(async () => {
     const list = await loadAvailablePrograms();
-    const { data } = list.length
-      ? await supabase.from("program_exercises").select("*").in("program_id", list.map((p) => p.id))
-      : { data: [] as ProgramExercise[] };
     setPrograms(list);
-    setExercises(data ?? []);
+    setExercises({});
   }, []);
+
+  useEffect(() => {
+    if (!open || exercises[open]) return;
+    let cancelled = false;
+    loadProgramExercises(open).then(({ data }) => {
+      if (!cancelled && data) setExercises((prev) => ({ ...prev, [open]: data }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, exercises]);
 
   // Reload when coming back from the builder.
   useFocusEffect(
@@ -155,7 +165,11 @@ export default function ProgramsScreen({ navigation }: Props) {
                       <>
                         {p.description && <Text style={styles.description}>{p.description}</Text>}
                         {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
-                        <ProgramSummary program={p} exercises={exercises.filter((e) => e.program_id === p.id)} />
+                        {exercises[p.id] ? (
+                          <ProgramSummary program={p} exercises={exercises[p.id]} collapsible />
+                        ) : (
+                          <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 10 }} />
+                        )}
                         <Text style={styles.description}>
                           ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
                           workout screen. To change it for one client, tap it on that client's Training tab.

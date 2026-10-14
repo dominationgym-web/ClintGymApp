@@ -237,7 +237,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "⚡ Performance: explosive power, speed and sports strength programs, HIIT, sprint and threshold intervals, and 8-week fight sport conditioning. 🏅 A link inside (and Menu ☰ → Sports Performance) explains who each one suits.",
         "🧘 Functional: mobility and flexibility programs, plus a link to the 🛡️ stability & injury prevention programs, which run alongside a client's main program.",
         "The same three groups show when you choose a client's program or put a workout on their calendar. Tap + Build a program to make your own.",
-        "Open any program and tap an exercise, or ▶ beside it, to watch its demo video and read how to do it.",
+        "Open any program and tap ▶ Check all exercises to see every exercise, week by week, before you give it to a client. Tap an exercise, or ▶ beside it, to watch its demo video and read how to do it.",
         "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Weight loss, Strength and Fitness, building joint stability, core strength and tendons before real training.",
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 20 ab reps between sets. When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
