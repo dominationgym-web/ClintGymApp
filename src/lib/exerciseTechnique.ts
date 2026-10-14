@@ -3,6 +3,7 @@
 // all rows the row guide, and so on), matched by the exercise's name, then its
 // body part. Written for clients, in plain words: how to move, how to get the
 // most from it, and how to make it fit their body.
+import { SPORTS_GUIDES } from "@/lib/sportsGuides";
 
 export type ExerciseTechnique = {
   // Short name of the movement pattern, e.g. "Bench press".
@@ -15,6 +16,8 @@ export type ExerciseTechnique = {
   tips: string[];
   // How to make it fit their limits (sore joints, less mobility, beginners).
   adapt: string[];
+  // Leave out GRIZZ's "muscle, not weight" rule (jumps, sprints, stretches).
+  noWeightRule?: boolean;
 };
 
 type Rule = { match: RegExp; technique: ExerciseTechnique };
@@ -1467,6 +1470,7 @@ const CATEGORY_FALLBACK: Record<string, ExerciseTechnique> = {
   "Forearms & Grip": FOREARM,
   Core: CRUNCH,
   Mobility: MOBILITY,
+  Flexibility: MOBILITY,
   Neck: NECK,
   "Full Body": CARDIO_CONDITIONING,
   Cardio: CARDIO_GENERAL,
@@ -1475,6 +1479,7 @@ const CATEGORY_FALLBACK: Record<string, ExerciseTechnique> = {
 // The guide for an exercise. Null only when neither its name nor body part
 // is recognised (e.g. a trainer's own exercise with no body part).
 export function techniqueFor(name: string, category?: string | null): ExerciseTechnique | null {
+  if (SPORTS_GUIDES[name]) return SPORTS_GUIDES[name];
   const lower = name.toLowerCase();
   if (category === "Cardio") {
     return CARDIO_RULES.find((r) => r.match.test(lower))?.technique ?? CARDIO_GENERAL;
@@ -1486,5 +1491,10 @@ export function techniqueFor(name: string, category?: string | null): ExerciseTe
 
 // Every distinct guide, for tests.
 export const ALL_TECHNIQUES: ExerciseTechnique[] = Array.from(
-  new Set([...RULES, ...CARDIO_RULES].map((r) => r.technique).concat(Object.values(CATEGORY_FALLBACK))),
+  new Set(
+    [...RULES, ...CARDIO_RULES]
+      .map((r) => r.technique)
+      .concat(Object.values(CATEGORY_FALLBACK))
+      .concat(Object.values(SPORTS_GUIDES)),
+  ),
 );

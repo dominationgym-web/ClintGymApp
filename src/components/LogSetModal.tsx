@@ -8,7 +8,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { formatRest } from "@/lib/programs";
 import { suggestNext, type Suggestion } from "@/lib/progression";
 import { techniqueFor } from "@/lib/exerciseTechnique";
-import ExerciseGuideButton, { ExerciseGuideContent, MuscleNotWeight } from "@/components/ExerciseGuide";
+import ExerciseGuideButton, { ExerciseGuideContent, MuscleNotWeight, WatchOnlineLink } from "@/components/ExerciseGuide";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import EveryRepTips from "@/components/EveryRepTips";
 import RestTimer from "@/components/RestTimer";
@@ -162,7 +162,7 @@ export default function LogSetModal({
               <ExerciseVideoPreview url={exercise.external_url} />
             </View>
           ) : (
-            <Text style={styles.note}>No demo video yet - ask your coach.</Text>
+            exercise && <WatchOnlineLink name={exercise.name} />
           )}
           {exercise && <ExerciseGuideButton name={exercise.name} category={exercise.category} variant="bar" onDoSet={() => {}} />}
           <View style={{ height: 8 }} />
@@ -191,7 +191,7 @@ export default function LogSetModal({
           )}
 
           <Text style={styles.heading}>Log a set</Text>
-          <MuscleNotWeight />
+          {!technique?.noWeightRule && <MuscleNotWeight />}
           <View style={styles.setRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Weight (kg)</Text>
