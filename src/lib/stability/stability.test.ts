@@ -14,6 +14,7 @@ import {
   targetText,
   type StabilityLogLite,
 } from "@/lib/stability";
+import { youtubeSearchUrl } from "@/lib/watchOnline";
 
 describe("stability programs", () => {
   it("has all 7 areas from the ground up, each with all 4 levels", () => {
@@ -61,6 +62,17 @@ describe("stability programs", () => {
   it("never uses overhead pressing", () => {
     const text = JSON.stringify(STABILITY_AREAS.map((a) => a.exercises)).toLowerCase();
     expect(text).not.toMatch(/overhead press|shoulder press|military press/);
+  });
+
+  it("every exercise with no clip has a short search for examples online", () => {
+    for (const a of STABILITY_AREAS) {
+      for (const e of a.exercises) {
+        if (e.video) continue;
+        expect(e.search, e.key).toBeDefined();
+        expect(e.search!.split(" ").length, e.key).toBeLessThanOrEqual(6);
+        expect(youtubeSearchUrl(e.search!), e.key).toMatch(/^https:\/\/www\.youtube\.com\/results\?search_query=[a-z0-9]+(\+[a-z0-9]+)*$/);
+      }
+    }
   });
 
   it("the video lookup in the migration lists exactly the clips the programs use", () => {

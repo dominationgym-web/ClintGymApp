@@ -37,6 +37,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "neck_rom",
       name: "Slow neck turns and tilts",
+      search: "neck range of motion exercises",
       measure: "reps",
       sided: false,
       steps: [
@@ -52,6 +53,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "chin_tuck",
       name: "Chin-tuck nod (lying)",
+      search: "supine chin tuck",
       measure: "hold",
       sided: false,
       steps: [
@@ -67,6 +69,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "chin_tuck_lift",
       name: "Chin-tucked head lift",
+      search: "chin tuck and lift supine",
       measure: "hold",
       sided: false,
       steps: [
@@ -82,6 +85,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "iso_4way",
       name: "Hand-resisted neck holds",
+      search: "neck isometric exercises",
       measure: "hold",
       sided: false,
       steps: [
@@ -97,6 +101,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "prone_chin_tuck",
       name: "Lying face-down head lift",
+      search: "prone chin tuck head lift",
       measure: "hold",
       sided: false,
       steps: [
@@ -112,6 +117,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "quadruped_neck",
       name: "Hands-and-knees neck nods",
+      search: "quadruped neck extension",
       measure: "reps",
       sided: false,
       steps: [
@@ -127,6 +133,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "band_neck",
       name: "Band neck hold",
+      search: "band neck isometric hold",
       measure: "hold",
       sided: false,
       steps: [
@@ -174,6 +181,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "side_neck",
       name: "Side-lying neck raise",
+      search: "side lying neck lateral flexion",
       measure: "reps",
       sided: true,
       steps: [
@@ -189,6 +197,7 @@ export const NECK: StabilityAreaGuide = {
     {
       key: "partner_perturb",
       name: "Neck hold with partner pushes",
+      search: "cervical rhythmic stabilization",
       measure: "hold",
       sided: false,
       steps: [

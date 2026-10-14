@@ -35,6 +35,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "adductor_squeeze",
       name: "Inner thigh squeeze",
+      search: "adductor squeeze ball",
       measure: "hold",
       sided: false,
       steps: [
@@ -66,6 +67,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "clamshell",
       name: "Clamshell",
+      search: "clamshell exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -97,6 +99,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "copenhagen_short",
       name: "Copenhagen plank, short (knee on bench)",
+      search: "short lever copenhagen plank",
       measure: "hold",
       sided: true,
       steps: [
@@ -112,6 +115,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "copenhagen_long",
       name: "Copenhagen plank, long (foot on bench)",
+      search: "copenhagen plank",
       measure: "hold",
       sided: true,
       steps: [
@@ -127,6 +131,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "copenhagen_reps",
       name: "Copenhagen raises",
+      search: "copenhagen adduction exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -142,6 +147,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "hip_hitch",
       name: "Hip hitch",
+      search: "hip hitch exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -157,6 +163,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "hip_flexor_hold",
       name: "Standing knee drive hold",
+      search: "standing hip flexor isometric hold",
       measure: "hold",
       sided: true,
       steps: [
@@ -220,6 +227,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "hip_airplane",
       name: "Hip airplane",
+      search: "hip airplane exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -267,6 +275,7 @@ export const HIP: StabilityAreaGuide = {
     {
       key: "hip_switch",
       name: "90/90 hip switches",
+      search: "90 90 hip switch",
       measure: "reps",
       sided: false,
       steps: [

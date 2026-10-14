@@ -14,6 +14,8 @@ export type StabilityExercise = {
   name: string;
   // The exercise library name, when there is a demo clip for it.
   video?: string;
+  // No clip: a short YouTube search for examples, e.g. "copenhagen plank".
+  search?: string;
   // hold: log seconds held; reps: log reps done before control was lost.
   measure: "hold" | "reps";
   // Done on each side (left and right are logged separately).

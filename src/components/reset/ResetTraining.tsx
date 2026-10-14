@@ -265,7 +265,7 @@ export default function ResetTraining({
                     {e.note && <Text style={styles.note}>{e.note}</Text>}
                   </View>
                 </View>
-                {openName && <ExerciseVideoPreview url={videos[openName] ?? null} />}
+                {openName && <ExerciseVideoPreview url={videos[openName] ?? null} name={openName} />}
               </View>
             );
           })}
@@ -321,7 +321,7 @@ export default function ResetTraining({
                         <Text style={styles.logText}>Use this</Text>
                       </Pressable>
                     </View>
-                    {swapPreview === item.id && <ExerciseVideoPreview url={item.external_url} />}
+                    {swapPreview === item.id && <ExerciseVideoPreview url={item.external_url} name={item.name} />}
                   </View>
                 )}
               />

@@ -447,7 +447,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                     <Text style={styles.useText}>Use</Text>
                   </Pressable>
                 </View>
-                {previewId === item.id && <ExerciseVideoPreview url={item.external_url} />}
+                {previewId === item.id && <ExerciseVideoPreview url={item.external_url} name={item.name} />}
               </View>
             )}
           />

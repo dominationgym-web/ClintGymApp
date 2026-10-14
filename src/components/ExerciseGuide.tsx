@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Linking } from "react-native";
+import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MUSCLE_NOT_WEIGHT, SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";
 import { BRAND_GOLD } from "@/lib/brand";
-import { watchOnlineUrl } from "@/lib/sportsGuides";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import WatchOnlineLink from "@/components/WatchOnlineLink";
 
 // The "how to do it properly" guide for one exercise: where to feel it, the
 // steps, how to get the most from it and how to make it fit your body.
@@ -49,20 +49,7 @@ export function MuscleNotWeight() {
   );
 }
 
-// For a move with no demo video yet (most stretches, mobility and sprint
-// drills): opens examples online (GRIZZ, 2026-10-14).
-export function WatchOnlineLink({ name }: { name: string }) {
-  return (
-    <Pressable
-      style={styles.watch}
-      onPress={() => Linking.openURL(watchOnlineUrl(name)).catch(() => {})}
-      accessibilityRole="link"
-      accessibilityLabel={`Watch examples of ${name} online`}
-    >
-      <Text style={styles.watchText}>▶ No video in the app yet: watch examples online ›</Text>
-    </Pressable>
-  );
-}
+export { WatchOnlineLink };
 
 // Opens the guide: a small ? button, or (variant "bar", GRIZZ 2026-10-12) a
 // full-width "How to do it" button that also says what the exercise works,
@@ -241,15 +228,5 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   ruleText: { color: "#F1F5F9", fontSize: 14, lineHeight: 20, fontWeight: "600" },
-  watch: {
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#1E293B",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginTop: 8,
-  },
-  watchText: { color: BRAND_GOLD, fontSize: 14, fontWeight: "700" },
   safety: { color: "#94A3B8", fontSize: 13, lineHeight: 19, marginTop: 18, fontStyle: "italic" },
 });

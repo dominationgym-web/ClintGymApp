@@ -33,6 +33,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "ankle_alphabet",
       name: "Ankle alphabet",
+      search: "ankle alphabet exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -48,6 +49,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "ankle_iso",
       name: "Ankle push-out and push-in holds",
+      search: "isometric ankle eversion inversion",
       measure: "hold",
       sided: true,
       steps: [
@@ -64,6 +66,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "band_4way",
       name: "Band ankle 4-way",
+      search: "4 way ankle band exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -127,6 +130,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "sl_balance",
       name: "Single-leg balance",
+      search: "single leg balance exercise",
       measure: "hold",
       sided: true,
       steps: [
@@ -142,6 +146,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "sl_balance_eyes_closed",
       name: "Single-leg balance, eyes closed",
+      search: "single leg balance eyes closed",
       measure: "hold",
       sided: true,
       steps: [
@@ -157,6 +162,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "sl_balance_soft",
       name: "Single-leg balance on a cushion",
+      search: "single leg balance on pillow",
       measure: "hold",
       sided: true,
       steps: [
@@ -172,6 +178,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "balance_reach",
       name: "Single-leg balance and reach (star)",
+      search: "star excursion balance exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -202,6 +209,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "hop_stick",
       name: "Hop and stick",
+      search: "single leg hop and stick",
       measure: "reps",
       sided: true,
       steps: [
@@ -217,6 +225,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "lateral_hop",
       name: "Side-to-side hop and stick",
+      search: "lateral hop and stick",
       measure: "reps",
       sided: true,
       steps: [
@@ -232,6 +241,7 @@ export const ANKLE: StabilityAreaGuide = {
     {
       key: "balance_catch",
       name: "Single-leg balance with ball catch",
+      search: "single leg balance ball toss",
       measure: "hold",
       sided: true,
       steps: [

@@ -34,6 +34,7 @@ export const KNEE: StabilityAreaGuide = {
     {
       key: "quad_set",
       name: "Quad squeeze",
+      search: "quad set exercise",
       measure: "hold",
       sided: true,
       steps: [
@@ -49,6 +50,7 @@ export const KNEE: StabilityAreaGuide = {
     {
       key: "straight_leg_raise",
       name: "Straight leg raise",
+      search: "straight leg raise exercise",
       measure: "reps",
       sided: true,
       steps: [
@@ -112,6 +114,7 @@ export const KNEE: StabilityAreaGuide = {
     {
       key: "tke",
       name: "Band knee lock-outs (TKE)",
+      search: "terminal knee extension band",
       measure: "reps",
       sided: true,
       steps: [
@@ -207,6 +210,7 @@ export const KNEE: StabilityAreaGuide = {
     {
       key: "sl_squat_box",
       name: "Single-leg squat to a box",
+      search: "single leg box squat",
       measure: "reps",
       sided: true,
       steps: [
@@ -254,6 +258,7 @@ export const KNEE: StabilityAreaGuide = {
     {
       key: "lateral_bound",
       name: "Side bound and stick",
+      search: "lateral bound and stick",
       measure: "reps",
       sided: true,
       steps: [

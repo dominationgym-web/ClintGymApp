@@ -37,6 +37,7 @@ export const CORE: StabilityAreaGuide = {
     {
       key: "cat_camel",
       name: "Cat-camel",
+      search: "cat camel exercise",
       measure: "reps",
       sided: false,
       steps: [
@@ -52,6 +53,7 @@ export const CORE: StabilityAreaGuide = {
     {
       key: "curl_up",
       name: "McGill curl-up",
+      search: "mcgill curl up",
       measure: "hold",
       sided: false,
       steps: [
@@ -131,6 +133,7 @@ export const CORE: StabilityAreaGuide = {
     {
       key: "back_ext_hold",
       name: "Back extension hold",
+      search: "sorensen hold",
       measure: "hold",
       sided: false,
       steps: [
@@ -178,6 +181,7 @@ export const CORE: StabilityAreaGuide = {
     {
       key: "hollow_hold",
       name: "Hollow hold",
+      search: "hollow body hold",
       measure: "hold",
       sided: false,
       steps: [
@@ -193,6 +197,7 @@ export const CORE: StabilityAreaGuide = {
     {
       key: "bear_hold",
       name: "Bear hold",
+      search: "bear plank hold",
       measure: "hold",
       sided: false,
       steps: [
@@ -208,6 +213,7 @@ export const CORE: StabilityAreaGuide = {
     {
       key: "rollout",
       name: "Ab wheel rollout",
+      search: "kneeling ab wheel rollout",
       measure: "reps",
       sided: false,
       steps: [
