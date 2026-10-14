@@ -325,6 +325,7 @@ export const PROGRAM_FAMILIES = [
   { key: "lowerBody", title: "Lower body workouts", icon: "🦵" },
   { key: "goalBlock", title: "12-week goal programs", icon: "🎯" },
   { key: "hiit", title: "HIIT", icon: "🔥" },
+  { key: "sprint", title: "Sprint & threshold intervals", icon: "⚡" },
   { key: "fullBody", title: "Full body", icon: "🏃" },
   { key: "upperLower", title: "Quick upper & lower", icon: "⏱️" },
   { key: "chestBi", title: "Chest & Bi", icon: "🏋️" },
@@ -346,6 +347,8 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   if (name.startsWith("lower body")) return "lowerBody";
   if (name.includes("12-week") || name.includes("3-week")) return "goalBlock";
   if (name.startsWith("hiit")) return "hiit";
+  // 10 cardio interval sessions (0090): "Sprint Intervals 3".
+  if (name.startsWith("sprint intervals")) return "sprint";
   if (name.includes("chest")) return "chestBi";
   if (name.includes("back")) return "backTri";
   if (name.includes("legs")) return "legs";
