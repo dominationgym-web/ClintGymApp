@@ -2,6 +2,8 @@
 // If the schema drifts from this, regenerate with:
 //   npx supabase gen types typescript --linked > src/types/database.ts
 
+import type { EquipmentItem } from "@/lib/equipment";
+
 export type AccessStatus = "active" | "expiring_soon" | "expired";
 export type PlanType = "intro_1mo" | "sub_6mo" | "sub_12mo";
 export type PackageType = "training_only" | "training_nutrition" | "training_nutrition_lifestyle";
@@ -181,6 +183,8 @@ export type Client = {
   library_access: boolean;
   // Home or gym training (0052): picked at signup, the trainer can switch it.
   training_place: "gym" | "home";
+  // What a home client trains with (0092), see src/lib/equipment.ts.
+  home_equipment: EquipmentItem[];
   // Abs between sets (0083): on unless the trainer switches it off.
   abs_between_sets: boolean;
   // Training experience from the intake form, and whether the trainer has

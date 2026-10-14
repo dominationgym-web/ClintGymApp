@@ -39,9 +39,21 @@ export function clientBrowsable<T extends Pick<Exercise, "id" | "category">>(exe
 // done with dumbbells, a barbell, kettlebells, bands or bodyweight.
 export type ExercisePlace = "gym" | "home";
 
+/**
+ * A client's own home check (0092, homeFit in src/lib/equipment.ts): which
+ * exercises their home equipment list covers. Without one, every
+ * home-friendly exercise counts.
+ */
+export type HomeFit = ((e: Pick<Exercise, "name" | "home_friendly">) => boolean) | null;
+
 /** The exercises for the chosen tab. */
-export function forPlace<T extends Pick<Exercise, "home_friendly">>(exercises: T[], place: ExercisePlace): T[] {
-  return place === "home" ? exercises.filter((e) => e.home_friendly) : exercises;
+export function forPlace<T extends Pick<Exercise, "name" | "home_friendly">>(
+  exercises: T[],
+  place: ExercisePlace,
+  fit: HomeFit = null,
+): T[] {
+  if (place !== "home") return exercises;
+  return exercises.filter((e) => (fit ? fit(e) : e.home_friendly));
 }
 
 // Change exercise (0047): body parts that count as the same for a swap. Must
@@ -76,16 +88,18 @@ export function bodyPartLabel(category: string | null): string {
 
 /**
  * Home training (0052): for a client who trains at home, the home exercise
- * used in place of a gym-only one. Same body part, preferring one not already
+ * used in place of a gym-only one (or, with their equipment list, one their
+ * equipment doesn't cover). Same body part, preferring one not already
  * in the session; null when the exercise is fine at home or there's no match.
  */
-export function homeAlternative<T extends Pick<Exercise, "id" | "category" | "home_friendly">>(
+export function homeAlternative<T extends Pick<Exercise, "id" | "name" | "category" | "home_friendly">>(
   exercise: T,
   exercises: T[],
   usedIds: (string | null)[],
+  fit: HomeFit = null,
 ): T | null {
-  if (exercise.home_friendly) return null;
-  const options = forPlace(swapOptions(exercises, exercise.category, [exercise.id]), "home");
+  if (fit ? fit(exercise) : exercise.home_friendly) return null;
+  const options = forPlace(swapOptions(exercises, exercise.category, [exercise.id]), "home", fit);
   return options.find((e) => !usedIds.includes(e.id)) ?? options[0] ?? null;
 }
 
@@ -97,13 +111,13 @@ export function homeAlternative<T extends Pick<Exercise, "id" | "category" | "ho
 export function withHomeAlternatives<
   R extends { kind: string; exercise_id: string | null; exercise_name: string },
   T extends Pick<Exercise, "id" | "name" | "category" | "home_friendly">,
->(rows: R[], exercises: T[]): { rows: R[]; homeIds: string[] } {
+>(rows: R[], exercises: T[], fit: HomeFit = null): { rows: R[]; homeIds: string[] } {
   const homeIds: string[] = [];
   const out = rows.map((row) => {
     const exercise = exercises.find((e) => e.id === row.exercise_id);
     if (row.kind === "cardio" || !exercise) return row;
     const used = [...rows.map((r) => r.exercise_id), ...homeIds];
-    const alt = homeAlternative(exercise, exercises, used);
+    const alt = homeAlternative(exercise, exercises, used, fit);
     if (!alt) return row;
     homeIds.push(alt.id);
     return { ...row, exercise_id: alt.id, exercise_name: alt.name };

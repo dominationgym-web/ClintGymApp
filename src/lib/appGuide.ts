@@ -70,6 +70,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "On workouts with abs between sets, the app shows an ab exercise after each set. Do the reps, then tap Complete and your rest timer starts.",
         "📈 Try this weight next tells you when you're ready to go heavier. Beat last time and you earn a gold star ⭐.",
         "Gym busy? Tap ⇄ Change exercise to swap for another exercise of the same body part, just for that day.",
+        "Training at home? List your equipment under 🏠 My home equipment on your Profile (dumbbells, kettlebells, bench, bands, a photo of your multi station...). Your workouts then only use what you have. Add to it whenever you buy something new.",
         "When you finish, tap Complete workout. If you couldn't finish or couldn't train, say why. Your coach sees a green, orange or red dot.",
       ],
     },
@@ -200,7 +201,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Overview: their training level (Beginner, Intermediate or Advanced) at the top, then their problems with Reply, Busy fixing and Fixed, plus messages.",
         "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. To add a habit, open a heading (Nutrition, Movement, Sleep & recovery, Mindset) and tap one, or type your own.",
-        "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. Gold stars show where they improved.",
+        "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar, switch Gym/Home, and see their training log. For home clients, 🏠 Home equipment shows what they own, with photos; tap Edit on a multi station to load the exercises it can do. The app then picks home exercises their equipment covers, and you can still change any of them. Gold stars show where they improved.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",

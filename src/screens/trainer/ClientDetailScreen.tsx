@@ -13,6 +13,7 @@ import FoundationOfferCard from "@/components/FoundationOfferCard";
 import ClientFormVideos from "@/components/ClientFormVideos";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
+import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import HabitOptionsPicker from "@/components/HabitOptionsPicker";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import GymHomeTabs from "@/components/GymHomeTabs";
@@ -562,11 +563,18 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               <Text style={styles.libraryTitle}>Trains at</Text>
               <Text style={[styles.helper, { marginBottom: 8 }]}>
                 {client.training_place === "home"
-                  ? `The program list shows home programs first. Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part.`
+                  ? `The program list shows home programs first. Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part that their equipment list covers.`
                   : `The program list shows gym programs first. ${client.name} does their program as written.`}
               </Text>
               <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
             </View>
+            {client.training_place === "home" && (
+              <HomeEquipmentCard
+                client={client}
+                trainer
+                onChanged={(items) => setClient((c) => (c ? { ...c, home_equipment: items } : c))}
+              />
+            )}
             <ClientProgramPicker key={programKey} clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             <ClientCalendarCard clientId={client.id} clientName={client.name} trainingPlace={client.training_place} />
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
