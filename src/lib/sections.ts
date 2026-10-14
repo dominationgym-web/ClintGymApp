@@ -6,8 +6,9 @@ import { SLEEP_GUIDELINES, type GuidelineGroup } from "@/lib/sleep";
 import { WOMENS_HEALTH_GUIDE } from "@/lib/cycle";
 import { SUPPLEMENT_GUIDE, SUPPLEMENTS } from "@/lib/supplements";
 import { NUTRITION_GUIDE, UNDERSTANDING_CARBS, UNDERSTANDING_INSULIN } from "@/lib/nutrition";
+import { SPORTS_PERFORMANCE_GUIDE } from "@/lib/sportsPerformance";
 
-export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset";
+export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset" | "sportsPerformance";
 
 export type Section = {
   key: SectionKey;
@@ -62,6 +63,15 @@ export const SECTIONS: Section[] = [
     summary: "Train, eat and supplement with your cycle, not against it. Log your period and the app guides you through each phase.",
     topics: [],
     content: WOMENS_HEALTH_GUIDE,
+  },
+  {
+    key: "sportsPerformance",
+    icon: "🏅",
+    accent: "#F59E0B",
+    title: "Sports Performance",
+    summary: "6 to 8-week programs for explosive power, speed, strength, mobility and flexibility. Ask your coach to start one.",
+    topics: [],
+    content: SPORTS_PERFORMANCE_GUIDE,
   },
 ];
 
