@@ -38,6 +38,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "wrist_rom",
       name: "Wrist circles and bends",
+      search: "wrist mobility exercises",
       measure: "reps",
       sided: false,
       steps: [
@@ -53,6 +54,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "tendon_glides",
       name: "Tendon glides",
+      search: "tendon gliding exercises",
       measure: "reps",
       sided: false,
       steps: [
@@ -68,6 +70,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "wrist_iso",
       name: "Wrist push holds",
+      search: "isometric wrist extension",
       measure: "hold",
       sided: true,
       steps: [
@@ -83,6 +86,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "grip_squeeze",
       name: "Grip squeeze hold",
+      search: "grip squeeze ball exercise",
       measure: "hold",
       sided: true,
       steps: [
@@ -146,6 +150,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "pron_sup",
       name: "Forearm rotations",
+      search: "forearm pronation supination hammer",
       measure: "reps",
       sided: true,
       steps: [
@@ -161,6 +166,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "radial_ulnar",
       name: "Hammer tilts",
+      search: "radial ulnar deviation hammer",
       measure: "reps",
       sided: true,
       steps: [
@@ -176,6 +182,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "quadruped_rock",
       name: "Hands-and-knees wrist load",
+      search: "quadruped wrist rocks",
       measure: "hold",
       sided: false,
       steps: [
@@ -191,6 +198,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "palm_lifts",
       name: "Palm lifts",
+      search: "quadruped palm lifts",
       measure: "reps",
       sided: false,
       steps: [
@@ -270,6 +278,7 @@ export const WRIST: StabilityAreaGuide = {
     {
       key: "fall_catch",
       name: "Wall fall-and-catch",
+      search: "plyometric wall push up",
       measure: "reps",
       sided: false,
       steps: [

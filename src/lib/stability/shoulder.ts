@@ -38,6 +38,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "iso_er",
       name: "Wall outward-rotation hold",
+      search: "isometric shoulder external rotation wall",
       measure: "hold",
       sided: true,
       steps: [
@@ -53,6 +54,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "iso_ir",
       name: "Wall inward-rotation hold",
+      search: "isometric shoulder internal rotation",
       measure: "hold",
       sided: true,
       steps: [
@@ -68,6 +70,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "scap_set",
       name: "Shoulder blade set",
+      search: "scapular setting exercise",
       measure: "hold",
       sided: false,
       steps: [
@@ -115,6 +118,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "sidelying_er",
       name: "Side-lying dumbbell rotation",
+      search: "side lying external rotation dumbbell",
       measure: "reps",
       sided: true,
       steps: [
@@ -130,6 +134,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "er_90",
       name: "Band rotation at 90/90",
+      search: "90 90 external rotation band",
       measure: "reps",
       sided: true,
       steps: [
@@ -145,6 +150,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "pull_apart",
       name: "Band pull-apart",
+      search: "band pull apart",
       measure: "reps",
       sided: false,
       steps: [
@@ -176,6 +182,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "prone_tw",
       name: "Lying T and W raise",
+      search: "prone t w raise",
       measure: "reps",
       sided: false,
       steps: [
@@ -223,6 +230,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "bottoms_up",
       name: "Bottoms-up kettlebell hold",
+      search: "bottoms up kettlebell hold",
       measure: "hold",
       sided: true,
       steps: [
@@ -238,6 +246,7 @@ export const SHOULDER: StabilityAreaGuide = {
     {
       key: "ball_drops",
       name: "Lying ball drops",
+      search: "prone ball drop shoulder",
       measure: "hold",
       sided: true,
       steps: [

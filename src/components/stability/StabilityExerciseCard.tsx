@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { WatchOnlineLink } from "@/components/ExerciseGuide";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -109,7 +110,7 @@ export default function StabilityExerciseCard({ exercise, dose, mode, videoUrl, 
 
       {open && (
         <View style={styles.body}>
-          {videoUrl && <ExerciseVideoPreview url={videoUrl} />}
+          {videoUrl ? <ExerciseVideoPreview url={videoUrl} /> : <WatchOnlineLink name={exercise.name} search={exercise.search} />}
           <Text style={styles.label}>How to do it</Text>
           {exercise.steps.map((step, i) => (
             <Text key={i} style={styles.text}>

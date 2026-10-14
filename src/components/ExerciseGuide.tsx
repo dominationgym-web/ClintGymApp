@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MUSCLE_NOT_WEIGHT, SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";
 import { BRAND_GOLD } from "@/lib/brand";
 import { watchOnlineUrl } from "@/lib/sportsGuides";
+import { youtubeSearchUrl } from "@/lib/watchOnline";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 
 // The "how to do it properly" guide for one exercise: where to feel it, the
@@ -50,12 +51,14 @@ export function MuscleNotWeight() {
 }
 
 // For a move with no demo video yet (most stretches, mobility and sprint
-// drills): opens examples online (GRIZZ, 2026-10-14).
-export function WatchOnlineLink({ name }: { name: string }) {
+// drills): opens examples online (GRIZZ, 2026-10-14). search is a short
+// search term when the name alone wouldn't find good examples.
+export function WatchOnlineLink({ name, search }: { name: string; search?: string }) {
+  const url = search ? youtubeSearchUrl(search) : watchOnlineUrl(name);
   return (
     <Pressable
       style={styles.watch}
-      onPress={() => Linking.openURL(watchOnlineUrl(name)).catch(() => {})}
+      onPress={() => Linking.openURL(url).catch(() => {})}
       accessibilityRole="link"
       accessibilityLabel={`Watch examples of ${name} online`}
     >
