@@ -5,7 +5,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { displayProgramName } from "@/lib/programs";
 import { loadCalendarWorkoutFor, loadCalendarWorkouts } from "@/lib/programQueries";
-import { forPlace, swapOptions, withHomeAlternatives } from "@/lib/exerciseFilter";
+import { forPlace, swapOptions, withHomeAlternatives, type HomeFit } from "@/lib/exerciseFilter";
 import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import { monthOf, monthRange, shortWorkoutName, type CalendarMonth } from "@/lib/trainingCalendar";
@@ -22,12 +22,15 @@ export default function ClientCalendarView({
   clientId,
   exercises,
   atHome,
+  fit = null,
   onSwapsChanged,
 }: {
   clientId: string;
   /** The exercises the client can see, for the swap choices. */
   exercises: Exercise[];
   atHome: boolean;
+  /** Their home equipment check (0092), null for every home exercise. */
+  fit?: HomeFit;
   /** A swap was made for this date, so the workout screen can pick it up. */
   onSwapsChanged?: (date: string) => void;
 }) {
@@ -92,14 +95,14 @@ export default function ClientCalendarView({
   const picked = selected ? entries.find((e) => e.workout_date === selected) : null;
   const pickedProgram = picked ? names[picked.program_id] : null;
   const canChange = !!selected && selected >= today;
-  const planned = atHome ? withHomeAlternatives(dayRows, exercises).rows : dayRows;
+  const planned = atHome ? withHomeAlternatives(dayRows, exercises, fit).rows : dayRows;
   const categoryOf = (row: ProgramExercise) =>
     exercises.find((e) => e.id === row.exercise_id)?.category ??
     exercises.find((e) => e.name === row.exercise_name)?.category ??
     null;
   const swapCategory = swapping ? categoryOf(swapping) : null;
   const swapChoices = swapping
-    ? forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, daySwaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym")
+    ? forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, daySwaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym", fit)
     : [];
   const chooseSwap = (exercise: Exercise | null) => {
     if (!swapping || !selected) return;

@@ -77,7 +77,7 @@ describe("swapOptions", () => {
 });
 
 describe("homeAlternative", () => {
-  const ex = (id: string, category: string, home_friendly: boolean) => ({ id, category, home_friendly });
+  const ex = (id: string, category: string, home_friendly: boolean) => ({ id, name: id, category, home_friendly });
   const legPress = ex("lp", "Legs", false);
   const goblet = ex("gs", "Legs", true);
   const lunge = ex("lu", "Legs", true);

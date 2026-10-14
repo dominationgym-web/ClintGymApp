@@ -8,6 +8,7 @@ import { AVATAR_BUCKET, avatarContentType, avatarStoragePath } from "@/lib/avata
 import ClientAvatar from "@/components/ClientAvatar";
 import { CoachMessageHistory } from "@/components/CoachMessages";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
+import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
 import { DailyQuoteCard } from "@/components/DailyQuote";
@@ -227,6 +228,8 @@ export default function ClientProfileScreen() {
       )}
 
       <CoachMessageHistory />
+
+      {client.training_place === "home" && <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />}
 
       <ProgressPhotosSection />
 

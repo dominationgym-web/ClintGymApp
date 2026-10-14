@@ -44,6 +44,8 @@ import { suggestNext, type Suggestion } from "@/lib/progression";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
+import HomeEquipmentCard from "@/components/HomeEquipmentCard";
+import { equipmentList, homeFit } from "@/lib/equipment";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import {
   cardioLabel,
@@ -90,7 +92,7 @@ const EFFORT_LABEL: Record<SetEffort, string> = {
 };
 
 export default function ExerciseLibraryScreen() {
-  const { client } = useAuth();
+  const { client, refreshProfile } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Exercise | null>(null);
@@ -130,6 +132,8 @@ export default function ExerciseLibraryScreen() {
   const [category, setCategory] = useState<string | null>(null);
   // Home training (0052): home clients start on the Home tab.
   const atHome = client?.training_place === "home";
+  // Their home equipment list (0092): home choices only use what it covers.
+  const fit = homeFit(client?.home_equipment);
   const [place, setPlace] = useState<ExercisePlace>(atHome ? "home" : "gym");
   useEffect(() => setPlace(atHome ? "home" : "gym"), [atHome]);
   // Change exercise (0047): today's swaps, and the program line being swapped.
@@ -232,7 +236,7 @@ export default function ExerciseLibraryScreen() {
   // Home training (0052): a client who trains at home gets a home exercise of
   // the same body part in place of each gym-only one, automatically.
   const { rows: homePlan, homeIds } = atHome
-    ? withHomeAlternatives(plannedWorkout, exercises)
+    ? withHomeAlternatives(plannedWorkout, exercises, fit)
     : { rows: plannedWorkout, homeIds: [] as string[] };
   const gymName = (row: ProgramExercise) => {
     const original = plannedWorkout.find((r) => r.id === row.id);
@@ -264,7 +268,7 @@ export default function ExerciseLibraryScreen() {
     client?.library_access === false
       ? exercises.filter((e) => programExerciseIds.includes(e.id))
       : clientBrowsable(exercises, programExerciseIds);
-  const shown = forPlace(browsable, place);
+  const shown = forPlace(browsable, place, fit);
   // The program card already lists today's exercises, so the reference list
   // only shows for clients who aren't on a program yet.
   const showReference = !program;
@@ -298,7 +302,7 @@ export default function ExerciseLibraryScreen() {
 
   const swapCategory = swapping ? categoryOf(swapping) : null;
   const swapChoices = swapping
-    ? forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, swaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym")
+    ? forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, swaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym", fit)
     : [];
 
   const saveProgress = async (next: ProgramSession, completed: boolean) => {
@@ -616,11 +620,15 @@ export default function ExerciseLibraryScreen() {
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
           <>
+            {client && atHome && equipmentList(client.home_equipment).length === 0 && (
+              <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
+            )}
             {client && (
               <ClientCalendarView
                 clientId={client.id}
                 exercises={exercises}
                 atHome={atHome}
+                fit={fit}
                 onSwapsChanged={(date) => {
                   if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
                 }}
