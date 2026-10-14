@@ -45,6 +45,8 @@ import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram } from "@
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
+import IntervalTimerModal from "@/components/IntervalTimerModal";
+import { hasIntervals } from "@/lib/intervalTimer";
 import { equipmentList, homeFit } from "@/lib/equipment";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import {
@@ -143,6 +145,7 @@ export default function ExerciseLibraryScreen() {
   const [cardioDone, setCardioDone] = useState<string[]>([]);
   // The program's how-to and nutrition notes open on tap, so the workout stays near the top.
   const [openInfo, setOpenInfo] = useState<"how" | "food" | null>(null);
+  const [timerOpen, setTimerOpen] = useState(false);
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -411,6 +414,41 @@ export default function ExerciseLibraryScreen() {
   // next-exercise prompt), so it always sees the latest sets.
   const categoriesRef = useRef(categoriesLoggedToday);
   categoriesRef.current = categoriesLoggedToday;
+  // Interval timer finished (2026-10-14): each finished effort becomes a set
+  // (reps = its seconds, or 1 for a distance), and cardio blocks tick off.
+  const saveIntervals = async (efforts: { row: ProgramExercise; seconds: number | null }[], cardioIds: string[]) => {
+    if (!client) return;
+    const counts: Record<string, number> = {};
+    const inserts = efforts.map(({ row, seconds }) => {
+      const key = row.exercise_id ?? row.exercise_name;
+      counts[key] = (counts[key] ?? setsDoneFor(row)) + 1;
+      return {
+        client_id: client.id,
+        exercise_id: row.exercise_id,
+        exercise_name: row.exercise_name,
+        log_date: todayIso(),
+        set_number: counts[key],
+        weight_kg: null,
+        reps: seconds ?? 1,
+        effort: "close_to_failure" as const,
+        warm_up: false,
+      };
+    });
+    if (inserts.length) {
+      const { data, error } = await supabase.from("workout_logs").insert(inserts).select();
+      if (error) {
+        Alert.alert("Couldn't save", error.message);
+        return;
+      }
+      setAllTodaysSets((prev) => [...prev, ...(data ?? [])]);
+    }
+    if (cardioIds.length) {
+      const next = Array.from(new Set([...cardioDone, ...cardioIds]));
+      setCardioDone(next);
+      saveCardioDone(todayIso(), next);
+    }
+  };
+
   const toggleCardio = (row: ProgramExercise) => {
     const next = cardioDone.includes(row.id) ? cardioDone.filter((id) => id !== row.id) : [...cardioDone, row.id];
     setCardioDone(next);
@@ -672,6 +710,12 @@ export default function ExerciseLibraryScreen() {
                     <Text style={styles.howToText}>{program.program.warm_up}</Text>
                   </View>
                 )}
+                {hasIntervals(todaysWorkout) && todaySession?.status !== "complete" && (
+                  <Pressable style={styles.timerButton} onPress={() => setTimerOpen(true)}>
+                    <Text style={styles.timerButtonText}>⏱ Start interval timer</Text>
+                    <Text style={styles.timerButtonSub}>Counts every round for you: red for work, green for easy.</Text>
+                  </Pressable>
+                )}
                 {absOn && todaysWorkout.length > 0 && (
                   <View style={styles.sessionWarmUp}>
                     <Text style={styles.sessionWarmUpTitle}>Abs between sets</Text>
@@ -834,6 +878,17 @@ export default function ExerciseLibraryScreen() {
         )}
       />
 
+      {program && (
+        <IntervalTimerModal
+          visible={timerOpen}
+          title={workoutTitle()}
+          description={program.program.description}
+          warmUp={program.program.warm_up}
+          rows={todaysWorkout}
+          onSave={saveIntervals}
+          onClose={() => setTimerOpen(false)}
+        />
+      )}
       <WorkoutReasonModal
         kind={reasonFor}
         done={todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0)}
@@ -1093,6 +1148,9 @@ const styles = StyleSheet.create({
   },
   sessionWarmUpTitle: { color: BRAND_GOLD, fontWeight: "700", marginBottom: 4 },
   cardioRow: { borderLeftWidth: 3, borderLeftColor: "#F97316", paddingLeft: 8 },
+  timerButton: { backgroundColor: "#7F1D1D", borderColor: "#DC2626", borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 12 },
+  timerButtonText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  timerButtonSub: { color: "#FECACA", fontSize: 13, marginTop: 2 },
   programCard: {
     backgroundColor: "#1E293B",
     borderRadius: 12,
