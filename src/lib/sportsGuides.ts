@@ -4,6 +4,7 @@
 // carries the steps and links out to examples online (watchOnlineUrl).
 // Matched by exact exercise name, before the general pattern guides.
 import type { ExerciseTechnique } from "@/lib/exerciseTechnique";
+import { youtubeSearchUrl } from "@/lib/watchOnline";
 
 const g = (pattern: string, feel: string, steps: string[], tips: string[], adapt: string[]): ExerciseTechnique => ({
   pattern,
@@ -434,7 +435,25 @@ export const SPORTS_GUIDES: Record<string, ExerciseTechnique> = {
   ),
 };
 
-/** A web search for examples of a move, for the ones with no demo video. */
+// Search terms for names that alone find the wrong videos or too few
+// (checked 2026-10-14). Every other move searches by its name.
+export const SPORTS_SEARCH: Record<string, string> = {
+  "Single-Leg Hop": "single leg hop and stick",
+  "High Knees": "high knees drill",
+  "Wall Drive Drill": "wall drive sprint drill",
+  "Acceleration Sprint": "sprint acceleration drill",
+  "Pro Agility Shuttle": "5 10 5 pro agility drill",
+  "Lateral Shuffle": "lateral shuffle drill",
+  "Crossover Run": "crossover run drill",
+  "Ladder Quick Feet": "agility ladder quick feet",
+  "Ankle Knee-to-Wall Rock": "knee to wall ankle mobility",
+  "Leg Swings": "leg swings warm up",
+  "Cat-Cow": "cat cow stretch",
+  "Thread the Needle": "thread the needle stretch",
+  "Wall Slide": "wall slides shoulder",
+};
+
+/** A short YouTube search for examples of a move with no demo video. */
 export function watchOnlineUrl(name: string): string {
-  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`how to do ${name}`)}`;
+  return youtubeSearchUrl(SPORTS_SEARCH[name] ?? name);
 }

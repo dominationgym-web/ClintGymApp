@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SPORTS_PROGRAMS, SPORTS_PERFORMANCE_GUIDE } from "./sportsPerformance";
-import { SPORTS_GUIDES, watchOnlineUrl } from "./sportsGuides";
+import { SPORTS_GUIDES, SPORTS_SEARCH, watchOnlineUrl } from "./sportsGuides";
 import { programFamily } from "./programs";
 import { techniqueFor } from "./exerciseTechnique";
 
@@ -45,7 +45,10 @@ describe("Sports Performance guides", () => {
   });
   it("links to examples online", () => {
     expect(watchOnlineUrl("World's Greatest Stretch")).toBe(
-      "https://www.youtube.com/results?search_query=how%20to%20do%20World's%20Greatest%20Stretch",
+      "https://www.youtube.com/results?search_query=worlds+greatest+stretch",
     );
+    expect(watchOnlineUrl("90/90 Hip Switch")).toBe("https://www.youtube.com/results?search_query=90+90+hip+switch");
+    expect(watchOnlineUrl("Cat-Cow")).toBe("https://www.youtube.com/results?search_query=cat+cow+stretch");
+    for (const name of Object.keys(SPORTS_SEARCH)) expect(SPORTS_GUIDES[name], name).toBeDefined();
   });
 });
