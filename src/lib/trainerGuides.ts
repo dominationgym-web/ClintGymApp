@@ -2,6 +2,7 @@
 // list of topics the trainer taps to open (one at a time, no long scroll).
 // Written from current sports-science research and kept to plain facts; the
 // numbers are the ranges most studies agree on, not hard rules.
+import { SPORTS_PERFORMANCE_GUIDE } from "@/lib/sportsPerformance";
 // A heading with its plain-text points (the client menu guides use emoji rows instead).
 type GuideGroup = { heading: string; points: string[]; icon?: string };
 
@@ -13,7 +14,7 @@ export type GuideTopic = {
   groups: GuideGroup[];
 };
 
-export type TrainerGuideKey = "retention" | "nutrition" | "training" | "recovery";
+export type TrainerGuideKey = "retention" | "nutrition" | "training" | "recovery" | "sportsPerformance";
 
 export type TrainerGuide = {
   key: TrainerGuideKey;
@@ -666,7 +667,7 @@ const RECOVERY: TrainerGuide = {
   ],
 };
 
-export const TRAINER_GUIDES: TrainerGuide[] = [RETENTION, NUTRITION, TRAINING, RECOVERY];
+export const TRAINER_GUIDES: TrainerGuide[] = [RETENTION, NUTRITION, TRAINING, RECOVERY, SPORTS_PERFORMANCE_GUIDE];
 
 export function trainerGuide(key: TrainerGuideKey): TrainerGuide | undefined {
   return TRAINER_GUIDES.find((g) => g.key === key);
