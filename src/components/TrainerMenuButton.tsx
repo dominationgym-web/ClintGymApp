@@ -6,6 +6,7 @@ import MenuButton from "@/components/MenuButton";
 import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
 import { TRAINER_GUIDES } from "@/lib/trainerGuides";
 import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
+import { STABILITY_MENU_ITEM } from "@/lib/stability";
 
 // The trainer app's menu (top right of every trainer tab).
 export default function TrainerMenuButton() {
@@ -14,6 +15,8 @@ export default function TrainerMenuButton() {
     <MenuButton
       items={[
         { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
+        // The stability programs to give clients (GRIZZ, 2026-10-14: trainer side only).
+        { ...STABILITY_MENU_ITEM, onPress: () => navigation.navigate("Stability") },
         ...TRAINER_GUIDES.map((g) => ({
           key: g.key,
           title: g.title,

@@ -19,6 +19,7 @@ import TrainerGuideScreen from "@/screens/trainer/TrainerGuideScreen";
 import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
+import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
@@ -78,6 +79,9 @@ export default function TrainerNavigator() {
         options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
       />
       <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
+      <Stack.Screen name="Stability" options={{ title: "Stability", headerBackTitle: "Back" }}>
+        {() => <StabilityScreen role="trainer" />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }

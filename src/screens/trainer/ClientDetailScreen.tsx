@@ -590,7 +590,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               resetNotice={resetNotice(client, todayIso())}
             />
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
-            <TrainerStabilityCard clientId={client.id} clientName={client.name} />
+            <TrainerStabilityCard clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Abs between sets</Text>

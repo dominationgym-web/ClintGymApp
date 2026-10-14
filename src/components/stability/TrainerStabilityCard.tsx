@@ -1,42 +1,121 @@
-import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientStabilityProgram, StabilityLog } from "@/types/database";
-import { assessExercise, findArea, findExercise, findProgram, levelInfo, phaseFor, stabilityWeek, targetText, unitLabel } from "@/lib/stability";
+import {
+  assessExercise,
+  findArea,
+  findExercise,
+  findProgram,
+  LEVELS,
+  levelInfo,
+  phaseFor,
+  STABILITY_AREAS,
+  stabilityStartMessage,
+  stabilityWeek,
+  targetText,
+  unitLabel,
+  type StabilityArea,
+  type StabilityLevel,
+} from "@/lib/stability";
 
-// For the trainer, on the client's Training tab: the stability programs the
-// client is running, the week they're on, and for each of this week's
-// exercises their last logged sets, their best, and whether they're ready to
-// progress or struggling. Tap to open, so it stays out of the way.
-export default function TrainerStabilityCard({ clientId, clientName }: { clientId: string; clientName: string }) {
+// For the trainer, on the client's Training tab. Stability programs are the
+// trainer's to give (GRIZZ, 2026-10-14): pick an area and a level to start one
+// (one per area; picking another level switches it), stop it, or move the
+// client up once they've finished. For each running program: the week
+// they're on, and for this week's exercises their last sets, their best, and
+// whether they're ready to progress or struggling. Tap to open.
+export default function TrainerStabilityCard({ clientId, clientName, trainerId }: { clientId: string; clientName: string; trainerId?: string }) {
   const [programs, setPrograms] = useState<ClientStabilityProgram[]>([]);
   const [logs, setLogs] = useState<StabilityLog[]>([]);
   const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [area, setArea] = useState<StabilityArea | null>(null);
+  const [level, setLevel] = useState<StabilityLevel | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    supabase
+  const load = useCallback(async () => {
+    const { data } = await supabase
       .from("client_stability_programs")
       .select("*")
       .eq("client_id", clientId)
       .is("ended_at", null)
-      .order("created_at")
-      .then(async ({ data }) => {
-        const rows = data ?? [];
-        setPrograms(rows);
-        if (rows.length === 0) return;
-        const { data: logRows } = await supabase
-          .from("stability_logs")
-          .select("*")
-          .in(
-            "stability_program_id",
-            rows.map((r) => r.id),
-          )
-          .order("log_date");
-        setLogs(logRows ?? []);
-      });
+      .order("created_at");
+    const rows = data ?? [];
+    setPrograms(rows);
+    if (rows.length === 0) return setLogs([]);
+    const { data: logRows } = await supabase
+      .from("stability_logs")
+      .select("*")
+      .in(
+        "stability_program_id",
+        rows.map((r) => r.id),
+      )
+      .order("log_date");
+    setLogs(logRows ?? []);
   }, [clientId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const start = async (a: StabilityArea, l: StabilityLevel) => {
+    setBusy(true);
+    const current = programs.find((p) => p.area === a);
+    if (current) {
+      const { error } = await supabase.from("client_stability_programs").update({ ended_at: new Date().toISOString() }).eq("id", current.id);
+      if (error) {
+        setBusy(false);
+        return Alert.alert("Couldn't switch the program", error.message);
+      }
+    }
+    const { error } = await supabase.from("client_stability_programs").insert({ client_id: clientId, area: a, level: l, started_on: todayIso() });
+    if (error) {
+      setBusy(false);
+      return Alert.alert("Couldn't start the program", error.message);
+    }
+    // Tell the client it's there and where to find it.
+    if (trainerId) {
+      await supabase.from("coach_messages").insert({ client_id: clientId, trainer_id: trainerId, body: stabilityStartMessage(clientName, a, l) });
+    }
+    setBusy(false);
+    setAdding(false);
+    setArea(null);
+    setLevel(null);
+    setOpen(true);
+    load();
+  };
+
+  const confirmStart = (a: StabilityArea, l: StabilityLevel) => {
+    const current = programs.find((p) => p.area === a);
+    const name = `${findArea(a).title} ${levelInfo(l).label}`;
+    const text = current
+      ? current.level === l
+        ? `${clientName} starts ${name} again from week 1 today. Their logs so far are kept.`
+        : `This ends ${clientName}'s ${findArea(a).title} ${levelInfo(current.level).label} program (logs are kept) and starts ${name} from week 1 today.`
+      : `${clientName} starts ${name} (${findProgram(a, l).weeks} weeks) today. They'll get a message telling them where to find it.`;
+    Alert.alert(`Start ${name}?`, text, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Start", onPress: () => start(a, l) },
+    ]);
+  };
+
+  const stop = (p: ClientStabilityProgram) => {
+    Alert.alert(`Stop ${findArea(p.area).title} ${levelInfo(p.level).label}?`, `It disappears from ${clientName}'s app. Their logs are kept.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Stop",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase.from("client_stability_programs").update({ ended_at: new Date().toISOString() }).eq("id", p.id);
+          if (error) Alert.alert("Couldn't stop it", error.message);
+          load();
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={styles.card}>
@@ -45,28 +124,31 @@ export default function TrainerStabilityCard({ clientId, clientName }: { clientI
           <Text style={styles.title}>🛡️ Stability programs</Text>
           <Text style={styles.sub}>
             {programs.length === 0
-              ? `${clientName} isn't doing any yet. They start them from the menu: Stability & injury prevention.`
+              ? `None yet. Tap to give ${clientName} one.`
               : programs.map((p) => `${findArea(p.area).title} ${levelInfo(p.level).label}`).join(" · ")}
           </Text>
         </View>
-        {programs.length > 0 && <Text style={styles.arrow}>{open ? "▲" : "▼"}</Text>}
+        <Text style={styles.arrow}>{open ? "▲" : "▼"}</Text>
       </Pressable>
       {open &&
         programs.map((p) => {
           const program = findProgram(p.area, p.level);
           const week = stabilityWeek(p.started_on, todayIso());
+          const finished = week > program.weeks;
           const phase = phaseFor(program, week);
           const mine = logs.filter((l) => l.stability_program_id === p.id);
           const lastDate = mine.length ? mine[mine.length - 1].log_date : null;
+          const next = LEVELS[LEVELS.findIndex((l) => l.level === p.level) + 1];
           return (
             <View key={p.id} style={styles.program}>
               <Text style={styles.programTitle}>
                 {findArea(p.area).icon} {findArea(p.area).title} · {levelInfo(p.level).label}
               </Text>
               <Text style={styles.sub}>
-                {week > program.weeks ? `Finished all ${program.weeks} weeks` : `Week ${week} of ${program.weeks}: ${phase.title}`}
+                {finished ? `Finished all ${program.weeks} weeks` : `Week ${week} of ${program.weeks}: ${phase.title}`}
                 {lastDate ? ` · last logged ${lastDate}` : " · nothing logged yet"}
               </Text>
+              {finished && <Text style={styles.exLine}>Finish test: {program.finishTest}</Text>}
               {phase.items.map((item) => {
                 const ex = findExercise(p.area, item.ex)!;
                 const a = assessExercise(
@@ -86,9 +168,69 @@ export default function TrainerStabilityCard({ clientId, clientName }: { clientI
                   </View>
                 );
               })}
+              <View style={styles.actions}>
+                {finished && next && (
+                  <Pressable style={styles.smallBtn} onPress={() => confirmStart(p.area, next.level)} disabled={busy}>
+                    <Text style={styles.smallBtnText}>Move up to {next.label}</Text>
+                  </Pressable>
+                )}
+                {finished && (
+                  <Pressable style={styles.smallBtn} onPress={() => confirmStart(p.area, p.level)} disabled={busy}>
+                    <Text style={styles.smallBtnText}>Repeat it</Text>
+                  </Pressable>
+                )}
+                <Pressable style={[styles.smallBtn, styles.stopBtn]} onPress={() => stop(p)} disabled={busy}>
+                  <Text style={[styles.smallBtnText, { color: "#F87171" }]}>Stop</Text>
+                </Pressable>
+              </View>
             </View>
           );
         })}
+      {open && !adding && (
+        <Pressable style={styles.addBtn} onPress={() => setAdding(true)}>
+          <Text style={styles.addText}>+ Give {clientName} a stability program</Text>
+        </Pressable>
+      )}
+      {open && adding && (
+        <View style={styles.program}>
+          <Text style={styles.pickLabel}>1. Which area?</Text>
+          <View style={styles.chips}>
+            {STABILITY_AREAS.map((a) => (
+              <Pressable key={a.area} style={[styles.chip, area === a.area && styles.chipOn]} onPress={() => setArea(a.area)}>
+                <Text style={[styles.chipText, area === a.area && styles.chipTextOn]}>
+                  {a.icon} {a.title}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          {area && (
+            <>
+              <Text style={styles.pickLabel}>2. Which level?</Text>
+              {LEVELS.map((l) => (
+                <Pressable key={l.level} style={[styles.levelRow, level === l.level && styles.levelRowOn]} onPress={() => setLevel(l.level)}>
+                  <Text style={styles.levelTitle}>
+                    {l.icon} {l.label} · {l.weeks} weeks
+                  </Text>
+                  <Text style={styles.levelWho}>{findArea(area).chooseLevel[l.level]}</Text>
+                </Pressable>
+              ))}
+            </>
+          )}
+          <View style={styles.actions}>
+            <Pressable
+              style={[styles.startBtn, (!area || !level || busy) && { opacity: 0.5 }]}
+              disabled={!area || !level || busy}
+              onPress={() => area && level && confirmStart(area, level)}
+            >
+              {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.startText}>Start it</Text>}
+            </Pressable>
+            <Pressable style={styles.smallBtn} onPress={() => (setAdding(false), setArea(null), setLevel(null))}>
+              <Text style={styles.smallBtnText}>Cancel</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.sub}>To read the full programs first: ☰ menu → Stability & injury prevention.</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -105,4 +247,22 @@ const styles = StyleSheet.create({
   exName: { color: "#E2E8F0", fontSize: 13.5, fontWeight: "600" },
   target: { color: "#94A3B8", fontWeight: "400" },
   exLine: { color: "#CBD5E1", fontSize: 12.5, marginTop: 1 },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  smallBtn: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12 },
+  smallBtnText: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700" },
+  stopBtn: { borderColor: "#F87171" },
+  addBtn: { borderTopWidth: 1, borderTopColor: "#0F172A", padding: 12, alignItems: "center" },
+  addText: { color: BRAND_GOLD, fontSize: 14, fontWeight: "700" },
+  pickLabel: { color: "#fff", fontSize: 14, fontWeight: "700", marginTop: 4, marginBottom: 6 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 },
+  chip: { backgroundColor: "#0F172A", borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10 },
+  chipOn: { backgroundColor: BRAND_GOLD },
+  chipText: { color: "#CBD5E1", fontSize: 13, fontWeight: "600" },
+  chipTextOn: { color: "#0F172A" },
+  levelRow: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginBottom: 6, borderWidth: 1, borderColor: "transparent" },
+  levelRowOn: { borderColor: BRAND_GOLD },
+  levelTitle: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  levelWho: { color: "#94A3B8", fontSize: 12.5, lineHeight: 17, marginTop: 2 },
+  startBtn: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 18, minWidth: 90, alignItems: "center" },
+  startText: { color: "#0F172A", fontSize: 14, fontWeight: "800" },
 });

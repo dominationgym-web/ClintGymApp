@@ -18,6 +18,7 @@ import type {
 } from "./types";
 
 export * from "./types";
+import { levelInfo } from "./common";
 export { LEVELS, levelInfo, STABILITY_BASICS } from "./common";
 
 // From the ground up, the order GRIZZ listed them.
@@ -29,6 +30,13 @@ export const STABILITY_MENU_ITEM = {
   icon: "🛡️",
   summary: "4-8 week programs for ankle, knee, hip, core, shoulder, wrist and neck: rehab to advanced.",
 };
+
+/** The coach message a client gets when their trainer starts a stability program for them. */
+export function stabilityStartMessage(clientName: string, area: StabilityArea, level: StabilityLevel): string {
+  const first = clientName.trim().split(/\s+/)[0] || "Hi";
+  const program = findProgram(area, level);
+  return `${first}, I've started you on the ${findArea(area).title} stability program (${levelInfo(level).label}, ${program.weeks} weeks). Open the ☰ menu and tap My stability program. Do the short ⚡ version before your workouts and the full session on the days it says, and log your holds and reps so I can see how you're going.`;
+}
 
 export function findArea(area: StabilityArea): StabilityAreaGuide {
   return STABILITY_AREAS.find((a) => a.area === area)!;
