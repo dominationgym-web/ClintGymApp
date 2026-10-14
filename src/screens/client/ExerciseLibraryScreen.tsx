@@ -733,6 +733,10 @@ export default function ExerciseLibraryScreen() {
                             category={categoryOf(row)}
                             variant="bar"
                             onDoSet={() => openProgramExercise(row)}
+                            videoUrl={
+                              (exercises.find((e) => e.id === row.exercise_id) ?? exercises.find((e) => e.name === row.exercise_name))
+                                ?.external_url
+                            }
                           />
                           {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
                           {!swaps[row.id] && gymName(row) && <Text style={styles.swappedText}>🏠 Home version of {gymName(row)}</Text>}
@@ -821,7 +825,7 @@ export default function ExerciseLibraryScreen() {
             <View style={{ flex: 1 }}>
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{item.name}</Text>
-                <ExerciseGuideButton name={item.name} category={item.category} onDoSet={() => openExercise(item)} />
+                <ExerciseGuideButton name={item.name} category={item.category} onDoSet={() => openExercise(item)} videoUrl={item.external_url} />
               </View>
               {item.category && <Text style={styles.category}>{item.category}</Text>}
             </View>

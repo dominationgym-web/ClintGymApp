@@ -1027,13 +1027,26 @@ const DEAD_BUG: ExerciseTechnique = {
   pattern: "Core control",
   feel: "Deep core.",
   steps: [
-    "Set up (on your back for dead bug, on hands and knees for bird dog).",
-    "Press your lower back gently towards the floor or keep it flat.",
-    "Slowly reach the opposite arm and leg away.",
-    "Return and switch sides.",
+    "Lie on your back. Arms straight up to the ceiling, knees bent at 90 degrees over your hips.",
+    "Press your lower back gently into the floor and keep it there.",
+    "Slowly lower your right arm behind your head and straighten your left leg towards the floor.",
+    "Stop just above the floor, come back to the start and switch sides.",
   ],
-  tips: ["Slow and controlled. Your back shouldn't move.", "Breathe out as you reach."],
+  tips: ["If your lower back lifts off the floor, you've gone too far.", "Breathe out as you reach."],
   adapt: ["Great for sore backs.", "Move just the legs or just the arms to make it easier."],
+};
+
+const BIRD_DOG: ExerciseTechnique = {
+  pattern: "Core control",
+  feel: "Deep core, lower back and bum.",
+  steps: [
+    "Kneel on all fours: hands under your shoulders, knees under your hips, back flat.",
+    "Brace your stomach as if someone is about to poke it.",
+    "Reach your right arm forward and your left leg straight back, until both line up with your body.",
+    "Hold for 2 seconds, bring them back under you and switch sides.",
+  ],
+  tips: ["Imagine a glass of water on your lower back. Don't spill it.", "Reach long, not high. Your hips stay level."],
+  adapt: ["Great for sore backs.", "Easier: move only the leg, or only the arm."],
 };
 
 const PALLOF: ExerciseTechnique = {
@@ -1113,9 +1126,27 @@ const SUPERMAN: ExerciseTechnique = {
 
 const NECK: ExerciseTechnique = {
   pattern: "Neck training",
-  feel: "Neck muscles.",
-  steps: ["Lie on a bench with your head over the edge.", "Move your head slowly through a small, comfortable range.", "Control it all the way back."],
-  tips: ["Very light weight, slow reps.", "Never jerk."],
+  feel: "Front of your neck.",
+  steps: [
+    "Lie on your back on a bench with your head and neck off the end.",
+    "Let your head lower back slowly to a comfortable stretch.",
+    "Tuck your chin and curl your head up until you're looking at your chest.",
+    "Lower back slowly. That's one rep.",
+  ],
+  tips: ["Very light weight, slow reps. A folded towel with a plate on your forehead works well.", "Never jerk or bounce."],
+  adapt: ["Start with no weight at all.", "Skip it if you've had neck problems. Ask your coach."],
+};
+
+const NECK_EXTENSION: ExerciseTechnique = {
+  pattern: "Neck training",
+  feel: "Back of your neck and upper traps.",
+  steps: [
+    "Lie face down on a bench with your head and neck off the end.",
+    "Let your head drop slowly, chin towards your chest.",
+    "Lift your head back up until you're looking straight ahead. Don't go further back than that.",
+    "Lower back slowly. That's one rep.",
+  ],
+  tips: ["Very light weight, slow reps. Hold a plate on the back of your head with a towel under it.", "Never jerk or bounce."],
   adapt: ["Start with no weight at all.", "Skip it if you've had neck problems. Ask your coach."],
 };
 
@@ -1208,6 +1239,71 @@ const CARDIO_CONDITIONING: ExerciseTechnique = {
   adapt: ["Slow it down or take out jumps if your joints complain.", "Shorter rounds with more rest are fine."],
 };
 
+const SHADOW_BOXING: ExerciseTechnique = {
+  pattern: "Shadow boxing",
+  feel: "Shoulders, core, legs, heart and lungs.",
+  steps: [
+    "Get in your stance: feet shoulder width apart, lead foot forward, hands up by your chin, elbows in.",
+    "Throw clean punches (jab, cross, hooks) and snap them back to your face.",
+    "Keep moving your feet: step in, step out, pivot. Never stand still.",
+    "Mix in slips and rolls under imaginary punches.",
+  ],
+  tips: ["Hands back to your chin after every punch.", "Turn your hips and back foot into the power punches. Breathe out on each one."],
+  adapt: ["Throw at half speed until your form is sharp.", "Shoulders sore? Shorter rounds with more footwork."],
+};
+
+const BATTLE_ROPES: ExerciseTechnique = {
+  pattern: "Battle ropes",
+  feel: "Shoulders, arms, core, heart and lungs.",
+  steps: [
+    "Hold one rope end in each hand and step back until there's a little slack.",
+    "Sit into a half squat: chest up, stomach tight.",
+    "Whip your arms up and down fast, either together (slams) or one after the other (waves).",
+    "Keep the waves going all the way to the anchor until the time is up.",
+  ],
+  tips: ["The power comes from your hips and legs, not just your arms.", "Keep breathing. Don't hold your breath."],
+  adapt: ["Step closer to the anchor to make it easier.", "Lower back sore? Stand taller and make smaller waves."],
+};
+
+const JUMP_ROPE: ExerciseTechnique = {
+  pattern: "Skipping",
+  feel: "Calves, shoulders, heart and lungs.",
+  steps: [
+    "Hold the handles by your hips, elbows close to your sides.",
+    "Turn the rope with your wrists, not your whole arms.",
+    "Make small hops on the balls of your feet, just high enough for the rope to pass.",
+    "Keep a steady rhythm, then try alternating feet or double bounces.",
+  ],
+  tips: ["Small, quiet jumps. Land softly.", "If you trip, just reset and go again."],
+  adapt: ["No rope or low ceiling? Do the same hops without one.", "Sore shins or calves? March on the spot instead."],
+};
+
+const BURPEE: ExerciseTechnique = {
+  pattern: "Burpee",
+  feel: "Whole body, heart and lungs.",
+  steps: [
+    "Stand tall, then squat down and put your hands on the floor.",
+    "Jump or step your feet back into a push-up position.",
+    "Jump or step your feet back to your hands.",
+    "Stand up and jump, clapping your hands overhead.",
+  ],
+  tips: ["Keep your back flat in the push-up position.", "Steady pace beats racing and stopping."],
+  adapt: ["Step back instead of jumping to take the load off your joints.", "Leave out the jump at the top."],
+};
+
+const MOUNTAIN_CLIMBER: ExerciseTechnique = {
+  pattern: "Mountain climber",
+  feel: "Core, shoulders, hip flexors, heart and lungs.",
+  steps: [
+    "Start in a push-up position, hands under your shoulders, body in a straight line.",
+    "Drive one knee towards your chest.",
+    "Switch legs quickly, like running in place.",
+    "Keep your hips level the whole time.",
+  ],
+  tips: ["Don't let your bum lift up.", "Shoulders stay over your hands."],
+  adapt: ["Slow it down to a march.", "Wrists sore? Put your hands on a bench."],
+};
+
 const CARDIO_SLED: ExerciseTechnique = {
   pattern: "Sled",
   feel: "Legs, bum and lungs.",
@@ -1229,7 +1325,12 @@ const CARDIO_RULES: Rule[] = [
   { match: /cycl|bike|spin|ride/, technique: CARDIO_CYCLE },
   { match: /swim/, technique: CARDIO_SWIM },
   { match: /sled/, technique: CARDIO_SLED },
-  { match: /burpee|jump rope|jumping jack|mountain climber|battle rope|shadow boxing/, technique: CARDIO_CONDITIONING },
+  { match: /shadow boxing/, technique: SHADOW_BOXING },
+  { match: /battle rope/, technique: BATTLE_ROPES },
+  { match: /jump rope/, technique: JUMP_ROPE },
+  { match: /burpee/, technique: BURPEE },
+  { match: /mountain climber/, technique: MOUNTAIN_CLIMBER },
+  { match: /jumping jack/, technique: CARDIO_CONDITIONING },
   { match: /walk|hik|hill|stair|versaclimber|elliptical|arc trainer/, technique: CARDIO_WALK },
   { match: /run/, technique: CARDIO_RUN },
 ];
@@ -1250,10 +1351,12 @@ const RULES: Rule[] = [
   { match: /jefferson curl/, technique: JEFFERSON_CURL },
   { match: /dead hang/, technique: DEAD_HANG },
   { match: /stretch/, technique: MOBILITY },
-  { match: /neck curl|neck extension/, technique: NECK },
+  { match: /neck extension/, technique: NECK_EXTENSION },
+  { match: /neck curl/, technique: NECK },
   { match: /side plank/, technique: SIDE_PLANK },
   { match: /plank/, technique: PLANK },
-  { match: /dead bug|bird dog/, technique: DEAD_BUG },
+  { match: /bird dog/, technique: BIRD_DOG },
+  { match: /dead bug/, technique: DEAD_BUG },
   { match: /pallof/, technique: PALLOF },
   { match: /windmill/, technique: WINDMILL },
   { match: /wood chopper|russian twist|side bend/, technique: ROTATION },
