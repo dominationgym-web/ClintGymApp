@@ -29,7 +29,7 @@ export const SECTIONS: Section[] = [
     summary: "How to eat to support your training and your goals: simple hand portions, plus a meal builder and calorie calculator if you like to count.",
     // Not shown (the section has content); here so search finds these pieces.
     topics: [
-      `${UNDERSTANDING_CARBS.title}: ${UNDERSTANDING_CARBS.paragraphs[0]}`,
+      `${UNDERSTANDING_CARBS.title}: ${UNDERSTANDING_CARBS.hook}`,
       `${UNDERSTANDING_INSULIN.title}: ${UNDERSTANDING_INSULIN.hook} Fat burning, insulin resistance, sugar.`,
       "Meal builder and calorie calculator: add up calories, protein, carbs and fat for a meal.",
     ],

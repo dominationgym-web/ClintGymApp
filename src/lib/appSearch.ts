@@ -1,4 +1,5 @@
 import type { Section, SectionKey } from "@/lib/sections";
+import { pointLine } from "@/lib/sleep";
 import type { ClientTabParamList, TrainerTabParamList } from "@/navigation/types";
 
 // The search screen (header magnifying glass) looks through everything a user
@@ -54,7 +55,7 @@ export function searchSections(sections: Section[], query: string): SectionHit[]
     }
     const lines = [
       ...s.topics,
-      ...(s.content ?? []).flatMap((g) => g.points.map((p) => `${g.heading}: ${p}`)),
+      ...(s.content ?? []).flatMap((g) => [g.hook, g.closing, ...g.points.map(pointLine)].filter(Boolean).map((line) => `${g.heading}: ${line}`)),
     ];
     const line = lines.find((l) => matchesAll(l, words));
     if (line) hits.push({ key: s.key, title: s.title, snippet: line });

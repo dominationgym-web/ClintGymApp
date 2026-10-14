@@ -5,75 +5,91 @@
 // simply enough to follow without reading up on it.
 import { toIsoDate } from "@/lib/dates";
 
+// One line of a menu guide, laid out like Understanding Insulin: an emoji in
+// a circle, a short bold title and the detail underneath.
+export type GuidelinePoint = { emoji: string; title: string; text: string };
+
 // icon: an emoji shown beside the heading on the section page.
-export type GuidelineGroup = { heading: string; points: string[]; icon?: string };
+// hook: a punchy line in a gold box at the top. closing: a line to finish on.
+export type GuidelineGroup = { heading: string; points: GuidelinePoint[]; icon?: string; hook?: string; closing?: string };
+
+/** A point as one plain line, for search. */
+export function pointLine(p: GuidelinePoint): string {
+  return `${p.title}. ${p.text}`;
+}
 
 export const SLEEP_GUIDELINES: GuidelineGroup[] = [
   {
     icon: "⭐",
     heading: "The basics",
+    hook: "A steady wake-up time does more for your sleep than an early night.",
     points: [
-      "Aim for 7 to 9 hours of sleep a night. Give yourself 8 to 9 hours in bed to get it.",
-      "Wake up at the same time every day, weekends included. A steady wake time does more than an early bedtime.",
-      "Go to bed when you feel sleepy, not just tired, and within about an hour of the same time each night.",
+      { emoji: "⏱️", title: "7 to 9 hours", text: "Aim for 7 to 9 hours of sleep a night. Give yourself 8 to 9 hours in bed to get it." },
+      { emoji: "⏰", title: "Same wake-up time", text: "Wake up at the same time every day, weekends included." },
+      { emoji: "🥱", title: "Sleepy, not just tired", text: "Go to bed when you feel sleepy, not just tired, and within about an hour of the same time each night." },
     ],
   },
   {
     icon: "☀️",
     heading: "During the day",
+    hook: "Good sleep starts the moment you wake up.",
     points: [
-      "Get outside within an hour of waking: 5 to 10 minutes of daylight on a clear day, 15 to 30 when it's cloudy. No sunglasses if it's safe.",
-      "Have your last coffee, energy drink or pre-workout before 12pm. Caffeine stays in your body for 8 to 10 hours.",
-      "Move every day. Finish hard training at least 2 hours before bed.",
-      "Keep naps short (20 minutes or less) and before 3pm.",
+      { emoji: "🌤️", title: "Morning daylight", text: "Get outside within an hour of waking: 5 to 10 minutes of daylight on a clear day, 15 to 30 when it's cloudy. No sunglasses if it's safe." },
+      { emoji: "☕", title: "Caffeine before 12pm", text: "Have your last coffee, energy drink or pre-workout before 12pm. Caffeine stays in your body for 8 to 10 hours." },
+      { emoji: "🏃", title: "Move every day", text: "Finish hard training at least 2 hours before bed." },
+      { emoji: "💤", title: "Short naps only", text: "Keep naps short (20 minutes or less) and before 3pm." },
     ],
   },
   {
     icon: "🌆",
     heading: "In the evening",
+    hook: "Slow down before bed and your body follows.",
     points: [
-      "Finish your last big meal 2 to 3 hours before bed.",
-      "Keep alcohol low and stop at least 3 hours before bed. It knocks you out but ruins the quality of your sleep.",
-      "Dim the lights in the house after dinner.",
-      "Put your phone, laptop and TV away an hour before bed, and charge your phone outside the bedroom.",
-      "Have a 30 to 60 minute wind-down: a warm shower, light stretching, reading or breathing.",
+      { emoji: "🍽️", title: "Eat early", text: "Finish your last big meal 2 to 3 hours before bed." },
+      { emoji: "🍷", title: "Go easy on alcohol", text: "Keep alcohol low and stop at least 3 hours before bed. It knocks you out but ruins the quality of your sleep." },
+      { emoji: "💡", title: "Dim the lights", text: "Dim the lights in the house after dinner." },
+      { emoji: "📵", title: "Screens away", text: "Put your phone, laptop and TV away an hour before bed, and charge your phone outside the bedroom." },
+      { emoji: "🛁", title: "Wind down", text: "Have a 30 to 60 minute wind-down: a warm shower, light stretching, reading or breathing." },
     ],
   },
   {
     icon: "🛏️",
     heading: "Your bedroom",
+    hook: "Cool, dark and quiet.",
     points: [
-      "Cool: around 18 to 20°C.",
-      "Dark: blackout curtains or an eye mask, and no standby lights.",
-      "Quiet: earplugs or a fan if you need them.",
-      "Keep the bed for sleep. No scrolling, work or TV in bed.",
+      { emoji: "❄️", title: "Cool", text: "Around 18 to 20°C." },
+      { emoji: "🌑", title: "Dark", text: "Blackout curtains or an eye mask, and no standby lights." },
+      { emoji: "🤫", title: "Quiet", text: "Earplugs or a fan if you need them." },
+      { emoji: "🛏️", title: "Bed is for sleep", text: "No scrolling, work or TV in bed." },
     ],
   },
   {
     icon: "😴",
     heading: "Can't fall asleep?",
+    hook: "Don't lie there fighting it.",
     points: [
-      "If you're still awake after about 20 minutes, get up. Do something calm in dim light, like reading, and go back to bed when you feel sleepy.",
-      "Don't watch the clock. Turn it away from you.",
-      "Write tomorrow's to-do list before bed so it isn't in your head.",
+      { emoji: "📖", title: "Get up after 20 minutes", text: "If you're still awake after about 20 minutes, get up. Do something calm in dim light, like reading, and go back to bed when you feel sleepy." },
+      { emoji: "🕰️", title: "Hide the clock", text: "Don't watch the clock. Turn it away from you." },
+      { emoji: "📝", title: "Empty your head", text: "Write tomorrow's to-do list before bed so it isn't in your head." },
     ],
   },
   {
     icon: "🔋",
     heading: "Recovery",
+    hook: "You don't grow in the gym. You grow while you recover.",
     points: [
-      "Sleep is your number one recovery tool. Muscle repair and most of your recovery happen while you sleep.",
-      "Take 1 to 2 full rest days a week. A walk or light stretching on rest days helps you recover.",
-      "After a bad night, train lighter that day instead of skipping or pushing through hard.",
-      "Spread your protein across the day and drink water steadily, not all at once.",
+      { emoji: "😴", title: "Sleep comes first", text: "Sleep is your number one recovery tool. Muscle repair and most of your recovery happen while you sleep." },
+      { emoji: "🗓️", title: "Rest days", text: "Take 1 to 2 full rest days a week. A walk or light stretching on rest days helps you recover." },
+      { emoji: "🪫", title: "After a bad night", text: "Train lighter that day instead of skipping or pushing through hard." },
+      { emoji: "💧", title: "Protein and water", text: "Spread your protein across the day and drink water steadily, not all at once." },
     ],
   },
   {
     icon: "🩺",
     heading: "When to see a doctor",
     points: [
-      "Loud snoring, gasping or choking at night, or feeling exhausted even after a full night's sleep.",
-      "Trouble sleeping most nights for more than 3 weeks.",
+      { emoji: "😮‍💨", title: "Snoring or gasping", text: "Loud snoring, gasping or choking at night, or feeling exhausted even after a full night's sleep." },
+      { emoji: "📆", title: "3 weeks of bad sleep", text: "Trouble sleeping most nights for more than 3 weeks." },
     ],
   },
 ];

@@ -17,6 +17,7 @@ import { SUPPLEMENTS, type SupplementLevel } from "@/lib/supplements";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
 import InsulinGuide from "@/components/InsulinGuide";
 import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
+import { CarbsGuide, GuideGroupCard } from "@/components/GuideBreakdown";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/context/AuthContext";
@@ -42,7 +43,7 @@ export default function SectionScreen({ route }: Props) {
     parts.push({ title: "Calorie calculator", icon: "🔢", body: <CalorieCalculator /> });
     // Right under the calorie calculator (GRIZZ, 2026-10-12).
     parts.push({ title: "Understanding Insulin", icon: "📈", body: <InsulinGuide /> });
-    parts.push({ title: UNDERSTANDING_CARBS.title, icon: "🍚", body: <UnderstandingCarbs /> });
+    parts.push({ title: UNDERSTANDING_CARBS.title, icon: "🍚", body: <CarbsGuide /> });
     parts.push({ title: "Build your plate", icon: "🥦", body: <FoodGroupExamples /> });
   }
   if (section.key === "womensHealthReset") parts.push({ title: "Cycle tracker", icon: "🗓️", body: <CycleTracker /> });
@@ -50,18 +51,7 @@ export default function SectionScreen({ route }: Props) {
     parts.push({
       title: group.heading,
       icon: group.icon,
-      body: (
-        <View style={styles.tips}>
-          {group.points.map((point, i) => (
-            <View key={point} style={styles.tip}>
-              <View style={[styles.tipNumber, { backgroundColor: section.accent }]}>
-                <Text style={styles.tipNumberText}>{i + 1}</Text>
-              </View>
-              <Text style={styles.tipText}>{point}</Text>
-            </View>
-          ))}
-        </View>
-      ),
+      body: <GuideGroupCard group={group} accent={section.accent} />,
     });
   }
   if (section.key === "supplementation") {
@@ -125,20 +115,6 @@ export default function SectionScreen({ route }: Props) {
         </View>
       )}
     </ScrollView>
-  );
-}
-
-function UnderstandingCarbs() {
-  return (
-    <View style={styles.card}>
-      <Text style={styles.bigHeading}>{UNDERSTANDING_CARBS.title}</Text>
-      {UNDERSTANDING_CARBS.paragraphs.map((p) => (
-        <Text key={p} style={styles.paragraph}>
-          {p}
-        </Text>
-      ))}
-      <Text style={[styles.paragraph, styles.question]}>{UNDERSTANDING_CARBS.question}</Text>
-    </View>
   );
 }
 
@@ -214,18 +190,6 @@ const styles = StyleSheet.create({
   heroIconText: { fontSize: 32 },
   heroTitle: { color: "#fff", fontSize: 24, fontWeight: "800", marginBottom: 6 },
   heroHint: { fontSize: 12, fontWeight: "700", letterSpacing: 1, marginTop: 10, textTransform: "uppercase" },
-  tips: { marginBottom: 12 },
-  tip: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#1E293B",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-  },
-  tipNumber: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", marginRight: 12, marginTop: 1 },
-  tipNumberText: { color: "#0F172A", fontSize: 13, fontWeight: "800" },
-  tipText: { color: "#E2E8F0", fontSize: 15, lineHeight: 22, flex: 1 },
   partHeaderOpen: { backgroundColor: "#273449", marginBottom: 8 },
   partTitle: { color: "#fff", fontSize: 16, fontWeight: "700", flex: 1, marginRight: 10 },
   partTag: { borderWidth: 1, borderRadius: 999, paddingVertical: 2, paddingHorizontal: 8, fontSize: 11, fontWeight: "700", marginRight: 10 },
@@ -234,9 +198,6 @@ const styles = StyleSheet.create({
   summary: { color: "#CBD5E1", fontSize: 15, lineHeight: 22, textAlign: "center" },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   heading: { color: BRAND_GOLD, fontSize: 15, fontWeight: "700", marginBottom: 8 },
-  bigHeading: { color: BRAND_GOLD, fontSize: 26, fontWeight: "800", marginBottom: 12 },
-  paragraph: { color: "#E2E8F0", fontSize: 15, lineHeight: 22, marginBottom: 10 },
-  question: { color: "#fff", fontWeight: "800", marginBottom: 0 },
   badge: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 8 },
   cardText: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 10 },
   topic: { color: "#CBD5E1", fontSize: 14, lineHeight: 21, marginBottom: 6 },

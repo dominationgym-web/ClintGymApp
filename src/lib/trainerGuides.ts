@@ -2,14 +2,15 @@
 // list of topics the trainer taps to open (one at a time, no long scroll).
 // Written from current sports-science research and kept to plain facts; the
 // numbers are the ranges most studies agree on, not hard rules.
-import type { GuidelineGroup } from "@/lib/sleep";
+// A heading with its plain-text points (the client menu guides use emoji rows instead).
+type GuideGroup = { heading: string; points: string[]; icon?: string };
 
 export type GuideTopic = {
   title: string;
   icon: string;
   // One or two sentences shown at the top of the open topic.
   intro?: string;
-  groups: GuidelineGroup[];
+  groups: GuideGroup[];
 };
 
 export type TrainerGuideKey = "retention" | "nutrition" | "training" | "recovery";
