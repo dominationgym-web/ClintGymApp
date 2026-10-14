@@ -5,8 +5,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso, toIsoDate } from "@/lib/dates";
-import { cycleToday, type CycleToday } from "@/lib/cycle";
-import { scheduleCycleReminders } from "@/lib/notifications";
+import { cycleToday, SUPPLEMENT_PREP_LIST, supplementPrepDaysLeft, type CycleToday } from "@/lib/cycle";
+import { CYCLE_NUDGE_BODY, CYCLE_NUDGE_TITLE, scheduleCycleReminders, scheduleCycleTrackerNudge } from "@/lib/notifications";
 import { getCycleReminderEnabled, setCycleReminderEnabled } from "@/lib/cycleReminderSetting";
 import { useAuth } from "@/context/AuthContext";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -31,7 +31,9 @@ function useCycleLogs() {
     const rows = data ?? [];
     setLogs(rows);
     getCycleReminderEnabled().then((enabled) => scheduleCycleReminders(rows.map((r) => r.period_start), enabled));
-  }, [client?.id]);
+    // Women who haven't logged a period yet get a Saturday nudge; logging one ends it.
+    scheduleCycleTrackerNudge(client.sex === "female" && rows.length === 0);
+  }, [client?.id, client?.sex]);
 
   useFocusEffect(
     useCallback(() => {
@@ -39,7 +41,7 @@ function useCycleLogs() {
     }, [load])
   );
 
-  return { logs, reload: load, clientId: client?.id };
+  return { logs, reload: load, clientId: client?.id, sex: client?.sex ?? null };
 }
 
 const daysAgoIso = (n: number) => {
@@ -53,6 +55,8 @@ const prettyDate = (iso: string) =>
 
 function TodayCard({ today, full }: { today: CycleToday; full: boolean }) {
   const p = today.phase;
+  // The week before her period: make sure she has her supplements.
+  const prepLeft = supplementPrepDaysLeft(today, todayIso());
   return (
     <View style={styles.todayCard}>
       <Text style={styles.kicker}>
@@ -64,6 +68,18 @@ function TodayCard({ today, full }: { today: CycleToday; full: boolean }) {
       <Text style={styles.body}>{p.tagline}</Text>
       {today.periodDue && (
         <Text style={styles.due}>Your period is due. Log it below when it starts and the app will catch up.</Text>
+      )}
+      {prepLeft !== null && (
+        <View style={styles.prepBox}>
+          <Text style={styles.blockTitle}>
+            🛒 Period due in about {prepLeft} day{prepLeft === 1 ? "" : "s"}: check your supplements
+          </Text>
+          {SUPPLEMENT_PREP_LIST.map((l) => (
+            <Text key={l} style={styles.line}>
+              • {l}
+            </Text>
+          ))}
+        </View>
       )}
       {full ? (
         <>
@@ -209,7 +225,7 @@ export default function CycleTracker() {
       <View style={[styles.card, styles.toggleRow]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>Daily phase reminder</Text>
-          <Text style={styles.small}>An 8am note on what to focus on for your phase (in the installed app).</Text>
+          <Text style={styles.small}>An 8am note on what to focus on for your phase, and a supplement check a week before your period (in the installed app).</Text>
         </View>
         <Switch
           value={remindersOn ?? true}
@@ -225,12 +241,24 @@ export default function CycleTracker() {
 
 /** A small card on the Check-in screen once she's logged a period; tap for the full guide. */
 export function CycleTodayBanner() {
-  const { logs } = useCycleLogs();
+  const { logs, sex } = useCycleLogs();
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const today = logs ? cycleToday(logs.map((l) => l.period_start), todayIso()) : null;
+  const openTracker = () => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" });
+  // Saturdays, until she logs her first period: the same nudge as the phone
+  // reminder, so it also shows in Expo Go.
+  if (!today && logs && logs.length === 0 && sex === "female" && parseIsoDate(todayIso()).getDay() === 6) {
+    return (
+      <Pressable style={styles.todayCard} onPress={openTracker}>
+        <Text style={styles.phaseName}>{CYCLE_NUDGE_TITLE}</Text>
+        <Text style={styles.body}>{CYCLE_NUDGE_BODY.replace(" Menu ☰ → Women's Health Reset.", "")}</Text>
+        <Text style={styles.reminder}>Tap to open it ›</Text>
+      </Pressable>
+    );
+  }
   if (!today) return null;
   return (
-    <Pressable onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" })}>
+    <Pressable onPress={openTracker}>
       <TodayCard today={today} full={false} />
     </Pressable>
   );
@@ -243,6 +271,7 @@ const styles = StyleSheet.create({
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },
   due: { color: "#FBBF24", fontSize: 13, marginTop: 8 },
   reminder: { color: "#CBD5E1", fontSize: 13, marginTop: 6 },
+  prepBox: { backgroundColor: "#0F172A", borderRadius: 8, padding: 10, marginTop: 10 },
   blockTitle: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginBottom: 4 },
   line: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 3 },
   small: { color: "#94A3B8", fontSize: 12, marginTop: 4 },

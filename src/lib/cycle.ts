@@ -277,3 +277,48 @@ export function upcomingPhases(periodStarts: string[], fromIso: string, days: nu
   }
   return out;
 }
+
+// A week before each period, a reminder to stock up on the supplements for
+// the period and the days around it (GRIZZ, 2026-10-14), so she has them in
+// time. Taken from the Period and Wind-down supplements above.
+export const SUPPLEMENT_PREP_DAYS = 7;
+export const SUPPLEMENT_PREP_LIST = [
+  "Magnesium, for cramps, mood and sleep",
+  "Omega-3 fish oil, for period pain",
+  "Vitamin B6, for PMS",
+  "Calcium, for PMS",
+  "Iron, only if your periods are heavy and your doctor agrees",
+];
+export const SUPPLEMENT_PREP_TITLE = "🛒 Your period is due in about a week";
+export const SUPPLEMENT_PREP_BODY =
+  "Check you have your supplements ready: magnesium, omega-3, vitamin B6 and calcium (iron only if your doctor says so).";
+
+/** The predicted start of each of her next `count` periods after `fromIso`. */
+export function nextPeriodStarts(periodStarts: string[], fromIso: string, count: number): string[] {
+  const sorted = periodStarts.filter((d) => d <= fromIso).sort();
+  const last = sorted[sorted.length - 1];
+  if (!last) return [];
+  const length = averageCycleLength(periodStarts);
+  const out: string[] = [];
+  for (let k = 1; out.length < count && k < count + 24; k++) {
+    const start = addDays(last, k * length);
+    if (start > fromIso) out.push(start);
+  }
+  return out;
+}
+
+/** The days to send the supplement reminder: a week before each of her next `count` periods, today or later. */
+export function supplementPrepDates(periodStarts: string[], fromIso: string, count: number): string[] {
+  return nextPeriodStarts(periodStarts, fromIso, count + 1)
+    .map((start) => addDays(start, -SUPPLEMENT_PREP_DAYS))
+    .filter((d) => d >= fromIso)
+    .slice(0, count);
+}
+
+/** Days until her next period when it's within the week before it (1 to 7), else null. */
+export function supplementPrepDaysLeft(today: CycleToday | null, todayIsoDate: string): number | null {
+  if (!today || today.periodDue) return null;
+  const left = daysBetween(todayIsoDate, today.nextPeriodOn);
+  return left >= 1 && left <= SUPPLEMENT_PREP_DAYS ? left : null;
+}
+

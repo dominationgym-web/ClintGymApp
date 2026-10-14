@@ -35,7 +35,8 @@ const PHOTO_GUIDELINES = [
 
 // The client's own progress photos, on their Profile tab. Optional, and
 // private to the client unless they switch on sharing with their trainer.
-export default function ProgressPhotosSection() {
+// `bare` drops the heading, for use inside a tap-to-open heading.
+export default function ProgressPhotosSection({ bare = false }: { bare?: boolean }) {
   const { client, refreshProfile } = useAuth();
   const [photos, setPhotos] = useState<LoadedProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -189,7 +190,7 @@ export default function ProgressPhotosSection() {
 
   return (
     <View>
-      <Text style={styles.heading}>Progress photos</Text>
+      {!bare && <Text style={styles.heading}>Progress photos</Text>}
       <Text style={styles.body}>
         Optional. Take a before set, then a new set every 6 weeks to see how far you've come.
       </Text>

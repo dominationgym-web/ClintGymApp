@@ -35,7 +35,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       title: "Your daily check-in",
       where: "Check-in tab",
       points: [
-        "Do it every morning. It takes a minute: your sleep, water, meals, alcohol and how you feel.",
+        "Do it every morning. It takes a minute over three short pages: How you feel, Sleep, then Food & drink. Tap Next to move on, or tap a page name at the top to jump to it.",
         "Be honest. A bad day logged truthfully helps your coach far more than a perfect day that didn't happen.",
         "The body and mind check asks about pain, tiredness and stress. If you report a problem, your coach is told straight away and the app checks in with you the next morning.",
         "After you check in, 📈 Your tips for this week reads your last 7 days and shows up to 3 things to work on, what to do and what it will do for you.",
@@ -51,7 +51,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       points: [
         "Tick off each habit as you do it. Your streak grows every day you keep it going.",
         "Your coach can set habits for you. You can also add your own from the list (nutrition, movement, sleep, mindset) or write your own, up to 15 at a time.",
-        "Set a reminder time on a habit so the app nudges you.",
+        "Tap ⚙ Days and reminder on a habit to pick its days, set a reminder time or stop it.",
         "Start small. Two habits you never miss beat ten you forget.",
         "Keep a habit 5 days out of 7 and your coach is told, so expect a message from them.",
       ],
@@ -139,6 +139,8 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Menu ☰ → Women's Health Reset, and the Reset tab",
       points: [
         "Women: log your period and the app shows which phase you're in, with how to train, eat and supplement in each one. Your period log is private. Your coach can't see it.",
+        "🛒 A week before your period is due, the app reminds you to check you have your supplements ready (magnesium, omega-3, vitamin B6 and calcium), on your phone and on your Check-in.",
+        "Until you log your first period, a Saturday reminder points you to the cycle tracker. It stops once you've logged one.",
         "The Health Reset is a week-by-week plan. Tap Start, tick off each day and add a note on how you feel. Men have their own version.",
       ],
     },
@@ -160,7 +162,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       points: [
         "Add progress photos every 6 weeks. The app reminds you. Photos show change the scale can't.",
         "Set your flag so your coach knows how you're doing: All good, I'd like some feedback, or Urgent, I need guidance. The app also asks you this the first time you open it each day.",
-        "Your coach's messages and payment details are here too.",
+        "Each part of your Profile is a heading you tap to open: How are you doing?, Messages from your coach, Progress photos, Goals and injuries, Paying your trainer and Account (log out).",
       ],
     },
     {
@@ -189,7 +191,8 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Start every day here. It shows today's compliance: who checked in, who trained and who needs you.",
         "Problems show in red: pain, fatigue, stress or an urgent flag. Tap Busy fixing (orange) while you deal with it, then Fixed to clear it. The app checks in with the client the next morning on your behalf.",
-        "🎥 New form videos and 🏆 habit wins show at the top. You get a phone notification for both.",
+        "Needs you, at the top, lists everything waiting on you in one card: new clients to activate, new form videos, foundation programs to approve, the recovery check and new suggestions. Tap a line to open it.",
+        "🏆 Habit wins show under it. You get a phone notification for new form videos and habit wins.",
         "🏅 You get a phone notification when a client earns a gold achievement: 10% more weight for at least the same reps.",
         "Habit wins list each habit a client kept 5 of 7 days. Tap Write to send them a message in your own words.",
         "The recovery check warns you when a client is training the same muscles two days running, and lets you make the session lighter or move it.",

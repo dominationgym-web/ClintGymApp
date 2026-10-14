@@ -14,7 +14,7 @@ import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
 import { progressPhotoReminderAt } from "@/lib/progressPhotos";
 import { upcomingSleepReminders } from "@/lib/sleep";
-import { upcomingPhases } from "@/lib/cycle";
+import { SUPPLEMENT_PREP_BODY, SUPPLEMENT_PREP_TITLE, supplementPrepDates, upcomingPhases } from "@/lib/cycle";
 import { upcomingResetReminders } from "@/lib/resetProgram";
 import { parseIsoDate, todayIso } from "@/lib/dates";
 
@@ -169,10 +169,13 @@ export async function unregisterForCoachMessages(): Promise<void> {
 const CYCLE_ID_PREFIX = "cycle-reminder-";
 const CYCLE_DAYS_AHEAD = 14;
 const CYCLE_REMINDER_HOUR = 8;
+// An hour after the phase reminder, so the two don't land together.
+const SUPPLEMENT_PREP_HOUR = 9;
 
 /**
  * (Re)schedules the 8am Women's Health Reset nudge for the next two weeks,
- * each one for the phase she'll be in that day, or clears them when
+ * each one for the phase she'll be in that day, plus a supplement check a
+ * week before each of her next three periods, or clears them all when
  * `enabled` is false or she hasn't logged a period. Safe to call on every open.
  */
 export async function scheduleCycleReminders(periodStarts: string[], enabled: boolean): Promise<void> {
@@ -194,6 +197,17 @@ export async function scheduleCycleReminders(periodStarts: string[], enabled: bo
       await N.scheduleNotificationAsync({
         identifier: `${CYCLE_ID_PREFIX}${date}`,
         content: { title: `${phase.emoji} ${phase.name}`, body: phase.reminder },
+        trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: at, channelId: REMINDERS_CHANNEL },
+      });
+    }
+    // A week before each of her next three periods: check her supplements.
+    for (const date of supplementPrepDates(periodStarts, todayIso(), 3)) {
+      const at = parseIsoDate(date);
+      at.setHours(SUPPLEMENT_PREP_HOUR, 0, 0, 0);
+      if (at <= now) continue;
+      await N.scheduleNotificationAsync({
+        identifier: `${CYCLE_ID_PREFIX}supplements-${date}`,
+        content: { title: SUPPLEMENT_PREP_TITLE, body: SUPPLEMENT_PREP_BODY },
         trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: at, channelId: REMINDERS_CHANNEL },
       });
     }
@@ -275,6 +289,41 @@ export async function scheduleSuggestionBoxReminder(): Promise<void> {
     });
   } catch (e) {
     console.warn("Couldn't schedule the suggestion box reminder", e);
+  }
+}
+
+const CYCLE_NUDGE_ID = "cycle-tracker-nudge";
+// Sunday is 1, so Saturday is 7.
+const CYCLE_NUDGE_WEEKDAY = 7;
+const CYCLE_NUDGE_HOUR = 9;
+export const CYCLE_NUDGE_TITLE = "🌸 Your cycle tracker";
+export const CYCLE_NUDGE_BODY =
+  "Log the first day of your last period and the app will guide your training, food and supplements through every phase. Menu ☰ → Women's Health Reset.";
+
+/**
+ * Saturdays at 9am, a nudge for women who haven't used the cycle tracker yet
+ * (GRIZZ, 2026-10-14). `wanted` is false once she has logged a period (or for
+ * men), which cancels it for good. Safe to call on every open.
+ */
+export async function scheduleCycleTrackerNudge(wanted: boolean): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    await N.cancelScheduledNotificationAsync(CYCLE_NUDGE_ID);
+    if (!wanted || !(await canNotify(N))) return;
+    await N.scheduleNotificationAsync({
+      identifier: CYCLE_NUDGE_ID,
+      content: { title: CYCLE_NUDGE_TITLE, body: CYCLE_NUDGE_BODY },
+      trigger: {
+        type: N.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: CYCLE_NUDGE_WEEKDAY,
+        hour: CYCLE_NUDGE_HOUR,
+        minute: 0,
+        channelId: REMINDERS_CHANNEL,
+      },
+    });
+  } catch (e) {
+    console.warn("Couldn't schedule the cycle tracker nudge", e);
   }
 }
 

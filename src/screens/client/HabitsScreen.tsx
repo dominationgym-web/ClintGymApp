@@ -40,6 +40,8 @@ export default function HabitsScreen() {
   const [reminderDrafts, setReminderDrafts] = useState<Record<string, string>>({});
   // Which habit's time was just saved, to show a "Saved" tick next to it.
   const [savedTimeFor, setSavedTimeFor] = useState<string | null>(null);
+  // The habit whose days and reminder are open; the rest stay folded away.
+  const [settingsFor, setSettingsFor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [choosing, setChoosing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -230,6 +232,8 @@ export default function HabitsScreen() {
         const done = completed >= h.reps_target;
         const tierResult = calculateHabitTier(h, habitLogs);
         const isMaxTier = tierResult.tier === STREAK_TIERS.length - 1;
+        // A habit with no days picked opens straight onto its days.
+        const showSettings = settingsFor === h.id || h.active_days.length === 0;
         return (
           <View key={h.id} style={[styles.habitCard, activeToday && done && styles.habitCardDone]}>
             <View style={styles.habitHeaderRow}>
@@ -260,53 +264,60 @@ export default function HabitsScreen() {
               <Text style={styles.helper}>Not scheduled for today.</Text>
             )}
 
-            <Text style={styles.fieldLabel}>Days that work for you</Text>
-            <View style={styles.dayRow}>
-              {DAY_LABELS.map((label, i) => (
-                <Pressable
-                  key={i}
-                  style={[styles.dayChip, h.active_days.includes(i) && styles.dayChipSelected]}
-                  onPress={() => toggleDay(h, i)}
-                >
-                  <Text style={[styles.dayChipText, h.active_days.includes(i) && styles.dayChipTextSelected]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Pressable style={styles.reminderToggleRow} onPress={() => toggleReminder(h)}>
-              <View style={[styles.checkbox, h.reminder_enabled && styles.checkboxChecked]} />
-              <Text style={styles.fieldLabel}>Remind me (coming soon - saves your preferred time for now)</Text>
+            <Pressable style={styles.settingsToggle} onPress={() => setSettingsFor(showSettings ? null : h.id)} hitSlop={6}>
+              <Text style={styles.settingsToggleText}>⚙ Days and reminder {showSettings ? "▲" : "▼"}</Text>
             </Pressable>
-            {h.reminder_enabled && (
-              <View style={styles.reminderTimeRow}>
-                <TextInput
-                  style={styles.timeInput}
-                  placeholder="HH:MM"
-                  placeholderTextColor="#64748B"
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                  returnKeyType="done"
-                  value={reminderDrafts[h.id] ?? ""}
-                  onChangeText={(v) => {
-                    setReminderDrafts((prev) => ({ ...prev, [h.id]: v }));
-                    if (savedTimeFor === h.id) setSavedTimeFor(null);
-                  }}
-                  onSubmitEditing={() => saveReminderTime(h)}
-                />
-                <Pressable style={styles.saveTimeButton} onPress={() => saveReminderTime(h)}>
-                  <Text style={styles.saveTimeButtonText}>Save time</Text>
+            {showSettings && (
+              <>
+                <Text style={styles.fieldLabel}>Days that work for you</Text>
+                <View style={styles.dayRow}>
+                  {DAY_LABELS.map((label, i) => (
+                    <Pressable
+                      key={i}
+                      style={[styles.dayChip, h.active_days.includes(i) && styles.dayChipSelected]}
+                      onPress={() => toggleDay(h, i)}
+                    >
+                      <Text style={[styles.dayChipText, h.active_days.includes(i) && styles.dayChipTextSelected]}>
+                        {label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Pressable style={styles.reminderToggleRow} onPress={() => toggleReminder(h)}>
+                  <View style={[styles.checkbox, h.reminder_enabled && styles.checkboxChecked]} />
+                  <Text style={styles.fieldLabel}>Remind me (coming soon - saves your preferred time for now)</Text>
                 </Pressable>
-                {savedTimeFor === h.id && <Text style={styles.savedText}>Saved ✓</Text>}
-              </View>
-            )}
-            {h.chosen_by_client ? (
-              <Pressable onPress={() => stopHabit(h)} hitSlop={8}>
-                <Text style={styles.stopText}>Stop this habit</Text>
-              </Pressable>
-            ) : (
-              <Text style={styles.coachSet}>Set by your coach</Text>
+                {h.reminder_enabled && (
+                  <View style={styles.reminderTimeRow}>
+                    <TextInput
+                      style={styles.timeInput}
+                      placeholder="HH:MM"
+                      placeholderTextColor="#64748B"
+                      keyboardType="numbers-and-punctuation"
+                      maxLength={5}
+                      returnKeyType="done"
+                      value={reminderDrafts[h.id] ?? ""}
+                      onChangeText={(v) => {
+                        setReminderDrafts((prev) => ({ ...prev, [h.id]: v }));
+                        if (savedTimeFor === h.id) setSavedTimeFor(null);
+                      }}
+                      onSubmitEditing={() => saveReminderTime(h)}
+                    />
+                    <Pressable style={styles.saveTimeButton} onPress={() => saveReminderTime(h)}>
+                      <Text style={styles.saveTimeButtonText}>Save time</Text>
+                    </Pressable>
+                    {savedTimeFor === h.id && <Text style={styles.savedText}>Saved ✓</Text>}
+                  </View>
+                )}
+                {h.chosen_by_client ? (
+                  <Pressable onPress={() => stopHabit(h)} hitSlop={8}>
+                    <Text style={styles.stopText}>Stop this habit</Text>
+                  </Pressable>
+                ) : (
+                  <Text style={styles.coachSet}>Set by your coach</Text>
+                )}
+              </>
             )}
           </View>
         );
@@ -321,6 +332,8 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 6 },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 12 },
+  settingsToggle: { marginTop: 12, alignSelf: "flex-start" },
+  settingsToggleText: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
   habitCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 14 },
   habitCardDone: { borderWidth: 1.5, borderColor: "#22C55E" },
   habitHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
