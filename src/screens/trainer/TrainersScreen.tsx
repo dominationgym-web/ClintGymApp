@@ -100,10 +100,17 @@ export default function TrainersScreen() {
         ]
       );
     } else {
-      Alert.alert(`Approve ${name}?`, "They'll be able to use the app and invite their clients with their code.", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Approve", onPress: () => setApproved(t, true) },
-      ]);
+      const unsigned = !t.agreement_accepted_at;
+      Alert.alert(
+        `Approve ${name}?`,
+        unsigned
+          ? "They haven't signed the trainer agreement yet. The app will ask them to sign it before they can use it."
+          : "They'll be able to use the app and invite their clients with their code.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Approve", onPress: () => setApproved(t, true) },
+        ]
+      );
     }
   };
 
@@ -151,6 +158,11 @@ export default function TrainersScreen() {
               {item.phone ? <Text style={styles.detail}>{item.phone}</Text> : null}
               <Text style={styles.detail}>
                 📍 {item.signup_country ? `Applied from ${countryName(item.signup_country)}` : "Country not checked"}
+                </Text>
+                <Text style={styles.detail}>
+                {item.agreement_accepted_at
+                  ? `Signed the agreement as "${item.agreement_signed_name}" on ${new Date(item.agreement_accepted_at).toLocaleDateString()}`
+                  : "Hasn't signed the trainer agreement yet"}
               </Text>
               <Text style={[styles.status, { color: item.approved ? "#22C55E" : "#F59E0B" }]}>
                 {item.approved ? `Approved · code ${item.join_code}` : "Waiting for your approval"}

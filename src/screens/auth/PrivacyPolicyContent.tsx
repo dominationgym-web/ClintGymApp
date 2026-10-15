@@ -10,11 +10,20 @@ import {
 // The wording lives in src/lib/privacyPolicy.ts, shared with the web page.
 export { PRIVACY_POLICY_VERSION };
 
-export default function PrivacyPolicyContent() {
+// The trainer the client is joining, once they've entered a code. The policy
+// then names them instead of "the trainer whose code you used to sign up".
+export type PolicyTrainer = { name: string };
+
+const GENERIC_TRAINER = "the trainer whose code you used to sign up";
+
+export default function PrivacyPolicyContent({ trainer }: { trainer?: PolicyTrainer | null }) {
+  const sections = trainer
+    ? SECTIONS.map((s) => ({ ...s, body: s.body.split(GENERIC_TRAINER).join(trainer.name) }))
+    : SECTIONS;
   return (
     <View>
       <Text style={styles.updated}>Last updated {PRIVACY_POLICY_LAST_UPDATED}</Text>
-      {SECTIONS.map((s) => (
+      {sections.map((s) => (
         <View key={s.heading} style={styles.section}>
           <Text style={styles.heading}>{s.heading}</Text>
           <Text style={styles.body}>{s.body}</Text>

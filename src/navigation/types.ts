@@ -6,7 +6,9 @@ import type { SectionKey } from "@/lib/sections";
 
 export type AuthStackParamList = {
   Welcome: undefined;
-  Login: undefined;
+  // `coach` shows the coach version of the login screen (same sign-in,
+  // coach-facing wording and an "apply to coach" link).
+  Login: { coach?: boolean } | undefined;
   Signup: undefined;
   TrainerSignup: undefined;
 };

@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { eftRows, logoStoragePath, normalizeJoinCode, referralRewards, trainerDisplayName, trialDaysLeft, trialLabel } from "./trainers";
+import {
+  eftRows,
+  isValidSignature,
+  logoStoragePath,
+  needsAgreement,
+  normalizeJoinCode,
+  referralRewards,
+  trainerDisplayName,
+  trialDaysLeft,
+  trialLabel,
+} from "./trainers";
 
 describe("eftRows", () => {
   it("keeps the screen order and drops empty fields", () => {
@@ -61,5 +71,25 @@ describe("referralRewards", () => {
     expect(referralRewards(4, 0)).toMatchObject({ unusedPercent: 100, freeMonths: 1, toNextFreeMonth: 4 });
     expect(referralRewards(5, 2)).toMatchObject({ unused: 3, unusedPercent: 75, freeMonths: 0 });
     expect(referralRewards(1, 3)).toMatchObject({ unused: 0 });
+  });
+});
+
+describe("needsAgreement", () => {
+  it("asks trainers who haven't signed the current version", () => {
+    expect(needsAgreement({ is_owner: false, agreement_version: null }, "v2")).toBe(true);
+    expect(needsAgreement({ is_owner: false, agreement_version: "v1" }, "v2")).toBe(true);
+    expect(needsAgreement({ is_owner: false, agreement_version: "v2" }, "v2")).toBe(false);
+  });
+
+  it("never asks the app owner", () => {
+    expect(needsAgreement({ is_owner: true, agreement_version: null }, "v2")).toBe(false);
+  });
+});
+
+describe("isValidSignature", () => {
+  it("needs at least two characters", () => {
+    expect(isValidSignature("  ")).toBe(false);
+    expect(isValidSignature("A ")).toBe(false);
+    expect(isValidSignature("Sam Smith")).toBe(true);
   });
 });

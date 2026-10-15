@@ -69,3 +69,17 @@ export function referralRewards(approvedReferrals: number, creditsUsed: number) 
     toNextFreeMonth: REFERRALS_PER_FREE_MONTH - (unused % REFERRALS_PER_FREE_MONTH),
   };
 }
+
+// A trainer must sign the current agreement before using the app. The app
+// owner runs the app and is the other party to it, so never needs to.
+export function needsAgreement(
+  trainer: { is_owner: boolean; agreement_version: string | null },
+  currentVersion: string
+): boolean {
+  return !trainer.is_owner && trainer.agreement_version !== currentVersion;
+}
+
+// A typed signature must look like a real name: at least two characters.
+export function isValidSignature(name: string): boolean {
+  return name.trim().length > 1;
+}

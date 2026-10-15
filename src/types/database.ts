@@ -36,6 +36,11 @@ export type Trainer = {
   phone: string | null;
   pop_whatsapp: string | null;
   eft_details: EftDetails;
+  // The trainer agreement they signed (0031): its version, the full name they
+  // typed as their signature, and when (stamped by the database).
+  agreement_version: string | null;
+  agreement_signed_name: string | null;
+  agreement_accepted_at: string | null;
   created_at: string;
   // Free trial and referrals (0060). trial_ends_at is set when the owner
   // approves the trainer. referred_by is the trainer whose code they used;

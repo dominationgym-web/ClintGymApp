@@ -5,6 +5,9 @@ import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
+import AgreementSignFields from "@/components/AgreementSignFields";
+import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
+import { isValidSignature } from "@/lib/trainers";
 import { countryCheckMessage, phoneCountry } from "@/lib/phoneCountry";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "TrainerSignup">;
@@ -22,6 +25,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
   // Another trainer's code (0060), so they get a referral reward.
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [signedName, setSignedName] = useState("");
+  const [agreed, setAgreed] = useState(false);
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -34,6 +39,14 @@ export default function TrainerSignupScreen({ navigation }: Props) {
     }
     if (password.length < 8) {
       Alert.alert("Weak password", "Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (!isValidSignature(signedName) || !agreed) {
+      Alert.alert(
+        "Sign the trainer agreement",
+        "Read the trainer agreement, type your full name to sign it, and tick the box to agree."
+      );
       return;
     }
 
@@ -61,6 +74,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       email: email.trim(),
       business_name: businessName.trim() || null,
       phone: phone.trim() || null,
+      agreement_version: TRAINER_AGREEMENT_VERSION,
+      agreement_signed_name: signedName.trim(),
       referred_by_code: referralCode.trim() || null,
       signup_country: check.ok ? check.country : null,
     });
@@ -116,11 +131,17 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         value={referralCode}
         onChangeText={setReferralCode}
       />
+      <AgreementSignFields
+        signedName={signedName}
+        onChangeSignedName={setSignedName}
+        agreed={agreed}
+        onToggleAgreed={() => setAgreed((a) => !a)}
+      />
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
         {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Apply as a trainer</Text>}
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
+      <Pressable onPress={() => navigation.navigate("Login", { coach: true })}>
+        <Text style={styles.link}>Already a coach? Log in</Text>
       </Pressable>
     </ScrollView>
   );
