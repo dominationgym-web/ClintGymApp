@@ -8,6 +8,7 @@ import PasswordInput from "@/components/PasswordInput";
 import AgreementSignFields from "@/components/AgreementSignFields";
 import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
 import { isValidSignature } from "@/lib/trainers";
+import { countryCheckMessage, phoneCountry } from "@/lib/phoneCountry";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "TrainerSignup">;
 
@@ -21,6 +22,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  // Another trainer's code (0060), so they get a referral reward.
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [signedName, setSignedName] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -48,6 +51,16 @@ export default function TrainerSignupScreen({ navigation }: Props) {
     }
 
     setLoading(true);
+    // Location must be on: the country sets rand or dollar pricing (0096).
+    // Builds without the location module can still apply; the owner then
+    // picks their currency.
+    const check = await phoneCountry();
+    if (!check.ok && check.reason !== "unavailable") {
+      setLoading(false);
+      const { title, message } = countryCheckMessage(check.reason);
+      Alert.alert(title, message);
+      return;
+    }
     const { data: authData, error: authError } = await supabase.auth.signUp({ email: email.trim(), password });
     if (authError || !authData.user) {
       setLoading(false);
@@ -63,6 +76,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       phone: phone.trim() || null,
       agreement_version: TRAINER_AGREEMENT_VERSION,
       agreement_signed_name: signedName.trim(),
+      referred_by_code: referralCode.trim() || null,
+      signup_country: check.ok ? check.country : null,
     });
     if (error) {
       setLoading(false);
@@ -76,10 +91,14 @@ export default function TrainerSignupScreen({ navigation }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Coach on Consistent Change</Text>
+      <Text style={styles.title}>Coach on Daily Evolution</Text>
       <Text style={styles.body}>
         Sign up as a trainer to run your own clients on the app. Your account is checked and approved before
-        clients can join you.
+        clients can join you, and then you get a free 2-week trial.
+      </Text>
+      <Text style={styles.body}>
+        📍 Please have your location on. We check your country once so you're charged the right prices. Only your
+        country is saved.
       </Text>
       <TextInput style={styles.input} placeholder="Your full name" value={name} onChangeText={setName} />
       <TextInput
@@ -104,6 +123,14 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         onChangeText={setPhone}
       />
       <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
+      <TextInput
+        style={styles.input}
+        placeholder="Referral code from another trainer (optional)"
+        autoCapitalize="characters"
+        autoCorrect={false}
+        value={referralCode}
+        onChangeText={setReferralCode}
+      />
       <AgreementSignFields
         signedName={signedName}
         onChangeSignedName={setSignedName}

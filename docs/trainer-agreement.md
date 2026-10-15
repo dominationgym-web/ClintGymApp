@@ -1,9 +1,9 @@
 # Trainer Agreement
 
-**Consistent Change**: every trainer signs this in the app by typing their full name.
+**Daily Evolution**: every trainer signs this in the app by typing their full name.
 
-**Last updated:** 9 October 2026  
-**Agreement version:** `2026-10-09`
+**Last updated:** 15 October 2026  
+**Agreement version:** `2026-10-15`
 
 _Generated from src/screens/auth/TrainerAgreementContent.tsx; the in-app text is the source of truth._
 
@@ -11,11 +11,13 @@ _Generated from src/screens/auth/TrainerAgreementContent.tsx; the in-app text is
 
 ## 1. Who this agreement is between
 
-You (the trainer signing below) and Clint Walters, trading as Domination Gym ("we"), who runs the Consistent Change app. It covers your use of the app to coach your own clients.
+You (the trainer signing below) and Clint Walters, trading as Daily Evolution ("we"), who runs the Daily Evolution app. It covers your use of the app to coach your own clients.
 
-## 2. Free test period and fees
+## 2. Fees and payment
 
-Using the app is free during the current test period. Before any monthly fee starts we'll tell you the amount at least 30 days ahead, and you can choose to stop using the app instead. Fees will be paid by EFT.
+You start with a free trial, shown on your Profile. After that you pay for the plan you choose (monthly, 6 months or 1 year upfront) plus the per-client fees shown in the app, in rand if you're in South Africa or US dollars elsewhere, by EFT. Credit from trainers you refer comes off what you owe. If we've given you free use, you only pay the per-client fees shown on your Profile.
+
+If a payment is overdue, your account and your clients' access can be paused until it's paid; nothing is deleted. We'll tell you in the app at least 30 days before any price change.
 
 ## 3. Your clients' information is your responsibility
 

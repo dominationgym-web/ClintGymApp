@@ -31,3 +31,24 @@ export function startOfLocalDay(date: Date): Date {
 export function parseIsoDate(iso: string): Date {
   return new Date(`${iso}T00:00:00`);
 }
+
+/**
+ * How long someone has been signed up, counted in whole local calendar days
+ * from `since` to `now`, as a short phrase like "3 weeks" or "1 year 2 months".
+ */
+export function describeTimeSince(since: Date, now: Date = new Date()): string {
+  const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
+  const start = startOfLocalDay(since);
+  const end = startOfLocalDay(now);
+  const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86_400_000));
+  if (days === 0) return "Joined today";
+  if (days < 14) return plural(days, "day");
+
+  let months = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+  if (end.getDate() < start.getDate()) months -= 1;
+  if (months < 2) return plural(Math.floor(days / 7), "week");
+  if (months < 12) return plural(months, "month");
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  return rest === 0 ? plural(years, "year") : `${plural(years, "year")} ${plural(rest, "month")}`;
+}

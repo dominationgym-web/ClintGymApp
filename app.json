@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Consistent Change",
+    "name": "Daily Evolution",
     "description": "Total Lifestyle Training & Accountability",
     "slug": "consistent-change",
     "version": "1.0.0",
@@ -21,10 +21,11 @@
     },
     "android": {
       "package": "com.dominationgym.consistentchange",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
-        "backgroundColor": "#0F172A"
+        "backgroundColor": "#080808"
       },
       "permissions": [
         "CAMERA",
@@ -41,7 +42,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 240,
           "resizeMode": "contain",
           "backgroundColor": "#0F172A"
         }
@@ -60,6 +61,12 @@
           "icon": "./assets/notification-icon.png",
           "color": "#D4AF37"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Checks which country you're in once, when you apply as a trainer, so you're charged the right prices. Only your country is saved."
+        }
       ]
     ],
     "owner": "grizzly75",
@@ -67,6 +74,12 @@
       "eas": {
         "projectId": "6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8"
       }
+    },
+    "runtimeVersion": "2026-10-11-firebase",
+    "updates": {
+      "url": "https://u.expo.dev/6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { problemColor, problemLevel, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
 import { toIsoDate } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
@@ -20,6 +21,8 @@ export default function ClientsScreen({ navigation }: Props) {
   const [clients, setClients] = useState<Client[]>([]);
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
+  // Red dot while a problem is open, orange while it's being fixed (0075).
+  const [problemLevels, setProblemLevels] = useState<Record<string, ProblemLevel>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -34,6 +37,16 @@ export default function ClientsScreen({ navigation }: Props) {
     setClients(list);
     // One request signs every photo on the list.
     signAvatarUrls(list.map((c) => c.avatar_path ?? "")).then(setAvatarUrls);
+    supabase
+      .from("client_problems")
+      .select("client_id, status")
+      .neq("status", "fixed")
+      .in("client_id", list.map((c) => c.id))
+      .then(({ data: rows }) => {
+        const levels: Record<string, ProblemLevel> = {};
+        unfixedByClient(rows ?? []).forEach((ps, id) => (levels[id] = problemLevel(ps)));
+        setProblemLevels(levels);
+      });
 
     // This month's consistency score - only meaningful for active clients.
     const active = list.filter((c) => c.access_status === "active");
@@ -157,8 +170,9 @@ export default function ClientsScreen({ navigation }: Props) {
               </View>
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
-                  {item.status_flag === "red" && <Text style={styles.flagIcon}>🚩</Text>}
-                  {item.status_flag === "orange" && <View style={[styles.flagDot, { backgroundColor: "#F59E0B" }]} />}
+                  {problemLevels[item.id] && (
+                    <View style={[styles.flagDot, { backgroundColor: problemColor(problemLevels[item.id]) }]} />
+                  )}
                   {isLeader && <Text style={styles.flagIcon}>🏆</Text>}
                   <Text style={styles.name}>{item.name}</Text>
                 </View>

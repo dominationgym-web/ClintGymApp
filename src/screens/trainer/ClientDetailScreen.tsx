@@ -1,13 +1,40 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert } from "react-native";
+import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
+import { checkinFeedback } from "@/lib/checkinFeedback";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert, Switch } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import { toIsoDate, todayIso } from "@/lib/dates";
-import type { Checkin, Client, Habit, WorkoutLog } from "@/types/database";
+import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
+import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
+import { TRAINING_LEVELS, levelLabel } from "@/lib/foundation";
+import { useAuth } from "@/context/AuthContext";
+import ReplyToClientModal from "@/components/ReplyToClientModal";
+import FoundationOfferCard from "@/components/FoundationOfferCard";
+import ClientFormVideos from "@/components/ClientFormVideos";
 import type { TrainerStackParamList } from "@/navigation/types";
 import ClientAvatar from "@/components/ClientAvatar";
+import HomeEquipmentCard from "@/components/HomeEquipmentCard";
+import HabitOptionsPicker from "@/components/HabitOptionsPicker";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
+import GymHomeTabs from "@/components/GymHomeTabs";
+import ClientProgramPicker from "@/components/ClientProgramPicker";
+import ClientCalendarCard from "@/components/ClientCalendarCard";
+import RecoveryCheckCard from "@/components/RecoveryCheckCard";
+import TrainerTrainingLog from "@/components/TrainerTrainingLog";
+import { useWorkoutSessions } from "@/components/useWorkoutSessions";
+import { trainingLogStart } from "@/lib/trainingLog";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
+import { BRAND_GOLD } from "@/lib/brand";
+import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
+import DietPlanner from "@/components/DietPlanner";
+import ClientOwnMealPlan from "@/components/ClientOwnMealPlan";
+import WorkoutsSavedButton from "@/components/WorkoutsSavedButton";
+import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
+import TrainerStabilityCard from "@/components/stability/TrainerStabilityCard";
+import WellbeingReports from "@/components/WellbeingReports";
+import ClientProblems from "@/components/ClientProblems";
+import { problemColor, problemLevel } from "@/lib/clientProblems";
+import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -28,11 +55,19 @@ function describeDays(activeDays: number[]) {
     .join(" ");
 }
 
-const EFFORT_LABEL: Record<string, string> = {
-  comfortable: "Comfortable",
-  close_to_failure: "Close to failure",
-  failure: "Failure",
-};
+type TabKey = "overview" | "checkins" | "habits" | "training" | "diet" | "photos" | "notes";
+
+// Bottom bar so the trainer can jump straight to one kind of info instead of
+// scrolling past everything else.
+const TABS: ScreenTab<TabKey>[] = [
+  { key: "overview", label: "Overview", icon: "person" },
+  { key: "checkins", label: "Check-ins", icon: "checkbox" },
+  { key: "habits", label: "Habits", icon: "repeat" },
+  { key: "training", label: "Training", icon: "barbell" },
+  { key: "diet", label: "Diet", icon: "nutrition" },
+  { key: "photos", label: "Photos", icon: "images" },
+  { key: "notes", label: "Notes", icon: "create" },
+];
 
 function formatIntakeLabel(key: string) {
   return key
@@ -40,8 +75,11 @@ function formatIntakeLabel(key: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function ClientDetailScreen({ route }: Props) {
+export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
+  const { trainer } = useAuth();
+  // Bumped when a foundation program is approved, so the program card reloads.
+  const [programKey, setProgramKey] = useState(0);
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -50,6 +88,55 @@ export default function ClientDetailScreen({ route }: Props) {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<TabKey>(route.params.tab ?? "overview");
+  // Unsaved diet plan changes: ask before leaving the Diet tab or the client.
+  // A ref, so "Leave" takes effect at once rather than on the next render.
+  const dietDirty = useRef(false);
+  const setDietDirty = (dirty: boolean) => {
+    dietDirty.current = dirty;
+  };
+  const confirmLeaveDiet = (leave: () => void) => {
+    if (!dietDirty.current) return leave();
+    Alert.alert("Leave without saving?", "Your changes to the diet plan haven't been saved.", [
+      { text: "Stay", style: "cancel" },
+      {
+        text: "Leave",
+        style: "destructive",
+        onPress: () => {
+          dietDirty.current = false;
+          leave();
+        },
+      },
+    ]);
+  };
+  useEffect(
+    () =>
+      navigation.addListener("beforeRemove", (e) => {
+        if (!dietDirty.current) return;
+        e.preventDefault();
+        confirmLeaveDiet(() => navigation.dispatch(e.data.action));
+      }),
+    [navigation]
+  );
+  // Problems not yet fixed (0075): red dot while one is open, orange while
+  // they're all being fixed.
+  const [problems, setProblems] = useState<ClientProblem[]>([]);
+  // How each workout in the training log went, with gold stars (0076).
+  const { byDate: workoutSessions } = useWorkoutSessions(clientId, trainingLogStart(todayIso()), todayIso());
+  const reloadProblems = async () => {
+    const { data } = await supabase
+      .from("client_problems")
+      .select("*")
+      .eq("client_id", clientId)
+      .neq("status", "fixed")
+      .order("created_at", { ascending: true });
+    setProblems(data ?? []);
+    // Fixing the last flag problem turns the client's flag green.
+    const { data: row } = await supabase.from("clients").select("*").eq("id", clientId).single();
+    if (row) setClient(row);
+  };
+  const [messages, setMessages] = useState<CoachMessage[]>([]);
+  const [replying, setReplying] = useState(false);
 
   const [newHabitName, setNewHabitName] = useState("");
   const [newHabitReps, setNewHabitReps] = useState(1);
@@ -85,6 +172,21 @@ export default function ClientDetailScreen({ route }: Props) {
     }
   };
 
+  const loadNotes = async () => {
+    const { data } = await supabase.from("client_trainer_notes").select("notes").eq("client_id", clientId).maybeSingle();
+    setNotes(data?.notes ?? "");
+  };
+
+  const loadMessages = async () => {
+    const { data } = await supabase
+      .from("coach_messages")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setMessages(data ?? []);
+  };
+
   useEffect(() => {
     const load = async () => {
       const [{ data: clientRow }, { data: checkinRows }, { data: workoutRows }] = await Promise.all([
@@ -99,17 +201,15 @@ export default function ClientDetailScreen({ route }: Props) {
           .from("workout_logs")
           .select("*")
           .eq("client_id", clientId)
+          .gte("log_date", trainingLogStart(todayIso()))
           .order("log_date", { ascending: false })
           .order("set_number", { ascending: true })
-          .limit(30),
+          .limit(1000),
       ]);
-      if (clientRow) {
-        setClient(clientRow);
-        setNotes(clientRow.trainer_notes ?? "");
-      }
+      if (clientRow) setClient(clientRow);
       setCheckins(checkinRows ?? []);
       setWorkoutLogs(workoutRows ?? []);
-      await loadHabits();
+      await Promise.all([loadHabits(), loadMessages(), loadNotes(), reloadProblems()]);
       setLoading(false);
     };
     load();
@@ -153,31 +253,52 @@ export default function ClientDetailScreen({ route }: Props) {
 
   const saveNotes = async () => {
     setSaving(true);
-    const { error } = await supabase.from("clients").update({ trainer_notes: notes }).eq("id", clientId);
+    const { error } = await supabase
+      .from("client_trainer_notes")
+      .upsert({ client_id: clientId, notes, updated_at: new Date().toISOString() }, { onConflict: "client_id" });
     setSaving(false);
     if (error) Alert.alert("Couldn't save notes", error.message);
   };
 
-  const markResolved = async () => {
-    const { error } = await supabase
-      .from("clients")
-      .update({ status_flag: "green", status_flag_note: null, status_flag_updated_at: new Date().toISOString() })
-      .eq("id", clientId);
-    if (error) {
-      Alert.alert("Couldn't update", error.message);
-      return;
-    }
-    setClient((c) => (c ? { ...c, status_flag: "green", status_flag_note: null } : c));
-  };
-
   const toggleLifestyleReset = async () => {
     const next = client?.lifestyle_reset_started_at ? null : todayIso();
-    const { error } = await supabase.from("clients").update({ lifestyle_reset_started_at: next }).eq("id", clientId);
+    // Ending clears her start date too, so a later enrolment starts at week 1.
+    const changes = next ? { lifestyle_reset_started_at: next } : { lifestyle_reset_started_at: null, reset_started_on: null };
+    const { error } = await supabase.from("clients").update(changes).eq("id", clientId);
     if (error) {
       Alert.alert("Couldn't update", error.message);
       return;
     }
-    setClient((c) => (c ? { ...c, lifestyle_reset_started_at: next } : c));
+    setClient((c) => (c ? { ...c, ...changes } : c));
+  };
+
+  const setTrainingPlace = async (next: "gym" | "home") => {
+    if (!client || next === client.training_place) return;
+    const previous = client.training_place;
+    setClient((c) => (c ? { ...c, training_place: next } : c));
+    const { error } = await supabase.from("clients").update({ training_place: next }).eq("id", clientId);
+    if (error) {
+      setClient((c) => (c ? { ...c, training_place: previous } : c));
+      Alert.alert("Couldn't update", error.message);
+    }
+  };
+
+  const toggleLibraryAccess = async (next: boolean) => {
+    setClient((c) => (c ? { ...c, library_access: next } : c));
+    const { error } = await supabase.from("clients").update({ library_access: next }).eq("id", clientId);
+    if (error) {
+      setClient((c) => (c ? { ...c, library_access: !next } : c));
+      Alert.alert("Couldn't update", error.message);
+    }
+  };
+
+  const toggleAbs = async (next: boolean) => {
+    setClient((c) => (c ? { ...c, abs_between_sets: next } : c));
+    const { error } = await supabase.from("clients").update({ abs_between_sets: next }).eq("id", clientId);
+    if (error) {
+      setClient((c) => (c ? { ...c, abs_between_sets: !next } : c));
+      Alert.alert("Couldn't update", error.message);
+    }
   };
 
   if (loading || !client) {
@@ -188,222 +309,417 @@ export default function ClientDetailScreen({ route }: Props) {
     );
   }
 
+  const timeWithYou = describeTimeSince(new Date(client.created_at));
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
-      <View style={styles.headerRow}>
-        <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{client.name}</Text>
-          <Text style={styles.helper}>{client.email}</Text>
-        </View>
-      </View>
-      {client.package_type && (
-        <View style={styles.packageBadge}>
-          <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
-        </View>
-      )}
-
-      {client.plan_type && (
-        <View style={styles.planBox}>
-          <Text style={styles.planLabel}>{client.plan_type === 'intro_1mo' ? '1 Month' : client.plan_type === 'sub_6mo' ? '6 Month' : '12 Month'} Plan</Text>
-          {client.plan_started_at && (
-            <Text style={styles.planDate}>
-              Started: {new Date(client.plan_started_at).toLocaleDateString()}
+    <View style={styles.container}>
+      <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
+        <View style={styles.headerRow}>
+          <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{client.name}</Text>
+            <Text style={styles.helper}>{client.email}</Text>
+            <Text style={styles.memberSince}>
+              {timeWithYou === "Joined today" ? timeWithYou : `With you ${timeWithYou}`} · since{" "}
+              {new Date(client.created_at).toLocaleDateString()}
             </Text>
-          )}
-          {client.plan_expires_at && (
-            <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
-              Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
-            </Text>
-          )}
+          </View>
         </View>
-      )}
+        {tab === "overview" && (
+          <>
+            <TrainingLevelBanner level={client.training_level} />
+            <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
+            {client.package_type && (
+              <View style={styles.packageBadge}>
+                <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
+              </View>
+            )}
 
-      <View style={styles.resetBox}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.resetTitle}>12-Week Lifestyle Reset</Text>
-          {client.lifestyle_reset_started_at ? (
-            <Text style={styles.helper}>Started {client.lifestyle_reset_started_at}</Text>
-          ) : (
-            <Text style={styles.helper}>Not enrolled</Text>
-          )}
-        </View>
-        <Pressable style={styles.resetButton} onPress={toggleLifestyleReset}>
-          <Text style={styles.resetButtonText}>
-            {client.lifestyle_reset_started_at ? "End program" : "Enroll"}
-          </Text>
-        </Pressable>
-      </View>
+            {client.plan_type && (
+              <View style={styles.planBox}>
+                <Text style={styles.planLabel}>{client.plan_type === 'intro_1mo' ? '1 Month' : client.plan_type === 'sub_6mo' ? '6 Month' : '12 Month'} Plan</Text>
+                {client.plan_started_at && (
+                  <Text style={styles.planDate}>
+                    Started: {new Date(client.plan_started_at).toLocaleDateString()}
+                  </Text>
+                )}
+                {client.plan_expires_at && (
+                  <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
+                    Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
+                  </Text>
+                )}
+              </View>
+            )}
 
-      {client.status_flag !== "green" && (
-        <View style={[styles.flagBanner, client.status_flag === "red" ? styles.flagBannerRed : styles.flagBannerOrange]}>
-          <Text style={styles.flagBannerTitle}>
-            {client.status_flag === "red" ? "🚩 Urgent - needs guidance" : "🟠 Wants feedback"}
-          </Text>
-          {client.status_flag_note && <Text style={styles.flagBannerNote}>{client.status_flag_note}</Text>}
-          {client.status_flag_updated_at && (
-            <Text style={styles.flagBannerTime}>
-              Set {new Date(client.status_flag_updated_at).toLocaleString()}
-            </Text>
-          )}
-          <Pressable style={styles.resolveButton} onPress={markResolved}>
-            <Text style={styles.resolveButtonText}>Mark as resolved</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
-      {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
-
-      <Text style={styles.sectionHeading}>Progress photos</Text>
-      <TrainerProgressPhotos clientId={client.id} clientName={client.name} shared={client.progress_photos_shared} />
-
-      <Text style={styles.sectionHeading}>Intake form</Text>
-      {Object.keys(client.intake_responses ?? {}).length === 0 ? (
-        <Text style={styles.helper}>No intake form completed yet.</Text>
-      ) : (
-        <View style={styles.intakeBox}>
-          {Object.entries(client.intake_responses).map(([key, value]) => (
-            <View key={key} style={styles.intakeRow}>
-              <Text style={styles.intakeLabel}>{formatIntakeLabel(key)}</Text>
-              <Text style={styles.intakeValue}>{String(value)}</Text>
+            <View style={styles.resetBox}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.resetTitle}>12-Week {resetName(client.sex)}</Text>
+                {client.lifestyle_reset_started_at ? (
+                  <Text style={styles.helper}>
+                    {client.reset_started_on
+                      ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)} (started ${client.reset_started_on})`
+                      : "Enrolled. Waiting for them to tap Start"}
+                  </Text>
+                ) : (
+                  <Text style={styles.helper}>Not enrolled</Text>
+                )}
+              </View>
+              <Pressable style={styles.resetButton} onPress={toggleLifestyleReset}>
+                <Text style={styles.resetButtonText}>
+                  {client.lifestyle_reset_started_at ? "End program" : "Enroll"}
+                </Text>
+              </Pressable>
             </View>
-          ))}
-        </View>
-      )}
-
-      <Text style={styles.sectionHeading}>Habits</Text>
-      <Text style={styles.helper}>
-        You set what's needed and how often - the client picks which days and reminder time actually
-        fit their schedule.
-      </Text>
-      {habits.length === 0 && <Text style={styles.helper}>No habits set up yet.</Text>}
-      {habits.map((h) => {
-        const tierResult = calculateHabitTier(h, habitLogsByHabit[h.id] ?? {});
-        const isMaxTier = tierResult.tier === STREAK_TIERS.length - 1;
-        return (
-          <View key={h.id} style={styles.habitRow}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.habitNameRow}>
-                <Text style={styles.habitName}>{h.name}</Text>
-                <View style={[styles.streakDot, { backgroundColor: tierResult.color }]} />
-                <Text style={[styles.streakText, { color: tierResult.color }]}>
-                  {tierResult.label}
-                  {!isMaxTier ? ` ${tierResult.progress}/${DAYS_PER_TIER}` : ""}
+            {client.intake_responses?.high_stress_or_anxiety === "Yes" && (
+              <View style={styles.stressFlag}>
+                <Text style={styles.stressFlagText}>
+                  ⚠️ On the intake form they said they often feel highly stressed or suffer with anxiety.
+                  {!client.lifestyle_reset_started_at
+                    ? ` The ${resetName(client.sex)} could be a good fit: tap Enroll above.`
+                    : " Ease them in and keep an eye on sleep and recovery."}
                 </Text>
               </View>
-              <Text style={styles.habitDetail}>
-                {h.reps_target}x/day · {describeDays(h.active_days)}
-                {h.reminder_enabled && h.reminder_time ? ` · Reminder ${h.reminder_time.slice(0, 5)}` : ""}
-                {h.end_date ? ` · Ends ${h.end_date}` : ""}
-              </Text>
-            </View>
-            <Pressable onPress={() => deleteHabit(h.id)}>
-              <Text style={styles.habitDelete}>Remove</Text>
+            )}
+            {client.reset_started_on && client.lifestyle_reset_started_at && (
+              <View style={styles.resetNotes}>
+                <Text style={styles.resetTitle}>Reset notes</Text>
+                <TrainerResetNotes clientId={client.id} />
+              </View>
+            )}
+
+            <Text style={styles.sectionHeading}>Messages to {client.name}</Text>
+            {messages.length === 0 ? (
+              <Text style={styles.helper}>No messages sent yet.</Text>
+            ) : (
+              messages.map((m) => (
+                <View key={m.id} style={styles.messageRow}>
+                  <Text style={styles.body}>{m.body}</Text>
+                  <Text style={styles.helper}>
+                    {new Date(m.created_at).toLocaleString()} · {m.read_at ? "Seen" : "Not seen yet"}
+                  </Text>
+                </View>
+              ))
+            )}
+            <Pressable style={styles.button} onPress={() => setReplying(true)}>
+              <Text style={styles.buttonText}>Send a message</Text>
             </Pressable>
-          </View>
-        );
-      })}
+            {trainer && replying && (
+              <ReplyToClientModal
+                client={client}
+                trainerId={trainer.id}
+                onClose={() => setReplying(false)}
+                onSent={(resolved) => {
+                  if (resolved) setClient((c) => (c ? { ...c, status_flag: "green", status_flag_note: null } : c));
+                  loadMessages();
+                  reloadProblems();
+                }}
+              />
+            )}
 
-      <View style={styles.addHabitBox}>
-        <Text style={styles.addHabitTitle}>Add a habit</Text>
-        <TextInput
-          style={styles.textInput}
-          placeholder="e.g. Take supplements"
-          placeholderTextColor="#64748B"
-          value={newHabitName}
-          onChangeText={setNewHabitName}
-        />
+            {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
+            {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
 
-        <Text style={styles.fieldLabel}>Times per day</Text>
-        <View style={styles.stepperRow}>
-          <Pressable style={styles.stepperButton} onPress={() => setNewHabitReps((r) => Math.max(1, r - 1))}>
-            <Text style={styles.stepperButtonText}>-</Text>
-          </Pressable>
-          <Text style={styles.stepperValue}>{newHabitReps}</Text>
-          <Pressable style={styles.stepperButton} onPress={() => setNewHabitReps((r) => r + 1)}>
-            <Text style={styles.stepperButtonText}>+</Text>
-          </Pressable>
-        </View>
+            <Text style={styles.sectionHeading}>Intake form</Text>
+            {Object.keys(client.intake_responses ?? {}).length === 0 ? (
+              <Text style={styles.helper}>No intake form completed yet.</Text>
+            ) : (
+              <View style={styles.intakeBox}>
+                {Object.entries(client.intake_responses).map(([key, value]) => (
+                  <View key={key} style={styles.intakeRow}>
+                    <Text style={styles.intakeLabel}>{formatIntakeLabel(key)}</Text>
+                    <Text style={styles.intakeValue}>{String(value)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
+        {tab === "checkins" && (
+          <>
+            <CheckinFeedbackCard feedback={checkinFeedback(checkins, todayIso())} forTrainer />
+            <Text style={styles.sectionHeading}>Last 14 check-ins</Text>
+            {checkins.length === 0 && <Text style={styles.helper}>No check-ins yet.</Text>}
+            {checkins.map((c) => (
+              <View key={c.id} style={[styles.checkinRow, c.distress_flag && styles.checkinDistress]}>
+                <Text style={styles.checkinDate}>{c.checkin_date}</Text>
+                {c.distress_flag && <Text style={styles.distressText}>⚠ {c.distress_notes}</Text>}
+                <Text style={styles.checkinDetail}>
+                  Sleep {c.sleep_quality ?? "-"}/5 · Water {c.water_litres}L · Alcohol {c.alcohol_units}u · High-GI{" "}
+                  {c.high_gi_count}
+                  {c.wound_down !== null && ` · Wind-down ${c.wound_down ? "yes" : "no"}`}
+                </Text>
+              </View>
+            ))}
+          </>
+        )}
+        {tab === "habits" && (
+          <>
+            <Text style={styles.sectionHeading}>Habits</Text>
+            <Text style={styles.helper}>
+              Habits you set stay until you remove them. Clients can also choose their own habits from a list
+              (marked "Chosen by client") and stop those themselves.
+            </Text>
+            {habits.length === 0 && <Text style={styles.helper}>No habits set up yet.</Text>}
+            {habits.map((h) => {
+              const tierResult = calculateHabitTier(h, habitLogsByHabit[h.id] ?? {});
+              const isMaxTier = tierResult.tier === STREAK_TIERS.length - 1;
+              return (
+                <View key={h.id} style={styles.habitRow}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.habitNameRow}>
+                      <Text style={styles.habitName}>{h.name}</Text>
+                      <View style={[styles.streakDot, { backgroundColor: tierResult.color }]} />
+                      <Text style={[styles.streakText, { color: tierResult.color }]}>
+                        {tierResult.label}
+                        {!isMaxTier ? ` ${tierResult.progress}/${DAYS_PER_TIER}` : ""}
+                      </Text>
+                    </View>
+                    <Text style={styles.habitDetail}>
+                      {h.reps_target}x/day · {describeDays(h.active_days)}
+                      {h.reminder_enabled && h.reminder_time ? ` · Reminder ${h.reminder_time.slice(0, 5)}` : ""}
+                      {h.end_date ? ` · ${h.end_date < todayIso() ? "Stopped" : "Ends"} ${h.end_date}` : ""}
+                      {h.chosen_by_client ? " · Chosen by client" : ""}
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => deleteHabit(h.id)}>
+                    <Text style={styles.habitDelete}>Remove</Text>
+                  </Pressable>
+                </View>
+              );
+            })}
 
-        <View style={styles.dateRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>Start date</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#64748B"
-              value={newHabitStart}
-              onChangeText={setNewHabitStart}
+            <View style={styles.addHabitBox}>
+              <Text style={styles.addHabitTitle}>Add a habit</Text>
+              <HabitOptionsPicker
+                habits={habits}
+                selected={newHabitName}
+                onPick={(name, reps) => {
+                  setNewHabitName(name);
+                  setNewHabitReps(reps);
+                }}
+              />
+              <TextInput
+                style={styles.textInput}
+                placeholder="e.g. Take supplements"
+                placeholderTextColor="#64748B"
+                value={newHabitName}
+                onChangeText={setNewHabitName}
+              />
+
+              <Text style={styles.fieldLabel}>Times per day</Text>
+              <View style={styles.stepperRow}>
+                <Pressable style={styles.stepperButton} onPress={() => setNewHabitReps((r) => Math.max(1, r - 1))}>
+                  <Text style={styles.stepperButtonText}>-</Text>
+                </Pressable>
+                <Text style={styles.stepperValue}>{newHabitReps}</Text>
+                <Pressable style={styles.stepperButton} onPress={() => setNewHabitReps((r) => r + 1)}>
+                  <Text style={styles.stepperButtonText}>+</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.dateRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Start date</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#64748B"
+                    value={newHabitStart}
+                    onChangeText={setNewHabitStart}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>End date (optional)</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Ongoing"
+                    placeholderTextColor="#64748B"
+                    value={newHabitEnd}
+                    onChangeText={setNewHabitEnd}
+                  />
+                </View>
+              </View>
+
+              <Pressable style={styles.button} onPress={addHabit} disabled={addingHabit}>
+                {addingHabit ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Add habit</Text>}
+              </Pressable>
+            </View>
+          </>
+        )}
+        {tab === "training" && (
+          <>
+            <RecoveryCheckCard clientId={client.id} clientName={client.name} />
+            {trainer && (
+              <FoundationOfferCard
+                client={client}
+                trainerId={trainer.id}
+                onChanged={(change) => {
+                  setClient((c) => (c ? { ...c, ...change } : c));
+                  if (change.foundation_status === "approved") setProgramKey((k) => k + 1);
+                }}
+              />
+            )}
+            {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.libraryTitle}>Trains at</Text>
+              <Text style={[styles.helper, { marginBottom: 8 }]}>
+                {client.training_place === "home"
+                  ? `The program list shows home programs first. Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part that their equipment list covers.`
+                  : `The program list shows gym programs first. ${client.name} does their program as written.`}
+              </Text>
+              <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
+            </View>
+            {client.training_place === "home" && (
+              <HomeEquipmentCard
+                client={client}
+                trainer
+                onChanged={(items) => setClient((c) => (c ? { ...c, home_equipment: items } : c))}
+              />
+            )}
+            <ClientProgramPicker
+              key={programKey}
+              clientId={client.id}
+              clientName={client.name}
+              trainingPlace={client.training_place}
+              resetNotice={resetNotice(client, todayIso())}
             />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.fieldLabel}>End date (optional)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ongoing"
-              placeholderTextColor="#64748B"
-              value={newHabitEnd}
-              onChangeText={setNewHabitEnd}
+            <ClientCalendarCard
+              clientId={client.id}
+              clientName={client.name}
+              trainingPlace={client.training_place}
+              resetNotice={resetNotice(client, todayIso())}
             />
-          </View>
-        </View>
+            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
+            <TrainerStabilityCard clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
+            <View style={styles.libraryRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.libraryTitle}>Abs between sets</Text>
+                <Text style={styles.helper}>
+                  Ab reps after every set on the upper body, lower body, full body, Chest & Bi and Back & Tri workouts, and on your own programs where you added abs. The rest timer starts when {client.name} taps Complete.
+                </Text>
+              </View>
+              <Switch
+                value={client.abs_between_sets !== false}
+                onValueChange={toggleAbs}
+                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                accessibilityLabel="Abs between sets"
+              />
+            </View>
+            <View style={styles.libraryRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.libraryTitle}>Full workout video library</Text>
+                <Text style={styles.helper}>Switch this on to allow client access to full workout videos. Not suggested.</Text>
+              </View>
+              <Switch
+                value={client.library_access}
+                onValueChange={toggleLibraryAccess}
+                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                accessibilityLabel="Full workout video library"
+              />
+            </View>
+            <Text style={styles.sectionHeading}>Training log, last 2 weeks</Text>
+            <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
+          </>
+        )}
+        {tab === "diet" && (
+          <>
+            <DietPlanner client={client} onDirtyChange={setDietDirty} />
+            <ClientOwnMealPlan clientId={client.id} clientName={client.name} />
+          </>
+        )}
 
-        <Pressable style={styles.button} onPress={addHabit} disabled={addingHabit}>
-          {addingHabit ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Add habit</Text>}
-        </Pressable>
-      </View>
+        {tab === "photos" && (
+          <>
+            <Text style={styles.sectionHeading}>Progress photos</Text>
+            <TrainerProgressPhotos clientId={client.id} clientName={client.name} shared={client.progress_photos_shared} />
+          </>
+        )}
+        {tab === "notes" && (
+          <>
+            <WellbeingReports clientId={client.id} />
+            <Text style={styles.sectionHeading}>Trainer notes</Text>
+            <TextInput
+              style={styles.notesInput}
+              multiline
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Private notes about this client"
+              placeholderTextColor="#64748B"
+            />
+            <Pressable style={styles.button} onPress={saveNotes} disabled={saving}>
+              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save notes</Text>}
+            </Pressable>
+          </>
+        )}
+      </ScrollView>
 
-      <Text style={styles.sectionHeading}>Trainer notes</Text>
-      <TextInput
-        style={styles.notesInput}
-        multiline
-        value={notes}
-        onChangeText={setNotes}
-        placeholder="Private notes about this client"
-        placeholderTextColor="#64748B"
+      <ScreenTabBar
+        current={tab}
+        onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => setTab(next)))}
+        tabs={TABS.map((t) => ({
+          ...t,
+          dot:
+            t.key === "overview"
+              ? (problemColor(problemLevel(problems)) ?? null)
+              : t.key === "checkins" || t.key === "notes"
+                ? (problemColor(problemLevel(problems.filter((p) => p.topic !== "flag"))) ?? null)
+                : null,
+        }))}
       />
-      <Pressable style={styles.button} onPress={saveNotes} disabled={saving}>
-        {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save notes</Text>}
-      </Pressable>
+    </View>
+  );
+}
 
-      <Text style={styles.sectionHeading}>Last 14 check-ins</Text>
-      {checkins.length === 0 && <Text style={styles.helper}>No check-ins yet.</Text>}
-      {checkins.map((c) => (
-        <View key={c.id} style={[styles.checkinRow, c.distress_flag && styles.checkinDistress]}>
-          <Text style={styles.checkinDate}>{c.checkin_date}</Text>
-          {c.distress_flag && <Text style={styles.distressText}>⚠ {c.distress_notes}</Text>}
-          <Text style={styles.checkinDetail}>
-            Sleep {c.sleep_quality ?? "-"}/5 · Water {c.water_litres}L · Alcohol {c.alcohol_units}u · High-GI{" "}
-            {c.high_gi_count}
-            {c.wound_down !== null && ` · Wind-down ${c.wound_down ? "yes" : "no"}`}
-          </Text>
-        </View>
-      ))}
+const LEVEL_LOOK: Record<string, { emoji: string; color: string }> = {
+  never: { emoji: "🌱", color: "#22C55E" },
+  beginner: { emoji: "🌱", color: "#22C55E" },
+  intermediate: { emoji: "💪", color: "#F59E0B" },
+  advanced: { emoji: "🔥", color: "#EF4444" },
+};
 
-      <Text style={styles.sectionHeading}>Recent training log</Text>
-      {workoutLogs.length === 0 && <Text style={styles.helper}>No sets logged yet.</Text>}
-      {workoutLogs.map((w) => (
-        <View key={w.id} style={styles.workoutRow}>
-          <Text style={styles.workoutExercise}>
-            {w.exercise_name} - Set {w.set_number}
-          </Text>
-          <Text style={styles.workoutDetail}>
-            {w.log_date} · {w.weight_kg ? `${w.weight_kg}kg x ` : ""}
-            {w.reps} reps · {EFFORT_LABEL[w.effort] ?? w.effort}
-          </Text>
-        </View>
-      ))}
-    </ScrollView>
+// The client's training experience from their intake form, at the top of the
+// Overview so the trainer is reminded every time they open the client
+// (GRIZZ, 2026-10-14).
+function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
+  const look = (level && LEVEL_LOOK[level]) || { emoji: "❔", color: "#64748B" };
+  const detail = TRAINING_LEVELS.find((l) => l.key === level)?.detail;
+  return (
+    <View style={[styles.levelBanner, { borderColor: look.color }]}>
+      <Text style={styles.levelEmoji}>{look.emoji}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.levelKicker}>TRAINING LEVEL</Text>
+        <Text style={[styles.levelName, { color: look.color }]}>{levelLabel(level)}</Text>
+        {detail ? <Text style={styles.levelDetail}>{detail}</Text> : null}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  levelBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#1E293B",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 12,
+  },
+  levelEmoji: { fontSize: 30 },
+  levelKicker: { color: "#94A3B8", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
+  levelName: { fontSize: 20, fontWeight: "800", marginTop: 1 },
+  levelDetail: { color: "#CBD5E1", fontSize: 13, marginTop: 2 },
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
+  stressFlag: { backgroundColor: "#422006", borderRadius: 10, padding: 12, marginBottom: 12 },
+  stressFlagText: { color: "#FDE68A", fontSize: 13, lineHeight: 18 },
+  libraryRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
+  libraryTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  memberSince: { color: BRAND_GOLD, fontSize: 13, fontWeight: "600" },
   packageBadge: {
     alignSelf: "flex-start",
     backgroundColor: "#1E293B",
@@ -433,24 +749,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   resetTitle: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  resetNotes: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8 },
   resetButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   resetButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
-  flagBanner: { borderRadius: 10, padding: 14, marginTop: 12, marginBottom: 4, borderWidth: 1.5 },
-  flagBannerRed: { backgroundColor: "#2A1414", borderColor: "#EF4444" },
-  flagBannerOrange: { backgroundColor: "#2A2114", borderColor: "#F59E0B" },
-  flagBannerTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  flagBannerNote: { color: "#E2E8F0", fontSize: 14, marginTop: 6 },
-  flagBannerTime: { color: "#94A3B8", fontSize: 11, marginTop: 6 },
-  resolveButton: {
-    backgroundColor: "#22C55E",
-    borderRadius: 8,
-    paddingVertical: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  resolveButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
+  flex1: { flex: 1 },
+  messageRow: { backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginBottom: 6 },
   intakeBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
   intakeRow: { marginBottom: 10 },
   intakeLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 2 },
@@ -470,9 +775,6 @@ const styles = StyleSheet.create({
   checkinDate: { color: "#fff", fontWeight: "600" },
   distressText: { color: "#F87171", fontSize: 13, marginTop: 4, fontWeight: "600" },
   checkinDetail: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
-  workoutRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
-  workoutExercise: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  workoutDetail: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   habitRow: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,23 +1,26 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { APP_OPERATOR } from "@/screens/auth/PrivacyPolicyContent";
+import { PRIVACY_CONTACT_EMAIL } from "@/lib/privacyPolicy";
+
+// Who runs the app and is the other party to this agreement.
+const APP_OPERATOR = { name: "Clint Walters, trading as Daily Evolution", email: PRIVACY_CONTACT_EMAIL };
 
 // Every trainer reads and signs this before using the app (0031). Bump the
 // version whenever the wording changes: trainers on an older version are asked
 // to sign again before they can carry on. Keep in sync with
 // docs/trainer-agreement.md.
-export const TRAINER_AGREEMENT_VERSION = "2026-10-09";
-export const TRAINER_AGREEMENT_LAST_UPDATED = "9 October 2026";
+export const TRAINER_AGREEMENT_VERSION = "2026-10-15";
+export const TRAINER_AGREEMENT_LAST_UPDATED = "15 October 2026";
 
 const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: "1. Who this agreement is between",
-    body: `You (the trainer signing below) and ${APP_OPERATOR.name} ("we"), who runs the Consistent Change app. It covers your use of the app to coach your own clients.`,
+    body: `You (the trainer signing below) and ${APP_OPERATOR.name} ("we"), who runs the Daily Evolution app. It covers your use of the app to coach your own clients.`,
   },
   {
-    heading: "2. Free test period and fees",
+    heading: "2. Fees and payment",
     body:
-      "Using the app is free during the current test period. Before any monthly fee starts we'll tell you the amount at least 30 days ahead, and you can choose to stop using the app instead. Fees will be paid by EFT.",
+      "You start with a free trial, shown on your Profile. After that you pay for the plan you choose (monthly, 6 months or 1 year upfront) plus the per-client fees shown in the app, in rand if you're in South Africa or US dollars elsewhere, by EFT. Credit from trainers you refer comes off what you owe. If we've given you free use, you only pay the per-client fees shown on your Profile.\n\nIf a payment is overdue, your account and your clients' access can be paused until it's paid; nothing is deleted. We'll tell you in the app at least 30 days before any price change.",
   },
   {
     heading: "3. Your clients' information is your responsibility",

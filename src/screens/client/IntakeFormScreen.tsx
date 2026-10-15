@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
+import { TRAINING_LEVELS } from "@/lib/foundation";
 
 function YesNo({
   label,
@@ -119,8 +121,15 @@ export default function IntakeFormScreen() {
   const [saving, setSaving] = useState(false);
 
   const [age, setAge] = useState("");
+  const [sex, setSex] = useState("");
+  // For the trainer's diet planner (0071): fills in the client's BMR.
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [activity, setActivity] = useState("");
 
   const [goals, setGoals] = useState<string[]>([]);
+  // Training experience (0087): the trainer is offered a foundation program.
+  const [experience, setExperience] = useState("");
   const [trainingForDetail, setTrainingForDetail] = useState("");
   const toggleGoal = (opt: string) =>
     setGoals((prev) => (prev.includes(opt) ? prev.filter((g) => g !== opt) : [...prev, opt]));
@@ -152,6 +161,7 @@ export default function IntakeFormScreen() {
   const [hasHealthCondition, setHasHealthCondition] = useState<boolean | null>(null);
   const [healthDetail, setHealthDetail] = useState("");
   const [smoker, setSmoker] = useState<boolean | null>(null);
+  const [stressed, setStressed] = useState<boolean | null>(null);
   const [caffeineAmount, setCaffeineAmount] = useState("");
   const [lastCaffeineTime, setLastCaffeineTime] = useState("");
 
@@ -160,6 +170,28 @@ export default function IntakeFormScreen() {
   const yn = (v: boolean | null) => (v === null ? "Not answered" : v ? "Yes" : "No");
 
   const handleSubmit = async () => {
+    if (!sex) {
+      Alert.alert("Male or female?", "Tap Male or Female under About you.");
+      return;
+    }
+    const height = Number(heightCm.replace(",", "."));
+    const weight = Number(weightKg.replace(",", "."));
+    if (!(height >= 100 && height <= 250)) {
+      Alert.alert("Your height", "Type your height in centimetres, for example 175.");
+      return;
+    }
+    if (!(weight >= 25 && weight <= 400)) {
+      Alert.alert("Your weight", "Type your weight in kilograms, for example 82.");
+      return;
+    }
+    if (!activity) {
+      Alert.alert("How active are you?", "Tap the option under About you that fits you best.");
+      return;
+    }
+    if (!experience) {
+      Alert.alert("Your training experience", "Tap the option under Your goals that fits you best.");
+      return;
+    }
     if (!age.trim() || goals.length === 0 || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
       Alert.alert("Almost done", "Fill in at least your age, goals, occupation, breakfast, and training habits.");
       return;
@@ -167,7 +199,12 @@ export default function IntakeFormScreen() {
 
     const responses: Record<string, string> = {
       age: age.trim(),
+      sex,
+      height_cm: String(height),
+      weight_kg: String(weight),
+      activity_level: activity,
       training_goals: goals.join(", "),
+      training_experience: experience,
       occupation_type: occupationType === "Other" ? occupationOther.trim() || "Other" : occupationType,
       job_stress_level: jobStress || "Not answered",
       work_setting: workSetting || "Not answered",
@@ -187,6 +224,7 @@ export default function IntakeFormScreen() {
       caffeine_amount: caffeineAmount || "Not answered",
       last_caffeine_time: lastCaffeineTime.trim() || "Not answered",
       has_health_condition_or_medication: yn(hasHealthCondition),
+      high_stress_or_anxiety: yn(stressed),
     };
 
     if (!eatsBreakfast) {
@@ -205,7 +243,11 @@ export default function IntakeFormScreen() {
     }
 
     setSaving(true);
-    const { error } = await supabase.from("clients").update({ intake_responses: responses }).eq("id", client.id);
+    const { error } = await supabase.from("clients").update({
+        intake_responses: responses,
+        sex: sex === "Male" ? "male" : "female",
+        training_level: TRAINING_LEVELS.find((l) => l.label === experience)?.key ?? null,
+      }).eq("id", client.id);
     setSaving(false);
     if (error) {
       Alert.alert("Couldn't save", error.message);
@@ -220,6 +262,7 @@ export default function IntakeFormScreen() {
       <Text style={styles.intro}>Quick taps, no essays. Two minutes and your trainer knows your routine.</Text>
 
       <Text style={styles.sectionHeading}>About you</Text>
+      <ChoiceField label="Are you male or female?" options={["Male", "Female"]} value={sex} onChange={setSex} />
       <View style={styles.field}>
         <Text style={styles.label}>Age</Text>
         <TextInput
@@ -231,6 +274,40 @@ export default function IntakeFormScreen() {
           keyboardType="number-pad"
         />
       </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Height (cm)</Text>
+        <TextInput
+          style={styles.timeInput}
+          value={heightCm}
+          onChangeText={setHeightCm}
+          placeholder="e.g. 175"
+          placeholderTextColor="#64748B"
+          keyboardType="decimal-pad"
+          maxLength={5}
+        />
+      </View>
+      <View style={styles.field}>
+        <Text style={styles.label}>Weight (kg)</Text>
+        <TextInput
+          style={styles.timeInput}
+          value={weightKg}
+          onChangeText={setWeightKg}
+          placeholder="e.g. 82"
+          placeholderTextColor="#64748B"
+          keyboardType="decimal-pad"
+          maxLength={5}
+        />
+      </View>
+      <ChoiceField
+        label="How active are you?"
+        options={INTAKE_ACTIVITY_LEVELS.map((a) => a.label)}
+        value={activity}
+        onChange={setActivity}
+      />
+      {activity ? (
+        <Text style={styles.activityHint}>{INTAKE_ACTIVITY_LEVELS.find((a) => a.label === activity)?.detail}</Text>
+      ) : null}
 
       <Text style={styles.sectionHeading}>Your goals</Text>
       <MultiChoiceField
@@ -250,6 +327,16 @@ export default function IntakeFormScreen() {
           />
         </View>
       )}
+
+      <ChoiceField
+        label="What's your training experience?"
+        options={TRAINING_LEVELS.map((l) => l.label)}
+        value={experience}
+        onChange={setExperience}
+      />
+      {experience ? (
+        <Text style={styles.activityHint}>{TRAINING_LEVELS.find((l) => l.label === experience)?.detail}</Text>
+      ) : null}
 
       <Text style={styles.sectionHeading}>Work</Text>
       <ChoiceField label="What kind of work do you do?" options={OCCUPATION_TYPES} value={occupationType} onChange={setOccupationType} />
@@ -307,6 +394,19 @@ export default function IntakeFormScreen() {
           />
         </View>
       )}
+      <YesNo label="Do you often feel highly stressed, or suffer with anxiety?" value={stressed} onChange={setStressed} />
+      {stressed && (
+        <View style={styles.stressNote}>
+          <Text style={styles.stressNoteText}>
+            {sex === "Female"
+              ? "Thanks for telling us. Our 12-week Women's Health Reset was made for this: it starts gently, calms your stress and sleep first, then builds your training up slowly. Your coach will talk to you about starting it."
+              : "Thanks for telling us. Our 12-week Men's Health Reset was made for this: it starts gently, calms your stress and sleep first, then builds your training up slowly. Your coach will talk to you about starting it."}
+          </Text>
+          <Text style={styles.stressNoteSmall}>
+            If it's severe or getting worse, please also speak to your doctor. Training helps, but it isn't a replacement for proper care.
+          </Text>
+        </View>
+      )}
       <YesNo label="Do you smoke or vape?" value={smoker} onChange={setSmoker} />
       <ChoiceField label="Caffeine per day" options={CAFFEINE_AMOUNTS} value={caffeineAmount} onChange={setCaffeineAmount} />
       {caffeineAmount && caffeineAmount !== "None" && (
@@ -324,9 +424,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 8 },
   intro: { color: "#94A3B8", fontSize: 13, lineHeight: 19, marginBottom: 8 },
+  stressNote: { backgroundColor: "#1E293B", borderRadius: 10, borderLeftWidth: 3, borderLeftColor: "#D4AF37", padding: 12, marginBottom: 14 },
+  stressNoteText: { color: "#E2E8F0", fontSize: 13.5, lineHeight: 19 },
+  stressNoteSmall: { color: "#94A3B8", fontSize: 12, lineHeight: 17, marginTop: 6 },
   sectionHeading: { color: "#22C55E", fontWeight: "700", fontSize: 15, marginTop: 22, marginBottom: 10 },
   field: { marginBottom: 16 },
   label: { color: "#E2E8F0", fontSize: 14, marginBottom: 8, lineHeight: 19 },
+  activityHint: { color: "#94A3B8", fontSize: 12, marginTop: -8, marginBottom: 14 },
   timeInput: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, maxWidth: 160 },
   textInput: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12 },
   multiline: { minHeight: 70, textAlignVertical: "top" },

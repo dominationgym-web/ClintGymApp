@@ -1,16 +1,31 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert } from "react-native";
+import React, { useCallback, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert, TextInput } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
-import type { Video } from "@/types/database";
+import type { CoachMessage, Video } from "@/types/database";
+import { MAX_VIDEO_SECONDS, videoProblem } from "@/lib/videoLimits";
+
+// 720p is plenty to check form and about half the size of full HD (iOS only;
+// Android records at the camera app's own quality).
+const VIDEO_OPTIONS: ImagePicker.ImagePickerOptions = {
+  mediaTypes: ["videos"],
+  quality: 0.7,
+  videoMaxDuration: MAX_VIDEO_SECONDS,
+  videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame1280x720,
+};
 
 export default function VideoUploadScreen() {
   const { client } = useAuth();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  // Which exercise the video shows, so the coach knows what to look at (0081).
+  const [exerciseName, setExerciseName] = useState("");
+  // The coach's feedback on each video (0084).
+  const [feedback, setFeedback] = useState<Record<string, CoachMessage[]>>({});
 
   const loadVideos = async () => {
     if (!client) return;
@@ -20,16 +35,33 @@ export default function VideoUploadScreen() {
       .eq("client_id", client.id)
       .is("deleted_at", null)
       .order("uploaded_at", { ascending: false });
-    if (!error && data) setVideos(data);
+    if (!error && data) {
+      setVideos(data);
+      const ids = data.map((v) => v.id);
+      const { data: sent } = ids.length
+        ? await supabase.from("coach_messages").select("*").in("video_id", ids).order("created_at", { ascending: true })
+        : { data: [] as CoachMessage[] };
+      const byVideo: Record<string, CoachMessage[]> = {};
+      for (const m of sent ?? []) if (m.video_id) (byVideo[m.video_id] ??= []).push(m);
+      setFeedback(byVideo);
+    }
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadVideos();
-  }, [client]);
+  // Reload on each visit, so the coach's latest feedback shows.
+  useFocusEffect(
+    useCallback(() => {
+      loadVideos();
+    }, [client]),
+  );
 
   const uploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!client) return;
+    const problem = videoProblem(asset.duration, asset.fileSize);
+    if (problem) {
+      Alert.alert("Can't upload this video", problem);
+      return;
+    }
     setUploading(true);
     try {
       const body = await new File(asset.uri).arrayBuffer();
@@ -45,9 +77,12 @@ export default function VideoUploadScreen() {
         client_id: client.id,
         storage_provider: "supabase",
         storage_path: storagePath,
+        exercise_name: exerciseName.trim() || null,
       });
       if (insertError) throw insertError;
 
+      setExerciseName("");
+      Alert.alert("Sent to your coach ✅", "Your coach has been told and will watch it.");
       await loadVideos();
     } catch (err) {
       Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
@@ -62,7 +97,7 @@ export default function VideoUploadScreen() {
       Alert.alert("Permission needed", "Allow camera access to record training proof.");
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["videos"], quality: 0.7 });
+    const result = await ImagePicker.launchCameraAsync(VIDEO_OPTIONS);
     if (result.canceled || !result.assets?.[0]) return;
     await uploadAsset(result.assets[0]);
   };
@@ -73,7 +108,7 @@ export default function VideoUploadScreen() {
       Alert.alert("Permission needed", "Allow access to your video library to upload training proof.");
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["videos"], quality: 0.7 });
+    const result = await ImagePicker.launchImageLibraryAsync(VIDEO_OPTIONS);
     if (result.canceled || !result.assets?.[0]) return;
     await uploadAsset(result.assets[0]);
   };
@@ -90,8 +125,17 @@ export default function VideoUploadScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Training proof</Text>
       <Text style={styles.helper}>
-        Videos are automatically removed 30 days after upload - your trainer's notes on them stay.
+        Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
       </Text>
+      <Text style={styles.fieldLabel}>Which exercise is it? (optional)</Text>
+      <TextInput
+        style={styles.input}
+        value={exerciseName}
+        onChangeText={setExerciseName}
+        placeholder="e.g. Barbell squat"
+        placeholderTextColor="#64748B"
+        maxLength={80}
+      />
       <View style={styles.row}>
         <Pressable style={[styles.button, styles.flex1]} onPress={handleRecord} disabled={uploading}>
           <Text style={styles.buttonText}>Record video</Text>
@@ -106,9 +150,23 @@ export default function VideoUploadScreen() {
         data={videos}
         keyExtractor={(v) => v.id}
         renderItem={({ item }) => (
-          <View style={styles.videoRow}>
-            <Text style={styles.label}>{new Date(item.uploaded_at).toLocaleDateString()}</Text>
-            <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString()}</Text>
+          <View style={styles.videoCard}>
+            <View style={styles.videoRow}>
+              <View style={styles.flex1}>
+                <Text style={styles.label}>{item.exercise_name || "Form video"}</Text>
+                <Text style={styles.expiry}>
+                  {new Date(item.uploaded_at).toLocaleDateString()}
+                  {item.viewed_at ? " · Coach watched ✓" : " · Sent to your coach"}
+                </Text>
+              </View>
+              <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString()}</Text>
+            </View>
+            {(feedback[item.id] ?? []).map((m) => (
+              <View key={m.id} style={styles.feedback}>
+                <Text style={styles.feedbackTitle}>💬 Your coach's feedback</Text>
+                <Text style={styles.feedbackText}>{m.body}</Text>
+              </View>
+            ))}
           </View>
         )}
         ListEmptyComponent={<Text style={styles.helper}>No videos uploaded yet.</Text>}
@@ -126,14 +184,13 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center" },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
-  videoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#1E293B",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  label: { color: "#fff" },
+  videoCard: { backgroundColor: "#1E293B", padding: 12, borderRadius: 10, marginBottom: 8 },
+  videoRow: { flexDirection: "row", justifyContent: "space-between" },
+  feedback: { backgroundColor: "#0F172A", borderRadius: 8, padding: 10, marginTop: 8 },
+  feedbackTitle: { color: "#22C55E", fontWeight: "700", fontSize: 13, marginBottom: 2 },
+  feedbackText: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },
+  label: { color: "#fff", fontWeight: "600" },
+  fieldLabel: { color: "#CBD5E1", fontSize: 13, fontWeight: "600", marginBottom: 6 },
+  input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15, marginBottom: 12 },
   expiry: { color: "#64748B", fontSize: 12 },
 });

@@ -12,8 +12,14 @@ import VideoUploadScreen from "@/screens/client/VideoUploadScreen";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import ClientProfileScreen from "@/screens/client/ClientProfileScreen";
 import SectionScreen from "@/screens/client/SectionScreen";
+import ClientSearchScreen from "@/screens/client/ClientSearchScreen";
+import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
+import ClientWelcomeScreen from "@/screens/client/ClientWelcomeScreen";
+import { ClientAppGuideScreen } from "@/screens/AppGuideScreen";
+import StabilityScreen from "@/screens/client/StabilityScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
+import DailyStartPopup from "@/components/DailyStartPopup";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -27,6 +33,8 @@ function ClientTabs() {
         headerTintColor: "#fff",
         headerRight: () => <SectionsMenuButton />,
         tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
+        // So the typing box sits right on the keyboard, not above the tab bar.
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: BRAND_GOLD,
         tabBarInactiveTintColor: "#64748B",
       }}
@@ -36,7 +44,7 @@ function ClientTabs() {
       {client?.lifestyle_reset_started_at && (
         <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />
       )}
-      <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
+      <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Video log", tabBarIcon: tabIcon("videocam") }} />
       <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Exercises", tabBarIcon: tabIcon("library") }} />
       <Tab.Screen name="Profile" component={ClientProfileScreen} options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }} />
     </Tab.Navigator>
@@ -47,13 +55,21 @@ function ClientTabs() {
 // top of them, with a back button to return to the tab you were on.
 export default function ClientNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
-      <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} />
-      <Stack.Screen
-        name="Section"
-        component={SectionScreen}
-        options={({ route }) => ({ title: findSection(route.params.sectionKey)?.title ?? "", headerBackTitle: "Back" })}
-      />
-    </Stack.Navigator>
+    <>
+      <DailyStartPopup />
+      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
+        <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Section"
+          component={SectionScreen}
+          options={({ route }) => ({ title: findSection(route.params.sectionKey)?.title ?? "", headerBackTitle: "Back" })}
+        />
+        <Stack.Screen name="Search" component={ClientSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
+        <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Welcome" component={ClientWelcomeScreen} options={{ title: "Welcome", headerBackTitle: "Back" }} />
+        <Stack.Screen name="AppGuide" component={ClientAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
+      </Stack.Navigator>
+    </>
   );
 }

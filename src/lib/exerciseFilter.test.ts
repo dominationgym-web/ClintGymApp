@@ -1,0 +1,117 @@
+import { describe, expect, it } from "vitest";
+import { clientBrowsable, exerciseCategories, filterExercises, forPlace, homeAlternative, swapOptions, withHomeAlternatives } from "@/lib/exerciseFilter";
+
+const list = [
+  { name: "Bench Press", category: "Push" },
+  { name: "Dumbbell Hammer Curl", category: "Biceps" },
+  { name: "Cable Rope Hammer Curl", category: "Biceps" },
+  { name: "Lat Pulldown", category: "Pull" },
+  { name: "Mystery", category: null },
+];
+
+describe("exerciseCategories", () => {
+  it("lists each body part once, in library order", () => {
+    expect(exerciseCategories(list)).toEqual(["Push", "Biceps", "Pull"]);
+  });
+});
+
+describe("filterExercises", () => {
+  it("returns everything with no search or body part", () => {
+    expect(filterExercises(list, "  ")).toHaveLength(5);
+  });
+  it("matches every word, in any order, ignoring case", () => {
+    expect(filterExercises(list, "curl HAMMER cable").map((e) => e.name)).toEqual(["Cable Rope Hammer Curl"]);
+    expect(filterExercises(list, "biceps")).toHaveLength(2);
+  });
+  it("narrows to one body part", () => {
+    expect(filterExercises(list, "", "Pull").map((e) => e.name)).toEqual(["Lat Pulldown"]);
+    expect(filterExercises(list, "press", "Biceps")).toEqual([]);
+  });
+});
+
+describe("clientBrowsable", () => {
+  const all = [
+    { id: "a", category: "Push" },
+    { id: "b", category: "Overhead Press" },
+    { id: "c", category: "Overhead Press" },
+  ];
+  it("hides overhead pressing unless it's in the client's program", () => {
+    expect(clientBrowsable(all, []).map((e) => e.id)).toEqual(["a"]);
+    expect(clientBrowsable(all, ["c", null]).map((e) => e.id)).toEqual(["a", "c"]);
+  });
+});
+
+describe("forPlace", () => {
+  const places = [
+    { name: "Leg Press", home_friendly: false },
+    { name: "Goblet Squat", home_friendly: true },
+  ];
+  it("shows the whole library on the Gym tab", () => {
+    expect(forPlace(places, "gym")).toHaveLength(2);
+  });
+  it("shows only no-machine exercises on the Home tab", () => {
+    expect(forPlace(places, "home").map((e) => e.name)).toEqual(["Goblet Squat"]);
+  });
+});
+
+describe("swapOptions", () => {
+  const lib = [
+    { id: "1", category: "Push" },
+    { id: "2", category: "Push" },
+    { id: "3", category: "Biceps" },
+    { id: "4", category: "Hamstrings" },
+    { id: "5", category: "Posterior Chain" },
+    { id: "6", category: "Overhead Press" },
+  ];
+  it("offers only the same body part, without the current exercise", () => {
+    expect(swapOptions(lib, "Push", ["1"]).map((e) => e.id)).toEqual(["2"]);
+  });
+  it("treats Romanian deadlifts and leg curls as the same body part", () => {
+    expect(swapOptions(lib, "Hamstrings", ["4"]).map((e) => e.id)).toEqual(["5"]);
+    expect(swapOptions(lib, "Posterior Chain", []).map((e) => e.id)).toEqual(["4", "5"]);
+  });
+  it("never offers trainer-only exercises or anything for an unknown body part", () => {
+    expect(swapOptions(lib, "Overhead Press", [])).toEqual([]);
+    expect(swapOptions(lib, null, [])).toEqual([]);
+  });
+});
+
+describe("homeAlternative", () => {
+  const ex = (id: string, category: string, home_friendly: boolean) => ({ id, name: id, category, home_friendly });
+  const legPress = ex("lp", "Legs", false);
+  const goblet = ex("gs", "Legs", true);
+  const lunge = ex("lu", "Legs", true);
+  const curl = ex("lc", "Hamstrings", false);
+  const rdl = ex("rdl", "Posterior Chain", true);
+  const all = [legPress, goblet, lunge, curl, rdl];
+  it("swaps a gym-only exercise for a home one of the same body part", () => {
+    expect(homeAlternative(legPress, all, [])?.id).toBe("gs");
+    expect(homeAlternative(curl, all, [])?.id).toBe("rdl");
+  });
+  it("avoids exercises already in the session", () => {
+    expect(homeAlternative(legPress, all, ["gs"])?.id).toBe("lu");
+  });
+  it("leaves home exercises alone", () => {
+    expect(homeAlternative(goblet, all, [])).toBeNull();
+  });
+});
+
+describe("withHomeAlternatives", () => {
+  const all = [
+    { id: "lp", name: "Leg Press", category: "Legs", home_friendly: false },
+    { id: "gs", name: "Goblet Squat", category: "Legs", home_friendly: true },
+    { id: "lu", name: "Lunge", category: "Legs", home_friendly: true },
+    { id: "pu", name: "Push-up", category: "Push", home_friendly: true },
+  ];
+  it("swaps gym-only exercises for different home ones and keeps the rest", () => {
+    const rows = [
+      { kind: "exercise", exercise_id: "lp", exercise_name: "Leg Press" },
+      { kind: "exercise", exercise_id: "gs", exercise_name: "Goblet Squat" },
+      { kind: "exercise", exercise_id: "pu", exercise_name: "Push-up" },
+      { kind: "cardio", exercise_id: null, exercise_name: "" },
+    ];
+    const { rows: out, homeIds } = withHomeAlternatives(rows, all);
+    expect(out.map((r) => r.exercise_id)).toEqual(["lu", "gs", "pu", null]);
+    expect(homeIds).toEqual(["lu"]);
+  });
+});

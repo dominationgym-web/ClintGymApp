@@ -20,7 +20,15 @@ model is licensing clips for exactly this use.
 4. `ExerciseLibraryScreen` plays the video inline (`expo-video`, in a modal)
    the moment `external_url` is set — no app code changes needed per video.
 
-## Current list (21 rows, all with videos live, `source = 'movekit'`)
+## 2026-10-09: the full library is live (migrations 0039 and 0040)
+
+GRIZZ moved to Supabase Pro and uploaded all ~410 MoveKit clips. 0040 adds every clip as an
+exercise (name and body part from the file name) except duplicate uploads ("name (1).mp4") and
+overhead pressing (overhead/push press, jerks, thrusters, clean and press, man maker, Cuban press,
+overhead squat), per the rule below. 0041 then added those 23 clips under their own "Overhead Press" body part for other trainers (GRIZZ, 2026-10-09); clients only see them if they are in their own program. About 390 exercises in all. The client's Exercises tab has
+search and body-part chips; the program builder's picker has search.
+
+## Original list (21 rows, all with videos live, `source = 'movekit'`)
 
 No overhead pressing of any kind (barbell or dumbbell) - trainer's call,
 considers it too risky for most clients - shoulders are trained via lateral
@@ -54,3 +62,11 @@ The `exercises` table takes any number of rows — adding more later is just
 more `insert` statements plus more uploaded files, no schema change. Per
 the brief, let real client usage (which movements actually get assigned
 most) drive what gets added next, rather than loading all 412 up front.
+
+## Gym and Home tabs (0045)
+
+`exercises.home_friendly` marks exercises that need no gym machine (dumbbells,
+barbell, kettlebells, bands, bench or bodyweight). The client exercise list and
+the program builder picker have a Gym tab (whole library) and a Home tab (only
+these). The flag was set from the exercise name; to fix one exercise, update
+its `home_friendly` in the database.

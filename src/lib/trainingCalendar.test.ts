@@ -1,0 +1,87 @@
+import { describe, expect, it } from "vitest";
+import {
+  monthLabel,
+  monthOf,
+  monthRange,
+  monthWeeks,
+  paceRest,
+  shiftMonth,
+  shortWorkoutName,
+  usedInBatch,
+  usedWorkoutIds,
+  withPace,
+} from "@/lib/trainingCalendar";
+import type { ProgramExercise } from "@/types/database";
+
+describe("months", () => {
+  it("lays October 2026 out Monday first", () => {
+    // 1 October 2026 is a Thursday.
+    const weeks = monthWeeks({ year: 2026, month: 9 });
+    expect(weeks[0]).toEqual([null, null, null, "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04"]);
+    expect(weeks[weeks.length - 1]).toEqual(["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", null]);
+    expect(weeks.every((w) => w.length === 7)).toBe(true);
+  });
+
+  it("moves between months across the year end", () => {
+    expect(shiftMonth({ year: 2026, month: 11 }, 1)).toEqual({ year: 2027, month: 0 });
+    expect(shiftMonth({ year: 2026, month: 0 }, -1)).toEqual({ year: 2025, month: 11 });
+    expect(monthLabel(monthOf("2026-10-12"))).toBe("October 2026");
+    expect(monthRange({ year: 2026, month: 1 })).toEqual({ from: "2026-02-01", to: "2026-02-28" });
+  });
+});
+
+describe("shortWorkoutName", () => {
+  it("fits the calendar workouts in a cell", () => {
+    expect(shortWorkoutName("Upper Body 3")).toBe("Upper 3");
+    expect(shortWorkoutName("Lower Body Superset 12")).toBe("Lower SS 12");
+    expect(shortWorkoutName("HIIT 4")).toBe("HIIT 4");
+    expect(shortWorkoutName("Upper Body Superset 3", false)).toBe("Upper SS");
+    expect(shortWorkoutName("Bodybuilding 3-week block")).toBe("Bodybuildin…");
+  });
+});
+
+describe("usedWorkoutIds", () => {
+  const programs = [
+    { id: "u1", name: "Upper Body 1", trainer_id: null },
+    { id: "u2", name: "Upper Body Superset 2", trainer_id: null },
+    { id: "l1", name: "Lower Body 1", trainer_id: null },
+    { id: "l2", name: "Lower Body Superset 2", trainer_id: null },
+  ];
+  const entry = (program_id: string, created_at = "2026-10-12T08:00:00Z") => ({ program_id, created_at });
+
+  it("marks workouts on the calendar as used", () => {
+    const used = usedWorkoutIds([entry("u1"), entry("l1")], [], programs);
+    expect([...used].sort()).toEqual(["l1", "u1"]);
+    expect(usedInBatch("upperBody", programs, used)).toBe(1);
+  });
+
+  it("frees a batch once every workout in it is used", () => {
+    const used = usedWorkoutIds([entry("u1"), entry("u2"), entry("l1")], [], programs);
+    expect([...used]).toEqual(["l1"]);
+  });
+
+  it("only counts workouts added after the batch was reset", () => {
+    const resets = [{ batch: "upperBody", reset_at: "2026-10-12T09:00:00Z" }];
+    const used = usedWorkoutIds([entry("u1"), entry("l1"), entry("u2", "2026-10-12T10:00:00Z")], resets, programs);
+    expect([...used].sort()).toEqual(["l1", "u2"]);
+  });
+});
+
+describe("pace", () => {
+  it("shortens or lengthens rests but keeps supersets back to back", () => {
+    expect(paceRest(75, "faster")).toBe(45);
+    expect(paceRest(30, "faster")).toBe(30);
+    expect(paceRest(60, "slower")).toBe(90);
+    expect(paceRest(120, "slower")).toBe(150);
+    expect(paceRest(0, "slower")).toBe(0);
+    expect(paceRest(75, "planned")).toBe(75);
+  });
+
+  it("leaves cardio blocks alone", () => {
+    const rows = [
+      { id: "a", kind: "exercise", rest_seconds: 60 },
+      { id: "b", kind: "cardio", rest_seconds: 0 },
+    ] as ProgramExercise[];
+    expect(withPace(rows, "faster").map((r) => r.rest_seconds)).toEqual([45, 0]);
+  });
+});

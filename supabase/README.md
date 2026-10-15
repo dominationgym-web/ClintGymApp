@@ -15,7 +15,7 @@ supabase db push
 - `client_status_flag_events` — append-only history of every red/orange/green change, written by a trigger (`0023`). The `clients.status_flag*` columns are the current-state cache; this is the record that "Mark as resolved" used to erase. Write-only via the trigger: there are deliberately no insert/update/delete policies, so neither side can edit or erase the log.
 - `clients.intake_responses` — jsonb, since the trainer is still designing the actual intake questions. Structure it as `{ "question_key": "answer" }` once the question set is final.
 - `checkins` — one row per client per day (`unique (client_id, checkin_date)`), covering every field in the morning check-in from the brief, including `distress_flag`/`distress_notes` for prominent (not push-notified) dashboard surfacing.
-- `videos` — training-proof uploads, `expires_at` defaults to 30 days out; a scheduled Edge Function should soft-delete (`deleted_at`) and remove the underlying storage object once past `expires_at`, without deleting the row itself (the trainer's notes should survive the video).
+- `videos` — training-proof uploads, `expires_at` defaults to 7 days out and is pulled to now when the client's plan becomes `expired` (`0033`); the nightly `cleanup-expired-videos` Edge Function soft-deletes (`deleted_at`) and removes the storage object once past `expires_at`, without deleting the row itself (the trainer's notes should survive the video). Clips are capped at 60s and 50 MB.
 - `exercises` — seeded with 10 placeholder entries (`0002_seed_exercises.sql`), source now `movekit`. `external_url` points at a file in the public `exercise-library` Storage bucket (`0006_exercise_library_bucket.sql`), not an external deep link — see `docs/exercise-library.md` for the upload workflow.
 - `push_tokens` — Expo push tokens for the daily trainer "who needs attention" summary and client renewal reminders.
 
@@ -42,3 +42,9 @@ whoever reviews the privacy policy, not something this schema assumes.
   every `client_id` table. Refuses the trainer account. Deployed with
   `verify_jwt` on; it only ever acts on the user in the caller's token. Any new
   bucket holding client files under `<clientId>/` must be added to its list.
+- `functions/cleanup-expired-videos` — run nightly at 3 AM by the
+  `cleanup-expired-videos-daily` pg_cron job (`0032`). Deletes training-video
+  files past `expires_at` through the Storage API (Supabase blocks deleting
+  `storage.objects` rows from SQL) and soft-deletes their rows. Deployed with
+  `verify_jwt` off; the cron job authenticates with a Vault secret
+  (`video_cleanup_cron_secret`) checked by `video_cleanup_secret_ok()`.

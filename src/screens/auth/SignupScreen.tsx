@@ -43,6 +43,11 @@ const PACKAGES: { key: PackageType; label: string; description: string }[] = [
   },
 ];
 
+const TRAINING_PLACES: { key: "gym" | "home"; label: string; description: string }[] = [
+  { key: "gym", label: "🏋️ Gym", description: "Full gym with machines and free weights." },
+  { key: "home", label: "🏠 Home", description: "Dumbbells, kettlebells, bands or just your bodyweight. Your workouts use home exercises." },
+];
+
 export default function SignupScreen({ navigation }: Props) {
   const { refreshProfile } = useAuth();
   const [name, setName] = useState("");
@@ -51,6 +56,7 @@ export default function SignupScreen({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<PlanType>("intro_1mo");
   const [pkg, setPkg] = useState<PackageType>("training_only");
+  const [trainingPlace, setTrainingPlace] = useState<"gym" | "home">("gym");
   const [consented, setConsented] = useState(false);
   const [loading, setLoading] = useState(false);
   const [policyVisible, setPolicyVisible] = useState(false);
@@ -127,7 +133,23 @@ export default function SignupScreen({ navigation }: Props) {
     }
 
     setLoading(true);
-    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+    let { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+    if (authError && /already registered/i.test(authError.message)) {
+      // An earlier try made the login but dropped before the client details
+      // were saved (no signal, app closed). With the same password, sign them
+      // in and finish it, rather than locking them out of their own email.
+      const retry = await supabase.auth.signInWithPassword({ email, password });
+      if (!retry.error && retry.data.user) {
+        const { data: trainerRow } = await supabase.from("trainers").select("id").eq("id", retry.data.user.id).maybeSingle();
+        if (trainerRow) {
+          setLoading(false);
+          Alert.alert("Already a trainer", "This email is a trainer account. Log in instead.");
+          return;
+        }
+        authData = { user: retry.data.user, session: retry.data.session };
+        authError = null;
+      }
+    }
     if (authError || !authData.user) {
       setLoading(false);
       Alert.alert("Couldn't sign up", authError?.message ?? "Unknown error");
@@ -146,11 +168,13 @@ export default function SignupScreen({ navigation }: Props) {
       phone: phone || null,
       plan_type: plan,
       package_type: pkg,
+      training_place: trainingPlace,
       consent_accepted_at: new Date().toISOString(),
       privacy_policy_version: PRIVACY_POLICY_VERSION,
     });
 
-    if (clientError) {
+    // 23505: the details were already saved on an earlier try, so carry on.
+    if (clientError && clientError.code !== "23505") {
       setLoading(false);
       Alert.alert("Couldn't finish signup", clientError.message);
       return;
@@ -215,6 +239,17 @@ export default function SignupScreen({ navigation }: Props) {
         </Pressable>
       ))}
 
+      <Text style={styles.sectionHeading}>Where will you train?</Text>
+      {TRAINING_PLACES.map((p) => (
+        <Pressable key={p.key} style={styles.packageRow} onPress={() => setTrainingPlace(p.key)}>
+          <View style={[styles.radio, trainingPlace === p.key && styles.radioSelected]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.body}>{p.label}</Text>
+            <Text style={styles.packageDescription}>{p.description}</Text>
+          </View>
+        </Pressable>
+      ))}
+
       <Text style={styles.sectionHeading}>Choose your plan</Text>
       {PLANS.map((p) => (
         <Pressable key={p.key} style={styles.planRow} onPress={() => setPlan(p.key)}>
@@ -246,7 +281,7 @@ export default function SignupScreen({ navigation }: Props) {
           </View>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
             <PrivacyPolicyContent
-              trainer={trainer ? { name: trainer.display_name, contact: trainer.pop_whatsapp } : null}
+              trainer={trainer ? { name: trainer.display_name } : null}
             />
           </ScrollView>
         </SafeAreaView>

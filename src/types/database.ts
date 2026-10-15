@@ -2,6 +2,8 @@
 // If the schema drifts from this, regenerate with:
 //   npx supabase gen types typescript --linked > src/types/database.ts
 
+import type { EquipmentItem } from "@/lib/equipment";
+
 export type AccessStatus = "active" | "expiring_soon" | "expired";
 export type PlanType = "intro_1mo" | "sub_6mo" | "sub_12mo";
 export type PackageType = "training_only" | "training_nutrition" | "training_nutrition_lifestyle";
@@ -40,7 +42,110 @@ export type Trainer = {
   agreement_signed_name: string | null;
   agreement_accepted_at: string | null;
   created_at: string;
+  // Free trial and referrals (0060). trial_ends_at is set when the owner
+  // approves the trainer. referred_by is the trainer whose code they used;
+  // referral_credits_used counts the 25% discounts the owner has applied.
+  trial_ends_at: string | null;
+  referred_by_code: string | null;
+  referred_by: string | null;
+  referral_credits_used: number;
+  // Billing (0064). Only the owner sets these. Client fees start 2 months
+  // after billing_started_on; paid_until moves on when he records a payment.
+  approved_at: string | null;
+  billing_plan: BillingPlan | null;
+  billing_currency: BillingCurrency | null;
+  billing_started_on: string | null;
+  paid_until: string | null;
+  // 0074: remind this trainer 2 days and 1 day before a client's planned workouts run out.
+  planning_reminders: boolean;
+  // 0096: the country their phone was in when they applied ("ZA" = rand
+  // prices), and free use: no plan, with per-client fees on every active
+  // client from free_use_fees_start (6 months on). Only the owner sets it.
+  signup_country: string | null;
+  signup_location_checked_at: string | null;
+  free_use_from: string | null;
 }
+
+export type BillingPlan = "monthly" | "six_months" | "yearly";
+export type BillingCurrency = "USD" | "ZAR";
+
+export type BillingPrices = Record<BillingCurrency, Record<BillingPlan | "client", number>>;
+
+export type BillingSettings = {
+  id: number;
+  prices: BillingPrices;
+  free_client_months: number;
+  free_clients: number;
+  client_fees_due_day: number;
+  lockout_enabled: boolean;
+  updated_at: string;
+};
+
+export type ClientActivation = {
+  id: number;
+  client_id: string | null;
+  client_name: string | null;
+  trainer_id: string;
+  activated_on: string;
+  created_at: string;
+};
+
+export type TrainerBillingMonth = {
+  trainer_id: string;
+  month: string;
+  active_clients: number;
+  new_activations: number;
+  currency: BillingCurrency | null;
+  free: boolean;
+  client_fee: number;
+  created_at: string;
+};
+
+export type TrainerPayment = {
+  id: string;
+  trainer_id: string;
+  kind: "subscription" | "client_fees";
+  amount: number;
+  currency: BillingCurrency;
+  months: 1 | 6 | 12 | null;
+  paid_on: string;
+  note: string | null;
+  created_at: string;
+};
+
+export type ReferralPayout = {
+  id: string;
+  trainer_id: string;
+  credits: number;
+  amount: number;
+  currency: BillingCurrency;
+  paid_on: string;
+  created_at: string;
+};
+
+export type TrainerBillingStatus = {
+  trainer_id: string;
+  billing_plan: BillingPlan | null;
+  billing_currency: BillingCurrency | null;
+  billing_started_on: string | null;
+  paid_until: string | null;
+  client_fees_from: string | null;
+  client_fees_billed: number;
+  client_fees_paid: number;
+  client_fees_owed: number;
+  client_fees_overdue: number;
+  plan_overdue: boolean;
+  locked: boolean;
+};
+
+export type BillingMonthRow = {
+  trainer_id: string;
+  active_clients: number;
+  new_activations: number;
+  currency: BillingCurrency | null;
+  free: boolean;
+  client_fee: number;
+};
 
 // What trainer_for_join_code() returns for a valid code (0029).
 export type JoinableTrainer = {
@@ -59,6 +164,8 @@ export type Client = {
   phone: string | null;
   goals: string | null;
   injuries: string | null;
+  // Always null since 0061: notes live in client_trainer_notes, which only
+  // the trainer can read.
   trainer_notes: string | null;
   intake_responses: Record<string, string>;
   access_status: AccessStatus;
@@ -67,6 +174,11 @@ export type Client = {
   plan_expires_at: string | null;
   package_type: PackageType | null;
   lifestyle_reset_started_at: string | null;
+  // Asked on the intake form (0057); null for clients from before. Men don't
+  // see the Women's Health Reset.
+  sex: "male" | "female" | null;
+  // The day she tapped Start on the Reset (0050): her week 1 begins here.
+  reset_started_on: string | null;
   consent_accepted_at: string | null;
   privacy_policy_version: string | null;
   status_flag: ClientStatusFlag;
@@ -77,6 +189,19 @@ export type Client = {
   // Off by default; only the client can turn it on (0027). While off, the
   // trainer can't see any of their progress photos.
   progress_photos_shared: boolean;
+  // Full exercise library (0043). Off by default: the client sees only their
+  // own program's exercises until their trainer switches it on.
+  library_access: boolean;
+  // Home or gym training (0052): picked at signup, the trainer can switch it.
+  training_place: "gym" | "home";
+  // What a home client trains with (0092), see src/lib/equipment.ts.
+  home_equipment: EquipmentItem[];
+  // Abs between sets (0083): on unless the trainer switches it off.
+  abs_between_sets: boolean;
+  // Training experience from the intake form, and whether the trainer has
+  // dealt with the foundation program offer (0087).
+  training_level: "never" | "beginner" | "intermediate" | "advanced" | null;
+  foundation_status: "suggested" | "approved" | "declined" | null;
   created_at: string;
 }
 
@@ -105,6 +230,76 @@ export type ClientStatusFlagEvent = {
   created_at: string;
 }
 
+// A trainer's message to one of their clients, usually a reply to a red or
+// orange flag (0034). read_at is set by mark_coach_messages_read().
+export type CoachMessage = {
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  body: string;
+  reply_to_flag: ClientStatusFlag | null;
+  // Set on the app's next-day check-in about a problem (0075).
+  problem_id: string | null;
+  // Feedback on a form video (0084).
+  video_id?: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+
+// How a client's workout went that day (0076): see src/lib/workoutSessions.ts.
+export type WorkoutSessionStatus = "complete" | "partial" | "missed";
+export type WorkoutSession = {
+  id: string;
+  client_id: string;
+  session_date: string;
+  title: string;
+  status: WorkoutSessionStatus;
+  sets_done: number;
+  sets_planned: number;
+  reason: string | null;
+  improvements: { exercise: string; before: string; after: string }[];
+  star: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// A problem a client raised: a body-and-mind report on a check-in or a red /
+// orange flag (0075). The trainer moves it open -> fixing -> fixed.
+export type ClientProblemTopic = "pain" | "fatigue" | "mental" | "flag";
+export type ClientProblemStatus = "open" | "fixing" | "fixed";
+export type ClientProblem = {
+  id: string;
+  client_id: string;
+  trainer_id: string | null;
+  topic: ClientProblemTopic;
+  detail: string;
+  reported_on: string;
+  last_reported_on: string;
+  status: ClientProblemStatus;
+  fixing_on: string | null;
+  fixed_at: string | null;
+  followup_sent_at: string | null;
+  client_reply: string | null;
+  client_replied_at: string | null;
+  created_at: string;
+}
+
+// One phone's Expo push token, held by whoever last signed in on it (0034).
+export type PushToken = {
+  id: string;
+  user_id: string;
+  expo_push_token: string;
+  created_at: string;
+}
+
+// The first day of one of the client's periods (0038). Private to her.
+export type CycleLog = {
+  id: string;
+  client_id: string;
+  period_start: string;
+  created_at: string;
+}
+
 export type Checkin = {
   id: string;
   client_id: string;
@@ -127,6 +322,16 @@ export type Checkin = {
   wound_down: boolean | null;
   distress_flag: boolean;
   distress_notes: string | null;
+  // Body and mind (0055): answered every day; null on older check-ins.
+  pain_status: "ok" | "reported" | null;
+  pain_area: string | null;
+  pain_notes: string | null;
+  fatigue_status: "ok" | "reported" | null;
+  fatigue_cause: string | null;
+  fatigue_notes: string | null;
+  mental_status: "ok" | "reported" | null;
+  mental_cause: string | null;
+  mental_notes: string | null;
   created_at: string;
 }
 
@@ -140,6 +345,9 @@ export type Video = {
   uploaded_at: string;
   expires_at: string;
   deleted_at: string | null;
+  // Form videos (0081): which exercise it shows, and when the trainer watched it.
+  exercise_name?: string | null;
+  viewed_at?: string | null;
 }
 
 export type Exercise = {
@@ -149,6 +357,8 @@ export type Exercise = {
   source: "movekit" | "muscle_and_motion" | "own_library";
   external_url: string | null;
   sort_order: number;
+  // No gym machine needed: shown on the Home tab (0045).
+  home_friendly: boolean;
 }
 
 export type SetEffort = "comfortable" | "close_to_failure" | "failure";
@@ -163,8 +373,147 @@ export type WorkoutLog = {
   weight_kg: number | null;
   reps: number;
   effort: SetEffort;
+  /** A warm-up set (0079): not a working set, set_number 0. */
+  warm_up?: boolean;
   created_at: string;
 }
+
+export type ProgramKind = "quick" | "weekly" | "custom";
+
+// 0035. trainer_id null = built into the app, usable by every trainer.
+export type Program = {
+  id: string;
+  trainer_id: string | null;
+  name: string;
+  kind: ProgramKind;
+  description: string | null;
+  // Weekly programs: index 0 = Monday.
+  day_titles: string[];
+  // Shown before the first exercise of every session (0048).
+  warm_up: string;
+  // Gym or home program (0053), so trainers pick the right kind for each client.
+  place: "gym" | "home";
+  // Multi-week programs (0065): sessions repeat after this many weeks.
+  // day_titles then has 7 entries per week. nutrition is shown with it.
+  weeks: number;
+  nutrition: string | null;
+  // 20 ab reps between sets on this workout (0083).
+  abs_between_sets: boolean;
+  // Reps per ab set, and the ab exercise (null = a different one each set).
+  abs_reps: number;
+  abs_exercise: string | null;
+  created_at: string;
+}
+
+export type ProgramExercise = {
+  id: string;
+  program_id: string;
+  // 1 = Monday ... 7 = Sunday for weekly programs; always 1 otherwise.
+  day_number: number;
+  // Which week of a multi-week program (0065); 1 otherwise. The app works
+  // with a single "slot" per session: (week_number - 1) * 7 + day_number.
+  week_number: number;
+  sort_order: number;
+  exercise_id: string | null;
+  exercise_name: string;
+  sets: number;
+  reps: string;
+  rest_seconds: number;
+  // A cardio block (0048): exercise_name is the machine or the trainer's own
+  // words, reps is how long, e.g. "30 sec".
+  kind: "exercise" | "cardio";
+  // Set in the app when the client's trainer changed this row for them
+  // (0070): what the workout itself says.
+  changed_from?: { exercise_id: string | null; exercise_name: string; sets: number; reps: string };
+}
+
+// The trainer's diet plan for a client (0071): 7 days of meals, foods by
+// name from src/lib/foods.ts, and the details for their calorie target.
+export type DietItem = { food: string; grams: number };
+export type DietMeal = { name: string; items: DietItem[] };
+export type DietDay = { meals: DietMeal[] };
+export type ClientDietPlan = {
+  client_id: string;
+  weight_kg: number | null;
+  height_cm: number | null;
+  age: number | null;
+  sex: "male" | "female" | null;
+  activity: number;
+  adjust_kcal: number;
+  days: DietDay[];
+  updated_at: string;
+};
+
+// The client's own meal plan, made by the app (0077, src/lib/mealPlanMaker.ts).
+export type ClientMealPlan = {
+  client_id: string;
+  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain"; diet?: "everything" | "vegetarian" | "pescatarian" };
+  targets: { kcal: number; protein: number; carbs: number; fat: number };
+  training_day: DietDay;
+  rest_day: DietDay;
+  variety: number;
+  updated_at: string;
+};
+
+// A trainer's change to an exercise for one client (0070): one row of one
+// workout (program_exercise_id), or an exercise swapped out of every workout
+// (original_exercise_id). Null fields keep what the workout says.
+export type ClientExerciseChange = {
+  id: string;
+  client_id: string;
+  program_exercise_id: string | null;
+  original_exercise_id: string | null;
+  exercise_id: string | null;
+  exercise_name: string | null;
+  sets: number | null;
+  reps: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ClientProgram = {
+  client_id: string;
+  program_id: string;
+  started_on: string;
+  assigned_at: string;
+  // Where the client is up to in a weekly program (0037); null until they
+  // first complete or move a session.
+  current_day: number | null;
+  // The week of a multi-week program (0065).
+  current_week: number | null;
+  due_on: string | null;
+  last_completed_at: string | null;
+  // Cardio the trainer added for this client on top of the program (0054),
+  // so ready-made programs can have cardio too. `after` is how many
+  // exercises come before the block; null means at the end.
+  extra_cardio: ExtraCardio[];
+  // Recovery check (0059): the date the trainer chose to leave a clash as it
+  // is, and a lighter session for one date (program exercise id → sets).
+  recovery_ignored_on: string | null;
+  recovery_adjustment: RecoveryAdjustment | null;
+}
+
+// Training calendar (0069): the workout (a quick program) a client does on
+// one date, chosen by their trainer.
+export type ClientCalendarWorkout = {
+  id: string;
+  client_id: string;
+  workout_date: string;
+  program_id: string;
+  created_at: string;
+}
+
+// When the trainer last tapped Reset on a batch of workouts for a client
+// (0069); workouts on the calendar from before then no longer count as used.
+export type ClientWorkoutReset = {
+  client_id: string;
+  batch: string;
+  reset_at: string;
+}
+
+export type RecoveryAdjustment = { date: string; sets: Record<string, number> };
+
+export type ExtraCardio = { after: number | null; name: string; reps: string };
 
 export type Habit = {
   id: string;
@@ -176,8 +525,34 @@ export type Habit = {
   end_date: string | null;
   reminder_enabled: boolean;
   reminder_time: string | null;
+  chosen_by_client: boolean;
   created_at: string;
 }
+
+// A gold achievement badge (0085): 10% more weight for at least the same reps.
+export type ClientAchievement = {
+  id: string;
+  client_id: string;
+  exercise_id: string | null;
+  exercise_name: string;
+  from_weight: number;
+  from_reps: number;
+  weight: number;
+  reps: number;
+  achieved_on: string;
+  created_at: string;
+};
+
+export type HabitWinRow = {
+  id: string;
+  client_id: string;
+  trainer_id: string | null;
+  week_start: string;
+  habits: { habit_id: string; name: string; days: number }[];
+  acknowledged_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export type HabitLog = {
   id: string;
@@ -186,6 +561,34 @@ export type HabitLog = {
   reps_completed: number;
   created_at: string;
 }
+
+// Stability & injury prevention (0094). Programs are defined in src/lib/stability.
+export type ClientStabilityProgram = {
+  id: string;
+  client_id: string;
+  area: "ankle" | "knee" | "hip" | "core" | "shoulder" | "wrist" | "neck";
+  level: "rehab" | "beginner" | "intermediate" | "advanced";
+  started_on: string;
+  ended_at: string | null;
+  created_at: string;
+};
+
+export type StabilityLog = {
+  id: string;
+  client_id: string;
+  stability_program_id: string;
+  area: ClientStabilityProgram["area"];
+  level: ClientStabilityProgram["level"];
+  week: number;
+  mode: "primer" | "full";
+  exercise_key: string;
+  set_number: number;
+  side: "left" | "right" | null;
+  seconds: number | null;
+  reps: number | null;
+  log_date: string;
+  created_at: string;
+};
 
 export type LifestyleResetDailyLog = {
   id: string;
@@ -199,8 +602,32 @@ export type LifestyleResetDailyLog = {
   aerobic_exercise: boolean;
   consistent_sleep: boolean;
   evening_winddown: boolean;
+  // Her daily note (0050): 1-5, did it help, and a comment.
+  feeling: number | null;
+  helped: "yes" | "a_little" | "not_yet" | null;
+  note: string | null;
   created_at: string;
 }
+
+// Suggestion box (0046): anyone can suggest, the app owner reads them all.
+export type SuggestionStatus = "new" | "good_idea" | "not_now";
+
+export type Suggestion = {
+  id: string;
+  author_id: string;
+  author_role: "client" | "trainer";
+  author_name: string;
+  body: string;
+  status: SuggestionStatus;
+  created_at: string;
+};
+
+// 0061. The trainer's private notes on a client.
+export type ClientTrainerNotes = {
+  client_id: string;
+  notes: string;
+  updated_at: string;
+};
 
 export interface Database {
   public: {
@@ -213,6 +640,44 @@ export interface Database {
         Update: Partial<ClientStatusFlagEvent>;
         Relationships: [];
       };
+      billing_settings: { Row: BillingSettings; Insert: Partial<BillingSettings>; Update: Partial<BillingSettings>; Relationships: [] };
+      client_activations: { Row: ClientActivation; Insert: Partial<ClientActivation>; Update: Partial<ClientActivation>; Relationships: [] };
+      trainer_billing_months: { Row: TrainerBillingMonth; Insert: Partial<TrainerBillingMonth>; Update: Partial<TrainerBillingMonth>; Relationships: [] };
+      trainer_payments: { Row: TrainerPayment; Insert: Partial<TrainerPayment>; Update: Partial<TrainerPayment>; Relationships: [] };
+      referral_payouts: { Row: ReferralPayout; Insert: Partial<ReferralPayout>; Update: Partial<ReferralPayout>; Relationships: [] };
+      client_trainer_notes: {
+        Row: ClientTrainerNotes;
+        Insert: Partial<ClientTrainerNotes>;
+        Update: Partial<ClientTrainerNotes>;
+        Relationships: [];
+      };
+      client_meal_plans: {
+        Row: ClientMealPlan;
+        Insert: Partial<ClientMealPlan>;
+        Update: Partial<ClientMealPlan>;
+        Relationships: [];
+      };
+      workout_sessions: {
+        Row: WorkoutSession;
+        Insert: Partial<WorkoutSession>;
+        Update: Partial<WorkoutSession>;
+        Relationships: [];
+      };
+      client_problems: {
+        Row: ClientProblem;
+        Insert: Partial<ClientProblem>;
+        Update: Partial<ClientProblem>;
+        Relationships: [];
+      };
+      coach_messages: {
+        Row: CoachMessage;
+        Insert: Partial<CoachMessage>;
+        Update: Partial<CoachMessage>;
+        Relationships: [];
+      };
+      push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
+      cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
+      suggestions: { Row: Suggestion; Insert: Partial<Suggestion>; Update: Partial<Suggestion>; Relationships: [] };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       progress_photos: {
         Row: ProgressPhoto;
@@ -224,23 +689,134 @@ export interface Database {
       exercises: { Row: Exercise; Insert: Partial<Exercise>; Update: Partial<Exercise>; Relationships: [] };
       habits: { Row: Habit; Insert: Partial<Habit>; Update: Partial<Habit>; Relationships: [] };
       habit_logs: { Row: HabitLog; Insert: Partial<HabitLog>; Update: Partial<HabitLog>; Relationships: [] };
+      client_achievements: {
+        Row: ClientAchievement;
+        Insert: Partial<ClientAchievement>;
+        Update: Partial<ClientAchievement>;
+        Relationships: [];
+      };
+      habit_wins: { Row: HabitWinRow; Insert: Partial<HabitWinRow>; Update: Partial<HabitWinRow>; Relationships: [] };
       workout_logs: { Row: WorkoutLog; Insert: Partial<WorkoutLog>; Update: Partial<WorkoutLog>; Relationships: [] };
+      programs: { Row: Program; Insert: Partial<Program>; Update: Partial<Program>; Relationships: [] };
+      program_exercises: {
+        Row: ProgramExercise;
+        Insert: Partial<ProgramExercise>;
+        Update: Partial<ProgramExercise>;
+        Relationships: [];
+      };
+      client_programs: {
+        Row: ClientProgram;
+        Insert: Partial<ClientProgram>;
+        Update: Partial<ClientProgram>;
+        Relationships: [];
+      };
+      client_calendar_workouts: {
+        Row: ClientCalendarWorkout;
+        Insert: Partial<ClientCalendarWorkout>;
+        Update: Partial<ClientCalendarWorkout>;
+        Relationships: [];
+      };
+      client_diet_plans: {
+        Row: ClientDietPlan;
+        Insert: Partial<ClientDietPlan>;
+        Update: Partial<ClientDietPlan>;
+        Relationships: [];
+      };
+      client_exercise_changes: {
+        Row: ClientExerciseChange;
+        Insert: Partial<ClientExerciseChange>;
+        Update: Partial<ClientExerciseChange>;
+        Relationships: [];
+      };
+      client_workout_resets: {
+        Row: ClientWorkoutReset;
+        Insert: Partial<ClientWorkoutReset>;
+        Update: Partial<ClientWorkoutReset>;
+        Relationships: [];
+      };
       lifestyle_reset_daily_logs: {
         Row: LifestyleResetDailyLog;
         Insert: Partial<LifestyleResetDailyLog>;
         Update: Partial<LifestyleResetDailyLog>;
         Relationships: [];
       };
+      client_stability_programs: {
+        Row: ClientStabilityProgram;
+        Insert: Partial<ClientStabilityProgram>;
+        Update: Partial<ClientStabilityProgram>;
+        Relationships: [];
+      };
+      stability_logs: {
+        Row: StabilityLog;
+        Insert: Partial<StabilityLog>;
+        Update: Partial<StabilityLog>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      acknowledge_habit_win: { Args: { p_win: string; p_message: string }; Returns: undefined };
+      mark_video_viewed: { Args: { p_video: string }; Returns: undefined };
+      record_workout_session: {
+        Args: {
+          p_title: string;
+          p_status: WorkoutSessionStatus;
+          p_sets_done: number;
+          p_sets_planned: number;
+          p_reason?: string | null;
+          p_improvements?: { exercise: string; before: string; after: string }[];
+        };
+        Returns: WorkoutSession;
+      };
+      set_client_problem_status: {
+        Args: { p_client: string; p_status: "fixing" | "fixed"; p_problem?: string };
+        Returns: undefined;
+      };
+      reply_to_client_problem: {
+        Args: { p_problem: string; p_reply: string };
+        Returns: undefined;
+      };
       trainer_for_join_code: {
         Args: { p_code: string };
         Returns: JoinableTrainer[];
       };
+      set_my_program_week_progress: {
+        Args: { p_current_week: number; p_current_day: number; p_due_on: string; p_completed: boolean };
+        Returns: undefined;
+      };
+      set_my_program_progress: {
+        Args: { p_current_day: number; p_due_on: string; p_completed: boolean };
+        Returns: undefined;
+      };
+      reset_exercise_videos: { Args: Record<string, never>; Returns: { name: string; external_url: string | null }[] };
+      swap_options_for: {
+        Args: { p_exercise: string; p_home?: boolean };
+        Returns: { id: string; name: string; category: string | null; external_url: string | null }[];
+      };
+      stability_exercise_videos: {
+        Args: Record<string, never>;
+        Returns: { name: string; external_url: string | null }[];
+      };
+      reset_exercise_info: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; category: string | null; external_url: string | null }[];
+      };
+      mark_coach_messages_read: { Args: Record<string, never>; Returns: undefined };
+      register_push_token: { Args: { p_token: string }; Returns: undefined };
       client_monthly_consistency: {
         Args: { p_client_id: string; p_month?: string };
         Returns: { checkin_rate: number; habit_rate: number | null; video_count: number; overall_score: number }[];
+      };
+      trainer_billing_status: { Args: { p_trainer: string }; Returns: TrainerBillingStatus[] };
+      billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
+      am_i_locked: { Args: Record<string, never>; Returns: boolean };
+      owner_payment_details: {
+        Args: Record<string, never>;
+        Returns: { display_name: string; eft_details: EftDetails; pop_whatsapp: string | null }[];
+      };
+      my_referrals: {
+        Args: Record<string, never>;
+        Returns: { name: string; approved: boolean; created_at: string }[];
       };
     };
   };

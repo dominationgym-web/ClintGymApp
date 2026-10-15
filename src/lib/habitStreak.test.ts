@@ -39,6 +39,7 @@ function habit(overrides: Partial<Habit> = {}): Habit {
     end_date: null,
     reminder_enabled: false,
     reminder_time: null,
+    chosen_by_client: false,
     created_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };
