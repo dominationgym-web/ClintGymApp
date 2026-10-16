@@ -16,7 +16,7 @@ export default function WatchOnlineLink({ name, search }: { name: string; search
       accessibilityRole="link"
       accessibilityLabel={`Watch examples of ${name} online`}
     >
-      <Text style={styles.watchText}>▶ No video in the app yet: watch examples online ›</Text>
+      <Text style={styles.watchText}>▶ Click here for video ›</Text>
     </Pressable>
   );
 }
