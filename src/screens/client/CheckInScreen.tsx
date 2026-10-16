@@ -86,7 +86,7 @@ export default function CheckInScreen() {
       .select("*")
       .eq("client_id", client.id)
       .order("checkin_date", { ascending: false })
-      .limit(7);
+      .limit(14);
     setWeek(data ?? []);
   }, [client]);
 

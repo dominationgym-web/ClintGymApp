@@ -22,6 +22,12 @@ export default function CheckinFeedbackCard({
         Based on {forTrainer ? "their" : "your"} last {feedback.days} check-in{feedback.days === 1 ? "" : "s"}.
         {feedback.tips.length > 0 ? " Tap a tip to see what to do." : ""}
       </Text>
+      {feedback.alcohol && (
+        <View style={styles.alcohol}>
+          <Text style={styles.tipTitle}>{feedback.alcohol.title}</Text>
+          <Text style={styles.text}>{feedback.alcohol.text}</Text>
+        </View>
+      )}
       {feedback.win && <Text style={styles.win}>🏆 {feedback.win}</Text>}
       {feedback.tips.length === 0 && (
         <Text style={styles.text}>Everything looks on track. Keep doing what {forTrainer ? "they're" : "you're"} doing.</Text>
@@ -63,6 +69,8 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontSize: 16, fontWeight: "800" },
   sub: { color: "#94A3B8", fontSize: 12, marginTop: 2, marginBottom: 8 },
   win: { color: "#86EFAC", fontSize: 14, lineHeight: 20, marginBottom: 8 },
+  // Alcohol message (GRIZZ, 2026-10-16).
+  alcohol: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   tip: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: 8 },
   tipOpen: { borderWidth: 1, borderColor: BRAND_GOLD },
   tipHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
