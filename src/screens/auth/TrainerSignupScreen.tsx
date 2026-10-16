@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
+import { retryIfIssuedInFuture } from "@/lib/clockSkew";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
 import AgreementSignFields from "@/components/AgreementSignFields";
@@ -68,17 +69,22 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       return;
     }
 
-    const { error } = await supabase.from("trainers").insert({
-      id: authData.user.id,
-      name: name.trim(),
-      email: email.trim(),
-      business_name: businessName.trim() || null,
-      phone: phone.trim() || null,
-      agreement_version: TRAINER_AGREEMENT_VERSION,
-      agreement_signed_name: signedName.trim(),
-      referred_by_code: referralCode.trim() || null,
-      signup_country: check.ok ? check.country : null,
-    });
+    // A brand-new login can briefly be refused as "issued at future";
+    // retryIfIssuedInFuture waits that out (see src/lib/clockSkew.ts).
+    const userId = authData.user.id;
+    const { error } = await retryIfIssuedInFuture(() =>
+      supabase.from("trainers").insert({
+        id: userId,
+        name: name.trim(),
+        email: email.trim(),
+        business_name: businessName.trim() || null,
+        phone: phone.trim() || null,
+        agreement_version: TRAINER_AGREEMENT_VERSION,
+        agreement_signed_name: signedName.trim(),
+        referred_by_code: referralCode.trim() || null,
+        signup_country: check.ok ? check.country : null,
+      })
+    );
     if (error) {
       setLoading(false);
       Alert.alert("Couldn't finish signup", error.message);

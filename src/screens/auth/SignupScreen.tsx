@@ -16,6 +16,7 @@ import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import type { JoinableTrainer, PackageType, PlanType } from "@/types/database";
 import { normalizeJoinCode } from "@/lib/trainers";
+import { retryIfIssuedInFuture } from "@/lib/clockSkew";
 import TrainerLogo from "@/components/TrainerLogo";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
@@ -140,7 +141,10 @@ export default function SignupScreen({ navigation }: Props) {
       // in and finish it, rather than locking them out of their own email.
       const retry = await supabase.auth.signInWithPassword({ email, password });
       if (!retry.error && retry.data.user) {
-        const { data: trainerRow } = await supabase.from("trainers").select("id").eq("id", retry.data.user.id).maybeSingle();
+        const userId = retry.data.user.id;
+        const { data: trainerRow } = await retryIfIssuedInFuture(() =>
+          supabase.from("trainers").select("id").eq("id", userId).maybeSingle()
+        );
         if (trainerRow) {
           setLoading(false);
           Alert.alert("Already a trainer", "This email is a trainer account. Log in instead.");
@@ -160,18 +164,23 @@ export default function SignupScreen({ navigation }: Props) {
     // be set to anything else from here - see the "client inserts own
     // signup row" RLS policy in supabase/migrations/0001_init.sql. The
     // trainer flips it to 'active' after confirming EFT/PayPal payment.
-    const { error: clientError } = await supabase.from("clients").insert({
-      id: authData.user.id,
-      trainer_id: joined.id,
-      name,
-      email,
-      phone: phone || null,
-      plan_type: plan,
-      package_type: pkg,
-      training_place: trainingPlace,
-      consent_accepted_at: new Date().toISOString(),
-      privacy_policy_version: PRIVACY_POLICY_VERSION,
-    });
+    // A brand-new login can briefly be refused as "issued at future";
+    // retryIfIssuedInFuture waits that out (see src/lib/clockSkew.ts).
+    const userId = authData.user.id;
+    const { error: clientError } = await retryIfIssuedInFuture(() =>
+      supabase.from("clients").insert({
+        id: userId,
+        trainer_id: joined.id,
+        name,
+        email,
+        phone: phone || null,
+        plan_type: plan,
+        package_type: pkg,
+        training_place: trainingPlace,
+        consent_accepted_at: new Date().toISOString(),
+        privacy_policy_version: PRIVACY_POLICY_VERSION,
+      })
+    );
 
     // 23505: the details were already saved on an earlier try, so carry on.
     if (clientError && clientError.code !== "23505") {
