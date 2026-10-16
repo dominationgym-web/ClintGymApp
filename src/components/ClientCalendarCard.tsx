@@ -480,6 +480,14 @@ function WorkoutPicker({
                 setOpenGroup(g);
                 setOpen(null);
               }}
+              extra={{
+                functional: (
+                  <Text style={styles.stabilityNote}>
+                    🛡️ Stability & Rehab programs run alongside the main program, not on calendar days. Give one from the
+                    Stability card under the program on this Training tab.
+                  </Text>
+                ),
+              }}
               renderFamily={(f) => {
                 const isOpen = open === f.key;
                 const usedCount = usedInBatch(f.key, f.programs, used);
@@ -573,6 +581,7 @@ function WorkoutPicker({
 }
 
 const styles = StyleSheet.create({
+  stabilityNote: { color: "#CBD5E1", fontSize: 13, marginHorizontal: 12, marginBottom: 12, marginTop: 4 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
   title: { color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 4 },
   helper: { color: "#94A3B8", fontSize: 13, lineHeight: 18, marginBottom: 10 },
