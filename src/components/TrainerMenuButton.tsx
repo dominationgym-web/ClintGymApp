@@ -15,8 +15,14 @@ export default function TrainerMenuButton() {
     <MenuButton
       items={[
         { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
-        // The stability programs to give clients (GRIZZ, 2026-10-14: trainer side only).
-        { ...STABILITY_MENU_ITEM, onPress: () => navigation.navigate("Stability") },
+        // The stability programs to give clients (GRIZZ, 2026-10-14: trainer side only),
+        // with every exercise's video for 1-on-1 coaching (named by GRIZZ, 2026-10-16).
+        {
+          ...STABILITY_MENU_ITEM,
+          title: "Stability & Rehab programming",
+          summary: "Rehab to advanced programs for ankle, knee, hip, core, shoulder, wrist and neck, with a video or examples online for every exercise.",
+          onPress: () => navigation.navigate("Stability"),
+        },
         ...TRAINER_GUIDES.map((g) => ({
           key: g.key,
           title: g.title,

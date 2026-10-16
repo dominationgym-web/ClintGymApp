@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
-import WatchOnlineLink from "@/components/WatchOnlineLink";
+import StabilityHowTo from "@/components/stability/StabilityHowTo";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
   assessExercise,
@@ -110,21 +109,7 @@ export default function StabilityExerciseCard({ exercise, dose, mode, videoUrl, 
 
       {open && (
         <View style={styles.body}>
-          {videoUrl ? <ExerciseVideoPreview url={videoUrl} /> : <WatchOnlineLink name={exercise.name} search={exercise.search} />}
-          <Text style={styles.label}>How to do it</Text>
-          {exercise.steps.map((step, i) => (
-            <Text key={i} style={styles.text}>
-              {i + 1}. {step}
-            </Text>
-          ))}
-          <Text style={styles.label}>⛔ Stop {exercise.measure === "hold" ? "the clock" : "counting"} when</Text>
-          <Text style={styles.text}>{exercise.lossOfControl}</Text>
-          <Text style={styles.label}>🏋️ Resistance</Text>
-          <Text style={styles.text}>{exercise.resistance}</Text>
-          <Text style={styles.label}>⬇ Easier</Text>
-          <Text style={styles.text}>{exercise.easier}</Text>
-          <Text style={styles.label}>⬆ Harder (once you hit the target two sessions running)</Text>
-          <Text style={styles.text}>{exercise.harder}</Text>
+          <StabilityHowTo exercise={exercise} videoUrl={videoUrl} />
 
           <View style={styles.logBox}>
             <Text style={styles.logTitle}>
@@ -186,8 +171,6 @@ const styles = StyleSheet.create({
   done: { color: "#22C55E", fontSize: 18, fontWeight: "800", marginRight: 10 },
   arrow: { color: BRAND_GOLD, fontSize: 13 },
   body: { paddingHorizontal: 12, paddingBottom: 12 },
-  label: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 10, marginBottom: 2 },
-  text: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, marginBottom: 2 },
   logBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 14 },
   logTitle: { color: "#fff", fontSize: 14.5, fontWeight: "700", marginBottom: 4 },
   history: { color: "#94A3B8", fontSize: 12.5, marginBottom: 6 },
