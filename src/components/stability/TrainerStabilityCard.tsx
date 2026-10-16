@@ -230,7 +230,7 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
               <Text style={styles.smallBtnText}>Cancel</Text>
             </Pressable>
           </View>
-          <Text style={styles.sub}>To read the full programs first: ☰ menu → Stability & injury prevention.</Text>
+          <Text style={styles.sub}>To read the full programs first: ☰ menu → Stability & Rehab programming (tap any exercise for its video).</Text>
         </View>
       )}
     </View>

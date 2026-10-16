@@ -139,7 +139,7 @@ export default function ProgramsScreen({ navigation }: Props) {
           ),
           functional: (
             <Pressable style={styles.shortcut} onPress={() => navigation.navigate("Stability")}>
-              <Text style={styles.shortcutText}>🛡️ Stability & injury prevention programs ›</Text>
+              <Text style={styles.shortcutText}>🛡️ Stability & Rehab programming ›</Text>
               <Text style={styles.description}>
                 Ankle to neck, Rehab to Advanced. They run alongside the main program; give one from the client's
                 Training tab.

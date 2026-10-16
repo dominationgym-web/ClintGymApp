@@ -222,7 +222,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",
-        "🛡️ Stability programs (Training tab): give a client a 4-8 week program for their ankle, knee, hip, core, shoulder, wrist or neck at Rehab, Beginner, Intermediate or Advanced level. They get a message and it appears in their menu. You see the week they're on, their logged holds and reps, and where they're ready to progress or struggling; move them up, repeat or stop it from there. Read every program first from your ☰ menu → Stability & injury prevention.",
+        "🛡️ Stability programs (Training tab): give a client a 4-8 week program for their ankle, knee, hip, core, shoulder, wrist or neck at Rehab, Beginner, Intermediate or Advanced level. They get a message and it appears in their menu. You see the week they're on, their logged holds and reps, and where they're ready to progress or struggling; move them up, repeat or stop it from there. Read every program first from your ☰ menu → Stability & Rehab programming, where you can tap any exercise for its video (or examples online) and how-to, handy for 1-on-1 sessions too.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
         "Photos and Notes: progress photos, and private notes only you can see.",
       ],

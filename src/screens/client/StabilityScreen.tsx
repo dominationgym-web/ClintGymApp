@@ -7,6 +7,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { useAuth } from "@/context/AuthContext";
 import type { ClientStabilityProgram, StabilityLog } from "@/types/database";
 import StabilityExerciseCard, { type StabilityEntry } from "@/components/stability/StabilityExerciseCard";
+import StabilityHowTo from "@/components/stability/StabilityHowTo";
 import {
   findArea,
   findExercise,
@@ -21,6 +22,7 @@ import {
   stabilityWeek,
   targetText,
   type StabilityArea,
+  type StabilityExercise,
   type StabilityLevel,
   type StabilityMode,
 } from "@/lib/stability";
@@ -154,13 +156,29 @@ export default function StabilityScreen({ role = "client" }: { role?: "client" |
 
   const toggle = (key: string) => setFold((f) => (f === key ? null : key));
 
+  // A tappable exercise in the browse views: opens its video (or watch-online
+  // link) and how-to, so trainers can coach it 1-on-1 (GRIZZ, 2026-10-16).
+  const exerciseRow = (ex: StabilityExercise, rowKey: string, label: React.ReactNode) => (
+    <View key={rowKey}>
+      <Pressable onPress={() => setOpenEx((o) => (o === rowKey ? null : rowKey))} style={styles.exRow} accessibilityRole="button">
+        <Text style={[styles.text, { flex: 1 }]}>{label}</Text>
+        <Text style={styles.exPlay}>{openEx === rowKey ? "▲" : "▶"}</Text>
+      </Pressable>
+      {openEx === rowKey && (
+        <View style={styles.exBody}>
+          <StabilityHowTo exercise={ex} videoUrl={ex.video ? (videos[ex.video] ?? null) : null} />
+        </View>
+      )}
+    </View>
+  );
+
   // ---- Home: your programs, the 7 areas, the basics ----
   if (step.kind === "home") {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <Text style={styles.heroIcon}>{STABILITY_MENU_ITEM.icon}</Text>
-          <Text style={styles.heroTitle}>Stability & injury prevention</Text>
+          <Text style={styles.heroTitle}>{role === "trainer" ? "Stability & Rehab programming" : "Stability & injury prevention"}</Text>
           <Text style={styles.heroText}>
             {role === "trainer"
               ? "28 programs from the ground up: 7 areas, each at Rehab, Beginner, Intermediate and Advanced. Browse them here, then give a client one on their Training tab."
@@ -248,6 +266,11 @@ export default function StabilityScreen({ role = "client" }: { role?: "client" |
           ))}
         </Fold>
 
+        <Fold title={`All ${area.title.toLowerCase()} exercises, with videos`} icon="▶" open={fold === "exercises"} onPress={() => toggle("exercises")}>
+          <Text style={[styles.hint, { marginTop: 0, marginBottom: 6 }]}>Tap one for its video (or examples online), how to do it, and how to make it easier or harder.</Text>
+          {area.exercises.map((ex) => exerciseRow(ex, `all-${ex.key}`, <Text style={{ fontWeight: "700" }}>{ex.name}</Text>))}
+        </Fold>
+
         <Text style={styles.section}>Choose your level</Text>
         {LEVELS.map((l) => {
           const program = findProgram(step.area, l.level);
@@ -305,15 +328,17 @@ export default function StabilityScreen({ role = "client" }: { role?: "client" |
             <Text style={[styles.text, { fontStyle: "italic", marginBottom: 6 }]}>{ph.focus}</Text>
             {ph.items.map((item) => {
               const ex = findExercise(step.area, item.ex)!;
-              return (
-                <Text key={item.ex} style={styles.text}>
+              return exerciseRow(
+                ex,
+                `ph${ph.from}-${item.ex}`,
+                <>
                   {item.primer ? "⚡ " : "•  "}
                   <Text style={{ fontWeight: "700" }}>{ex.name}</Text>: {ex.measure === "hold" ? "hold " : ""}
                   {targetText(item, ex, "full")}
-                </Text>
+                </>,
               );
             })}
-            <Text style={styles.hint}>⚡ = part of the short version before a workout</Text>
+            <Text style={styles.hint}>⚡ = part of the short version before a workout. Tap an exercise for its video and how-to.</Text>
           </Fold>
         ))}
         <Fold title="The finish test" icon="🏁" open={fold === "test"} onPress={() => toggle("test")}>
@@ -435,6 +460,9 @@ const styles = StyleSheet.create({
   arrow: { color: BRAND_GOLD, fontSize: 13 },
   text: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, marginBottom: 4 },
   hint: { color: "#94A3B8", fontSize: 12.5, marginTop: 4, marginBottom: 10 },
+  exRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
+  exPlay: { color: BRAND_GOLD, fontSize: 13, marginLeft: 8 },
+  exBody: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginBottom: 8 },
   levelCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginBottom: 8, borderLeftWidth: 4 },
   levelTitle: { color: "#fff", fontSize: 15.5, fontWeight: "800" },
   levelWho: { color: "#94A3B8", fontSize: 13, lineHeight: 18, marginTop: 3 },
