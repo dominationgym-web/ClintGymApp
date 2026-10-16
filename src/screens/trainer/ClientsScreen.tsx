@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, Refresh
 import { supabase } from "@/lib/supabase";
 import { problemColor, problemLevel, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
 import { toIsoDate } from "@/lib/dates";
+import { bringBackChanges } from "@/lib/comeback";
 import { useAuth } from "@/context/AuthContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
 import type { AccessStatus, Client } from "@/types/database";
@@ -18,7 +19,11 @@ const STATUS_LABEL: Record<AccessStatus, string> = {
 
 export default function ClientsScreen({ navigation }: Props) {
   const { trainer } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const [allClients, setClients] = useState<Client[]>([]);
+  // Archived clients (0097) are kept but hidden behind the Archived button.
+  const [showArchived, setShowArchived] = useState(false);
+  const archivedCount = allClients.filter((c) => c.archived_at).length;
+  const clients = allClients.filter((c) => !!c.archived_at === showArchived);
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
   // Red dot while a problem is open, orange while it's being fixed (0075).
@@ -49,7 +54,7 @@ export default function ClientsScreen({ navigation }: Props) {
       });
 
     // This month's consistency score - only meaningful for active clients.
-    const active = list.filter((c) => c.access_status === "active");
+    const active = list.filter((c) => c.access_status === "active" && !c.archived_at);
     const results = await Promise.all(
       active.map((c) => supabase.rpc("client_monthly_consistency", { p_client_id: c.id }))
     );
@@ -142,6 +147,26 @@ export default function ClientsScreen({ navigation }: Props) {
     );
   };
 
+  // Bring an archived client back: all their old data is still there.
+  const bringBack = (client: Client) => {
+    Alert.alert(
+      `Bring ${client.name} back?`,
+      "All their old data is still here. They'll be asked to fill in the intake form again, so you can compare then and now on their Overview. Tap Activate once they've paid.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Bring back",
+          onPress: async () => {
+            const changes = bringBackChanges(client, new Date().toISOString());
+            const { error } = await supabase.from("clients").update(changes).eq("id", client.id);
+            if (error) return Alert.alert("Couldn't bring them back", error.message);
+            setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...changes } : c)));
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -154,8 +179,19 @@ export default function ClientsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Clients</Text>
-      <Text style={styles.helper}>Use Activate/Mark expired to manage client access after confirming payment.</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{showArchived ? "Archived clients" : "Clients"}</Text>
+        {(archivedCount > 0 || showArchived) && (
+          <Pressable style={styles.archiveToggle} onPress={() => setShowArchived((v) => !v)}>
+            <Text style={styles.archiveToggleText}>{showArchived ? "‹ Back to clients" : `🗄 Archived (${archivedCount})`}</Text>
+          </Pressable>
+        )}
+      </View>
+      <Text style={styles.helper}>
+        {showArchived
+          ? "Old clients, with all their data kept. Tap Bring back if they start again."
+          : "Use Activate/Mark expired to manage client access after confirming payment. Archive an old client from their Overview."}
+      </Text>
       <FlatList
         data={clients}
         keyExtractor={(c) => c.id}
@@ -185,7 +221,11 @@ export default function ClientsScreen({ navigation }: Props) {
                   )}
                 </View>
               </View>
-              {item.access_status === "expired" ? (
+              {item.archived_at ? (
+                <Pressable style={styles.actionButton} onPress={() => bringBack(item)}>
+                  <Text style={styles.actionButtonText}>Bring back</Text>
+                </Pressable>
+              ) : item.access_status === "expired" ? (
                 <Pressable style={styles.actionButton} onPress={() => activateClient(item)}>
                   <Text style={styles.actionButtonText}>Activate</Text>
                 </Pressable>
@@ -197,7 +237,7 @@ export default function ClientsScreen({ navigation }: Props) {
             </Pressable>
           );
         }}
-        ListEmptyComponent={<Text style={styles.helper}>No clients yet.</Text>}
+        ListEmptyComponent={<Text style={styles.helper}>{showArchived ? "No archived clients." : "No clients yet."}</Text>}
       />
     </View>
   );
@@ -218,6 +258,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
+  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  archiveToggle: { backgroundColor: "#1E293B", borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
+  archiveToggleText: { color: "#CBD5E1", fontWeight: "600", fontSize: 12 },
   helper: { color: "#64748B", fontSize: 12, marginBottom: 16 },
   row: {
     flexDirection: "row",

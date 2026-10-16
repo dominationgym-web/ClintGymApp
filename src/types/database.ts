@@ -202,6 +202,14 @@ export type Client = {
   // dealt with the foundation program offer (0087).
   training_level: "never" | "beginner" | "intermediate" | "advanced" | null;
   foundation_status: "suggested" | "approved" | "declined" | null;
+  // Archive (0097): hidden from the trainer's lists while archived_at is set.
+  // Nothing is deleted. first_stint_ended_at is the first archive (set once),
+  // returned_at the last time they were brought back, and
+  // first_intake_responses their intake answers from the first time.
+  archived_at: string | null;
+  first_stint_ended_at: string | null;
+  returned_at: string | null;
+  first_intake_responses: Record<string, string> | null;
   created_at: string;
 }
 

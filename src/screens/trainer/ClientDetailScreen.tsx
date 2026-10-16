@@ -33,6 +33,8 @@ import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import TrainerStabilityCard from "@/components/stability/TrainerStabilityCard";
 import WellbeingReports from "@/components/WellbeingReports";
 import ClientProblems from "@/components/ClientProblems";
+import ComebackCompareCard from "@/components/ComebackCompareCard";
+import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 
@@ -260,6 +262,32 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     if (error) Alert.alert("Couldn't save notes", error.message);
   };
 
+  // Archive (0097): hides an old client and closes their access. Nothing is
+  // deleted, so they can be brought back with all their history.
+  const archiveOrBringBack = () => {
+    if (!client) return;
+    const archived = !!client.archived_at;
+    Alert.alert(
+      archived ? `Bring ${client.name} back?` : `Archive ${client.name}?`,
+      archived
+        ? "All their old data is still here. They'll be asked to fill in the intake form again, so you can compare then and now below. Tap Activate on the Clients list once they've paid."
+        : "They move off your client lists and their access closes. Nothing is deleted: if they come back, open Archived on the Clients tab and tap Bring back.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: archived ? "Bring back" : "Archive",
+          onPress: async () => {
+            const now = new Date().toISOString();
+            const changes = archived ? bringBackChanges(client, now) : archiveChanges(client, now);
+            const { error } = await supabase.from("clients").update(changes).eq("id", client.id);
+            if (error) return Alert.alert("Couldn't update", error.message);
+            setClient((c) => (c ? { ...c, ...changes } : c));
+          },
+        },
+      ]
+    );
+  };
+
   const toggleLifestyleReset = async () => {
     const next = client?.lifestyle_reset_started_at ? null : todayIso();
     // Ending clears her start date too, so a later enrolment starts at week 1.
@@ -327,6 +355,17 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         </View>
         {tab === "overview" && (
           <>
+            {client.archived_at && (
+              <View style={styles.archivedBanner}>
+                <Text style={styles.archivedText}>
+                  🗄 Archived on {new Date(client.archived_at).toLocaleDateString()}. All their data is kept.
+                </Text>
+                <Pressable style={styles.button} onPress={archiveOrBringBack}>
+                  <Text style={styles.buttonText}>Bring back</Text>
+                </Pressable>
+              </View>
+            )}
+            <ComebackCompareCard client={client} />
             <TrainingLevelBanner level={client.training_level} />
             <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
             {client.package_type && (
@@ -431,6 +470,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   </View>
                 ))}
               </View>
+            )}
+            {!client.archived_at && (
+              <Pressable style={styles.archiveButton} onPress={archiveOrBringBack}>
+                <Text style={styles.archiveButtonText}>🗄 Archive this client</Text>
+              </Pressable>
             )}
           </>
         )}
@@ -696,6 +740,10 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 }
 
 const styles = StyleSheet.create({
+  archivedBanner: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 12 },
+  archivedText: { color: "#CBD5E1", fontSize: 13 },
+  archiveButton: { borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 24 },
+  archiveButtonText: { color: "#94A3B8", fontWeight: "600" },
   levelBanner: {
     flexDirection: "row",
     alignItems: "center",

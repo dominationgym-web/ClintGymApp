@@ -59,7 +59,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     const { count } = await supabase
       .from("clients")
       .select("id", { count: "exact", head: true })
-      .eq("trainer_id", trainer.id)
+      .eq("trainer_id", trainer.id).is("archived_at", null)
       .eq("access_status", "expired")
       .is("plan_started_at", null);
     setWaitingSignups(count ?? 0);
@@ -77,7 +77,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   const loadRecoveryClients = useCallback(async () => {
     if (!trainer) return;
     const today = todayIso();
-    const { data: mine } = await supabase.from("clients").select("id, name").eq("trainer_id", trainer.id);
+    const { data: mine } = await supabase.from("clients").select("id, name").eq("trainer_id", trainer.id).is("archived_at", null);
     const trained = await clientsWhoTrainedYesterday((mine ?? []).map((c) => c.id), today);
     const checks = await Promise.all(trained.map((id) => loadRecoveryCheck(id, today)));
     setRecoveryClients(
@@ -98,7 +98,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 
   const loadNewVideos = useCallback(async () => {
     if (!trainer) return;
-    const { data: mine } = await supabase.from("clients").select("id, name").eq("trainer_id", trainer.id);
+    const { data: mine } = await supabase.from("clients").select("id, name").eq("trainer_id", trainer.id).is("archived_at", null);
     const ids = (mine ?? []).map((c) => c.id);
     if (ids.length === 0) return setNewVideos([]);
     const { data } = await supabase
@@ -125,7 +125,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     const { data } = await supabase
       .from("clients")
       .select("id, name")
-      .eq("trainer_id", trainer.id)
+      .eq("trainer_id", trainer.id).is("archived_at", null)
       .eq("foundation_status", "suggested")
       .order("created_at", { ascending: false });
     setFoundationWaiting(data ?? []);
@@ -153,7 +153,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     const { data: clients } = await supabase
       .from("clients")
       .select("*")
-      .eq("trainer_id", trainer.id)
+      .eq("trainer_id", trainer.id).is("archived_at", null)
       // Everyone who still has access, which includes `expiring_soon` - those
       // are paid-up clients inside their renewal window, and filtering on
       // 'active' alone dropped them (and any red flag they had raised) off the
