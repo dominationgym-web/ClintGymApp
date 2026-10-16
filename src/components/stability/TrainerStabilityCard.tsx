@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientStabilityProgram, StabilityLog } from "@/types/database";
+import StabilityHowTo from "@/components/stability/StabilityHowTo";
 import {
   assessExercise,
   findArea,
@@ -18,6 +19,7 @@ import {
   targetText,
   unitLabel,
   type StabilityArea,
+  type StabilityExercise,
   type StabilityLevel,
 } from "@/lib/stability";
 
@@ -35,6 +37,23 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
   const [area, setArea] = useState<StabilityArea | null>(null);
   const [level, setLevel] = useState<StabilityLevel | null>(null);
   const [busy, setBusy] = useState(false);
+  // Every exercise opens its video and how-to, so the trainer can do and coach
+  // it too (GRIZZ, 2026-10-16).
+  const [openEx, setOpenEx] = useState<string | null>(null);
+  const [videos, setVideos] = useState<Record<string, string | null>>({});
+
+  useEffect(() => {
+    supabase.rpc("stability_exercise_videos").then(({ data }) => {
+      setVideos(Object.fromEntries((data ?? []).map((r) => [r.name, r.external_url])));
+    });
+  }, []);
+
+  const howTo = (rowKey: string, ex: StabilityExercise) =>
+    openEx === rowKey && (
+      <View style={styles.howTo}>
+        <StabilityHowTo exercise={ex} videoUrl={ex.video ? (videos[ex.video] ?? null) : null} />
+      </View>
+    );
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -160,9 +179,13 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
                 );
                 return (
                   <View key={item.ex} style={styles.row}>
-                    <Text style={styles.exName}>
-                      {ex.name} <Text style={styles.target}>({targetText(item, ex, "full")})</Text>
-                    </Text>
+                    <Pressable onPress={() => setOpenEx((o) => (o === `${p.id}-${item.ex}` ? null : `${p.id}-${item.ex}`))} accessibilityRole="button">
+                      <Text style={styles.exName}>
+                        {ex.name} <Text style={styles.target}>({targetText(item, ex, "full")})</Text>
+                        <Text style={styles.target}>  {openEx === `${p.id}-${item.ex}` ? "▲" : "▶ video"}</Text>
+                      </Text>
+                    </Pressable>
+                    {howTo(`${p.id}-${item.ex}`, ex)}
                     <Text style={styles.exLine}>
                       {a.last ? `Last: ${a.last}${ex.measure === "hold" ? " sec" : ""} · Best: ${unitLabel(ex, a.best ?? 0)}` : "Not logged yet"}
                       {a.status === "ready" ? "  ⬆ ready to progress" : a.status === "easier" ? "  ⬇ struggling: under half the target" : ""}
@@ -218,6 +241,25 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
               ))}
             </>
           )}
+          {area && level && (
+            <>
+              <Text style={styles.pickLabel}>3. The exercises (tap for the video and how-to)</Text>
+              {[...new Set(findProgram(area, level).phases.flatMap((ph) => ph.items.map((i) => i.ex)))].map((key) => {
+                const ex = findExercise(area, key)!;
+                return (
+                  <View key={key} style={styles.row}>
+                    <Pressable onPress={() => setOpenEx((o) => (o === `pick-${key}` ? null : `pick-${key}`))} accessibilityRole="button">
+                      <Text style={styles.exName}>
+                        {ex.name}
+                        <Text style={styles.target}>  {openEx === `pick-${key}` ? "▲" : "▶ video"}</Text>
+                      </Text>
+                    </Pressable>
+                    {howTo(`pick-${key}`, ex)}
+                  </View>
+                );
+              })}
+            </>
+          )}
           <View style={styles.actions}>
             <Pressable
               style={[styles.startBtn, (!area || !level || busy) && { opacity: 0.5 }]}
@@ -238,6 +280,7 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
 }
 
 const styles = StyleSheet.create({
+  howTo: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 6 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, marginTop: 12, overflow: "hidden" },
   header: { flexDirection: "row", alignItems: "center", padding: 12 },
   title: { color: "#fff", fontSize: 15, fontWeight: "700" },

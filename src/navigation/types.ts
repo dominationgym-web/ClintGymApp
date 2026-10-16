@@ -1,3 +1,4 @@
+import type { StabilityArea } from "@/lib/stability";
 import type { TrainerGuideKey } from "@/lib/trainerGuides";
 import type { CompositeScreenProps, NavigatorScreenParams } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
@@ -52,7 +53,8 @@ export type TrainerStackParamList = {
   Billing: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
   AppGuide: undefined;
-  Stability: undefined;
+  // area opens that body area straight away (from an injury a client reported).
+  Stability: { area?: StabilityArea } | undefined;
 };
 
 export type TrainerTabScreenProps<T extends keyof TrainerTabParamList> = CompositeScreenProps<

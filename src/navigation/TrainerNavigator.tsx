@@ -83,7 +83,7 @@ export default function TrainerNavigator() {
         />
         <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
         <Stack.Screen name="Stability" options={{ title: "Stability", headerBackTitle: "Back" }}>
-          {() => <StabilityScreen role="trainer" />}
+          {({ route }) => <StabilityScreen role="trainer" initialArea={route.params?.area} />}
         </Stack.Screen>
       </Stack.Navigator>
     </>
