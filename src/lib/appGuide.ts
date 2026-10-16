@@ -71,6 +71,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "📈 Try this weight next tells you when you're ready to go heavier. Beat last time and you earn a gold star ⭐.",
         "Gym busy? Tap ⇄ Change exercise to swap for another exercise of the same body part, just for that day.",
         "Sprint, HIIT and conditioning workouts have a ⏱ Start interval timer button. It explains the session and how hard each effort should feel, then counts every round: red for work, green for easy, with a buzz at each switch. Save it at the end and your efforts go on your workout.",
+        "Drop set programs (intermediate and advanced): put in your start weight and reps, and the round clock starts. It pauses while you type the next weight and runs again when you tap Log. Tap Finish round to save your time and start the 6-minute recovery. Next time, try to beat it.",
         "Training at home? List your equipment under 🏠 My home equipment on your Profile (dumbbells, kettlebells, bench, bands, a photo of your multi station...). Your workouts then only use what you have. Add to it whenever you buy something new.",
         "When you finish, tap Complete workout. If you couldn't finish or couldn't train, say why. Your coach sees a green, orange or red dot.",
       ],
@@ -235,7 +236,8 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Programs tab",
       points: [
         "Programs sit in three groups. Tap one to open it, then tap a heading inside to see its programs.",
-        "🏋️ Gym (🏠 Home on the Home tab): beginner & intermediate foundations, 12-week goal programs, full body, upper and lower body, Chest & Bi, Back & Tri, Legs, and your own programs.",
+        "🏋️ Gym (🏠 Home on the Home tab): beginner & intermediate foundations, 12-week goal programs, full body, upper and lower body, Chest & Bi, Back & Tri, Legs, drop sets (3 per body part, for intermediate and advanced lifters: 2 rounds for intermediate, 3 for advanced), and your own programs.",
+        "Drop set round times show under the client's training log, with how many drops and reps they did, so you can see their output.",
         "⚡ Performance: explosive power, speed and sports strength programs, HIIT, sprint and threshold intervals, and 8-week fight sport conditioning. 🏅 A link inside (and Menu ☰ → Sports Performance) explains who each one suits.",
         "🧘 Functional: mobility and flexibility programs, plus a link to the 🛡️ stability & injury prevention programs, which run alongside a client's main program.",
         "The same three groups show when you choose a client's program or put a workout on their calendar. Tap + Build a program to make your own.",

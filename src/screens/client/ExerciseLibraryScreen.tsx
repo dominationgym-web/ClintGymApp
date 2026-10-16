@@ -48,6 +48,8 @@ import ClientCalendarView from "@/components/ClientCalendarView";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import IntervalTimerModal from "@/components/IntervalTimerModal";
 import { hasIntervals } from "@/lib/intervalTimer";
+import DropSetLogger from "@/components/DropSetLogger";
+import { isDropSetProgram, roundsForLevel } from "@/lib/dropSets";
 import { equipmentList, homeFit } from "@/lib/equipment";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import {
@@ -151,6 +153,8 @@ export default function ExerciseLibraryScreen() {
   // The program's how-to and nutrition notes open on tap, so the workout stays near the top.
   const [openInfo, setOpenInfo] = useState<"how" | "food" | null>(null);
   const [timerOpen, setTimerOpen] = useState(false);
+  // Drop set programs (0099, GRIZZ, 2026-10-16) log in their own logger.
+  const [dropRow, setDropRow] = useState<ProgramExercise | null>(null);
   const { height: screenHeight } = useWindowDimensions();
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -260,9 +264,13 @@ export default function ExerciseLibraryScreen() {
   };
   // Today's workout with any swaps in place, so logging, ticking off and the
   // next-exercise prompt all follow the exercise the client actually does.
+  // Drop set programs show 2 rounds (intermediate) or 3 (advanced) as the sets.
+  const dropMode = isDropSetProgram(program?.program);
+  const dropRounds = roundsForLevel(client?.training_level);
   const todaysWorkout = homePlan.map((row) => {
     const swap = swaps[row.id];
-    return swap ? { ...row, exercise_id: swap.id, exercise_name: swap.name } : row;
+    const r = swap ? { ...row, exercise_id: swap.id, exercise_name: swap.name } : row;
+    return dropMode && r.kind === "exercise" ? { ...r, sets: dropRounds } : r;
   });
   const plannedRow = (row: ProgramExercise) => homePlan.find((r) => r.id === row.id) ?? row;
   // 20 ab reps between sets on this workout, unless the trainer switched it off (0083).
@@ -478,11 +486,19 @@ export default function ExerciseLibraryScreen() {
     row.kind === "cardio"
       ? cardioDone.includes(row.id) ? row.sets : 0
       : allTodaysSets.filter(
-          (s) => !s.warm_up && (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name),
+          (s) =>
+            !s.warm_up &&
+            // A drop set round starts at set 1, so count rounds, not drops.
+            (!dropMode || s.set_number === 1) &&
+            (row.exercise_id ? s.exercise_id === row.exercise_id : s.exercise_name === row.exercise_name),
         ).length;
 
   // `rest`: start a rest timer on arrival (coming back to a superset's first half).
   const openProgramExercise = (row: ProgramExercise, rest = 0) => {
+    if (dropMode) {
+      setDropRow(row);
+      return;
+    }
     // Fall back to a name-only entry if the exercise was taken out of the library.
     const exercise = exercises.find((e) => e.id === row.exercise_id) ??
       exercises.find((e) => e.name === row.exercise_name) ?? {
@@ -958,6 +974,18 @@ export default function ExerciseLibraryScreen() {
           rows={todaysWorkout}
           onSave={saveIntervals}
           onClose={() => setTimerOpen(false)}
+        />
+      )}
+      {program && client && dropMode && (
+        <DropSetLogger
+          visible={!!dropRow}
+          row={dropRow}
+          client={client}
+          programId={program.program.id}
+          rounds={dropRounds}
+          roundsDone={dropRow ? setsDoneFor(dropRow) : 0}
+          onSaved={(logs) => setAllTodaysSets((prev) => [...prev, ...logs])}
+          onClose={() => setDropRow(null)}
         />
       )}
       <WorkoutReasonModal
