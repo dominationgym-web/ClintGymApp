@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { withExtraCardio } from "@/lib/programs";
 import { applyExerciseChanges, type ChangeWrites } from "@/lib/exerciseChanges";
+import { exercisesForSlot } from "@/lib/trainingCalendar";
 import type { ClientExerciseChange, ClientProgram, Program, ProgramExercise } from "@/types/database";
 
 export interface ActiveProgram {
@@ -91,21 +92,64 @@ export async function loadCalendarWorkouts(clientId: string, from: string, to: s
 export interface CalendarDayWorkout {
   program: Program;
   exercises: ProgramExercise[];
+  /** The program's session on this day (0098), null for the whole workout. */
+  daySlot: number | null;
 }
 
-/** The workout on a client's calendar for `date` (0069), with its exercises, or null. */
-export async function loadCalendarWorkoutFor(clientId: string, date: string): Promise<CalendarDayWorkout | null> {
-  const { data: entry } = await supabase
-    .from("client_calendar_workouts")
+export interface CalendarDay {
+  /** The day's main workout, or null when there are only extra blocks. */
+  main: CalendarDayWorkout | null;
+  /** Extra blocks for the day (0098, GRIZZ, 2026-10-16), e.g. mobility or fight, in order. */
+  extras: CalendarDayWorkout[];
+}
+
+/** A client's extra calendar blocks between two dates (0098), leaving out ones taken off. */
+export async function loadCalendarBlocks(clientId: string, from: string, to: string) {
+  const { data } = await supabase
+    .from("client_calendar_blocks")
     .select("*")
     .eq("client_id", clientId)
-    .eq("workout_date", date)
-    .maybeSingle();
-  if (!entry) return null;
-  const [{ data: program }, { data: exercises }, changes] = await Promise.all([
-    supabase.from("programs").select("*").eq("id", entry.program_id).maybeSingle(),
-    loadProgramExercises(entry.program_id),
+    .gte("workout_date", from)
+    .lte("workout_date", to)
+    .is("removed_at", null)
+    .order("workout_date", { ascending: true })
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true });
+  return data ?? [];
+}
+
+/**
+ * What's on a client's calendar for `date` (0069): the main workout and any
+ * extra blocks (0098), each with its exercises (just its session for a day
+ * from a weekly program) and the client's exercise changes. Null when nothing
+ * is planned.
+ */
+export async function loadCalendarWorkoutFor(clientId: string, date: string): Promise<CalendarDay | null> {
+  const [{ data: entry }, blocks] = await Promise.all([
+    supabase.from("client_calendar_workouts").select("*").eq("client_id", clientId).eq("workout_date", date).maybeSingle(),
+    loadCalendarBlocks(clientId, date, date),
+  ]);
+  const picks = [...(entry ? [entry] : []), ...blocks];
+  if (picks.length === 0) return null;
+  const ids = [...new Set(picks.map((p) => p.program_id))];
+  const [{ data: programs }, { data: rows }, changes] = await Promise.all([
+    supabase.from("programs").select("*").in("id", ids),
+    supabase
+      .from("program_exercises")
+      .select("*")
+      .in("program_id", ids)
+      .order("week_number", { ascending: true })
+      .order("day_number", { ascending: true })
+      .order("sort_order", { ascending: true }),
     loadExerciseChanges(clientId),
   ]);
-  return program ? { program, exercises: applyExerciseChanges(exercises ?? [], changes) } : null;
+  const build = (pick: { program_id: string; day_slot: number | null }): CalendarDayWorkout | null => {
+    const program = (programs ?? []).find((p) => p.id === pick.program_id);
+    if (!program) return null;
+    const own = (rows ?? []).filter((r) => r.program_id === pick.program_id);
+    return { program, exercises: applyExerciseChanges(exercisesForSlot(own, pick.day_slot), changes), daySlot: pick.day_slot };
+  };
+  const main = entry ? build(entry) : null;
+  const extras = blocks.map(build).filter((b): b is CalendarDayWorkout => !!b);
+  return main || extras.length > 0 ? { main, extras } : null;
 }
