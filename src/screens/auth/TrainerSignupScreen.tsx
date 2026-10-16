@@ -62,7 +62,28 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       Alert.alert(title, message);
       return;
     }
-    const { data: authData, error: authError } = await supabase.auth.signUp({ email: email.trim(), password });
+    let { data: authData, error: authError } = await supabase.auth.signUp({ email: email.trim(), password });
+    if (authError && /already registered/i.test(authError.message)) {
+      // An earlier try made the login but dropped before the trainer details
+      // were saved (GRIZZ, 2026-10-16: a tester's application never arrived).
+      // With the same password, sign them in and finish it, as client signup does.
+      const retry = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (!retry.error && retry.data.user) {
+        const userId = retry.data.user.id;
+        const [{ data: trainerRow }, { data: clientRow }] = await Promise.all([
+          retryIfIssuedInFuture(() => supabase.from("trainers").select("id").eq("id", userId).maybeSingle()),
+          retryIfIssuedInFuture(() => supabase.from("clients").select("id").eq("id", userId).maybeSingle()),
+        ]);
+        if (trainerRow || clientRow) {
+          await supabase.auth.signOut();
+          setLoading(false);
+          Alert.alert("Already signed up", `This email already has a ${trainerRow ? "trainer" : "client"} account. Log in instead.`);
+          return;
+        }
+        authData = { user: retry.data.user, session: retry.data.session };
+        authError = null;
+      }
+    }
     if (authError || !authData.user) {
       setLoading(false);
       Alert.alert("Couldn't sign up", authError?.message ?? "Unknown error");

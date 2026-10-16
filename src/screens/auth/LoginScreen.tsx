@@ -38,7 +38,7 @@ export default function LoginScreen({ navigation, route }: Props) {
         await supabase.auth.signOut();
         Alert.alert(
           "Finish signing up",
-          "Your sign-up didn't finish last time. Tap \"New client? Sign up\" and use the same email and password to complete it."
+          "Your sign-up didn't finish last time. Clients: tap \"New client? Sign up\". Trainers: tap \"Are you a trainer? Apply to coach here\". Use the same email and password to complete it."
         );
       }
     }
