@@ -150,7 +150,6 @@ export default function IntakeFormScreen() {
 
   const [wakeTime, setWakeTime] = useState("");
   const [bedtime, setBedtime] = useState("");
-  const [bedtimeConsistent, setBedtimeConsistent] = useState<boolean | null>(null);
   const [hasCaregiving, setHasCaregiving] = useState<boolean | null>(null);
 
   const [currentlyTraining, setCurrentlyTraining] = useState<boolean | null>(null);
@@ -217,7 +216,6 @@ export default function IntakeFormScreen() {
       eats_during_lunch: yn(eatsDuringLunch),
       wake_time: wakeTime.trim() || "Not answered",
       bedtime: bedtime.trim() || "Not answered",
-      bedtime_consistent: yn(bedtimeConsistent),
       has_caregiving_responsibilities: yn(hasCaregiving),
       currently_training: yn(currentlyTraining),
       smoker_or_vaper: yn(smoker),
@@ -367,11 +365,10 @@ export default function IntakeFormScreen() {
       <Text style={styles.sectionHeading}>Daily structure</Text>
       <TimeField label="Wake time" value={wakeTime} onChangeText={setWakeTime} />
       <TimeField label="Bedtime" value={bedtime} onChangeText={setBedtime} />
-      <YesNo label="Same bedtime most nights?" value={bedtimeConsistent} onChange={setBedtimeConsistent} />
       <YesNo label="Kids or caregiving that shapes your day?" value={hasCaregiving} onChange={setHasCaregiving} />
 
       <Text style={styles.sectionHeading}>Training habits</Text>
-      <YesNo label="Do you currently train elsewhere or on your own?" value={currentlyTraining} onChange={setCurrentlyTraining} />
+      <YesNo label="Are you training at the moment? (gym, home or with another coach)" value={currentlyTraining} onChange={setCurrentlyTraining} />
       {currentlyTraining && (
         <>
           <TimeField label="What time of day?" value={trainingTime} onChangeText={setTrainingTime} />
