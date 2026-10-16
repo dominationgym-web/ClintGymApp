@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  stabilityAreasFor,
   assessExercise,
   findExercise,
   itemsFor,
@@ -169,5 +170,24 @@ describe("stabilityStartMessage", () => {
     const msg = stabilityStartMessage("Thandi Mokoena", "knee", "rehab");
     expect(msg).toMatch(/^Thandi, I've started you on the Knee stability program \(Rehab, 8 weeks\)/);
     expect(msg).toContain("My stability program");
+  });
+});
+
+describe("stabilityAreasFor", () => {
+  it("maps every check-in pain area except Other to a program", async () => {
+    const { WELLBEING_TOPICS } = await import("@/lib/wellbeing");
+    const kinds = WELLBEING_TOPICS.find((t) => t.key === "pain")!.kinds;
+    for (const k of kinds) {
+      if (k === "Other") expect(stabilityAreasFor(k)).toEqual([]);
+      else expect(stabilityAreasFor(k).length, k).toBeGreaterThan(0);
+    }
+  });
+
+  it("reads free text from the intake injuries box", () => {
+    expect(stabilityAreasFor("Torn ACL in 2019, left knee still sore")).toEqual(["knee"]);
+    expect(stabilityAreasFor("bad back")).toEqual(["core"]);
+    expect(stabilityAreasFor("Upper back tight")).toEqual(["shoulder"]);
+    expect(stabilityAreasFor("tennis elbow and a stiff neck")).toEqual(["wrist", "neck"]);
+    expect(stabilityAreasFor("None", null, "")).toEqual([]);
   });
 });

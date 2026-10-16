@@ -57,9 +57,9 @@ const Bullet = ({ children }: { children: React.ReactNode }) => <Text style={sty
 // the client's Training tab. The client only sees the programs their coach
 // gave them: they do them and log each exercise as seconds held or reps done
 // before losing control. Runs alongside the client's main program.
-export default function StabilityScreen({ role = "client" }: { role?: "client" | "trainer" }) {
+export default function StabilityScreen({ role = "client", initialArea }: { role?: "client" | "trainer"; initialArea?: StabilityArea }) {
   const { client } = useAuth();
-  const [step, setStep] = useState<Step>({ kind: "home" });
+  const [step, setStep] = useState<Step>(initialArea ? { kind: "area", area: initialArea } : { kind: "home" });
   const [fold, setFold] = useState<string | null>(null);
   const [openEx, setOpenEx] = useState<string | null>(null);
   const [mode, setMode] = useState<StabilityMode>("primer");

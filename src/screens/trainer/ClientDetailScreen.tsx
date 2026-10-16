@@ -31,6 +31,8 @@ import ClientOwnMealPlan from "@/components/ClientOwnMealPlan";
 import WorkoutsSavedButton from "@/components/WorkoutsSavedButton";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import TrainerStabilityCard from "@/components/stability/TrainerStabilityCard";
+import RehabSuggestion from "@/components/stability/RehabSuggestion";
+import { stabilityAreasFor } from "@/lib/stability";
 import WellbeingReports from "@/components/WellbeingReports";
 import ClientProblems from "@/components/ClientProblems";
 import ComebackCompareCard from "@/components/ComebackCompareCard";
@@ -456,6 +458,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             )}
 
             {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
+            {client.injuries && stabilityAreasFor(client.injuries).length > 0 && <RehabSuggestion clientName={client.name} texts={[client.injuries]} />}
             {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
 
             <Text style={styles.sectionHeading}>Intake form</Text>
@@ -681,7 +684,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "notes" && (
           <>
-            <WellbeingReports clientId={client.id} />
+            <WellbeingReports clientId={client.id} clientName={client.name} />
             <Text style={styles.sectionHeading}>Trainer notes</Text>
             <TextInput
               style={styles.notesInput}

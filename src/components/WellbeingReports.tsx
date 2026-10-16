@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
+import RehabSuggestion from "@/components/stability/RehabSuggestion";
 import { reportsByTopic, WELLBEING_TOPICS, type WellbeingKey, type WellbeingReport } from "@/lib/wellbeing";
 
 // On the trainer's Notes tab: what the client reported on their check-ins
 // (0055), in three sections (Injury or pain, Fatigue, Mental exhaustion), so
 // the trainer can adjust their program. Tap a section to open it.
-export default function WellbeingReports({ clientId }: { clientId: string }) {
+export default function WellbeingReports({ clientId, clientName }: { clientId: string; clientName: string }) {
   const [reports, setReports] = useState<Record<WellbeingKey, WellbeingReport[]> | null>(null);
   const [open, setOpen] = useState<WellbeingKey | null>(null);
 
@@ -47,14 +48,17 @@ export default function WellbeingReports({ clientId }: { clientId: string }) {
               (list.length === 0 ? (
                 <Text style={styles.entryNotes}>Nothing reported yet.</Text>
               ) : (
-                list.slice(0, 10).map((r) => (
-                  <View key={r.date} style={styles.entry}>
-                    <Text style={styles.entryHead}>
-                      {r.date} · {r.kind}
-                    </Text>
-                    <Text style={styles.entryNotes}>{r.notes}</Text>
-                  </View>
-                ))
+                <>
+                  {t.key === "pain" && <RehabSuggestion clientName={clientName} texts={[list[0].kind, list[0].notes]} />}
+                  {list.slice(0, 10).map((r) => (
+                    <View key={r.date} style={styles.entry}>
+                      <Text style={styles.entryHead}>
+                        {r.date} · {r.kind}
+                      </Text>
+                      <Text style={styles.entryNotes}>{r.notes}</Text>
+                    </View>
+                  ))}
+                </>
               ))}
           </View>
         );

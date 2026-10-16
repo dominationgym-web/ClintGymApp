@@ -20,6 +20,7 @@ import type {
 export * from "./types";
 import { levelInfo } from "./common";
 export { LEVELS, levelInfo, STABILITY_BASICS } from "./common";
+export { stabilityAreasFor } from "./injuryMatch";
 
 // From the ground up, the order GRIZZ listed them.
 export const STABILITY_AREAS: StabilityAreaGuide[] = [ANKLE, KNEE, HIP, CORE, SHOULDER, WRIST, NECK];
