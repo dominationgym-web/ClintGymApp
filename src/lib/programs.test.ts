@@ -283,6 +283,8 @@ describe("programFamily", () => {
     expect(built("Strength 12-week program")).toBe("goalBlock");
     expect(built("HIIT 7")).toBe("hiit");
     expect(built("Sprint Intervals 10")).toBe("sprint");
+    expect(built("Drop Set Chest 1")).toBe("dropset");
+    expect(built("Drop Set Back 3")).toBe("dropset");
     expect(built("Fight Conditioning – Wrestling")).toBe("fight");
     expect(built("Upper Body 3")).toBe("upperBody");
     expect(built("Upper Body Superset 4")).toBe("upperBody");
@@ -302,6 +304,7 @@ describe("programFamily", () => {
     expect(groupOf("Beginner Foundation - Strength")).toBe("gym");
     expect(groupOf("Explosive Power 1 – Jump Base")).toBe("performance");
     expect(groupOf("HIIT 7")).toBe("performance");
+    expect(groupOf("Drop Set Calves 2")).toBe("gym");
     expect(groupOf("Fight Conditioning – Boxing")).toBe("performance");
     expect(groupOf("Mobility 2 – Spine & Shoulders")).toBe("functional");
     expect(groupOf("Flexibility 1 – Hips")).toBe("functional");

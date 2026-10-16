@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Press
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
+import DropSetRoundsCard from "@/components/DropSetRoundsCard";
 import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
 import { TRAINING_LEVELS, levelLabel } from "@/lib/foundation";
 import { useAuth } from "@/context/AuthContext";
@@ -667,6 +668,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             </View>
             <Text style={styles.sectionHeading}>Training log, last 2 weeks</Text>
             <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
+            <DropSetRoundsCard clientId={client.id} />
           </>
         )}
         {tab === "diet" && (

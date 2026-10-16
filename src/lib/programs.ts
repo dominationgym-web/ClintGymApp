@@ -363,6 +363,7 @@ export const PROGRAM_FAMILIES = [
   { key: "chestBi", group: "gym", title: "Chest & Bi", icon: "🏋️" },
   { key: "backTri", group: "gym", title: "Back & Tri", icon: "🦾" },
   { key: "legs", group: "gym", title: "Legs", icon: "🦵" },
+  { key: "dropset", group: "gym", title: "Drop sets (intermediate & advanced)", icon: "⬇️" },
   { key: "own", group: "gym", title: "Your programs", icon: "⭐" },
   { key: "sportsPower", group: "performance", title: "Explosive power", icon: "💥" },
   { key: "sportsSpeed", group: "performance", title: "Speed", icon: "🚀" },
@@ -387,6 +388,9 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   if (name.startsWith("sports strength ")) return "sportsStrength";
   if (name.startsWith("mobility ")) return "sportsMobility";
   if (name.startsWith("flexibility ")) return "sportsFlexibility";
+  // Drop set programs (0099, GRIZZ, 2026-10-16): "Drop Set Chest 1". Before
+  // the chest/back checks below, since their names say chest and back.
+  if (name.startsWith("drop set")) return "dropset";
   // 6-week foundation programs (0086): "Beginner Foundation - Strength".
   if (name.includes("foundation")) return "foundation";
   // The 15 + 15 calendar workouts (0069): "Upper Body 1", "Lower Body Superset 2".

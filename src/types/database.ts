@@ -386,6 +386,22 @@ export type WorkoutLog = {
   created_at: string;
 }
 
+// A finished drop set round (0099, GRIZZ, 2026-10-16). seconds is the round
+// clock, which pauses while the client types the next weight.
+export type DropSetRound = {
+  id: string;
+  client_id: string;
+  program_id: string | null;
+  exercise_id: string | null;
+  exercise_name: string;
+  log_date: string;
+  round_number: number;
+  seconds: number;
+  drops: number;
+  total_reps: number;
+  created_at: string;
+};
+
 export type ProgramKind = "quick" | "weekly" | "custom";
 
 // 0035. trainer_id null = built into the app, usable by every trainer.
@@ -780,6 +796,12 @@ export interface Database {
         Row: StabilityLog;
         Insert: Partial<StabilityLog>;
         Update: Partial<StabilityLog>;
+        Relationships: [];
+      };
+      drop_set_rounds: {
+        Row: DropSetRound;
+        Insert: Partial<DropSetRound>;
+        Update: Partial<DropSetRound>;
         Relationships: [];
       };
     };
