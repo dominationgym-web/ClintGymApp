@@ -42,7 +42,7 @@ import type { ClientAchievement } from "@/types/database";
 import { AB_REPS, abExerciseFor, absBetweenSets } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
-import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
+import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
@@ -114,6 +114,10 @@ export default function ExerciseLibraryScreen() {
   const [program, setProgram] = useState<ActiveProgram | null>(null);
   // A workout the trainer put on today's calendar (0069) replaces the program for the day.
   const [calendarToday, setCalendarToday] = useState(false);
+  // One day of a weekly program on today's calendar (its slot), and extra
+  // blocks the coach added for today (0098, GRIZZ, 2026-10-16).
+  const [calendarSlot, setCalendarSlot] = useState<number | null>(null);
+  const [calendarExtras, setCalendarExtras] = useState<CalendarDayWorkout[]>([]);
   const [pace, setPace] = useState<WorkoutPace>("planned");
   // How today's workout went, once the client has finished it (0076).
   const [todaySession, setTodaySession] = useState<WorkoutSession | null>(null);
@@ -188,10 +192,13 @@ export default function ExerciseLibraryScreen() {
       setSwaps(todaysSwaps);
       setCardioDone(await getCardioDone(todayIso()));
       if (!error && data) setExercises(data);
-      if (calendar && client) {
+      setCalendarExtras(calendar?.extras ?? []);
+      setCalendarSlot(calendar?.main?.daySlot ?? null);
+      const main = calendar?.main ?? null;
+      if (main && client) {
         const assignment = active?.assignment ?? {
           client_id: client.id,
-          program_id: calendar.program.id,
+          program_id: main.program.id,
           started_on: todayIso(),
           assigned_at: todayIso(),
           current_day: null,
@@ -204,14 +211,14 @@ export default function ExerciseLibraryScreen() {
         };
         setProgram({
           assignment,
-          program: calendar.program,
-          exercises: withExtraCardio(calendar.exercises, assignment.extra_cardio),
+          program: main.program,
+          exercises: withExtraCardio(main.exercises, assignment.extra_cardio),
         });
         setCalendarToday(true);
       } else {
         setProgram(active);
       }
-      if (!calendar) setCalendarToday(false);
+      if (!main) setCalendarToday(false);
       setAllTodaysSets(logged ?? []);
       setLoading(false);
     };
@@ -221,13 +228,16 @@ export default function ExerciseLibraryScreen() {
   // Weekly programs are worked through in order (0037): the current session
   // shows from its day until it's completed or moved.
   const today = todayIso();
-  const weekly = program?.program.kind === "weekly";
+  // A calendar workout is just the day's exercises, even when it's one day of a weekly program (0098).
+  const weekly = !calendarToday && program?.program.kind === "weekly";
   const days = program && weekly ? trainingDays(program.exercises) : [];
   const session = program && weekly ? currentSession(program.assignment, days) : null;
   const sessionDue = session ? isDue(session, today) : false;
   const fullPlan = !program
     ? []
-    : weekly
+    : calendarToday
+      ? [...program.exercises].sort((a, b) => a.sort_order - b.sort_order)
+      : weekly
       ? session && sessionDue
         ? program.exercises.filter((e) => slotOf(e) === session.day).sort((a, b) => a.sort_order - b.sort_order)
         : []
@@ -331,7 +341,15 @@ export default function ExerciseLibraryScreen() {
   // orange with a reason for the coach. Couldn't train: red with a reason.
   // Either way a weekly program moves on as before (0037).
   const workoutTitle = () =>
-    !program ? "" : session ? sessionTitle(program.program, session.day) : calendarToday ? displayProgramName(program.program) : dayTitle(program.program, new Date());
+    !program
+      ? ""
+      : session
+        ? sessionTitle(program.program, session.day)
+        : calendarToday
+          ? calendarSlot != null
+            ? `${displayProgramName(program.program)}: ${sessionTitle(program.program, calendarSlot)}`
+            : displayProgramName(program.program)
+          : dayTitle(program.program, new Date());
 
   const recordSession = async (status: "complete" | "partial" | "missed", reason: string | null) => {
     if (!client) return null;
@@ -679,7 +697,13 @@ export default function ExerciseLibraryScreen() {
                 {calendarToday && <Text style={styles.fromCalendar}>📅 Today's workout from your training calendar</Text>}
                 <Text style={styles.programKicker}>{displayProgramName(program.program).toUpperCase()}</Text>
                 <Text style={styles.programTitle}>
-                  {session ? (sessionDue ? sessionTitle(program.program, session.day) : "Rest day") : dayTitle(program.program, new Date())}
+                  {session
+                    ? sessionDue
+                      ? sessionTitle(program.program, session.day)
+                      : "Rest day"
+                    : calendarToday && calendarSlot != null
+                      ? sessionTitle(program.program, calendarSlot)
+                      : dayTitle(program.program, new Date())}
                 </Text>
                 {session && sessionDue && session.dueOn < today && (
                   <Text style={styles.carried}>Carried over from {weekdayOf(session.dueOn)}. Complete it to unlock your next workout.</Text>
@@ -827,6 +851,51 @@ export default function ExerciseLibraryScreen() {
                 )}
               </View>
             )}
+            {calendarExtras.map((block, i) => (
+              <View key={`${block.program.id}-${i}`} style={styles.programCard}>
+                <Text style={styles.fromCalendar}>📅 Extra block from your coach for today</Text>
+                <Text style={styles.programTitle}>{displayProgramName(block.program)}</Text>
+                {block.daySlot != null && <Text style={styles.category}>{sessionTitle(block.program, block.daySlot)}</Text>}
+                {block.program.warm_up ? (
+                  <View style={styles.sessionWarmUp}>
+                    <Text style={styles.sessionWarmUpTitle}>Warm up first</Text>
+                    <Text style={styles.howToText}>{block.program.warm_up}</Text>
+                  </View>
+                ) : null}
+                {[...block.exercises]
+                  .sort((a, b) => a.sort_order - b.sort_order)
+                  .map((row) => {
+                    if (row.kind === "cardio") {
+                      return (
+                        <View key={row.id} style={[styles.programRow, styles.cardioRow]}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.name}>🔥 Cardio</Text>
+                            <Text style={styles.category}>{cardioLabel(row)}</Text>
+                          </View>
+                        </View>
+                      );
+                    }
+                    const ex = exercises.find((e) => e.id === row.exercise_id) ?? exercises.find((e) => e.name === row.exercise_name);
+                    return (
+                      <View key={row.id} style={styles.programRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.name}>{row.exercise_name}</Text>
+                          <Text style={styles.category}>
+                            {row.sets} sets x {row.reps} · rest {formatRest(row.rest_seconds)}
+                          </Text>
+                          <ExerciseGuideButton
+                            name={row.exercise_name}
+                            category={ex?.category ?? null}
+                            variant="bar"
+                            onDoSet={ex ? () => openExercise(ex) : undefined}
+                            videoUrl={ex?.external_url ?? null}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })}
+              </View>
+            ))}
             {showReference && <Text style={styles.title}>Exercise reference</Text>}
             {!showReference ? null : client?.library_access === false ? (
               <Text style={styles.helper}>

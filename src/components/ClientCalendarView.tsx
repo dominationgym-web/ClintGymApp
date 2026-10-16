@@ -4,20 +4,22 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { displayProgramName } from "@/lib/programs";
-import { loadCalendarWorkoutFor, loadCalendarWorkouts } from "@/lib/programQueries";
+import { loadCalendarBlocks, loadCalendarWorkoutFor, loadCalendarWorkouts, type CalendarDayWorkout } from "@/lib/programQueries";
 import { forPlace, swapOptions, withHomeAlternatives, type HomeFit } from "@/lib/exerciseFilter";
 import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
-import { monthOf, monthRange, shortWorkoutName, type CalendarMonth } from "@/lib/trainingCalendar";
+import ExerciseGuideButton from "@/components/ExerciseGuide";
+import { monthOf, monthRange, shortWorkoutName, slotLabel, type CalendarMonth } from "@/lib/trainingCalendar";
 import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
-import type { ClientCalendarWorkout, Exercise, Program, ProgramExercise } from "@/types/database";
+import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise } from "@/types/database";
 
 // The client's own training calendar (0069), under a tap-to-open heading on
 // their workout screen. Only shows once their coach has planned something.
 // Tapping a day lists its exercises, and from today on each can be changed
-// for that day if the gym will be busy (0047).
+// for that day if the gym will be busy (0047). Extra blocks the coach added
+// to a day (mobility, flexibility, fight..., 0098) show under its workout.
 export default function ClientCalendarView({
   clientId,
   exercises,
@@ -37,6 +39,8 @@ export default function ClientCalendarView({
   const today = todayIso();
   const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
   const [entries, setEntries] = useState<ClientCalendarWorkout[]>([]);
+  const [blocks, setBlocks] = useState<ClientCalendarBlock[]>([]);
+  const [dayExtras, setDayExtras] = useState<CalendarDayWorkout[]>([]);
   const [names, setNames] = useState<Record<string, Pick<Program, "name" | "trainer_id">>>({});
   const [hasAny, setHasAny] = useState(false);
   const [open, setOpen] = useState(false);
@@ -48,30 +52,36 @@ export default function ClientCalendarView({
 
   useEffect(() => {
     setDayRows([]);
+    setDayExtras([]);
     setDaySwaps({});
     if (!selected) return;
     let live = true;
     Promise.all([loadCalendarWorkoutFor(clientId, selected), getExerciseSwaps(selected)]).then(([workout, swaps]) => {
       if (!live) return;
-      setDayRows(workout ? [...workout.exercises].sort((a, b) => a.sort_order - b.sort_order) : []);
+      setDayRows(workout?.main ? [...workout.main.exercises].sort((a, b) => a.sort_order - b.sort_order) : []);
+      setDayExtras(workout?.extras ?? []);
       setDaySwaps(swaps);
     });
     return () => {
       live = false;
     };
-  }, [clientId, selected, entries]);
+  }, [clientId, selected, entries, blocks]);
 
   // Show the calendar as soon as anything is planned from today on, even
   // when it's all next month.
   useEffect(() => {
     const yearOn = `${Number(today.slice(0, 4)) + 1}-12-31`;
-    loadCalendarWorkouts(clientId, today, yearOn).then((rows) => {
-      if (rows.length > 0) setHasAny(true);
+    Promise.all([loadCalendarWorkouts(clientId, today, yearOn), loadCalendarBlocks(clientId, today, yearOn)]).then(([rows, extra]) => {
+      if (rows.length > 0 || extra.length > 0) setHasAny(true);
     });
   }, [clientId, today]);
 
   useEffect(() => {
     const { from, to } = monthRange(month);
+    loadCalendarBlocks(clientId, from, to).then((extra) => {
+      setBlocks(extra);
+      if (extra.length > 0) setHasAny(true);
+    });
     loadCalendarWorkouts(clientId, from, to).then(async (rows) => {
       setEntries(rows);
       if (rows.length > 0) setHasAny(true);
@@ -91,6 +101,11 @@ export default function ClientCalendarView({
   for (const e of entries) {
     const p = names[e.program_id];
     if (p) labels[e.workout_date] = p.trainer_id ? shortWorkoutName(p.name) : shortWorkoutName(displayProgramName(p), false);
+  }
+  // "+1" for each extra block on a day.
+  for (const date of new Set(blocks.map((b) => b.workout_date))) {
+    const extra = blocks.filter((b) => b.workout_date === date).length;
+    labels[date] = labels[date] ? `${labels[date]} +${extra}` : `+${extra}`;
   }
   const picked = selected ? entries.find((e) => e.workout_date === selected) : null;
   const pickedProgram = picked ? names[picked.program_id] : null;
@@ -136,7 +151,9 @@ export default function ClientCalendarView({
             {selected
               ? pickedProgram
                 ? `${displayProgramName(pickedProgram)} on this day. It shows on your workout screen that morning.`
-                : "Nothing planned on this day."
+                : dayExtras.length > 0
+                  ? "Extra blocks from your coach on this day."
+                  : "Nothing planned on this day."
               : "Your coach plans your workouts here. Tap a day to see what's on."}
           </Text>
           {pickedProgram &&
@@ -164,6 +181,30 @@ export default function ClientCalendarView({
                 </View>
               );
             })}
+          {dayExtras.map((block, i) => (
+            <View key={`${block.program.id}-${i}`} style={{ marginTop: 12 }}>
+              <Text style={styles.blockTitle}>➕ {displayProgramName(block.program)}</Text>
+              {block.daySlot != null && <Text style={styles.rowSets}>{slotLabel(block.program, block.daySlot)}</Text>}
+              {[...block.exercises]
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .map((row) => {
+                  const ex = exercises.find((e) => e.id === row.exercise_id) ?? exercises.find((e) => e.name === row.exercise_name);
+                  return (
+                    <View key={row.id} style={styles.row}>
+                      <Text style={styles.rowName}>{row.kind === "cardio" ? "🔥 Cardio" : row.exercise_name}</Text>
+                      {row.kind !== "cardio" && (
+                        <>
+                          <Text style={styles.rowSets}>
+                            {row.sets} sets x {row.reps}
+                          </Text>
+                          <ExerciseGuideButton name={row.exercise_name} category={ex?.category ?? null} variant="bar" videoUrl={ex?.external_url ?? null} />
+                        </>
+                      )}
+                    </View>
+                  );
+                })}
+            </View>
+          ))}
         </View>
       )}
       <ExerciseSwapModal
@@ -190,5 +231,6 @@ const styles = StyleSheet.create({
   rowName: { color: "#fff", fontWeight: "600" },
   rowSets: { color: "#64748B", fontSize: 12, marginTop: 2 },
   swapped: { color: BRAND_GOLD, fontSize: 12, marginTop: 2 },
+  blockTitle: { color: "#38BDF8", fontWeight: "800", fontSize: 15 },
   changeLink: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 6 },
 });

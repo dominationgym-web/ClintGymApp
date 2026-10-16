@@ -14,18 +14,23 @@ export default function ProgramSummary({
   exercises,
   onPressExercise,
   collapsible = false,
+  onlySlot = null,
 }: {
   program: Program;
   exercises: ProgramExercise[];
   onPressExercise?: (row: ProgramExercise) => void;
   /** Programs tab: the list stays shut until the trainer taps to check it (GRIZZ, 2026-10-14). */
   collapsible?: boolean;
+  /** Just this session of a weekly program, for a single day on the calendar (GRIZZ, 2026-10-16). */
+  onlySlot?: number | null;
 }) {
   const [info, setInfo] = useState<ProgramExercise | null>(null);
   const [shown, setShown] = useState(!collapsible);
   const weeks = program.weeks ?? 1;
   const days =
-    program.kind !== "weekly"
+    onlySlot != null
+      ? [onlySlot]
+      : program.kind !== "weekly"
       ? [1]
       : weeks > 1
         ? [...new Set(exercises.map(slotOf))].sort((a, b) => a - b)

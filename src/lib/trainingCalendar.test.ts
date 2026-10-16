@@ -10,6 +10,9 @@ import {
   usedInBatch,
   usedWorkoutIds,
   withPace,
+  exercisesForSlot,
+  programSlots,
+  slotLabel,
 } from "@/lib/trainingCalendar";
 import type { ProgramExercise } from "@/types/database";
 
@@ -64,6 +67,34 @@ describe("usedWorkoutIds", () => {
     const resets = [{ batch: "upperBody", reset_at: "2026-10-12T09:00:00Z" }];
     const used = usedWorkoutIds([entry("u1"), entry("l1"), entry("u2", "2026-10-12T10:00:00Z")], resets, programs);
     expect([...used].sort()).toEqual(["l1", "u2"]);
+  });
+
+  it("ignores single days of weekly programs", () => {
+    const used = usedWorkoutIds([{ ...entry("u1"), day_slot: 3 }, { ...entry("l1"), day_slot: null }], [], programs);
+    expect([...used]).toEqual(["l1"]);
+  });
+});
+
+describe("single days from a program", () => {
+  const rows = [
+    { id: "a", day_number: 1, week_number: 1 },
+    { id: "b", day_number: 3, week_number: 1 },
+    { id: "c", day_number: 3, week_number: 2 },
+    { id: "d", day_number: 3, week_number: 2 },
+  ];
+
+  it("picks one session's exercises, or all of them without a slot", () => {
+    expect(exercisesForSlot(rows, 10).map((r) => r.id)).toEqual(["c", "d"]);
+    expect(exercisesForSlot(rows, 3).map((r) => r.id)).toEqual(["b"]);
+    expect(exercisesForSlot(rows, null)).toHaveLength(4);
+  });
+
+  it("lists the training sessions and labels them", () => {
+    expect(programSlots(rows)).toEqual([1, 3, 10]);
+    const program = { weeks: 2, day_titles: ["Push", "", "Mobility flow", "", "", "", "", "", "", "Hips"] };
+    expect(slotLabel(program, 3)).toBe("Week 1 · Wed: Mobility flow");
+    expect(slotLabel(program, 10)).toBe("Week 2 · Wed: Hips");
+    expect(slotLabel({ weeks: 1, day_titles: [] }, 2)).toBe("Tue");
   });
 });
 

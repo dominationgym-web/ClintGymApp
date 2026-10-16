@@ -3,14 +3,23 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Tex
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";
-import { loadAvailablePrograms, loadCalendarWorkouts, loadExerciseChanges, loadProgramExercises } from "@/lib/programQueries";
+import {
+  loadAvailablePrograms,
+  loadCalendarBlocks,
+  loadCalendarWorkouts,
+  loadExerciseChanges,
+  loadProgramExercises,
+} from "@/lib/programQueries";
 import { PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import ProgramGroups from "@/components/ProgramGroups";
 import {
   monthLabel,
   monthOf,
   monthRange,
+  exercisesForSlot,
+  programSlots,
   shortWorkoutName,
+  slotLabel,
   usedInBatch,
   usedWorkoutIds,
   type CalendarMonth,
@@ -23,7 +32,10 @@ import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
-import type { ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
+import type { ClientCalendarBlock, ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
+
+// What the picker is choosing: the day's main workout, or an extra block (0098).
+type PickMode = "main" | "block";
 
 const RED = "#EF4444";
 
@@ -37,6 +49,9 @@ function dayHeading(date: string): string {
 // for this client show "Used" in red until the whole batch is used or the
 // trainer taps Reset for that batch, so the same workout isn't repeated by
 // accident.
+// Any day from any program (GRIZZ, 2026-10-16, 0098): the trainer can also
+// put one session of a weekly or multi-week program on a day, and add extra
+// blocks (mobility, flexibility, fight...) under the day's workout.
 export default function ClientCalendarCard({
   clientId,
   clientName,
@@ -54,24 +69,30 @@ export default function ClientCalendarCard({
   const resetWarned = useRef(false);
   const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
   const [monthEntries, setMonthEntries] = useState<ClientCalendarWorkout[]>([]);
-  const [allEntries, setAllEntries] = useState<Pick<ClientCalendarWorkout, "program_id" | "created_at">[]>([]);
+  const [monthBlocks, setMonthBlocks] = useState<ClientCalendarBlock[]>([]);
+  const [allEntries, setAllEntries] = useState<Pick<ClientCalendarWorkout, "program_id" | "created_at" | "day_slot">[]>([]);
   const [resets, setResets] = useState<ClientWorkoutReset[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedExercises, setSelectedExercises] = useState<ProgramExercise[]>([]);
   const [picking, setPicking] = useState<string | null>(null);
+  const [pickMode, setPickMode] = useState<PickMode>("main");
+  // The selected day's extra blocks' exercises, by block id.
+  const [blockExercises, setBlockExercises] = useState<Record<string, ProgramExercise[]>>({});
   const [changing, setChanging] = useState<ProgramExercise | null>(null);
   const [busy, setBusy] = useState(false);
 
   const loadMonth = useCallback(async () => {
     const { from, to } = monthRange(month);
-    setMonthEntries(await loadCalendarWorkouts(clientId, from, to));
+    const [entries, blocks] = await Promise.all([loadCalendarWorkouts(clientId, from, to), loadCalendarBlocks(clientId, from, to)]);
+    setMonthEntries(entries);
+    setMonthBlocks(blocks);
   }, [clientId, month]);
 
   const loadUsed = useCallback(async () => {
     const [{ data: entries }, { data: batchResets }] = await Promise.all([
-      supabase.from("client_calendar_workouts").select("program_id, created_at").eq("client_id", clientId),
+      supabase.from("client_calendar_workouts").select("program_id, created_at, day_slot").eq("client_id", clientId),
       supabase.from("client_workout_resets").select("*").eq("client_id", clientId),
     ]);
     setAllEntries(entries ?? []);
@@ -86,25 +107,42 @@ export default function ClientCalendarCard({
     loadMonth();
   }, [loadMonth]);
 
-  // Only single-session workouts fit on a day.
-  const workouts = programs.filter((p) => p.kind === "quick");
+  // Quick workouts go on a day whole; weekly and multi-week programs give one
+  // of their sessions (0098).
   const byId = new Map(programs.map((p) => [p.id, p]));
   const entryOn = (date: string) => monthEntries.find((e) => e.workout_date === date) ?? null;
+  const blocksOn = (date: string) => monthBlocks.filter((b) => b.workout_date === date && byId.has(b.program_id));
   const labels: Record<string, string> = {};
-  for (const e of monthEntries) {
-    const p = byId.get(e.program_id);
-    if (p) labels[e.workout_date] = shortWorkoutName(p.name);
+  for (const date of new Set([...monthEntries.map((e) => e.workout_date), ...monthBlocks.map((b) => b.workout_date)])) {
+    const main = entryOn(date);
+    const p = main ? byId.get(main.program_id) : null;
+    const extra = blocksOn(date).length;
+    const name = p ? shortWorkoutName(p.name) : "";
+    if (name || extra) labels[date] = name ? (extra ? `${name} +${extra}` : name) : `+${extra}`;
   }
   const selectedEntry = selected ? entryOn(selected) : null;
   const selectedProgram = selectedEntry ? byId.get(selectedEntry.program_id) ?? null : null;
+  const selectedBlocks = selected ? blocksOn(selected) : [];
+  const blockKey = selectedBlocks.map((b) => b.id).join(",");
 
-  // The day's workout with this client's exercise changes in place (0070).
+  // The day's workout (just its session for a weekly program) and extra
+  // blocks, with this client's exercise changes in place (0070).
   const loadSelectedExercises = useCallback(async () => {
     setSelectedExercises([]);
-    if (!selectedProgram) return;
-    const [{ data }, changes] = await Promise.all([loadProgramExercises(selectedProgram.id), loadExerciseChanges(clientId)]);
-    setSelectedExercises(applyExerciseChanges(data ?? [], changes));
-  }, [selectedProgram?.id, clientId]);
+    setBlockExercises({});
+    const changes = await loadExerciseChanges(clientId);
+    if (selectedProgram && selectedEntry) {
+      const { data } = await loadProgramExercises(selectedProgram.id);
+      setSelectedExercises(applyExerciseChanges(exercisesForSlot(data ?? [], selectedEntry.day_slot), changes));
+    }
+    const lists = await Promise.all(
+      selectedBlocks.map(async (b) => {
+        const { data } = await loadProgramExercises(b.program_id);
+        return [b.id, applyExerciseChanges(exercisesForSlot(data ?? [], b.day_slot), changes)] as const;
+      }),
+    );
+    setBlockExercises(Object.fromEntries(lists));
+  }, [selectedProgram?.id, selectedEntry?.day_slot, blockKey, clientId]);
 
   useEffect(() => {
     loadSelectedExercises();
@@ -117,29 +155,43 @@ export default function ClientCalendarCard({
   const pressDay = (date: string) => {
     setSelected(date);
     // A day the client already trained shows how it went instead of the picker.
-    if (!entryOn(date) && !sessions[date]) openPicker(date);
+    if (!entryOn(date) && !sessions[date] && blocksOn(date).length === 0) openPicker(date);
   };
 
-  const openPicker = (date: string) => {
+  const openPicker = (date: string, mode: PickMode = "main") => {
+    const open = () => {
+      setPickMode(mode);
+      setPicking(date);
+    };
     if (resetNotice && !resetWarned.current) {
       resetWarned.current = true;
       Alert.alert("On the Health Reset", `${resetNotice} Do you still want to add a workout?`, [
         { text: "Cancel", style: "cancel" },
-        { text: "Add a workout", onPress: () => setPicking(date) },
+        { text: "Add a workout", onPress: open },
       ]);
       return;
     }
-    setPicking(date);
+    open();
   };
 
-  const choose = async (program: Program) => {
+  // `slot` is the session of a weekly program, null for a whole quick workout.
+  const choose = async (program: Program, slot: number | null) => {
     if (!picking) return;
     setBusy(true);
-    const { error } = await supabase.from("client_calendar_workouts").upsert(
-      // created_at is when it was (re)planned, which is what "used" counts from.
-      { client_id: clientId, workout_date: picking, program_id: program.id, created_at: new Date().toISOString() },
-      { onConflict: "client_id,workout_date" },
-    );
+    const { error } =
+      pickMode === "block"
+        ? await supabase.from("client_calendar_blocks").insert({
+            client_id: clientId,
+            workout_date: picking,
+            program_id: program.id,
+            day_slot: slot,
+            position: Math.max(0, ...blocksOn(picking).map((b) => b.position)) + 1,
+          })
+        : await supabase.from("client_calendar_workouts").upsert(
+            // created_at is when it was (re)planned, which is what "used" counts from.
+            { client_id: clientId, workout_date: picking, program_id: program.id, day_slot: slot, created_at: new Date().toISOString() },
+            { onConflict: "client_id,workout_date" },
+          );
     setBusy(false);
     if (error) {
       Alert.alert("Couldn't save", error.message);
@@ -168,6 +220,28 @@ export default function ClientCalendarCard({
     ]);
   };
 
+  // Taking a block off keeps its row, marked removed (0098).
+  const takeOffBlock = (block: ClientCalendarBlock, name: string) => {
+    Alert.alert(`Take ${name} off this day?`, `${clientName} won't see it on ${dayHeading(block.workout_date)}.`, [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Take it off",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase
+            .from("client_calendar_blocks")
+            .update({ removed_at: new Date().toISOString() })
+            .eq("id", block.id);
+          if (error) {
+            Alert.alert("Couldn't remove it", error.message);
+            return;
+          }
+          await loadMonth();
+        },
+      },
+    ]);
+  };
+
   const resetBatch = (batch: ProgramFamily, title: string) => {
     Alert.alert(`Reset ${title}?`, `Every workout in this batch becomes available for ${clientName} again.`, [
       { text: "Cancel", style: "cancel" },
@@ -191,8 +265,10 @@ export default function ClientCalendarCard({
     <View style={styles.card}>
       <Text style={styles.title}>📅 Training calendar</Text>
       <Text style={styles.helper}>
-        Tap a day to give {clientName} a workout. On those days it replaces their program. Used workouts show in red so you
-        don't repeat one by accident. A green dot means they finished the workout, orange partly, red couldn't train, and ⭐
+        Tap a day to give {clientName} a workout. On those days it replaces their program. You don't have to give a whole
+        program: pick any day from any program, like a gym day on Monday and a mobility day on Tuesday. Tap ＋ Add a block to
+        put mobility, flexibility or a fight session on a day too, to suit how {clientName} is feeling. Used workouts show in red
+        so you don't repeat one by accident. A green dot means they finished the workout, orange partly, red couldn't train, and ⭐
         means they pushed their weights up. Tap the day to see.
       </Text>
       {loading ? (
@@ -208,34 +284,66 @@ export default function ClientCalendarCard({
           marks={marks}
         />
       )}
-      {selected && sessions[selected] && !(selectedEntry && selectedProgram) && (
+      {selected && (
         <View style={styles.dayBox}>
           <Text style={styles.dayTitle}>{dayHeading(selected)}</Text>
-          <WorkoutSessionResult session={sessions[selected]} />
-        </View>
-      )}
-      {selectedEntry && selectedProgram && (
-        <View style={styles.dayBox}>
-          <Text style={styles.dayTitle}>{dayHeading(selectedEntry.workout_date)}</Text>
-          <Text style={styles.dayWorkout}>{selectedProgram.name}</Text>
-          {sessions[selectedEntry.workout_date] && <WorkoutSessionResult session={sessions[selectedEntry.workout_date]} />}
-          <ProgramSummary program={selectedProgram} exercises={selectedExercises} onPressExercise={setChanging} />
-          <View style={styles.dayButtons}>
-            <Pressable style={styles.changeButton} onPress={() => openPicker(selectedEntry.workout_date)}>
-              <Text style={styles.changeText}>Change workout</Text>
-            </Pressable>
-            <Pressable style={styles.clearButton} onPress={() => clearDay(selectedEntry)}>
-              <Text style={styles.clearText}>Take it off</Text>
-            </Pressable>
-          </View>
+          {selectedEntry && selectedProgram ? (
+            <>
+              <Text style={styles.dayWorkout}>{selectedProgram.name}</Text>
+              {selectedEntry.day_slot != null && (
+                <Text style={styles.daySlot}>{slotLabel(selectedProgram, selectedEntry.day_slot)}</Text>
+              )}
+              {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
+              <ProgramSummary
+                program={selectedProgram}
+                exercises={selectedExercises}
+                onPressExercise={setChanging}
+                onlySlot={selectedEntry.day_slot}
+              />
+              <View style={styles.dayButtons}>
+                <Pressable style={styles.changeButton} onPress={() => openPicker(selectedEntry.workout_date)}>
+                  <Text style={styles.changeText}>Change workout</Text>
+                </Pressable>
+                <Pressable style={styles.clearButton} onPress={() => clearDay(selectedEntry)}>
+                  <Text style={styles.clearText}>Take it off</Text>
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <>
+              {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
+              <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPicker(selected)}>
+                <Text style={styles.changeText}>＋ Add a workout</Text>
+              </Pressable>
+            </>
+          )}
+          {selectedBlocks.map((b) => {
+            const p = byId.get(b.program_id);
+            if (!p) return null;
+            return (
+              <View key={b.id} style={styles.block}>
+                <Text style={styles.blockName}>{p.name}</Text>
+                {b.day_slot != null && <Text style={styles.daySlot}>{slotLabel(p, b.day_slot)}</Text>}
+                <ProgramSummary program={p} exercises={blockExercises[b.id] ?? []} onPressExercise={setChanging} onlySlot={b.day_slot} />
+                <Pressable style={[styles.clearButton, styles.blockOff]} onPress={() => takeOffBlock(b, p.name)}>
+                  <Text style={styles.clearText}>Take it off</Text>
+                </Pressable>
+              </View>
+            );
+          })}
+          <Pressable style={styles.addBlock} onPress={() => openPicker(selected, "block")}>
+            <Text style={styles.addBlockText}>＋ Add a block (mobility, flexibility, fight…)</Text>
+          </Pressable>
         </View>
       )}
       <WorkoutPicker
         date={picking}
-        workouts={workouts}
+        mode={pickMode}
+        workouts={programs}
         entries={allEntries}
         resets={resets}
-        currentId={picking ? entryOn(picking)?.program_id ?? null : null}
+        currentId={picking && pickMode === "main" ? entryOn(picking)?.program_id ?? null : null}
+        currentSlot={picking && pickMode === "main" ? entryOn(picking)?.day_slot ?? null : null}
         clientName={clientName}
         trainingPlace={trainingPlace}
         resetNotice={resetNotice}
@@ -260,13 +368,16 @@ export default function ClientCalendarCard({
 }
 
 // The workouts to put on one day, under tap-to-open batch headings, with
-// used ones in red and a Reset per batch.
+// used ones in red and a Reset per batch. Weekly and multi-week programs open
+// to list their sessions (rest days left out); tap one to put that day on.
 function WorkoutPicker({
   date,
+  mode,
   workouts,
   entries,
   resets,
   currentId,
+  currentSlot,
   clientName,
   trainingPlace,
   resetNotice,
@@ -276,33 +387,54 @@ function WorkoutPicker({
   onClose,
 }: {
   date: string | null;
+  mode: PickMode;
   workouts: Program[];
-  entries: Pick<ClientCalendarWorkout, "program_id" | "created_at">[];
+  entries: Pick<ClientCalendarWorkout, "program_id" | "created_at" | "day_slot">[];
   resets: ClientWorkoutReset[];
   currentId: string | null;
+  currentSlot: number | null;
   clientName: string;
   trainingPlace: ExercisePlace;
   resetNotice: string | null;
   busy: boolean;
-  onChoose: (program: Program) => void;
+  onChoose: (program: Program, slot: number | null) => void;
   onReset: (batch: ProgramFamily, title: string) => void;
   onClose: () => void;
 }) {
   const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
   const [open, setOpen] = useState<ProgramFamily | null>(null);
   const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
+  // The weekly program open to show its sessions, and each one's sessions once loaded.
+  const [openProgram, setOpenProgram] = useState<string | null>(null);
+  const [slots, setSlots] = useState<Record<string, number[]>>({});
 
   useEffect(() => {
     if (date) {
       setPlace(trainingPlace);
       setOpen(null);
       setOpenGroup(null);
+      setOpenProgram(null);
     }
   }, [date, trainingPlace]);
 
+  const toggleProgram = async (p: Program) => {
+    if (openProgram === p.id) {
+      setOpenProgram(null);
+      return;
+    }
+    setOpenProgram(p.id);
+    if (slots[p.id]) return;
+    const { data } = await loadProgramExercises(p.id);
+    setSlots((prev) => ({ ...prev, [p.id]: programSlots(data ?? []) }));
+  };
+
   const here = workouts.filter((p) => p.place === place);
-  // Gym and home batches are used up separately.
-  const used = usedWorkoutIds(entries, resets, here);
+  // Gym and home batches are used up separately. Only quick workouts get used up.
+  const used = usedWorkoutIds(
+    entries,
+    resets,
+    here.filter((p) => p.kind === "quick"),
+  );
   const families = PROGRAM_FAMILIES.map((f) => ({ ...f, programs: here.filter((p) => programFamily(p) === f.key) })).filter(
     (f) => f.programs.length > 0,
   );
@@ -312,7 +444,9 @@ function WorkoutPicker({
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>{date ? `Workout for ${dayHeading(date)}` : ""}</Text>
+            <Text style={styles.sheetTitle}>
+              {date ? `${mode === "block" ? "Add a block to" : "Workout for"} ${dayHeading(date)}` : ""}
+            </Text>
             <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Close">
               <Text style={styles.close}>✕</Text>
             </Pressable>
@@ -349,15 +483,18 @@ function WorkoutPicker({
               renderFamily={(f) => {
                 const isOpen = open === f.key;
                 const usedCount = usedInBatch(f.key, f.programs, used);
+                const quickCount = f.programs.filter((p) => p.kind === "quick").length;
                 return (
                   <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
                     <Pressable style={styles.familyHeader} onPress={() => setOpen(isOpen ? null : f.key)}>
                       <Text style={styles.familyIcon}>{f.icon}</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.familyTitle}>{f.title}</Text>
-                        <Text style={[styles.usedCount, usedCount > 0 && { color: RED }]}>
-                          {usedCount} of {f.programs.length} used
-                        </Text>
+                        {quickCount > 0 && (
+                          <Text style={[styles.usedCount, usedCount > 0 && { color: RED }]}>
+                            {usedCount} of {quickCount} used
+                          </Text>
+                        )}
                       </View>
                       <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
                     </Pressable>
@@ -368,13 +505,46 @@ function WorkoutPicker({
                     )}
                     {isOpen &&
                       f.programs.map((p) => {
-                        const current = p.id === currentId;
+                        if (p.kind === "weekly") {
+                          const shut = openProgram !== p.id;
+                          const list = slots[p.id];
+                          return (
+                            <View key={p.id} style={[styles.choice, !shut && { borderColor: BRAND_GOLD }]}>
+                              <Pressable onPress={() => toggleProgram(p)} disabled={busy}>
+                                <View style={styles.choiceTop}>
+                                  <Text style={styles.name}>{p.name}</Text>
+                                  {p.id === currentId && <Text style={styles.currentTag}>On this day</Text>}
+                                  <Text style={styles.chevron}>{shut ? "▾" : "▴"}</Text>
+                                </View>
+                                <Text style={styles.description}>Tap to choose one of its days</Text>
+                              </Pressable>
+                              {!shut && !list && <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 8 }} />}
+                              {!shut &&
+                                list?.map((slot) => {
+                                  const current = p.id === currentId && slot === currentSlot;
+                                  return (
+                                    <Pressable
+                                      key={slot}
+                                      style={[styles.session, current && { borderColor: BRAND_GOLD }]}
+                                      onPress={() => onChoose(p, slot)}
+                                      disabled={busy || current}
+                                    >
+                                      <Text style={styles.sessionText}>{slotLabel(p, slot)}</Text>
+                                      {current && <Text style={styles.currentTag}>On this day</Text>}
+                                    </Pressable>
+                                  );
+                                })}
+                              {!shut && list?.length === 0 && <Text style={styles.description}>No exercises in this program yet.</Text>}
+                            </View>
+                          );
+                        }
+                        const current = p.id === currentId && currentSlot == null;
                         const isUsed = used.has(p.id) && !current;
                         return (
                           <Pressable
                             key={p.id}
                             style={[styles.choice, current && { borderColor: BRAND_GOLD }, isUsed && styles.choiceUsed]}
-                            onPress={() => onChoose(p)}
+                            onPress={() => onChoose(p, null)}
                             disabled={busy || current || isUsed}
                           >
                             <View style={styles.choiceTop}>
@@ -409,6 +579,15 @@ const styles = StyleSheet.create({
   dayBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: 10 },
   dayTitle: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },
   dayWorkout: { color: BRAND_GOLD, fontSize: 16, fontWeight: "800", marginTop: 2 },
+  daySlot: { color: "#CBD5E1", fontSize: 13, fontWeight: "700", marginTop: 2 },
+  addWorkout: { flex: 0, marginTop: 10 },
+  block: { borderTopWidth: 1, borderTopColor: "#1E293B", marginTop: 12, paddingTop: 10 },
+  blockName: { color: "#38BDF8", fontSize: 15, fontWeight: "800" },
+  blockOff: { flex: 0, marginTop: 8, paddingVertical: 8 },
+  addBlock: { borderWidth: 1, borderColor: BRAND_GOLD, borderStyle: "dashed", borderRadius: 8, paddingVertical: 10, alignItems: "center", marginTop: 12 },
+  addBlockText: { color: BRAND_GOLD, fontWeight: "800" },
+  session: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginTop: 6, borderWidth: 1.5, borderColor: "transparent" },
+  sessionText: { color: "#fff", fontWeight: "600", fontSize: 14, flex: 1 },
   dayButtons: { flexDirection: "row", gap: 8, marginTop: 12 },
   changeButton: { flex: 1, backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 10, alignItems: "center" },
   changeText: { color: "#0F172A", fontWeight: "800" },

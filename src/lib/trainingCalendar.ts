@@ -1,5 +1,5 @@
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
-import { programFamily, type ProgramFamily } from "@/lib/programs";
+import { programFamily, slotOf, WEEKDAY_NAMES, type ProgramFamily } from "@/lib/programs";
 import type { ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
 
 // Training calendar (0069): the trainer puts a workout on each training day
@@ -78,9 +78,10 @@ export function shortWorkoutName(name: string, withNumber = true): string {
  * The workouts already used for a client, which the trainer shouldn't pick
  * again: every program on their calendar since its batch was last reset.
  * Once every workout in a batch is used, the whole batch is free again.
+ * Single days of weekly programs (day_slot set, 0098) never count as used.
  */
 export function usedWorkoutIds(
-  entries: Pick<ClientCalendarWorkout, "program_id" | "created_at">[],
+  entries: (Pick<ClientCalendarWorkout, "program_id" | "created_at"> & { day_slot?: number | null })[],
   resets: Pick<ClientWorkoutReset, "batch" | "reset_at">[],
   programs: Pick<Program, "id" | "name" | "trainer_id">[],
 ): Set<string> {
@@ -88,6 +89,7 @@ export function usedWorkoutIds(
   const resetAt = new Map(resets.map((r) => [r.batch, r.reset_at]));
   const used = new Set<string>();
   for (const e of entries) {
+    if (e.day_slot != null) continue;
     const program = byId.get(e.program_id);
     if (!program) continue;
     const since = resetAt.get(programFamily(program));
@@ -108,6 +110,28 @@ export function usedInBatch(
   used: Set<string>,
 ): number {
   return programs.filter((p) => programFamily(p) === batch && used.has(p.id)).length;
+}
+
+// Single days from any program (GRIZZ, 2026-10-16, 0098): a calendar workout
+// or extra block can be one session of a weekly or multi-week program, kept
+// as its slot, (week - 1) * 7 + weekday.
+
+/** The exercises for one session (slot) of a program, or all of them when the slot is null. */
+export function exercisesForSlot<T extends { day_number: number; week_number?: number | null }>(rows: T[], slot: number | null): T[] {
+  return slot == null ? rows : rows.filter((r) => slotOf(r) === slot);
+}
+
+/** "Week 2 · Wed: Mobility flow", or "Wed: Mobility flow" in a one-week program. */
+export function slotLabel(program: Pick<Program, "day_titles" | "weeks">, slot: number): string {
+  const weekday = WEEKDAY_NAMES[(slot - 1) % 7].slice(0, 3);
+  const title = program.day_titles[slot - 1];
+  const day = title ? `${weekday}: ${title}` : weekday;
+  return (program.weeks ?? 1) > 1 ? `Week ${Math.floor((slot - 1) / 7) + 1} · ${day}` : day;
+}
+
+/** A program's training sessions (slots with exercises), in order. Rest days are left out. */
+export function programSlots(rows: { day_number: number; week_number?: number | null }[]): number[] {
+  return [...new Set(rows.map(slotOf))].sort((a, b) => a - b);
 }
 
 // Pace (GRIZZ, 2026-10-12): the client can do a calendar workout faster, with

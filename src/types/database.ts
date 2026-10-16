@@ -509,6 +509,22 @@ export type ClientCalendarWorkout = {
   workout_date: string;
   program_id: string;
   created_at: string;
+  // One session of a weekly or multi-week program, as its slot (0098, GRIZZ,
+  // 2026-10-16); null for the whole workout.
+  day_slot: number | null;
+}
+
+// An extra block on a client's calendar day (0098, GRIZZ, 2026-10-16), e.g.
+// mobility after the main workout. Taken off by setting removed_at.
+export type ClientCalendarBlock = {
+  id: string;
+  client_id: string;
+  workout_date: string;
+  program_id: string;
+  day_slot: number | null;
+  position: number;
+  created_at: string;
+  removed_at: string | null;
 }
 
 // When the trainer last tapped Reset on a batch of workouts for a client
@@ -722,6 +738,12 @@ export interface Database {
         Row: ClientCalendarWorkout;
         Insert: Partial<ClientCalendarWorkout>;
         Update: Partial<ClientCalendarWorkout>;
+        Relationships: [];
+      };
+      client_calendar_blocks: {
+        Row: ClientCalendarBlock;
+        Insert: Partial<ClientCalendarBlock>;
+        Update: Partial<ClientCalendarBlock>;
         Relationships: [];
       };
       client_diet_plans: {
