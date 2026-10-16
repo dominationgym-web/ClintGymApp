@@ -627,6 +627,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               trainingPlace={client.training_place}
               resetNotice={resetNotice(client, todayIso())}
             />
+            {/* Right under the main program, not at the bottom (GRIZZ, 2026-10-16: hard to find). */}
+            <TrainerStabilityCard clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
             <ClientCalendarCard
               clientId={client.id}
               clientName={client.name}
@@ -634,7 +636,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               resetNotice={resetNotice(client, todayIso())}
             />
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
-            <TrainerStabilityCard clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
             <View style={styles.libraryRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Abs between sets</Text>
