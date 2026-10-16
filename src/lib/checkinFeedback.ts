@@ -25,6 +25,14 @@ export type CheckinFeedback = {
   tips: FeedbackTip[];
   // Something going well, to keep them motivated.
   win: string | null;
+  // The day-by-day alcohol message (see alcoholMessage), or null.
+  alcohol: AlcoholMessage | null;
+};
+
+export type AlcoholMessage = {
+  kind: "session" | "slipped" | "firstDry" | "dryStreak" | "neverDrinks";
+  title: string;
+  text: string;
 };
 
 type Recent = Pick<
@@ -79,7 +87,7 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
   const days = week.length;
   const tips: FeedbackTip[] = [];
   const wins: { text: string; strength: number }[] = [];
-  if (days === 0) return { days, tips, win: null };
+  if (days === 0) return { days, tips, win: null, alcohol: null };
 
   // Sleep length.
   const hours = week.map((c) => sleepHours(c.sleep_bed_time, c.sleep_wake_time)).filter((h): h is number => h !== null);
@@ -144,22 +152,7 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
     wins.push({ text: `You're drinking about ${one(Math.round(water * 10) / 10)} L of water a day. Keep it up.`, strength: 2 });
   }
 
-  // Alcohol.
-  const units = week.reduce((t, c) => t + (Number(c.alcohol_units) || 0), 0);
-  const heavyDay = Math.max(0, ...week.map((c) => Number(c.alcohol_units) || 0));
-  if (units > 7 || heavyDay > 4) {
-    tips.push({
-      key: "alcohol",
-      icon: "🍷",
-      title: "Cut back on alcohol",
-      because: `You've had ${one(units)} units in the last ${days} check-in${days === 1 ? "" : "s"}${heavyDay > 4 ? `, with ${one(heavyDay)} in one day` : ""}.`,
-      doThis: "Pick 2 or 3 alcohol-free days, and swap every second drink for water when you do drink.",
-      itWill: "Better sleep and recovery, and faster fat loss. Your body stops burning fat while it clears alcohol.",
-      priority: heavyDay > 6 || units > 14 ? 85 : 65,
-    });
-  } else if (units === 0 && days >= 3) {
-    wins.push({ text: "No alcohol this week. Your sleep and recovery will thank you.", strength: 2 });
-  }
+  // Alcohol has its own motivational message (alcoholMessage below), not a tip.
 
   // High-GI meals.
   const highGi = average(week.map((c) => Number(c.high_gi_count) || 0));
@@ -237,5 +230,85 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
 
   tips.sort((a, b) => b.priority - a.priority);
   wins.sort((a, b) => b.strength - a.strength);
-  return { days, tips: tips.slice(0, MAX_TIPS), win: wins[0]?.text ?? null };
+  return { days, tips: tips.slice(0, MAX_TIPS), win: wins[0]?.text ?? null, alcohol: alcoholMessage(all, today) };
+}
+
+// Alcohol message (GRIZZ, 2026-10-16): motivational, never derogatory. After
+// a big session, a kind nudge to limit it plus water and electrolytes. Each
+// alcohol-free day after that gets more praise and a different benefit. If
+// they drink again after a good run, a coach's "you were doing so well", then
+// back on it tomorrow. Always a reminder that honest answers only help them.
+export const HEAVY_DAY_UNITS = 4;
+export const HEAVY_SESSION_UNITS = 8;
+export const EVOLVE_TAGLINE = "Our aim is to evolve daily, 1% at a time.";
+const HONESTY = `Thanks for being honest. It only helps you, and it's the long term that matters. ${EVOLVE_TAGLINE}`;
+const RECOVERY = "After a drinking session, drink extra water and take electrolytes to rehydrate and recover faster.";
+const BENEFITS = [
+  "Your sleep is deeper, so you recover better from training.",
+  "Your body is back to burning fat instead of clearing alcohol.",
+  "Your mood and energy are steadier.",
+  "Your workouts feel stronger and your muscles recover faster.",
+  "Fewer cravings and better food choices.",
+  "Better hydration, clearer skin and a sharper mind.",
+];
+
+/**
+ * The alcohol message from the check-ins up to today (any order). Days with
+ * no check-in are skipped, so the streak counts check-ins logged alcohol-free.
+ */
+export function alcoholMessage(all: Pick<Checkin, "checkin_date" | "alcohol_units">[], today: string): AlcoholMessage | null {
+  const units = all
+    .filter((c) => c.checkin_date <= today)
+    .sort((a, b) => b.checkin_date.localeCompare(a.checkin_date))
+    .map((c) => Number(c.alcohol_units) || 0);
+  if (units.length === 0) return null;
+
+  if (units[0] > 0) {
+    // The drinking days at the top make up this session.
+    let i = 0;
+    while (i < units.length && units[i] > 0) i++;
+    const session = units.slice(0, i);
+    let dry = 0;
+    while (i + dry < units.length && units[i + dry] === 0) dry++;
+    if (dry >= 2) {
+      return {
+        kind: "slipped",
+        title: "🍷 Back on it tomorrow",
+        text: `You were doing so well, ${dry} days alcohol-free. I'm a little disappointed, but one session doesn't undo your progress. Start a new streak tomorrow. ${RECOVERY} ${HONESTY}`,
+      };
+    }
+    const total = session.reduce((t, u) => t + u, 0);
+    const heavy = Math.max(...session) >= HEAVY_DAY_UNITS || total >= HEAVY_SESSION_UNITS;
+    return {
+      kind: "session",
+      title: heavy ? "🍷 Time to limit the alcohol" : "🍷 Keep the alcohol low",
+      text: `${heavy ? `That was a big session, ${one(total)} units.` : `You logged ${one(total)} units.`} Limiting alcohol gives you better sleep and recovery, faster fat loss and a steadier mood. Let's aim for alcohol-free days this week. ${RECOVERY} ${HONESTY}`,
+    };
+  }
+
+  let streak = 0;
+  while (streak < units.length && units[streak] === 0) streak++;
+  const drankBefore = streak < units.length;
+  if (!drankBefore) {
+    if (units.length < 3) return null;
+    return {
+      kind: "neverDrinks",
+      title: "💪 Alcohol-free",
+      text: `No alcohol logged in ${units.length} check-ins. Great work. ${EVOLVE_TAGLINE}`,
+    };
+  }
+  if (streak === 1) {
+    return {
+      kind: "firstDry",
+      title: "✅ Alcohol-free day",
+      text: `Well done, no alcohol yesterday. That's the first step. ${BENEFITS[0]} ${BENEFITS[1]} Keep it going. ${HONESTY}`,
+    };
+  }
+  const benefit = BENEFITS[(streak - 1) % BENEFITS.length];
+  const cheer = streak >= 5 ? "That's a real habit now, I'm proud of you." : streak >= 3 ? "You're building momentum." : "Two in a row, nice.";
+  return {
+    kind: "dryStreak",
+    title: `🔥 ${streak} days alcohol-free`,
+    text: `${streak} days alcohol-free. ${cheer} ${benefit} Every day adds up. ${HONESTY}`,
+  };
 }

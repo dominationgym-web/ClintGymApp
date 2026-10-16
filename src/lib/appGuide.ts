@@ -38,7 +38,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Do it every morning. It takes a minute over three short pages: How you feel, Sleep, then Food & drink. Tap Next to move on, or tap a page name at the top to jump to it.",
         "Be honest. A bad day logged truthfully helps your coach far more than a perfect day that didn't happen.",
         "The body and mind check asks about pain, tiredness and stress. If you report a problem, your coach is told straight away and the app checks in with you the next morning.",
-        "After you check in, 📈 Your tips for this week reads your last 7 days and shows up to 3 things to work on, what to do and what it will do for you.",
+        "After you check in, 📈 Your tips for this week reads your last 7 days and shows up to 3 things to work on, what to do and what it will do for you. It also gives you a message on alcohol: encouragement for every alcohol-free day, and water and electrolyte advice after a drinking session.",
         "Messages from your coach show at the top. You can reply right there.",
         "Your daily quote and the evening sleep tip also live here.",
       ],
