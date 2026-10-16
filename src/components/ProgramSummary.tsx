@@ -39,7 +39,7 @@ export default function ProgramSummary({
     <View>
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
       {onPressExercise ? (
-        <Text style={styles.tapHint}>✎ Tap an exercise to change it, or its sets and reps, for this client. Tap ▶ to watch it.</Text>
+        <Text style={styles.tapHint}>✎ Tap an exercise to change it, or its sets and reps, for this client. Tap the green ▶ to watch it.</Text>
       ) : collapsible ? (
         <Pressable onPress={() => setShown(!shown)} hitSlop={6} accessibilityRole="button" style={styles.checkButton}>
           <Text style={styles.checkText}>
@@ -51,7 +51,7 @@ export default function ProgramSummary({
       ) : (
         <Text style={styles.tapHint}>▶ Tap an exercise to watch its video and how to do it.</Text>
       )}
-      {collapsible && shown ? <Text style={styles.tapHint}>Tap an exercise or ▶ to watch its video and how to do it.</Text> : null}
+      {collapsible && shown ? <Text style={styles.tapHint}>Tap an exercise or the green ▶ to watch its video and how to do it.</Text> : null}
       {shown && days.map((day) => {
         const rows = exercises.filter((e) => slotOf(e) === day).sort((a, b) => a.sort_order - b.sort_order);
         const weekOf = (slot: number) => Math.floor((slot - 1) / 7) + 1;
@@ -77,8 +77,9 @@ export default function ProgramSummary({
                   );
                 }
                 const line = (
-                  <Text style={[styles.line, onPressExercise && styles.tappable, r.changed_from && styles.changed]}>
-                    {`${r.exercise_name}: ${r.sets} x ${r.reps}, rest ${formatRest(r.rest_seconds)}`}
+                  <Text style={[styles.detail, r.changed_from && styles.changed]}>
+                    <Text style={styles.exName}>{r.exercise_name}</Text>
+                    {`\n${r.sets} x ${r.reps}, rest ${formatRest(r.rest_seconds)}`}
                     {r.changed_from ? (
                       <Text style={styles.was}>
                         {r.changed_from.exercise_name !== r.exercise_name
@@ -89,7 +90,7 @@ export default function ProgramSummary({
                   </Text>
                 );
                 return (
-                  <View key={r.id} style={styles.row}>
+                  <View key={r.id} style={styles.exCard}>
                     <Pressable
                       style={{ flex: 1 }}
                       onPress={() => (onPressExercise ? onPressExercise(r) : setInfo(r))}
@@ -99,7 +100,9 @@ export default function ProgramSummary({
                       {line}
                     </Pressable>
                     <Pressable onPress={() => setInfo(r)} hitSlop={8} accessibilityLabel={`Watch ${r.exercise_name}`}>
-                      <Text style={styles.watch}>▶</Text>
+                      <View style={styles.play}>
+                        <Text style={styles.playText}>▶</Text>
+                      </View>
                     </Pressable>
                   </View>
                 );
@@ -124,5 +127,23 @@ const styles = StyleSheet.create({
   checkButton: { borderWidth: 1, borderColor: "#D4AF37", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: 8 },
   checkText: { color: "#D4AF37", fontSize: 14, fontWeight: "700", textAlign: "center" },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
+  // Each exercise stands out as its own card with a green play button
+  // (GRIZZ, 2026-10-16: the video was easy to miss among the text).
+  exCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: "#22C55E",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginVertical: 4,
+  },
+  exName: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  detail: { color: "#94A3B8", fontSize: 13 },
+  play: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#22C55E", alignItems: "center", justifyContent: "center" },
+  playText: { color: "#0F172A", fontSize: 16, fontWeight: "900", marginLeft: 2 },
   watch: { color: "#D4AF37", fontSize: 14, fontWeight: "800", paddingHorizontal: 6, paddingVertical: 3 },
 });
