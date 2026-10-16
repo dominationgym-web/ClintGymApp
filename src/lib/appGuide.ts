@@ -207,6 +207,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "New signups land here. Activate a client once they've paid. Only an expired plan locks the app.",
         "Dots show who needs attention. Tap a client to open everything about them.",
         "Share your trainer code (Profile tab) so new clients join you when they sign up.",
+        "🗄 Old clients: open a client and tap Archive this client at the bottom of their Overview. They leave your lists and their access closes, but nothing is deleted. If they start again, tap 🗄 Archived on the Clients tab, then Bring back. They fill in the intake form again, and a Then vs now card on their Overview compares their first time with you against now.",
       ],
     },
     {
