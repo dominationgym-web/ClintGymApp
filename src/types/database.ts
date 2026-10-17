@@ -385,6 +385,8 @@ export type WorkoutLog = {
   effort: SetEffort;
   /** A warm-up set (0079): not a working set, set_number 0. */
   warm_up?: boolean;
+  /** The gauge set (0104): first set of a new exercise, taken to failure. */
+  gauge?: boolean;
   created_at: string;
 }
 

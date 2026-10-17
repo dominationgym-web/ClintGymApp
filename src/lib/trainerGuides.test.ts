@@ -13,6 +13,7 @@ describe("trainer guides", () => {
       "Biceps",
       "Triceps",
       "Shoulders",
+      "Gauge test (new clients)",
     ]);
   });
 

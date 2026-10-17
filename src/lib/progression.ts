@@ -5,7 +5,7 @@ import type { SetEffort } from "@/types/database";
 // failure, then add the smallest sensible jump and work back up the range.
 // It only looks at what the client logged last time for that exercise.
 
-export type LoggedSet = { weight_kg: number | null; reps: number; effort: SetEffort; warm_up?: boolean };
+export type LoggedSet = { weight_kg: number | null; reps: number; effort: SetEffort; warm_up?: boolean; gauge?: boolean };
 
 export type Suggestion = {
   /** "Last time: 40kg × 10, 10, 9" */
@@ -46,7 +46,8 @@ export function suggestNext(
   reps: string | null | undefined,
   exercise: { name: string; category: string | null },
 ): Suggestion | null {
-  const weighted = lastSets.filter((s) => !s.warm_up && s.weight_kg !== null && s.weight_kg > 0);
+  // The gauge set (src/lib/gauge.ts) only found the weight; the sets after it count.
+  const weighted = lastSets.filter((s) => !s.warm_up && !s.gauge && s.weight_kg !== null && s.weight_kg > 0);
   if (weighted.length === 0) return null;
   const top = Math.max(...weighted.map((s) => s.weight_kg as number));
   const working = weighted.filter((s) => s.weight_kg === top);
