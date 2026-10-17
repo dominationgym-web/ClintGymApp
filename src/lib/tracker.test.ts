@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { trackerTotals, trainerPlanLine } from "@/lib/tracker";
+import { clientIncomeTotals, trackerTotals, trainerPlanLine } from "@/lib/tracker";
 import type { OwnerTrackerRow } from "@/types/database";
 
 const today = "2026-10-17";
@@ -59,5 +59,16 @@ describe("trainerPlanLine", () => {
     expect(trainerPlanLine(row({ billing_plan: "monthly", paid_until: "2026-11-01" }), today)).toBe("Paid");
     expect(trainerPlanLine(row({ billing_plan: "monthly", paid_until: "2026-10-01" }), today)).toBe("Payment due");
     expect(trainerPlanLine(row({}), today)).toBe("No plan yet");
+  });
+});
+
+describe("clientIncomeTotals", () => {
+  it("adds up what clients pay trainers, rand and dollars apart", () => {
+    const t = clientIncomeTotals([
+      { trainer_id: "a", currency: "ZAR", income: 3000, priced: 2, unpriced: 1 },
+      { trainer_id: "b", currency: "USD", income: 240, priced: 2, unpriced: 0 },
+      { trainer_id: "c", currency: "ZAR", income: 1000, priced: 1, unpriced: 3 },
+    ]);
+    expect(t).toEqual({ ZAR: { income: 4000, priced: 3 }, USD: { income: 240, priced: 2 }, unpriced: 4 });
   });
 });

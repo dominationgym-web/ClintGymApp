@@ -79,3 +79,17 @@ const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "O
 function monthShort(iso: string): string {
   return SHORT[Number(iso.slice(5, 7)) - 1];
 }
+
+export type ClientIncomeRow = { trainer_id: string; currency: BillingCurrency; income: number; priced: number; unpriced: number };
+
+/** What clients pay their trainers a month (0106), added up by currency. */
+export function clientIncomeTotals(rows: ClientIncomeRow[]) {
+  const totals = { ZAR: { income: 0, priced: 0 }, USD: { income: 0, priced: 0 }, unpriced: 0 };
+  for (const r of rows) {
+    const side = totals[r.currency === "USD" ? "USD" : "ZAR"];
+    side.income += Number(r.income);
+    side.priced += Number(r.priced);
+    totals.unpriced += Number(r.unpriced);
+  }
+  return totals;
+}

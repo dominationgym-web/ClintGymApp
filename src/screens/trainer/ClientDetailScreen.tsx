@@ -9,6 +9,7 @@ import DropSetRoundsCard from "@/components/DropSetRoundsCard";
 import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
 import { TRAINING_LEVELS, levelLabel } from "@/lib/foundation";
 import { useAuth } from "@/context/AuthContext";
+import ClientPricePicker from "@/components/ClientPricePicker";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import FoundationOfferCard from "@/components/FoundationOfferCard";
 import ClientFormVideos from "@/components/ClientFormVideos";
@@ -378,6 +379,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
               </View>
             )}
+
+            <ClientPricePicker
+              clientId={client.id}
+              value={client.price_package}
+              onChanged={(next) => setClient((c) => (c ? { ...c, price_package: next } : c))}
+            />
 
             {client.plan_type && (
               <View style={styles.planBox}>
