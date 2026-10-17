@@ -85,13 +85,16 @@ export function suggestRecovery(inputs: RecoveryInputs, today: string, limit = 2
     add("sleep", "You've been tired or sleeping badly. An early night is the best recovery you can do today.");
   }
   if (streak >= 5 || (tired && streak >= 3)) {
-    add("rest", `You've trained ${streak} days in a row. A proper rest day lets your body catch up and come back stronger.`);
+    add(
+      "easy_movement",
+      `You've trained ${streak} days in a row. Take a rest day from training: an easy walk is plenty, and your body comes back stronger.`,
+    );
   }
   if (stressed) {
     add("breathing", "You've had a lot on your mind. Five minutes of slow breathing helps you switch off and sleep better.");
   }
   if (y.legs >= BIG_LEG_SETS) {
-    add("cold_heat", `Big leg day yesterday (${y.legs} sets). A sauna, warm bath or cold water can ease sore legs.`);
+    add("cold", `Big leg day yesterday (${y.legs} sets). A cold shower or ice bath can ease sore legs.`);
   }
   if (y.hard >= HARD_SETS || y.sets >= BIG_SESSION_SETS) {
     add(

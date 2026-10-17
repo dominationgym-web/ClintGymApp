@@ -169,6 +169,10 @@ export type RecoveryActivityRow = {
   done_on: string | null;
   minutes: number | null;
   suggested_reason: string | null;
+  /** A planned activity the client skipped (0108). */
+  skipped: boolean;
+  /** Optional note on soreness, energy or how they feel (0108). */
+  notes: string | null;
   created_at: string;
 };
 
@@ -220,6 +224,8 @@ export type Client = {
   package_type: PackageType | null;
   // Which of the trainer's prices this client pays (0106).
   price_package?: PricePackage | null;
+  // Their ready-made recovery program (0108): training, sports or lifestyle.
+  recovery_program?: "training" | "sports" | "lifestyle" | null;
   lifestyle_reset_started_at: string | null;
   // Asked on the intake form (0057); null for clients from before. Men don't
   // see the Women's Health Reset.

@@ -607,7 +607,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {tab === "training" && (
           <>
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
-            <RecoveryCoachCard clientId={client.id} clientName={client.name} />
+            <RecoveryCoachCard
+              clientId={client.id}
+              clientName={client.name}
+              program={client.recovery_program}
+              onProgramChanged={(next) => setClient((c) => (c ? { ...c, recovery_program: next } : c))}
+            />
             {trainer && (
               <FoundationOfferCard
                 client={client}
