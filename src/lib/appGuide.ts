@@ -205,10 +205,11 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "Clients and payments",
       where: "Clients tab",
       points: [
-        "New signups land here. Activate a client once they've paid. Only an expired plan locks the app.",
+        "Four tabs sort your clients: Active (training now), Waiting approval (new signups and returning clients), Awaiting payment (plan ended in the last 30 days) and Dormant (archived, or plan ended over 30 days ago).",
+        "Activate a client once they've paid. Only an expired plan locks the app.",
         "Dots show who needs attention. Tap a client to open everything about them.",
         "Share your trainer code (Profile tab) so new clients join you when they sign up.",
-        "🗄 Old clients: open a client and tap Archive this client at the bottom of their Overview. They leave your lists and their access closes, but nothing is deleted. If they start again, tap 🗄 Archived on the Clients tab, then Bring back. They fill in the intake form again, and a Then vs now card on their Overview compares their first time with you against now.",
+        "🗄 Old clients: open a client and tap Archive this client at the bottom of their Overview. They leave your lists and their access closes, but nothing is deleted. If they start again, open the Dormant tab on the Clients tab and tap Bring back. They fill in the intake form again, and a Then vs now card on their Overview compares their first time with you against now.",
       ],
     },
     {
