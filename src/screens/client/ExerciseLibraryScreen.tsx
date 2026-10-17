@@ -80,6 +80,7 @@ import {
   type ProgramSession,
 } from "@/lib/programSchedule";
 import { weekdayOf } from "@/lib/programSchedule";
+import { catchUpDate, isWeekend, type MissedWorkout } from "@/lib/catchUp";
 import { applyRecoveryAdjustment } from "@/lib/recovery";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -123,6 +124,11 @@ export default function ExerciseLibraryScreen() {
   const [pace, setPace] = useState<WorkoutPace>("planned");
   // How today's workout went, once the client has finished it (0076).
   const [todaySession, setTodaySession] = useState<WorkoutSession | null>(null);
+  // Weekend catch-up (0101): calendar workouts missed this week, the client's
+  // pick (a missed date, or "today"), and the missed day showing right now.
+  const [missed, setMissed] = useState<MissedWorkout[]>([]);
+  const [chosenDay, setChosenDay] = useState<string | null>(null);
+  const [catchUpFor, setCatchUpFor] = useState<string | null>(null);
   const [reasonFor, setReasonFor] = useState<"partial" | "missed" | null>(null);
   // Every set logged today, to tick off the program and spot warm-ups.
   const [allTodaysSets, setAllTodaysSets] = useState<WorkoutLog[]>([]);
@@ -167,7 +173,10 @@ export default function ExerciseLibraryScreen() {
   const [refresh, setRefresh] = useState(0);
   useFocusEffect(
     useCallback(() => {
-      if (loadedFor.current && loadedFor.current !== todayIso()) setRefresh((r) => r + 1);
+      if (loadedFor.current && loadedFor.current !== todayIso()) {
+        setChosenDay(null);
+        setRefresh((r) => r + 1);
+      }
     }, [])
   );
   useEffect(() => {
@@ -180,10 +189,9 @@ export default function ExerciseLibraryScreen() {
   useEffect(() => {
     const load = async () => {
       loadedFor.current = todayIso();
-      const [{ data, error }, active, calendar, { data: logged }, todaysSwaps, { data: sessionRow }] = await Promise.all([
+      const [{ data, error }, active, { data: logged }, todaysSwaps, { data: sessionRow }, { data: missedRows }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         client ? loadClientProgram(client.id) : Promise.resolve(null),
-        client ? loadCalendarWorkoutFor(client.id, todayIso()) : Promise.resolve(null),
         client
           ? supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso())
           : Promise.resolve({ data: [] as WorkoutLog[] }),
@@ -191,7 +199,14 @@ export default function ExerciseLibraryScreen() {
         client
           ? supabase.from("workout_sessions").select("*").eq("client_id", client.id).eq("session_date", todayIso()).maybeSingle()
           : Promise.resolve({ data: null }),
+        client ? supabase.rpc("my_missed_workouts") : Promise.resolve({ data: [] as MissedWorkout[] }),
       ]);
+      const missedList = missedRows ?? [];
+      setMissed(missedList);
+      // At the weekend the screen opens on a missed workout instead of today's.
+      const makeUp = catchUpDate(todayIso(), missedList, sessionRow ?? null, chosenDay);
+      setCatchUpFor(makeUp);
+      const calendar = client ? await loadCalendarWorkoutFor(client.id, makeUp ?? todayIso()) : null;
       setTodaySession(sessionRow ?? null);
       setSwaps(todaysSwaps);
       setCardioDone(await getCardioDone(todayIso()));
@@ -227,7 +242,7 @@ export default function ExerciseLibraryScreen() {
       setLoading(false);
     };
     load();
-  }, [client?.id, refresh]);
+  }, [client?.id, refresh, chosenDay]);
 
   // Weekly programs are worked through in order (0037): the current session
   // shows from its day until it's completed or moved.
@@ -392,6 +407,16 @@ export default function ExerciseLibraryScreen() {
       return null;
     }
     setTodaySession(data);
+    if (catchUpFor && status !== "missed") {
+      const { data: made, error: makeUpError } = await supabase.rpc("mark_workout_makeup", { p_date: catchUpFor });
+      if (makeUpError || !made) {
+        console.warn("Couldn't mark the catch-up", makeUpError);
+        return data;
+      }
+      setTodaySession(made);
+      setMissed((prev) => prev.filter((m) => m.workout_date !== catchUpFor));
+      return made;
+    }
     return data;
   };
 
@@ -706,11 +731,49 @@ export default function ExerciseLibraryScreen() {
                 onSwapsChanged={(date) => {
                   if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
                 }}
+                catchUpDates={isWeekend(today) && !todaySession ? missed.map((m) => m.workout_date) : []}
+                onCatchUp={setChosenDay}
               />
             )}
             {program && (
               <View style={styles.programCard}>
-                {calendarToday && <Text style={styles.fromCalendar}>📅 Today's workout from your training calendar</Text>}
+                {catchUpFor ? (
+                  <View style={styles.catchUp}>
+                    <Text style={styles.catchUpTitle}>🔁 Catching up {weekdayOf(catchUpFor)}'s missed workout</Text>
+                    {!todaySession && (
+                      <View style={styles.catchUpChips}>
+                        {missed
+                          .filter((m) => m.workout_date !== catchUpFor)
+                          .map((m) => (
+                            <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
+                              <Text style={styles.catchUpChipText}>Do {weekdayOf(m.workout_date)}'s instead</Text>
+                            </Pressable>
+                          ))}
+                        <Pressable style={styles.catchUpChip} onPress={() => setChosenDay("today")}>
+                          <Text style={styles.catchUpChipText}>Do today's workout instead</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <>
+                    {calendarToday && <Text style={styles.fromCalendar}>📅 Today's workout from your training calendar</Text>}
+                    {missed.length > 0 && !todaySession && isWeekend(today) && (
+                      <View style={styles.catchUpChips}>
+                        {missed.map((m) => (
+                          <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
+                            <Text style={styles.catchUpChipText}>🔁 Catch up {weekdayOf(m.workout_date)}'s workout</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
+                    {missed.length > 0 && !isWeekend(today) && (
+                      <Text style={styles.carried}>
+                        Missed {weekdayOf(missed[0].workout_date)}'s workout? You can catch it up on Saturday or Sunday.
+                      </Text>
+                    )}
+                  </>
+                )}
                 <Text style={styles.programKicker}>{displayProgramName(program.program).toUpperCase()}</Text>
                 <Text style={styles.programTitle}>
                   {session
@@ -1180,6 +1243,11 @@ const styles = StyleSheet.create({
   doSetRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   absBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
   absButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },
+  catchUp: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginBottom: 10, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
+  catchUpTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14 },
+  catchUpChips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8, marginBottom: 6 },
+  catchUpChip: { backgroundColor: "#334155", borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
+  catchUpChipText: { color: "#fff", fontWeight: "700", fontSize: 12 },
   fromCalendar: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 6 },
   paceBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 10 },
   paceChips: { flexDirection: "row", gap: 6, marginVertical: 8 },

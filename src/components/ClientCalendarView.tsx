@@ -26,6 +26,8 @@ export default function ClientCalendarView({
   atHome,
   fit = null,
   onSwapsChanged,
+  catchUpDates = [],
+  onCatchUp,
 }: {
   clientId: string;
   /** The exercises the client can see, for the swap choices. */
@@ -35,6 +37,9 @@ export default function ClientCalendarView({
   fit?: HomeFit;
   /** A swap was made for this date, so the workout screen can pick it up. */
   onSwapsChanged?: (date: string) => void;
+  /** Missed days this week that can be done today (weekend catch-up, 0101). */
+  catchUpDates?: string[];
+  onCatchUp?: (date: string) => void;
 }) {
   const today = todayIso();
   const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
@@ -156,6 +161,17 @@ export default function ClientCalendarView({
                   : "Nothing planned on this day."
               : "Your coach plans your workouts here. Tap a day to see what's on."}
           </Text>
+          {selected && catchUpDates.includes(selected) && onCatchUp && (
+            <Pressable
+              style={styles.catchUpButton}
+              onPress={() => {
+                onCatchUp(selected);
+                setOpen(false);
+              }}
+            >
+              <Text style={styles.catchUpText}>🔁 Missed this one? Do it today</Text>
+            </Pressable>
+          )}
           {pickedProgram &&
             planned.map((row) => {
               if (row.kind === "cardio") {
@@ -232,5 +248,7 @@ const styles = StyleSheet.create({
   rowSets: { color: "#64748B", fontSize: 12, marginTop: 2 },
   swapped: { color: BRAND_GOLD, fontSize: 12, marginTop: 2 },
   blockTitle: { color: "#38BDF8", fontWeight: "800", fontSize: 15 },
+  catchUpButton: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 10 },
+  catchUpText: { color: "#0F172A", fontWeight: "800" },
   changeLink: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 6 },
 });
