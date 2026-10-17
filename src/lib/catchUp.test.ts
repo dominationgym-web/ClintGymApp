@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catchUpDate, isWeekend } from "@/lib/catchUp";
+import { catchUpDate, isWeekend, orderByRestedMuscles } from "@/lib/catchUp";
 
 const SAT = "2026-10-17";
 const SUN = "2026-10-18";
@@ -38,5 +38,17 @@ describe("catchUpDate", () => {
 
   it("shows today's own workout when nothing was missed", () => {
     expect(catchUpDate(SAT, [], null, null)).toBeNull();
+  });
+});
+
+describe("orderByRestedMuscles", () => {
+  const MON = "2026-10-12";
+  it("puts the workout that rests yesterday's body parts first", () => {
+    const parts = { [MON]: ["Legs", "Hamstrings"], [THU]: ["Chest", "Back"] };
+    expect(orderByRestedMuscles([{ workout_date: MON }, { workout_date: THU }], parts, ["Legs", "Hamstrings"]).map((m) => m.workout_date)).toEqual([THU, MON]);
+  });
+
+  it("keeps the earliest first when nothing was trained yesterday", () => {
+    expect(orderByRestedMuscles([{ workout_date: THU }, { workout_date: MON }], {}, []).map((m) => m.workout_date)).toEqual([MON, THU]);
   });
 });

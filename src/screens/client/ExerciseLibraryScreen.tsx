@@ -80,7 +80,7 @@ import {
   type ProgramSession,
 } from "@/lib/programSchedule";
 import { weekdayOf } from "@/lib/programSchedule";
-import { catchUpDate, isWeekend, type MissedWorkout } from "@/lib/catchUp";
+import { catchUpDate, isWeekend, orderByRestedMuscles, type MissedWorkout } from "@/lib/catchUp";
 import { applyRecoveryAdjustment } from "@/lib/recovery";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -201,7 +201,25 @@ export default function ExerciseLibraryScreen() {
           : Promise.resolve({ data: null }),
         client ? supabase.rpc("my_missed_workouts") : Promise.resolve({ data: [] as MissedWorkout[] }),
       ]);
-      const missedList = missedRows ?? [];
+      let missedList = missedRows ?? [];
+      // More than one to catch up: start with the one that rests the body
+      // parts they trained yesterday (GRIZZ, 2026-10-17).
+      if (client && missedList.length > 1 && !sessionRow && isWeekend(todayIso())) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const [workouts, { data: yesterdaySets }] = await Promise.all([
+          Promise.all(missedList.map((m) => loadCalendarWorkoutFor(client.id, m.workout_date))),
+          supabase.from("workout_logs").select("exercise_id, exercise_name").eq("client_id", client.id).eq("log_date", toIsoDate(yesterday)),
+        ]);
+        const library = data ?? [];
+        const partOf = (row: { exercise_id: string | null; exercise_name: string }) =>
+          (library.find((e) => e.id === row.exercise_id) ?? library.find((e) => e.name === row.exercise_name))?.category ?? null;
+        const parts = (rows: { exercise_id: string | null; exercise_name: string }[]) =>
+          rows.map(partOf).filter((c): c is string => !!c);
+        const partsByDate: Record<string, string[]> = {};
+        missedList.forEach((m, i) => (partsByDate[m.workout_date] = parts(workouts[i]?.main?.exercises ?? [])));
+        missedList = orderByRestedMuscles(missedList, partsByDate, parts(yesterdaySets ?? []));
+      }
       setMissed(missedList);
       // At the weekend the screen opens on a missed workout instead of today's.
       const makeUp = catchUpDate(todayIso(), missedList, sessionRow ?? null, chosenDay);

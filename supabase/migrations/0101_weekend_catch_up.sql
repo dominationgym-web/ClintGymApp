@@ -1,7 +1,7 @@
 -- Weekend catch-up (GRIZZ, 2026-10-17): a client who missed a calendar
 -- workout during the week can do it on Saturday or Sunday. The app opens on
 -- the missed workout at the weekend, the client can also pick it from their
--- calendar, and a 9am push on Saturday and Sunday reminds them.
+-- calendar, and a 6am push on Saturday and Sunday (0102) reminds them.
 --
 -- A missed workout is a training calendar workout from Monday of this week up
 -- to yesterday with no green or orange session that day, that hasn't already
@@ -90,7 +90,7 @@ $$;
 revoke execute on function public.mark_workout_makeup(date) from public, anon;
 grant execute on function public.mark_workout_makeup(date) to authenticated;
 
--- Saturday and Sunday at 9am SA: remind clients with a missed workout who
+-- Saturday and Sunday mornings: remind clients with a missed workout who
 -- haven't trained yet today.
 create or replace function public.weekend_catch_up_reminders()
 returns void
@@ -132,5 +132,5 @@ revoke execute on function public.weekend_catch_up_reminders() from public, anon
 
 select cron.unschedule('weekend-catch-up-reminders')
 where exists (select 1 from cron.job where jobname = 'weekend-catch-up-reminders');
--- 07:00 UTC is 09:00 in South Africa; 6 = Saturday, 0 = Sunday.
+-- 6 = Saturday, 0 = Sunday. Moved to 04:00 UTC (06:00 SA) in 0102.
 select cron.schedule('weekend-catch-up-reminders', '0 7 * * 6,0', $$select public.weekend_catch_up_reminders();$$);

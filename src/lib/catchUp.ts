@@ -35,3 +35,18 @@ export function catchUpDate(
   if (chosen && missed.some((m) => m.workout_date === chosen)) return chosen;
   return missed[0]?.workout_date ?? null;
 }
+
+/**
+ * Missed workouts in the order to offer them: the one that works the fewest
+ * of the body parts trained the day before comes first (legs yesterday, so an
+ * upper body workout today), earliest first when they tie.
+ */
+export function orderByRestedMuscles<T extends Pick<MissedWorkout, "workout_date">>(
+  missed: T[],
+  partsByDate: Record<string, string[]>,
+  yesterdayParts: string[],
+): T[] {
+  const tired = new Set(yesterdayParts);
+  const overlap = (m: T) => new Set((partsByDate[m.workout_date] ?? []).filter((p) => tired.has(p))).size;
+  return [...missed].sort((a, b) => overlap(a) - overlap(b) || a.workout_date.localeCompare(b.workout_date));
+}
