@@ -148,7 +148,17 @@ export default function ClientCalendarView({
             labels={labels}
             today={today}
             selected={selected}
-            onPressDay={setSelected}
+            onPressDay={(date) => {
+              // At the weekend a day with nothing on it goes straight to the
+              // missed workout (GRIZZ, 2026-10-17).
+              const empty = !entries.some((e) => e.workout_date === date) && !blocks.some((b) => b.workout_date === date);
+              if (empty && catchUpDates.length > 0 && onCatchUp) {
+                onCatchUp(catchUpDates[0]);
+                setOpen(false);
+                return;
+              }
+              setSelected(date);
+            }}
             marks={marks}
           />
           {selected && sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
