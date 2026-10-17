@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyMoves,
   monthLabel,
   monthOf,
   monthRange,
@@ -114,5 +115,16 @@ describe("pace", () => {
       { id: "b", kind: "cardio", rest_seconds: 0 },
     ] as ProgramExercise[];
     expect(withPace(rows, "faster").map((r) => r.rest_seconds)).toEqual([45, 0]);
+  });
+});
+
+describe("applyMoves", () => {
+  it("moves a caught-up workout to the day it was done", () => {
+    const { labels, moves } = applyMoves({ "2026-10-15": "Upper SS 2", "2026-10-16": "Lower 3" }, [
+      { session_date: "2026-10-17", makeup_for: "2026-10-15" },
+      { session_date: "2026-10-16", makeup_for: null },
+    ]);
+    expect(labels["2026-10-17"]).toBe("Upper SS 2");
+    expect(moves).toEqual({ "2026-10-15": "missed", "2026-10-17": "caughtUp" });
   });
 });

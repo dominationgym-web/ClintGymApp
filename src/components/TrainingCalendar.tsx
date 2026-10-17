@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { CALENDAR_WEEKDAYS, monthLabel, monthWeeks, shiftMonth, type CalendarMonth } from "@/lib/trainingCalendar";
+import { CALENDAR_WEEKDAYS, monthLabel, monthWeeks, shiftMonth, type CalendarMonth, type CalendarMove } from "@/lib/trainingCalendar";
 
 // A month grid, Monday first, with the workout on each day (0069). The
 // trainer taps a day to plan it; the client's copy is read-only, or opens a
@@ -15,6 +15,7 @@ export default function TrainingCalendar({
   selected,
   onPressDay,
   marks,
+  moves,
 }: {
   month: CalendarMonth;
   onChangeMonth: (month: CalendarMonth) => void;
@@ -25,6 +26,8 @@ export default function TrainingCalendar({
   onPressDay?: (date: string) => void;
   /** Date → how the client's workout went (0076): a coloured dot, and a star. */
   marks?: Record<string, { color: string; star: boolean }>;
+  /** Weekend catch-ups (0101): "Moved" in red on the missed day, green on the day it was done. */
+  moves?: Record<string, CalendarMove>;
 }) {
   return (
     <View>
@@ -48,9 +51,10 @@ export default function TrainingCalendar({
         <View key={i} style={styles.row}>
           {week.map((date, j) => {
             if (!date) return <View key={j} style={styles.cell} />;
-            const label = labels[date];
+            const move = moves?.[date];
+            const label = move === "missed" ? undefined : labels[date];
             const mark = marks?.[date];
-            const past = date < today && !mark;
+            const past = date < today && !mark && !move;
             return (
               <Pressable
                 key={date}
@@ -77,10 +81,11 @@ export default function TrainingCalendar({
                   )}
                 </View>
                 {label ? (
-                  <Text style={styles.label} numberOfLines={2}>
+                  <Text style={styles.label} numberOfLines={move ? 1 : 2}>
                     {label}
                   </Text>
                 ) : null}
+                {move ? <Text style={[styles.moved, { color: move === "missed" ? "#EF4444" : "#22C55E" }]}>Moved</Text> : null}
               </Pressable>
             );
           })}
@@ -109,4 +114,5 @@ const styles = StyleSheet.create({
   dayNumber: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },
   dayNumberPlanned: { color: "#fff" },
   label: { color: BRAND_GOLD, fontSize: 9.5, fontWeight: "700", marginTop: 2 },
+  moved: { fontSize: 9.5, fontWeight: "800", marginTop: 2 },
 });

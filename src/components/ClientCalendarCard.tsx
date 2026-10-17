@@ -13,6 +13,7 @@ import {
 import { PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import ProgramGroups from "@/components/ProgramGroups";
 import {
+  applyMoves,
   monthLabel,
   monthOf,
   monthRange,
@@ -151,6 +152,7 @@ export default function ClientCalendarCard({
   // Dots and gold stars for how each day's workout went (0076).
   const range = monthRange(month);
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
+  const moved = applyMoves(labels, Object.values(sessions));
 
   const pressDay = (date: string) => {
     setSelected(date);
@@ -277,7 +279,8 @@ export default function ClientCalendarCard({
         <TrainingCalendar
           month={month}
           onChangeMonth={setMonth}
-          labels={labels}
+          labels={moved.labels}
+          moves={moved.moves}
           today={today}
           selected={selected}
           onPressDay={pressDay}

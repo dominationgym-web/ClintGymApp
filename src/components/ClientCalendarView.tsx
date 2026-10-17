@@ -9,7 +9,7 @@ import { forPlace, swapOptions, withHomeAlternatives, type HomeFit } from "@/lib
 import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import ExerciseGuideButton from "@/components/ExerciseGuide";
-import { monthOf, monthRange, shortWorkoutName, slotLabel, type CalendarMonth } from "@/lib/trainingCalendar";
+import { applyMoves, monthOf, monthRange, shortWorkoutName, slotLabel, type CalendarMonth } from "@/lib/trainingCalendar";
 import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
@@ -112,6 +112,7 @@ export default function ClientCalendarView({
     const extra = blocks.filter((b) => b.workout_date === date).length;
     labels[date] = labels[date] ? `${labels[date]} +${extra}` : `+${extra}`;
   }
+  const moved = applyMoves(labels, Object.values(sessions));
   const picked = selected ? entries.find((e) => e.workout_date === selected) : null;
   const pickedProgram = picked ? names[picked.program_id] : null;
   const canChange = !!selected && selected >= today;
@@ -145,7 +146,8 @@ export default function ClientCalendarView({
           <TrainingCalendar
             month={month}
             onChangeMonth={setMonth}
-            labels={labels}
+            labels={moved.labels}
+            moves={moved.moves}
             today={today}
             selected={selected}
             onPressDay={(date) => {
