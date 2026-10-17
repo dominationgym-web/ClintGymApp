@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { problemColor, problemLevel, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
 import { toIsoDate } from "@/lib/dates";
 import { bringBackChanges } from "@/lib/comeback";
+import { CLIENT_GROUPS, clientGroup, type ClientGroup } from "@/lib/clientGroups";
 import { useAuth } from "@/context/AuthContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
 import type { AccessStatus, Client } from "@/types/database";
@@ -20,10 +21,13 @@ const STATUS_LABEL: Record<AccessStatus, string> = {
 export default function ClientsScreen({ navigation }: Props) {
   const { trainer } = useAuth();
   const [allClients, setClients] = useState<Client[]>([]);
-  // Archived clients (0097) are kept but hidden behind the Archived button.
-  const [showArchived, setShowArchived] = useState(false);
-  const archivedCount = allClients.filter((c) => c.archived_at).length;
-  const clients = allClients.filter((c) => !!c.archived_at === showArchived);
+  // Four tabs: Active / Waiting approval / Awaiting payment / Dormant (archived
+  // clients from 0097 land under Dormant).
+  const [group, setGroup] = useState<ClientGroup>("active");
+  const today = toIsoDate(new Date());
+  const groupOf = (c: Client) => clientGroup(c, today);
+  const clients = allClients.filter((c) => groupOf(c) === group);
+  const current = CLIENT_GROUPS.find((g) => g.key === group)!;
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
   // Red dot while a problem is open, orange while it's being fixed (0075).
@@ -179,19 +183,21 @@ export default function ClientsScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>{showArchived ? "Archived clients" : "Clients"}</Text>
-        {(archivedCount > 0 || showArchived) && (
-          <Pressable style={styles.archiveToggle} onPress={() => setShowArchived((v) => !v)}>
-            <Text style={styles.archiveToggleText}>{showArchived ? "‹ Back to clients" : `🗄 Archived (${archivedCount})`}</Text>
-          </Pressable>
-        )}
+      <Text style={styles.title}>Clients</Text>
+      <View style={styles.tabs}>
+        {CLIENT_GROUPS.map((g) => {
+          const count = allClients.filter((c) => groupOf(c) === g.key).length;
+          const on = g.key === group;
+          return (
+            <Pressable key={g.key} style={[styles.tab, on && styles.tabOn]} onPress={() => setGroup(g.key)}>
+              <Text style={[styles.tabText, on && styles.tabTextOn]}>
+                {g.label} ({count})
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
-      <Text style={styles.helper}>
-        {showArchived
-          ? "Old clients, with all their data kept. Tap Bring back if they start again."
-          : "Use Activate/Mark expired to manage client access after confirming payment. Archive an old client from their Overview."}
-      </Text>
+      <Text style={styles.helper}>{current.helper}</Text>
       <FlatList
         data={clients}
         keyExtractor={(c) => c.id}
@@ -237,7 +243,7 @@ export default function ClientsScreen({ navigation }: Props) {
             </Pressable>
           );
         }}
-        ListEmptyComponent={<Text style={styles.helper}>{showArchived ? "No archived clients." : "No clients yet."}</Text>}
+        ListEmptyComponent={<Text style={styles.helper}>{current.empty}</Text>}
       />
     </View>
   );
@@ -258,9 +264,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  archiveToggle: { backgroundColor: "#1E293B", borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
-  archiveToggleText: { color: "#CBD5E1", fontWeight: "600", fontSize: 12 },
+  tabs: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12, marginBottom: 10 },
+  tab: { width: "48%", flexGrow: 1, backgroundColor: "#1E293B", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 8, alignItems: "center" },
+  tabOn: { backgroundColor: "#D4AF37" },
+  tabText: { color: "#CBD5E1", fontWeight: "700", fontSize: 13, textAlign: "center" },
+  tabTextOn: { color: "#0F172A" },
   helper: { color: "#64748B", fontSize: 12, marginBottom: 16 },
   row: {
     flexDirection: "row",

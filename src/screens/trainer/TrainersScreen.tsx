@@ -26,6 +26,8 @@ export default function TrainersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Each trainer is a small row (name, email, time left or Paid); tap to open the rest.
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from("trainers").select("*").order("created_at", { ascending: false });
@@ -148,11 +150,37 @@ export default function TrainersScreen() {
           everyone.filter((t) => t.referred_by === item.id && t.approved).length,
           item.referral_credits_used,
         );
+        const open = openId === item.id;
+        const pay = !item.approved
+          ? { text: "Waiting for your approval", color: "#F59E0B" }
+          : item.free_use_from
+            ? { text: "Free use", color: "#22C55E" }
+            : trial && !trialOver
+              ? { text: trial, color: "#94A3B8" }
+              : item.billing_plan
+                ? { text: "Paid", color: "#22C55E" }
+                : { text: trial ?? "No plan yet", color: "#F59E0B" };
+        if (!open) {
+          return (
+            <Pressable style={styles.compactRow} onPress={() => setOpenId(item.id)} accessibilityRole="button">
+              <TrainerLogo name={name} path={item.logo_path} size={32} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name} numberOfLines={1}>{name}</Text>
+                <Text style={styles.detail} numberOfLines={1}>{item.email}</Text>
+                <Text style={[styles.status, { color: pay.color, marginTop: 2 }]}>{pay.text}</Text>
+              </View>
+              <Text style={styles.chevron}>▸</Text>
+            </Pressable>
+          );
+        }
         return (
           <View style={styles.row}>
-            <TrainerLogo name={name} path={item.logo_path} size={48} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{name}</Text>
+              <Pressable style={styles.openHeader} onPress={() => setOpenId(null)} accessibilityRole="button">
+                <TrainerLogo name={name} path={item.logo_path} size={32} />
+                <Text style={[styles.name, { flex: 1 }]}>{name}</Text>
+                <Text style={styles.chevron}>▾</Text>
+              </Pressable>
               {item.business_name ? <Text style={styles.detail}>{item.name}</Text> : null}
               <Text style={styles.detail}>{item.email}</Text>
               {item.phone ? <Text style={styles.detail}>{item.phone}</Text> : null}
@@ -189,7 +217,6 @@ export default function TrainersScreen() {
                   ) : null}
                 </View>
               ) : null}
-            </View>
             <Pressable
               style={[styles.action, item.approved ? styles.blockAction : styles.approveAction]}
               onPress={() => confirm(item)}
@@ -201,6 +228,7 @@ export default function TrainersScreen() {
                 <Text style={styles.actionText}>{item.approved ? "Block" : "Approve"}</Text>
               )}
             </Pressable>
+            </View>
           </View>
         );
       }}
@@ -226,7 +254,19 @@ const styles = StyleSheet.create({
   status: { fontSize: 12, fontWeight: "600", marginTop: 6 },
   extraRow: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
   extraLink: { color: "#D4AF37", fontSize: 13, fontWeight: "700", marginTop: 2 },
-  action: { borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14, minWidth: 80, alignItems: "center" },
+  compactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#1E293B",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  openHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
+  chevron: { color: "#D4AF37", fontSize: 18, fontWeight: "700" },
+  action: { alignSelf: "flex-start", marginTop: 12, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14, minWidth: 80, alignItems: "center" },
   approveAction: { backgroundColor: "#22C55E" },
   blockAction: { backgroundColor: "#475569" },
   actionText: { color: "#fff", fontWeight: "700" },
