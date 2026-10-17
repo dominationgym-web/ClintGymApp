@@ -93,6 +93,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
   const [tab, setTab] = useState<TabKey>(route.params.tab ?? "overview");
   // Unsaved diet plan changes: ask before leaving the Diet tab or the client.
   // A ref, so "Leave" takes effect at once rather than on the next render.
@@ -263,6 +264,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       .upsert({ client_id: clientId, notes, updated_at: new Date().toISOString() }, { onConflict: "client_id" });
     setSaving(false);
     if (error) Alert.alert("Couldn't save notes", error.message);
+    else setNotesSaved(true);
   };
 
   // Archive (0097): hides an old client and closes their access. Nothing is
@@ -687,17 +689,25 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {tab === "notes" && (
           <>
             <WellbeingReports clientId={client.id} clientName={client.name} />
-            <Text style={styles.sectionHeading}>Trainer notes</Text>
+            <Text style={styles.sectionHeading}>Private notes</Text>
+            <Text style={styles.notesHelper}>Only you see these. To message {client.name}, open a section above and tap Send a check-in note.</Text>
             <TextInput
               style={styles.notesInput}
               multiline
               value={notes}
-              onChangeText={setNotes}
+              onChangeText={(text) => {
+                setNotes(text);
+                setNotesSaved(false);
+              }}
               placeholder="Private notes about this client"
               placeholderTextColor="#64748B"
             />
             <Pressable style={styles.button} onPress={saveNotes} disabled={saving}>
-              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save notes</Text>}
+              {saving ? (
+                <ActivityIndicator color="#0F172A" />
+              ) : (
+                <Text style={styles.buttonText}>{notesSaved ? "✓ Notes saved" : "Save notes"}</Text>
+              )}
             </Pressable>
           </>
         )}
@@ -814,6 +824,7 @@ const styles = StyleSheet.create({
   intakeRow: { marginBottom: 10 },
   intakeLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 2 },
   intakeValue: { color: "#E2E8F0", fontSize: 14 },
+  notesHelper: { color: "#64748B", fontSize: 12, marginBottom: 8 },
   notesInput: {
     backgroundColor: "#1E293B",
     color: "#fff",

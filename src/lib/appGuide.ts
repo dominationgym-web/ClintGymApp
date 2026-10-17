@@ -228,7 +228,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",
         "🛡️ Stability programs (Training tab): give a client a 4-8 week program for their ankle, knee, hip, core, shoulder, wrist or neck at Rehab, Beginner, Intermediate or Advanced level. They get a message and it appears in their menu. You see the week they're on, their logged holds and reps, and where they're ready to progress or struggling; move them up, repeat or stop it from there. Read every program first from your ☰ menu → Stability & Rehab programming, where you can tap any exercise for its video (or examples online) and how-to, handy for 1-on-1 sessions too. When a client reports pain or an injury (check-in or intake), a 🛡️ Recovery, mobility and rehab box on their profile opens the matching rehab programs.",
         "Diet: build their week of meals against their BMR, and see the meal plan they made themselves.",
-        "Photos and Notes: progress photos, and private notes only you can see.",
+        "Photos and Notes: progress photos, and private notes only you can see. On Notes, open a Body and mind section (pain, fatigue, mental exhaustion) and tap 💬 Send a check-in note to message the client about it; they see it at the top of their Check-in and can reply.",
       ],
     },
     {
