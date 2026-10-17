@@ -30,6 +30,7 @@ import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import ProgramSummary from "@/components/ProgramSummary";
+import PlanProgramModal from "@/components/PlanProgramModal";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
@@ -54,15 +55,23 @@ function dayHeading(date: string): string {
 // Any day from any program (GRIZZ, 2026-10-16, 0098): the trainer can also
 // put one session of a weekly or multi-week program on a day, and add extra
 // blocks (mobility, flexibility, fight...) under the day's workout.
+// Simpler set-up (GRIZZ, 2026-10-17): tapping an empty day from today on
+// opens PlanProgramModal, which lays a whole program over a split of
+// weekdays from that day. Single days can still be changed after.
 export default function ClientCalendarCard({
   clientId,
   clientName,
   trainingPlace,
   resetNotice = null,
+  trainerId,
+  onStabilityStarted,
 }: {
   clientId: string;
   clientName: string;
   trainingPlace: ExercisePlace;
+  trainerId?: string;
+  // A rehab (stability) program started from the planner, so its card reloads.
+  onStabilityStarted?: () => void;
   // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
   resetNotice?: string | null;
 }) {
@@ -84,6 +93,8 @@ export default function ClientCalendarCard({
   const [blockExercises, setBlockExercises] = useState<Record<string, ProgramExercise[]>>({});
   const [changing, setChanging] = useState<ProgramExercise | null>(null);
   const [busy, setBusy] = useState(false);
+  // The day a whole program is being planned from.
+  const [planning, setPlanning] = useState<string | null>(null);
 
   const loadMonth = useCallback(async () => {
     const { from, to } = monthRange(month);
@@ -159,7 +170,22 @@ export default function ClientCalendarCard({
   const pressDay = (date: string) => {
     setSelected(date);
     // A day the client already trained shows how it went instead of the picker.
-    if (!entryOn(date) && !sessions[date] && blocksOn(date).length === 0) openPicker(date);
+    if (entryOn(date) || sessions[date] || blocksOn(date).length > 0) return;
+    // From today on, an empty day starts a whole program; a past day gets one workout.
+    if (date >= today) openPlanner(date);
+    else openPicker(date);
+  };
+
+  const openPlanner = (date: string) => {
+    if (resetNotice && !resetWarned.current) {
+      resetWarned.current = true;
+      Alert.alert("On the Health Reset", `${resetNotice} Do you still want to plan a program?`, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Plan a program", onPress: () => setPlanning(date) },
+      ]);
+      return;
+    }
+    setPlanning(date);
   };
 
   const openPicker = (date: string, mode: PickMode = "main") => {
@@ -269,11 +295,8 @@ export default function ClientCalendarCard({
     <View style={styles.card}>
       <Text style={styles.title}>📅 Training calendar</Text>
       <Text style={styles.helper}>
-        Tap a day to give {clientName} a workout. On those days it replaces their program. You don't have to give a whole
-        program: pick any day from any program, like a gym day on Monday and a mobility day on Tuesday. Tap ＋ Add a block to
-        put mobility, flexibility or a fight session on a day too, to suit how {clientName} is feeling. Used workouts show in red
-        so you don't repeat one by accident. A green dot means they finished the workout, orange partly, red couldn't train, and ⭐
-        means they pushed their weights up. Recovery they planned or did (🌿 / ✓) shows in bright green. Tap the day to see.
+        Tap the day {clientName} starts, pick the type, the program and the days they train, and the calendar fills itself.
+        Tap any day after to change it.
       </Text>
       {loading ? (
         <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
@@ -340,8 +363,36 @@ export default function ClientCalendarCard({
           <Pressable style={styles.addBlock} onPress={() => openPicker(selected, "block")}>
             <Text style={styles.addBlockText}>＋ Add a block (mobility, flexibility, fight…)</Text>
           </Pressable>
+          {selected >= today && (
+            <Pressable style={styles.addBlock} onPress={() => openPlanner(selected)}>
+              <Text style={styles.addBlockText}>📋 Start a new program from this day</Text>
+            </Pressable>
+          )}
         </View>
       )}
+      <View style={styles.legend}>
+        <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up · 🌿 recovery</Text>
+      </View>
+      <PlanProgramModal
+        date={planning}
+        clientId={clientId}
+        clientName={clientName}
+        trainerId={trainerId}
+        trainingPlace={trainingPlace}
+        programs={programs}
+        resetNotice={resetNotice}
+        onSingleWorkout={(date) => {
+          setPlanning(null);
+          setPickMode("main");
+          setPicking(date);
+        }}
+        onDone={async (what) => {
+          setPlanning(null);
+          if (what === "stability") onStabilityStarted?.();
+          else await Promise.all([loadMonth(), loadUsed()]);
+        }}
+        onClose={() => setPlanning(null)}
+      />
       <WorkoutPicker
         date={picking}
         mode={pickMode}
@@ -591,6 +642,8 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
   title: { color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 4 },
   helper: { color: "#94A3B8", fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  legend: { marginTop: 8 },
+  legendText: { color: "#64748B", fontSize: 11 },
   dayBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: 10 },
   dayTitle: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },
   dayWorkout: { color: BRAND_GOLD, fontSize: 16, fontWeight: "800", marginTop: 2 },

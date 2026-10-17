@@ -87,6 +87,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const { trainer } = useAuth();
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
+  const [stabilityKey, setStabilityKey] = useState(0);
+  // Which tap-to-open heading on the Training tab is open.
+  const [trainingOpen, setTrainingOpen] = useState<string | null>(null);
+  const toggleTraining = (key: string) => setTrainingOpen((k) => (k === key ? null : key));
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -607,12 +611,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {tab === "training" && (
           <>
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
-            <RecoveryCoachCard
-              clientId={client.id}
-              clientName={client.name}
-              program={client.recovery_program}
-              onProgramChanged={(next) => setClient((c) => (c ? { ...c, recovery_program: next } : c))}
-            />
             {trainer && (
               <FoundationOfferCard
                 client={client}
@@ -623,68 +621,83 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 }}
               />
             )}
-            {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
-            <View style={{ marginTop: 12 }}>
-              <Text style={styles.libraryTitle}>Trains at</Text>
-              <Text style={[styles.helper, { marginBottom: 8 }]}>
-                {client.training_place === "home"
-                  ? `The program list shows home programs first. Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part that their equipment list covers.`
-                  : `The program list shows gym programs first. ${client.name} does their program as written.`}
-              </Text>
-              <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
-            </View>
-            {client.training_place === "home" && (
-              <HomeEquipmentCard
-                client={client}
-                trainer
-                onChanged={(items) => setClient((c) => (c ? { ...c, home_equipment: items } : c))}
-              />
-            )}
-            <ClientProgramPicker
-              key={programKey}
-              clientId={client.id}
-              clientName={client.name}
-              trainingPlace={client.training_place}
-              resetNotice={resetNotice(client, todayIso())}
-            />
-            {/* Right under the main program, not at the bottom (GRIZZ, 2026-10-16: hard to find). */}
-            <TrainerStabilityCard clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
+            {/* Calendar first (GRIZZ, 2026-10-17): tap a day to start a program. The rest is tucked under tap-to-open headings. */}
             <ClientCalendarCard
               clientId={client.id}
               clientName={client.name}
               trainingPlace={client.training_place}
               resetNotice={resetNotice(client, todayIso())}
+              trainerId={trainer?.id}
+              onStabilityStarted={() => setStabilityKey((k) => k + 1)}
             />
-            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
-            <View style={styles.libraryRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.libraryTitle}>Abs between sets</Text>
-                <Text style={styles.helper}>
-                  Ab reps after every set on the upper body, lower body, full body, Chest & Bi and Back & Tri workouts, and on your own programs where you added abs. The rest timer starts when {client.name} taps Complete.
+            <TrainerStabilityCard key={stabilityKey} clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
+            <TrainingSection title="🌿 Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
+              <RecoveryCoachCard
+                clientId={client.id}
+                clientName={client.name}
+                program={client.recovery_program}
+                onProgramChanged={(next) => setClient((c) => (c ? { ...c, recovery_program: next } : c))}
+              />
+            </TrainingSection>
+            <TrainingSection title="🏠 Where they train" open={trainingOpen === "place"} onToggle={() => toggleTraining("place")}>
+              <View style={{ marginTop: 12 }}>
+                <Text style={styles.libraryTitle}>Trains at</Text>
+                <Text style={[styles.helper, { marginBottom: 8 }]}>
+                  {client.training_place === "home"
+                    ? `The program list shows home programs first. Gym-only exercises in ${client.name}'s program are swapped for home ones of the same body part that their equipment list covers.`
+                    : `The program list shows gym programs first. ${client.name} does their program as written.`}
                 </Text>
+                <GymHomeTabs current={client.training_place} onChange={setTrainingPlace} accent={BRAND_GOLD} />
               </View>
-              <Switch
-                value={client.abs_between_sets !== false}
-                onValueChange={toggleAbs}
-                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
-                accessibilityLabel="Abs between sets"
+              {client.training_place === "home" && (
+                <HomeEquipmentCard
+                  client={client}
+                  trainer
+                  onChanged={(items) => setClient((c) => (c ? { ...c, home_equipment: items } : c))}
+                />
+              )}
+            </TrainingSection>
+            <TrainingSection title="📈 Training log, last 2 weeks" open={trainingOpen === "log"} onToggle={() => toggleTraining("log")}>
+              <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
+              <DropSetRoundsCard clientId={client.id} />
+            </TrainingSection>
+            <TrainingSection title="⚙️ More options" open={trainingOpen === "more"} onToggle={() => toggleTraining("more")}>
+              <ClientProgramPicker
+                key={programKey}
+                clientId={client.id}
+                clientName={client.name}
+                trainingPlace={client.training_place}
+                resetNotice={resetNotice(client, todayIso())}
               />
-            </View>
-            <View style={styles.libraryRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.libraryTitle}>Full workout video library</Text>
-                <Text style={styles.helper}>Switch this on to allow client access to full workout videos. Not suggested.</Text>
+              {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
+              {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
+              <View style={styles.libraryRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.libraryTitle}>Abs between sets</Text>
+                  <Text style={styles.helper}>
+                    Ab reps after every set on the upper body, lower body, full body, Chest & Bi and Back & Tri workouts, and on your own programs where you added abs. The rest timer starts when {client.name} taps Complete.
+                  </Text>
+                </View>
+                <Switch
+                  value={client.abs_between_sets !== false}
+                  onValueChange={toggleAbs}
+                  trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                  accessibilityLabel="Abs between sets"
+                />
               </View>
-              <Switch
-                value={client.library_access}
-                onValueChange={toggleLibraryAccess}
-                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
-                accessibilityLabel="Full workout video library"
-              />
-            </View>
-            <Text style={styles.sectionHeading}>Training log, last 2 weeks</Text>
-            <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
-            <DropSetRoundsCard clientId={client.id} />
+              <View style={styles.libraryRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.libraryTitle}>Full workout video library</Text>
+                  <Text style={styles.helper}>Switch this on to allow client access to full workout videos. Not suggested.</Text>
+                </View>
+                <Switch
+                  value={client.library_access}
+                  onValueChange={toggleLibraryAccess}
+                  trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                  accessibilityLabel="Full workout video library"
+                />
+              </View>
+            </TrainingSection>
           </>
         )}
         {tab === "diet" && (
@@ -754,6 +767,19 @@ const LEVEL_LOOK: Record<string, { emoji: string; color: string }> = {
 // The client's training experience from their intake form, at the top of the
 // Overview so the trainer is reminded every time they open the client
 // (GRIZZ, 2026-10-14).
+// A tap-to-open heading on the Training tab.
+function TrainingSection({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <View style={[styles.trainingSection, open && styles.trainingSectionOpen]}>
+      <Pressable style={styles.trainingSectionHeader} onPress={onToggle} accessibilityRole="button">
+        <Text style={styles.trainingSectionTitle}>{title}</Text>
+        <Text style={styles.trainingSectionChevron}>{open ? "▴" : "▾"}</Text>
+      </Pressable>
+      {open && <View style={styles.trainingSectionBody}>{children}</View>}
+    </View>
+  );
+}
+
 function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
   const look = (level && LEVEL_LOOK[level]) || { emoji: "❔", color: "#64748B" };
   const detail = TRAINING_LEVELS.find((l) => l.key === level)?.detail;
@@ -832,6 +858,12 @@ const styles = StyleSheet.create({
   resetButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
+  trainingSection: { backgroundColor: "#111C33", borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: "#1E293B" },
+  trainingSectionOpen: { borderColor: BRAND_GOLD },
+  trainingSectionHeader: { flexDirection: "row", alignItems: "center", padding: 14 },
+  trainingSectionTitle: { color: "#fff", fontWeight: "800", fontSize: 16, flex: 1 },
+  trainingSectionChevron: { color: "#94A3B8", fontSize: 18 },
+  trainingSectionBody: { paddingHorizontal: 10, paddingBottom: 12 },
   flex1: { flex: 1 },
   messageRow: { backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginBottom: 6 },
   intakeBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
