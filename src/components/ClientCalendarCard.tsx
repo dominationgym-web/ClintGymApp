@@ -28,6 +28,7 @@ import {
 import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
+import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import ProgramSummary from "@/components/ProgramSummary";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
@@ -152,6 +153,7 @@ export default function ClientCalendarCard({
   // Dots and gold stars for how each day's workout went (0076).
   const range = monthRange(month);
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
+  const recovery = useRecoveryCalendar(clientId, range.from, range.to);
   const moved = applyMoves(labels, Object.values(sessions));
 
   const pressDay = (date: string) => {
@@ -271,7 +273,7 @@ export default function ClientCalendarCard({
         program: pick any day from any program, like a gym day on Monday and a mobility day on Tuesday. Tap ＋ Add a block to
         put mobility, flexibility or a fight session on a day too, to suit how {clientName} is feeling. Used workouts show in red
         so you don't repeat one by accident. A green dot means they finished the workout, orange partly, red couldn't train, and ⭐
-        means they pushed their weights up. Tap the day to see.
+        means they pushed their weights up. Recovery they planned or did (🌿 / ✓) shows in bright green. Tap the day to see.
       </Text>
       {loading ? (
         <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
@@ -281,6 +283,7 @@ export default function ClientCalendarCard({
           onChangeMonth={setMonth}
           labels={moved.labels}
           moves={moved.moves}
+          recovery={recovery}
           today={today}
           selected={selected}
           onPressDay={pressDay}

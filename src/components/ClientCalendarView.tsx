@@ -13,6 +13,7 @@ import { applyMoves, monthOf, monthRange, shortWorkoutName, slotLabel, type Cale
 import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
+import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise } from "@/types/database";
 
 // The client's own training calendar (0069), under a tap-to-open heading on
@@ -99,6 +100,7 @@ export default function ClientCalendarView({
 
   const range = monthRange(month);
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
+  const recovery = useRecoveryCalendar(clientId, range.from, range.to);
 
   if (!hasAny) return null;
 
@@ -148,6 +150,7 @@ export default function ClientCalendarView({
             onChangeMonth={setMonth}
             labels={moved.labels}
             moves={moved.moves}
+            recovery={recovery}
             today={today}
             selected={selected}
             onPressDay={(date) => {

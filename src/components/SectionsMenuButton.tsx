@@ -9,9 +9,10 @@ import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
 import { WELCOME_MENU_ITEM } from "@/lib/welcome";
 import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 import { STABILITY_MENU_ITEM } from "@/lib/stability";
+import { RECOVERY_MENU_ITEM } from "@/lib/recoveryActivities";
 import { supabase } from "@/lib/supabase";
 
-// The client app's menu: Nutrition, Women's Health Reset (with the cycle
+// The client app's menu: Recovery (GRIZZ, 2026-10-17), Nutrition, Women's Health Reset (with the cycle
 // tracker, women only) and Sleep & Recovery (GRIZZ, 2026-10-12) first, then the
 // client's stability program (only once their coach has given them one: the
 // trainer runs Stability, 2026-10-14), then
@@ -49,6 +50,7 @@ export default function SectionsMenuButton() {
   return (
     <MenuButton
       items={[
+        { ...RECOVERY_MENU_ITEM, onPress: () => navigation.navigate("Recovery") },
         ...first.map(item),
         ...(hasStability ? [{ ...STABILITY_MENU_ITEM, title: "My stability program", summary: "The stability program your coach gave you: do it and log your holds and reps.", onPress: () => navigation.navigate("Stability") }] : []),
         { ...SUGGESTION_BOX_MENU_ITEM, onPress: () => navigation.navigate("SuggestionBox") },

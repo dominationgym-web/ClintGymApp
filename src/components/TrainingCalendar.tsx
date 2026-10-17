@@ -6,7 +6,8 @@ import { CALENDAR_WEEKDAYS, monthLabel, monthWeeks, shiftMonth, type CalendarMon
 // A month grid, Monday first, with the workout on each day (0069). The
 // trainer taps a day to plan it; the client's copy is read-only, or opens a
 // day's details through onPressDay. Days the client trained carry a green,
-// orange or red dot and any gold star (0076).
+// orange or red dot and any gold star (0076). Recovery activities show in
+// bright green (0107).
 export default function TrainingCalendar({
   month,
   onChangeMonth,
@@ -16,6 +17,7 @@ export default function TrainingCalendar({
   onPressDay,
   marks,
   moves,
+  recovery,
 }: {
   month: CalendarMonth;
   onChangeMonth: (month: CalendarMonth) => void;
@@ -28,6 +30,8 @@ export default function TrainingCalendar({
   marks?: Record<string, { color: string; star: boolean }>;
   /** Weekend catch-ups (0101): "Moved" in red on the missed day, green on the day it was done. */
   moves?: Record<string, CalendarMove>;
+  /** Date → recovery activities planned or done that day (0107), in bright green. */
+  recovery?: Record<string, { label: string; done: boolean }[]>;
 }) {
   return (
     <View>
@@ -54,7 +58,8 @@ export default function TrainingCalendar({
             const move = moves?.[date];
             const label = move === "missed" ? undefined : labels[date];
             const mark = marks?.[date];
-            const past = date < today && !mark && !move;
+            const rec = recovery?.[date];
+            const past = date < today && !mark && !move && !rec;
             return (
               <Pressable
                 key={date}
@@ -86,6 +91,13 @@ export default function TrainingCalendar({
                   </Text>
                 ) : null}
                 {move ? <Text style={[styles.moved, { color: move === "missed" ? "#EF4444" : "#22C55E" }]}>Moved</Text> : null}
+                {rec ? (
+                  <Text style={styles.recovery} numberOfLines={1}>
+                    {rec[0].done ? "✓ " : "🌿 "}
+                    {rec[0].label}
+                    {rec.length > 1 ? ` +${rec.length - 1}` : ""}
+                  </Text>
+                ) : null}
               </Pressable>
             );
           })}
@@ -115,4 +127,5 @@ const styles = StyleSheet.create({
   dayNumberPlanned: { color: "#fff" },
   label: { color: BRAND_GOLD, fontSize: 9.5, fontWeight: "700", marginTop: 2 },
   moved: { fontSize: 9.5, fontWeight: "800", marginTop: 2 },
+  recovery: { color: "#4ADE80", fontSize: 9.5, fontWeight: "800", marginTop: 2 },
 });

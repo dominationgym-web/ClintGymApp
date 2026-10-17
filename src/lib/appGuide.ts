@@ -149,6 +149,18 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "recovery",
+      icon: "🌿",
+      title: "Recovery",
+      where: "Menu ☰ → Recovery",
+      points: [
+        "Eight simple recovery activities: Sleep, Hydration, Breathing, Cold & heat, Stretching & mobility, Foam rolling, Easy movement and Rest & recharge. Tap one to see what it does, how to do it and how long.",
+        "Tap ✓ Done it today, or pick a day and tap 📅 Plan it. Planned activities show on your training calendar in bright green; tick them off with ✓ Done.",
+        "🌿 Recovery suggested for you: the app looks at your training this week (how many days in a row, how hard you pushed, big leg days) and your check-ins (pain, tiredness, poor sleep, stress) and suggests what would help most. It shows on your Recovery page and your Check-in.",
+        "Your coach sees what you plan and do.",
+      ],
+    },
+    {
       key: "sleep",
       icon: "🌙",
       title: "Sleep and recovery",
@@ -227,6 +239,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "📅 Training calendar: you don't have to give a whole program. Tap a day and pick any workout, or open a weekly program and pick one of its days, so you can mix and match, like a gym day on Monday, mobility on Tuesday, gym again on Wednesday and flexibility on Thursday. Tap ＋ Add a block to put an extra block (mobility, flexibility or a fight session) on the same day, to suit the client and their energy. Take it off removes a block.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "🎯 Gauge test: the first time a client does an exercise, their first set is a gauge set to failure at a weight they pick. The app works out their working weight from it, and their training log marks it 🎯 Gauge set. Full explanation in ☰ → Training each body part → Gauge test, so you can explain it to them.",
+        "🌿 Recovery (Training tab): what the client did and planned for recovery in the last 2 weeks, anything planned but not done, and what the app is suggesting to them today and why. Their recovery also shows on their calendar in bright green.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",
         "🛡️ Stability programs (Training tab): give a client a 4-8 week program for their ankle, knee, hip, core, shoulder, wrist or neck at Rehab, Beginner, Intermediate or Advanced level. They get a message and it appears in their menu. You see the week they're on, their logged holds and reps, and where they're ready to progress or struggling; move them up, repeat or stop it from there. Read every program first from your ☰ menu → Stability & Rehab programming, where you can tap any exercise for its video (or examples online) and how-to, handy for 1-on-1 sessions too. When a client reports pain or an injury (check-in or intake), a 🛡️ Recovery, mobility and rehab box on their profile opens the matching rehab programs.",

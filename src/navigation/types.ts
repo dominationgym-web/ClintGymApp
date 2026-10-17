@@ -32,6 +32,7 @@ export type ClientStackParamList = {
   Welcome: undefined;
   AppGuide: undefined;
   Stability: undefined;
+  Recovery: undefined;
 };
 
 export type TrainerTabParamList = {
