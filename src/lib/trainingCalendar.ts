@@ -170,3 +170,25 @@ export function withPace(rows: ProgramExercise[], pace: WorkoutPace): ProgramExe
   if (pace === "planned") return rows;
   return rows.map((r) => (r.kind === "cardio" ? r : { ...r, rest_seconds: paceRest(r.rest_seconds, pace) }));
 }
+
+export type CalendarMove = "missed" | "caughtUp";
+
+/**
+ * Weekend catch-ups (0101) on the calendar (GRIZZ, 2026-10-17): the workout
+ * moves to the day it was done, which shows "Moved" in green, and the day it
+ * was missed shows "Moved" in red.
+ */
+export function applyMoves(
+  labels: Record<string, string>,
+  sessions: { session_date: string; makeup_for: string | null }[],
+): { labels: Record<string, string>; moves: Record<string, CalendarMove> } {
+  const shown = { ...labels };
+  const moves: Record<string, CalendarMove> = {};
+  for (const s of sessions) {
+    if (!s.makeup_for) continue;
+    moves[s.makeup_for] = "missed";
+    moves[s.session_date] = "caughtUp";
+    if (labels[s.makeup_for]) shown[s.session_date] = labels[s.makeup_for];
+  }
+  return { labels: shown, moves };
+}
