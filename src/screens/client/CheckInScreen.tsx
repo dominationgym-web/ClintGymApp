@@ -2,6 +2,7 @@ import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import WellbeingQuestions from "@/components/WellbeingQuestions";
+import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -227,6 +228,7 @@ export default function CheckInScreen() {
         <CheckinFeedbackCard
           feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso())}
         />
+        {client && <RecoverySuggestionCard clientId={client.id} refreshKey={saved} />}
         {missing.length > 0 && (
           <View style={styles.notice}>
             <Text style={styles.noticeText}>
@@ -290,6 +292,7 @@ export default function CheckInScreen() {
             <CycleTodayBanner />
             <ResetReminderBanner />
             <ProgressPhotoReminder />
+            {client && !saved && <RecoverySuggestionCard clientId={client.id} />}
           </>
         )}
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>

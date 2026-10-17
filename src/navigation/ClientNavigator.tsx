@@ -17,6 +17,7 @@ import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import ClientWelcomeScreen from "@/screens/client/ClientWelcomeScreen";
 import { ClientAppGuideScreen } from "@/screens/AppGuideScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
+import RecoveryScreen from "@/screens/client/RecoveryScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
 import DailyStartPopup from "@/components/DailyStartPopup";
@@ -69,6 +70,7 @@ export default function ClientNavigator() {
         <Stack.Screen name="Welcome" component={ClientWelcomeScreen} options={{ title: "Welcome", headerBackTitle: "Back" }} />
         <Stack.Screen name="AppGuide" component={ClientAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
         <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
       </Stack.Navigator>
     </>
   );

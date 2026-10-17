@@ -160,6 +160,18 @@ export type ClientPrices = {
   flat?: number | null;
 };
 
+// A recovery activity a client planned or did (0107).
+export type RecoveryActivityRow = {
+  id: string;
+  client_id: string;
+  activity: string;
+  planned_on: string;
+  done_on: string | null;
+  minutes: number | null;
+  suggested_reason: string | null;
+  created_at: string;
+};
+
 // One row of owner_tracker() (0105): a trainer's clients, fees and plan.
 export type OwnerTrackerRow = {
   trainer_id: string;
@@ -734,6 +746,12 @@ export interface Database {
         Row: ClientMealPlan;
         Insert: Partial<ClientMealPlan>;
         Update: Partial<ClientMealPlan>;
+        Relationships: [];
+      };
+      recovery_activities: {
+        Row: RecoveryActivityRow;
+        Insert: Partial<RecoveryActivityRow>;
+        Update: Partial<RecoveryActivityRow>;
         Relationships: [];
       };
       workout_sessions: {

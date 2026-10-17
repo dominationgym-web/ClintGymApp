@@ -22,6 +22,7 @@ import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
 import ClientCalendarCard from "@/components/ClientCalendarCard";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
+import RecoveryCoachCard from "@/components/RecoveryCoachCard";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { trainingLogStart } from "@/lib/trainingLog";
@@ -606,6 +607,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {tab === "training" && (
           <>
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
+            <RecoveryCoachCard clientId={client.id} clientName={client.name} />
             {trainer && (
               <FoundationOfferCard
                 client={client}
