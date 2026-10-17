@@ -31,14 +31,16 @@ import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
+import OwnerTracker from "@/components/OwnerTracker";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices, EftDetails } from "@/types/database";
 
-type TabKey = "code" | "refer" | "details" | "payments" | "account";
+type TabKey = "code" | "tracker" | "refer" | "details" | "payments" | "account";
 
 const TABS: ScreenTab<TabKey>[] = [
   { key: "code", label: "Code & logo", icon: "qr-code" },
+  { key: "tracker", label: "Tracker", icon: "stats-chart" },
   { key: "refer", label: "Plan & refer", icon: "gift" },
   { key: "details", label: "Details", icon: "person" },
   { key: "payments", label: "Payments", icon: "card" },
@@ -72,7 +74,8 @@ export default function TrainerProfileScreen() {
   }, [trainer?.id, tab]);
 
   if (!trainer) return null;
-  const tabs = trainer.is_owner ? TABS.filter((t) => t.key !== "refer") : TABS;
+  // Owner only: the tracker across all trainers (0105). Trainers get Plan & refer instead.
+  const tabs = TABS.filter((t) => (trainer.is_owner ? t.key !== "refer" : t.key !== "tracker"));
   const today = todayIso();
   const trial = trialLabel(trainer.trial_ends_at, today);
   const trialLeft = trialDaysLeft(trainer.trial_ends_at, today);
@@ -191,6 +194,7 @@ export default function TrainerProfileScreen() {
             </View>
           </>
         )}
+        {tab === "tracker" && trainer.is_owner && <OwnerTracker />}
         {tab === "refer" && (
           <>
             <TrainerPlanCard trainer={trainer} />

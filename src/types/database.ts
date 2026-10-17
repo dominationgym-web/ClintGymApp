@@ -147,6 +147,26 @@ export type BillingMonthRow = {
   client_fee: number;
 };
 
+// One row of owner_tracker() (0105): a trainer's clients, fees and plan.
+export type OwnerTrackerRow = {
+  trainer_id: string;
+  name: string;
+  is_owner: boolean;
+  region: "SA" | "International" | null;
+  currency: BillingCurrency | null;
+  billing_plan: BillingPlan | null;
+  trial_ends_at: string | null;
+  paid_until: string | null;
+  free_use: boolean;
+  clients_total: number;
+  clients_active: number;
+  client_fee_now: number;
+  client_fee_full: number;
+  plan_price: number;
+  paid_subs_month: number;
+  paid_fees_month: number;
+};
+
 // What trainer_for_join_code() returns for a valid code (0029).
 export type JoinableTrainer = {
   id: string;
@@ -870,6 +890,7 @@ export interface Database {
       };
       trainer_billing_status: { Args: { p_trainer: string }; Returns: TrainerBillingStatus[] };
       billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
+      owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
       am_i_locked: { Args: Record<string, never>; Returns: boolean };
       owner_payment_details: {
         Args: Record<string, never>;
