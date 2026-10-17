@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SESSION_COLORS, SESSION_LABELS, STAR_GOLD } from "@/lib/workoutSessions";
+import { weekdayOf } from "@/lib/programSchedule";
 import type { WorkoutSession } from "@/types/database";
 
 // How one day's workout went (0076): the coloured result, the client's reason
@@ -18,6 +19,7 @@ export default function WorkoutSessionResult({ session }: { session: WorkoutSess
         </Text>
       </View>
       {session.title ? <Text style={styles.meta}>{session.title}</Text> : null}
+      {session.makeup_for ? <Text style={styles.meta}>🔁 Caught up {weekdayOf(session.makeup_for)}'s missed workout</Text> : null}
       {session.reason ? <Text style={styles.reason}>Why: {session.reason}</Text> : null}
       {session.improvements.map((i) => (
         <View key={i.exercise} style={styles.improvement}>

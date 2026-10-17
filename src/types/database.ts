@@ -260,6 +260,8 @@ export type WorkoutSession = {
   id: string;
   client_id: string;
   session_date: string;
+  // The missed weekday this weekend session caught up (0101), else null.
+  makeup_for: string | null;
   title: string;
   status: WorkoutSessionStatus;
   sets_done: number;
@@ -820,6 +822,11 @@ export interface Database {
         };
         Returns: WorkoutSession;
       };
+      my_missed_workouts: {
+        Args: Record<string, never>;
+        Returns: { workout_date: string; program_id: string; program_name: string; program_trainer_id: string | null }[];
+      };
+      mark_workout_makeup: { Args: { p_date: string }; Returns: WorkoutSession };
       set_client_problem_status: {
         Args: { p_client: string; p_status: "fixing" | "fixed"; p_problem?: string };
         Returns: undefined;

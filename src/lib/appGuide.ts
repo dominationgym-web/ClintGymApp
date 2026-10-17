@@ -85,6 +85,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "When your coach plans workouts on days, open 📅 Your training calendar to see what's coming.",
         "Tap a day to see its exercises. You can change an exercise ahead of time if you know the gym will be busy.",
         "Green, orange and red dots show how each workout went, and a gold star shows where you improved.",
+        "🔁 Missed a workout in the week? On Saturday or Sunday the app opens on it so you can catch it up, and you get a reminder at 9am. You can also tap the missed day on your calendar and choose Do it today.",
       ],
     },
     {
