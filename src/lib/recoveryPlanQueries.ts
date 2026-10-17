@@ -84,7 +84,7 @@ export async function planRecovery(
   clientId: string,
   activity: string,
   plannedOn: string,
-  opts: { done?: boolean; minutes?: number; reason?: string | null } = {},
+  opts: { done?: boolean; minutes?: number; reason?: string | null; notes?: string | null } = {},
 ) {
   return supabase.from("recovery_activities").insert({
     client_id: clientId,
@@ -93,5 +93,6 @@ export async function planRecovery(
     done_on: opts.done ? plannedOn : null,
     minutes: opts.minutes ?? null,
     suggested_reason: opts.reason ?? null,
+    notes: opts.notes ?? null,
   });
 }

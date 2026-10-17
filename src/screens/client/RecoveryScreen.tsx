@@ -6,22 +6,36 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { addDays } from "@/lib/programSchedule";
-import { RECOVERY_ACTIVITIES, dayLabel, findRecoveryActivity, type RecoveryActivityKey } from "@/lib/recoveryActivities";
+import {
+  RECOVERY_ACTIVITIES,
+  RECOVERY_PROGRAMS,
+  WHY_RECOVERY,
+  dayLabel,
+  durationText,
+  findRecoveryActivity,
+  findRecoveryProgram,
+  type RecoveryActivityKey,
+  type RecoveryProgramKey,
+} from "@/lib/recoveryActivities";
 import { loadRecoveryActivities } from "@/lib/recoveryPlanQueries";
 import RecoveryActivityModal, { RECOVERY_GREEN } from "@/components/RecoveryActivityModal";
 import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 import type { RecoveryActivityRow } from "@/types/database";
 
-// The client's Recovery section (GRIZZ, 2026-10-17, 0107): the app's
-// suggestion for today, eight recovery activities to read and do or plan,
-// and what's planned this week. Planned ones also show on their calendar in
-// bright green, and their coach sees them.
+// The client's Recovery section (GRIZZ, 2026-10-17, 0107/0108): the app's
+// suggestion for today, their ready-made recovery program, eight activities
+// to read and log or plan, the Daily Log (planned, done, skipped) and why
+// recovery matters. Planned ones show on their calendar in bright green, and
+// their coach sees all of it.
 export default function RecoveryScreen() {
-  const { client } = useAuth();
+  const { client, refreshProfile } = useAuth();
   const today = todayIso();
   const [rows, setRows] = useState<RecoveryActivityRow[]>([]);
   const [open, setOpen] = useState<RecoveryActivityKey | null>(null);
   const [adding, setAdding] = useState(false);
+  const [completing, setCompleting] = useState<RecoveryActivityRow | null>(null);
+  const [programOpen, setProgramOpen] = useState<RecoveryProgramKey | null>(null);
+  const [whyOpen, setWhyOpen] = useState(false);
   const [version, setVersion] = useState(0);
 
   const load = useCallback(() => {
@@ -41,18 +55,21 @@ export default function RecoveryScreen() {
     load();
     setVersion((v) => v + 1);
   };
-  const planned = rows.filter((r) => !r.done_on && r.planned_on >= today);
-  const overdue = rows.filter((r) => !r.done_on && r.planned_on < today);
-  const doneThisWeek = rows.filter((r) => r.done_on && r.done_on >= addDays(today, -6));
+  const planned = rows.filter((r) => !r.done_on && !r.skipped && r.planned_on >= today);
+  const overdue = rows.filter((r) => !r.done_on && !r.skipped && r.planned_on < today);
+  const thisWeek = rows.filter((r) => (r.done_on ?? (r.skipped ? r.planned_on : null)) && (r.done_on ?? r.planned_on) >= addDays(today, -6));
+  const program = findRecoveryProgram(client.recovery_program);
 
-  const markDone = async (row: RecoveryActivityRow) => {
-    const info = findRecoveryActivity(row.activity);
-    const { error } = await supabase
-      .from("recovery_activities")
-      .update({ done_on: today, minutes: row.minutes ?? info?.minutes ?? null })
-      .eq("id", row.id);
+  const skip = async (row: RecoveryActivityRow) => {
+    const { error } = await supabase.from("recovery_activities").update({ skipped: true }).eq("id", row.id);
     if (error) return Alert.alert("Couldn't save", error.message);
     changed();
+  };
+  const chooseProgram = async (key: RecoveryProgramKey | null) => {
+    const { error } = await supabase.from("clients").update({ recovery_program: key }).eq("id", client.id);
+    if (error) return Alert.alert("Couldn't save", error.message);
+    setProgramOpen(null);
+    await refreshProfile();
   };
   const remove = (row: RecoveryActivityRow) =>
     Alert.alert("Remove this?", `${findRecoveryActivity(row.activity)?.title ?? "This activity"} on ${dayLabel(row.planned_on, today)}`, [
@@ -77,8 +94,11 @@ export default function RecoveryScreen() {
           <Text style={styles.planTitle}>{info?.title ?? r.activity}</Text>
           <Text style={[styles.planDay, late && { color: "#F59E0B" }]}>{late ? `Planned ${dayLabel(r.planned_on, today)}` : dayLabel(r.planned_on, today)}</Text>
         </View>
-        <Pressable style={styles.tick} onPress={() => markDone(r)} hitSlop={6} accessibilityLabel="Mark done">
+        <Pressable style={styles.tick} onPress={() => setCompleting(r)} hitSlop={6} accessibilityLabel="Mark done">
           <Text style={styles.tickText}>✓ Done</Text>
+        </Pressable>
+        <Pressable style={styles.skip} onPress={() => skip(r)} hitSlop={6} accessibilityLabel="Skipped">
+          <Text style={styles.skipText}>Skip</Text>
         </Pressable>
         <Pressable onPress={() => remove(r)} hitSlop={8} accessibilityLabel="Remove">
           <Text style={styles.remove}>✕</Text>
@@ -100,6 +120,48 @@ export default function RecoveryScreen() {
 
       <RecoverySuggestionCard clientId={client.id} limit={2} refreshKey={version} onChanged={changed} showLink={false} />
 
+      <Text style={styles.heading}>{program ? "Your recovery program" : "Pick a recovery program"}</Text>
+      {program ? (
+        <View style={styles.programCard}>
+          <Text style={styles.programTitle}>{program.title}</Text>
+          {program.steps.map((step) => (
+            <Text key={step} style={styles.programStep}>
+              • {step}
+            </Text>
+          ))}
+          <Text style={styles.programFocus}>Focus: {program.focus}</Text>
+          <Pressable onPress={() => chooseProgram(null)} hitSlop={8}>
+            <Text style={styles.change}>Change program</Text>
+          </Pressable>
+        </View>
+      ) : (
+        RECOVERY_PROGRAMS.map((p) => (
+          <View key={p.key} style={styles.programCard}>
+            <Pressable onPress={() => setProgramOpen(programOpen === p.key ? null : p.key)} accessibilityRole="button">
+              <Text style={styles.programTitle}>
+                {programOpen === p.key ? "▾" : "▸"} {p.title}
+              </Text>
+              <Text style={styles.programWho}>{p.who}</Text>
+            </Pressable>
+            {programOpen === p.key && (
+              <>
+                {p.steps.map((step) => (
+                  <Text key={step} style={styles.programStep}>
+                    • {step}
+                  </Text>
+                ))}
+                <Text style={styles.programFocus}>Focus: {p.focus}</Text>
+                <Pressable style={styles.chooseButton} onPress={() => chooseProgram(p.key)}>
+                  <Text style={styles.chooseText}>Choose this program</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        ))
+      )}
+
+      <Text style={styles.heading}>Recovery activities</Text>
+
       <View style={styles.grid}>
         {RECOVERY_ACTIVITIES.map((a) => (
           <Pressable key={a.key} style={styles.tile} onPress={() => setOpen(a.key)} accessibilityRole="button">
@@ -118,28 +180,47 @@ export default function RecoveryScreen() {
         <Text style={styles.note}>Planned activities appear in your calendar in bright green.</Text>
       </View>
 
-      {(planned.length > 0 || overdue.length > 0) && <Text style={styles.heading}>Planned</Text>}
+      <Text style={styles.heading}>Daily Log</Text>
       {overdue.map((r) => planRow(r, true))}
       {planned.map((r) => planRow(r, false))}
-
-      <Text style={styles.heading}>Done this week: {doneThisWeek.length}</Text>
-      {doneThisWeek.length === 0 ? (
-        <Text style={styles.empty}>Nothing yet. Pick one above and tap "Done it today".</Text>
+      {thisWeek.length === 0 && planned.length === 0 && overdue.length === 0 ? (
+        <Text style={styles.empty}>Nothing yet. Tap an activity above to log it or plan it.</Text>
       ) : (
-        <View style={styles.doneWrap}>
-          {doneThisWeek.map((r) => (
-            <View key={r.id} style={styles.donePill}>
-              <Text style={styles.donePillText}>
-                ✓ {findRecoveryActivity(r.activity)?.title ?? r.activity} · {dayLabel(r.done_on!, today)}
+        thisWeek.map((r) => (
+          <View key={r.id} style={styles.logRow}>
+            <Text style={[styles.logMark, r.skipped && { color: "#94A3B8" }]}>{r.skipped ? "–" : "✓"}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.logTitle}>
+                {findRecoveryActivity(r.activity)?.title ?? r.activity} · {dayLabel(r.done_on ?? r.planned_on, today)}
+                {r.skipped ? " · skipped" : r.minutes ? ` · ${durationText(r.minutes)}` : ""}
               </Text>
+              {r.notes ? <Text style={styles.logNote}>“{r.notes}”</Text> : null}
             </View>
-          ))}
-        </View>
+          </View>
+        ))
       )}
+
+      <Pressable style={styles.whyHead} onPress={() => setWhyOpen(!whyOpen)} accessibilityRole="button">
+        <Text style={styles.whyTitle}>{whyOpen ? "▾" : "▸"} Why recovery matters</Text>
+      </Pressable>
+      {whyOpen &&
+        WHY_RECOVERY.map((line) => (
+          <Text key={line} style={styles.whyText}>
+            {line}
+          </Text>
+        ))}
       <Text style={styles.footer}>Your coach can see what you plan and do.</Text>
 
       <RecoveryActivityModal visible={!!open} clientId={client.id} activity={open} onClose={() => setOpen(null)} onSaved={changed} />
       <RecoveryActivityModal visible={adding} clientId={client.id} activity={null} onClose={() => setAdding(false)} onSaved={changed} />
+      <RecoveryActivityModal
+        visible={!!completing}
+        clientId={client.id}
+        activity={null}
+        completing={completing}
+        onClose={() => setCompleting(null)}
+        onSaved={changed}
+      />
     </ScrollView>
   );
 }
@@ -166,9 +247,23 @@ const styles = StyleSheet.create({
   tick: { borderWidth: 1, borderColor: RECOVERY_GREEN, borderRadius: 14, paddingVertical: 4, paddingHorizontal: 10 },
   tickText: { color: RECOVERY_GREEN, fontWeight: "700", fontSize: 13 },
   remove: { color: "#64748B", fontSize: 16, paddingHorizontal: 4 },
+  skip: { borderWidth: 1, borderColor: "#475569", borderRadius: 14, paddingVertical: 4, paddingHorizontal: 10 },
+  skipText: { color: "#94A3B8", fontWeight: "700", fontSize: 13 },
   empty: { color: "#64748B", fontSize: 13 },
-  doneWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  donePill: { backgroundColor: "#14532D", borderRadius: 14, paddingVertical: 4, paddingHorizontal: 10 },
-  donePillText: { color: "#BBF7D0", fontSize: 12, fontWeight: "600" },
+  logRow: { flexDirection: "row", gap: 8, paddingVertical: 6 },
+  logMark: { color: RECOVERY_GREEN, fontWeight: "800", width: 16, textAlign: "center" },
+  logTitle: { color: "#E2E8F0", fontSize: 14 },
+  logNote: { color: "#94A3B8", fontSize: 12, fontStyle: "italic", marginTop: 1 },
+  programCard: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginBottom: 8 },
+  programTitle: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  programWho: { color: "#94A3B8", fontSize: 13, marginTop: 2 },
+  programStep: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, marginTop: 4 },
+  programFocus: { color: RECOVERY_GREEN, fontSize: 13, marginTop: 8 },
+  change: { color: "#64748B", fontSize: 12, marginTop: 8, textAlign: "right" },
+  chooseButton: { backgroundColor: RECOVERY_GREEN, borderRadius: 10, padding: 10, alignItems: "center", marginTop: 10 },
+  chooseText: { color: "#0F172A", fontWeight: "800" },
+  whyHead: { marginTop: 18, paddingVertical: 8 },
+  whyTitle: { color: RECOVERY_GREEN, fontWeight: "700", fontSize: 15 },
+  whyText: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, marginTop: 6 },
   footer: { color: "#64748B", fontSize: 12, marginTop: 16 },
 });

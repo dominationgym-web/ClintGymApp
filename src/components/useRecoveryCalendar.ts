@@ -11,6 +11,7 @@ export function useRecoveryCalendar(clientId: string, from: string, to: string, 
       if (!live) return;
       const map: Record<string, { label: string; done: boolean }[]> = {};
       for (const r of rows) {
+        if (r.skipped) continue;
         const date = r.done_on ?? r.planned_on;
         (map[date] ??= []).push({ label: recoveryShortName(r.activity), done: !!r.done_on });
       }

@@ -32,13 +32,13 @@ describe("suggestRecovery", () => {
 
   it("spots a hard day and a big leg day yesterday", () => {
     const s = suggestRecovery({ ...empty, sets: sets("2026-10-16", 10, "failure", true) }, today);
-    expect(s.map((x) => x.activity)).toEqual(["cold_heat", "foam_rolling"]);
+    expect(s.map((x) => x.activity)).toEqual(["cold", "foam_rolling"]);
   });
 
-  it("asks for a rest day after 5 days in a row", () => {
+  it("asks for a rest day (active recovery) after 5 days in a row", () => {
     const week = ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16"].flatMap((d) => sets(d, 6));
     const s = suggestRecovery({ ...empty, sets: week }, today);
-    expect(s[0].activity).toBe("rest");
+    expect(s[0].activity).toBe("easy_movement");
     expect(s[0].reason).toContain("5 days in a row");
   });
 
