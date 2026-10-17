@@ -4,7 +4,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { money, monthLabel } from "@/lib/billing";
-import { trackerTotals, trainerPlanLine } from "@/lib/tracker";
+import { clientIncomeTotals, trackerTotals, trainerPlanLine, type ClientIncomeRow } from "@/lib/tracker";
 import type { BillingCurrency, OwnerTrackerRow } from "@/types/database";
 
 const SIDES: { currency: BillingCurrency; label: string }[] = [
@@ -16,13 +16,15 @@ const SIDES: { currency: BillingCurrency; label: string }[] = [
 // fees and trainer subscriptions, split South Africa and International.
 export default function OwnerTracker() {
   const [rows, setRows] = useState<OwnerTrackerRow[] | null>(null);
+  const [income, setIncome] = useState<ClientIncomeRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showTrainers, setShowTrainers] = useState(false);
 
   const load = useCallback(async () => {
-    const { data, error: err } = await supabase.rpc("owner_tracker");
-    if (err) setError(err.message);
-    else setRows(data ?? []);
+    const [tracker, clientIncome] = await Promise.all([supabase.rpc("owner_tracker"), supabase.rpc("owner_client_income")]);
+    if (tracker.error) setError(tracker.error.message);
+    else setRows(tracker.data ?? []);
+    setIncome(clientIncome.data ?? []);
   }, []);
 
   useEffect(() => {
@@ -34,6 +36,8 @@ export default function OwnerTracker() {
 
   const today = todayIso();
   const t = trackerTotals(rows, today);
+  const earned = clientIncomeTotals(income);
+  const incomeFor = new Map(income.map((i) => [i.trainer_id, i]));
 
   return (
     <>
@@ -47,6 +51,21 @@ export default function OwnerTracker() {
         Includes your own {t.clients.ownActive}. {t.trainers} trainer{t.trainers === 1 ? "" : "s"}
         {t.onTrial ? `, ${t.onTrial} on trial` : ""}
         {t.freeUse ? `, ${t.freeUse} on free use` : ""}.
+      </Text>
+
+      <Text style={styles.heading}>What clients pay their trainers</Text>
+      <View style={styles.row}>
+        {SIDES.map(({ currency, label }) => (
+          <View key={currency} style={styles.box}>
+            <Text style={styles.boxLabel}>{label}</Text>
+            <Text style={styles.big}>{money(earned[currency].income, currency)}</Text>
+            <Text style={styles.small}>a month from {earned[currency].priced} client{earned[currency].priced === 1 ? "" : "s"}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={styles.hint}>
+        From each trainer's prices on Profile → Income (test run).
+        {earned.unpriced ? ` ${earned.unpriced} active client${earned.unpriced === 1 ? " has" : "s have"} no price yet.` : ""}
       </Text>
 
       <Text style={styles.heading}>Monthly client fees · {monthLabel(today)}</Text>
@@ -99,8 +118,13 @@ export default function OwnerTracker() {
               <Text style={styles.trainerName}>
                 {r.clients_active} client{r.clients_active === 1 ? "" : "s"}
               </Text>
+              {incomeFor.get(r.trainer_id)?.priced ? (
+                <Text style={styles.small}>
+                  Earns {money(Number(incomeFor.get(r.trainer_id)?.income), incomeFor.get(r.trainer_id)?.currency)} a month
+                </Text>
+              ) : null}
               {!r.is_owner && (
-                <Text style={styles.small}>{money(Number(r.client_fee_full), r.currency)} a month</Text>
+                <Text style={styles.small}>Pays you {money(Number(r.client_fee_full), r.currency)} a month</Text>
               )}
             </View>
           </View>

@@ -64,6 +64,8 @@ export type Trainer = {
   signup_country: string | null;
   signup_location_checked_at: string | null;
   free_use_from: string | null;
+  // What this trainer's clients pay them a month (0106).
+  client_prices?: ClientPrices | null;
 }
 
 export type BillingPlan = "monthly" | "six_months" | "yearly";
@@ -147,6 +149,17 @@ export type BillingMonthRow = {
   client_fee: number;
 };
 
+// A trainer's client prices (0106): a table (Fully Online, or 1-4 extra days a
+// week for existing 1-on-1 clients) or one monthly fee for everyone.
+export type PricePackage = "online" | "extra_1" | "extra_2" | "extra_3" | "extra_4";
+export type ClientPrices = {
+  currency: BillingCurrency;
+  mode: "table" | "flat";
+  online?: number | null;
+  extra?: Partial<Record<"1" | "2" | "3" | "4", number | null>>;
+  flat?: number | null;
+};
+
 // One row of owner_tracker() (0105): a trainer's clients, fees and plan.
 export type OwnerTrackerRow = {
   trainer_id: string;
@@ -193,6 +206,8 @@ export type Client = {
   plan_started_at: string | null;
   plan_expires_at: string | null;
   package_type: PackageType | null;
+  // Which of the trainer's prices this client pays (0106).
+  price_package?: PricePackage | null;
   lifestyle_reset_started_at: string | null;
   // Asked on the intake form (0057); null for clients from before. Men don't
   // see the Women's Health Reset.
@@ -891,6 +906,10 @@ export interface Database {
       trainer_billing_status: { Args: { p_trainer: string }; Returns: TrainerBillingStatus[] };
       billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
       owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
+      owner_client_income: {
+        Args: Record<string, never>;
+        Returns: { trainer_id: string; currency: BillingCurrency; income: number; priced: number; unpriced: number }[];
+      };
       am_i_locked: { Args: Record<string, never>; Returns: boolean };
       owner_payment_details: {
         Args: Record<string, never>;
