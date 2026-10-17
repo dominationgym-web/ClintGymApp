@@ -564,6 +564,38 @@ const TRAINING: TrainerGuide = {
         },
       ],
     },
+    {
+      title: "Gauge test (new clients)",
+      icon: "🎯",
+      intro: "You aren't there to pick a new client's weights, so the app finds them with one set per exercise.",
+      groups: [
+        {
+          heading: "How it works",
+          points: [
+            "The first time a client does an exercise, their first working set is a gauge set.",
+            "They pick a weight they think they can lift for the program's reps and do as many good reps as they can, until they can't do one more with good form.",
+            "From that weight and those reps the app estimates their one-rep max, then works out the weight for the top of the rep range with reps kept in reserve. That weight goes in the box for their other sets.",
+            "Every exercise gets its own gauge set. After that, Try this weight next keeps adjusting the weight from each session, so the app's suggestions get closer as it learns their strength.",
+          ],
+        },
+        {
+          heading: "No failure in the intro",
+          points: [
+            "In the first 6 weeks, or while on a Foundation program, clients stop each set 2 reps short of failure. The app works out their weight that way and reminds them under every set.",
+            "After the intro the app aims for 1 rep short. The gauge set is the only set taken to failure early on.",
+            "Why: new lifters' form breaks down near failure, and their joints and tendons adapt more slowly than their muscles. Building the habit of good reps first keeps them training without injury.",
+          ],
+        },
+        {
+          heading: "Explaining it to your client",
+          points: [
+            "\"For each new exercise, your first set tells the app what you can lift. Pick a weight you think you can do about 10 times and go until you can't do another good rep. The app then sets your weight for the rest.\"",
+            "\"For every other set, finish when you could still do 1 or 2 more good reps. We'll start pushing to failure once your intro program is done.\"",
+            "The gauge set shows in their training log as 🎯 Gauge set, so you can check the weight they picked and the reps they managed.",
+          ],
+        },
+      ],
+    },
   ],
 };
 

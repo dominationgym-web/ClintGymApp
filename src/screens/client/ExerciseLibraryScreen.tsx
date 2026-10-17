@@ -42,6 +42,7 @@ import type { ClientAchievement } from "@/types/database";
 import { AB_REPS, abExerciseFor, absBetweenSets } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
+import { gaugeWeight, inIntro, needsGauge, type GaugeResult } from "@/lib/gauge";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
@@ -109,6 +110,10 @@ export default function ExerciseLibraryScreen() {
   const [warmUpDue, setWarmUpDue] = useState(false);
   const [startWeight, setStartWeight] = useState("");
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  // Gauge test (GRIZZ, 2026-10-17): first set of a new exercise to failure,
+  // then the app works out the working weight.
+  const [gaugeDue, setGaugeDue] = useState(false);
+  const [gaugeResult, setGaugeResult] = useState<GaugeResult | null>(null);
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [effort, setEffort] = useState<SetEffort | null>(null);
@@ -265,6 +270,8 @@ export default function ExerciseLibraryScreen() {
   // Weekly programs are worked through in order (0037): the current session
   // shows from its day until it's completed or moved.
   const today = todayIso();
+  // Intro (first 6 weeks or a Foundation program): no sets to failure but the gauge set.
+  const intro = inIntro(program?.program.name, client?.plan_started_at, today);
   // A calendar workout is just the day's exercises, even when it's one day of a weekly program (0098).
   const weekly = !calendarToday && program?.program.kind === "weekly";
   const days = program && weekly ? trainingDays(program.exercises) : [];
@@ -588,6 +595,8 @@ export default function ExerciseLibraryScreen() {
     setReps("");
     setEffort(null);
     setSuggestion(null);
+    setGaugeDue(false);
+    setGaugeResult(null);
     setWarmUpDue(false);
     setStartWeight("");
     if (!client) return;
@@ -603,6 +612,7 @@ export default function ExerciseLibraryScreen() {
     const lastDate = earlier?.[0]?.log_date;
     const next = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
     setSuggestion(next);
+    setGaugeDue(!!programRow && needsGauge(earlier ?? [], data ?? [], programRow.reps));
     const working = (data ?? []).filter((s) => !s.warm_up);
     const lastToday = working[working.length - 1]?.weight_kg;
     const start = lastToday ? String(lastToday) : next?.weight ? String(next.weight) : "";
@@ -639,7 +649,12 @@ export default function ExerciseLibraryScreen() {
       return;
     }
     const warmUp = warmUpDue;
-    if (!effort && !warmUp) {
+    const gauge = gaugeDue && !warmUp;
+    if (gauge && !(Number(weight) > 0)) {
+      Alert.alert("Missing weight", "Enter the weight you picked for your gauge set.");
+      return;
+    }
+    if (!effort && !warmUp && !gauge) {
       Alert.alert("Missing effort", "Pick how the set felt.");
       return;
     }
@@ -655,8 +670,9 @@ export default function ExerciseLibraryScreen() {
         set_number: warmUp ? 0 : workingDone + 1,
         weight_kg: weight ? Number(weight) : null,
         reps: repsNum,
-        effort: warmUp ? "comfortable" : effort!,
+        effort: warmUp ? "comfortable" : gauge ? "failure" : effort!,
         warm_up: warmUp,
+        gauge,
       })
       .select()
       .single();
@@ -670,6 +686,16 @@ export default function ExerciseLibraryScreen() {
     if (!warmUp) checkAchievement(client.id, data).then((b) => b && setBadge(b));
     setReps("");
     setEffort(null);
+    if (gauge && target) {
+      setGaugeDue(false);
+      const result = gaugeWeight({ weight: Number(weight), reps: repsNum }, target.reps, selected, intro);
+      setGaugeResult(result);
+      if (result) {
+        setWeight(String(result.weight));
+        setStartWeight(String(result.weight));
+        Alert.alert(`🎯 Your working weight: ${result.weight}kg`, result.advice);
+      }
+    }
     if (warmUp) {
       // Warm-up done: back to the start weight for the working sets, after a short breather.
       setWarmUpDue(false);
@@ -679,8 +705,9 @@ export default function ExerciseLibraryScreen() {
       setRestRun((n) => n + 1);
       return;
     }
-    // Keep the weight for the next set; most sets use the same one.
-    setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
+    // Keep the weight for the next set; most sets use the same one (after a
+    // gauge set, the weight it worked out).
+    if (!gauge) setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
     const done = (row: ProgramExercise) =>
       target && row.id === target.id ? workingDone + 1 : setsDoneFor(row);
     // Supersets alternate: straight into the partner, or back to the first
@@ -1149,6 +1176,23 @@ export default function ExerciseLibraryScreen() {
                   </View>
                 );
               })()}
+            {gaugeDue && !warmUpDue && (
+              <View style={styles.gaugeBox}>
+                <Text style={styles.gaugeTitle}>🎯 Gauge set: first time doing this exercise</Text>
+                <Text style={styles.warmUpText}>
+                  Your coach isn't there to pick your weight, so this set finds it. Pick a weight you think you can lift about{" "}
+                  {target?.reps ?? "10"} times. Do as many good reps as you can, until you can't do one more with good form. Log the weight
+                  and your reps, and the app works out the right weight for the rest of your sets.
+                </Text>
+                <Text style={styles.warmUpText}>This is the only set you take to failure.</Text>
+              </View>
+            )}
+            {gaugeResult && (
+              <View style={styles.gaugeBox}>
+                <Text style={styles.gaugeTitle}>🎯 Your working weight: {gaugeResult.weight}kg</Text>
+                <Text style={styles.warmUpText}>{gaugeResult.advice}</Text>
+              </View>
+            )}
             {suggestion && (
               <View style={styles.warmUpBox}>
                 <Text style={styles.warmUpTitle}>📈 {suggestion.last}</Text>
@@ -1183,8 +1227,13 @@ export default function ExerciseLibraryScreen() {
               </View>
             </View>
 
-            {!warmUpDue && <Text style={styles.fieldLabel}>How did it feel?</Text>}
-            {!warmUpDue && <View style={styles.effortRow}>
+            {!warmUpDue && !gaugeDue && <Text style={styles.fieldLabel}>How did it feel?</Text>}
+            {!warmUpDue && !gaugeDue && intro && (
+              <Text style={styles.introNote}>
+                Your first 6 weeks: stop each set when you could still do 1-2 more good reps. Going to failure comes after your intro program.
+              </Text>
+            )}
+            {!warmUpDue && !gaugeDue && <View style={styles.effortRow}>
               {EFFORT_OPTIONS.map((o) => (
                 <Pressable
                   key={o.key}
@@ -1202,7 +1251,7 @@ export default function ExerciseLibraryScreen() {
               {logging ? (
                 <ActivityIndicator color="#0F172A" />
               ) : (
-                <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : "Log set"}</Text>
+                <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : gaugeDue ? "Log gauge set" : "Log set"}</Text>
               )}
             </Pressable>
 
@@ -1306,6 +1355,9 @@ const styles = StyleSheet.create({
   fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6 },
   categoryChip: { flex: 0, paddingHorizontal: 14, marginRight: 8 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15 },
+  gaugeBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
+  gaugeTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15, marginBottom: 4 },
+  introNote: { color: "#FBBF24", fontSize: 12, marginBottom: 8 },
   effortRow: { flexDirection: "row", gap: 8, marginBottom: 16, flexWrap: "wrap" },
   effortChip: { backgroundColor: "#1E293B", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   effortChipSelected: { backgroundColor: "#22C55E" },
