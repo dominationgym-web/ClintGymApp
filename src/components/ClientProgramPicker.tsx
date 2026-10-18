@@ -15,6 +15,7 @@ import CardioDurationPicker from "@/components/CardioDurationPicker";
 import ProgramChooserModal from "@/components/ProgramChooserModal";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
+import type { StabilityArea } from "@/lib/stability";
 
 // For a weekly program: which session the client is on, and when they last finished one.
 function progressLine(active: ActiveProgram): string | null {
@@ -36,12 +37,17 @@ export default function ClientProgramPicker({
   clientName,
   trainingPlace,
   resetNotice = null,
+  onChanged,
+  injuries = [],
 }: {
   clientId: string;
   clientName: string;
   trainingPlace: ExercisePlace;
   // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
   resetNotice?: string | null;
+  // A program was picked, so the injury check runs (GRIZZ, 2026-10-17).
+  onChanged?: () => void;
+  injuries?: StabilityArea[];
 }) {
   const [active, setActive] = useState<ActiveProgram | null>(null);
   const [choices, setChoices] = useState<Program[]>([]);
@@ -114,6 +120,7 @@ export default function ClientProgramPicker({
     setChoosing(false);
     await load();
     setBusy(false);
+    if (!error) onChanged?.();
   };
 
   const stop = () =>
@@ -250,6 +257,7 @@ export default function ClientProgramPicker({
         clientId={clientId}
         clientName={clientName}
         trainingPlace={trainingPlace}
+        injuries={injuries}
         onClose={() => setChanging(null)}
         onSaved={() => {
           setChanging(null);

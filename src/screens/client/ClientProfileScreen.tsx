@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import InjuryList from "@/components/InjuryList";
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -258,8 +259,15 @@ export default function ClientProfileScreen() {
       <FoldSection icon="🎯" title="Goals and injuries" open={openFold === "goals"} onToggle={() => fold("goals")}>
         <Text style={styles.sectionHeading}>Goals</Text>
         <Text style={styles.body}>{client.goals || "Not set yet - your trainer will add this."}</Text>
-        <Text style={styles.sectionHeading}>Injuries / notes for your trainer</Text>
-        <Text style={styles.body}>{client.injuries || "None on file."}</Text>
+        <Text style={styles.sectionHeading}>My injuries</Text>
+        <Text style={styles.body}>List every injury, one at a time, so your coach can keep your program safe. Tap Healed once it's better.</Text>
+        <InjuryList clientId={client.id} role="client" />
+        {client.injuries ? (
+          <>
+            <Text style={styles.sectionHeading}>From your sign-up form</Text>
+            <Text style={styles.body}>{client.injuries}</Text>
+          </>
+        ) : null}
       </FoldSection>
 
       {trainer ? (

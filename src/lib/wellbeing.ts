@@ -50,6 +50,19 @@ export const WELLBEING_TOPICS: {
   },
 ];
 
+/** Pain areas picked on the check-in, saved as one line: "Knee, Lower back". */
+export function splitKinds(kind: string): string[] {
+  return kind.split(",").map((k) => k.trim()).filter(Boolean);
+}
+
+/** Adds or removes one area from the saved line, keeping the list's order. */
+export function toggleKind(kind: string, area: string): string {
+  const picked = splitKinds(kind);
+  const next = picked.includes(area) ? picked.filter((k) => k !== area) : [...picked, area];
+  const order = WELLBEING_TOPICS[0].kinds;
+  return next.sort((a, b) => order.indexOf(a) - order.indexOf(b)).join(", ");
+}
+
 const blankAnswer = (): WellbeingAnswer => ({ status: null, kind: "", notes: "" });
 
 export const EMPTY_WELLBEING: WellbeingForm = { pain: blankAnswer(), fatigue: blankAnswer(), mental: blankAnswer() };
