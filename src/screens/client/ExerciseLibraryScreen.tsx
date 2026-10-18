@@ -353,8 +353,8 @@ export default function ExerciseLibraryScreen() {
   // The program card already lists today's exercises, so the reference list
   // only shows for clients who aren't on a program yet.
   const showReference = !program;
-  // What's open on the Today view: the workout opens by itself once started or when catching up.
-  const part = openPart === undefined ? (catchUpFor || (allTodaysSets.length > 0 && todaySession?.status !== "complete") ? "main" : null) : openPart;
+  // What's open on the Today view (GRIZZ, 2026-10-18: "they must click on the program for it to open").
+  const part = openPart ?? null;
   const togglePart = (key: string) => setOpenPart(part === key ? null : key);
   const choosePlace = (next: ExercisePlace) => {
     setPlace(next);
@@ -792,6 +792,19 @@ export default function ExerciseLibraryScreen() {
               <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
             )}
             {client && (
+              <ClientCalendarView
+                clientId={client.id}
+                exercises={exercises}
+                atHome={atHome}
+                fit={fit}
+                onSwapsChanged={(date) => {
+                  if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
+                }}
+                catchUpDates={isWeekend(today) && !todaySession ? missed.map((m) => m.workout_date) : []}
+                onCatchUp={setChosenDay}
+              />
+            )}
+            {client && (
               <View style={styles.todayCard}>
                 <Text style={styles.todayHeading}>Today</Text>
                 <Text style={styles.todayDate}>
@@ -1090,21 +1103,6 @@ export default function ExerciseLibraryScreen() {
                   })}
               </View>
             ))}
-            {client && (
-              <FoldSection icon="📅" title="My calendar" hint="Your workouts for the month" open={part === "calendar"} onToggle={() => togglePart("calendar")}>
-              <ClientCalendarView
-                clientId={client.id}
-                exercises={exercises}
-                atHome={atHome}
-                fit={fit}
-                onSwapsChanged={(date) => {
-                  if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
-                }}
-                catchUpDates={isWeekend(today) && !todaySession ? missed.map((m) => m.workout_date) : []}
-                onCatchUp={setChosenDay}
-              />
-              </FoldSection>
-            )}
             {client && (
               <FoldSection icon="🏃" title="Other exercise" hint="Log a walk, run, ride or hike" open={part === "other"} onToggle={() => togglePart("other")}>
                 <OtherActivityCard clientId={client.id} role="client" />

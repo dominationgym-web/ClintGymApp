@@ -62,7 +62,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       title: "Today's workout",
       where: "Exercises tab",
       points: [
-        "The Exercises tab opens on Today: just what's on for the day (your workout and any extra session like stretching), or a rest day. Tap it to open the workout, then tap an exercise to log your sets. Your calendar and Other exercise are under tap-to-open headings below.",
+        "The Exercises tab opens on your calendar, with Today underneath: just what's on for the day (your workout and any extra session like stretching), or a rest day. Tap it to open the workout, then tap an exercise to log your sets. Other exercise is under a tap-to-open heading below.",
         "Tap 📖 How to do it on any exercise to watch the demo video and see what it works, the steps, and tips to get the most from it. Tap the green Do set button beside the exercise, or at the bottom of the guide, to log your set.",
         "The first exercise for each body part starts with one warm-up set at half your start weight. It's logged as a warm-up and doesn't count as a working set.",
         "Log the weight, the reps and how the set felt. The rest timer starts by itself, and supersets take you straight to the next exercise.",
