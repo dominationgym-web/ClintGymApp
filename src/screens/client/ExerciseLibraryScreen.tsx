@@ -43,9 +43,11 @@ import { AB_REPS, abExerciseFor, absBetweenSets } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
 import { gaugeWeight, inIntro, needsGauge, type GaugeResult } from "@/lib/gauge";
+import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
+import OtherActivityCard from "@/components/OtherActivityCard";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import IntervalTimerModal from "@/components/IntervalTimerModal";
 import { hasIntervals } from "@/lib/intervalTimer";
@@ -85,6 +87,7 @@ import { catchUpDate, isWeekend, orderByRestedMuscles, type MissedWorkout } from
 import { applyRecoveryAdjustment } from "@/lib/recovery";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import FoldSection from "@/components/FoldSection";
 
 const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
   { key: "comfortable", label: "Comfortable" },
@@ -125,6 +128,8 @@ export default function ExerciseLibraryScreen() {
   // One day of a weekly program on today's calendar (its slot), and extra
   // blocks the coach added for today (0098, GRIZZ, 2026-10-16).
   const [calendarSlot, setCalendarSlot] = useState<number | null>(null);
+  // Today's calendar workout is in a deload week (0115).
+  const [deloadToday, setDeloadToday] = useState(false);
   const [calendarExtras, setCalendarExtras] = useState<CalendarDayWorkout[]>([]);
   const [pace, setPace] = useState<WorkoutPace>("planned");
   // How today's workout went, once the client has finished it (0076).
@@ -163,6 +168,10 @@ export default function ExerciseLibraryScreen() {
   const [cardioDone, setCardioDone] = useState<string[]>([]);
   // The program's how-to and nutrition notes open on tap, so the workout stays near the top.
   const [openInfo, setOpenInfo] = useState<"how" | "food" | null>(null);
+  // The simple Today view (GRIZZ, 2026-10-18: "a simplified structure when you
+  // open. So the client can see what's on for the day. Then only if he clicks
+  // on it then it opens up."): which part is open, undefined until tapped.
+  const [openPart, setOpenPart] = useState<string | null | undefined>(undefined);
   const [timerOpen, setTimerOpen] = useState(false);
   // Drop set programs (0099, GRIZZ, 2026-10-16) log in their own logger.
   const [dropRow, setDropRow] = useState<ProgramExercise | null>(null);
@@ -236,6 +245,7 @@ export default function ExerciseLibraryScreen() {
       if (!error && data) setExercises(data);
       setCalendarExtras(calendar?.extras ?? []);
       setCalendarSlot(calendar?.main?.daySlot ?? null);
+      setDeloadToday(!!calendar?.main?.deload);
       const main = calendar?.main ?? null;
       if (main && client) {
         const assignment = active?.assignment ?? {
@@ -307,6 +317,15 @@ export default function ExerciseLibraryScreen() {
   // Drop set programs show 2 rounds (intermediate) or 3 (advanced) as the sets.
   const dropMode = isDropSetProgram(program?.program);
   const dropRounds = roundsForLevel(client?.training_level);
+  const todayTitle = !program
+    ? ""
+    : session
+      ? sessionDue
+        ? sessionTitle(program.program, session.day)
+        : "Rest day"
+      : calendarToday && calendarSlot != null
+        ? sessionTitle(program.program, calendarSlot)
+        : dayTitle(program.program, new Date());
   const todaysWorkout = homePlan.map((row) => {
     const swap = swaps[row.id];
     const r = swap ? { ...row, exercise_id: swap.id, exercise_name: swap.name } : row;
@@ -334,6 +353,9 @@ export default function ExerciseLibraryScreen() {
   // The program card already lists today's exercises, so the reference list
   // only shows for clients who aren't on a program yet.
   const showReference = !program;
+  // What's open on the Today view: the workout opens by itself once started or when catching up.
+  const part = openPart === undefined ? (catchUpFor || (allTodaysSets.length > 0 && todaySession?.status !== "complete") ? "main" : null) : openPart;
+  const togglePart = (key: string) => setOpenPart(part === key ? null : key);
   const choosePlace = (next: ExercisePlace) => {
     setPlace(next);
     setCategory(null);
@@ -610,9 +632,11 @@ export default function ExerciseLibraryScreen() {
       .order("log_date", { ascending: false })
       .limit(20);
     const lastDate = earlier?.[0]?.log_date;
-    const next = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
+    const usual = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
+    // Deload week (0115): about 70% of the usual weight, and no gauge set.
+    const next = deloadToday && calendarToday ? deloadSuggestion(usual, exercise) : usual;
     setSuggestion(next);
-    setGaugeDue(!!programRow && needsGauge(earlier ?? [], data ?? [], programRow.reps));
+    setGaugeDue(!(deloadToday && calendarToday) && !!programRow && needsGauge(earlier ?? [], data ?? [], programRow.reps));
     const working = (data ?? []).filter((s) => !s.warm_up);
     const lastToday = working[working.length - 1]?.weight_kg;
     const start = lastToday ? String(lastToday) : next?.weight ? String(next.weight) : "";
@@ -768,19 +792,63 @@ export default function ExerciseLibraryScreen() {
               <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
             )}
             {client && (
-              <ClientCalendarView
-                clientId={client.id}
-                exercises={exercises}
-                atHome={atHome}
-                fit={fit}
-                onSwapsChanged={(date) => {
-                  if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
-                }}
-                catchUpDates={isWeekend(today) && !todaySession ? missed.map((m) => m.workout_date) : []}
-                onCatchUp={setChosenDay}
-              />
+              <View style={styles.todayCard}>
+                <Text style={styles.todayHeading}>Today</Text>
+                <Text style={styles.todayDate}>
+                  {new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
+                </Text>
+                {program && todaysWorkout.length > 0 && (
+                  <Pressable style={[styles.todayRow, part === "main" && styles.todayRowOpen]} onPress={() => togglePart("main")}>
+                    <Text style={styles.todayIcon}>{deloadToday && calendarToday ? "🌙" : catchUpFor ? "🔁" : "🏋️"}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.todayTitle}>{todayTitle}</Text>
+                      <Text style={styles.todayHint}>
+                        {catchUpFor ? `Catching up ${weekdayOf(catchUpFor)}'s workout · ` : ""}
+                        {todaysWorkout.length} exercise{todaysWorkout.length === 1 ? "" : "s"}
+                        {todaySession ? ` · ${SESSION_LABELS[todaySession.status]}` : allTodaysSets.length > 0 ? " · In progress" : ""}
+                      </Text>
+                    </View>
+                    {todaySession ? (
+                      <View style={[styles.resultDot, { backgroundColor: SESSION_COLORS[todaySession.status] }]} />
+                    ) : (
+                      <Text style={styles.todayOpen}>{part === "main" ? "Close ▴" : "Start ›"}</Text>
+                    )}
+                  </Pressable>
+                )}
+                {calendarExtras.map((block, i) => (
+                  <Pressable
+                    key={`row-${block.program.id}-${i}`}
+                    style={[styles.todayRow, part === `extra-${i}` && styles.todayRowOpen]}
+                    onPress={() => togglePart(`extra-${i}`)}
+                  >
+                    <Text style={styles.todayIcon}>🤸</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.todayTitle}>{displayProgramName(block.program)}</Text>
+                      <Text style={styles.todayHint}>
+                        {block.daySlot != null ? `${sessionTitle(block.program, block.daySlot)} · ` : ""}
+                        {block.exercises.length} exercise{block.exercises.length === 1 ? "" : "s"}
+                      </Text>
+                    </View>
+                    <Text style={styles.todayOpen}>{part === `extra-${i}` ? "Close ▴" : "Open ›"}</Text>
+                  </Pressable>
+                ))}
+                {(!program || todaysWorkout.length === 0) && calendarExtras.length === 0 && (
+                  <Text style={styles.todayRest}>
+                    {program ? "😌 Rest day. Let your body recover." : "Nothing planned for today."}
+                  </Text>
+                )}
+                {program && todaysWorkout.length === 0 && missed.length > 0 && isWeekend(today) && !todaySession && (
+                  <View style={styles.catchUpChips}>
+                    {missed.map((m) => (
+                      <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
+                        <Text style={styles.catchUpChipText}>🔁 Catch up {weekdayOf(m.workout_date)}'s workout</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
             )}
-            {program && (
+            {program && part === "main" && (
               <View style={styles.programCard}>
                 {catchUpFor ? (
                   <View style={styles.catchUp}>
@@ -820,20 +888,21 @@ export default function ExerciseLibraryScreen() {
                   </>
                 )}
                 <Text style={styles.programKicker}>{displayProgramName(program.program).toUpperCase()}</Text>
-                <Text style={styles.programTitle}>
-                  {session
-                    ? sessionDue
-                      ? sessionTitle(program.program, session.day)
-                      : "Rest day"
-                    : calendarToday && calendarSlot != null
-                      ? sessionTitle(program.program, calendarSlot)
-                      : dayTitle(program.program, new Date())}
-                </Text>
+                <Text style={styles.programTitle}>{todayTitle}</Text>
                 {session && sessionDue && session.dueOn < today && (
                   <Text style={styles.carried}>Carried over from {weekdayOf(session.dueOn)}. Complete it to unlock your next workout.</Text>
                 )}
                 {lightened && (
                   <Text style={styles.carried}>Your coach made today's session lighter to give your muscles time to recover.</Text>
+                )}
+                {deloadToday && calendarToday && (
+                  <View style={styles.deload}>
+                    <Text style={styles.deloadTitle}>🌙 Deload week</Text>
+                    <Text style={styles.deloadText}>
+                      Your coach has given you a lighter week so your body can recover and come back stronger: half the sets, about 70% of
+                      your usual weights, and stop 3 or more reps before failure. Your normal program carries on next week.
+                    </Text>
+                  </View>
                 )}
                 {program.program.description ? (
                   <Pressable style={styles.howTo} onPress={() => setOpenInfo(openInfo === "how" ? null : "how")}>
@@ -975,7 +1044,8 @@ export default function ExerciseLibraryScreen() {
                 )}
               </View>
             )}
-            {calendarExtras.map((block, i) => (
+            {calendarExtras.map((block, i) =>
+              part !== `extra-${i}` ? null : (
               <View key={`${block.program.id}-${i}`} style={styles.programCard}>
                 <Text style={styles.fromCalendar}>📅 Extra block from your coach for today</Text>
                 <Text style={styles.programTitle}>{displayProgramName(block.program)}</Text>
@@ -1020,6 +1090,26 @@ export default function ExerciseLibraryScreen() {
                   })}
               </View>
             ))}
+            {client && (
+              <FoldSection icon="📅" title="My calendar" hint="Your workouts for the month" open={part === "calendar"} onToggle={() => togglePart("calendar")}>
+              <ClientCalendarView
+                clientId={client.id}
+                exercises={exercises}
+                atHome={atHome}
+                fit={fit}
+                onSwapsChanged={(date) => {
+                  if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
+                }}
+                catchUpDates={isWeekend(today) && !todaySession ? missed.map((m) => m.workout_date) : []}
+                onCatchUp={setChosenDay}
+              />
+              </FoldSection>
+            )}
+            {client && (
+              <FoldSection icon="🏃" title="Other exercise" hint="Log a walk, run, ride or hike" open={part === "other"} onToggle={() => togglePart("other")}>
+                <OtherActivityCard clientId={client.id} role="client" />
+              </FoldSection>
+            )}
             {showReference && <Text style={styles.title}>Exercise reference</Text>}
             {!showReference ? null : client?.library_access === false ? (
               <Text style={styles.helper}>
@@ -1307,6 +1397,19 @@ export default function ExerciseLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  todayCard: { backgroundColor: "#111C33", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#1E293B" },
+  todayHeading: { color: BRAND_GOLD, fontSize: 22, fontWeight: "800" },
+  todayDate: { color: "#94A3B8", fontSize: 13, marginTop: 2, marginBottom: 6 },
+  todayRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#0F172A", borderRadius: 12, padding: 14, marginTop: 8 },
+  todayRowOpen: { borderWidth: 1, borderColor: BRAND_GOLD },
+  todayIcon: { fontSize: 26 },
+  todayTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  todayHint: { color: "#94A3B8", fontSize: 13, marginTop: 2 },
+  todayOpen: { color: BRAND_GOLD, fontSize: 14, fontWeight: "700" },
+  todayRest: { color: "#CBD5E1", fontSize: 15, marginTop: 10 },
+  deload: { borderWidth: 1, borderColor: DELOAD_BLUE, borderRadius: 10, padding: 10, marginTop: 8 },
+  deloadTitle: { color: DELOAD_BLUE, fontWeight: "700", fontSize: 14 },
+  deloadText: { color: "#E2E8F0", fontSize: 13, lineHeight: 18, marginTop: 4 },
   doSetRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   absBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
   absButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },

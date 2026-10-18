@@ -5,6 +5,7 @@
 import { supabase } from "@/lib/supabase";
 import { addDays } from "@/lib/programSchedule";
 import { muscleGroupsFor } from "@/lib/recovery";
+import { activityTitle, isBigActivity } from "@/lib/otherActivities";
 import { suggestRecovery, type RecoveryInputs, type RecoverySuggestion } from "@/lib/recoverySuggest";
 import type { RecoveryActivityRow, SetEffort } from "@/types/database";
 
@@ -23,7 +24,7 @@ export async function loadRecoveryActivities(clientId: string, from: string, to:
 /** The client's last week of training, check-ins and recovery, ready for suggestRecovery(). */
 export async function loadRecoveryInputs(clientId: string, today: string): Promise<RecoveryInputs> {
   const weekStart = addDays(today, -6);
-  const [logs, checkins, recovery] = await Promise.all([
+  const [logs, checkins, recovery, activities] = await Promise.all([
     supabase
       .from("workout_logs")
       .select("exercise_id, exercise_name, log_date, effort, warm_up")
@@ -37,6 +38,12 @@ export async function loadRecoveryInputs(clientId: string, today: string): Promi
       .gte("checkin_date", addDays(today, -1))
       .lte("checkin_date", today),
     loadRecoveryActivities(clientId, weekStart, today),
+    supabase
+      .from("client_activities")
+      .select("activity_date, kind, name, minutes, effort")
+      .eq("client_id", clientId)
+      .gte("activity_date", weekStart)
+      .lte("activity_date", today),
   ]);
   const rows = ((logs.data ?? []) as {
     exercise_id: string | null;
@@ -72,6 +79,12 @@ export async function loadRecoveryInputs(clientId: string, today: string): Promi
       mental: c.mental_status === "reported",
     })),
     recovery,
+    activities: (activities.data ?? []).map((a) => ({
+      date: a.activity_date,
+      what: activityTitle(a),
+      minutes: a.minutes,
+      big: isBigActivity(a),
+    })),
   };
 }
 

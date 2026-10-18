@@ -157,6 +157,11 @@ describe("calendarDayLabels", () => {
     expect(functional).toEqual({ "2026-10-19": "Flexibility +1", "2026-10-20": "Flexibility" });
   });
 
+  it("marks a deload week's workout", () => {
+    const { labels } = calendarDayLabels([{ workout_date: "2026-10-26", program_id: "train", deload: true }], [], (id) => programs[id], label);
+    expect(labels).toEqual({ "2026-10-26": "🌙 Deload" });
+  });
+
   it("shortens functional names for a cell", () => {
     expect(functionalShortName("Flexibility 4 – Lower Back Release")).toBe("Flex 4");
     expect(functionalShortName("Flexibility 4 – Lower Back Release", false)).toBe("Flexibility");

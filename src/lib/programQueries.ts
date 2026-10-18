@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { deloadExercises } from "@/lib/deload";
 import { withExtraCardio } from "@/lib/programs";
 import { applyExerciseChanges, type ChangeWrites } from "@/lib/exerciseChanges";
 import { exercisesForSlot } from "@/lib/trainingCalendar";
@@ -94,6 +95,8 @@ export interface CalendarDayWorkout {
   exercises: ProgramExercise[];
   /** The program's session on this day (0098), null for the whole workout. */
   daySlot: number | null;
+  /** A deload week's workout (0115): sets already halved here. */
+  deload?: boolean;
 }
 
 export interface CalendarDay {
@@ -143,11 +146,12 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
       .order("sort_order", { ascending: true }),
     loadExerciseChanges(clientId),
   ]);
-  const build = (pick: { program_id: string; day_slot: number | null }): CalendarDayWorkout | null => {
+  const build = (pick: { program_id: string; day_slot: number | null; deload?: boolean }): CalendarDayWorkout | null => {
     const program = (programs ?? []).find((p) => p.id === pick.program_id);
     if (!program) return null;
     const own = (rows ?? []).filter((r) => r.program_id === pick.program_id);
-    return { program, exercises: applyExerciseChanges(exercisesForSlot(own, pick.day_slot), changes), daySlot: pick.day_slot };
+    const exercises = applyExerciseChanges(exercisesForSlot(own, pick.day_slot), changes);
+    return { program, exercises: pick.deload ? deloadExercises(exercises) : exercises, daySlot: pick.day_slot, deload: !!pick.deload };
   };
   const main = entry ? build(entry) : null;
   const extras = blocks.map(build).filter((b): b is CalendarDayWorkout => !!b);

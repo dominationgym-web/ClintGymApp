@@ -22,10 +22,12 @@ import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
 import InjuryCheckCard from "@/components/InjuryCheckCard";
 import InjuryList from "@/components/InjuryList";
+import ClientDailySummaryCard from "@/components/ClientDailySummaryCard";
 import type { StabilityArea } from "@/lib/stability";
 import ClientCalendarCard from "@/components/ClientCalendarCard";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
 import RecoveryCoachCard from "@/components/RecoveryCoachCard";
+import OtherActivityCard from "@/components/OtherActivityCard";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { trainingLogStart } from "@/lib/trainingLog";
@@ -386,6 +388,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 </Pressable>
               </View>
             )}
+            <ClientDailySummaryCard clientId={client.id} clientName={client.name} />
             <ComebackCompareCard client={client} />
             <TrainingLevelBanner level={client.training_level} />
             <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
@@ -663,6 +666,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               trainerId={trainer?.id}
               onChanged={() => setStabilityDaysKey((k) => k + 1)}
             />
+            <TrainingSection title="🏃 Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
+              <OtherActivityCard clientId={client.id} role="trainer" />
+            </TrainingSection>
             <TrainingSection title="🌿 Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
               <RecoveryCoachCard
                 clientId={client.id}

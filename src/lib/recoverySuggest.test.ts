@@ -56,4 +56,13 @@ describe("suggestRecovery", () => {
     );
     expect(s).toEqual([]);
   });
+
+  it("counts a long run or ride outside the program", () => {
+    const yesterday = "2026-10-16";
+    const s = suggestRecovery({ ...empty, activities: [{ date: yesterday, what: "Run", minutes: 75, big: true }] }, today, 3);
+    expect(s.map((x) => x.activity)).toContain("foam_rolling");
+    expect(s.find((x) => x.activity === "foam_rolling")?.reason).toContain("Run yesterday (75 min)");
+    const easy = suggestRecovery({ ...empty, activities: [{ date: yesterday, what: "Walk", minutes: 30, big: false }] }, today, 3);
+    expect(easy).toEqual([]);
+  });
 });

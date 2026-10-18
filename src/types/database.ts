@@ -171,6 +171,42 @@ export type ClientInjury = {
   created_at: string;
 };
 
+// Whether a client is due a deload week (0115, deload_check()).
+export type DeloadCheck = {
+  weeks: number;
+  reasons: string[];
+  due: boolean;
+  last_deload: string | null;
+  planned_deload: string | null;
+};
+
+// Exercise outside the programs (0114): walks, runs, rides, hikes and more.
+export type ClientActivity = {
+  id: string;
+  client_id: string;
+  activity_date: string;
+  kind: "walk" | "run" | "cycle" | "hike" | "swim" | "sport" | "other";
+  name: string | null;
+  minutes: number;
+  distance_km: number | null;
+  avg_hr: number | null;
+  effort: "easy" | "moderate" | "hard" | null;
+  notes: string | null;
+  created_at: string;
+};
+
+// The trainer's daily summary of a client's energy and needs (0114).
+export type ClientDailySummary = {
+  id: string;
+  client_id: string;
+  summary_date: string;
+  energy: string;
+  summary: string;
+  suggestions: string[];
+  facts: Record<string, unknown>;
+  created_at: string;
+};
+
 export type RecoveryActivityRow = {
   id: string;
   client_id: string;
@@ -236,6 +272,8 @@ export type Client = {
   price_package?: PricePackage | null;
   // Their ready-made recovery program (0108): training, sports or lifestyle.
   recovery_program?: "training" | "sports" | "lifestyle" | null;
+  // When the trainer was last told a deload week is due (0115).
+  deload_alerted_on?: string | null;
   lifestyle_reset_started_at: string | null;
   // Asked on the intake form (0057); null for clients from before. Men don't
   // see the Women's Health Reset.
@@ -595,6 +633,8 @@ export type ClientCalendarWorkout = {
   // One session of a weekly or multi-week program, as its slot (0098, GRIZZ,
   // 2026-10-16); null for the whole workout.
   day_slot: number | null;
+  // A deload week's workout (0115): half the sets at a lighter weight.
+  deload?: boolean;
 }
 
 // An extra block on a client's calendar day (0098, GRIZZ, 2026-10-16), e.g.
@@ -803,6 +843,13 @@ export interface Database {
         Update: Partial<RecoveryActivityRow>;
         Relationships: [];
       };
+      client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
+      client_daily_summaries: {
+        Row: ClientDailySummary;
+        Insert: Partial<ClientDailySummary>;
+        Update: Partial<ClientDailySummary>;
+        Relationships: [];
+      };
       workout_sessions: {
         Row: WorkoutSession;
         Insert: Partial<WorkoutSession>;
@@ -928,6 +975,8 @@ export interface Database {
       acknowledge_habit_win: { Args: { p_win: string; p_message: string }; Returns: undefined };
       mark_video_viewed: { Args: { p_video: string }; Returns: undefined };
       plan_workouts_left: { Args: { p_plan_id: string }; Returns: number };
+      deload_check: { Args: { p_client: string }; Returns: DeloadCheck | null };
+      add_deload_week: { Args: { p_client: string; p_start: string }; Returns: number };
       record_workout_session: {
         Args: {
           p_title: string;
