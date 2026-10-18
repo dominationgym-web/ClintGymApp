@@ -29,7 +29,18 @@ import {
 // client up once they've finished. For each running program: the week
 // they're on, and for this week's exercises their last sets, their best, and
 // whether they're ready to progress or struggling. Tap to open.
-export default function TrainerStabilityCard({ clientId, clientName, trainerId }: { clientId: string; clientName: string; trainerId?: string }) {
+export default function TrainerStabilityCard({
+  clientId,
+  clientName,
+  trainerId,
+  onChanged,
+}: {
+  clientId: string;
+  clientName: string;
+  trainerId?: string;
+  // A program started or stopped, so the calendar's stability days reload (0110).
+  onChanged?: () => void;
+}) {
   const [programs, setPrograms] = useState<ClientStabilityProgram[]>([]);
   const [logs, setLogs] = useState<StabilityLog[]>([]);
   const [open, setOpen] = useState(false);
@@ -107,6 +118,7 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
     setLevel(null);
     setOpen(true);
     load();
+    onChanged?.();
   };
 
   const confirmStart = (a: StabilityArea, l: StabilityLevel) => {
@@ -133,6 +145,7 @@ export default function TrainerStabilityCard({ clientId, clientName, trainerId }
           const { error } = await supabase.from("client_stability_programs").update({ ended_at: new Date().toISOString() }).eq("id", p.id);
           if (error) Alert.alert("Couldn't stop it", error.message);
           load();
+          onChanged?.();
         },
       },
     ]);

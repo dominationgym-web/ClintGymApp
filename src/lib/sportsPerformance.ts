@@ -1,5 +1,6 @@
 // Sports Performance (GRIZZ, 2026-10-14): 15 short programs of 6-8 weeks,
-// three each for explosive power, speed, strength, mobility and flexibility.
+// three each for explosive power, speed, strength, mobility and flexibility,
+// plus a 4-week lower back stretch under Flexibility (2026-10-18).
 // The programs themselves are built-ins in the database (0093); the trainer
 // puts a client on one from the program picker. This file describes them in
 // the trainer's menu (GRIZZ: trainer side only, not the client menu).
@@ -7,7 +8,7 @@ import type { TrainerGuide } from "@/lib/trainerGuides";
 
 export type SportsCategory = "power" | "speed" | "strength" | "mobility" | "flexibility";
 
-export type SportsProgram = { name: string; weeks: 6 | 8; category: SportsCategory; level: string; summary: string };
+export type SportsProgram = { name: string; weeks: 4 | 6 | 8; category: SportsCategory; level: string; summary: string };
 
 // Names must match 0093 exactly.
 export const SPORTS_PROGRAMS: SportsProgram[] = [
@@ -26,6 +27,7 @@ export const SPORTS_PROGRAMS: SportsProgram[] = [
   { name: "Flexibility 1 – Lower Body", weeks: 6, category: "flexibility", level: "Everyone", summary: "Looser hamstrings, hips, quads, glutes and calves." },
   { name: "Flexibility 2 – Upper Body & Spine", weeks: 6, category: "flexibility", level: "Everyone", summary: "Open up the chest, lats, shoulders, neck and spine." },
   { name: "Flexibility 3 – Splits & Deep Range", weeks: 6, category: "flexibility", level: "Martial arts, dance, goalkeepers", summary: "Work towards front and side splits with contract-relax stretching." },
+  { name: "Flexibility 4 – Lower Back Release", weeks: 4, category: "flexibility", level: "Tight lower back", summary: "A short, gentle routine for the hips, glutes, hamstrings and spine." },
 ];
 
 const CATEGORIES: { category: SportsCategory; icon: string; heading: string; hook: string }[] = [
@@ -41,7 +43,7 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
   title: "Sports Performance",
   icon: "🏅",
   accent: "#F59E0B",
-  summary: "15 programs of 6-8 weeks for explosive power, speed, strength, mobility and flexibility, and who each one suits.",
+  summary: "16 programs for explosive power, speed, strength, mobility and flexibility (including a lower back stretch), and who each one suits.",
   topics: [
     {
       title: "How the programs work",
@@ -51,7 +53,7 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
         {
           heading: "The basics",
           points: [
-            "Each program runs 6 or 8 weeks, three sessions a week (Monday, Wednesday and Friday), and builds as it goes.",
+            "Each program runs 6 or 8 weeks (the lower back stretch 4), three sessions a week (Monday, Wednesday and Friday), and builds as it goes.",
             "8-week programs have an easy week 4 and a test week 8 at half the sets.",
             "Mobility and Flexibility are in the picker for home clients too; the others need a gym, a field or both.",
             "Each program has its own warm-up and nutrition notes, shown to the client with the workout.",

@@ -1,13 +1,14 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
+import { STABILITY_PURPLE, type StabilityCalendarItem } from "@/lib/stabilityCalendar";
 import { CALENDAR_WEEKDAYS, monthLabel, monthWeeks, shiftMonth, type CalendarMonth, type CalendarMove } from "@/lib/trainingCalendar";
 
 // A month grid, Monday first, with the workout on each day (0069). The
 // trainer taps a day to plan it; the client's copy is read-only, or opens a
 // day's details through onPressDay. Days the client trained carry a green,
 // orange or red dot and any gold star (0076). Recovery activities show in
-// bright green (0107).
+// bright green (0107), stability sessions in purple (0110).
 export default function TrainingCalendar({
   month,
   onChangeMonth,
@@ -18,6 +19,7 @@ export default function TrainingCalendar({
   marks,
   moves,
   recovery,
+  stability,
 }: {
   month: CalendarMonth;
   onChangeMonth: (month: CalendarMonth) => void;
@@ -32,6 +34,8 @@ export default function TrainingCalendar({
   moves?: Record<string, CalendarMove>;
   /** Date → recovery activities planned or done that day (0107), in bright green. */
   recovery?: Record<string, { label: string; done: boolean }[]>;
+  /** Date → stability sessions planned or logged that day (0110), in purple. */
+  stability?: Record<string, StabilityCalendarItem[]>;
 }) {
   return (
     <View>
@@ -59,7 +63,8 @@ export default function TrainingCalendar({
             const label = move === "missed" ? undefined : labels[date];
             const mark = marks?.[date];
             const rec = recovery?.[date];
-            const past = date < today && !mark && !move && !rec;
+            const stab = stability?.[date];
+            const past = date < today && !mark && !move && !rec && !stab;
             return (
               <Pressable
                 key={date}
@@ -67,6 +72,7 @@ export default function TrainingCalendar({
                   styles.cell,
                   styles.day,
                   label && styles.planned,
+                  !label && stab && styles.stabilityDay,
                   date === today && styles.today,
                   date === selected && styles.selected,
                   past && styles.past,
@@ -91,6 +97,13 @@ export default function TrainingCalendar({
                   </Text>
                 ) : null}
                 {move ? <Text style={[styles.moved, { color: move === "missed" ? "#EF4444" : "#22C55E" }]}>Moved</Text> : null}
+                {stab ? (
+                  <Text style={styles.stability} numberOfLines={1}>
+                    {stab[0].done ? "✓ " : "🧘 "}
+                    {stab[0].label}
+                    {stab.length > 1 ? ` +${stab.length - 1}` : ""}
+                  </Text>
+                ) : null}
                 {rec ? (
                   <Text style={styles.recovery} numberOfLines={1}>
                     {rec[0].done ? "✓ " : "🌿 "}
@@ -127,5 +140,7 @@ const styles = StyleSheet.create({
   dayNumberPlanned: { color: "#fff" },
   label: { color: BRAND_GOLD, fontSize: 9.5, fontWeight: "700", marginTop: 2 },
   moved: { fontSize: 9.5, fontWeight: "800", marginTop: 2 },
+  stabilityDay: { backgroundColor: "#24163A", borderColor: "#6B21A8" },
+  stability: { color: STABILITY_PURPLE, fontSize: 9.5, fontWeight: "800", marginTop: 2 },
   recovery: { color: "#4ADE80", fontSize: 9.5, fontWeight: "800", marginTop: 2 },
 });

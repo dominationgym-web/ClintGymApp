@@ -91,6 +91,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
   const [stabilityKey, setStabilityKey] = useState(0);
+  // Bumped when a stability program starts or stops, so the calendar's stability days reload.
+  const [stabilityDaysKey, setStabilityDaysKey] = useState(0);
   // Injury check (GRIZZ, 2026-10-17): planKey bumps after any program pick to put up the check sign.
   const [planKey, setPlanKey] = useState(0);
   const [injuryKey, setInjuryKey] = useState(0);
@@ -569,6 +571,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   setNewHabitName(name);
                   setNewHabitReps(reps);
                 }}
+                onAdd={addHabit}
+                adding={addingHabit}
               />
               <TextInput
                 style={styles.textInput}
@@ -650,8 +654,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               onStabilityStarted={() => setStabilityKey((k) => k + 1)}
               onPlanChanged={planChanged}
               injuries={injuredAreas}
+              stabilityKey={stabilityDaysKey}
             />
-            <TrainerStabilityCard key={stabilityKey} clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
+            <TrainerStabilityCard
+              key={stabilityKey}
+              clientId={client.id}
+              clientName={client.name}
+              trainerId={trainer?.id}
+              onChanged={() => setStabilityDaysKey((k) => k + 1)}
+            />
             <TrainingSection title="🌿 Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
               <RecoveryCoachCard
                 clientId={client.id}
