@@ -11,6 +11,7 @@ import {
   findSplit,
   planProgramDates,
   sessionsPerWeek,
+  splitAlongside,
   suggestedSplit,
   TRAINING_SPLITS,
   WEEK_CHOICES,
@@ -97,18 +98,37 @@ export default function PlanProgramModal({
   const activate = async () => {
     if (!date || !program || plan.length === 0) return;
     const end = plan[plan.length - 1].date;
-    const { data: current } = await supabase.from("client_programs").select("program_id").eq("client_id", clientId).maybeSingle();
+    const [{ data: current }, { data: existing }, { data: blocks }] = await Promise.all([
+      supabase.from("client_programs").select("program_id").eq("client_id", clientId).maybeSingle(),
+      supabase.from("client_calendar_workouts").select("workout_date").eq("client_id", clientId).gte("workout_date", date).lte("workout_date", end),
+      supabase
+        .from("client_calendar_blocks")
+        .select("workout_date, position")
+        .eq("client_id", clientId)
+        .is("removed_at", null)
+        .gte("workout_date", date)
+        .lte("workout_date", end),
+    ]);
     const currentName = current ? programs.find((p) => p.id === current.program_id)?.name : null;
-    const save = async () => {
+    const taken = (existing ?? []).map((e) => e.workout_date);
+    const summary = `${plan.length} sessions on ${findSplit(split).label} for ${weeks} weeks, from ${dayHeading(plan[0].date)} to ${dayHeading(end)}.`;
+    const now = new Date().toISOString();
+
+    const finish = (error: { message: string } | null | undefined) => {
+      setBusy(false);
+      if (error) return Alert.alert("Couldn't save the plan", error.message);
+      onDone("calendar");
+    };
+
+    // The new plan takes over those weeks: what was on them is replaced.
+    const replace = async () => {
       setBusy(true);
-      // The new plan replaces whatever was on the calendar over those weeks.
       const cleared = await supabase
         .from("client_calendar_workouts")
         .delete()
         .eq("client_id", clientId)
         .gte("workout_date", date)
         .lte("workout_date", end);
-      const now = new Date().toISOString();
       const added = cleared.error
         ? cleared
         : await supabase.from("client_calendar_workouts").insert(
@@ -116,20 +136,54 @@ export default function PlanProgramModal({
           );
       // Only the calendar shows from now on, so the old main program stops.
       const stopped = !added.error && current ? await supabase.from("client_programs").delete().eq("client_id", clientId) : null;
-      setBusy(false);
-      const error = added.error ?? stopped?.error;
-      if (error) return Alert.alert("Couldn't save the plan", error.message);
-      onDone("calendar");
+      finish(added.error ?? stopped?.error);
     };
+
+    // Stretching, mobility or rehab on top of their training (GRIZZ,
+    // 2026-10-18): nothing already planned is touched. Busy days get the
+    // session as an extra block under their workout.
+    const alongside = async () => {
+      setBusy(true);
+      const { mains, extras } = splitAlongside(plan, taken);
+      const nextPosition = (day: string) =>
+        Math.max(0, ...(blocks ?? []).filter((b) => b.workout_date === day).map((b) => b.position)) + 1;
+      const [a, b] = await Promise.all([
+        mains.length
+          ? supabase.from("client_calendar_workouts").insert(
+              mains.map((p) => ({ client_id: clientId, workout_date: p.date, program_id: program.id, day_slot: p.slot, created_at: now })),
+            )
+          : null,
+        extras.length
+          ? supabase.from("client_calendar_blocks").insert(
+              extras.map((p) => ({ client_id: clientId, workout_date: p.date, program_id: program.id, day_slot: p.slot, position: nextPosition(p.date) })),
+            )
+          : null,
+      ]);
+      finish(a?.error ?? b?.error);
+    };
+
+    if (taken.length === 0) {
+      Alert.alert(
+        `Activate ${program.name}?`,
+        `${summary}` +
+          (currentName ? ` ${clientName} comes off ${currentName}, so only the calendar shows.` : "") +
+          " You can still change any single day after.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Activate", onPress: replace },
+        ],
+      );
+      return;
+    }
     Alert.alert(
-      `Activate ${program.name}?`,
-      `${plan.length} workouts on ${findSplit(split).label} for ${weeks} weeks, from ${dayHeading(plan[0].date)} to ${dayHeading(end)}. ` +
-        "Anything already on the calendar in those weeks is replaced." +
-        (currentName ? ` ${clientName} comes off ${currentName}, so only the calendar shows.` : "") +
-        " You can still change any single day after.",
+      `Add ${program.name}?`,
+      `${summary} ${clientName} already has ${taken.length} workout${taken.length === 1 ? "" : "s"} planned in those weeks. ` +
+        `Add it alongside keeps them and puts this session under the workout on days they share. ` +
+        `Replace takes them off the calendar.`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Activate", onPress: save },
+        { text: "Replace", style: "destructive", onPress: replace },
+        { text: "Add it alongside", onPress: alongside },
       ],
     );
   };

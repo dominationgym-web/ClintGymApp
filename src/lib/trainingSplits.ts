@@ -63,3 +63,14 @@ export function planProgramDates(start: string, days: number[], slots: number[],
   }
   return out;
 }
+
+/**
+ * Adding a program alongside what's already planned (GRIZZ, 2026-10-18:
+ * "Clients should be able to do more than 1 thing a day"): days with nothing
+ * on them get it as their workout, days that already have a workout keep it
+ * and get the new session as an extra block under it.
+ */
+export function splitAlongside<T extends { date: string }>(plan: T[], takenDates: Iterable<string>): { mains: T[]; extras: T[] } {
+  const taken = new Set(takenDates);
+  return { mains: plan.filter((p) => !taken.has(p.date)), extras: plan.filter((p) => taken.has(p.date)) };
+}
