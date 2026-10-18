@@ -85,6 +85,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Exercises tab",
       points: [
         "When your coach plans workouts on days, open 📅 Your training calendar to see what's coming.",
+        "Your training shows in gold. 🤸 Mobility and flexibility show in teal and 🧘 stability in purple, so you can see what's extra on a day; some days have more than one.",
         "Tap a day to see its exercises. You can change an exercise ahead of time if you know the gym will be busy.",
         "Green, orange and red dots show how each workout went, and a gold star shows where you improved.",
         "🔁 Missed a workout in the week? On Saturday or Sunday the app opens on it so you can catch it up, and you get a reminder at 6am. If you missed more than one, it starts with the one that works different muscles from yesterday. Tapping an empty day on your calendar also takes you to it, or tap the missed day and choose Do it today.",

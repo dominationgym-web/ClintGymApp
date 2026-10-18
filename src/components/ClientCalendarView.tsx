@@ -6,13 +6,13 @@ import type { ClientStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
-import { displayProgramName } from "@/lib/programs";
+import { displayProgramName, isFunctionalProgram } from "@/lib/programs";
 import { loadCalendarBlocks, loadCalendarWorkoutFor, loadCalendarWorkouts, type CalendarDayWorkout } from "@/lib/programQueries";
 import { forPlace, swapOptions, withHomeAlternatives, type HomeFit } from "@/lib/exerciseFilter";
 import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import ExerciseGuideButton from "@/components/ExerciseGuide";
-import { applyMoves, monthOf, monthRange, shortWorkoutName, slotLabel, type CalendarMonth } from "@/lib/trainingCalendar";
+import { applyMoves, calendarDayLabels, FUNCTIONAL_TEAL, functionalShortName, monthOf, monthRange, shortWorkoutName, slotLabel, type CalendarMonth } from "@/lib/trainingCalendar";
 import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
@@ -95,14 +95,13 @@ export default function ClientCalendarView({
 
   useEffect(() => {
     const { from, to } = monthRange(month);
-    loadCalendarBlocks(clientId, from, to).then((extra) => {
+    Promise.all([loadCalendarBlocks(clientId, from, to), loadCalendarWorkouts(clientId, from, to)]).then(async ([extra, rows]) => {
       setBlocks(extra);
       if (extra.length > 0) setHasAny(true);
-    });
-    loadCalendarWorkouts(clientId, from, to).then(async (rows) => {
+      const extraIds = extra.map((b) => b.program_id);
       setEntries(rows);
       if (rows.length > 0) setHasAny(true);
-      const missing = [...new Set(rows.map((r) => r.program_id))].filter((id) => !names[id]);
+      const missing = [...new Set([...rows.map((r) => r.program_id), ...extraIds])].filter((id) => !names[id]);
       if (missing.length === 0) return;
       const { data } = await supabase.from("programs").select("id, name, trainer_id").in("id", missing);
       setNames((prev) => ({ ...prev, ...Object.fromEntries((data ?? []).map((p) => [p.id, p])) }));
@@ -117,16 +116,14 @@ export default function ClientCalendarView({
 
   if (!hasAny) return null;
 
-  const labels: Record<string, string> = {};
-  for (const e of entries) {
-    const p = names[e.program_id];
-    if (p) labels[e.workout_date] = p.trainer_id ? shortWorkoutName(p.name) : shortWorkoutName(displayProgramName(p), false);
-  }
-  // "+1" for each extra block on a day.
-  for (const date of new Set(blocks.map((b) => b.workout_date))) {
-    const extra = blocks.filter((b) => b.workout_date === date).length;
-    labels[date] = labels[date] ? `${labels[date]} +${extra}` : `+${extra}`;
-  }
+  // Training in gold; mobility and flexibility apart, in teal (GRIZZ, 2026-10-18).
+  const { labels, functional } = calendarDayLabels(entries, blocks, (id) => names[id], (p) =>
+    isFunctionalProgram(p)
+      ? functionalShortName(p.name, !!p.trainer_id)
+      : p.trainer_id
+        ? shortWorkoutName(p.name)
+        : shortWorkoutName(displayProgramName(p), false),
+  );
   const moved = applyMoves(labels, Object.values(sessions));
   const picked = selected ? entries.find((e) => e.workout_date === selected) : null;
   const pickedProgram = picked ? names[picked.program_id] : null;
@@ -165,6 +162,7 @@ export default function ClientCalendarView({
             moves={moved.moves}
             recovery={recovery}
             stability={stability.map}
+            functional={functional}
             today={today}
             selected={selected}
             onPressDay={(date) => {
@@ -239,7 +237,9 @@ export default function ClientCalendarView({
           ))}
           {dayExtras.map((block, i) => (
             <View key={`${block.program.id}-${i}`} style={{ marginTop: 12 }}>
-              <Text style={styles.blockTitle}>➕ {displayProgramName(block.program)}</Text>
+              <Text style={[styles.blockTitle, isFunctionalProgram(block.program) && { color: FUNCTIONAL_TEAL }]}>
+                {isFunctionalProgram(block.program) ? "🤸" : "➕"} {displayProgramName(block.program)}
+              </Text>
               {block.daySlot != null && <Text style={styles.rowSets}>{slotLabel(block.program, block.daySlot)}</Text>}
               {[...block.exercises]
                 .sort((a, b) => a.sort_order - b.sort_order)

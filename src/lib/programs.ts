@@ -377,6 +377,16 @@ export const PROGRAM_FAMILIES = [
 
 export type ProgramFamily = (typeof PROGRAM_FAMILIES)[number]["key"];
 
+/**
+ * Mobility, flexibility and other Functional programs: shown in their own
+ * teal on the calendar so clients can tell them from their training (GRIZZ,
+ * 2026-10-18).
+ */
+export function isFunctionalProgram(program: Pick<Program, "name" | "trainer_id">): boolean {
+  const family = programFamily(program);
+  return PROGRAM_FAMILIES.some((f) => f.key === family && f.group === "functional");
+}
+
 /** Which heading a program sits under in the popup, from its name. */
 export function programFamily(program: Pick<Program, "name" | "trainer_id">): ProgramFamily {
   if (program.trainer_id) return "own";

@@ -14,7 +14,7 @@ import {
   exercisesForSlot,
   programSlots,
   slotLabel,
-} from "@/lib/trainingCalendar";
+ calendarDayLabels, functionalShortName } from "@/lib/trainingCalendar";
 import type { ProgramExercise } from "@/types/database";
 
 describe("months", () => {
@@ -126,5 +126,39 @@ describe("applyMoves", () => {
     ]);
     expect(labels["2026-10-17"]).toBe("Upper SS 2");
     expect(moves).toEqual({ "2026-10-15": "missed", "2026-10-17": "caughtUp" });
+  });
+});
+
+describe("calendarDayLabels", () => {
+  const programs: Record<string, { name: string; trainer_id: string | null }> = {
+    train: { name: "Intermediate Foundation - Bodybuilding", trainer_id: null },
+    flex: { name: "Flexibility 4 – Lower Back Release", trainer_id: null },
+    mob: { name: "Mobility 1 – Hips", trainer_id: null },
+    hiit: { name: "HIIT 3", trainer_id: null },
+  };
+  const label = (p: { name: string; trainer_id: string | null }) => p.name.split(" ")[0];
+
+  it("keeps mobility and flexibility apart from the training, as the workout or an extra", () => {
+    const { labels, functional } = calendarDayLabels(
+      [
+        { workout_date: "2026-10-19", program_id: "train" },
+        { workout_date: "2026-10-20", program_id: "flex" },
+      ],
+      [
+        { workout_date: "2026-10-19", program_id: "flex" },
+        { workout_date: "2026-10-19", program_id: "hiit" },
+        { workout_date: "2026-10-19", program_id: "mob" },
+        { workout_date: "2026-10-21", program_id: "gone" },
+      ],
+      (id) => programs[id],
+      label,
+    );
+    expect(labels).toEqual({ "2026-10-19": "Intermediate +1" });
+    expect(functional).toEqual({ "2026-10-19": "Flexibility +1", "2026-10-20": "Flexibility" });
+  });
+
+  it("shortens functional names for a cell", () => {
+    expect(functionalShortName("Flexibility 4 – Lower Back Release")).toBe("Flex 4");
+    expect(functionalShortName("Flexibility 4 – Lower Back Release", false)).toBe("Flexibility");
   });
 });
