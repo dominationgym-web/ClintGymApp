@@ -24,7 +24,7 @@ export default function AgreementSignFields({ signedName, onChangeSignedName, ag
       <TextInput
         style={styles.input}
         placeholder="Full name"
-        placeholderTextColor="#64748B"
+        placeholderTextColor="#94A3B8"
         autoCapitalize="words"
         value={signedName}
         onChangeText={onChangeSignedName}
