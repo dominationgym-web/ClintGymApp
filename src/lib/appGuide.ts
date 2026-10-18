@@ -76,6 +76,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Drop set programs (intermediate and advanced): put in your start weight and reps, and the round clock starts. It pauses while you type the next weight and runs again when you tap Log. Tap Finish round to save your time and start the 6-minute recovery. Next time, try to beat it.",
         "Training at home? List your equipment under 🏠 My home equipment on your Profile (dumbbells, kettlebells, bench, bands, a photo of your multi station...). Your workouts then only use what you have. Add to it whenever you buy something new.",
         "When you finish, tap Complete workout. If you couldn't finish or couldn't train, say why. Your coach sees a green, orange or red dot.",
+        "🏃 Other exercise (under your calendar): did a walk, run, ride, hike, swim or sport outside your program? Tap + Log exercise and add how long, and if you have them the distance, average heart rate and how hard it felt. Your coach sees it and the app counts it when it suggests your recovery.",
       ],
     },
     {
@@ -236,6 +237,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "Inside a client",
       where: "Clients tab → tap a client",
       points: [
+        "🧠 Daily summary (top of Overview): every day the AI reads the client's last 7 days (check-ins, How are you doing? answers, workouts done and missed, how hard their sets were, other exercise like runs and walks, habits, pain and injuries) and gives their energy (High, Good, Low or Very low), a short summary and suggestions to help you decide: keep, lighten or progress their training, swap exercises, plan rest. From Friday it reads as the end of week summary. Tap Refresh after they log something new. It's a guide: check it against what you know.",
         "Overview: their training level (Beginner, Intermediate or Advanced) at the top, then their problems with Reply, Busy fixing and Fixed, plus messages.",
         "Check-ins and Habits: their daily answers and streaks, plus the tips the app gave them this week. To add a habit, open a heading (Nutrition, Movement, Sleep & recovery, Mindset) and tap one, or type your own.",
         "Training: watch their 🎥 form videos (new ones are marked) and write your correction under the video while it plays; tap Watch again to replay it. Choose their program, put workouts on their calendar (if they're on the Health Reset, the app warns you and shows which week they're on), switch Gym/Home, and see their training log. For home clients, 🏠 Home equipment shows what they own, with photos; tap Edit on a multi station to load the exercises it can do. The app then picks home exercises their equipment covers, and you can still change any of them. Gold stars show where they improved.",
@@ -244,6 +246,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "📅 Training calendar: you don't have to give a whole program either. Tap a day and pick any workout, or open a weekly program and pick one of its days, so you can mix and match, like a gym day on Monday, mobility on Tuesday, gym again on Wednesday and flexibility on Thursday. Tap ＋ Add a block to put an extra block (mobility, flexibility or a fight session) on the same day, to suit the client and their energy. Take it off removes a block.",
         "Tap any exercise in their program or calendar to swap it or change the sets and reps, for this client only.",
         "🎯 Gauge test: the first time a client does an exercise, their first set is a gauge set to failure at a weight they pick. The app works out their working weight from it, and their training log marks it 🎯 Gauge set. Full explanation in ☰ → Training each body part → Gauge test, so you can explain it to them.",
+        "🏃 Other exercise (Training tab): walks, runs, rides, hikes, swims and sport the client logged outside their program in the last 7 days, with time, distance, pace and average heart rate. Long or hard sessions count as training load in their recovery suggestions and daily summary.",
         "🌿 Recovery (Training tab): pick their recovery program (Training, Sports or Lifestyle), and see what they did in the last 2 weeks with how long and their notes, what's planned, what they skipped, and what the app is suggesting to them today and why. Their recovery also shows on their calendar in bright green.",
         "Abs between sets: switch it off on their Training tab if a client shouldn't do ab reps between sets.",
         "🌱 New clients tell you their training experience. For Never trained, Beginner and Intermediate you're asked to approve a 6-week foundation program on their Training tab; approving starts it and sends them a note explaining why.",

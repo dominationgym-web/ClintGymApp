@@ -171,6 +171,33 @@ export type ClientInjury = {
   created_at: string;
 };
 
+// Exercise outside the programs (0114): walks, runs, rides, hikes and more.
+export type ClientActivity = {
+  id: string;
+  client_id: string;
+  activity_date: string;
+  kind: "walk" | "run" | "cycle" | "hike" | "swim" | "sport" | "other";
+  name: string | null;
+  minutes: number;
+  distance_km: number | null;
+  avg_hr: number | null;
+  effort: "easy" | "moderate" | "hard" | null;
+  notes: string | null;
+  created_at: string;
+};
+
+// The trainer's daily summary of a client's energy and needs (0114).
+export type ClientDailySummary = {
+  id: string;
+  client_id: string;
+  summary_date: string;
+  energy: string;
+  summary: string;
+  suggestions: string[];
+  facts: Record<string, unknown>;
+  created_at: string;
+};
+
 export type RecoveryActivityRow = {
   id: string;
   client_id: string;
@@ -801,6 +828,13 @@ export interface Database {
         Row: RecoveryActivityRow;
         Insert: Partial<RecoveryActivityRow>;
         Update: Partial<RecoveryActivityRow>;
+        Relationships: [];
+      };
+      client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
+      client_daily_summaries: {
+        Row: ClientDailySummary;
+        Insert: Partial<ClientDailySummary>;
+        Update: Partial<ClientDailySummary>;
         Relationships: [];
       };
       workout_sessions: {

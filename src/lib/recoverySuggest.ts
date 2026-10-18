@@ -21,6 +21,8 @@ export type RecoveryInputs = {
   }[];
   /** Recovery activities done (or planned) recently. */
   recovery: { activity: string; planned_on: string; done_on: string | null }[];
+  /** Exercise outside the programs (0114): runs, rides, hikes. big = 60+ min or hard. */
+  activities?: { date: string; what: string; minutes: number; big: boolean }[];
 };
 
 export type RecoverySuggestion = { activity: RecoveryActivityKey; reason: string };
@@ -68,7 +70,10 @@ export function suggestRecovery(inputs: RecoveryInputs, today: string, limit = 2
   const tired = recentCheckins.find((c) => c.fatigue || (c.sleepQuality !== null && c.sleepQuality <= 2));
   const stressed = recentCheckins.find((c) => c.mental);
 
-  const trainedDays = new Set(inputs.sets.filter((s) => s.date >= weekStart).map((s) => s.date));
+  const activities = inputs.activities ?? [];
+  const trainedDays = new Set(
+    [...inputs.sets.map((s) => s.date), ...activities.filter((a) => a.big).map((a) => a.date)].filter((d) => d >= weekStart),
+  );
   const daysThisWeek = trainedDays.size;
   const streak = streakBack(trainedDays, trainedDays.has(today) ? today : yesterday);
   const y = dayLoad(inputs.sets, yesterday);
@@ -104,8 +109,18 @@ export function suggestRecovery(inputs: RecoveryInputs, today: string, limit = 2
         : `Yesterday was a big session (${y.sets} sets). Foam rolling helps tight, sore muscles.`,
     );
   }
-  if (t.sets >= BIG_SESSION_SETS) {
-    add("hydration", `Big session today (${t.sets} sets). Replace the fluid you sweated out.`);
+  const bigYesterday = activities.find((a) => a.date === yesterday && a.big);
+  if (bigYesterday) {
+    add("foam_rolling", `${bigYesterday.what} yesterday (${bigYesterday.minutes} min). Foam rolling helps tired legs and back recover.`);
+  }
+  const bigToday = activities.find((a) => a.date === today && a.big);
+  if (t.sets >= BIG_SESSION_SETS || bigToday) {
+    add(
+      "hydration",
+      t.sets >= BIG_SESSION_SETS
+        ? `Big session today (${t.sets} sets). Replace the fluid you sweated out.`
+        : `${bigToday!.what} today (${bigToday!.minutes} min). Replace the fluid you sweated out.`,
+    );
   }
   if (streak >= 3 && !trainedDays.has(today)) {
     add("easy_movement", `${streak} training days in a row. An easy walk, swim or ride today keeps you moving while you recover.`);

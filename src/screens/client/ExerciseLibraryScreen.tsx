@@ -46,6 +46,7 @@ import { gaugeWeight, inIntro, needsGauge, type GaugeResult } from "@/lib/gauge"
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
+import OtherActivityCard from "@/components/OtherActivityCard";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import IntervalTimerModal from "@/components/IntervalTimerModal";
 import { hasIntervals } from "@/lib/intervalTimer";
@@ -780,6 +781,7 @@ export default function ExerciseLibraryScreen() {
                 onCatchUp={setChosenDay}
               />
             )}
+            {client && <OtherActivityCard clientId={client.id} role="client" />}
             {program && (
               <View style={styles.programCard}>
                 {catchUpFor ? (
