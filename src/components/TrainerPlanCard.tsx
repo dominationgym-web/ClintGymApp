@@ -5,6 +5,7 @@ import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, shortDate } from "@/lib/billing";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
+import SendProofOfPayment from "@/components/SendProofOfPayment";
 import type { BillingSettings, EftDetails, Trainer, TrainerBillingStatus } from "@/types/database";
 
 // A trainer's own plan (0064): what they pay, when it's due, client fees owed,
@@ -79,7 +80,8 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
       {(showPayment || due) && owner ? (
         <>
           <Text style={styles.payTitle}>How to pay</Text>
-          <TrainerPaymentDetails eftDetails={owner.eft_details} popWhatsapp={owner.pop_whatsapp} />
+          <TrainerPaymentDetails eftDetails={owner.eft_details} popWhatsapp={owner.pop_whatsapp} proofInApp />
+          <SendProofOfPayment to="owner" payerId={trainer.id} trainerId={trainer.id} receiverName="Daily Evolution" />
         </>
       ) : null}
     </View>
