@@ -100,6 +100,9 @@
       "url": "https://u.expo.dev/6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8",
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
+    },
+    "experiments": {
+      "baseUrl": "/app"
     }
   }
 }

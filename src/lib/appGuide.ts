@@ -214,6 +214,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Dashboard tab",
       points: [
         "Start every day here. It shows today's compliance: who checked in, who trained and who needs you.",
+        "💻 On a laptop or PC, open consistent-change.expo.app/app in any browser and log in with the same email and password. Everything works the same, on a bigger screen.",
         "Problems show in red: pain, fatigue, stress or an urgent flag. Tap Busy fixing (orange) while you deal with it, then Fixed to clear it. The app checks in with the client the next morning on your behalf.",
         "Needs you, at the top, lists everything waiting on you in one card: new clients to activate, new form videos, foundation programs to approve, the recovery check and new suggestions. Tap a line to open it.",
         "🏆 Habit wins show under it. You get a phone notification for new form videos and habit wins.",
