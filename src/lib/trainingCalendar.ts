@@ -1,5 +1,5 @@
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
-import { programFamily, slotOf, WEEKDAY_NAMES, type ProgramFamily } from "@/lib/programs";
+import { isFunctionalProgram, programFamily, slotOf, WEEKDAY_NAMES, type ProgramFamily } from "@/lib/programs";
 import type { ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
 
 // Training calendar (0069): the trainer puts a workout on each training day
@@ -191,4 +191,50 @@ export function applyMoves(
     if (labels[s.makeup_for]) shown[s.session_date] = labels[s.makeup_for];
   }
   return { labels: shown, moves };
+}
+
+/** Teal for mobility, flexibility and other Functional sessions on the calendar (GRIZZ, 2026-10-18). */
+export const FUNCTIONAL_TEAL = "#2DD4BF";
+
+/**
+ * Each day's calendar labels: the training workout (with "+N" for extra
+ * training blocks) in gold, and Functional sessions (mobility, flexibility)
+ * apart, in teal, whether they are the day's workout or an extra block.
+ */
+export function calendarDayLabels(
+  entries: { workout_date: string; program_id: string }[],
+  blocks: { workout_date: string; program_id: string }[],
+  program: (id: string) => Pick<Program, "name" | "trainer_id"> | undefined,
+  label: (p: Pick<Program, "name" | "trainer_id">) => string,
+): { labels: Record<string, string>; functional: Record<string, string> } {
+  const labels: Record<string, string> = {};
+  const functional: Record<string, string> = {};
+  const dates = new Set([...entries.map((e) => e.workout_date), ...blocks.map((b) => b.workout_date)]);
+  for (const date of dates) {
+    let main = "";
+    let extra = 0;
+    const fun: string[] = [];
+    const entry = entries.find((e) => e.workout_date === date);
+    const p = entry ? program(entry.program_id) : undefined;
+    if (p) {
+      if (isFunctionalProgram(p)) fun.push(label(p));
+      else main = label(p);
+    }
+    for (const b of blocks) {
+      if (b.workout_date !== date) continue;
+      const bp = program(b.program_id);
+      if (!bp) continue;
+      if (isFunctionalProgram(bp)) fun.push(label(bp));
+      else extra++;
+    }
+    if (main || extra) labels[date] = main ? (extra ? `${main} +${extra}` : main) : `+${extra}`;
+    if (fun.length) functional[date] = fun.length > 1 ? `${fun[0]} +${fun.length - 1}` : fun[0];
+  }
+  return { labels, functional };
+}
+
+/** "Flexibility 4 – Lower Back Release" → "Flex 4" (or "Flexibility" without the number) for a calendar cell. */
+export function functionalShortName(name: string, withNumber = true): string {
+  const head = name.split(" – ")[0];
+  return shortWorkoutName(withNumber ? head.replace(/^Flexibility\b/, "Flex") : head.replace(/\s+\d+$/, ""));
 }

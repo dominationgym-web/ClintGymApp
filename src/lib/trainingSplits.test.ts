@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultWeeks, findSplit, planProgramDates, sessionsPerWeek, suggestedSplit, TRAINING_SPLITS, weekdayOfIso } from "./trainingSplits";
+import { defaultWeeks, findSplit, planProgramDates, sessionsPerWeek, splitAlongside, suggestedSplit, TRAINING_SPLITS, weekdayOfIso } from "./trainingSplits";
 
 describe("training splits", () => {
   it("never trains on a Sunday", () => {
@@ -44,5 +44,18 @@ describe("training splits", () => {
     expect(suggestedSplit(7)).toBe("mon_sat");
     expect(defaultWeeks(1)).toBe(4);
     expect(defaultWeeks(12)).toBe(12);
+  });
+});
+
+describe("splitAlongside", () => {
+  it("keeps days that already have a workout and adds the new session as an extra there", () => {
+    const plan = [
+      { date: "2026-10-19", slot: 1 },
+      { date: "2026-10-20", slot: 3 },
+      { date: "2026-10-21", slot: 5 },
+    ];
+    const { mains, extras } = splitAlongside(plan, ["2026-10-19", "2026-10-21", "2026-10-23"]);
+    expect(mains.map((p) => p.date)).toEqual(["2026-10-20"]);
+    expect(extras.map((p) => p.date)).toEqual(["2026-10-19", "2026-10-21"]);
   });
 });

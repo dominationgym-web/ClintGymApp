@@ -10,10 +10,13 @@ import {
   loadExerciseChanges,
   loadProgramExercises,
 } from "@/lib/programQueries";
-import { PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
+import { isFunctionalProgram, PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import ProgramGroups from "@/components/ProgramGroups";
 import {
   applyMoves,
+  calendarDayLabels,
+  FUNCTIONAL_TEAL,
+  functionalShortName,
   monthLabel,
   monthOf,
   monthRange,
@@ -31,6 +34,7 @@ import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import StabilityDayPlanner from "@/components/stability/StabilityDayPlanner";
+import WeeklyPlanCard from "@/components/WeeklyPlanCard";
 import ProgramSummary from "@/components/ProgramSummary";
 import PlanProgramModal from "@/components/PlanProgramModal";
 import type { StabilityArea } from "@/lib/stability";
@@ -107,6 +111,8 @@ export default function ClientCalendarCard({
   const [busy, setBusy] = useState(false);
   // The day a whole program is being planned from.
   const [planning, setPlanning] = useState<string | null>(null);
+  // Bumped when a program is planned, so the week-by-week card reloads.
+  const [planKey, setPlanKey] = useState(0);
 
   const loadMonth = useCallback(async () => {
     const { from, to } = monthRange(month);
@@ -137,14 +143,10 @@ export default function ClientCalendarCard({
   const byId = new Map(programs.map((p) => [p.id, p]));
   const entryOn = (date: string) => monthEntries.find((e) => e.workout_date === date) ?? null;
   const blocksOn = (date: string) => monthBlocks.filter((b) => b.workout_date === date && byId.has(b.program_id));
-  const labels: Record<string, string> = {};
-  for (const date of new Set([...monthEntries.map((e) => e.workout_date), ...monthBlocks.map((b) => b.workout_date)])) {
-    const main = entryOn(date);
-    const p = main ? byId.get(main.program_id) : null;
-    const extra = blocksOn(date).length;
-    const name = p ? shortWorkoutName(p.name) : "";
-    if (name || extra) labels[date] = name ? (extra ? `${name} +${extra}` : name) : `+${extra}`;
-  }
+  // Training in gold; mobility and flexibility apart, in teal (GRIZZ, 2026-10-18).
+  const { labels, functional } = calendarDayLabels(monthEntries, monthBlocks, (id) => byId.get(id), (p) =>
+    isFunctionalProgram(p) ? functionalShortName(p.name) : shortWorkoutName(p.name),
+  );
   const selectedEntry = selected ? entryOn(selected) : null;
   const selectedProgram = selectedEntry ? byId.get(selectedEntry.program_id) ?? null : null;
   const selectedBlocks = selected ? blocksOn(selected) : [];
@@ -313,6 +315,16 @@ export default function ClientCalendarCard({
         Tap the day {clientName} starts, pick the type, the program and the days they train, and the calendar fills itself.
         Tap any day after to change it.
       </Text>
+      <WeeklyPlanCard
+        clientId={clientId}
+        clientName={clientName}
+        programs={programs}
+        refreshKey={planKey}
+        onChanged={async () => {
+          await Promise.all([loadMonth(), loadUsed()]);
+          onPlanChanged?.();
+        }}
+      />
       {loading ? (
         <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
       ) : (
@@ -323,6 +335,7 @@ export default function ClientCalendarCard({
           moves={moved.moves}
           recovery={recovery}
           stability={stability.map}
+          functional={functional}
           today={today}
           selected={selected}
           onPressDay={pressDay}
@@ -334,7 +347,7 @@ export default function ClientCalendarCard({
           <Text style={styles.dayTitle}>{dayHeading(selected)}</Text>
           {selectedEntry && selectedProgram ? (
             <>
-              <Text style={styles.dayWorkout}>{selectedProgram.name}</Text>
+              <Text style={[styles.dayWorkout, isFunctionalProgram(selectedProgram) && { color: FUNCTIONAL_TEAL }]}>{selectedProgram.name}</Text>
               {selectedEntry.day_slot != null && (
                 <Text style={styles.daySlot}>{slotLabel(selectedProgram, selectedEntry.day_slot)}</Text>
               )}
@@ -367,7 +380,7 @@ export default function ClientCalendarCard({
             if (!p) return null;
             return (
               <View key={b.id} style={styles.block}>
-                <Text style={styles.blockName}>{p.name}</Text>
+                <Text style={[styles.blockName, isFunctionalProgram(p) && { color: FUNCTIONAL_TEAL }]}>{p.name}</Text>
                 {b.day_slot != null && <Text style={styles.daySlot}>{slotLabel(p, b.day_slot)}</Text>}
                 <ProgramSummary program={p} exercises={blockExercises[b.id] ?? []} onPressExercise={setChanging} onlySlot={b.day_slot} />
                 <Pressable style={[styles.clearButton, styles.blockOff]} onPress={() => takeOffBlock(b, p.name)}>
@@ -395,7 +408,7 @@ export default function ClientCalendarCard({
         </View>
       )}
       <View style={styles.legend}>
-        <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up · 🌿 recovery · 🧘 stability</Text>
+        <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up · 🤸 mobility & flexibility · 🌿 recovery · 🧘 stability</Text>
       </View>
       <PlanProgramModal
         date={planning}
@@ -418,6 +431,7 @@ export default function ClientCalendarCard({
           }
           else {
             await Promise.all([loadMonth(), loadUsed()]);
+            setPlanKey((k) => k + 1);
             onPlanChanged?.();
           }
         }}
