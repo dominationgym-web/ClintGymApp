@@ -50,15 +50,17 @@ export default function LoginScreen({ navigation, route }: Props) {
       <Text style={styles.brand}>Daily Evolution</Text>
       <Text style={styles.tagline}>Building a better you</Text>
       <Text style={styles.title}>{coach ? "Coach login" : "Welcome back"}</Text>
-      <TextInput
+      <Text style={styles.label}>Email</Text>
+      <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
-        placeholder="Email"
+        placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
       />
-      <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
+      <Text style={styles.label}>Password</Text>
+      <PasswordInput placeholder="Your password" value={password} onChangeText={setPassword} />
       <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
       </Pressable>
@@ -87,6 +89,7 @@ export default function LoginScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
+  label: { color: "#CBD5E1", fontWeight: "600", marginBottom: 6 },
   container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
   brand: { fontSize: 32, fontWeight: "800", color: "#fff", textAlign: "center" },
   tagline: {
