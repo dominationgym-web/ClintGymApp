@@ -28,7 +28,7 @@ export function weekdayIndex(date: Date): number {
 }
 
 export const ACTIVITY_LEVELS: { factor: number; label: string; detail: string }[] = [
-  { factor: 1, label: "BMR only", detail: "What the body burns at rest, no activity added" },
+  { factor: 1, label: "BMR only", detail: "What the body burns at rest, no activity added. Not a target to eat to: pick their real activity for the plan." },
   { factor: 1.2, label: "Inactive", detail: "Desk job, little or no exercise" },
   { factor: 1.375, label: "Light", detail: "Training 1-3 days a week" },
   { factor: 1.55, label: "Active", detail: "Training 3-5 days a week" },
@@ -77,6 +77,55 @@ export function dailyTarget(plan: Pick<DietPlan, "weight_kg" | "height_cm" | "ag
   const need = dailyNeed(plan);
   return need == null ? null : need + plan.adjust_kcal;
 }
+
+// Safety floors (nutrition review, 2026-10-18): below these, or below the
+// BMR, or more than 25% under what the body uses, a diet needs a dietitian.
+export const SAFE_FLOOR_KCAL: Record<DietSex, number> = { female: 1200, male: 1500 };
+export const MAX_DEFICIT_SHARE = 0.25;
+
+/**
+ * Why a calorie target is too low to use without a dietitian, in plain words,
+ * or null when it's fine. `bmrKcal` and `need` are the client's BMR and what
+ * their body uses with activity.
+ */
+export function lowTargetWarning(target: number | null, bmrKcal: number | null, need: number | null, sex: DietSex | null): string | null {
+  if (target == null) return null;
+  const reasons: string[] = [];
+  if (sex && target < SAFE_FLOOR_KCAL[sex]) reasons.push(`under ${SAFE_FLOOR_KCAL[sex].toLocaleString()} kcal for a ${sex === "male" ? "man" : "woman"}`);
+  if (bmrKcal != null && target < bmrKcal) reasons.push("under their BMR");
+  if (need != null && target < need * (1 - MAX_DEFICIT_SHARE)) reasons.push("more than 25% under what their body uses");
+  if (!reasons.length) return null;
+  return `This target is ${reasons.join(", ")}. That's below what's safe without a registered dietitian. Refer them before using it.`;
+}
+
+// Health reasons a calorie-deficit plan needs a doctor or registered dietitian
+// first (nutrition review, 2026-10-18), read from the intake's health answer.
+const REFERRAL_CONDITIONS: { reason: string; match: RegExp }[] = [
+  { reason: "diabetes", match: /diabet|metformin|insulin|blood sugar|glucose/i },
+  { reason: "kidney disease", match: /kidney|renal|dialysis|\bckd\b/i },
+  { reason: "pregnancy or breastfeeding", match: /pregnan|breast ?feed|nursing|expecting a baby/i },
+  { reason: "an eating disorder, now or in the past", match: /eating disorder|anorexi|bulimi|binge|purg|arfid/i },
+];
+
+export const ADULT_AGE = 18;
+
+/**
+ * Why this client should see a doctor or registered dietitian before a
+ * calorie-deficit plan: diabetes, kidney disease, pregnancy or breastfeeding,
+ * an eating disorder (from what they wrote on the intake), or being under 18.
+ * Empty when none apply. `age` overrides the intake's age when given.
+ */
+export function referralReasons(client: { intake_responses?: Record<string, unknown> | null }, age?: number | null): string[] {
+  const answers = client.intake_responses ?? {};
+  const detail = answers.has_health_condition_or_medication === "Yes" ? String(answers.health_condition_detail ?? "") : "";
+  const reasons = REFERRAL_CONDITIONS.filter((c) => c.match.test(detail)).map((c) => c.reason);
+  const years = age ?? Number(answers.age);
+  if (Number.isFinite(years) && years > 0 && years < ADULT_AGE) reasons.push("being under 18");
+  return reasons;
+}
+
+export const REFERRAL_NOTE =
+  "Please check with your doctor or a registered dietitian (find one at adsa.org.za) before following a calorie-deficit plan. Until then, your plan is set to what your body uses.";
 
 // The planner's food tabs, in the coach's words, and which number the trainer
 // sets for a food in each: grams of protein, carbs, fibre or fat, or the

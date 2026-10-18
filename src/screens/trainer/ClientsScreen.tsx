@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { problemColor, problemLevel, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
-import { toIsoDate } from "@/lib/dates";
+import { parseIsoDate, toIsoDate } from "@/lib/dates";
+import { renewedPlanDates } from "@/lib/planRenewal";
 import { bringBackChanges } from "@/lib/comeback";
 import { CLIENT_GROUPS, clientGroup, type ClientGroup } from "@/lib/clientGroups";
 import { useAuth } from "@/context/AuthContext";
@@ -89,7 +90,11 @@ export default function ClientsScreen({ navigation }: Props) {
 
   useEffect(() => {
     load().finally(() => setLoading(false));
-  }, [load]);
+    // Reload on coming back, e.g. after archiving a client from their page.
+    return navigation.addListener("focus", () => {
+      load();
+    });
+  }, [navigation, load]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -97,80 +102,43 @@ export default function ClientsScreen({ navigation }: Props) {
     setRefreshing(false);
   };
 
-  // Activate a client: payment received, set dates, move to active status
+  // Payment received: set the plan dates and open access. Paying early adds the
+  // new plan on from the current end date (renewedPlanDates).
   const activateNow = async (client: Client) => {
-    if (!client.plan_type) {
+    const updates = renewedPlanDates(client, new Date());
+    if (!updates) {
       Alert.alert("Error", "No plan type selected for this client.");
       return;
     }
-
-    const today = new Date();
-    const planDays =
-      client.plan_type === "intro_1mo" ? 30 :
-      client.plan_type === "sub_6mo" ? 180 :
-      365; // sub_12mo
-
-    const expiryDate = new Date(today);
-    expiryDate.setDate(expiryDate.getDate() + planDays);
-
-    const updates = {
-      access_status: "active" as const,
-      plan_started_at: toIsoDate(today),
-      plan_expires_at: toIsoDate(expiryDate),
-    };
-
     const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
     if (!error) {
       setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
     } else {
-      Alert.alert("Error", "Failed to activate client.");
+      Alert.alert("Error", "Failed to update the client's plan.");
     }
   };
 
-  // With a proof of payment waiting, Activate opens it so it can be checked first.
+  // With a proof of payment waiting, Activate / Renew opens it so it can be checked first.
   const activateClient = async (client: Client) => {
     if (proofs[client.id]) {
       setViewing(proofs[client.id]);
       return;
     }
+    const renewing = client.access_status !== "expired";
+    const next = renewedPlanDates(client, new Date());
+    const until = next ? ` Their plan will run to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.` : "";
     Alert.alert(
-      "Activate client?",
-      `Confirm payment received for ${client.name}. Their access will activate now.`,
+      renewing ? "Renew plan?" : "Activate client?",
+      renewing
+        ? `Confirm payment received for ${client.name}. The new plan starts when the current one ends.${until}`
+        : `Confirm payment received for ${client.name}. Their access will activate now.${until}`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Activate", style: "default", onPress: () => activateNow(client) },
+        { text: renewing ? "Renew" : "Activate", style: "default", onPress: () => activateNow(client) },
       ]
     );
   };
   const viewingClient = viewing ? allClients.find((c) => c.id === viewing.client_id) ?? null : null;
-
-  // Mark client as expired: revoke access, move to expired status
-  const markExpired = async (client: Client) => {
-    Alert.alert(
-      "Mark as expired?",
-      `This will revoke ${client.name}'s access. Are you sure?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Mark expired",
-          style: "destructive",
-          onPress: async () => {
-            const { error } = await supabase
-              .from("clients")
-              .update({ access_status: "expired" })
-              .eq("id", client.id);
-            if (!error) {
-              setClients((prev) =>
-                prev.map((c) => (c.id === client.id ? { ...c, access_status: "expired" } : c))
-              );
-            } else {
-              Alert.alert("Error", "Failed to mark client as expired.");
-            }
-          },
-        },
-      ]
-    );
-  };
 
   // Bring an archived client back: all their old data is still there.
   const bringBack = (client: Client) => {
@@ -257,13 +225,9 @@ export default function ClientsScreen({ navigation }: Props) {
                 <Pressable style={styles.actionButton} onPress={() => bringBack(item)}>
                   <Text style={styles.actionButtonText}>Bring back</Text>
                 </Pressable>
-              ) : item.access_status === "expired" ? (
-                <Pressable style={styles.actionButton} onPress={() => activateClient(item)}>
-                  <Text style={styles.actionButtonText}>Activate</Text>
-                </Pressable>
               ) : (
-                <Pressable style={styles.dangerButton} onPress={() => markExpired(item)}>
-                  <Text style={styles.dangerButtonText}>Mark expired</Text>
+                <Pressable style={styles.actionButton} onPress={() => activateClient(item)}>
+                  <Text style={styles.actionButtonText}>{item.access_status === "expired" ? "Activate" : "Renew"}</Text>
                 </Pressable>
               )}
             </Pressable>
@@ -274,9 +238,9 @@ export default function ClientsScreen({ navigation }: Props) {
       <PaymentProofModal
         proof={viewing}
         from={viewingClient?.name ?? "your client"}
-        confirmLabel={viewingClient?.access_status === "expired" ? "✓ Paid, activate them" : "✓ Paid"}
+        confirmLabel={viewingClient?.access_status === "expired" ? "✓ Paid, activate them" : "✓ Paid, renew their plan"}
         onConfirm={() => {
-          if (viewingClient?.access_status === "expired") activateNow(viewingClient);
+          if (viewingClient && !viewingClient.archived_at) activateNow(viewingClient);
           setViewing(null);
         }}
         onReviewed={loadProofs}
@@ -328,6 +292,4 @@ const styles = StyleSheet.create({
   actionButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
   proofChip: { alignSelf: "flex-start", backgroundColor: "#3A2F0B", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 },
   proofChipText: { color: "#D4AF37", fontWeight: "700", fontSize: 12 },
-  dangerButton: { backgroundColor: "#EF4444", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 10 },
-  dangerButtonText: { color: "#fff", fontWeight: "700", fontSize: 12 },
 });

@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Tex
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
+import { parseWeight } from "@/lib/weightInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import RestTimer from "@/components/RestTimer";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -10,6 +11,7 @@ import {
   clockSeconds,
   compareRound,
   DROP_SET_REST_SECONDS,
+  dropPlanText,
   dropRange,
   formatRoundTime,
   needsLevelNote,
@@ -104,8 +106,7 @@ export default function DropSetLogger({
       Alert.alert("Reps", "Put in how many reps you did.");
       return;
     }
-    const w = weight.trim() ? parseFloat(weight.replace(",", ".")) : null;
-    setEntries((e) => [...e, { weight: w != null && !isNaN(w) ? w : null, reps: r }]);
+    setEntries((e) => [...e, { weight: parseWeight(weight), reps: r }]);
     setClock((c) => startClock(c, Date.now()));
     setNow(Date.now());
     setReps("");
@@ -127,7 +128,8 @@ export default function DropSetLogger({
       set_number: i + 1,
       weight_kg: e.weight,
       reps: e.reps,
-      effort: "failure" as const,
+      // Every drop stops short; only the last may go to failure.
+      effort: range.toFailure && i === entries.length - 1 ? ("failure" as const) : ("close_to_failure" as const),
       warm_up: false,
     }));
     const { data: logs, error } = await supabase.from("workout_logs").insert(logRows).select();
@@ -155,7 +157,7 @@ export default function DropSetLogger({
     if (roundError) Alert.alert("Couldn't save the round time", roundError.message);
     if (saved) setToday((t) => [...t, saved as DropSetRound]);
     onSaved((logs as WorkoutLog[]) ?? []);
-    setResult(`Round ${roundNumber}: ${formatRoundTime(seconds)}, ${drops} drops, ${totalReps} reps. ${compareRound({ seconds, totalReps }, lastRound && { seconds: lastRound.seconds, totalReps: lastRound.total_reps })}`);
+    setResult(`Round ${roundNumber}: ${totalReps} reps, ${drops} drops (${formatRoundTime(seconds)}). ${compareRound({ seconds, totalReps }, lastRound && { seconds: lastRound.seconds, totalReps: lastRound.total_reps })}`);
     setEntries([]);
     setClock(newClock());
     if (roundNumber < rounds) setResting((n) => n + 1);
@@ -174,7 +176,7 @@ export default function DropSetLogger({
               </Pressable>
             </View>
             <Text style={styles.sub}>
-              {rounds} rounds · start weight 4-8 reps, then {range.min}-{range.max} drops of 10-20%, all to failure · rest 5 to 6 min between rounds
+              {dropPlanText(rounds, range)}
             </Text>
             {needsLevelNote(client.training_level) && (
               <Text style={styles.note}>Drop sets are for intermediate and advanced lifters. Go carefully and stop if your form breaks.</Text>
@@ -194,7 +196,7 @@ export default function DropSetLogger({
                 </View>
                 {lastRound && (
                   <Text style={styles.last}>
-                    Last time: {formatRoundTime(lastRound.seconds)}, {lastRound.drops} drops, {lastRound.total_reps} reps
+                    Last time: {lastRound.total_reps} reps, {lastRound.drops} drops ({formatRoundTime(lastRound.seconds)})
                   </Text>
                 )}
                 {entries.length > 0 && (

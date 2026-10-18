@@ -51,7 +51,16 @@ type Recent = Pick<
   | "mental_status"
 >;
 
-export const WATER_TARGET_LITRES = 2.5;
+// Water (nutrition review, 2026-10-18): about 33 ml per kg of body weight
+// from drinks, plus extra on training days. Without a weight, 2 litres.
+export const WATER_TARGET_LITRES = 2;
+export const WATER_ML_PER_KG = 33;
+
+/** The day's water target in litres, to the nearest 0.1 L, from body weight when known. */
+export function waterTargetLitres(weightKg?: number | null): number {
+  if (!weightKg || weightKg < 25 || weightKg > 400) return WATER_TARGET_LITRES;
+  return Math.round((weightKg * WATER_ML_PER_KG) / 100) / 10;
+}
 export const SLEEP_TARGET_HOURS = 7;
 export const MAX_TIPS = 3;
 
@@ -79,7 +88,7 @@ const one = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
  * most important few come first; when everything looks good there are none
  * and `win` says so.
  */
-export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
+export function checkinFeedback(all: Recent[], today: string, weightKg?: number | null): CheckinFeedback {
   const weekAgo = new Date(`${today}T12:00:00`);
   weekAgo.setDate(weekAgo.getDate() - 6);
   const from = `${weekAgo.getFullYear()}-${String(weekAgo.getMonth() + 1).padStart(2, "0")}-${String(weekAgo.getDate()).padStart(2, "0")}`;
@@ -114,7 +123,7 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
       icon: "😴",
       title: "Improve your sleep quality",
       because: `Your sleep quality has been about ${one(Math.round(quality * 2) / 2)} out of 5.`,
-      doThis: "Keep the room dark and cool, stop caffeine after 2pm, and put the phone away an hour before bed.",
+      doThis: "Keep the room dark and cool, have your last caffeine at least 8 hours before bed, and put the phone away an hour before bed.",
       itWill: "Deeper sleep, so you wake up rested and recover faster from training.",
       priority: 70,
     });
@@ -137,14 +146,15 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
 
   // Water.
   const water = average(week.map((c) => Number(c.water_litres) || 0));
-  if (water !== null && water < WATER_TARGET_LITRES) {
-    const more = Math.max(0.5, Math.round((WATER_TARGET_LITRES - water) * 2) / 2);
+  const waterTarget = waterTargetLitres(weightKg);
+  if (water !== null && water < waterTarget) {
+    const more = Math.max(0.5, Math.round((waterTarget - water) * 2) / 2);
     tips.push({
       key: "water",
       icon: "💧",
       title: "Drink more water",
       because: `You're averaging ${one(Math.round(water * 10) / 10)} L a day.`,
-      doThis: `Add about ${one(more)} L a day: a big glass when you wake up and a bottle with you all day. More on training days.`,
+      doThis: `Aim for about ${one(waterTarget)} L a day${weightKg ? " (about 30 to 35 ml per kg of your weight)" : ""}, plus extra on training days: add about ${one(more)} L with a big glass when you wake up and a bottle with you all day. Pale straw-coloured urine means you're drinking enough.`,
       itWill: "More energy, fewer cravings (thirst often feels like hunger), better workouts and better digestion.",
       priority: water < 1.5 ? 75 : 55,
     });
@@ -162,8 +172,8 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
       icon: "🍞",
       title: "Swap some high-GI meals",
       because: `About ${one(Math.round(highGi * 10) / 10)} of your meals a day are high-GI (white bread, sweets, sugary drinks).`,
-      doThis: "Keep fast carbs for around your workout. At other meals choose sweet potato, rice, beans or veg with your protein.",
-      itWill: "Steadier energy, fewer sugar crashes and cravings, and less fat stored from insulin spikes.",
+      doThis: "Keep fast carbs for around your workout. At other meals choose beans, lentils, boiled sweet potato, basmati or brown rice, wholewheat pasta or veg with your protein.",
+      itWill: "Steadier energy, fewer sugar crashes and cravings, and meals that keep you full for longer, so it's easier to eat the right amount.",
       priority: highGi >= 3 ? 70 : 50,
     });
   }
@@ -192,7 +202,7 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
       icon: "🔋",
       title: "Look after your energy",
       because: `You felt run down on ${tired} days this week.`,
-      doThis: "Put sleep first, eat enough, and tell your coach if training feels too much. A lighter session is fine.",
+      doThis: "Put sleep first, eat enough, and tell your coach if training feels too much. A lighter session is fine. Tired most days for 2-3 weeks even when you sleep well? See your GP: it can be low iron, thyroid or not eating enough.",
       itWill: "You recover properly, so you come back stronger instead of burning out or getting injured.",
       priority: 75,
     });
@@ -206,7 +216,7 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
       icon: "🧠",
       title: "Take time to switch off",
       because: `You felt mentally drained on ${stressed} days this week.`,
-      doThis: "Take 5 minutes a day for slow breathing or a walk outside, and keep training even if it's lighter.",
+      doThis: "Take 5 minutes a day for slow breathing or a walk outside, and keep training even if it's lighter. Feeling low or overwhelmed for more than two weeks? Talk to your GP or SADAG.",
       itWill: "Lower stress, better sleep and fewer stress cravings. Exercise is one of the best stress relievers there is.",
       priority: 65,
     });
@@ -220,7 +230,7 @@ export function checkinFeedback(all: Recent[], today: string): CheckinFeedback {
       icon: "🩹",
       title: "Train around your pain",
       because: `You reported pain on ${sore} day${sore === 1 ? "" : "s"} this week.`,
-      doThis: "Your coach has been told. Skip or swap anything that hurts (use Change exercise) and go lighter until it settles.",
+      doThis: "Your coach has been told. Go lighter or swap anything that hurts more than about 5 out of 10, or leaves it worse the next morning. If it isn't easing within 1-2 weeks, or there's swelling, numbness, night pain or it's getting worse, see a physio, biokineticist or doctor.",
       itWill: "It gives the area time to heal, so a niggle doesn't turn into an injury that stops you training.",
       priority: 90,
     });

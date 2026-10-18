@@ -1,4 +1,4 @@
-import { d, phase, program } from "./common";
+import { d, phase, program, REHAB_REFER } from "./common";
 import { CORE } from "./core";
 import type { StabilityAreaGuide, StabilityExercise } from "./types";
 
@@ -18,12 +18,12 @@ export const SHOULDER: StabilityAreaGuide = {
   summary: "Rotator cuff strength, shoulder blade control and a joint that stays centred under load.",
   why: [
     "The shoulder has the most movement of any joint, and pays for it with the least stability. The ball sits on a shallow socket, held there mainly by four small rotator cuff muscles and the muscles that steer the shoulder blade.",
-    "Most gym training builds the chest and front of the shoulder far more than the back. When the outward-rotating muscles fall behind, the ball drifts forward in the socket and the shoulder starts to pinch and ache.",
+    "Shoulders get sore when load goes up faster than the tendons and muscles have adapted. Building rotator-cuff and upper-back strength gradually is the best-supported fix. Posture plays a smaller part than people think.",
     "A short prevention warm-up of exactly these exercises (outward rotation, shoulder blade control, upper back mobility) cut shoulder problems by 28% in a study of overhead athletes.",
     "These programs keep the arms at or below shoulder height for the loaded work, with no overhead pressing.",
   ],
   chooseLevel: {
-    rehab: "Shoulder pain, a rotator cuff strain, a shoulder that clicks and aches, or after a shoulder injury or dislocation once a doctor or physio has cleared you to strengthen.",
+    rehab: `Shoulder pain, a rotator cuff strain, a shoulder that clicks and aches, or after a shoulder injury or dislocation once a doctor or physio has cleared you to strengthen. ${REHAB_REFER}`,
     beginner: "No current injury, but your shoulders roll forward, push-ups or bench press make them ache, or band work on the rotator cuff is new to you.",
     intermediate: "You can do 15 band external rotations each side with a medium band, 15 push-ups with a 'plus' at the top, and hang from a bar for 30 seconds.",
     advanced: "You can do Turkish get-ups with a moderate bell, hang for 60 seconds, and do push-ups explosively without pain. For throwing, contact and combat sports, and heavy upper-body lifting.",
@@ -32,6 +32,7 @@ export const SHOULDER: StabilityAreaGuide = {
     "The shoulder has dislocated or feels like it slips out.",
     "You can't lift the arm out to the side after a fall or injury (possible tear: see a doctor soon).",
     "Pain at night that keeps waking you, or pain with numbness or tingling down the arm.",
+    "A hot, red, swollen joint with a fever (urgent: see a doctor today).",
     "Left shoulder or arm pain with chest tightness, breathlessness or sweating (call for help immediately).",
   ],
   exercises: [
@@ -46,7 +47,7 @@ export const SHOULDER: StabilityAreaGuide = {
         "Press the back of your wrist into the wall as if trying to rotate the arm outwards. The arm doesn't move.",
         "Hold, breathing normally.",
       ],
-      lossOfControl: "Stop when you can't keep the same push, the shoulder shrugs up, or pain goes above 3/10.",
+      lossOfControl: "Stop when you can't keep the same push, the shoulder shrugs up, or pain goes above 5/10.",
       resistance: "Start at half effort, build to 7/10 by week 2.",
       easier: "Push more gently.",
       harder: "Push harder, then move to band rotations.",
@@ -62,7 +63,7 @@ export const SHOULDER: StabilityAreaGuide = {
         "Press the palm side of your wrist into the frame as if rotating the arm inwards. The arm doesn't move.",
         "Hold, breathing normally.",
       ],
-      lossOfControl: "Stop when you can't keep the same push, the shoulder rolls forward, or pain goes above 3/10.",
+      lossOfControl: "Stop when you can't keep the same push, the shoulder rolls forward, or pain goes above 5/10.",
       resistance: "Start at half effort, build to 7/10 by week 2.",
       easier: "Push more gently.",
       harder: "Push harder.",

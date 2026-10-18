@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { repRange, suggestNext, weightStep, type LoggedSet } from "./progression";
+import { heavyCompound, heavyLowerOrSpine, repRange, suggestNext, weightStep, type LoggedSet } from "./progression";
 
 const sets = (weight: number, reps: number[], effort: LoggedSet["effort"] = "close_to_failure"): LoggedSet[] =>
   reps.map((r) => ({ weight_kg: weight, reps: r, effort }));
@@ -20,8 +20,29 @@ describe("weightStep", () => {
   it("adds 5kg on big lower-body lifts and 2.5kg elsewhere", () => {
     expect(weightStep(squat)).toBe(5);
     expect(weightStep({ name: "Leg Press", category: "Legs" })).toBe(5);
-    expect(weightStep({ name: "Dumbbell Goblet Squat", category: "Legs" })).toBe(2.5);
     expect(weightStep(bench)).toBe(2.5);
+  });
+  it("uses real dumbbell and kettlebell steps", () => {
+    expect(weightStep({ name: "Dumbbell Goblet Squat", category: "Legs" })).toBe(2);
+    expect(weightStep({ name: "Dumbbell Lateral Raise", category: "Shoulders" }, 6)).toBe(2);
+    expect(weightStep({ name: "Dumbbell Bench Press", category: "Chest" }, 20)).toBe(2.5);
+    expect(weightStep({ name: "Kettlebell Romanian Deadlift", category: "Hamstrings" }, 16)).toBe(4);
+  });
+  it("suggests a dumbbell weight that exists", () => {
+    expect(suggestNext(sets(6, [15, 15, 15]), "12-15", { name: "Dumbbell Lateral Raise", category: "Shoulders" })?.weight).toBe(8);
+  });
+});
+
+describe("heavy lifts", () => {
+  it("spots heavy lower-body, spine-loading and compound lifts", () => {
+    expect(heavyLowerOrSpine("Barbell Back Squat")).toBe(true);
+    expect(heavyLowerOrSpine("Romanian Deadlift")).toBe(true);
+    expect(heavyLowerOrSpine("Walking Lunges")).toBe(true);
+    expect(heavyLowerOrSpine("Jump Squat")).toBe(false);
+    expect(heavyLowerOrSpine("Leg Extension")).toBe(false);
+    expect(heavyCompound("Barbell Bench Press")).toBe(true);
+    expect(heavyCompound("Trap Bar Deadlift")).toBe(true);
+    expect(heavyCompound("Cable Lateral Raise")).toBe(false);
   });
 });
 

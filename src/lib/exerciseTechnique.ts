@@ -30,10 +30,10 @@ export const MUSCLE_NOT_WEIGHT =
 // How to get the most from every rep: range of motion and muscle tension.
 // Shown, tap to open, when logging a set.
 export const EVERY_REP_TIPS: string[] = [
-  "Full range of motion: lower until you feel a good stretch in the working muscle, then come all the way back up. Half reps build half the muscle.",
+  "Use the full range you can control, and above all don't cut off the stretched (bottom) part. Reps in the stretch work very well; skipping the stretch is what costs growth.",
   "Control the way down: take 2 to 3 seconds to lower. That's where a lot of the muscle-building happens.",
   "Pause in the stretch for a moment at the bottom instead of bouncing out of it.",
-  "Keep the tension on the muscle: don't rest at the top or lock out and relax between reps.",
+  "Keep moving smoothly from rep to rep: no long rests at the top in the middle of a set.",
   "Squeeze the muscle hard at the top of each rep, and think about the muscle doing the work, not your hands moving the weight.",
   "Breathe out as you lift and in as you lower. Brace your stomach on squats, lunges and deadlifts.",
   "Finish each set 1 to 3 reps short of failure with good form. If the form breaks, the set is over.",
@@ -183,7 +183,7 @@ const CLOSE_GRIP_PRESS: ExerciseTechnique = {
 };
 
 const OVERHEAD_PRESS: ExerciseTechnique = {
-  pattern: "Overhead press (optional)",
+  pattern: "Overhead press",
   feel: "Shoulders and triceps.",
   steps: [
     "Stand or sit tall, weight at shoulder height, stomach and bum tight.",
@@ -193,7 +193,7 @@ const OVERHEAD_PRESS: ExerciseTechnique = {
   ],
   tips: ["Don't lean back. Keep your ribs down and stomach braced.", "Lower slowly to shoulder height."],
   adapt: [
-    "Overhead pressing is optional. If your shoulders pinch, ask your coach to swap it for a landmine press or lateral raise.",
+    "Overhead pressing is safe and useful for healthy shoulders. If your shoulders pinch, ask your coach to swap it for a landmine press or a high-incline press.",
     "Seated with back support is easier on your lower back.",
   ],
 };
@@ -1191,7 +1191,7 @@ const CARDIO_RUN: ExerciseTechnique = {
     "Hold the pace your coach set, then finish with a few easy minutes.",
   ],
   tips: ["Easy runs should feel easy enough to talk.", "Short, quick steps are kinder to your joints."],
-  adapt: ["Knees sore? Walk-run intervals, or swap to the bike or elliptical.", "Build up slowly, about 10% more each week."],
+  adapt: ["Knees sore? Walk-run intervals, or swap to the bike or elliptical.", "Build up gradually, and keep any single run no more than about 10% longer than your longest run in the last month."],
 };
 
 const CARDIO_WALK: ExerciseTechnique = {

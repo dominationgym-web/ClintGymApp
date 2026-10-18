@@ -23,6 +23,8 @@ export type RecoveryInputs = {
   recovery: { activity: string; planned_on: string; done_on: string | null }[];
   /** Exercise outside the programs (0114): runs, rides, hikes. big = 60+ min or hard. */
   activities?: { date: string; what: string; minutes: number; big: boolean }[];
+  /** The client's recovery program (0108). Cold is only suggested on Sports. */
+  recoveryProgram?: string | null;
 };
 
 export type RecoverySuggestion = { activity: RecoveryActivityKey; reason: string };
@@ -80,10 +82,12 @@ export function suggestRecovery(inputs: RecoveryInputs, today: string, limit = 2
   const t = dayLoad(inputs.sets, today);
   const doneThisWeek = inputs.recovery.filter((r) => r.done_on && r.done_on >= weekStart).length;
 
+  // Pain gets easy movement, not stretching: stretching a fresh strain hard
+  // can make it worse (review 2026-10-18).
   if (pain) {
     add(
-      "stretching",
-      `You reported pain${pain.painArea ? ` (${pain.painArea.toLowerCase()})` : ""}. Gentle mobility can help, but stop if it hurts and tell your coach.`,
+      "easy_movement",
+      `You reported pain${pain.painArea ? ` (${pain.painArea.toLowerCase()})` : ""}. Keep moving gently within comfort. Don't stretch a fresh strain hard. Your coach will adjust your plan.`,
     );
   }
   if (tired) {
@@ -98,8 +102,17 @@ export function suggestRecovery(inputs: RecoveryInputs, today: string, limit = 2
   if (stressed) {
     add("breathing", "You've had a lot on your mind. Five minutes of slow breathing helps you switch off and sleep better.");
   }
+  // Cold straight after weights can blunt muscle growth, so it's only
+  // suggested to clients on Sports Recovery; everyone else gets easy movement.
   if (y.legs >= BIG_LEG_SETS) {
-    add("cold", `Big leg day yesterday (${y.legs} sets). A cold shower or ice bath can ease sore legs.`);
+    if (inputs.recoveryProgram === "sports") {
+      add(
+        "cold",
+        `Big leg day yesterday (${y.legs} sets). A cold shower or ice bath can ease sore legs before your next session. Not within 4 hours of weights if you're building muscle.`,
+      );
+    } else {
+      add("easy_movement", `Big leg day yesterday (${y.legs} sets). An easy walk or ride today helps sore legs recover.`);
+    }
   }
   if (y.hard >= HARD_SETS || y.sets >= BIG_SESSION_SETS) {
     add(

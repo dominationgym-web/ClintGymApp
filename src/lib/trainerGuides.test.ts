@@ -28,6 +28,14 @@ describe("trainer guides", () => {
     }
   });
 
+  it("has a guide on working with injured clients, with the pain rule and referrals", () => {
+    const topic = trainerGuide("recovery")?.topics.find((t) => t.title === "Working with injured clients");
+    const text = JSON.stringify(topic);
+    expect(text).toContain("biokineticist");
+    expect(text).toContain("5 out of 10");
+    expect(text).toContain("settled by the next morning");
+  });
+
   it("never recommends oats or hack squats", () => {
     const text = JSON.stringify(TRAINER_GUIDES).toLowerCase();
     expect(text).not.toContain("oat");

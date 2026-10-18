@@ -7,6 +7,7 @@ import {
   displayProgramName,
   supersetNext,
   supersetStep,
+  contrastRest,
   nextUnfinished,
   resizeExercises,
   blankCardio,
@@ -19,6 +20,7 @@ import {
   needsWarmUp,
   programDayNumber,
   warmUpReps,
+  needsRamp,
   withExtraCardio,
   programFamily,
   PROGRAM_FAMILIES,
@@ -133,10 +135,18 @@ describe("formatRest and formatClock", () => {
 });
 
 describe("warmUpReps", () => {
-  it("doubles the working reps", () => {
-    expect(warmUpReps("8-10")).toBe("16-20");
-    expect(warmUpReps("5")).toBe("10");
-    expect(warmUpReps("10 each leg")).toBe("20 each leg");
+  it("uses the working reps, never more than 10", () => {
+    expect(warmUpReps("8-10")).toBe("8-10");
+    expect(warmUpReps("5")).toBe("5");
+    expect(warmUpReps("12-15")).toBe("10");
+    expect(warmUpReps("15 each leg")).toBe("10 each leg");
+  });
+
+  it("ramps up over 2-3 sets for heavy work only", () => {
+    expect(needsRamp("3-5")).toBe(true);
+    expect(needsRamp("6-8")).toBe(true);
+    expect(needsRamp("8-10")).toBe(false);
+    expect(needsRamp("30 sec")).toBe(false);
   });
 
   it("skips timed holds", () => {
@@ -226,6 +236,12 @@ describe("supersetStep", () => {
   it("goes back to the first half after the second, with its rest", () => {
     const done: Record<string, number> = { a: 1, b: 1, c: 0 };
     expect(supersetStep(b, session, (e) => done[e.id])).toEqual({ go: a, restSeconds: 120 });
+  });
+  it("rests before the jump in a contrast pair", () => {
+    const heavy = { ...a, reps: "3 heavy, rest 3-4 min, then the jump" };
+    expect(contrastRest(heavy)).toBe(180);
+    expect(contrastRest(a)).toBe(0);
+    expect(supersetStep(heavy, [heavy, b, c], () => 0)).toEqual({ go: b, restSeconds: 180 });
   });
   it("stops once the partner is finished, and ignores plain exercises", () => {
     const done: Record<string, number> = { a: 3, b: 3, c: 0 };
@@ -344,8 +360,9 @@ describe("warmUpWeight", () => {
 });
 
 describe("warmUpRepsToFill", () => {
-  it("fills the first number of double the reps", () => {
-    expect(warmUpRepsToFill("8-10")).toBe("16");
+  it("fills the first number of the warm-up reps", () => {
+    expect(warmUpRepsToFill("8-10")).toBe("8");
+    expect(warmUpRepsToFill("12-15")).toBe("10");
     expect(warmUpRepsToFill("45 sec")).toBe("");
   });
 });

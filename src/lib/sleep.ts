@@ -35,7 +35,7 @@ export const SLEEP_GUIDELINES: GuidelineGroup[] = [
     hook: "Good sleep starts the moment you wake up.",
     points: [
       { emoji: "🌤️", title: "Morning daylight", text: "Get outside within an hour of waking: 5 to 10 minutes of daylight on a clear day, 15 to 30 when it's cloudy. No sunglasses if it's safe." },
-      { emoji: "☕", title: "Caffeine before 12pm", text: "Have your last coffee, energy drink or pre-workout before 12pm. Caffeine stays in your body for 8 to 10 hours." },
+      { emoji: "☕", title: "Caffeine 8 hours before bed", text: "Have your last coffee or energy drink at least 8 hours before bed (about 2pm for a 10pm bedtime), and a big pre-workout dose 12 hours before. Caffeine stays in your body for hours." },
       { emoji: "🏃", title: "Move every day", text: "Finish hard training at least 2 hours before bed." },
       { emoji: "💤", title: "Short naps only", text: "Keep naps short (20 minutes or less) and before 3pm." },
     ],

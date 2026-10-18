@@ -31,6 +31,7 @@ import WatchOnlineLink from "@/components/WatchOnlineLink";
 import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
+import { parseWeight } from "@/lib/weightInput";
 import { useAuth } from "@/context/AuthContext";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession } from "@/types/database";
 import WorkoutReasonModal from "@/components/WorkoutReasonModal";
@@ -39,10 +40,10 @@ import RestTimer from "@/components/RestTimer";
 import AchievementBadge from "@/components/AchievementBadge";
 import { checkAchievement } from "@/lib/achievementQueries";
 import type { ClientAchievement } from "@/types/database";
-import { AB_REPS, abExerciseFor, absBetweenSets } from "@/lib/absBetweenSets";
+import { AB_MAX_ROUNDS, AB_REPS, abExerciseFor, absAfterExercise, absBetweenSets, abRoundsDone } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
-import { gaugeWeight, inIntro, needsGauge, type GaugeResult } from "@/lib/gauge";
+import { gaugeWeight, inIntro, needsGauge, needsSafeties, SAFETIES_NOTE, type GaugeResult } from "@/lib/gauge";
 import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
@@ -64,9 +65,11 @@ import {
   exercisesForDate,
   formatRest,
   needsWarmUp,
+  contrastRest,
   supersetNext,
   supersetStep,
   nextUnfinished,
+  needsRamp,
   warmUpReps,
   warmUpRepsToFill,
   warmUpWeight,
@@ -148,7 +151,7 @@ export default function ExerciseLibraryScreen() {
   const [restRun, setRestRun] = useState(0);
   // Length of the rest timer that's showing.
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
-  // Abs between sets (0083): after a working set the client does 20 ab reps
+  // Abs between sets (0083): after a working set the client does 15 ab reps
   // and taps Complete, which starts the rest timer. `rest` is that timer's length.
   // Gold achievement badge (0085) earned by the set just logged.
   const [badge, setBadge] = useState<ClientAchievement | null>(null);
@@ -332,10 +335,13 @@ export default function ExerciseLibraryScreen() {
     return dropMode && r.kind === "exercise" ? { ...r, sets: dropRounds } : r;
   });
   const plannedRow = (row: ProgramExercise) => homePlan.find((r) => r.id === row.id) ?? row;
-  // 20 ab reps between sets on this workout, unless the trainer switched it off (0083).
+  // Ab reps between sets on this workout, unless the trainer switched it off (0083).
   const absOn = absBetweenSets(program?.program, client);
   const abReps = program?.program.abs_reps || AB_REPS;
   const abName = (count: number) => abExerciseFor(count - 1, program?.program.abs_exercise);
+  // Not after heavy squats, hinges, lunges or rows, and at most AB_MAX_ROUNDS a session (0118).
+  const absAfter = (row: ProgramExercise | null) =>
+    absOn && !!row && absAfterExercise(row.exercise_name) && abRoundsDone(allTodaysSets) < AB_MAX_ROUNDS;
   const workingSetsToday = () => allTodaysSets.filter((s) => !s.warm_up).length;
   const categoryOf = (row: ProgramExercise) =>
     exercises.find((e) => e.id === row.exercise_id)?.category ??
@@ -362,6 +368,10 @@ export default function ExerciseLibraryScreen() {
   };
   // The open exercise is the first half of a superset: no rest timer after it.
   const targetNext = target ? supersetNext(target, todaysWorkout) : null;
+  const supersetLabel = (row: ProgramExercise, next: ProgramExercise) =>
+    contrastRest(row) > 0
+      ? `rest ${formatRest(contrastRest(row))}, then ${next.exercise_name}`
+      : `superset: straight into ${next.exercise_name}`;
   const [savingProgress, setSavingProgress] = useState(false);
 
   const openSwap = (row: ProgramExercise) => {
@@ -566,7 +576,7 @@ export default function ExerciseLibraryScreen() {
         ).length;
 
   // `rest`: start a rest timer on arrival (coming back to a superset's first half).
-  const openProgramExercise = (row: ProgramExercise, rest = 0) => {
+  const openProgramExercise = (row: ProgramExercise, rest = 0, abs = absOn) => {
     if (dropMode) {
       setDropRow(row);
       return;
@@ -582,7 +592,7 @@ export default function ExerciseLibraryScreen() {
       sort_order: 0,
       home_friendly: false,
     };
-    openExercise(exercise, row, rest);
+    openExercise(exercise, row, rest, abs);
   };
 
   const player = useVideoPlayer(selected?.external_url ?? null, (p) => {
@@ -604,11 +614,11 @@ export default function ExerciseLibraryScreen() {
     };
   }, [selected, player]);
 
-  const openExercise = async (exercise: Exercise, programRow: ProgramExercise | null = null, rest = 0) => {
+  const openExercise = async (exercise: Exercise, programRow: ProgramExercise | null = null, rest = 0, absFirst = absOn) => {
     setSelected(exercise);
     setTarget(programRow);
     // Rest after a set waits for the ab reps when the workout has them.
-    const abs = rest > 0 && absOn;
+    const abs = rest > 0 && absFirst;
     setAbsDue(abs ? { rest, count: workingSetsToday() } : null);
     setRestSeconds(rest);
     setRestRun(rest > 0 && !abs ? Date.now() : 0);
@@ -674,7 +684,7 @@ export default function ExerciseLibraryScreen() {
     }
     const warmUp = warmUpDue;
     const gauge = gaugeDue && !warmUp;
-    if (gauge && !(Number(weight) > 0)) {
+    if (gauge && parseWeight(weight) == null) {
       Alert.alert("Missing weight", "Enter the weight you picked for your gauge set.");
       return;
     }
@@ -692,9 +702,9 @@ export default function ExerciseLibraryScreen() {
         exercise_name: selected.name,
         log_date: todayIso(),
         set_number: warmUp ? 0 : workingDone + 1,
-        weight_kg: weight ? Number(weight) : null,
+        weight_kg: parseWeight(weight),
         reps: repsNum,
-        effort: warmUp ? "comfortable" : gauge ? "failure" : effort!,
+        effort: warmUp ? "comfortable" : gauge ? "close_to_failure" : effort!,
         warm_up: warmUp,
         gauge,
       })
@@ -712,7 +722,7 @@ export default function ExerciseLibraryScreen() {
     setEffort(null);
     if (gauge && target) {
       setGaugeDue(false);
-      const result = gaugeWeight({ weight: Number(weight), reps: repsNum }, target.reps, selected, intro);
+      const result = gaugeWeight({ weight: parseWeight(weight) ?? 0, reps: repsNum }, target.reps, selected, intro);
       setGaugeResult(result);
       if (result) {
         setWeight(String(result.weight));
@@ -738,13 +748,13 @@ export default function ExerciseLibraryScreen() {
     // half with the rest timer running.
     const step = target ? supersetStep(target, todaysWorkout, done) : null;
     if (step) {
-      openProgramExercise(step.go, step.restSeconds);
+      openProgramExercise(step.go, step.restSeconds, absAfter(target));
       return;
     }
     const rest = target?.rest_seconds || DEFAULT_REST_SECONDS;
     const next = target && workingDone + 1 >= target.sets ? nextUnfinished(target, todaysWorkout, done) : null;
     // Abs between sets, except after the very last set of the workout.
-    if (target && absOn && (workingDone + 1 < target.sets || next)) {
+    if (target && absAfter(target) && (workingDone + 1 < target.sets || next)) {
       // Any rest still counting from the last set stops: abs come first.
       setRestRun(0);
       setAbsDue({ rest, count: workingSetsToday() + 1 });
@@ -763,7 +773,7 @@ export default function ExerciseLibraryScreen() {
         Alert.alert(`${target.exercise_name} done ✓`, `Ready to move on to ${next.exercise_name}?`, [
           { text: "Not yet", style: "cancel" },
           // With abs between sets, the abs and rest come along to the next exercise.
-          { text: "Next exercise", onPress: () => openProgramExercise(next, absOn ? rest : 0) },
+          { text: "Next exercise", onPress: () => openProgramExercise(next, absAfter(target) ? rest : 0) },
         ]);
       } else {
         const finish = session && sessionDue ? " Tap Complete workout to unlock your next session." : " Tap Complete workout so your coach sees it.";
@@ -802,6 +812,7 @@ export default function ExerciseLibraryScreen() {
                 }}
                 catchUpDates={isWeekend(today) && !todaySession ? missed.map((m) => m.workout_date) : []}
                 onCatchUp={setChosenDay}
+                refreshKey={refresh}
               />
             )}
             {client && (
@@ -954,7 +965,8 @@ export default function ExerciseLibraryScreen() {
                     <Text style={styles.howToText}>
                       After each set, do {abReps} reps of{" "}
                       {program.program.abs_exercise ? program.program.abs_exercise.toLowerCase() : "the ab exercise the app shows you"}, then tap
-                      Complete to start your rest.
+                      Complete to start your rest. No abs after heavy squats, deadlifts, hip thrusts, lunges or heavy rows: rest fully for
+                      those. At most {AB_MAX_ROUNDS} rounds of abs a session.
                     </Text>
                   </View>
                 )}
@@ -1002,7 +1014,7 @@ export default function ExerciseLibraryScreen() {
                           </View>
                           <Text style={styles.category}>
                             {row.sets} sets x {row.reps} ·{" "}
-                            {next ? `superset: straight into ${next.exercise_name}` : `rest ${formatRest(row.rest_seconds)}`}
+                            {next ? supersetLabel(row, next) : `rest ${formatRest(row.rest_seconds)}`}
                           </Text>
                           <ExerciseGuideButton
                             name={row.exercise_name}
@@ -1233,12 +1245,12 @@ export default function ExerciseLibraryScreen() {
             ) : (
               selected && <WatchOnlineLink name={selected.name} />
             )}
-            {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" onDoSet={() => {}} />}
+            {selected && <ExerciseGuideButton name={selected.name} category={selected.category} variant="bar" />}
             <View style={{ height: 10 }} />
             {target && (
               <Text style={styles.targetText}>
                 Target: {target.sets} sets x {target.reps} reps ·{" "}
-                {targetNext ? `superset: straight into ${targetNext.exercise_name}` : `rest ${formatRest(target.rest_seconds)}`}
+                {targetNext ? supersetLabel(target, targetNext) : `rest ${formatRest(target.rest_seconds)}`}
               </Text>
             )}
             {target && target.kind !== "cardio" && todaysSets.every((s) => s.warm_up) && (
@@ -1254,10 +1266,16 @@ export default function ExerciseLibraryScreen() {
                   <View style={styles.warmUpBox}>
                     <Text style={styles.warmUpTitle}>Warm-up set first</Text>
                     <Text style={styles.warmUpText}>
-                      First {selected?.category?.toLowerCase()} exercise today: do 1 warm-up set at half your start weight
-                      {half ? ` (${half}kg)` : ""} for double the reps{warmUpRepsText ? ` (${warmUpRepsText})` : ""}. It's logged as a
-                      warm-up and doesn't count as one of your working sets.
+                      First {selected?.category?.toLowerCase()} exercise today: do 1 warm-up set at about half your start weight
+                      {half ? ` (${half}kg)` : ""}{warmUpRepsText ? ` for ${warmUpRepsText} easy reps` : ""}. It's logged as a warm-up and
+                      doesn't count as one of your working sets.
                     </Text>
+                    {target && needsRamp(target.reps) && (
+                      <Text style={styles.warmUpText}>
+                        These are heavy sets, so build up after it: 3-5 reps at about 70% of your start weight, then 1-2 reps at about 85%,
+                        before your first working set. No need to log those.
+                      </Text>
+                    )}
                     <Pressable onPress={skipWarmUp} hitSlop={8} style={{ alignSelf: "flex-start" }}>
                       <Text style={styles.changeLink}>Already warmed up? Skip it</Text>
                     </Pressable>
@@ -1268,11 +1286,14 @@ export default function ExerciseLibraryScreen() {
               <View style={styles.gaugeBox}>
                 <Text style={styles.gaugeTitle}>🎯 Gauge set: first time doing this exercise</Text>
                 <Text style={styles.warmUpText}>
-                  Your coach isn't there to pick your weight, so this set finds it. Pick a weight you think you can lift about{" "}
-                  {target?.reps ?? "10"} times. Do as many good reps as you can, until you can't do one more with good form. Log the weight
-                  and your reps, and the app works out the right weight for the rest of your sets.
+                  Your coach isn't there to pick your weight, so this set finds it. Pick a weight you think you can lift about 6-10 times.
+                  Do a hard set, and stop when you think you have 1-2 good reps left, or as soon as a rep slows right down or your form
+                  changes. Log the weight and your reps, and the app works out the right weight for the rest of your sets.
                 </Text>
-                <Text style={styles.warmUpText}>This is the only set you take to failure.</Text>
+                <Text style={styles.warmUpText}>
+                  {intro ? "Don't go to failure: no set does in your first 6 weeks, this one included." : "Don't go to failure on this set."}
+                </Text>
+                {selected && needsSafeties(selected.name) && <Text style={styles.warmUpText}>{SAFETIES_NOTE}</Text>}
               </View>
             )}
             {gaugeResult && (

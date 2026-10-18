@@ -1,9 +1,13 @@
-// Drop set programs (GRIZZ, 2026-10-16, migration 0099). One exercise done
-// as 2 rounds (intermediate) or 3 rounds (advanced). A round is a start weight
-// for 4-8 reps to failure, then 6-10 lighter "drops", each to failure. The
-// round clock starts when the start weight's reps are logged, pauses while
-// the client types the next weight and runs again when they tap Log. The
-// round's time is one of the things that tracks their output.
+// Drop set programs (GRIZZ, 2026-10-16, migration 0099; dosing 0118). One
+// exercise done as 2 rounds (intermediate) or 3 rounds (advanced). A round is
+// a start weight for about 8-12 reps, then 4-6 lighter "drops" (GRIZZ's
+// choice, 2026-10-18) of about 10-15% each, so the last one is roughly half
+// the start weight. Each drop stops 1 rep short and only the last may go to
+// failure. Smith squats, hack squats and leg presses stop every drop 1-2 reps
+// short, never at failure under a loaded bar or sled. The round clock
+// starts when the start weight's reps are logged, pauses while the client
+// types the next weight and runs again when they tap Log. Total reps at the
+// same start weight is what tracks their output; the time is only shown.
 
 import type { Client } from "@/types/database";
 
@@ -24,11 +28,19 @@ export function needsLevelNote(level: Client["training_level"] | undefined): boo
   return level !== "intermediate" && level !== "advanced";
 }
 
-/** How many drops after the start weight: fewer on barbell and plate-loaded lifts. */
-export function dropRange(exerciseName: string): { min: number; max: number } {
+export type DropPlan = { min: number; max: number; toFailure: boolean };
+
+/** How many drops after the start weight, and whether they go to failure. */
+export function dropRange(exerciseName: string): DropPlan {
   const n = exerciseName.toLowerCase();
-  const heavy = /barbell|smith|leg press|hip thrust|seated calf|plate/.test(n);
-  return heavy ? { min: 6, max: 8 } : { min: 8, max: 10 };
+  if (/smith.*squat|squat.*smith|leg press|hack squat/.test(n)) return { min: 4, max: 6, toFailure: false };
+  return { min: 4, max: 6, toFailure: true };
+}
+
+/** The one-line plan under the exercise name. */
+export function dropPlanText(rounds: number, plan: DropPlan): string {
+  const effort = plan.toFailure ? "each 1 rep short, only the last to failure" : "each stopped 1-2 reps short, never to failure";
+  return `${rounds} rounds · start weight 8-12 reps, then ${plan.min}-${plan.max} drops of about 10-15%, ${effort} · rest 5 to 6 min between rounds`;
 }
 
 // The round clock: time adds up only while it runs.
@@ -55,20 +67,16 @@ export function formatRoundTime(seconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** How this round compares with the same round last time. Faster is better. */
+/** How this round compares with the same round last time: total reps is what counts. */
 export function compareRound(
   now: { seconds: number; totalReps: number },
   last: { seconds: number; totalReps: number } | null | undefined,
 ): string {
-  if (!last) return "First time: this is your time to beat.";
-  const diff = now.seconds - last.seconds;
-  const time =
-    diff === 0
-      ? "Same time as last time"
-      : diff < 0
-        ? `${formatRoundTime(-diff)} faster than last time`
-        : `${formatRoundTime(diff)} slower than last time`;
+  if (!last) return "First time: your total reps are the number to beat.";
   const repDiff = now.totalReps - last.totalReps;
-  const reps = repDiff === 0 ? "same reps" : repDiff > 0 ? `${repDiff} more reps` : `${-repDiff} fewer reps`;
-  return `${time}, ${reps}.`;
+  return repDiff === 0
+    ? "Same total reps as last time."
+    : repDiff > 0
+      ? `${repDiff} more reps than last time.`
+      : `${-repDiff} fewer reps than last time.`;
 }

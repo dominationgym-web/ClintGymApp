@@ -52,7 +52,7 @@ const TRAINING_PLACES: { key: "gym" | "home"; label: string; description: string
 export default function SignupScreen({ navigation }: Props) {
   const { refreshProfile } = useAuth();
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [emailText, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<PlanType>("intro_1mo");
@@ -99,6 +99,8 @@ export default function SignupScreen({ navigation }: Props) {
   };
 
   const handleSignup = async () => {
+    // Phone autofill often adds a space at the end; Supabase stores emails in lower case.
+    const email = emailText.trim().toLowerCase();
     if (!name || !email || !password) {
       Alert.alert("Missing details", "Fill in your name, email, and a password.");
       return;
@@ -233,7 +235,7 @@ export default function SignupScreen({ navigation }: Props) {
         placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
-        value={email}
+        value={emailText}
         onChangeText={setEmail}
       />
       <Text style={styles.label}>Phone number (optional)</Text>

@@ -14,7 +14,7 @@ export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
     points: [
       { emoji: "🥩", title: "Protein", text: "About 1.6 to 2.2 g per kg of body weight a day, spread over 3 to 5 meals. For a 70 kg person that's roughly 110 to 150 g." },
       { emoji: "🥦", title: "Vegetables and fruit", text: "At least 5 handfuls a day, in different colours. They give you vitamins, minerals and fibre for recovery and gut health." },
-      { emoji: "💧", title: "Water", text: "2 to 3 litres a day, more when you sweat. Even being a little dehydrated cuts strength and energy." },
+      { emoji: "💧", title: "Water", text: "About 30 to 35 ml per kg of body weight a day (about 2 to 2.5 litres at 70 kg), plus extra when you train or sweat. Pale straw-coloured urine means you're drinking enough. Even being a little dehydrated cuts strength and energy." },
       { emoji: "🍠", title: "Carbs around training", text: "Rice, potatoes, sweet potato or fruit fuel your sessions and refill your muscles afterwards." },
       { emoji: "😴", title: "Sleep", text: "Sleep 7 to 9 hours. No supplement comes close to what sleep does for recovery." },
     ],
@@ -28,7 +28,7 @@ export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
       { emoji: "🌅", title: "Morning with breakfast", text: "Vitamin D, omega-3, multivitamin (if you take one), creatine." },
       { emoji: "⚡", title: "Before training", text: "Coffee or caffeine if you want it, and water with electrolytes on sweaty days." },
       { emoji: "🥤", title: "After training", text: "A protein shake if you're short of protein, plus a proper meal with carbs." },
-      { emoji: "🌙", title: "Evening", text: "Magnesium, about an hour before bed." },
+      { emoji: "🌙", title: "Evening", text: "Magnesium (if you take it), about an hour before bed." },
     ],
   },
   {
@@ -104,16 +104,16 @@ export const SUPPLEMENTS: Supplement[] = [
     what: "Healthy fats (EPA and DHA) that calm inflammation, ease stiff joints, and support your heart and brain.",
     who: "Anyone who eats oily fish (salmon, sardines, mackerel) less than twice a week.",
     how: "About 1 to 2 g of EPA and DHA combined a day, with food. Check the label: a 1 g capsule often holds only 300 mg of EPA and DHA. Algae oil is the option for vegetarians.",
-    careful: "Can cause fishy burps; taking it with meals or keeping it in the fridge helps. Check with your doctor if you take blood thinners.",
+    careful: "Can cause fishy burps; taking it with meals or keeping it in the fridge helps. High doses (over about 1 g a day) slightly raise the risk of an irregular heartbeat (atrial fibrillation), so check with your doctor first if you have a heart condition or take blood thinners. For general health, 2 portions of oily fish a week (about 250 to 500 mg a day) is enough.",
   },
   {
     name: "Magnesium",
     icon: "😴",
-    level: "Proven",
-    what: "A mineral your muscles and nerves need to relax. It helps with sleep, cramps and recovery, and hard training uses more of it because you lose some in sweat.",
-    who: "People who train hard, sweat a lot, sleep badly or get muscle cramps.",
-    how: "200 to 400 mg of magnesium glycinate or citrate in the evening, about an hour before bed.",
-    careful: "Too much, especially magnesium oxide or citrate, can loosen your stomach. Start low. Check with your doctor if you have kidney problems.",
+    level: "Might help",
+    what: "A mineral your muscles and nerves need to relax. You lose some in sweat. It may help sleep and cramps if you're low, but in people who get enough from food the evidence is weak.",
+    who: "People who train hard, sweat a lot, eat few nuts, seeds, beans and whole grains, or sleep badly.",
+    how: "200 to 350 mg a day from supplements (350 mg is the upper limit for supplements), as glycinate or citrate, in the evening about an hour before bed.",
+    careful: "Too much, especially magnesium oxide or citrate, can loosen your stomach. Start low, and count any magnesium in a multivitamin. Check with your doctor if you have kidney problems.",
   },
   {
     name: "Caffeine",
@@ -121,8 +121,8 @@ export const SUPPLEMENTS: Supplement[] = [
     level: "Training days",
     what: "Wakes up your brain and nervous system so training feels easier. You get more energy, focus and power, and you can push a little harder.",
     who: "Anyone who wants a boost before training, as long as it doesn't make them jittery.",
-    how: "1 to 3 mg per kg of body weight, 30 to 60 minutes before training. A strong coffee is about 100 to 150 mg.",
-    careful: "Avoid it after about 2pm so it doesn't ruin your sleep. Pre-workout powders can hold 300 mg or more per scoop, so read the label. Skip it if you have heart problems, high blood pressure or anxiety, or if you're pregnant.",
+    how: "3 to 6 mg per kg of body weight, about 60 minutes before training. Start at the low end (about 3 mg per kg, roughly 200 mg at 70 kg). A strong coffee is about 100 to 150 mg.",
+    careful: "Keep to 400 mg a day in total. Have your last caffeine at least 8 to 12 hours before bed so it doesn't ruin your sleep, which matters if you train in the evening. Pre-workout powders can hold 300 mg or more per scoop, so read the label. Skip it if you have heart problems, high blood pressure or anxiety. If you're pregnant or breastfeeding, keep all caffeine under 200 mg a day and skip pre-workouts.",
   },
   {
     name: "Electrolytes",
@@ -136,10 +136,10 @@ export const SUPPLEMENTS: Supplement[] = [
   {
     name: "Beta-alanine",
     icon: "🔥",
-    level: "Training days",
+    level: "Might help",
     what: "Helps your muscles cope with the burning feeling in hard efforts of 1 to 4 minutes, so you can keep going a little longer.",
     who: "People doing high-rep sets, circuits, CrossFit-style or interval training. Little benefit for heavy, low-rep lifting.",
-    how: "3 to 5 g a day, every day. It builds up over a few weeks, so the timing on the day doesn't matter.",
+    how: "4 to 6 g a day, every day (rest days too), split into smaller doses with meals. It builds up in your muscles over 2 to 4 weeks, so it isn't a pre-workout and the timing on the day doesn't matter.",
     careful: "It can cause a harmless tingling in the face and hands. Splitting the dose over the day reduces it.",
   },
   {
@@ -149,7 +149,7 @@ export const SUPPLEMENTS: Supplement[] = [
     what: "A sports drink or a banana during long sessions keeps your energy up when your muscles' fuel starts running low.",
     who: "Sessions longer than about 75 minutes, or two sessions in one day.",
     how: "About 30 to 60 g of carbs per hour of training, from a sports drink, banana or similar.",
-    careful: "Not needed for normal sessions under an hour. If fat loss is your goal, skip it, especially before cardio.",
+    careful: "Not needed for normal sessions under an hour. If fat loss is your goal, count its calories like any other food.",
   },
   {
     name: "Glutamine",
@@ -194,7 +194,7 @@ export const SUPPLEMENTS: Supplement[] = [
     what: "A herb that may lower stress hormones and help you sleep and recover better.",
     who: "People who feel stressed, wired or run down, or who sleep badly.",
     how: "300 to 600 mg a day, often in the evening.",
-    careful: "Skip it if you're pregnant or breastfeeding, or have thyroid or autoimmune problems. Check with your doctor if you take any medication.",
+    careful: "Rare cases of liver injury have been reported: stop and see a doctor if you notice yellow skin or eyes, dark urine or itching. Don't use it if you're pregnant, trying to fall pregnant or breastfeeding, or have thyroid or autoimmune problems. Don't take it with thyroid medication, sedatives or immune-suppressing medication, or in the 2 weeks before surgery. Check with your doctor if you take any medication.",
   },
   {
     name: "Tart cherry juice",

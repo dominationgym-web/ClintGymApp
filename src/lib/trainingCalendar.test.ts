@@ -105,6 +105,12 @@ describe("pace", () => {
     expect(paceRest(30, "faster")).toBe(30);
     expect(paceRest(60, "slower")).toBe(90);
     expect(paceRest(120, "slower")).toBe(150);
+    // Slower never shortens the coach's rest.
+    expect(paceRest(240, "slower")).toBe(240);
+    // Faster keeps 90 seconds on heavy compound lifts.
+    expect(paceRest(180, "faster", "Barbell Back Squat")).toBe(90);
+    expect(paceRest(60, "faster", "Trap Bar Deadlift")).toBe(60);
+    expect(paceRest(90, "faster", "Cable Fly")).toBe(45);
     expect(paceRest(0, "slower")).toBe(0);
     expect(paceRest(75, "planned")).toBe(75);
   });

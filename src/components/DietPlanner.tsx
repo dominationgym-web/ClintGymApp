@@ -11,7 +11,9 @@ import {
   dayTotals,
   emptyWeek,
   intakeDetails,
+  lowTargetWarning,
   normaliseWeek,
+  referralReasons,
   sumTotals,
   targetStatus,
   weekdayIndex,
@@ -128,6 +130,10 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
   const base = bmr(details);
   const need = dailyNeed({ ...details, activity });
   const target = need == null ? null : need + adjustKcal;
+  // Safety (nutrition review, 2026-10-18): a target below the floors needs a
+  // dietitian, and some clients need a doctor or dietitian before any deficit.
+  const lowWarning = lowTargetWarning(target, base, need, sex);
+  const referral = referralReasons(client, details.age);
 
   const change = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
@@ -186,11 +192,20 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
   return (
     <View>
       <Text style={styles.heading}>🥗 Diet plan for {client.name}</Text>
+      {referral.length > 0 && (
+        <View style={styles.warnBox}>
+          <Text style={styles.warnTitle}>🩺 Refer before a calorie deficit</Text>
+          <Text style={styles.warnText}>
+            {client.name}'s intake shows {referral.join(" and ")}. Don't set a calorie deficit: ask them to check with their doctor or a
+            registered dietitian (adsa.org.za) first, and keep them at what their body uses until then.
+          </Text>
+        </View>
+      )}
 
       {/* Calorie target, tap to open */}
       <View style={styles.card}>
         <Pressable style={styles.cardHeader} onPress={() => setTargetOpen(!targetOpen)}>
-          <Text style={styles.cardTitle}>{target != null ? `Target: ${target.toLocaleString()} kcal a day` : "Set the calorie target"}</Text>
+          <Text style={styles.cardTitle}>{target != null ? `${lowWarning ? "⚠️ " : ""}Target: ${target.toLocaleString()} kcal a day` : "Set the calorie target"}</Text>
           <Text style={styles.chevron}>{targetOpen ? "▲" : "▼"}</Text>
         </Pressable>
         {targetOpen && (
@@ -239,6 +254,11 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
                 <Text style={styles.helper}>{direction === "over" ? "Over by" : "Under by"}</Text>
                 <TextInput style={styles.smallInput} value={adjust} onChangeText={change(setAdjust)} keyboardType="number-pad" maxLength={4} />
                 <Text style={styles.helper}>kcal a day</Text>
+              </View>
+            )}
+            {lowWarning && (
+              <View style={styles.warnBox}>
+                <Text style={styles.warnText}>⚠️ {lowWarning}</Text>
               </View>
             )}
           </View>
@@ -351,6 +371,9 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 const styles = StyleSheet.create({
+  warnBox: { backgroundColor: "#0F172A", borderRadius: 10, borderLeftWidth: 3, borderLeftColor: "#F87171", padding: 12, marginTop: 10 },
+  warnTitle: { color: "#F87171", fontWeight: "800", marginBottom: 4 },
+  warnText: { color: "#E2E8F0", fontSize: 13, lineHeight: 19 },
   heading: { color: "#fff", fontSize: 17, fontWeight: "800", marginTop: 12, marginBottom: 10 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

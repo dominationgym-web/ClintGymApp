@@ -13,7 +13,7 @@ export const HABIT_GROUPS: HabitGroup[] = [
     icon: "🥗",
     habits: [
       { name: "Protein with every meal", reps: 3, why: "Keeps you full and protects your muscle." },
-      { name: "Drink 3 litres of water", reps: 1, why: "Energy, training and hunger all improve when you're hydrated." },
+      { name: "Drink to pale urine (about 30 to 35 ml per kg)", reps: 1, why: "Energy, training and hunger all improve when you're hydrated. More on training days." },
       { name: "2 fists of vegetables at lunch and supper", reps: 2, why: "Fibre, vitamins and volume for very few calories." },
       { name: "No sugary drinks", reps: 1, why: "The easiest calories to cut." },
       { name: "Take my supplements", reps: 1, why: "Only works if it's every day." },
@@ -41,7 +41,7 @@ export const HABIT_GROUPS: HabitGroup[] = [
       { name: "In bed by 22:30", reps: 1, why: "A set bedtime is the best sleep habit there is." },
       { name: "No screens 30 minutes before bed", reps: 1, why: "Helps you fall asleep faster." },
       { name: "7 to 9 hours of sleep", reps: 1, why: "Where your body recovers and builds." },
-      { name: "No caffeine after 14:00", reps: 1, why: "Caffeine stays in your system for hours." },
+      { name: "No caffeine in the 8 hours before bed", reps: 1, why: "Caffeine stays in your system for hours." },
     ],
   },
   {

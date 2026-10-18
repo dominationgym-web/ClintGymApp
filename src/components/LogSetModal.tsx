@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { todayIso } from "@/lib/dates";
+import { parseWeight } from "@/lib/weightInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatRest } from "@/lib/programs";
 import { suggestNext, type Suggestion } from "@/lib/progression";
@@ -115,7 +116,7 @@ export default function LogSetModal({
         exercise_name: exercise.name,
         log_date: todayIso(),
         set_number: todaysSets.filter((s) => !s.warm_up).length + 1,
-        weight_kg: weight ? Number(weight) : null,
+        weight_kg: parseWeight(weight),
         reps: repsNum,
         effort,
       })

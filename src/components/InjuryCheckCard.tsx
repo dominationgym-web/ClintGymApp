@@ -5,26 +5,28 @@ import { todayIso } from "@/lib/dates";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
 import { loadExerciseChanges, loadProgramExercises } from "@/lib/programQueries";
 import { exercisesForSlot } from "@/lib/trainingCalendar";
-import { exerciseRisks, injuryAreas, riskLine, type InjuryRisk } from "@/lib/injuryRisk";
+import { checkRisks, exerciseKey, exerciseRisks, injuryAreas, keepCovers, riskLine, type InjuryRisk } from "@/lib/injuryRisk";
 import { findArea } from "@/lib/stability";
 import type { StabilityArea } from "@/lib/stability";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ProgramExercise } from "@/types/database";
 
-const RED = "#EF4444";
+const AMBER = "#F59E0B";
 const GREEN = "#22C55E";
 
 type Flagged = { row: ProgramExercise; risks: InjuryRisk[] };
+type Kept = Flagged & { reason: string };
 
 // Injury check (GRIZZ, 2026-10-17), at the top of the client's Training tab.
 // Takes the client's injuries (intake box and open pain reports), looks at
 // every exercise in their plan from today on (calendar days and any main
-// program), and lists the ones that could aggravate them. "Fix them" walks
-// the trainer through each one in ExerciseChangeModal, which suggests 3 safe
-// swaps and won't save a risky one, until all are corrected. After any
-// program pick a sign pops up: all clear, or how many adjustments are needed
-// with a button that takes the trainer to each; fixed ones turn green.
+// program), and lists the ones worth checking. "Check them" walks the
+// trainer through each one in ExerciseChangeModal, which suggests 3 swaps
+// with nothing to check, or lets the trainer keep it with a reason (load,
+// range, tempo...). Since the 2026-10-18 review it's a warning, not a block
+// or a safety clearance: a name check can't judge load or diagnosis. After any
+// program pick a sign pops up: no clashes found, or how many to check.
 export default function InjuryCheckCard({
   clientId,
   clientName,
@@ -35,7 +37,7 @@ export default function InjuryCheckCard({
 }: {
   clientId: string;
   clientName: string;
-  /** The intake injuries box. */
+  /** The intake injuries box (null once the trainer marks it healed). */
   injuries: string | null;
   trainingPlace: ExercisePlace;
   /** Bumped when the plan changes; a new plan with risky exercises opens the walk-through. */
@@ -45,19 +47,21 @@ export default function InjuryCheckCard({
 }) {
   const [areas, setAreas] = useState<StabilityArea[]>([]);
   const [flagged, setFlagged] = useState<Flagged[]>([]);
+  // Flagged exercises the trainer kept anyway, with why (0119).
+  const [kept, setKept] = useState<Kept[]>([]);
   const [loading, setLoading] = useState(true);
   const [fixing, setFixing] = useState<Flagged | null>(null);
   const [step, setStep] = useState({ done: 0, total: 0 });
   const [showAll, setShowAll] = useState(false);
-  // Exercises replaced in this visit, shown in green.
+  // Exercises checked (swapped, adjusted or kept) in this visit, shown in green.
   const [fixed, setFixed] = useState<string[]>([]);
   // The injury check sign: shown after a program pick and when all are fixed.
   const [sign, setSign] = useState<"check" | "done" | null>(null);
   const seenKey = useRef(refreshKey);
 
-  const check = useCallback(async (): Promise<Flagged[]> => {
+  const check = useCallback(async (): Promise<{ flagged: Flagged[]; kept: Kept[] }> => {
     const today = todayIso();
-    const [{ data: listed }, { data: pains }, { data: days }, { data: blocks }, { data: main }, { data: library }, changes] = await Promise.all([
+    const [{ data: listed }, { data: pains }, { data: days }, { data: blocks }, { data: main }, { data: library }, changes, { data: keeps }] = await Promise.all([
       supabase.from("client_injuries").select("area, notes").eq("client_id", clientId).is("healed_on", null),
       supabase.from("client_problems").select("detail").eq("client_id", clientId).eq("topic", "pain").neq("status", "fixed"),
       supabase.from("client_calendar_workouts").select("program_id, day_slot").eq("client_id", clientId).gte("workout_date", today),
@@ -65,6 +69,7 @@ export default function InjuryCheckCard({
       supabase.from("client_programs").select("program_id").eq("client_id", clientId).maybeSingle(),
       supabase.from("exercises").select("id, name, category"),
       loadExerciseChanges(clientId),
+      supabase.from("client_injury_keeps").select("exercise_key, areas, reason").eq("client_id", clientId),
     ]);
     const found = injuryAreas(
       injuries,
@@ -73,7 +78,7 @@ export default function InjuryCheckCard({
     );
     setAreas(found);
     onAreas?.(found);
-    if (found.length === 0) return [];
+    if (found.length === 0) return { flagged: [], kept: [] };
     // Each program once, with the sessions used (null = the whole program).
     const uses = new Map<string, Set<number | null>>();
     for (const p of [...(days ?? []), ...(blocks ?? [])]) {
@@ -90,24 +95,31 @@ export default function InjuryCheckCard({
       rows.push(...applyExerciseChanges(picked, changes));
     });
     const category = new Map((library ?? []).map((e) => [e.id, e.category]));
+    const keepOf = new Map((keeps ?? []).map((k) => [k.exercise_key, k]));
     const out: Flagged[] = [];
+    const keptOut: Kept[] = [];
     const seen = new Set<string>();
     for (const row of rows) {
       if (row.kind === "cardio") continue;
       const key = row.exercise_id ?? row.exercise_name.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      const risks = exerciseRisks({ name: row.exercise_name, category: row.exercise_id ? category.get(row.exercise_id) : null }, found);
-      if (risks.length) out.push({ row, risks });
+      // Only risks worth checking; gentle rehab notes show in the change screen.
+      const risks = checkRisks(exerciseRisks({ name: row.exercise_name, category: row.exercise_id ? category.get(row.exercise_id) : null }, found));
+      if (!risks.length) continue;
+      const keep = keepOf.get(exerciseKey({ exercise_id: row.exercise_id, name: row.exercise_name }));
+      if (keep && keepCovers(keep, risks)) keptOut.push({ row, risks, reason: keep.reason });
+      else out.push({ row, risks });
     }
-    return out;
+    return { flagged: out, kept: keptOut };
   }, [clientId, injuries]);
 
   const load = useCallback(async () => {
-    const list = await check();
-    setFlagged(list);
+    const result = await check();
+    setFlagged(result.flagged);
+    setKept(result.kept);
     setLoading(false);
-    return list;
+    return result.flagged;
   }, [check]);
 
   useEffect(() => {
@@ -146,22 +158,20 @@ export default function InjuryCheckCard({
   const signModal = (
     <Modal visible={!!sign} transparent animationType="fade" onRequestClose={() => setSign(null)}>
       <View style={styles.backdrop}>
-        <View style={[styles.sign, { borderColor: clear ? GREEN : RED }]}>
+        <View style={[styles.sign, { borderColor: clear ? GREEN : AMBER }]}>
           <Text style={styles.signIcon}>{clear ? "✅" : "🩹"}</Text>
-          <Text style={styles.signHeading}>Injury liability check</Text>
+          <Text style={styles.signHeading}>Injury check</Text>
           {clear ? (
             <>
-              <Text style={[styles.signBig, { color: GREEN }]}>All clear</Text>
+              <Text style={[styles.signBig, { color: GREEN }]}>No clashes found</Text>
               <Text style={styles.signText}>
                 {areas.length === 0
                   ? `${clientName} has no injuries listed.`
-                  : sign === "done"
-                    ? `Every exercise is now safe for ${clientName}'s ${names}.`
-                    : `Nothing in this plan should aggravate ${clientName}'s ${names}.`}
+                  : `No clashes found with ${clientName}'s listed injuries (${names}). This is a name check, not a clinical assessment: watch how they respond and adjust.`}
               </Text>
               {fixed.map((n, i) => (
                 <Text key={`${n}-${i}`} style={styles.fixedLine}>
-                  ✓ {n} replaced
+                  ✓ {n} checked
                 </Text>
               ))}
               <Pressable style={[styles.fix, { backgroundColor: GREEN }]} onPress={() => setSign(null)}>
@@ -170,15 +180,15 @@ export default function InjuryCheckCard({
             </>
           ) : (
             <>
-              <Text style={[styles.signBig, { color: RED }]}>
-                {flagged.length} adjustment{flagged.length === 1 ? "" : "s"} required
+              <Text style={[styles.signBig, { color: AMBER }]}>
+                {flagged.length} exercise{flagged.length === 1 ? "" : "s"} to check
               </Text>
               <Text style={styles.signText}>
-                These may aggravate {clientName}'s {names}:
+                These may aggravate {clientName}'s {names}. Adjust the load, range or tempo, swap them, or keep them with a reason:
               </Text>
               {flagged.slice(0, 6).map((f) => (
                 <Text key={f.row.id} style={styles.signRow}>
-                  ✕ {f.row.exercise_name}
+                  ⚠ {f.row.exercise_name}
                 </Text>
               ))}
               {flagged.length > 6 && <Text style={styles.signText}>and {flagged.length - 6} more</Text>}
@@ -195,27 +205,27 @@ export default function InjuryCheckCard({
     </Modal>
   );
 
-  if (loading) return <ActivityIndicator color={RED} style={{ marginTop: 10 }} />;
+  if (loading) return <ActivityIndicator color={AMBER} style={{ marginTop: 10 }} />;
   if (areas.length === 0) return signModal;
 
   return (
-    <View style={[styles.card, { borderColor: clear ? GREEN : RED }]}>
+    <View style={[styles.card, { borderColor: clear ? GREEN : AMBER }]}>
       {signModal}
       {fixed.map((n, i) => (
         <Text key={`${n}-${i}`} style={styles.fixedLine}>
-          ✓ {n} replaced
+          ✓ {n} checked
         </Text>
       ))}
       {clear ? (
-        <Text style={[styles.title, { color: GREEN }]}>✓ All clear: plan is safe for {clientName}'s {names}</Text>
+        <Text style={[styles.title, { color: GREEN }]}>✓ Injury check: no clashes found with {clientName}'s listed injuries ({names})</Text>
       ) : (
         <>
-          <Text style={[styles.title, { color: RED }]}>
-            🩹 {flagged.length} adjustment{flagged.length === 1 ? "" : "s"} required for {clientName}'s {names}
+          <Text style={[styles.title, { color: AMBER }]}>
+            🩹 Injury check: {flagged.length} exercise{flagged.length === 1 ? "" : "s"} to check for {clientName}'s {names}
           </Text>
           {shown.map((f) => (
             <View key={f.row.id} style={styles.row}>
-              <Text style={styles.name}>✕ {f.row.exercise_name}</Text>
+              <Text style={styles.name}>⚠ {f.row.exercise_name}</Text>
               <Text style={styles.why}>{riskLine(f.risks)}</Text>
             </View>
           ))}
@@ -225,10 +235,18 @@ export default function InjuryCheckCard({
             </Pressable>
           )}
           <Pressable style={styles.fix} onPress={() => start(flagged)}>
-            <Text style={styles.fixText}>Fix them one by one</Text>
+            <Text style={styles.fixText}>Check them one by one</Text>
           </Pressable>
         </>
       )}
+      {kept.map((k) => (
+        <Pressable key={k.row.id} onPress={() => setFixing(k)} hitSlop={4}>
+          <Text style={styles.keptLine}>
+            Kept: {k.row.exercise_name} ({k.reason.toLowerCase()})
+          </Text>
+        </Pressable>
+      ))}
+      <Text style={styles.small}>A name check, not a clinical assessment. Watch how they respond and adjust.</Text>
       <ExerciseChangeModal
         row={fixing?.row ?? null}
         clientId={clientId}
@@ -251,9 +269,11 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: "800" },
   row: { marginTop: 8 },
   name: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  why: { color: "#FCA5A5", fontSize: 12, marginTop: 1 },
+  why: { color: "#FCD34D", fontSize: 12, marginTop: 1 },
+  keptLine: { color: "#CBD5E1", fontSize: 13, marginTop: 6 },
+  small: { color: "#64748B", fontSize: 12, marginTop: 8 },
   more: { color: "#94A3B8", fontWeight: "700", marginTop: 8 },
-  fix: { backgroundColor: RED, borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  fix: { backgroundColor: AMBER, borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 12 },
   fixText: { color: "#fff", fontWeight: "800", fontSize: 15 },
   fixedLine: { color: GREEN, fontWeight: "700", fontSize: 13, marginBottom: 4 },
   backdrop: { flex: 1, backgroundColor: "rgba(2,6,23,0.85)", justifyContent: "center", padding: 20 },
@@ -262,7 +282,7 @@ const styles = StyleSheet.create({
   signHeading: { color: "#94A3B8", fontWeight: "800", fontSize: 13, textAlign: "center", marginTop: 6, textTransform: "uppercase", letterSpacing: 1 },
   signBig: { fontSize: 24, fontWeight: "900", textAlign: "center", marginTop: 6 },
   signText: { color: "#CBD5E1", fontSize: 14, textAlign: "center", marginTop: 8, marginBottom: 4 },
-  signRow: { color: RED, fontWeight: "700", fontSize: 14, marginTop: 4 },
+  signRow: { color: AMBER, fontWeight: "700", fontSize: 14, marginTop: 4 },
   later: { alignItems: "center", paddingVertical: 12 },
   laterText: { color: "#94A3B8", fontWeight: "700" },
 });

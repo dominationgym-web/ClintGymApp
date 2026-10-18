@@ -60,10 +60,22 @@ export function supersetPrev(row: ProgramExercise, session: ProgramExercise[]): 
 }
 
 /**
- * What happens after a set of `row` is logged in a superset: go straight to
- * the partner after the first half, or back to the first half (after resting)
- * after the second half, while the partner still has sets left. Null when the
- * row isn't in a superset or the partner is finished.
+ * Contrast pairs (0118): a heavy set, then a jump or throw. The heavy row is
+ * a superset first half (rest 0) whose reps say how long to rest before the
+ * partner, e.g. "3 heavy, rest 3 min, then the jump". The boost from the heavy
+ * set only outweighs its fatigue after a few minutes. 0 for any other row.
+ */
+export function contrastRest(row: Pick<ProgramExercise, "reps">): number {
+  const m = row.reps.match(/rest (\d+)(?:\s*[-–]\s*\d+)? min/i);
+  return m ? Number(m[1]) * 60 : 0;
+}
+
+/**
+ * What happens after a set of `row` is logged in a superset: go to the
+ * partner after the first half (straight away, or after the contrast rest),
+ * or back to the first half (after resting) after the second half, while the
+ * partner still has sets left. Null when the row isn't in a superset or the
+ * partner is finished.
  */
 export function supersetStep(
   row: ProgramExercise,
@@ -71,7 +83,7 @@ export function supersetStep(
   setsDone: (row: ProgramExercise) => number,
 ): { go: ProgramExercise; restSeconds: number } | null {
   const next = supersetNext(row, session);
-  if (next && next.kind !== "cardio" && setsDone(next) < next.sets) return { go: next, restSeconds: 0 };
+  if (next && next.kind !== "cardio" && setsDone(next) < next.sets) return { go: next, restSeconds: contrastRest(row) };
   const prev = supersetPrev(row, session);
   if (prev && setsDone(prev) < prev.sets) return { go: prev, restSeconds: row.rest_seconds };
   return null;
@@ -112,14 +124,31 @@ export function formatClock(seconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/** Warm-up sets never have more reps than this, or more than the working sets. */
+export const WARM_UP_MAX_REPS = 10;
+
 /**
- * Warm-up reps: double the working reps, e.g. "8-10" -> "16-20" and
- * "10 each leg" -> "20 each leg". Timed holds ("45 sec") and anything without
- * a number get no warm-up set, so this returns null.
+ * Warm-up reps (0118): the working reps, capped at WARM_UP_MAX_REPS, so the
+ * warm-up never tires the client more than a working set would: "8-10" stays
+ * "8-10", "12-15" -> "10" and "15 each leg" -> "10 each leg". Timed holds
+ * ("45 sec") and anything without a number get no warm-up set, so this
+ * returns null.
  */
 export function warmUpReps(reps: string): string | null {
   if (/sec|min/i.test(reps) || !/\d/.test(reps)) return null;
-  return reps.replace(/\d+/g, (n) => String(Number(n) * 2));
+  const capped = reps.replace(/\d+/g, (n) => String(Math.min(Number(n), WARM_UP_MAX_REPS)));
+  return capped.replace(/^\s*(\d+)\s*[-–]\s*\1\b/, "$1");
+}
+
+/**
+ * Heavy work (8 reps or fewer at the top of the range) gets a 2-3 set ramp
+ * instead of one jump to the working weight. Only the first ramp set is
+ * logged; the screen describes the rest.
+ */
+export function needsRamp(reps: string): boolean {
+  if (/sec|min/i.test(reps)) return false;
+  const nums = reps.match(/\d+/g)?.map(Number) ?? [];
+  return nums.length > 0 && Math.max(...nums) <= 8;
 }
 
 /**
@@ -200,7 +229,7 @@ export function weeklyDraftProblem(name: string, sessions: DraftSession[]): stri
 
 // Warm-up (0048): what every program starts with unless the trainer rewords it.
 export const DEFAULT_WARM_UP =
-  "5 minutes of light jogging or a brisk walk to get the blood flowing. Any easy cardio you enjoy works.";
+  "5 minutes of easy cardio, like a light jog, brisk walk, bike or rower. Then a few easy moves for the joints you'll train, like leg swings, arm circles and bodyweight squats. Then your warm-up sets.";
 
 // Cardio blocks (0048).
 export const CARDIO_OPTIONS = ["Assault bike", "Ski Erg", "Treadmill", "Boxing", "Cycle", "Sprint"];

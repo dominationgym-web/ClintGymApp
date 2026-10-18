@@ -3,6 +3,8 @@ import {
   amountLabel,
   bmr,
   intakeDetails,
+  lowTargetWarning,
+  referralReasons,
   dailyTarget,
   dayTotals,
   emptyWeek,
@@ -89,5 +91,27 @@ describe("intakeDetails", () => {
       sex: null,
       activity: null,
     });
+  });
+});
+
+describe("safety (nutrition review, 2026-10-18)", () => {
+  it("warns when a target is under the floor, the BMR or 25% under need", () => {
+    expect(lowTargetWarning(1100, 1300, 1800, "female")).toMatch(/under 1,200 kcal for a woman, under their BMR, more than 25%/);
+    expect(lowTargetWarning(1450, 1600, 2400, "male")).toMatch(/1,500 kcal for a man/);
+    expect(lowTargetWarning(1500, 1300, 1800, "female")).toBeNull();
+    expect(lowTargetWarning(null, 1300, 1800, "female")).toBeNull();
+  });
+  it("reads health conditions and age from the intake", () => {
+    const intake = (detail: string, age = "34") => ({
+      intake_responses: { has_health_condition_or_medication: "Yes", health_condition_detail: detail, age },
+    });
+    expect(referralReasons(intake("Type 2 diabetes, on metformin"))).toEqual(["diabetes"]);
+    expect(referralReasons(intake("I'm 5 months pregnant"))).toEqual(["pregnancy or breastfeeding"]);
+    expect(referralReasons(intake("Had anorexia as a teen"))).toEqual(["an eating disorder, now or in the past"]);
+    expect(referralReasons(intake("Chronic kidney disease"))).toEqual(["kidney disease"]);
+    expect(referralReasons(intake("Asthma"))).toEqual([]);
+    expect(referralReasons(intake("Asthma", "16"))).toEqual(["being under 18"]);
+    expect(referralReasons({ intake_responses: { has_health_condition_or_medication: "No", health_condition_detail: "diabetes" } })).toEqual([]);
+    expect(referralReasons({ intake_responses: {} }, 15)).toEqual(["being under 18"]);
   });
 });

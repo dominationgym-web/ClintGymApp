@@ -12,6 +12,7 @@ import ReplyToClientModal from "@/components/ReplyToClientModal";
 import HabitWinsCard from "@/components/HabitWinsCard";
 import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
+import { clientGroup } from "@/lib/clientGroups";
 import type { Checkin, Client, ClientProblem } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 
@@ -34,6 +35,17 @@ const priority = (r: ClientStatus): number =>
     hasCheckedInToday: r.todaysCheckin !== null,
   });
 
+// New videos counted per client, in the order they first appear (newest first).
+function videosByClient(videos: { clientId: string; name: string }[]) {
+  const out = new Map<string, { clientId: string; name: string; count: number }>();
+  for (const v of videos) {
+    const row = out.get(v.clientId) ?? { clientId: v.clientId, name: v.name, count: 0 };
+    row.count += 1;
+    out.set(v.clientId, row);
+  }
+  return [...out.values()];
+}
+
 export default function TrainerDashboardScreen({ navigation }: Props) {
   const { trainer } = useAuth();
   const [rows, setRows] = useState<ClientStatus[]>([]);
@@ -50,20 +62,51 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     scheduleSuggestionBoxReminder();
   }, [isOwner]);
 
-  // New clients who signed up and are waiting to be activated (0056 also sends
-  // the trainer a phone notification when one signs up).
+  // Clients waiting to be activated: new sign-ups and returning clients (the
+  // Clients tab's "Waiting approval" group). 0056 also sends the trainer a
+  // phone notification when one signs up.
   const [waitingSignups, setWaitingSignups] = useState(0);
 
   const loadWaitingSignups = useCallback(async () => {
     if (!trainer) return;
-    const { count } = await supabase
+    const { data } = await supabase
       .from("clients")
-      .select("id", { count: "exact", head: true })
+      .select("access_status, archived_at, plan_started_at, plan_expires_at, returned_at")
       .eq("trainer_id", trainer.id).is("archived_at", null)
-      .eq("access_status", "expired")
-      .is("plan_started_at", null);
-    setWaitingSignups(count ?? 0);
+      .eq("access_status", "expired");
+    const today = todayIso();
+    setWaitingSignups((data ?? []).filter((c) => clientGroup(c, today) === "approval").length);
   }, [trainer]);
+
+  // Proof of payment slips not checked yet (0117): from clients, and for the
+  // owner from trainers too, plus trainers waiting for approval.
+  const [proofCount, setProofCount] = useState(0);
+  const [trainerProofCount, setTrainerProofCount] = useState(0);
+  const [trainersToApprove, setTrainersToApprove] = useState(0);
+
+  const loadOwed = useCallback(async () => {
+    if (!trainer) return;
+    const { count } = await supabase
+      .from("payment_proofs")
+      .select("id", { count: "exact", head: true })
+      .eq("trainer_id", trainer.id)
+      .eq("to_owner", false)
+      .eq("status", "new");
+    setProofCount(count ?? 0);
+    if (!isOwner) return;
+    const [{ count: fromTrainers }, { count: applicants }] = await Promise.all([
+      supabase.from("payment_proofs").select("id", { count: "exact", head: true }).eq("to_owner", true).eq("status", "new"),
+      // approved_at stays set on a blocked trainer, so this counts only new applicants.
+      supabase.from("trainers").select("id", { count: "exact", head: true }).eq("approved", false).is("approved_at", null),
+    ]);
+    setTrainerProofCount(fromTrainers ?? 0);
+    setTrainersToApprove(applicants ?? 0);
+  }, [trainer, isOwner]);
+
+  useEffect(() => {
+    loadOwed();
+    return navigation.addListener("focus", loadOwed);
+  }, [navigation, loadOwed]);
 
   useEffect(() => {
     loadWaitingSignups();
@@ -196,7 +239,11 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 
   useEffect(() => {
     load().finally(() => setLoading(false));
-  }, [load]);
+    // Reload on coming back, e.g. after marking a problem Fixed inside a client.
+    return navigation.addListener("focus", () => {
+      load();
+    });
+  }, [navigation, load]);
 
   // The row's buttons move all of the client's problems at once; the
   // client's page has a button per problem.
@@ -213,6 +260,10 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     setRefreshing(true);
     loadWaitingSignups();
     loadRecoveryClients();
+    loadNewVideos();
+    loadFoundationWaiting();
+    loadSuggestionCount();
+    loadOwed();
     await load();
     setRefreshing(false);
   };
@@ -229,30 +280,47 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   const needsYou = [
     waitingSignups > 0 && {
       key: "signups",
-      text: `🆕 ${waitingSignups} new client${waitingSignups === 1 ? "" : "s"} to activate`,
+      text: `🆕 ${waitingSignups} client${waitingSignups === 1 ? "" : "s"} to activate`,
       link: "Open",
       onPress: () => navigation.navigate("Clients"),
     },
-    recoveryClients.length > 0 && {
-      key: "recovery",
-      text: `⚠️ ${recoveryClients.map((c) => c.name.split(" ")[0]).join(", ")}: same muscles as yesterday`,
+    proofCount > 0 && {
+      key: "proofs",
+      text: `🧾 ${proofCount} proof${proofCount === 1 ? "" : "s"} of payment to check`,
       link: "Open",
-      onPress: () => navigation.navigate("ClientDetail", { clientId: recoveryClients[0].id, tab: "training" }),
+      onPress: () => navigation.navigate("Clients"),
     },
-    newVideos.length > 0 && {
-      key: "videos",
-      text: `🎥 ${newVideos.length} new form video${newVideos.length === 1 ? "" : "s"} from ${[
-        ...new Set(newVideos.map((v) => v.name.split(" ")[0])),
-      ].join(", ")}`,
+    trainersToApprove > 0 && {
+      key: "trainers",
+      text: `🧑‍🏫 ${trainersToApprove} trainer${trainersToApprove === 1 ? "" : "s"} to approve`,
+      link: "Open",
+      onPress: () => navigation.navigate("Trainers"),
+    },
+    trainerProofCount > 0 && {
+      key: "trainerProofs",
+      text: `🧾 ${trainerProofCount} trainer payment${trainerProofCount === 1 ? "" : "s"} to record`,
+      link: "Open",
+      onPress: () => navigation.navigate("Billing"),
+    },
+    // One line per client, so each link opens the right client.
+    ...recoveryClients.map((c) => ({
+      key: `recovery-${c.id}`,
+      text: `⚠️ ${c.name.split(" ")[0]}: same muscles as yesterday`,
+      link: "Open",
+      onPress: () => navigation.navigate("ClientDetail", { clientId: c.id, tab: "training" }),
+    })),
+    ...videosByClient(newVideos).map((v) => ({
+      key: `videos-${v.clientId}`,
+      text: `🎥 ${v.count} new form video${v.count === 1 ? "" : "s"} from ${v.name.split(" ")[0]}`,
       link: "Watch",
-      onPress: () => navigation.navigate("ClientDetail", { clientId: newVideos[0].clientId, tab: "training" }),
-    },
-    foundationWaiting.length > 0 && {
-      key: "foundation",
-      text: `🌱 Approve a foundation program for ${foundationWaiting.map((c) => c.name.split(" ")[0]).join(", ")}`,
+      onPress: () => navigation.navigate("ClientDetail", { clientId: v.clientId, tab: "training", open: "videos" }),
+    })),
+    ...foundationWaiting.map((c) => ({
+      key: `foundation-${c.id}`,
+      text: `🌱 Approve a foundation program for ${c.name.split(" ")[0]}`,
       link: "Open",
-      onPress: () => navigation.navigate("ClientDetail", { clientId: foundationWaiting[0].id, tab: "training" }),
-    },
+      onPress: () => navigation.navigate("ClientDetail", { clientId: c.id, tab: "training" }),
+    })),
     newSuggestions > 0 && {
       key: "suggestions",
       text: `💡 ${newSuggestions} new suggestion${newSuggestions === 1 ? "" : "s"}`,

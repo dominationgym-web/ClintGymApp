@@ -11,10 +11,22 @@ export function levelInfo(level: StabilityLevel) {
   return LEVELS.find((l) => l.level === level)!;
 }
 
+// Added to every area's Rehab "who": trainers can't diagnose or treat
+// injuries, so anything fresh, after surgery or with a red flag is assessed
+// first (review 2026-10-18).
+export const REHAB_REFER =
+  "For a niggle with none of this area's red flags, or once a physio, biokineticist or doctor has assessed it and cleared training. Fresh injuries (the last 1-2 weeks), anything after surgery, or any red flag: get it assessed first.";
+
+// One pain rule for the whole app (review 2026-10-18, the pain-monitoring
+// model used in tendon rehab research). Repeated in the trainer guide and the
+// check-in pain tip.
+export const PAIN_RULE =
+  "Some pain during exercise is OK: up to about 5 out of 10, as long as it has settled by the next morning and isn't creeping up week to week. More than that, or worse the next morning: ease off a step.";
+
 // How hard and how heavy, per level. Areas add their own line on top.
 export const LEVEL_RESISTANCE: Record<StabilityLevel, string> = {
   rehab:
-    "Start gently. Holds at about half your effort (5 out of 10) in weeks 1-2, working up to 7 out of 10 by weeks 3-4. Use bodyweight or the lightest band. Some discomfort is fine up to 3 out of 10, as long as it settles within an hour and isn't worse the next morning. If it is, go back to what felt fine for a few sessions.",
+    "Start gently. Holds at about half your effort (5 out of 10) in weeks 1-2, working up to 7 out of 10 by weeks 3-4. Use bodyweight or the lightest band. Some discomfort is fine up to about 5 out of 10, as long as it has settled by the next morning and isn't creeping up week to week. If it is, go back to what felt fine for a few sessions.",
   beginner:
     "Bodyweight or a light band (yellow or red). Each set should feel like 5-6 out of 10: you finish with perfect form and could do a few more. Slow and controlled: about 2 seconds up and 2-3 seconds down on reps.",
   intermediate:
@@ -25,7 +37,7 @@ export const LEVEL_RESISTANCE: Record<StabilityLevel, string> = {
 
 export const LEVEL_PROGRESSION: Record<StabilityLevel, string> = {
   rehab:
-    "Move on to the next phase when its week comes AND you can do the current targets with pain no higher than 3 out of 10 and nothing worse the next morning. If not, stay in the phase another week: healing tissue can't be rushed. Inside a phase, add time or reps first, then effort, never both on the same day.",
+    "Move on to the next phase when its week comes AND you can do the current targets with pain no higher than about 5 out of 10 and nothing worse the next morning. If not, stay in the phase another week: healing tissue can't be rushed. Inside a phase, add time or reps first, then effort, never both on the same day.",
   beginner:
     "When you hit the target on every set, without losing control, in two sessions in a row, make that exercise harder by one step (the Harder line on the exercise). Add time or reps first, then a harder position, then load. Change one thing at a time.",
   intermediate:
@@ -80,7 +92,7 @@ export const STABILITY_BASICS: { heading: string; icon: string; points: string[]
     icon: "🧱",
     points: [
       "Stability is your body's ability to hold a joint in a safe position while something tries to move it: your weight, a load, a landing, a push. Most injuries happen in the split second a joint loses that control: the ankle rolls, the knee caves in, the lower back bends under load.",
-      "These programs train that control directly, from the ground up: ankle, knee, hip, core, shoulder, wrist and neck. Research on programs like these (FIFA 11+, balance training after ankle sprains, the Copenhagen adductor and Nordic hamstring programs, neck strengthening in contact sports) shows injury rates dropping by roughly a third to a half when they're done consistently.",
+      "These programs train that control directly, from the ground up: ankle, knee, hip, core, shoulder, wrist and neck. Trials of programs like these (FIFA 11+, balance training after ankle sprains, the Copenhagen adductor and Nordic hamstring programs) show injury rates dropping by roughly a third to a half when they're done consistently. Neck strength is linked with fewer concussions in some studies, but that hasn't been tested the same way.",
       "Consistency beats intensity. Two or three short sessions a week for 6-8 weeks change how the joint behaves. A single hard session does very little.",
     ],
   },
@@ -98,8 +110,8 @@ export const STABILITY_BASICS: { heading: string; icon: string; points: string[]
     icon: "🚦",
     points: [
       "0-2 out of 10: green. Carry on.",
-      "3-5 out of 10: amber. OK during rehab exercises only if it settles within an hour and isn't worse the next morning. Otherwise ease off: less time, less effort or an easier version.",
-      "Above 5, sharp or catching pain, pins and needles, or swelling the next day: red. Stop that exercise and tell your coach. See a doctor or physio if it doesn't settle.",
+      "3-5 out of 10: amber. OK as long as it has settled by the next morning and isn't creeping up week to week. If it hasn't, ease off a step: less time, less effort or an easier version.",
+      "Above 5, sharp or catching pain, pins and needles, or swelling the next day: red. Stop that exercise and tell your coach. See a physio, biokineticist or doctor if it doesn't settle within 1-2 weeks.",
     ],
   },
   {

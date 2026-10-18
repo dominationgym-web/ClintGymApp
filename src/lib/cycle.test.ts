@@ -121,3 +121,14 @@ describe("supplement check a week before her period", () => {
     expect(supplementPrepDaysLeft(cycleToday(starts, "2026-10-28"), "2026-10-28")).toBeNull();
   });
 });
+
+describe("safe content (nutrition review, 2026-10-18)", () => {
+  it("keeps B6 to 10 mg, magnesium to 350 mg, and has no fixed strength windows", async () => {
+    const c = await import("./cycle");
+    const all = JSON.stringify([c.CYCLE_PHASES, c.WOMENS_HEALTH_GUIDE, c.SUPPLEMENT_PREP_LIST, c.SUPPLEMENT_PREP_BODY]);
+    expect(all).not.toMatch(/\b50 mg|400 mg|best window|clear used hormones|handles carbs well/);
+    expect(c.SUPPLEMENT_PREP_BODY).toMatch(/10 mg a day or less/);
+    expect(all).toMatch(/ferritin/);
+    expect(all).toMatch(/RED-S/);
+  });
+});

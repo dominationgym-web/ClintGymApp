@@ -7,7 +7,6 @@ import {
   FOUNDATION_GOALS,
   foundationGoalFor,
   foundationLevelFor,
-  foundationMessage,
   foundationProgramName,
   levelLabel,
   type FoundationGoal,
@@ -17,15 +16,13 @@ import type { Client } from "@/types/database";
 
 // On the client's Training tab (0087): their training experience, and for
 // Never trained, Beginner and Intermediate an offer to put them on a 6-week
-// foundation program (0086). Approving starts the program and sends the
-// client a note explaining why the first 6 weeks are foundation building.
+// foundation program (0086). Approving starts the program; no message is sent
+// for the trainer.
 export default function FoundationOfferCard({
   client,
-  trainerId,
   onChanged,
 }: {
   client: Client;
-  trainerId: string;
   onChanged: (change: Partial<Client>) => void;
 }) {
   const firstName = client.name.split(" ")[0];
@@ -64,20 +61,15 @@ export default function FoundationOfferCard({
       Alert.alert("Couldn't start the program", error.message);
       return;
     }
-    const { error: messageError } = await supabase.from("coach_messages").insert({
-      client_id: client.id,
-      trainer_id: trainerId,
-      body: foundationMessage(firstName, client.training_level ?? (level === "Beginner" ? "beginner" : "intermediate"), programName),
-    });
+    // No automatic note to the client (GRIZZ: never ready-made messages from
+    // trainer to client). The trainer writes their own if they want to.
     await supabase.from("clients").update({ foundation_status: "approved" }).eq("id", client.id);
     setBusy(false);
     setOpen(false);
     onChanged({ foundation_status: "approved" });
     Alert.alert(
       "Program started",
-      messageError
-        ? `${firstName} is on ${programName}, but the note explaining why didn't send. Send them a message yourself.`
-        : `${firstName} is on ${programName} and has been sent a note explaining why.`,
+      `${firstName} is on ${programName}. It's on their Exercises tab now. If you'd like to tell them why, send them a message from their Overview.`,
     );
   };
 

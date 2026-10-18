@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
-import { carbShares, cleanTime, dietAllows, goalKcal, macroTargets, makeDay, mealLabel, mealRoles, mealTimesFor, swapItem, swapOptions } from "./mealPlanMaker";
+import { carbShares, cleanTime, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions } from "./mealPlanMaker";
+import { TARGET_MARGIN } from "./dietPlan";
 
 const targets = macroTargets(2400, 80);
 
@@ -74,11 +75,19 @@ describe("swaps", () => {
 });
 
 describe("goalKcal", () => {
-  it("eats under for weight loss and over for muscle, never below the floor", () => {
-    expect(goalKcal(2400, "lose", null)).toBe(2000);
+  it("eats about 18% under for weight loss and over for muscle", () => {
+    expect(goalKcal(2400, "lose", null)).toBe(1970);
     expect(goalKcal(2400, "maintain", null)).toBe(2400);
     expect(goalKcal(2400, "gain", null)).toBe(2700);
-    expect(goalKcal(1450, "lose", null)).toBe(1200);
+  });
+  it("never goes under 1,200 kcal for women, 1,500 for men, or the BMR", () => {
+    expect(goalKcal(1450, "lose", null, { sex: "female" })).toBe(1200);
+    expect(goalKcal(1800, "lose", null, { sex: "male" })).toBe(1500);
+    // 60 kg sedentary woman: needs 1,487, BMR 1,239. The cut would be 1,220.
+    expect(goalKcal(1487, "lose", null, { sex: "female", bmr: 1239 })).toBe(1239);
+    // Never more than what the body uses.
+    expect(goalKcal(1400, "lose", null, { sex: "male" })).toBe(1400);
+    expect(kcalFloor("male", 1700)).toBe(1700);
   });
   it("uses the coach's target when asked and there is one", () => {
     expect(goalKcal(2400, "coach", 2100)).toBe(2100);
@@ -87,12 +96,17 @@ describe("goalKcal", () => {
 });
 
 describe("goals, snack and diets (GRIZZ, 2026-10-12)", () => {
-  it("is low carb for weight loss", () => {
+  it("keeps protein high for weight loss, with enough carbs left for whole foods", () => {
     const lose = macroTargets(1600, 70, "lose");
-    const keep = macroTargets(1600, 70, "maintain");
-    expect(lose.carbs).toBeLessThan(keep.carbs);
-    expect(lose.carbs).toBeLessThanOrEqual(150);
     expect(lose.protein).toBe(154);
+    expect(lose.carbs).toBeGreaterThanOrEqual(80);
+    expect(lose.protein * 4 + lose.carbs * 4 + lose.fat * 9).toBeLessThanOrEqual(1620);
+  });
+  it("bases protein on the weight at a BMI of 25 when BMI is over 30 (nutrition review, 2026-10-18)", () => {
+    expect(proteinWeight(110, 165)).toBe(68);
+    expect(proteinWeight(70, 175)).toBe(70);
+    expect(proteinWeight(110)).toBe(110);
+    expect(macroTargets(1700, 110, "lose", 165).protein).toBe(150);
   });
   const settings = { meals: mealTimesFor(4, "17:30"), training: "17:30" };
   it("adds a biltong snack for meat eaters", () => {
@@ -100,6 +114,14 @@ describe("goals, snack and diets (GRIZZ, 2026-10-12)", () => {
     const snack = day.meals.find((m) => m.name.includes("Protein snack"));
     expect(snack?.items[0].food).toBe("Biltong, lean, medium");
     expect(day.meals).toHaveLength(5);
+  });
+  it("has biltong at most once a day", () => {
+    for (const variety of [0, 1, 2, 3, 4, 5]) {
+      for (const td of [true, false]) {
+        const day = makeDay(settings, macroTargets(1520, 65, "lose", 165), td, variety);
+        expect(day.meals.flatMap((m) => m.items).filter((i) => /biltong/i.test(i.food))).toHaveLength(1);
+      }
+    }
   });
   it("keeps meat out for vegetarians and meat out but fish in for pescatarians", () => {
     for (const variety of [0, 1, 2, 3]) {
@@ -128,5 +150,52 @@ describe("goals, snack and diets (GRIZZ, 2026-10-12)", () => {
       if (carbs.length) expect(carbs[0].grams).toBeLessThanOrEqual(300);
     }
     expect(big.meals.some((m) => m.items.filter((i) => carbFoods.has(i.food)).length === 2)).toBe(true);
+  });
+});
+
+describe("plan quality (nutrition review, 2026-10-18)", () => {
+  const people = [
+    { kcal: 1520, weight: 65, height: 165, diet: "everything" as const },
+    { kcal: 1770, weight: 110, height: 165, diet: "everything" as const },
+    { kcal: 1470, weight: 60, height: 162, diet: "vegetarian" as const },
+    { kcal: 1289, weight: 60, height: 160, diet: "everything" as const, dairyFree: true },
+    { kcal: 1500, weight: 62, height: 165, diet: "pescatarian" as const },
+  ];
+  const groups = (day: ReturnType<typeof makeDay>) => day.meals.flatMap((m) => m.items).map((i) => FOODS.find((f) => f.name === i.food));
+  it("weight-loss days land on target with 25 g of fibre, fruit, legumes and dairy", () => {
+    for (const p of people) {
+      const targets = macroTargets(p.kcal, p.weight, "lose", p.height);
+      for (const count of [2, 3, 4, 5]) {
+        for (const training of ["06:30", "17:30", null]) {
+          for (const variety of [0, 1, 2, 3]) {
+            for (const td of [true, false]) {
+              const settings = { meals: mealTimesFor(count, training), training, goal: "lose" as const, diet: p.diet, dairyFree: p.dairyFree };
+              const day = makeDay(settings, targets, td, variety);
+              const totals = dayTotals(day);
+              expect(Math.abs(totals.kcal - p.kcal)).toBeLessThanOrEqual(TARGET_MARGIN);
+              expect(totals.fibre).toBeGreaterThanOrEqual(FIBRE_TARGET);
+              expect(Math.abs(totals.protein - targets.protein)).toBeLessThan(25);
+              const foods = groups(day);
+              expect(foods.some((f) => /apple|pear|berries|banana|raspberries/i.test(f?.name ?? ""))).toBe(true);
+              for (const m of day.meals) for (const i of m.items) expect(foodAllowed(i.food, p.diet, p.dairyFree)).toBe(true);
+              if (!p.dairyFree) expect(foods.some((f) => /milk|yoghurt|cottage/i.test(f?.name ?? ""))).toBe(true);
+            }
+          }
+        }
+      }
+    }
+  });
+  it("puts legumes in the main meals", () => {
+    const settings = { meals: mealTimesFor(4, "17:30"), training: "17:30", goal: "lose" as const };
+    const legumes = [0, 1, 2, 3].some((v) =>
+      makeDay(settings, macroTargets(1520, 65, "lose", 165), false, v).meals.some((m) => m.items.some((i) => /lentil|chickpea|bean/i.test(i.food))),
+    );
+    expect(legumes).toBe(true);
+  });
+  it("keeps dairy out when dairy-free", () => {
+    expect(foodAllowed("Whey protein powder", "everything", true)).toBe(false);
+    expect(foodAllowed("Greek yoghurt, plain", "vegetarian", true)).toBe(false);
+    expect(foodAllowed("Eggs", "vegetarian", true)).toBe(true);
+    expect(swapOptions("Chicken breast (cooked)", "everything", true).some((f) => /whey/i.test(f.name))).toBe(false);
   });
 });

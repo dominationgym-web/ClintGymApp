@@ -18,7 +18,7 @@ export function deloadExercises<T extends Pick<ProgramExercise, "sets" | "kind">
 
 /** About 70% of the usual weight, rounded down to the exercise's weight step. */
 export function deloadWeight(usual: number, exercise: { name: string; category: string | null }): number {
-  const step = weightStep(exercise);
+  const step = weightStep(exercise, usual * DELOAD_WEIGHT);
   const w = Math.floor((usual * DELOAD_WEIGHT) / step) * step;
   return Math.max(step, Math.round(w * 10) / 10);
 }

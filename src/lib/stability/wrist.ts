@@ -1,4 +1,4 @@
-import { d, phase, program } from "./common";
+import { d, phase, program, REHAB_REFER } from "./common";
 import { CORE } from "./core";
 import { SHOULDER } from "./shoulder";
 import type { StabilityAreaGuide, StabilityExercise } from "./types";
@@ -23,7 +23,7 @@ export const WRIST: StabilityAreaGuide = {
     "Like the ankle, the wrist needs to learn to bear weight gradually: on hands and knees first, then planks, then crawling and catching.",
   ],
   chooseLevel: {
-    rehab: "Wrist or forearm pain, tennis or golfer's elbow, a wrist sprain, or after a fracture once the cast is off and your doctor or physio has cleared you.",
+    rehab: `Wrist or forearm pain, tennis or golfer's elbow, a wrist sprain, or after a fracture once the cast is off and your doctor or physio has cleared you. ${REHAB_REFER}`,
     beginner: "No current injury, but push-ups or planks make your wrists ache, or your grip gives out early on pulls and carries.",
     intermediate: "You can hold a plank on your hands for 45 seconds without wrist pain, hang for 30 seconds and carry a heavy dumbbell in each hand for 30 seconds.",
     advanced: "Your wrists are pain-free in long planks and crawls, and you hang for 45+ seconds. For combat sports, gymnastics, climbing and heavy lifting.",
@@ -32,7 +32,7 @@ export const WRIST: StabilityAreaGuide = {
     "Pain at the base of the thumb (in the 'snuffbox' hollow) after a fall on an outstretched hand: this can be a scaphoid fracture that doesn't show at first. See a doctor.",
     "Numbness or tingling in the thumb, index and middle fingers, especially at night (possible carpal tunnel).",
     "A wrist that clicks and gives way, or a lump that's growing.",
-    "Swelling and heat around the joint without an injury.",
+    "Swelling and heat around the joint without an injury, or a hot, red, swollen joint with a fever (urgent: see a doctor today).",
   ],
   exercises: [
     {
@@ -78,8 +78,8 @@ export const WRIST: StabilityAreaGuide = {
         "Put your other hand on the back of it and try to lift the wrist up while the other hand stops it moving. Hold.",
         "Then turn the palm up and push up against the other hand the same way. Log the shorter hold.",
       ],
-      lossOfControl: "Stop when you can't keep the same push, or pain goes above 3/10.",
-      resistance: "Start at half effort, build to 7/10. Holds of 30-45 seconds can ease tennis-elbow pain.",
+      lossOfControl: "Stop when you can't keep the same push, or pain goes above 5/10.",
+      resistance: "Start at half effort, build to 7/10. Holds of 30-45 seconds are a gentle way to start loading a sore elbow, not a painkiller.",
       easier: "Push more gently.",
       harder: "Push harder, then move on to dumbbell curls and extensions.",
     },
@@ -94,7 +94,7 @@ export const WRIST: StabilityAreaGuide = {
         "Squeeze and hold, keeping the wrist straight (not bent back or forward).",
         "Relax fully between holds.",
       ],
-      lossOfControl: "Stop the clock when the squeeze fades, the wrist bends, or elbow pain goes above 3/10.",
+      lossOfControl: "Stop the clock when the squeeze fades, the wrist bends, or elbow pain goes above 5/10.",
       resistance: "Soft ball in rehab; firmer ball or a towel wrung tight later.",
       easier: "Softer ball, gentler squeeze.",
       harder: "Firmer ball, or squeeze with the arm straight out.",
@@ -126,7 +126,7 @@ export const WRIST: StabilityAreaGuide = {
         "Lift the back of the hand up as far as you can, then lower over 3 seconds.",
         "Only the wrist moves.",
       ],
-      lossOfControl: "Stop when the forearm lifts to help, the range gets shorter, or elbow pain goes above 3/10.",
+      lossOfControl: "Stop when the forearm lifts to help, the range gets shorter, or elbow pain goes above 5/10.",
       resistance: "Lighter than wrist curls: 0.5-1 kg in rehab, 2-5 kg later. These muscles are smaller.",
       easier: "Lighter.",
       harder: "Heavier, or the slow-lowering version.",
@@ -142,8 +142,8 @@ export const WRIST: StabilityAreaGuide = {
         "Use your OTHER hand to help lift the weight up, then let go and lower it with the working wrist over 4-5 seconds.",
         "The slow lowering is the exercise. Used for tennis elbow.",
       ],
-      lossOfControl: "Stop when you can't keep the lowering slow and smooth, or pain goes above 4/10.",
-      resistance: "Pick a weight where the lowering is hard but slow. Some elbow discomfort (up to 4/10) is normal with this one, as long as it settles by the next day.",
+      lossOfControl: "Stop when you can't keep the lowering slow and smooth, or pain goes above 5/10.",
+      resistance: "Pick a weight where the lowering is hard but slow. Some elbow discomfort (up to 5/10) is normal with this one, as long as it has settled by the next morning.",
       easier: "Lighter.",
       harder: "Heavier, or arm straighter.",
     },
@@ -190,7 +190,7 @@ export const WRIST: StabilityAreaGuide = {
         "Slowly rock your weight forward over the hands as far as is comfortable, and hold there.",
         "Teaches the wrists to bear weight with the hand gripping the floor, not collapsing.",
       ],
-      lossOfControl: "Stop the clock when the knuckles lift (weight sinking into the heel of the hand), or the wrist pain goes above 3/10.",
+      lossOfControl: "Stop the clock when the knuckles lift (weight sinking into the heel of the hand), or the wrist pain goes above 5/10.",
       resistance: "Bodyweight. More forward = more load.",
       easier: "Less forward lean, or on a fist or a pair of dumbbell handles (wrist straight).",
       harder: "More forward lean, then a plank.",
@@ -222,7 +222,7 @@ export const WRIST: StabilityAreaGuide = {
         "Grip the floor with your fingertips so the weight isn't all in the heel of the hand.",
         "Hold, breathing normally.",
       ],
-      lossOfControl: "Stop the clock when the wrists hurt above 3/10, the hips sag, or the fingertips stop gripping.",
+      lossOfControl: "Stop the clock when the wrists hurt above 5/10, the hips sag, or the fingertips stop gripping.",
       resistance: "Bodyweight. Rocking the shoulders forward over the hands loads the wrists more.",
       easier: "On your knees, or hands on a bench.",
       harder: "Shoulders slightly forward of the hands, or lift one foot.",
@@ -302,7 +302,7 @@ WRIST.programs = [
   program("wrist", "rehab", {
     who: "Wrist or forearm pain, tennis or golfer's elbow, a wrist sprain, or after a fracture once the cast is off and you've been cleared.",
     goal: "Get the movement back, calm pain with holds, then rebuild the forearm muscles and the wrist's ability to take weight.",
-    resistance: "Tennis/golfer's elbow: the slow-lowering exercise can cause some discomfort (up to 4/10). That's fine if it's settled by the next morning.",
+    resistance: "Tennis/golfer's elbow: the slow-lowering exercise can cause some discomfort (up to 5/10). That's fine if it has settled by the next morning and isn't creeping up week to week.",
     finishTest: "15 wrist curls and extensions each side with your old weight (or within a kilo of the good side), a 20-second plank on your hands, and a 30-second farmer's carry, all pain-free.",
     phases: [
       phase(1, 2, "Get it moving", "Pain-free range and gentle holds.", [

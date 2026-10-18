@@ -53,7 +53,7 @@ const page = (title, body) => `<!doctype html>
 <main>
 <header><img src="/icon.png" alt=""><a href="/">Daily Evolution</a></header>
 ${body}
-<nav><a href="/privacy">Privacy policy</a><a href="/delete-account">Delete your account</a><a href="/support">Support</a></nav>
+<nav><a href="/privacy">Privacy policy</a><a href="/delete-account">Delete your account</a><a href="/support">Support</a><a href="/app/">Trainer login on a laptop</a></nav>
 </main>
 </body>
 </html>

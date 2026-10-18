@@ -24,7 +24,7 @@ export async function loadRecoveryActivities(clientId: string, from: string, to:
 /** The client's last week of training, check-ins and recovery, ready for suggestRecovery(). */
 export async function loadRecoveryInputs(clientId: string, today: string): Promise<RecoveryInputs> {
   const weekStart = addDays(today, -6);
-  const [logs, checkins, recovery, activities] = await Promise.all([
+  const [logs, checkins, recovery, activities, client] = await Promise.all([
     supabase
       .from("workout_logs")
       .select("exercise_id, exercise_name, log_date, effort, warm_up")
@@ -44,6 +44,7 @@ export async function loadRecoveryInputs(clientId: string, today: string): Promi
       .eq("client_id", clientId)
       .gte("activity_date", weekStart)
       .lte("activity_date", today),
+    supabase.from("clients").select("recovery_program").eq("id", clientId).maybeSingle(),
   ]);
   const rows = ((logs.data ?? []) as {
     exercise_id: string | null;
@@ -85,6 +86,7 @@ export async function loadRecoveryInputs(clientId: string, today: string): Promi
       minutes: a.minutes,
       big: isBigActivity(a),
     })),
+    recoveryProgram: (client.data as { recovery_program: string | null } | null)?.recovery_program ?? null,
   };
 }
 

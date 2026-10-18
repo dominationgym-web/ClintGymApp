@@ -94,14 +94,17 @@ export const UNDERSTANDING_CARBS = {
       { emoji: "🏆", title: "Elite athletes", text: "Running 100km a week or training twice a day." },
       { emoji: "🪑", title: "Most people", text: "Sitting at desks for eight hours, sleeping badly, stressed out, then copying the diet of people whose entire lives revolve around performance." },
     ],
-    line: "Eating like a performance athlete when you are not one is not health. It is just eating sugar and calling it fuel.",
+    line: "Most people don't need to eat like a performance athlete. Eat whole-food carbs to suit how active you are, and cut the sugar and sugary drinks first.",
   },
+  // Nutrition review (2026-10-18): normal blood sugar after a meal does no
+  // harm in a healthy person, and whole-food carbs are linked with better
+  // health, so this part no longer suggests every carb meal causes damage.
   leftOut: {
     title: "What often gets left out",
     points: [
-      "What that glucose is doing at the cellular level while it is being burned through.",
-      "Even when you think you have “burned it off,” glycation still happens. Glucose still binds to proteins and lipids during that spike. Your body still triggers an insulin response. The damage may be smaller when you are highly active, but it is not zero.",
-      "Working harder does not erase the biological process that happens the moment glucose enters your blood.",
+      "Not all carbs are the same. Vegetables, fruit, beans, lentils, whole grains, potatoes and pap come with fibre, vitamins and minerals, and are linked with a longer, healthier life.",
+      "Sugar, sweets and sugary drinks give you energy and little else, don't fill you up and are easy to overeat. Cut those first.",
+      "The normal rise in blood sugar after a meal does no harm in a healthy person. Harm comes from blood sugar that stays high, as in diabetes. If you have diabetes or prediabetes, follow your doctor's or dietitian's advice on carbs.",
     ],
   },
   myWhy: ["I eat for health.", "For longevity.", "For what my cells look like at 75, not for what I can lift in the gym."],
@@ -110,29 +113,34 @@ export const UNDERSTANDING_CARBS = {
 
 // "Understanding Insulin": GRIZZ's talk on carbs, insulin and fat burning
 // (2026-10-10), tidied into short visual blocks. Shown by InsulinGuide.
+// Rewritten to match the trainer guide (nutrition review, 2026-10-18): fat
+// loss comes from a calorie deficit; protein, fibre and whole foods help with
+// fullness; lower carb is fine if preferred but burns no more fat at the same
+// calories.
 export const UNDERSTANDING_INSULIN = {
   title: "Understanding Insulin",
-  subtitle: "Carbs, insulin and fat burning for your fitness goals",
-  hook: "Carbs don't make you fat. But they can stop you burning fat.",
+  subtitle: "Carbs, insulin and fat loss for your fitness goals",
+  hook: "Carbs don't make you fat. Eating more than your body uses does.",
   intro:
-    "People think carbs are bad. They're not. Depending on who you are and what you do, carbs can be a necessity. What most people don't understand is what carbs do to your insulin.",
+    "People think carbs are bad. They're not. Depending on who you are and what you do, carbs can be a big help. Here's what insulin really does, and what really decides fat loss.",
   steps: [
-    { emoji: "🍬", title: "You eat carbs", text: "Sugar most of all, but any carb raises your insulin." },
-    { emoji: "📈", title: "Insulin spikes", text: "The higher your insulin, the less fat your body can burn." },
-    { emoji: "⏸️", title: "Fat burning slows", text: "For a while, your body burns less fat while it clears that sugar out of your blood and into the muscle." },
+    { emoji: "🍬", title: "You eat carbs", text: "Your blood sugar rises and your body releases insulin. That's normal and healthy." },
+    { emoji: "📈", title: "Insulin does its job", text: "It moves the sugar into your muscles and liver, to use now or store for later." },
+    { emoji: "⏸️", title: "Fat burning pauses, then picks up", text: "For a few hours your body burns a bit less fat. Over days and weeks, your total calories decide your fat loss, not insulin." },
   ],
   oneSweet: {
     title: "“But I only had one sweet”",
     points: [
-      "In that moment, it's not about the calories. One sweet's calories barely count, but the insulin spike slows your fat burning for a while.",
-      "If you're overweight and insulin resistant, that spike is bigger and lasts longer.",
-      "Have it before the treadmill and your body burns less fat on that walk, because it's busy clearing that sugar first.",
-      "The takeaway: rather skip sweets and carbs before your cardio, especially if you're overweight or insulin resistant.",
+      "One sweet won't stop your fat loss. Over weeks, it's the total calories that count.",
+      "The problem with sweets and sugary drinks is that they don't fill you up and they're easy to overeat, so the calories add up fast.",
+      "If you're overweight or insulin resistant, sugar can hit harder and bring a crash and cravings soon after. Another reason to keep it small.",
+      "Cardio before or after eating burns the same fat over weeks. Eat first if it helps you train better.",
+      "The takeaway: build meals on protein, vegetables, fruit and whole-food carbs, which keep you full, and keep sweets for now and then.",
     ],
   },
   whoFor: [
-    { emoji: "🐢", title: "Overweight or insulin resistant", text: "A sweet before training slows your fat burning right down." },
-    { emoji: "💪", title: "Big and muscular", text: "That same sweet can help: your goal is to fuel the muscle and use that insulin." },
+    { emoji: "🐢", title: "Overweight or insulin resistant", text: "Cut sugar and sugary drinks first, and have carbs from whole foods with protein and veg. Fewer carbs is fine if it helps your hunger and blood sugar. Training and losing even 5 to 10% of your weight make your body handle insulin much better." },
+    { emoji: "💪", title: "Big and muscular", text: "More carbs around training fuel hard sessions and help you recover." },
   ],
   order: {
     title: "Order matters",
@@ -142,7 +150,7 @@ export const UNDERSTANDING_INSULIN = {
     },
     right: {
       label: "Weights first, run after",
-      text: "Lift while you're fresh and fuelled, then run 20 minutes. You get the most out of your weights and still burn fat on the run.",
+      text: "Lift while you're fresh and fuelled, then run 20 minutes. You get the most out of your weights and still get your cardio in.",
     },
     note: "If you're lifting weights, surely your aim is to gain muscle or strength?",
   },
@@ -151,7 +159,7 @@ export const UNDERSTANDING_INSULIN = {
     { emoji: "⚖️", goal: "Want to lose weight?" },
     { emoji: "🏋️", goal: "Want to put on muscle?" },
   ],
-  goalsLine: "There's a specific way to eat and train for each one. It's horses for courses: there is no one shoe fits all.",
+  goalsLine: "There's a specific way to eat and train for each one. It's horses for courses: there is no one shoe fits all. For fat loss, it's a calorie deficit you can stick to, with enough protein.",
   warning:
     "This is where people make a big mistake. They listen to influencers who have no clue what they're talking about. Don't listen to some muscle monkey saying “do this and you'll put on muscle”. If you're not a muscle monkey, it's not going to work for you.",
   closing: "You are different. Do what helps you reach your goals, not someone else's.",

@@ -10,10 +10,10 @@ import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import type { ClientExerciseChange, Exercise, ProgramExercise } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
-import { exerciseRisks, riskLine, safeSuggestions } from "@/lib/injuryRisk";
+import { checkRisks, exerciseKey, exerciseRisks, KEEP_REASONS, riskLine, safeSuggestions } from "@/lib/injuryRisk";
 import type { StabilityArea } from "@/lib/stability";
 
-const RED = "#EF4444";
+const AMBER = "#F59E0B";
 const GREEN = "#22C55E";
 
 const SETS = [1, 2, 3, 4, 5, 6];
@@ -31,7 +31,7 @@ export default function ExerciseChangeModal({
   injuries = [],
   stepLabel,
 }: {
-  /** The client's injured areas (src/lib/injuryRisk.ts): risky exercises show red and won't save. */
+  /** The client's injured areas (src/lib/injuryRisk.ts): flagged exercises show amber; the trainer can still keep them. */
   injuries?: StabilityArea[];
   /** "1 of 4" while the injury check walks through the flagged exercises. */
   stepLabel?: string;
@@ -55,6 +55,8 @@ export default function ExerciseChangeModal({
   const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Why a flagged exercise is kept anyway (KEEP_REASONS).
+  const [keepReason, setKeepReason] = useState<string | null>(null);
 
   // What the workout itself says for this row.
   const original = row ? { id: row.id, ...(row.changed_from ?? row) } : null;
@@ -68,6 +70,7 @@ export default function ExerciseChangeModal({
     setSearch("");
     setAllParts(false);
     setPlace(trainingPlace);
+    setKeepReason(null);
     loadExerciseChanges(clientId).then((list) => {
       setChanges(list);
       const { own } = changesFor({ id: row.id, exercise_id: row.changed_from?.exercise_id ?? row.exercise_id }, list);
@@ -95,28 +98,49 @@ export default function ExerciseChangeModal({
   const { own, everywhere: everyChange } = changesFor({ id: row.id, exercise_id: original.exercise_id }, changes);
   const isChanged = !!own || !!everyChange;
   const swapped = exercise && exercise.id !== original.exercise_id;
-  // Injury check (GRIZZ, 2026-10-17): red can't save, green can.
+  // Injury check (GRIZZ, 2026-10-17; warns instead of blocking since the
+  // 2026-10-18 review): amber is worth a look, and can still be kept with a
+  // reason; a rehab move gets a gentle note; green has no clashes.
   const categoryOf = (id: string | null | undefined) => library.find((e) => e.id === id)?.category ?? null;
-  const risksOf = (e: { id?: string | null; name: string; category?: string | null }) =>
+  const allRisksOf = (e: { id?: string | null; name: string; category?: string | null }) =>
     exerciseRisks({ name: e.name, category: e.category !== undefined ? e.category : categoryOf(e.id) }, injuries);
+  const risksOf = (e: { id?: string | null; name: string; category?: string | null }) => checkRisks(allRisksOf(e));
   const chosen = exercise ?? { id: original.exercise_id, name: original.exercise_name };
-  const chosenRisks = risksOf(chosen);
+  const chosenAll = allRisksOf(chosen);
+  const chosenRisks = checkRisks(chosenAll);
+  const chosenNotes = chosenAll.filter((r) => r.level === "note");
   const originalRisks = risksOf({ id: original.exercise_id, name: original.exercise_name });
   const suggestions =
     injuries.length > 0 && originalRisks.length > 0 && library.length > 0
       ? safeSuggestions({ id: original.exercise_id, name: original.exercise_name, category: originalCategory }, forPlace(library, place), injuries)
       : [];
 
-  const save = async () => {
+  const save = () => {
     if (!exercise) return;
-    if (chosenRisks.length > 0) {
-      Alert.alert("Not safe for their injury", `${exercise.name} may hurt their ${riskLine(chosenRisks)}. Pick a green exercise.`);
-      return;
-    }
     if (!reps.trim()) {
       Alert.alert("Add the reps", "For example 10-12, or 30 sec.");
       return;
     }
+    if (chosenRisks.length > 0) {
+      if (!keepReason) {
+        Alert.alert("How will you adjust it?", "Pick how you'll keep it manageable, or pick a swap with nothing to check.");
+        return;
+      }
+      Alert.alert(
+        "Keep it anyway?",
+        `${exercise.name}: ${riskLine(chosenRisks)}. You're keeping it with: ${keepReason.toLowerCase()}. Watch how they respond and adjust.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Keep it anyway", onPress: () => write(true) },
+        ],
+      );
+      return;
+    }
+    write(false);
+  };
+
+  const write = async (keep: boolean) => {
+    if (!exercise) return;
     setSaving(true);
     const error = await saveExerciseChanges(
       planChangeWrites(clientId, { ...original, exercise_id: original.exercise_id }, changes, {
@@ -126,6 +150,18 @@ export default function ExerciseChangeModal({
         everywhere,
       }),
     );
+    if (!error && keep && keepReason) {
+      // Remembered so the injury check shows it as kept, not flagged again.
+      await supabase.from("client_injury_keeps").upsert(
+        {
+          client_id: clientId,
+          exercise_key: exerciseKey({ exercise_id: exercise.id, name: exercise.name }),
+          areas: chosenRisks.map((r) => r.area),
+          reason: keepReason,
+        },
+        { onConflict: "client_id,exercise_key" },
+      );
+    }
     setSaving(false);
     if (error) {
       Alert.alert("Couldn't save", error);
@@ -203,12 +239,12 @@ export default function ExerciseChangeModal({
                           const risks = injuries.length ? risksOf(item) : [];
                           return (
                             <>
-                              <Text style={[styles.exerciseName, injuries.length > 0 && { color: risks.length ? RED : GREEN }]}>
-                                {injuries.length > 0 ? (risks.length ? "✕ " : "✓ ") : ""}
+                              <Text style={[styles.exerciseName, injuries.length > 0 && { color: risks.length ? AMBER : GREEN }]}>
+                                {injuries.length > 0 ? (risks.length ? "⚠ " : "✓ ") : ""}
                                 {item.name}
                               </Text>
                               {item.category ? <Text style={styles.helper}>{item.category}</Text> : null}
-                              {risks.length > 0 && <Text style={styles.riskSmall}>May hurt: {riskLine(risks)}</Text>}
+                              {risks.length > 0 && <Text style={styles.riskSmall}>Check: {riskLine(risks)}</Text>}
                             </>
                           );
                         })()}
@@ -239,20 +275,33 @@ export default function ExerciseChangeModal({
               In the workout: {original.exercise_name}, {original.sets} x {original.reps}
             </Text>
             {injuries.length > 0 && library.length > 0 && (
-              <View style={[styles.riskBox, { borderColor: chosenRisks.length ? RED : GREEN }]}>
-                <Text style={[styles.riskTitle, { color: chosenRisks.length ? RED : GREEN }]}>
-                  {chosenRisks.length ? `✕ ${chosen.name} may hurt their injury` : `✓ ${chosen.name} is safe for their injury`}
+              <View style={[styles.riskBox, { borderColor: chosenRisks.length ? AMBER : GREEN }]}>
+                <Text style={[styles.riskTitle, { color: chosenRisks.length ? AMBER : GREEN }]}>
+                  {chosenRisks.length
+                    ? `⚠ ${chosen.name} may aggravate their injury: worth a check`
+                    : `✓ No clashes found with their listed injuries`}
                 </Text>
-                {chosenRisks.map((r) => (
+                {[...chosenRisks, ...chosenNotes].map((r) => (
                   <Text key={r.area} style={styles.riskText}>
                     {r.title}: {r.why}
                   </Text>
                 ))}
+                <Text style={styles.helper}>A name check, not a clinical assessment. Try changing the load, range or tempo before swapping.</Text>
               </View>
+            )}
+            {injuries.length > 0 && chosenRisks.length > 0 && (
+              <>
+                <Text style={styles.label}>To keep it, how will you adjust it?</Text>
+                <View style={styles.chips}>
+                  {KEEP_REASONS.map((r) => (
+                    <Chip key={r} label={r} on={keepReason === r} onPress={() => setKeepReason((k) => (k === r ? null : r))} />
+                  ))}
+                </View>
+              </>
             )}
             {suggestions.length > 0 && (
               <>
-                <Text style={styles.label}>Better options for {clientName}</Text>
+                <Text style={styles.label}>Swaps with nothing to check for {clientName}</Text>
                 {suggestions.map((e) => {
                   const on = exercise?.id === e.id;
                   return (
@@ -316,16 +365,14 @@ export default function ExerciseChangeModal({
             />
             <Text style={styles.helper}>Sets and reps change in this workout only.</Text>
 
-            <Pressable style={[styles.saveButton, chosenRisks.length > 0 && styles.saveBlocked]} onPress={save} disabled={saving}>
+            <Pressable style={[styles.saveButton, chosenRisks.length > 0 && styles.saveWarn]} onPress={save} disabled={saving}>
               {saving ? (
                 <ActivityIndicator color="#0F172A" />
               ) : (
-                <Text style={[styles.saveText, chosenRisks.length > 0 && { color: "#fff" }]}>
-                  {chosenRisks.length > 0 ? "Pick a green exercise to save" : `Save for ${clientName}`}
-                </Text>
+                <Text style={styles.saveText}>{chosenRisks.length > 0 ? "Keep it anyway" : `Save for ${clientName}`}</Text>
               )}
             </Pressable>
-            {isChanged && originalRisks.length === 0 ? (
+            {isChanged ? (
               <Pressable style={styles.putBack} onPress={putBack} disabled={saving}>
                 <Text style={styles.putBackText}>Put back the original</Text>
               </Pressable>
@@ -365,12 +412,12 @@ const styles = StyleSheet.create({
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 10, fontSize: 14 },
   saveButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 24 },
   saveText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
-  saveBlocked: { backgroundColor: "#7F1D1D" },
+  saveWarn: { backgroundColor: AMBER },
   step: { color: BRAND_GOLD, fontWeight: "800", fontSize: 13, marginBottom: 4 },
   riskBox: { borderWidth: 1.5, borderRadius: 10, padding: 10, marginTop: 10, backgroundColor: "#111C33" },
   riskTitle: { fontWeight: "800", fontSize: 14 },
   riskText: { color: "#CBD5E1", fontSize: 13, marginTop: 3 },
-  riskSmall: { color: "#FCA5A5", fontSize: 12, marginTop: 2 },
+  riskSmall: { color: "#FCD34D", fontSize: 12, marginTop: 2 },
   suggestion: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1.5, borderColor: "transparent" },
   suggestionUse: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, overflow: "hidden" },
   putBack: { alignItems: "center", paddingVertical: 14 },

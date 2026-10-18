@@ -1,4 +1,4 @@
-import { d, phase, program } from "./common";
+import { d, phase, program, REHAB_REFER } from "./common";
 import type { StabilityAreaGuide } from "./types";
 
 // Ankle: balance (proprioceptive) training cuts repeat ankle sprains by about
@@ -18,13 +18,14 @@ export const ANKLE: StabilityAreaGuide = {
     "A stable ankle also protects the knee and hip above it: when the foot can't hold its position, the knee caves in to make up for it.",
   ],
   chooseLevel: {
-    rehab: "You sprained or injured the ankle in the last few months, or it still feels weak, swells or 'gives way'. Start here once you can walk without limping.",
+    rehab: `You sprained or injured the ankle in the last few months, or it still feels weak, swells or 'gives way'. Start here once you can walk without limping. ${REHAB_REFER}`,
     beginner: "No current injury, but you can't stand on one leg for 30 seconds with your eyes open, or do 15 single-leg heel raises.",
     intermediate: "You can balance 30 seconds on one leg with eyes open and do 15-20 single-leg heel raises on each side.",
-    advanced: "You can balance 20+ seconds on one leg with eyes closed, do 25 single-leg heel raises, and hop and land on one leg without wobbling. For running, court and field sports.",
+    advanced: "You can balance 15+ seconds on one leg with eyes closed, do 25 single-leg heel raises, and hop and land on one leg without wobbling. For running, court and field sports.",
   },
   redFlags: [
-    "You can't put weight on it, or there's bone pain when you press the inside or outside ankle bone or the middle of the foot (it may need an X-ray).",
+    "You can't take 4 steps on it, or it hurts when you press the back edge or tip of either ankle bone, the bony bump halfway along the outside of the foot (base of the 5th metatarsal) or the bony bump on the inside of the midfoot (it may need an X-ray).",
+    "Sudden pain at the back of the heel, as if you were kicked, and trouble pushing off (possible Achilles rupture: see a doctor the same day).",
     "Swelling, heat or bruising that is getting worse rather than better.",
     "Calf pain with swelling and warmth, especially after a long trip or surgery (see a doctor the same day).",
     "Numbness or pins and needles in the foot.",
@@ -58,7 +59,7 @@ export const ANKLE: StabilityAreaGuide = {
         "Then put the inside edge against a chair leg or your other foot and push in. Log the shorter of the two.",
         "Breathe normally the whole time.",
       ],
-      lossOfControl: "Stop when you can't keep the same push without the foot sliding, cramping or the pain going above 3 out of 10.",
+      lossOfControl: "Stop when you can't keep the same push without the foot sliding, cramping or the pain going above 5 out of 10.",
       resistance: "Start at about half effort (5/10) and build to 7/10 by week 3. These holds calm a sore ankle and wake the stabilising muscles up.",
       easier: "Push more gently, or hold for less time.",
       harder: "Push harder (up to 7/10), then move on to the band exercises.",
@@ -155,7 +156,7 @@ export const ANKLE: StabilityAreaGuide = {
         "Without your eyes, the ankle's own sensors have to do the work: this is the bit that gets lost after a sprain.",
       ],
       lossOfControl: "Stop when you open your eyes, touch down, grab the wall or hop.",
-      resistance: "Bodyweight. Healthy adults under 40 usually manage 20-30 seconds.",
+      resistance: "Bodyweight. Adults aged 18-39 average about 9-10 seconds with eyes closed on a firm floor; 15+ seconds is good. Comparing with your other side matters most.",
       easier: "Eyes open but looking at the ceiling, or a fingertip on the wall.",
       harder: "Eyes closed on a cushion or folded towel.",
     },
@@ -279,7 +280,7 @@ ANKLE.programs = [
     who: "After an ankle sprain or injury once you can walk without a limp, or an ankle that keeps rolling or feels unsteady.",
     goal: "Calm the ankle down, rebuild calf and shin strength, and retrain balance so it stops giving way.",
     resistance: "Wear shoes for the first 2 weeks if the ankle feels unsure, then go barefoot.",
-    finishTest: "25 single-leg heel raises on the injured side (or within 2-3 of the good side), 30 seconds balancing with eyes closed, and 10 pain-free hops on that leg.",
+    finishTest: "25 single-leg heel raises on the injured side (or within 2-3 of the good side), 10-15 seconds balancing with eyes closed (or within 2-3 seconds of the good side), and 10 pain-free hops on that leg.",
     phases: [
       phase(1, 2, "Settle and wake it up", "Gentle movement and holds to calm the ankle and switch the muscles on.", [
         d("ankle_alphabet", 2, 1, { primer: true }),
@@ -310,7 +311,7 @@ ANKLE.programs = [
   program("ankle", "beginner", {
     who: "No current injury, but your balance on one leg is shaky or your calves tire quickly.",
     goal: "Solid single-leg balance and calf strength, so everyday trips and stumbles don't turn into sprains.",
-    finishTest: "30 seconds on one leg with eyes open on each side, 20 seconds with eyes closed, and 15 single-leg heel raises each side.",
+    finishTest: "30 seconds on one leg with eyes open on each side, 10 seconds with eyes closed, and 15 single-leg heel raises each side.",
     phases: [
       phase(1, 2, "Find your balance", "Grip the floor and own one leg at a time.", [
         d("sl_balance", 3, 30, { primer: true }),

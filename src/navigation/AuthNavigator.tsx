@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
@@ -12,10 +13,12 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function AuthNavigator() {
   // Opens on the welcome page until it has been read once on this phone. If
-  // the phone's storage can't be read, skip it rather than block login.
-  const [welcomeSeen, setWelcomeSeen] = useState<boolean | null>(null);
+  // the phone's storage can't be read, skip it rather than block login. The
+  // laptop (web) version is for trainers, so it opens straight on Login.
+  const [welcomeSeen, setWelcomeSeen] = useState<boolean | null>(Platform.OS === "web" ? true : null);
 
   useEffect(() => {
+    if (Platform.OS === "web") return;
     let cancelled = false;
     AsyncStorage.getItem(WELCOME_SEEN_KEY)
       .then((value) => !cancelled && setWelcomeSeen(value != null))
