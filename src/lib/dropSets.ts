@@ -1,9 +1,10 @@
 // Drop set programs (GRIZZ, 2026-10-16, migration 0099; dosing 0118). One
 // exercise done as 2 rounds (intermediate) or 3 rounds (advanced). A round is
-// a start weight for about 8-12 reps, then 2-3 lighter "drops" of about
-// 20-25%, each taken to failure or 1 rep short (the trials behind drop sets
-// used 2-3 drops). Smith squats and leg presses get 1-2 drops and stop 1-2
-// reps short, never at failure under a loaded bar or sled. The round clock
+// a start weight for about 8-12 reps, then 4-6 lighter "drops" (GRIZZ's
+// choice, 2026-10-18) of about 10-15% each, so the last one is roughly half
+// the start weight. Each drop stops 1 rep short and only the last may go to
+// failure. Smith squats, hack squats and leg presses stop every drop 1-2 reps
+// short, never at failure under a loaded bar or sled. The round clock
 // starts when the start weight's reps are logged, pauses while the client
 // types the next weight and runs again when they tap Log. Total reps at the
 // same start weight is what tracks their output; the time is only shown.
@@ -32,14 +33,14 @@ export type DropPlan = { min: number; max: number; toFailure: boolean };
 /** How many drops after the start weight, and whether they go to failure. */
 export function dropRange(exerciseName: string): DropPlan {
   const n = exerciseName.toLowerCase();
-  if (/smith.*squat|squat.*smith|leg press|hack squat/.test(n)) return { min: 1, max: 2, toFailure: false };
-  return { min: 2, max: 3, toFailure: true };
+  if (/smith.*squat|squat.*smith|leg press|hack squat/.test(n)) return { min: 4, max: 6, toFailure: false };
+  return { min: 4, max: 6, toFailure: true };
 }
 
 /** The one-line plan under the exercise name. */
 export function dropPlanText(rounds: number, plan: DropPlan): string {
-  const effort = plan.toFailure ? "each to failure or 1 rep short" : "each stopped 1-2 reps short, never to failure";
-  return `${rounds} rounds · start weight 8-12 reps, then ${plan.min}-${plan.max} drops of about 20-25%, ${effort} · rest 5 to 6 min between rounds`;
+  const effort = plan.toFailure ? "each 1 rep short, only the last to failure" : "each stopped 1-2 reps short, never to failure";
+  return `${rounds} rounds · start weight 8-12 reps, then ${plan.min}-${plan.max} drops of about 10-15%, ${effort} · rest 5 to 6 min between rounds`;
 }
 
 // The round clock: time adds up only while it runs.

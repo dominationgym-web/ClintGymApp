@@ -128,7 +128,8 @@ export default function DropSetLogger({
       set_number: i + 1,
       weight_kg: e.weight,
       reps: e.reps,
-      effort: range.toFailure ? ("failure" as const) : ("close_to_failure" as const),
+      // Every drop stops short; only the last may go to failure.
+      effort: range.toFailure && i === entries.length - 1 ? ("failure" as const) : ("close_to_failure" as const),
       warm_up: false,
     }));
     const { data: logs, error } = await supabase.from("workout_logs").insert(logRows).select();

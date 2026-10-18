@@ -1,17 +1,18 @@
 -- Training review fixes (2026-10-18). Built-in programs only (trainer_id is null);
 -- trainers' own programs are left as they wrote them.
 
--- 1. Drop sets: 2-3 drops of about 20-25% from an 8-12 rep start weight, not
---    8-10 drops all to failure. Smith squats and leg presses get 1-2 drops and
---    stop short of failure. Total reps is the output, not the round time
+-- 1. Drop sets: 4-6 drops (GRIZZ's choice) of about 10-15% from an 8-12 rep
+--    start weight, not 8-10 drops all to failure. Each drop stops 1 rep short
+--    and only the last may go to failure; Smith squats and leg presses stop
+--    every drop 1-2 reps short. Total reps is the output, not the round time
 --    (src/lib/dropSets.ts).
 update programs
 set description = regexp_replace(
   description,
   'Each round: pick a start weight.*$',
   'Each round: pick a start weight you can do about 8-12 reps with and go to failure, or stop 1 rep short. '
-  || 'Then drop the weight by about 20-25% and go straight into the next set, again to failure or 1 rep short. '
-  || 'Do 2-3 drops. Rest only long enough to change the weight, and rest 5 to 6 minutes between rounds because drop sets are very tiring. '
+  || 'Then drop the weight by about 10-15% and go straight into the next set, again stopping 1 rep short. '
+  || 'Do 4-6 drops; only the last one may go to failure. Rest only long enough to change the weight, and rest 5 to 6 minutes between rounds because drop sets are very tiring. '
   || 'To log: put in your start weight and record your reps, then log each drop. Your total reps at the same start weight is your output, so try to beat it next time.'
 )
 where trainer_id is null
@@ -25,8 +26,8 @@ set description = regexp_replace(
   description,
   'Each round: pick a start weight.*$',
   'Each round: pick a start weight you can do about 8-12 reps with and stop when you have 1-2 good reps left. '
-  || 'Then drop the weight by about 20-25% and go straight into the next set, again stopping 1-2 reps short. '
-  || 'Do 1-2 drops at most, and never go to failure or let your form break under the load. '
+  || 'Then drop the weight by about 10-15% and go straight into the next set, again stopping 1-2 reps short. '
+  || 'Do 4-6 drops, and never go to failure or let your form break under the load. '
   || 'Rest only long enough to change the weight, and rest 5 to 6 minutes between rounds because drop sets are very tiring. '
   || 'To log: put in your start weight and record your reps, then log each drop. Your total reps at the same start weight is your output, so try to beat it next time.'
 )

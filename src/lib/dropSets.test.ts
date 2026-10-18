@@ -28,11 +28,11 @@ describe("drop sets", () => {
     expect(needsLevelNote(null)).toBe(true);
     expect(needsLevelNote("intermediate")).toBe(false);
   });
-  it("uses 2-3 drops, and fewer, short of failure, on Smith squats and leg presses", () => {
-    expect(dropRange("Leg Press")).toEqual({ min: 1, max: 2, toFailure: false });
-    expect(dropRange("Smith Machine Squat")).toEqual({ min: 1, max: 2, toFailure: false });
-    expect(dropRange("Cable Curl")).toEqual({ min: 2, max: 3, toFailure: true });
-    expect(dropPlanText(2, dropRange("Cable Curl"))).toContain("2-3 drops of about 20-25%");
+  it("uses 4-6 drops, all short of failure on Smith squats and leg presses", () => {
+    expect(dropRange("Leg Press")).toEqual({ min: 4, max: 6, toFailure: false });
+    expect(dropRange("Smith Machine Squat")).toEqual({ min: 4, max: 6, toFailure: false });
+    expect(dropRange("Cable Curl")).toEqual({ min: 4, max: 6, toFailure: true });
+    expect(dropPlanText(2, dropRange("Cable Curl"))).toContain("4-6 drops of about 10-15%");
     expect(dropPlanText(2, dropRange("Leg Press"))).toContain("never to failure");
   });
   it("adds up time only while the clock runs", () => {
