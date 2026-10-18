@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { ClientStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
@@ -14,6 +17,8 @@ import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
+import { useStabilityCalendar } from "@/components/useStabilityCalendar";
+import { loadStabilityDays, STABILITY_PURPLE } from "@/lib/stabilityCalendar";
 import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise } from "@/types/database";
 
 // The client's own training calendar (0069), under a tap-to-open heading on
@@ -21,6 +26,7 @@ import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, Pro
 // Tapping a day lists its exercises, and from today on each can be changed
 // for that day if the gym will be busy (0047). Extra blocks the coach added
 // to a day (mobility, flexibility, fight..., 0098) show under its workout.
+// Stability sessions show in purple and open the stability program (0110).
 export default function ClientCalendarView({
   clientId,
   exercises,
@@ -43,6 +49,7 @@ export default function ClientCalendarView({
   onCatchUp?: (date: string) => void;
 }) {
   const today = todayIso();
+  const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
   const [entries, setEntries] = useState<ClientCalendarWorkout[]>([]);
   const [blocks, setBlocks] = useState<ClientCalendarBlock[]>([]);
@@ -77,8 +84,12 @@ export default function ClientCalendarView({
   // when it's all next month.
   useEffect(() => {
     const yearOn = `${Number(today.slice(0, 4)) + 1}-12-31`;
-    Promise.all([loadCalendarWorkouts(clientId, today, yearOn), loadCalendarBlocks(clientId, today, yearOn)]).then(([rows, extra]) => {
-      if (rows.length > 0 || extra.length > 0) setHasAny(true);
+    Promise.all([
+      loadCalendarWorkouts(clientId, today, yearOn),
+      loadCalendarBlocks(clientId, today, yearOn),
+      loadStabilityDays(clientId, today, yearOn),
+    ]).then(([rows, extra, stabilityDays]) => {
+      if (rows.length > 0 || extra.length > 0 || stabilityDays.length > 0) setHasAny(true);
     });
   }, [clientId, today]);
 
@@ -101,6 +112,8 @@ export default function ClientCalendarView({
   const range = monthRange(month);
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
   const recovery = useRecoveryCalendar(clientId, range.from, range.to);
+  const stability = useStabilityCalendar(clientId, range.from, range.to);
+  const dayStability = selected ? stability.map[selected] ?? [] : [];
 
   if (!hasAny) return null;
 
@@ -151,12 +164,14 @@ export default function ClientCalendarView({
             labels={moved.labels}
             moves={moved.moves}
             recovery={recovery}
+            stability={stability.map}
             today={today}
             selected={selected}
             onPressDay={(date) => {
               // At the weekend a day with nothing on it goes straight to the
               // missed workout (GRIZZ, 2026-10-17).
-              const empty = !entries.some((e) => e.workout_date === date) && !blocks.some((b) => b.workout_date === date);
+              const empty =
+                !entries.some((e) => e.workout_date === date) && !blocks.some((b) => b.workout_date === date) && !stability.map[date];
               if (empty && catchUpDates.length > 0 && onCatchUp) {
                 onCatchUp(catchUpDates[0]);
                 setOpen(false);
@@ -173,7 +188,9 @@ export default function ClientCalendarView({
                 ? `${displayProgramName(pickedProgram)} on this day. It shows on your workout screen that morning.`
                 : dayExtras.length > 0
                   ? "Extra blocks from your coach on this day."
-                  : "Nothing planned on this day."
+                  : dayStability.length > 0
+                    ? "Stability work from your coach on this day."
+                    : "Nothing planned on this day."
               : "Your coach plans your workouts here. Tap a day to see what's on."}
           </Text>
           {selected && catchUpDates.includes(selected) && onCatchUp && (
@@ -212,6 +229,14 @@ export default function ClientCalendarView({
                 </View>
               );
             })}
+          {dayStability.map((item) => (
+            <Pressable key={item.programId} style={styles.stabilityRow} onPress={() => navigation.navigate("Stability")} accessibilityRole="button">
+              <Text style={styles.stabilityTitle}>
+                {item.done ? "✓" : "🧘"} {item.label} stability{item.done ? " · logged" : ""}
+              </Text>
+              <Text style={styles.stabilityOpen}>Open my stability program ›</Text>
+            </Pressable>
+          ))}
           {dayExtras.map((block, i) => (
             <View key={`${block.program.id}-${i}`} style={{ marginTop: 12 }}>
               <Text style={styles.blockTitle}>➕ {displayProgramName(block.program)}</Text>
@@ -263,6 +288,9 @@ const styles = StyleSheet.create({
   rowSets: { color: "#64748B", fontSize: 12, marginTop: 2 },
   swapped: { color: BRAND_GOLD, fontSize: 12, marginTop: 2 },
   blockTitle: { color: "#38BDF8", fontWeight: "800", fontSize: 15 },
+  stabilityRow: { borderWidth: 1, borderColor: "#6B21A8", backgroundColor: "#1A1029", borderRadius: 10, padding: 10, marginTop: 10 },
+  stabilityTitle: { color: STABILITY_PURPLE, fontWeight: "800", fontSize: 15 },
+  stabilityOpen: { color: "#E9D5FF", fontSize: 13, fontWeight: "700", marginTop: 4 },
   catchUpButton: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 10 },
   catchUpText: { color: "#0F172A", fontWeight: "800" },
   changeLink: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 6 },

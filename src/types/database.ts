@@ -680,6 +680,17 @@ export type ClientStabilityProgram = {
   created_at: string;
 };
 
+// A day the trainer put a stability program on the client's calendar (0110).
+// Taken off by setting removed_at.
+export type ClientStabilityDay = {
+  id: string;
+  client_id: string;
+  stability_program_id: string;
+  day: string;
+  created_at: string;
+  removed_at: string | null;
+};
+
 export type StabilityLog = {
   id: string;
   client_id: string;
@@ -869,6 +880,12 @@ export interface Database {
         Row: ClientStabilityProgram;
         Insert: Partial<ClientStabilityProgram>;
         Update: Partial<ClientStabilityProgram>;
+        Relationships: [];
+      };
+      client_stability_days: {
+        Row: ClientStabilityDay;
+        Insert: Partial<ClientStabilityDay>;
+        Update: Partial<ClientStabilityDay>;
         Relationships: [];
       };
       stability_logs: {

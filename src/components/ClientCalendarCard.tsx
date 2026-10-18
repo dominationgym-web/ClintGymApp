@@ -29,6 +29,8 @@ import TrainingCalendar from "@/components/TrainingCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
+import { useStabilityCalendar } from "@/components/useStabilityCalendar";
+import StabilityDayPlanner from "@/components/stability/StabilityDayPlanner";
 import ProgramSummary from "@/components/ProgramSummary";
 import PlanProgramModal from "@/components/PlanProgramModal";
 import type { StabilityArea } from "@/lib/stability";
@@ -68,6 +70,7 @@ export default function ClientCalendarCard({
   onStabilityStarted,
   onPlanChanged,
   injuries = [],
+  stabilityKey,
 }: {
   clientId: string;
   clientName: string;
@@ -77,6 +80,8 @@ export default function ClientCalendarCard({
   onStabilityStarted?: () => void;
   // The calendar's workouts changed, so the injury check runs again.
   onPlanChanged?: () => void;
+  // Changes when a stability program starts or stops elsewhere, so its days reload.
+  stabilityKey?: unknown;
   // The client's injured areas: risky exercises show red when changing one.
   injuries?: StabilityArea[];
   // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
@@ -172,12 +177,14 @@ export default function ClientCalendarCard({
   const range = monthRange(month);
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
   const recovery = useRecoveryCalendar(clientId, range.from, range.to);
+  const [stabilityReload, setStabilityReload] = useState(0);
+  const stability = useStabilityCalendar(clientId, range.from, range.to, `${String(stabilityKey)}-${stabilityReload}`);
   const moved = applyMoves(labels, Object.values(sessions));
 
   const pressDay = (date: string) => {
     setSelected(date);
     // A day the client already trained shows how it went instead of the picker.
-    if (entryOn(date) || sessions[date] || blocksOn(date).length > 0) return;
+    if (entryOn(date) || sessions[date] || blocksOn(date).length > 0 || stability.map[date]) return;
     // From today on, an empty day starts a whole program; a past day gets one workout.
     if (date >= today) openPlanner(date);
     else openPicker(date);
@@ -315,6 +322,7 @@ export default function ClientCalendarCard({
           labels={moved.labels}
           moves={moved.moves}
           recovery={recovery}
+          stability={stability.map}
           today={today}
           selected={selected}
           onPressDay={pressDay}
@@ -368,6 +376,14 @@ export default function ClientCalendarCard({
               </View>
             );
           })}
+          <StabilityDayPlanner
+            date={selected}
+            clientId={clientId}
+            programs={stability.programs}
+            days={stability.days}
+            items={stability.map[selected] ?? []}
+            onChanged={() => setStabilityReload((k) => k + 1)}
+          />
           <Pressable style={styles.addBlock} onPress={() => openPicker(selected, "block")}>
             <Text style={styles.addBlockText}>＋ Add a block (mobility, flexibility, fight…)</Text>
           </Pressable>
@@ -379,7 +395,7 @@ export default function ClientCalendarCard({
         </View>
       )}
       <View style={styles.legend}>
-        <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up · 🌿 recovery</Text>
+        <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up · 🌿 recovery · 🧘 stability</Text>
       </View>
       <PlanProgramModal
         date={planning}
@@ -396,7 +412,10 @@ export default function ClientCalendarCard({
         }}
         onDone={async (what) => {
           setPlanning(null);
-          if (what === "stability") onStabilityStarted?.();
+          if (what === "stability") {
+            onStabilityStarted?.();
+            setStabilityReload((k) => k + 1);
+          }
           else {
             await Promise.all([loadMonth(), loadUsed()]);
             onPlanChanged?.();
