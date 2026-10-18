@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_WELLBEING, reportedTopics, reportsByTopic, validateWellbeing, type WellbeingForm } from "@/lib/wellbeing";
+import { EMPTY_WELLBEING, reportedTopics, reportsByTopic, splitKinds, toggleKind, validateWellbeing, type WellbeingForm } from "@/lib/wellbeing";
 import type { Checkin } from "@/types/database";
 
 const ok = { status: "ok" as const, kind: "", notes: "" };
@@ -52,5 +52,14 @@ describe("reportsByTopic", () => {
     expect(reports.fatigue).toEqual([{ date: "2026-10-05", kind: "Heavy weekend", notes: "Wedding" }]);
     expect(reports.mental).toEqual([]);
     expect(reportedTopics(rows[1])).toEqual(["Injury or pain", "Fatigue"]);
+  });
+});
+
+describe("several pain areas", () => {
+  it("toggles areas in list order", () => {
+    expect(toggleKind("", "Knee")).toBe("Knee");
+    expect(toggleKind("Knee", "Neck")).toBe("Neck, Knee");
+    expect(toggleKind("Neck, Knee", "Neck")).toBe("Knee");
+    expect(splitKinds("Neck, Knee")).toEqual(["Neck", "Knee"]);
   });
 });

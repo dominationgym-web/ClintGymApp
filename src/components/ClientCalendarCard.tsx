@@ -31,6 +31,7 @@ import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import ProgramSummary from "@/components/ProgramSummary";
 import PlanProgramModal from "@/components/PlanProgramModal";
+import type { StabilityArea } from "@/lib/stability";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
@@ -65,6 +66,8 @@ export default function ClientCalendarCard({
   resetNotice = null,
   trainerId,
   onStabilityStarted,
+  onPlanChanged,
+  injuries = [],
 }: {
   clientId: string;
   clientName: string;
@@ -72,6 +75,10 @@ export default function ClientCalendarCard({
   trainerId?: string;
   // A rehab (stability) program started from the planner, so its card reloads.
   onStabilityStarted?: () => void;
+  // The calendar's workouts changed, so the injury check runs again.
+  onPlanChanged?: () => void;
+  // The client's injured areas: risky exercises show red when changing one.
+  injuries?: StabilityArea[];
   // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
   resetNotice?: string | null;
 }) {
@@ -230,6 +237,7 @@ export default function ClientCalendarCard({
     setSelected(picking);
     setPicking(null);
     await Promise.all([loadMonth(), loadUsed()]);
+    onPlanChanged?.();
   };
 
   const clearDay = (entry: ClientCalendarWorkout) => {
@@ -389,7 +397,10 @@ export default function ClientCalendarCard({
         onDone={async (what) => {
           setPlanning(null);
           if (what === "stability") onStabilityStarted?.();
-          else await Promise.all([loadMonth(), loadUsed()]);
+          else {
+            await Promise.all([loadMonth(), loadUsed()]);
+            onPlanChanged?.();
+          }
         }}
         onClose={() => setPlanning(null)}
       />
@@ -414,6 +425,7 @@ export default function ClientCalendarCard({
         clientId={clientId}
         clientName={clientName}
         trainingPlace={trainingPlace}
+        injuries={injuries}
         onClose={() => setChanging(null)}
         onSaved={() => {
           setChanging(null);

@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { WELLBEING_TOPICS, type WellbeingAnswer, type WellbeingForm, type WellbeingKey } from "@/lib/wellbeing";
+import { splitKinds, toggleKind, WELLBEING_TOPICS, type WellbeingAnswer, type WellbeingForm, type WellbeingKey } from "@/lib/wellbeing";
 
 // Pain, fatigue and mental exhaustion on the check-in (0055). Each needs a tap:
 // "I'm okay", or "Something's up" with what it is and a short note.
@@ -42,17 +42,19 @@ export default function WellbeingQuestions({
             </View>
             {a.status === "reported" && (
               <View>
-                <Text style={styles.label}>{t.kindLabel}</Text>
+                <Text style={styles.label}>{t.key === "pain" ? `${t.kindLabel} Tap every place that hurts.` : t.kindLabel}</Text>
                 <View style={styles.chips}>
-                  {t.kinds.map((kind) => (
-                    <Pressable
-                      key={kind}
-                      style={[styles.chip, a.kind === kind && styles.chipOn]}
-                      onPress={() => update(t.key, { kind })}
-                    >
-                      <Text style={[styles.chipText, a.kind === kind && styles.chipTextOn]}>{kind}</Text>
-                    </Pressable>
-                  ))}
+                  {t.kinds.map((kind) => {
+                    // Pain can be in more than one place (GRIZZ, 2026-10-17): tap several.
+                    const picked = t.key === "pain" ? splitKinds(a.kind) : [a.kind];
+                    const on = picked.includes(kind);
+                    const next = t.key === "pain" ? toggleKind(a.kind, kind) : kind;
+                    return (
+                      <Pressable key={kind} style={[styles.chip, on && styles.chipOn]} onPress={() => update(t.key, { kind: next })}>
+                        <Text style={[styles.chipText, on && styles.chipTextOn]}>{kind}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
                 <Text style={styles.label}>What is it and why?</Text>
                 <TextInput
