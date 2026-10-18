@@ -127,32 +127,38 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         📍 Please have your location on. We check your country once so you're charged the right prices. Only your
         country is saved.
       </Text>
-      <TextInput style={styles.input} placeholder="Your full name" value={name} onChangeText={setName} />
-      <TextInput
+      <Text style={styles.label}>Name and surname</Text>
+      <TextInput placeholderTextColor="#94A3B8" style={styles.input} placeholder="e.g. Thabo Mokoena" autoCapitalize="words" value={name} onChangeText={setName} />
+      <Text style={styles.label}>Business name (optional)</Text>
+      <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
-        placeholder="Business name (optional)"
+        placeholder="e.g. Daily Evolution"
         value={businessName}
         onChangeText={setBusinessName}
       />
-      <TextInput
+      <Text style={styles.label}>Email</Text>
+      <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
-        placeholder="Email"
+        placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput
+      <Text style={styles.label}>Phone number (optional)</Text>
+      <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
-        placeholder="Phone (optional)"
+        placeholder="e.g. 082 123 4567"
         keyboardType="phone-pad"
         value={phone}
         onChangeText={setPhone}
       />
-      <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
-      <TextInput
+      <Text style={styles.label}>Password</Text>
+      <PasswordInput placeholder="Choose a password" value={password} onChangeText={setPassword} />
+      <Text style={styles.label}>Referral code from another trainer (optional)</Text>
+      <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
-        placeholder="Referral code from another trainer (optional)"
+        placeholder="Leave empty if you don't have one"
         autoCapitalize="characters"
         autoCorrect={false}
         value={referralCode}
@@ -175,6 +181,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  label: { color: "#CBD5E1", fontWeight: "600", marginBottom: 6 },
   container: { flexGrow: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 12 },
   body: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 20 },

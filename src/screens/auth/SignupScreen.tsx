@@ -200,7 +200,7 @@ export default function SignupScreen({ navigation }: Props) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create your account</Text>
       <Text style={styles.label}>Trainer code</Text>
-      <TextInput
+      <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
         placeholder="The code your trainer gave you"
         autoCapitalize="characters"
@@ -225,17 +225,21 @@ export default function SignupScreen({ navigation }: Props) {
           </Text>
         </View>
       ) : null}
-      <TextInput style={styles.input} placeholder="Full name" value={name} onChangeText={setName} />
-      <TextInput
+      <Text style={styles.label}>Name and surname</Text>
+      <TextInput placeholderTextColor="#94A3B8" style={styles.input} placeholder="e.g. Thabo Mokoena" autoCapitalize="words" value={name} onChangeText={setName} />
+      <Text style={styles.label}>Email</Text>
+      <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
-        placeholder="Email"
+        placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
       />
-      <TextInput style={styles.input} placeholder="Phone (optional)" value={phone} onChangeText={setPhone} />
-      <PasswordInput placeholder="Password" value={password} onChangeText={setPassword} />
+      <Text style={styles.label}>Phone number (optional)</Text>
+      <TextInput placeholderTextColor="#94A3B8" style={styles.input} placeholder="e.g. 082 123 4567" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+      <Text style={styles.label}>Password</Text>
+      <PasswordInput placeholder="Choose a password" value={password} onChangeText={setPassword} />
 
       <Text style={styles.sectionHeading}>Choose your package</Text>
       {PACKAGES.map((p) => (
@@ -311,7 +315,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 16 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, flexShrink: 1 },
-  label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6 },
+  label: { color: "#CBD5E1", fontWeight: "600", marginBottom: 6 },
   trainerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 },
   trainerName: { color: "#fff", fontWeight: "700" },
   input: {

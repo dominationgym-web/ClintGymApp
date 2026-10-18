@@ -10,7 +10,7 @@ export default function PasswordInput({ style, ...inputProps }: Props) {
 
   return (
     <View style={styles.wrapper}>
-      <TextInput style={[styles.input, style]} secureTextEntry={!visible} {...inputProps} />
+      <TextInput style={[styles.input, style]} placeholderTextColor="#94A3B8" secureTextEntry={!visible} {...inputProps} />
       <Pressable style={styles.toggle} onPress={() => setVisible((v) => !v)} hitSlop={8}>
         <Text style={styles.toggleText}>{visible ? "Hide" : "Show"}</Text>
       </Pressable>

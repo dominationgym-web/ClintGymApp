@@ -161,6 +161,16 @@ export type ClientPrices = {
 };
 
 // A recovery activity a client planned or did (0107).
+// Each injury a client listed (0109); healed_on set once it's better.
+export type ClientInjury = {
+  id: string;
+  client_id: string;
+  area: string;
+  notes: string | null;
+  healed_on: string | null;
+  created_at: string;
+};
+
 export type RecoveryActivityRow = {
   id: string;
   client_id: string;
@@ -752,6 +762,12 @@ export interface Database {
         Row: ClientMealPlan;
         Insert: Partial<ClientMealPlan>;
         Update: Partial<ClientMealPlan>;
+        Relationships: [];
+      };
+      client_injuries: {
+        Row: ClientInjury;
+        Insert: Partial<ClientInjury>;
+        Update: Partial<ClientInjury>;
         Relationships: [];
       };
       recovery_activities: {

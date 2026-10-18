@@ -10,6 +10,11 @@ import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import type { ClientExerciseChange, Exercise, ProgramExercise } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import { exerciseRisks, riskLine, safeSuggestions } from "@/lib/injuryRisk";
+import type { StabilityArea } from "@/lib/stability";
+
+const RED = "#EF4444";
+const GREEN = "#22C55E";
 
 const SETS = [1, 2, 3, 4, 5, 6];
 
@@ -23,7 +28,13 @@ export default function ExerciseChangeModal({
   trainingPlace,
   onClose,
   onSaved,
+  injuries = [],
+  stepLabel,
 }: {
+  /** The client's injured areas (src/lib/injuryRisk.ts): risky exercises show red and won't save. */
+  injuries?: StabilityArea[];
+  /** "1 of 4" while the injury check walks through the flagged exercises. */
+  stepLabel?: string;
   /** The row as the client sees it, with changed_from when already changed. */
   row: ProgramExercise | null;
   clientId: string;
@@ -84,9 +95,24 @@ export default function ExerciseChangeModal({
   const { own, everywhere: everyChange } = changesFor({ id: row.id, exercise_id: original.exercise_id }, changes);
   const isChanged = !!own || !!everyChange;
   const swapped = exercise && exercise.id !== original.exercise_id;
+  // Injury check (GRIZZ, 2026-10-17): red can't save, green can.
+  const categoryOf = (id: string | null | undefined) => library.find((e) => e.id === id)?.category ?? null;
+  const risksOf = (e: { id?: string | null; name: string; category?: string | null }) =>
+    exerciseRisks({ name: e.name, category: e.category !== undefined ? e.category : categoryOf(e.id) }, injuries);
+  const chosen = exercise ?? { id: original.exercise_id, name: original.exercise_name };
+  const chosenRisks = risksOf(chosen);
+  const originalRisks = risksOf({ id: original.exercise_id, name: original.exercise_name });
+  const suggestions =
+    injuries.length > 0 && originalRisks.length > 0 && library.length > 0
+      ? safeSuggestions({ id: original.exercise_id, name: original.exercise_name, category: originalCategory }, forPlace(library, place), injuries)
+      : [];
 
   const save = async () => {
     if (!exercise) return;
+    if (chosenRisks.length > 0) {
+      Alert.alert("Not safe for their injury", `${exercise.name} may hurt their ${riskLine(chosenRisks)}. Pick a green exercise.`);
+      return;
+    }
     if (!reps.trim()) {
       Alert.alert("Add the reps", "For example 10-12, or 30 sec.");
       return;
@@ -173,8 +199,19 @@ export default function ExerciseChangeModal({
                   <View style={styles.libraryRow}>
                     <View style={styles.libraryTop}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.exerciseName}>{item.name}</Text>
-                        {item.category ? <Text style={styles.helper}>{item.category}</Text> : null}
+                        {(() => {
+                          const risks = injuries.length ? risksOf(item) : [];
+                          return (
+                            <>
+                              <Text style={[styles.exerciseName, injuries.length > 0 && { color: risks.length ? RED : GREEN }]}>
+                                {injuries.length > 0 ? (risks.length ? "✕ " : "✓ ") : ""}
+                                {item.name}
+                              </Text>
+                              {item.category ? <Text style={styles.helper}>{item.category}</Text> : null}
+                              {risks.length > 0 && <Text style={styles.riskSmall}>May hurt: {riskLine(risks)}</Text>}
+                            </>
+                          );
+                        })()}
                       </View>
                       <Pressable hitSlop={6} onPress={() => setPreviewId((id) => (id === item.id ? null : item.id))}>
                         <Text style={styles.watch}>{previewId === item.id ? "Hide" : "▶ Watch"}</Text>
@@ -197,9 +234,46 @@ export default function ExerciseChangeModal({
           </>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
+            {stepLabel ? <Text style={styles.step}>🩹 Injury check · {stepLabel}</Text> : null}
             <Text style={styles.helper}>
               In the workout: {original.exercise_name}, {original.sets} x {original.reps}
             </Text>
+            {injuries.length > 0 && library.length > 0 && (
+              <View style={[styles.riskBox, { borderColor: chosenRisks.length ? RED : GREEN }]}>
+                <Text style={[styles.riskTitle, { color: chosenRisks.length ? RED : GREEN }]}>
+                  {chosenRisks.length ? `✕ ${chosen.name} may hurt their injury` : `✓ ${chosen.name} is safe for their injury`}
+                </Text>
+                {chosenRisks.map((r) => (
+                  <Text key={r.area} style={styles.riskText}>
+                    {r.title}: {r.why}
+                  </Text>
+                ))}
+              </View>
+            )}
+            {suggestions.length > 0 && (
+              <>
+                <Text style={styles.label}>Better options for {clientName}</Text>
+                {suggestions.map((e) => {
+                  const on = exercise?.id === e.id;
+                  return (
+                    <Pressable
+                      key={e.id}
+                      style={[styles.suggestion, on && { borderColor: GREEN }]}
+                      onPress={() => {
+                        setExercise({ id: e.id, name: e.name });
+                        setEverywhere(true);
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.exerciseName, { color: GREEN }]}>✓ {e.name}</Text>
+                        {e.category ? <Text style={styles.helper}>{e.category}</Text> : null}
+                      </View>
+                      <Text style={[styles.useText, styles.suggestionUse, on && { backgroundColor: GREEN }]}>{on ? "Picked" : "Use"}</Text>
+                    </Pressable>
+                  );
+                })}
+              </>
+            )}
 
             <Text style={styles.label}>Exercise</Text>
             <View style={styles.exerciseBox}>
@@ -242,10 +316,16 @@ export default function ExerciseChangeModal({
             />
             <Text style={styles.helper}>Sets and reps change in this workout only.</Text>
 
-            <Pressable style={styles.saveButton} onPress={save} disabled={saving}>
-              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>Save for {clientName}</Text>}
+            <Pressable style={[styles.saveButton, chosenRisks.length > 0 && styles.saveBlocked]} onPress={save} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator color="#0F172A" />
+              ) : (
+                <Text style={[styles.saveText, chosenRisks.length > 0 && { color: "#fff" }]}>
+                  {chosenRisks.length > 0 ? "Pick a green exercise to save" : `Save for ${clientName}`}
+                </Text>
+              )}
             </Pressable>
-            {isChanged ? (
+            {isChanged && originalRisks.length === 0 ? (
               <Pressable style={styles.putBack} onPress={putBack} disabled={saving}>
                 <Text style={styles.putBackText}>Put back the original</Text>
               </Pressable>
@@ -285,6 +365,14 @@ const styles = StyleSheet.create({
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 10, fontSize: 14 },
   saveButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 24 },
   saveText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
+  saveBlocked: { backgroundColor: "#7F1D1D" },
+  step: { color: BRAND_GOLD, fontWeight: "800", fontSize: 13, marginBottom: 4 },
+  riskBox: { borderWidth: 1.5, borderRadius: 10, padding: 10, marginTop: 10, backgroundColor: "#111C33" },
+  riskTitle: { fontWeight: "800", fontSize: 14 },
+  riskText: { color: "#CBD5E1", fontSize: 13, marginTop: 3 },
+  riskSmall: { color: "#FCA5A5", fontSize: 12, marginTop: 2 },
+  suggestion: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1.5, borderColor: "transparent" },
+  suggestionUse: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, overflow: "hidden" },
   putBack: { alignItems: "center", paddingVertical: 14 },
   putBackText: { color: "#F87171", fontWeight: "700", fontSize: 14 },
   libraryRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },

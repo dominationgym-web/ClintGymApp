@@ -20,6 +20,9 @@ import HabitOptionsPicker from "@/components/HabitOptionsPicker";
 import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
+import InjuryCheckCard from "@/components/InjuryCheckCard";
+import InjuryList from "@/components/InjuryList";
+import type { StabilityArea } from "@/lib/stability";
 import ClientCalendarCard from "@/components/ClientCalendarCard";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
 import RecoveryCoachCard from "@/components/RecoveryCoachCard";
@@ -88,6 +91,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
   const [stabilityKey, setStabilityKey] = useState(0);
+  // Injury check (GRIZZ, 2026-10-17): planKey bumps after any program pick to put up the check sign.
+  const [planKey, setPlanKey] = useState(0);
+  const [injuryKey, setInjuryKey] = useState(0);
+  const [injuredAreas, setInjuredAreas] = useState<StabilityArea[]>([]);
+  const planChanged = () => setPlanKey((k) => k + 1);
   // Which tap-to-open heading on the Training tab is open.
   const [trainingOpen, setTrainingOpen] = useState<string | null>(null);
   const toggleTraining = (key: string) => setTrainingOpen((k) => (k === key ? null : key));
@@ -472,7 +480,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               />
             )}
 
-            {client.injuries && <Text style={styles.body}>Injuries: {client.injuries}</Text>}
+            {client.injuries && <Text style={styles.body}>Injuries (sign-up form): {client.injuries}</Text>}
+            <Text style={styles.libraryTitle}>🩹 Injuries</Text>
+            <InjuryList clientId={client.id} role="trainer" clientName={client.name} onChanged={() => setInjuryKey((k) => k + 1)} />
             {client.injuries && stabilityAreasFor(client.injuries).length > 0 && <RehabSuggestion clientName={client.name} texts={[client.injuries]} />}
             {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
 
@@ -623,6 +633,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 }}
               />
             )}
+            <InjuryCheckCard
+              key={injuryKey}
+              clientId={client.id}
+              clientName={client.name}
+              injuries={client.injuries}
+              trainingPlace={client.training_place}
+              refreshKey={planKey}
+              onAreas={setInjuredAreas}
+            />
             {/* Calendar first (GRIZZ, 2026-10-17): tap a day to start a program. The rest is tucked under tap-to-open headings. */}
             <ClientCalendarCard
               clientId={client.id}
@@ -631,6 +650,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               resetNotice={resetNotice(client, todayIso())}
               trainerId={trainer?.id}
               onStabilityStarted={() => setStabilityKey((k) => k + 1)}
+              onPlanChanged={planChanged}
+              injuries={injuredAreas}
             />
             <TrainerStabilityCard key={stabilityKey} clientId={client.id} clientName={client.name} trainerId={trainer?.id} />
             <TrainingSection title="🌿 Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
@@ -670,6 +691,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 clientName={client.name}
                 trainingPlace={client.training_place}
                 resetNotice={resetNotice(client, todayIso())}
+                onChanged={planChanged}
+                injuries={injuredAreas}
               />
               {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
               {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
