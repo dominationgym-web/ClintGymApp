@@ -12,7 +12,7 @@ set description = regexp_replace(
   'Each round: pick a start weight.*$',
   'Each round: pick a start weight you can do about 8-12 reps with and go to failure, or stop 1 rep short. '
   || 'Then drop the weight by about 10-15% and go straight into the next set, again stopping 1 rep short. '
-  || 'Do 4-6 drops; only the last one may go to failure. Rest only long enough to change the weight, and rest 5 to 6 minutes between rounds because drop sets are very tiring. '
+  || 'Do 4-6 drops, and only the last one may go to failure. Rest only long enough to change the weight, and rest 5 to 6 minutes between rounds because drop sets are very tiring. '
   || 'To log: put in your start weight and record your reps, then log each drop. Your total reps at the same start weight is your output, so try to beat it next time.'
 )
 where trainer_id is null
