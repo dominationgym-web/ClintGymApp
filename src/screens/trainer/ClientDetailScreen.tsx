@@ -559,6 +559,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   setNewHabitName(name);
                   setNewHabitReps(reps);
                 }}
+                onAdd={addHabit}
+                adding={addingHabit}
               />
               <TextInput
                 style={styles.textInput}
