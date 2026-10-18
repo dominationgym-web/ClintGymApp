@@ -21,8 +21,9 @@ import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import { loadStabilityDays, STABILITY_PURPLE } from "@/lib/stabilityCalendar";
 import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise } from "@/types/database";
 
-// The client's own training calendar (0069), under a tap-to-open heading on
-// their workout screen. Only shows once their coach has planned something.
+// The client's own training calendar (0069), always open at the top of their
+// workout screen (GRIZZ, 2026-10-18: "already open. So they dont need to
+// click"). Only shows once their coach has planned something.
 // Tapping a day lists its exercises, and from today on each can be changed
 // for that day if the gym will be busy (0047). Extra blocks the coach added
 // to a day (mobility, flexibility, fight..., 0098) show under its workout.
@@ -56,7 +57,6 @@ export default function ClientCalendarView({
   const [dayExtras, setDayExtras] = useState<CalendarDayWorkout[]>([]);
   const [names, setNames] = useState<Record<string, Pick<Program, "name" | "trainer_id">>>({});
   const [hasAny, setHasAny] = useState(false);
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   // The selected day's workout and any swaps made for it.
   const [dayRows, setDayRows] = useState<ProgramExercise[]>([]);
@@ -149,12 +149,10 @@ export default function ClientCalendarView({
 
   return (
     <View style={styles.card}>
-      <Pressable onPress={() => setOpen(!open)} style={styles.header} accessibilityRole="button" accessibilityState={{ expanded: open }}>
+      <View style={styles.header}>
         <Text style={styles.title}>📅 Your training calendar</Text>
-        <Text style={styles.chevron}>{open ? "▲" : "▼"}</Text>
-      </Pressable>
-      {open && (
-        <View style={{ marginTop: 10 }}>
+      </View>
+      <View style={{ marginTop: 10 }}>
           <TrainingCalendar
             month={month}
             onChangeMonth={setMonth}
@@ -172,7 +170,6 @@ export default function ClientCalendarView({
                 !entries.some((e) => e.workout_date === date) && !blocks.some((b) => b.workout_date === date) && !stability.map[date];
               if (empty && catchUpDates.length > 0 && onCatchUp) {
                 onCatchUp(catchUpDates[0]);
-                setOpen(false);
                 return;
               }
               setSelected(date);
@@ -196,7 +193,7 @@ export default function ClientCalendarView({
               style={styles.catchUpButton}
               onPress={() => {
                 onCatchUp(selected);
-                setOpen(false);
+                setSelected(null);
               }}
             >
               <Text style={styles.catchUpText}>🔁 Missed this one? Do it today</Text>
@@ -261,8 +258,7 @@ export default function ClientCalendarView({
                 })}
             </View>
           ))}
-        </View>
-      )}
+      </View>
       <ExerciseSwapModal
         visible={!!swapping}
         exerciseName={swapping?.exercise_name ?? null}
@@ -281,7 +277,6 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { color: "#fff", fontSize: 16, fontWeight: "800" },
-  chevron: { color: BRAND_GOLD, fontSize: 14 },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 8 },
   row: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 8 },
   rowName: { color: "#fff", fontWeight: "600" },
