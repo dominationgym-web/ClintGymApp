@@ -362,7 +362,7 @@ const CYCLE_NUDGE_WEEKDAY = 7;
 const CYCLE_NUDGE_HOUR = 9;
 export const CYCLE_NUDGE_TITLE = "🌸 Your cycle tracker";
 export const CYCLE_NUDGE_BODY =
-  "Log the first day of your last period and the app will guide your training, food and supplements through every phase. Menu ☰ → Women's Health Reset.";
+  "Log the first day of your last period and the app will guide your training, food and supplements through every phase. Menu ☰ → Cycle tracker.";
 
 /**
  * Saturdays at 9am, a nudge for women who haven't used the cycle tracker yet

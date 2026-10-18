@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { defaultWeeks, findSplit, planProgramDates, sessionsPerWeek, splitAlongside, suggestedSplit, TRAINING_SPLITS, weekdayOfIso } from "./trainingSplits";
+import {
+  defaultWeeks,
+  findSplit,
+  planProgramDates,
+  sessionsPerWeek,
+  splitAlongside,
+  splitNote,
+  suggestedSplit,
+  TRAINING_SPLITS,
+  weekdayOfIso,
+  weeksToFinish,
+} from "./trainingSplits";
 
 describe("training splits", () => {
   it("never trains on a Sunday", () => {
@@ -59,3 +70,29 @@ describe("splitAlongside", () => {
     expect(extras.map((p) => p.date)).toEqual(["2026-10-19", "2026-10-21"]);
   });
 });
+
+describe("a program on a split with a different number of days", () => {
+  // A 4-day, 12-week program: Mon, Tue, Thu, Fri each week, easy weeks 4, 8 and 12.
+  const slots = Array.from({ length: 12 }, (_, w) => [1, 2, 4, 5].map((d) => w * 7 + d)).flat();
+
+  it("takes longer on fewer days, and says where the easy weeks land", () => {
+    expect(weeksToFinish(slots.length, 2)).toBe(24);
+    const plan = planProgramDates("2026-10-19", findSplit("tue_thu").days, slots, 24);
+    expect(plan).toHaveLength(48);
+    const note = splitNote(plan, 4, 2, slots.length, [4, 8, 12]);
+    expect(note).toContain("takes 24 weeks");
+    expect(note).toContain("program week 4 from calendar week 7");
+  });
+
+  it("warns about less rest on more days", () => {
+    const fullBody = Array.from({ length: 4 }, (_, w) => [1, 3, 5].map((d) => w * 7 + d)).flat();
+    const plan = planProgramDates("2026-10-19", findSplit("mon_fri").days, fullBody, 3);
+    expect(splitNote(plan, 3, 5, fullBody.length, [])).toContain("less rest");
+  });
+
+  it("says nothing when the split matches", () => {
+    const plan = planProgramDates("2026-10-19", findSplit("mon_tue_thu_fri").days, slots, 12);
+    expect(splitNote(plan, 4, 4, slots.length, [4, 8, 12])).toBeNull();
+  });
+});
+

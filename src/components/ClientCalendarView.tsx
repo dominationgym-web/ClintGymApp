@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
-import { todayIso } from "@/lib/dates";
+import { parseIsoDate, todayIso } from "@/lib/dates";
 import { displayProgramName, isFunctionalProgram } from "@/lib/programs";
 import { loadCalendarBlocks, loadCalendarWorkoutFor, loadCalendarWorkouts, type CalendarDayWorkout } from "@/lib/programQueries";
 import { forPlace, swapOptions, withHomeAlternatives, type HomeFit } from "@/lib/exerciseFilter";
@@ -37,7 +38,8 @@ import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, Pro
 // click"). One week at a time, Monday to Sunday, with each day's workout and
 // the body parts it trains (GRIZZ, 2026-10-18). Only shows once their coach
 // has planned something.
-// Tapping a day lists its exercises, and from today on each can be changed
+// Tapping a day opens it in a pop-up page (app-flow review C5, 2026-10-18), so
+// the week and Today below stay where they are. It lists the day's exercises, and from today on each can be changed
 // for that day if the gym will be busy (0047). Extra blocks the coach added
 // to a day (mobility, flexibility, fight..., 0098) show under its workout.
 // Stability sessions show in purple and open the stability program (0110).
@@ -251,6 +253,19 @@ export default function ClientCalendarView({
             }}
             marks={marks}
           />
+          {!selected && <Text style={styles.helper}>Your coach plans your workouts here. Tap a day to see what's on.</Text>}
+      </View>
+      <Modal visible={!!selected} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelected(null)}>
+        <SafeAreaView style={styles.sheet} edges={["top", "bottom"]}>
+          <View style={styles.sheetHeader}>
+            <Pressable onPress={() => setSelected(null)} hitSlop={10} accessibilityRole="button">
+              <Text style={styles.sheetBack}>‹ Back</Text>
+            </Pressable>
+            <Text style={styles.sheetTitle}>
+              {selected ? parseIsoDate(selected).toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" }) : ""}
+            </Text>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
           {selected && sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
           <Text style={styles.helper}>
             {selected
@@ -261,7 +276,7 @@ export default function ClientCalendarView({
                   : dayStability.length > 0
                     ? "Stability work from your coach on this day."
                     : "Nothing planned on this day."
-              : "Your coach plans your workouts here. Tap a day to see what's on."}
+              : ""}
           </Text>
           {selected && catchUpDates.includes(selected) && onCatchUp && (
             <Pressable
@@ -300,7 +315,10 @@ export default function ClientCalendarView({
               );
             })}
           {dayStability.map((item) => (
-            <Pressable key={item.programId} style={styles.stabilityRow} onPress={() => navigation.navigate("Stability")} accessibilityRole="button">
+            <Pressable key={item.programId} style={styles.stabilityRow} onPress={() => {
+                setSelected(null);
+                navigation.navigate("Stability");
+              }} accessibilityRole="button">
               <Text style={styles.stabilityTitle}>
                 {item.done ? "✓" : "🧘"} {item.label} stability{item.done ? " · logged" : ""}
               </Text>
@@ -313,6 +331,7 @@ export default function ClientCalendarView({
                 {isFunctionalProgram(block.program) ? "🤸" : "➕"} {displayProgramName(block.program)}
               </Text>
               {block.daySlot != null && <Text style={styles.rowSets}>{slotLabel(block.program, block.daySlot)}</Text>}
+              {block.result && <Text style={styles.rowSets}>{block.result === "done" ? "✅ Done" : "Couldn't do it"}</Text>}
               {[...block.exercises]
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((row) => {
@@ -333,7 +352,8 @@ export default function ClientCalendarView({
                 })}
             </View>
           ))}
-      </View>
+          </ScrollView>
+      {/* Inside the day's page, so it opens on top of it. */}
       <ExerciseSwapModal
         visible={!!swapping}
         exerciseName={swapping?.exercise_name ?? null}
@@ -344,12 +364,18 @@ export default function ClientCalendarView({
         onChoose={chooseSwap}
         onClose={() => setSwapping(null)}
       />
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12 },
+  sheet: { flex: 1, backgroundColor: "#0F172A" },
+  sheetHeader: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#1E293B" },
+  sheetBack: { color: BRAND_GOLD, fontWeight: "700", fontSize: 16 },
+  sheetTitle: { color: "#fff", fontWeight: "800", fontSize: 17, flexShrink: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { color: "#fff", fontSize: 16, fontWeight: "800" },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 8 },

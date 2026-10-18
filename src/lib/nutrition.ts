@@ -22,7 +22,7 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
       { emoji: "🥩", title: "Protein", text: "1–2 palm-sized portions." },
       { emoji: "🍚", title: "Carbohydrates", text: "1 cupped-hand portion, adjusted for activity and goals." },
       { emoji: "🥦", title: "Vegetables", text: "1–2 fists or more." },
-      { emoji: "🥑", title: "Healthy fats", text: "1 small thumb-sized portion." },
+      { emoji: "🥑", title: "Healthy fats", text: "1–2 thumb-sized portions (about 1 for women, 2 for men)." },
       { emoji: "🍓", title: "Fruit", text: "1 medium piece or a small bowl of berries." },
     ],
   },
@@ -42,7 +42,7 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
     icon: "💡",
     heading: "Good to know",
     points: [
-      { emoji: "🌱", title: "Organic where you can", text: "All foods should be certified organic where available." },
+      { emoji: "🌱", title: "Organic or not", text: "Fresh, frozen or tinned, organic or not: what matters most is eating enough vegetables, fruit, beans and whole foods. Wash fresh produce before you eat it." },
       { emoji: "📏", title: "Approximate values", text: "Nutritional values are approximate. Meat and fish values refer to raw food, while grains and legumes are listed cooked unless specified otherwise." },
     ],
   },
@@ -196,6 +196,6 @@ export const FOOD_GROUP_EXAMPLES: FoodGroupExample[] = [
   { title: "Protein", portion: "1–2 palms", emojis: "🍗 🐟 🥩 🥚", examples: "Chicken, fish, lean beef, eggs, ostrich, Greek yoghurt" },
   { title: "Carbohydrates", portion: "1 cupped hand", emojis: "🍠 🍚 🥔 🌽", examples: "Sweet potato, brown rice, potatoes, beans, lentils, quinoa" },
   { title: "Vegetables", portion: "1–2 fists or more", emojis: "🥦 🥬 🥕 🥒", examples: "Broccoli, spinach, carrots, peppers, green beans, cauliflower" },
-  { title: "Healthy fats", portion: "1 thumb", emojis: "🥑 🥜 🌰", examples: "Avocado, olive oil, nuts, seeds, nut butter" },
+  { title: "Healthy fats", portion: "1–2 thumbs", emojis: "🥑 🥜 🌰", examples: "Avocado, olive oil, nuts, seeds, nut butter" },
   { title: "Fruit", portion: "1 piece or a small bowl of berries", emojis: "🍎 🍓 🍌 🍊", examples: "Apple, berries, banana, orange, pear" },
 ];

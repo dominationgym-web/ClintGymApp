@@ -1,27 +1,19 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, Alert, TextInput } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { File } from "expo-file-system";
+import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator, TextInput } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import type { CoachMessage, Video } from "@/types/database";
-import { MAX_VIDEO_SECONDS, videoProblem } from "@/lib/videoLimits";
+import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 
-// 720p is plenty to check form and about half the size of full HD (iOS only;
-// Android records at the camera app's own quality).
-const VIDEO_OPTIONS: ImagePicker.ImagePickerOptions = {
-  mediaTypes: ["videos"],
-  quality: 0.7,
-  videoMaxDuration: MAX_VIDEO_SECONDS,
-  videoQuality: ImagePicker.UIImagePickerControllerQualityType.IFrame1280x720,
-};
-
+// Form videos (was the Video log tab, app-flow review C2, 2026-10-18): the
+// client's videos and their coach's feedback, opened from Profile. Most videos
+// are filmed straight from the set log ("🎥 Film this set"), which fills in the
+// exercise; this page can still send one.
 export default function VideoUploadScreen() {
   const { client } = useAuth();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   // Which exercise the video shows, so the coach knows what to look at (0081).
   const [exerciseName, setExerciseName] = useState("");
   // The coach's feedback on each video (0084).
@@ -48,70 +40,17 @@ export default function VideoUploadScreen() {
     setLoading(false);
   };
 
+  const { uploading, record, pickFromLibrary } = useFormVideoUpload(client?.id, () => {
+    setExerciseName("");
+    loadVideos();
+  });
+
   // Reload on each visit, so the coach's latest feedback shows.
   useFocusEffect(
     useCallback(() => {
       loadVideos();
     }, [client]),
   );
-
-  const uploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
-    if (!client) return;
-    const problem = videoProblem(asset.duration, asset.fileSize);
-    if (problem) {
-      Alert.alert("Can't upload this video", problem);
-      return;
-    }
-    setUploading(true);
-    try {
-      const body = await new File(asset.uri).arrayBuffer();
-      const fileExt = asset.uri.split(".").pop() ?? "mp4";
-      const storagePath = `${client.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("training-videos")
-        .upload(storagePath, body, { contentType: asset.mimeType ?? `video/${fileExt}` });
-      if (uploadError) throw uploadError;
-
-      const { error: insertError } = await supabase.from("videos").insert({
-        client_id: client.id,
-        storage_provider: "supabase",
-        storage_path: storagePath,
-        exercise_name: exerciseName.trim() || null,
-      });
-      if (insertError) throw insertError;
-
-      setExerciseName("");
-      Alert.alert("Sent to your coach ✅", "Your coach has been told and will watch it.");
-      await loadVideos();
-    } catch (err) {
-      Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleRecord = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow camera access to record training proof.");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync(VIDEO_OPTIONS);
-    if (result.canceled || !result.assets?.[0]) return;
-    await uploadAsset(result.assets[0]);
-  };
-
-  const handlePickFromLibrary = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow access to your video library to upload training proof.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync(VIDEO_OPTIONS);
-    if (result.canceled || !result.assets?.[0]) return;
-    await uploadAsset(result.assets[0]);
-  };
 
   if (loading) {
     return (
@@ -123,11 +62,10 @@ export default function VideoUploadScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Training proof</Text>
       <Text style={styles.helper}>
-        Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
+        Film a set straight from your workout: tap 🎥 Film this set in the set log. Or send one here. Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
       </Text>
-      <Text style={styles.fieldLabel}>Which exercise is it? (optional)</Text>
+      <Text style={styles.fieldLabel}>Which exercise is it?</Text>
       <TextInput
         style={styles.input}
         value={exerciseName}
@@ -137,10 +75,10 @@ export default function VideoUploadScreen() {
         maxLength={80}
       />
       <View style={styles.row}>
-        <Pressable style={[styles.button, styles.flex1]} onPress={handleRecord} disabled={uploading}>
+        <Pressable style={[styles.button, styles.flex1]} onPress={() => record(exerciseName)} disabled={uploading}>
           <Text style={styles.buttonText}>Record video</Text>
         </Pressable>
-        <Pressable style={[styles.button, styles.flex1]} onPress={handlePickFromLibrary} disabled={uploading}>
+        <Pressable style={[styles.button, styles.flex1]} onPress={() => pickFromLibrary(exerciseName)} disabled={uploading}>
           <Text style={styles.buttonText}>Choose from library</Text>
         </Pressable>
       </View>

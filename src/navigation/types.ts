@@ -14,13 +14,16 @@ export type AuthStackParamList = {
   TrainerSignup: undefined;
 };
 
+// "Exercises" is the tab called Training (app-flow review C1, 2026-10-18); the
+// key stays so notification taps and old links still land on it. The old
+// Video log tab is now the FormVideos page, opened from Profile or the set log.
 export type ClientTabParamList = {
   CheckIn: undefined;
   Habits: undefined;
   Reset: undefined;
-  Training: undefined;
   Exercises: undefined;
-  Profile: undefined;
+  // open: the Profile heading to show opened, e.g. "pay" from the plan-ending banner.
+  Profile: { open?: "pay" } | undefined;
 };
 
 export type ClientStackParamList = {
@@ -33,6 +36,8 @@ export type ClientStackParamList = {
   AppGuide: undefined;
   Stability: undefined;
   Recovery: undefined;
+  // The client's form videos and their coach's feedback (was the Video log tab).
+  FormVideos: undefined;
 };
 
 export type TrainerTabParamList = {

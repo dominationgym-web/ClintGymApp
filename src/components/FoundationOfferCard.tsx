@@ -3,6 +3,8 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "rea
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
+import { loadAvailablePrograms } from "@/lib/programQueries";
+import { resetNotice } from "@/lib/resetProgram";
 import {
   FOUNDATION_GOALS,
   foundationGoalFor,
@@ -12,12 +14,15 @@ import {
   type FoundationGoal,
   type FoundationLevel,
 } from "@/lib/foundation";
-import type { Client } from "@/types/database";
+import type { Client, Program } from "@/types/database";
+import PlanProgramModal from "@/components/PlanProgramModal";
+import { useAuth } from "@/context/AuthContext";
 
 // On the client's Training tab (0087): their training experience, and for
 // Never trained, Beginner and Intermediate an offer to put them on a 6-week
-// foundation program (0086). Approving starts the program; no message is sent
-// for the trainer.
+// foundation program (0086). Approving opens the calendar planner with the
+// program already picked (review 2026-10-18: one way to give a program), so
+// foundation clients get a calendar like everyone else. No message is sent.
 export default function FoundationOfferCard({
   client,
   onChanged,
@@ -30,46 +35,35 @@ export default function FoundationOfferCard({
   const [level, setLevel] = useState<FoundationLevel>(foundationLevelFor(client.training_level) ?? "Beginner");
   const [goal, setGoal] = useState<FoundationGoal>(foundationGoalFor(client.intake_responses?.training_goals));
   const [busy, setBusy] = useState(false);
+  const { trainer } = useAuth();
+  // The program picked, while the planner is open; all programs for its "comes off" check.
+  const [planning, setPlanning] = useState<Program | null>(null);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const programName = foundationProgramName(level, goal);
 
   const approve = async () => {
     setBusy(true);
-    const { data: program } = await supabase
-      .from("programs")
-      .select("id")
-      .is("trainer_id", null)
-      .eq("name", programName)
-      .maybeSingle();
+    const all = await loadAvailablePrograms();
+    setBusy(false);
+    const program = all.find((p) => p.trainer_id === null && p.name === programName);
     if (!program) {
-      setBusy(false);
       Alert.alert("Couldn't find the program", `${programName} isn't in the app yet.`);
       return;
     }
-    const { error } = await supabase.from("client_programs").upsert({
-      client_id: client.id,
-      program_id: program.id,
-      started_on: todayIso(),
-      assigned_at: new Date().toISOString(),
-      current_day: null,
-      current_week: null,
-      due_on: null,
-      last_completed_at: null,
-      extra_cardio: [],
-    });
-    if (error) {
-      setBusy(false);
-      Alert.alert("Couldn't start the program", error.message);
-      return;
-    }
-    // No automatic note to the client (GRIZZ: never ready-made messages from
-    // trainer to client). The trainer writes their own if they want to.
-    await supabase.from("clients").update({ foundation_status: "approved" }).eq("id", client.id);
-    setBusy(false);
+    setPrograms(all);
+    setPlanning(program);
+  };
+
+  // Activated on the calendar: the offer is done. No automatic note to the
+  // client (GRIZZ: never ready-made messages from trainer to client).
+  const planned = async () => {
+    setPlanning(null);
     setOpen(false);
+    await supabase.from("clients").update({ foundation_status: "approved" }).eq("id", client.id);
     onChanged({ foundation_status: "approved" });
     Alert.alert(
       "Program started",
-      `${firstName} is on ${programName}. It's on their Exercises tab now. If you'd like to tell them why, send them a message from their Overview.`,
+      `${firstName} is on ${programName}. It's on their calendar now. If you'd like to tell them why, send them a message from their Overview.`,
     );
   };
 
@@ -112,19 +106,31 @@ export default function FoundationOfferCard({
             ))}
           </View>
           <Text style={styles.helper}>
-            {level === "Beginner" ? "3 days a week, full body." : "4 days a week, upper/lower."} {firstName} gets a friendly note explaining why
-            the first 6 weeks are foundation building.
+            {level === "Beginner" ? "3 days a week, full body." : "4 days a week, upper/lower."} Next you pick the days they train, and it
+            goes on their calendar from today.
           </Text>
           <View style={styles.buttons}>
             <Pressable style={styles.secondary} onPress={notNow} disabled={busy}>
               <Text style={styles.secondaryText}>Not now</Text>
             </Pressable>
             <Pressable style={styles.primary} onPress={approve} disabled={busy}>
-              {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Approve and start</Text>}
+              {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Approve: pick the days</Text>}
             </Pressable>
           </View>
         </>
       )}
+      <PlanProgramModal
+        date={planning ? todayIso() : null}
+        clientId={client.id}
+        clientName={firstName}
+        trainerId={trainer?.id}
+        trainingPlace={client.training_place}
+        programs={programs}
+        resetNotice={resetNotice(client, todayIso())}
+        startWith={planning}
+        onDone={planned}
+        onClose={() => setPlanning(null)}
+      />
     </View>
   );
 }

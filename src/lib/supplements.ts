@@ -1,9 +1,10 @@
 // The Supplementation section: what's worth taking for energy, muscle,
 // performance and recovery, in plain language. Each supplement has its own
 // card (what it does, who it suits, how to take it, what to watch) so clients
-// can decide for themselves or ask their trainer. Labelled by how strong the
-// evidence is, so they spend money on what works first. General information,
-// not medical advice.
+// can decide for themselves or ask their trainer. Three simple tiers (review
+// 2026-10-18): Worth it, Might help, Skip, so they spend money on what works
+// first. The cards are listed in that order. General information, not medical
+// advice.
 import type { GuidelineGroup } from "@/lib/sleep";
 
 export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
@@ -25,7 +26,7 @@ export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
     heading: "Your daily routine, simply",
     hook: "Four times in the day. That's all it takes.",
     points: [
-      { emoji: "🌅", title: "Morning with breakfast", text: "Vitamin D, omega-3, multivitamin (if you take one), creatine." },
+      { emoji: "🌅", title: "Morning with breakfast", text: "Creatine, plus vitamin D, omega-3 or a multivitamin if you take them." },
       { emoji: "⚡", title: "Before training", text: "Coffee or caffeine if you want it, and water with electrolytes on sweaty days." },
       { emoji: "🥤", title: "After training", text: "A protein shake if you're short of protein, plus a proper meal with carbs." },
       { emoji: "🌙", title: "Evening", text: "Magnesium (if you take it), about an hour before bed." },
@@ -46,7 +47,7 @@ export const SUPPLEMENT_GUIDE: GuidelineGroup[] = [
   },
 ];
 
-export type SupplementLevel = "Proven" | "Training days" | "Might help" | "Save your money";
+export type SupplementLevel = "Worth it" | "Might help" | "Skip";
 
 export type Supplement = {
   name: string;
@@ -61,17 +62,16 @@ export type Supplement = {
 };
 
 export const SUPPLEMENT_LEVELS: { level: SupplementLevel; meaning: string }[] = [
-  { level: "Proven", meaning: "Strong evidence. Worth taking for most people who train." },
-  { level: "Training days", meaning: "Helps performance on the day you take it." },
-  { level: "Might help", meaning: "Some evidence. Try once the basics are in place." },
-  { level: "Save your money", meaning: "Not worth buying for most people." },
+  { level: "Worth it", meaning: "Strong evidence. Worth it for most people who train (protein powder only if you're short on protein from food)." },
+  { level: "Might help", meaning: "Only if you're low or have a reason: the card says who it suits. Get the basics right first." },
+  { level: "Skip", meaning: "Not worth buying for most people." },
 ];
 
 export const SUPPLEMENTS: Supplement[] = [
   {
     name: "Creatine monohydrate",
     icon: "⚡",
-    level: "Proven",
+    level: "Worth it",
     what: "Tops up the quick energy your muscles use for short, hard efforts. You get a rep or two more per set, which builds more strength and muscle over time, and you recover faster between sets.",
     who: "Anyone who lifts weights or does sprint-type training, men and women, young and older. Vegetarians often notice the biggest difference because they eat little creatine in food.",
     how: "3 to 5 g every day, any time of day, including rest days. No need to load or cycle it. Mix it into water, a shake or yoghurt.",
@@ -82,25 +82,34 @@ export const SUPPLEMENTS: Supplement[] = [
   {
     name: "Protein powder",
     icon: "🥤",
-    level: "Proven",
+    level: "Worth it",
     what: "Simply protein in an easy form. Protein repairs and builds muscle and keeps you full. Whey comes from milk; plant blends (pea, rice, soy) suit people who avoid dairy.",
     who: "People who struggle to reach their daily protein (about 1.6 to 2.2 g per kg of body weight) from meals, or who need a quick option after training or on the go.",
     how: "One scoop (about 25 g protein) after training or as a snack, in water or milk. Count it as part of your daily protein, not on top of it.",
     careful: "It's food, not magic. If you already eat enough protein, you don't need it. If whey bloats you, try a whey isolate or a plant protein.",
   },
   {
+    name: "Caffeine",
+    icon: "☕",
+    level: "Worth it",
+    what: "Wakes up your brain and nervous system so training feels easier. You get more energy, focus and power, and you can push a little harder.",
+    who: "Anyone who wants a boost before training, as long as it doesn't make them jittery.",
+    how: "3 to 6 mg per kg of body weight, about 60 minutes before training. Start at the low end (about 3 mg per kg, roughly 200 mg at 70 kg). A strong coffee is about 100 to 150 mg.",
+    careful: "Keep to 400 mg a day in total. Have your last caffeine at least 8 to 12 hours before bed so it doesn't ruin your sleep, which matters if you train in the evening. Pre-workout powders can hold 300 mg or more per scoop, so read the label. Skip it if you have heart problems, high blood pressure or anxiety. If you're pregnant or breastfeeding, keep all caffeine under 200 mg a day and skip pre-workouts.",
+  },
+  {
     name: "Vitamin D3",
     icon: "☀️",
-    level: "Proven",
+    level: "Might help",
     what: "Your body makes vitamin D from sunlight. It keeps bones and muscles strong and supports your mood and immune system.",
-    who: "Anyone who works indoors, covers up in the sun, has darker skin, or trains through winter. Many people are low without knowing it.",
+    who: "Worth it if you're low. You're more likely to be low if you work indoors, cover up in the sun, have darker skin, or it's winter: a blood test from your doctor tells you. If your level is fine, taking more doesn't make bones or performance better.",
     how: "1,000 to 2,000 IU a day with a meal that has some fat in it, because it absorbs better with fat.",
-    careful: "More is not better: it builds up in the body, so don't take high doses for long unless a blood test shows you're low. Your doctor can test your levels.",
+    careful: "More is not better: it builds up in the body. Stay under 4,000 IU a day (the upper limit) unless your doctor tells you otherwise after a blood test.",
   },
   {
     name: "Omega-3 fish oil",
     icon: "🐟",
-    level: "Proven",
+    level: "Might help",
     what: "Healthy fats (EPA and DHA) that calm inflammation, ease stiff joints, and support your heart and brain.",
     who: "Anyone who eats oily fish (salmon, sardines, mackerel) less than twice a week.",
     how: "About 1 to 2 g of EPA and DHA combined a day, with food. Check the label: a 1 g capsule often holds only 300 mg of EPA and DHA. Algae oil is the option for vegetarians.",
@@ -116,18 +125,9 @@ export const SUPPLEMENTS: Supplement[] = [
     careful: "Too much, especially magnesium oxide or citrate, can loosen your stomach. Start low, and count any magnesium in a multivitamin. Check with your doctor if you have kidney problems.",
   },
   {
-    name: "Caffeine",
-    icon: "☕",
-    level: "Training days",
-    what: "Wakes up your brain and nervous system so training feels easier. You get more energy, focus and power, and you can push a little harder.",
-    who: "Anyone who wants a boost before training, as long as it doesn't make them jittery.",
-    how: "3 to 6 mg per kg of body weight, about 60 minutes before training. Start at the low end (about 3 mg per kg, roughly 200 mg at 70 kg). A strong coffee is about 100 to 150 mg.",
-    careful: "Keep to 400 mg a day in total. Have your last caffeine at least 8 to 12 hours before bed so it doesn't ruin your sleep, which matters if you train in the evening. Pre-workout powders can hold 300 mg or more per scoop, so read the label. Skip it if you have heart problems, high blood pressure or anxiety. If you're pregnant or breastfeeding, keep all caffeine under 200 mg a day and skip pre-workouts.",
-  },
-  {
     name: "Electrolytes",
     icon: "💧",
-    level: "Training days",
+    level: "Might help",
     what: "Salts (sodium, potassium, magnesium) you lose in sweat. Replacing them helps stop cramps, headaches and the tired, flat feeling after a sweaty session.",
     who: "Anyone training for a long time, sweating heavily, or training in hot weather.",
     how: "A sachet or tablet in your water during or after long or sweaty sessions. A pinch of salt in water with some fruit also works.",
@@ -145,11 +145,20 @@ export const SUPPLEMENTS: Supplement[] = [
   {
     name: "Carbs during training",
     icon: "🍌",
-    level: "Training days",
+    level: "Might help",
     what: "A sports drink or a banana during long sessions keeps your energy up when your muscles' fuel starts running low.",
     who: "Sessions longer than about 75 minutes, or two sessions in one day.",
     how: "About 30 to 60 g of carbs per hour of training, from a sports drink, banana or similar.",
     careful: "Not needed for normal sessions under an hour. If fat loss is your goal, count its calories like any other food.",
+  },
+  {
+    name: "Beetroot juice (nitrate)",
+    icon: "🟣",
+    level: "Might help",
+    what: "Beetroot is rich in nitrate, which your body turns into nitric oxide. It helps your muscles use oxygen better, so hard efforts feel a little easier.",
+    who: "People doing endurance work (running, cycling, rowing) or repeated hard efforts like intervals and team sports. Little benefit for heavy lifting.",
+    how: "A concentrated beetroot shot (about 6 to 8 mmol nitrate, usually 70 to 140 ml) 2 to 3 hours before training or an event. Eating plenty of leafy greens and beetroot gives you nitrate too.",
+    careful: "It can turn your urine and stools pink or red, which is harmless. Don't use antibacterial mouthwash around the time you take it: mouth bacteria are needed to use the nitrate.",
   },
   {
     name: "Glutamine",
@@ -226,7 +235,7 @@ export const SUPPLEMENTS: Supplement[] = [
   {
     name: "BCAAs",
     icon: "🚫",
-    level: "Save your money",
+    level: "Skip",
     what: "Three amino acids sold for muscle building and recovery.",
     who: "Hardly anyone. Your protein from food and shakes already contains them.",
     how: "Not needed if you eat enough protein. Spend the money on good food or creatine instead.",
@@ -235,7 +244,7 @@ export const SUPPLEMENTS: Supplement[] = [
   {
     name: "Testosterone boosters",
     icon: "🚫",
-    level: "Save your money",
+    level: "Skip",
     what: "Herbal blends that claim to raise testosterone.",
     who: "No one: there's no good evidence they work in healthy people.",
     how: "Sleep, strength training, enough healthy fats and zinc, and a healthy body weight do far more.",
@@ -244,7 +253,7 @@ export const SUPPLEMENTS: Supplement[] = [
   {
     name: "Fat burners",
     icon: "🚫",
-    level: "Save your money",
+    level: "Skip",
     what: "Pills that claim to melt fat. Most are mainly high-dose caffeine at a high price.",
     who: "No one. Fat loss comes from your eating, training, sleep and daily steps.",
     how: "If you want the energy, a coffee does the same job for a fraction of the cost.",

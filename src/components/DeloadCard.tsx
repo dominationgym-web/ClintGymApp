@@ -11,6 +11,7 @@ import type { DeloadCheck } from "@/types/database";
 // one tap: the calendar from that day moves back a week and the week that
 // was there goes in lighter (half the sets, about 70% weight). Otherwise a
 // small line says how many weeks they've trained and offers one anyway.
+// Programs with their own easy weeks count those as deloads (0121).
 export default function DeloadCard({
   clientId,
   clientName,
@@ -72,6 +73,18 @@ export default function DeloadCard({
         <Text style={styles.plannedText}>
           🌙 Deload week on the calendar from {new Date(`${check.planned_deload}T12:00:00`).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}.
         </Text>
+      </View>
+    );
+  }
+
+  // The program has its own easy week coming (0121): no extra deload needed.
+  if (check.program_easy_soon && !check.due) {
+    const when = check.program_easy_next
+      ? ` from ${new Date(`${check.program_easy_next}T12:00:00`).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}`
+      : " in the next 2 weeks";
+    return (
+      <View style={[styles.card, styles.planned]}>
+        <Text style={styles.plannedText}>🌙 {firstName}'s program has its own easy week{when}, so no extra deload is needed.</Text>
       </View>
     );
   }

@@ -16,7 +16,9 @@ const g = (pattern: string, feel: string, steps: string[], tips: string[], adapt
   noWeightRule: true,
 });
 
-const LAND_SOFT = "Land softly on the balls of your feet, knees in line with your toes, hips back, like a spring.";
+// Review 2026-10-18: broad and depth jumps land through the whole foot, which
+// is easier to stick and spares the calves and Achilles.
+const LAND_SOFT = "Land softly through your whole foot, hips back, knees in line with your toes, like a spring.";
 const STOP_PAIN = "Stretch to a mild pull, never pain. Breathe slowly and relax into it.";
 
 export const SPORTS_GUIDES: Record<string, ExerciseTechnique> = {

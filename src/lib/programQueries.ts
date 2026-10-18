@@ -97,6 +97,9 @@ export interface CalendarDayWorkout {
   daySlot: number | null;
   /** A deload week's workout (0115): sets already halved here. */
   deload?: boolean;
+  /** For an extra block (0123): its row id, and the client's Done / Couldn't do it. */
+  blockId?: string;
+  result?: "done" | "skipped" | null;
 }
 
 export interface CalendarDay {
@@ -154,6 +157,11 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
     return { program, exercises: pick.deload ? deloadExercises(exercises) : exercises, daySlot: pick.day_slot, deload: !!pick.deload };
   };
   const main = entry ? build(entry) : null;
-  const extras = blocks.map(build).filter((b): b is CalendarDayWorkout => !!b);
+  const extras = blocks
+    .map((b): CalendarDayWorkout | null => {
+      const built = build(b);
+      return built ? { ...built, blockId: b.id, result: b.result ?? null } : null;
+    })
+    .filter((b): b is CalendarDayWorkout => !!b);
   return main || extras.length > 0 ? { main, extras } : null;
 }

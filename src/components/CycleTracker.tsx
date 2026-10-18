@@ -5,20 +5,22 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso, toIsoDate } from "@/lib/dates";
-import { cycleToday, SUPPLEMENT_PREP_LIST, supplementPrepDaysLeft, type CycleToday } from "@/lib/cycle";
+import { cycleLooksIrregular, cycleToday, MENOPAUSE_HEADING, SUPPLEMENT_PREP_LIST, supplementPrepDaysLeft, type CycleToday } from "@/lib/cycle";
 import { CYCLE_NUDGE_BODY, CYCLE_NUDGE_TITLE, scheduleCycleReminders, scheduleCycleTrackerNudge } from "@/lib/notifications";
-import { getCycleReminderEnabled, setCycleReminderEnabled } from "@/lib/cycleReminderSetting";
+import { getCycleIrregular, getCycleReminderEnabled, setCycleIrregular, setCycleReminderEnabled } from "@/lib/cycleReminderSetting";
 import { useAuth } from "@/context/AuthContext";
 import type { ClientStackParamList } from "@/navigation/types";
 import type { CycleLog } from "@/types/database";
 
 // Women's Health Reset cycle tracking (0038). She logs the first day of each
 // period; the app works out her phase and guides her through it, with an 8am
-// reminder in the installed app.
+// reminder in the installed app. Women whose periods are irregular or have
+// stopped (perimenopause, menopause) can turn the phase guide off.
 
 function useCycleLogs() {
   const { client } = useAuth();
   const [logs, setLogs] = useState<CycleLog[] | null>(null);
+  const [irregular, setIrregular] = useState(false);
 
   const load = useCallback(async () => {
     if (!client) return;
@@ -35,9 +37,13 @@ function useCycleLogs() {
     }
     const rows = data ?? [];
     setLogs(rows);
-    getCycleReminderEnabled().then((enabled) => scheduleCycleReminders(rows.map((r) => r.period_start), enabled));
-    // Women who haven't logged a period yet get a Saturday nudge; logging one ends it.
-    scheduleCycleTrackerNudge(client.sex === "female" && rows.length === 0);
+    Promise.all([getCycleReminderEnabled(), getCycleIrregular()]).then(([enabled, irr]) => {
+      setIrregular(irr);
+      // No phase reminders when her periods are irregular or have stopped: the phases won't fit.
+      scheduleCycleReminders(rows.map((r) => r.period_start), enabled && !irr);
+      // Women who haven't logged a period yet get a Saturday nudge; logging one (or saying they've stopped) ends it.
+      scheduleCycleTrackerNudge(client.sex === "female" && rows.length === 0 && !irr);
+    });
   }, [client?.id, client?.sex]);
 
   useFocusEffect(
@@ -46,7 +52,7 @@ function useCycleLogs() {
     }, [load])
   );
 
-  return { logs, reload: load, clientId: client?.id, sex: client?.sex ?? null };
+  return { logs, reload: load, clientId: client?.id, sex: client?.sex ?? null, irregular, setIrregular };
 }
 
 const daysAgoIso = (n: number) => {
@@ -116,7 +122,7 @@ function Block({ title, lines }: { title: string; lines: string[] }) {
 
 /** The whole tracker, at the top of the Women's Health Reset page. */
 export default function CycleTracker() {
-  const { logs, reload, clientId } = useCycleLogs();
+  const { logs, reload, clientId, sex, irregular, setIrregular } = useCycleLogs();
   const [busy, setBusy] = useState(false);
   const [pickingEarlier, setPickingEarlier] = useState(false);
   const [daysAgo, setDaysAgo] = useState(2);
@@ -164,12 +170,28 @@ export default function CycleTracker() {
   const toggleReminders = (next: boolean) => {
     setRemindersOn(next);
     setCycleReminderEnabled(next);
-    scheduleCycleReminders(starts, next);
+    scheduleCycleReminders(starts, next && !irregular);
+  };
+
+  const toggleIrregular = (next: boolean) => {
+    setIrregular(next);
+    setCycleIrregular(next);
+    scheduleCycleReminders(starts, (remindersOn ?? true) && !next);
+    scheduleCycleTrackerNudge(sex === "female" && starts.length === 0 && !next);
   };
 
   return (
     <View>
-      {today ? (
+      {irregular ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>🌡️ Periods irregular or stopped</Text>
+          <Text style={styles.body}>
+            The phase guide is off, because the phases won't fit when your periods are irregular or have stopped. Go by how you
+            feel each day. You can still log any period below, which is handy to show your doctor.
+          </Text>
+          <Text style={[styles.body, { marginTop: 8 }]}>Open {MENOPAUSE_HEADING} further down this page for how to train and eat now.</Text>
+        </View>
+      ) : today ? (
         <TodayCard today={today} full />
       ) : (
         <View style={styles.card}>
@@ -178,6 +200,7 @@ export default function CycleTracker() {
             Log the first day of your last period and the app will show you which phase you're in, what to expect, and how to
             train, eat and supplement for it.
           </Text>
+          <Text style={styles.small}>Periods irregular or stopped? Use the switch further down.</Text>
         </View>
       )}
 
@@ -227,36 +250,63 @@ export default function CycleTracker() {
         <Text style={[styles.small, { marginTop: 10 }]}>Only you can see this. Your coach can't.</Text>
       </View>
 
+      {!irregular && cycleLooksIrregular(starts, todayIso()) && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Your cycles look irregular</Text>
+          <Text style={styles.small}>
+            If you're over 40, this can be perimenopause. If the phase guide doesn't fit, turn on the switch below and track how you
+            feel instead. Irregular cycles at any age are worth mentioning to your doctor.
+          </Text>
+        </View>
+      )}
+
       <View style={[styles.card, styles.toggleRow]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Daily phase reminder</Text>
-          <Text style={styles.small}>An 8am note on what to focus on for your phase, and a supplement check a week before your period (in the installed app).</Text>
+          <Text style={styles.cardTitle}>My periods are irregular or have stopped</Text>
+          <Text style={styles.small}>For perimenopause, menopause or cycles that vary a lot. Turns off the phase guide and phase reminders.</Text>
         </View>
         <Switch
-          value={remindersOn ?? true}
-          disabled={remindersOn === null}
-          onValueChange={toggleReminders}
+          value={irregular}
+          onValueChange={toggleIrregular}
           trackColor={{ true: BRAND_GOLD, false: "#334155" }}
-          accessibilityLabel="Daily phase reminder"
+          accessibilityLabel="My periods are irregular or have stopped"
         />
       </View>
+
+      {!irregular && (
+        <View style={[styles.card, styles.toggleRow]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle}>Daily phase reminder</Text>
+            <Text style={styles.small}>An 8am note on what to focus on for your phase, and a supplement check a week before your period (in the installed app).</Text>
+          </View>
+          <Switch
+            value={remindersOn ?? true}
+            disabled={remindersOn === null}
+            onValueChange={toggleReminders}
+            trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+            accessibilityLabel="Daily phase reminder"
+          />
+        </View>
+      )}
     </View>
   );
 }
 
 /** A small card on the Check-in screen once she's logged a period; tap for the full guide. */
 export function CycleTodayBanner() {
-  const { logs, sex } = useCycleLogs();
+  const { logs, sex, irregular } = useCycleLogs();
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const today = logs ? cycleToday(logs.map((l) => l.period_start), todayIso()) : null;
   const openTracker = () => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" });
   // Saturdays, until she logs her first period: the same nudge as the phone
   // reminder, so it also shows in Expo Go.
+  // Periods irregular or stopped: no phase card and no nudge.
+  if (irregular) return null;
   if (!today && logs && logs.length === 0 && sex === "female" && parseIsoDate(todayIso()).getDay() === 6) {
     return (
       <Pressable style={styles.todayCard} onPress={openTracker}>
         <Text style={styles.phaseName}>{CYCLE_NUDGE_TITLE}</Text>
-        <Text style={styles.body}>{CYCLE_NUDGE_BODY.replace(" Menu ☰ → Women's Health Reset.", "")}</Text>
+        <Text style={styles.body}>{CYCLE_NUDGE_BODY.replace(" Menu ☰ → Cycle tracker.", "")}</Text>
         <Text style={styles.reminder}>Tap to open it ›</Text>
       </Pressable>
     );

@@ -62,7 +62,7 @@ export default function ClientFormVideos({ client, trainerId }: { client: Client
       </Text>
       {videos.length === 0 ? (
         <Text style={styles.helper}>
-          No videos in the last 7 days. {client.name.split(" ")[0]} can send one from their Video log tab, and you'll get a
+          No videos in the last 7 days. {client.name.split(" ")[0]} can film one from their set log (🎥 Film this set), and you'll get a
           notification.
         </Text>
       ) : (

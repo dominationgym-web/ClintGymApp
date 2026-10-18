@@ -1,18 +1,14 @@
 import React, { useCallback, useState } from "react";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { TrainerStackParamList } from "@/navigation/types";
+import { useFocusEffect } from "@react-navigation/native";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
-import { todayIso } from "@/lib/dates";
-import { loadAvailablePrograms, loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
+import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
 import ProgramSummary from "@/components/ProgramSummary";
 import { currentSession, sessionTitle, slotOf, trainingDays, weekdayOf } from "@/lib/programSchedule";
-import type { ExtraCardio, Program, ProgramExercise } from "@/types/database";
+import type { ExtraCardio, ProgramExercise } from "@/types/database";
 import { CARDIO_ALL, CARDIO_OPTIONS, cardioDuration, cardioLabel } from "@/lib/programs";
 import CardioDurationPicker from "@/components/CardioDurationPicker";
-import ProgramChooserModal from "@/components/ProgramChooserModal";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { StabilityArea } from "@/lib/stability";
@@ -29,39 +25,29 @@ function progressLine(active: ActiveProgram): string | null {
   return next + last;
 }
 
-// On the trainer's view of a client: the program they're on, and one tap to
-// switch them onto another (0035). The client sees it on their Exercises tab.
-// The choices open on gym or home programs to match where the client trains.
+// On the trainer's view of a client: an old-style program they're still on
+// (0035), with its extra cardio. New programs go on the calendar only (review
+// 2026-10-18: one way to give a program), so there's no picker here any more:
+// tapping a day on the calendar takes them off this one.
 export default function ClientProgramPicker({
   clientId,
   clientName,
   trainingPlace,
-  resetNotice = null,
-  onChanged,
   injuries = [],
 }: {
   clientId: string;
   clientName: string;
   trainingPlace: ExercisePlace;
-  // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
-  resetNotice?: string | null;
-  // A program was picked, so the injury check runs (GRIZZ, 2026-10-17).
-  onChanged?: () => void;
   injuries?: StabilityArea[];
 }) {
   const [active, setActive] = useState<ActiveProgram | null>(null);
-  const [choices, setChoices] = useState<Program[]>([]);
-  const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
-  const [choosing, setChoosing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [showWorkouts, setShowWorkouts] = useState(false);
   const [changing, setChanging] = useState<ProgramExercise | null>(null);
 
   const load = useCallback(async () => {
-    const [current, available] = await Promise.all([loadClientProgram(clientId), loadAvailablePrograms()]);
-    setActive(current);
-    setChoices(available);
+    setActive(await loadClientProgram(clientId));
   }, [clientId]);
 
   // Reload on coming back, so a program just built shows up in the popup.
@@ -99,30 +85,6 @@ export default function ClientProgramPicker({
 
   const positionLabel = (after: number | null) => (after == null ? "At the end" : `After exercise ${after}`);
 
-  const activate = async (program: Program) => {
-    setBusy(true);
-    const { error } = await supabase
-      .from("client_programs")
-      .upsert({
-        client_id: clientId,
-        program_id: program.id,
-        started_on: todayIso(),
-        assigned_at: new Date().toISOString(),
-        // A new program starts from its first session (0037).
-        current_day: null,
-        current_week: null,
-        due_on: null,
-        last_completed_at: null,
-        // Cardio added for the old program doesn't carry over.
-        extra_cardio: [],
-      });
-    if (error) Alert.alert("Couldn't switch program", error.message);
-    setChoosing(false);
-    await load();
-    setBusy(false);
-    if (!error) onChanged?.();
-  };
-
   const stop = () =>
     Alert.alert(`Take ${clientName} off this program?`, "Their training log stays as it is.", [
       { text: "Cancel", style: "cancel" },
@@ -143,7 +105,7 @@ export default function ClientProgramPicker({
 
   return (
     <View>
-      <Text style={styles.heading}>Program</Text>
+      <Text style={styles.heading}>Old-style program</Text>
       {active ? (
         <View style={styles.card}>
           <Text style={styles.name}>{active.program.name}</Text>
@@ -157,7 +119,7 @@ export default function ClientProgramPicker({
           )}
         </View>
       ) : (
-        <Text style={styles.helper}>Not on a program yet.</Text>
+        <Text style={styles.helper}>Not on an old-style program. Programs now go on the calendar: tap a day at the top of this tab.</Text>
       )}
 
       {active && (
@@ -215,43 +177,15 @@ export default function ClientProgramPicker({
         </View>
       )}
 
-      <View style={styles.buttonRow}>
-        <Pressable
-          style={styles.button}
-          onPress={() =>
-            resetNotice
-              ? Alert.alert("On the Health Reset", `${resetNotice} Do you still want to give them a program?`, [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Choose a program", onPress: () => setChoosing(true) },
-                ])
-              : setChoosing(true)
-          }
-          disabled={busy}
-        >
-          <Text style={styles.buttonText}>{active ? "Change program" : "Choose a program"}</Text>
-        </Pressable>
-        {active && (
+      {active && (
+        <View style={styles.buttonRow}>
+          <Text style={[styles.helper, { flex: 1 }]}>To change it, tap a day on the calendar and pick a new program.</Text>
           <Pressable style={styles.secondaryButton} onPress={stop} disabled={busy}>
             <Text style={styles.secondaryText}>Take off</Text>
           </Pressable>
-        )}
-      </View>
+        </View>
+      )}
 
-      <ProgramChooserModal
-        visible={choosing}
-        programs={choices}
-        currentId={active?.program.id ?? null}
-        clientName={clientName}
-        trainingPlace={trainingPlace}
-        resetNotice={resetNotice}
-        busy={busy}
-        onChoose={activate}
-        onBuild={() => {
-          setChoosing(false);
-          navigation.navigate("ProgramBuilder");
-        }}
-        onClose={() => setChoosing(false)}
-      />
       <ExerciseChangeModal
         row={changing}
         clientId={clientId}

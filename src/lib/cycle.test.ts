@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   averageCycleLength,
   CYCLE_PHASES,
+  cycleLooksIrregular,
   cycleToday,
   daysBetween,
+  MENOPAUSE_GUIDE,
+  MENOPAUSE_HEADING,
   phaseForDay,
   PHASE_ORDER,
   nextPeriodStarts,
@@ -130,5 +133,31 @@ describe("safe content (nutrition review, 2026-10-18)", () => {
     expect(c.SUPPLEMENT_PREP_BODY).toMatch(/10 mg a day or less/);
     expect(all).toMatch(/ferritin/);
     expect(all).toMatch(/RED-S/);
+  });
+});
+
+describe("perimenopause and menopause (nutrition review, 2026-10-18)", () => {
+  it("spots cycles that keep changing length, or a long gap", () => {
+    // Regular 28-day cycles.
+    expect(cycleLooksIrregular(["2026-07-01", "2026-07-29", "2026-08-26", "2026-09-23"], "2026-10-01")).toBe(false);
+    // 24, 38, 23, 36 days: keeps changing by 7 or more.
+    expect(cycleLooksIrregular(["2026-05-01", "2026-05-25", "2026-07-02", "2026-07-25", "2026-08-30"], "2026-09-05")).toBe(true);
+    // One odd cycle (or a missed log) isn't enough.
+    expect(cycleLooksIrregular(["2026-06-01", "2026-06-29", "2026-08-08", "2026-09-05"], "2026-09-10")).toBe(false);
+    // 60 days or more since her last period.
+    expect(cycleLooksIrregular(["2026-08-01"], "2026-09-30")).toBe(true);
+    expect(cycleLooksIrregular(["2026-08-01"], "2026-09-28")).toBe(false);
+    expect(cycleLooksIrregular([], "2026-09-28")).toBe(false);
+  });
+
+  it("covers training, bone, protein, calcium, vitamin D, creatine, hot flushes and the doctor", () => {
+    const text = JSON.stringify(MENOPAUSE_GUIDE);
+    for (const word of ["Strength train", "impact", "1.2 to 1.6 g", "Calcium", "Vitamin D", "Creatine", "Hot flushes", "HRT", "doctor"]) {
+      expect(text).toContain(word);
+    }
+    // Shown on the Women's Health Reset page.
+    expect(WOMENS_HEALTH_GUIDE.map((g) => g.heading)).toContain(MENOPAUSE_HEADING);
+    expect(WOMENS_HEALTH_GUIDE.map((g) => g.heading)).toContain("Iron and eating enough");
+    expect(JSON.stringify(WOMENS_HEALTH_GUIDE).toLowerCase()).not.toMatch(/\boats?\b/);
   });
 });

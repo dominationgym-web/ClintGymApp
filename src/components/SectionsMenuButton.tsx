@@ -12,8 +12,8 @@ import { STABILITY_MENU_ITEM } from "@/lib/stability";
 import { RECOVERY_MENU_ITEM } from "@/lib/recoveryActivities";
 import { supabase } from "@/lib/supabase";
 
-// The client app's menu: Recovery (GRIZZ, 2026-10-17), Nutrition, Women's Health Reset (with the cycle
-// tracker, women only) and Sleep & Recovery (GRIZZ, 2026-10-12) first, then the
+// The client app's menu: Recovery (GRIZZ, 2026-10-17), Nutrition, Cycle tracker (the cycle guide
+// and tracker, women only) and Sleep (GRIZZ, 2026-10-12) first, then the
 // client's stability program (only once their coach has given them one: the
 // trainer runs Stability, 2026-10-14), then
 // the suggestion box (the coach wants it easy to find), how to use the app,

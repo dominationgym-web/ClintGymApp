@@ -15,6 +15,20 @@ describe("supplement cards", () => {
   });
 });
 
+describe("three tiers (nutrition review, 2026-10-18)", () => {
+  it("lists Worth it, then Might help, then Skip", () => {
+    const order = SUPPLEMENTS.map((s) => SUPPLEMENT_LEVELS.findIndex((l) => l.level === s.level));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(SUPPLEMENTS.filter((s) => s.level === "Worth it").map((s) => s.name)).toEqual(["Creatine monohydrate", "Protein powder", "Caffeine"]);
+  });
+  it("puts vitamin D under Might help with its upper limit, and adds beetroot", () => {
+    const d = SUPPLEMENTS.find((s) => s.name === "Vitamin D3")!;
+    expect(d.level).toBe("Might help");
+    expect(d.careful).toMatch(/4,000 IU/);
+    expect(SUPPLEMENTS.find((s) => s.name.startsWith("Beetroot"))?.how).toMatch(/2 to 3 hours before/);
+  });
+});
+
 describe("doses (nutrition review, 2026-10-18)", () => {
   const card = (name: string) => SUPPLEMENTS.find((s) => s.name.startsWith(name))!;
   it("keeps magnesium within the 350 mg supplement limit", () => {
@@ -29,7 +43,7 @@ describe("doses (nutrition review, 2026-10-18)", () => {
   });
   it("gives caffeine per ISSN and beta-alanine as a daily build-up", () => {
     expect(card("Caffeine").how).toMatch(/3 to 6 mg per kg of body weight, about 60 minutes before/);
-    expect(card("Beta-alanine").level).not.toBe("Training days");
+    expect(card("Beta-alanine").level).toBe("Might help");
     expect(card("Beta-alanine").how).toMatch(/every day/);
   });
 });

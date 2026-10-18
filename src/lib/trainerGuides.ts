@@ -3,6 +3,8 @@
 // Written from current sports-science research and kept to plain facts; the
 // numbers are the ranges most studies agree on, not hard rules.
 import { SPORTS_PERFORMANCE_GUIDE } from "@/lib/sportsPerformance";
+import { REFERRAL_GUIDE } from "@/lib/referralGuide";
+import { WOMENS_HEALTH_TRAINER_GUIDE } from "@/lib/womensHealthTrainerGuide";
 // A heading with its plain-text points (the client menu guides use emoji rows instead).
 type GuideGroup = { heading: string; points: string[]; icon?: string };
 
@@ -14,7 +16,7 @@ export type GuideTopic = {
   groups: GuideGroup[];
 };
 
-export type TrainerGuideKey = "retention" | "nutrition" | "training" | "recovery" | "sportsPerformance";
+export type TrainerGuideKey = "retention" | "nutrition" | "training" | "recovery" | "sportsPerformance" | "womensHealth" | "referral";
 
 export type TrainerGuide = {
   key: TrainerGuideKey;
@@ -618,7 +620,7 @@ const TRAINING: TrainerGuide = {
         {
           heading: "No failure in the intro",
           points: [
-            "In the first 6 weeks, or while on a Foundation program, clients stop each set 2 reps short of failure. The app works out their weight that way and reminds them under every set.",
+            "In the first 6 weeks (2 weeks for advanced clients), or while on a Foundation program, clients stop each set 2 reps short of failure. The app works out their weight that way and reminds them under every set.",
             "After the intro the app aims for 1 rep short. The gauge set follows the same rule: no set goes to failure in the intro, the gauge set included.",
             "Why: new lifters' form breaks down near failure, and their joints and tendons adapt more slowly than their muscles. Building the habit of good reps first keeps them training without injury.",
           ],
@@ -718,7 +720,7 @@ const RECOVERY: TrainerGuide = {
         {
           heading: "Plan easier weeks",
           points: [
-            "Every 4 to 8 weeks, a lighter week (deload) with about half the sets lets joints and tiredness catch up.",
+            "Every 4 to 8 weeks, a lighter week (deload) with about half the sets lets joints and tiredness catch up. Many programs have one built in (their easy weeks), and the app counts those, so you only add one when a client has gone longer without.",
             "Deload early if a client shows signs of under-recovery.",
           ],
         },
@@ -786,7 +788,16 @@ const RECOVERY: TrainerGuide = {
   ],
 };
 
-export const TRAINER_GUIDES: TrainerGuide[] = [RETENTION, NUTRITION, TRAINING, RECOVERY, SPORTS_PERFORMANCE_GUIDE];
+// "When to refer" first, so trainers see scope and red flags before anything else (safety first, 2026-10-18).
+export const TRAINER_GUIDES: TrainerGuide[] = [
+  REFERRAL_GUIDE,
+  RETENTION,
+  NUTRITION,
+  TRAINING,
+  RECOVERY,
+  WOMENS_HEALTH_TRAINER_GUIDE,
+  SPORTS_PERFORMANCE_GUIDE,
+];
 
 export function trainerGuide(key: TrainerGuideKey): TrainerGuide | undefined {
   return TRAINER_GUIDES.find((g) => g.key === key);

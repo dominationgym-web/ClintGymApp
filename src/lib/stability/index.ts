@@ -32,11 +32,19 @@ export const STABILITY_MENU_ITEM = {
   summary: "4-8 week programs for ankle, knee, hip, core, shoulder, wrist and neck: rehab to advanced.",
 };
 
-/** The coach message a client gets when their trainer starts a stability program for them. */
-export function stabilityStartMessage(clientName: string, area: StabilityArea, level: StabilityLevel): string {
-  const first = clientName.trim().split(/\s+/)[0] || "Hi";
-  const program = findProgram(area, level);
-  return `${first}, I've started you on the ${findArea(area).title} stability program (${levelInfo(level).label}, ${program.weeks} weeks). Open the ☰ menu and tap My stability program. Do the short ⚡ version before your workouts and the full session on the days it says, and log your holds and reps so I can see how you're going.`;
+// Before a Rehab program starts, the trainer ticks that none of these apply
+// (review 2026-10-18): trainers can't diagnose or treat injuries, so anything
+// fresh, after surgery or with a red flag is assessed first.
+export const REHAB_GENERAL_FLAGS = [
+  "The injury happened in the last 1-2 weeks.",
+  "They've had surgery on this area and haven't been cleared for strength training by their surgeon or physio.",
+  "Pain at night or at rest, pain above about 7 out of 10, or pain that isn't improving after 2 weeks.",
+  "A hot, red, swollen joint, or fever or feeling unwell.",
+];
+
+/** The red flags to check before a Rehab program: the general ones, then the area's own. */
+export function rehabRedFlags(area: StabilityArea): string[] {
+  return [...REHAB_GENERAL_FLAGS, ...findArea(area).redFlags];
 }
 
 export function findArea(area: StabilityArea): StabilityAreaGuide {

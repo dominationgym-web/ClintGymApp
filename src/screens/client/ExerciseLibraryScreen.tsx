@@ -42,8 +42,8 @@ import { checkAchievement } from "@/lib/achievementQueries";
 import type { ClientAchievement } from "@/types/database";
 import { AB_MAX_ROUNDS, AB_REPS, abExerciseFor, absAfterExercise, absBetweenSets, abRoundsDone } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
-import { suggestNext, type Suggestion } from "@/lib/progression";
-import { gaugeWeight, inIntro, needsGauge, needsSafeties, SAFETIES_NOTE, type GaugeResult } from "@/lib/gauge";
+import { EFFORT_LABEL, EFFORT_OPTIONS, EFFORT_QUESTION, suggestNext, type Suggestion } from "@/lib/progression";
+import { gaugeWeight, inIntro, introWeeks, needsGauge, needsSafeties, SAFETIES_NOTE, type GaugeResult } from "@/lib/gauge";
 import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
@@ -91,18 +91,8 @@ import { applyRecoveryAdjustment } from "@/lib/recovery";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import FoldSection from "@/components/FoldSection";
-
-const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
-  { key: "comfortable", label: "Comfortable" },
-  { key: "close_to_failure", label: "Close to failure" },
-  { key: "failure", label: "Failure" },
-];
-
-const EFFORT_LABEL: Record<SetEffort, string> = {
-  comfortable: "Comfortable",
-  close_to_failure: "Close to failure",
-  failure: "Failure",
-};
+import TodayPlanRows from "@/components/TodayPlanRows";
+import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 
 export default function ExerciseLibraryScreen() {
   const { client, refreshProfile } = useAuth();
@@ -179,6 +169,12 @@ export default function ExerciseLibraryScreen() {
   // Drop set programs (0099, GRIZZ, 2026-10-16) log in their own logger.
   const [dropRow, setDropRow] = useState<ProgramExercise | null>(null);
   const { height: screenHeight } = useWindowDimensions();
+  // Stability and recovery rows on Today (app-flow review C4), so a day with only those isn't a "rest day".
+  const [planRows, setPlanRows] = useState(0);
+  // Done / Couldn't do it on extra blocks (0123), as just tapped, by block id.
+  const [blockResults, setBlockResults] = useState<Record<string, "done" | "skipped" | null>>({});
+  // "🎥 Film this set" in the set log (C2): the video goes to the coach with the exercise filled in.
+  const film = useFormVideoUpload(client?.id);
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
   const compactVideoHeight = Math.min(screenHeight * 0.28, 240);
@@ -247,6 +243,7 @@ export default function ExerciseLibraryScreen() {
       setCardioDone(await getCardioDone(todayIso()));
       if (!error && data) setExercises(data);
       setCalendarExtras(calendar?.extras ?? []);
+      setBlockResults({});
       setCalendarSlot(calendar?.main?.daySlot ?? null);
       setDeloadToday(!!calendar?.main?.deload);
       const main = calendar?.main ?? null;
@@ -283,8 +280,9 @@ export default function ExerciseLibraryScreen() {
   // Weekly programs are worked through in order (0037): the current session
   // shows from its day until it's completed or moved.
   const today = todayIso();
-  // Intro (first 6 weeks or a Foundation program): no sets to failure but the gauge set.
-  const intro = inIntro(program?.program.name, client?.plan_started_at, today);
+  // Intro (first 6 weeks, 2 for advanced clients, or a Foundation program): no sets to failure.
+  const intro = inIntro(program?.program.name, client?.plan_started_at, today, client?.training_level);
+  const introLength = `${introWeeks(client?.training_level)} weeks`;
   // A calendar workout is just the day's exercises, even when it's one day of a weekly program (0098).
   const weekly = !calendarToday && program?.program.kind === "weekly";
   const days = program && weekly ? trainingDays(program.exercises) : [];
@@ -398,6 +396,19 @@ export default function ExerciseLibraryScreen() {
   const swapChoices = swapping
     ? forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, swaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym", fit)
     : [];
+
+  const resultOf = (block: CalendarDayWorkout) =>
+    block.blockId && block.blockId in blockResults ? blockResults[block.blockId] : block.result ?? null;
+  // Extra blocks (bug 11, app-flow review): the client ticks them off so the coach sees them on their calendar.
+  const setBlockResult = async (block: CalendarDayWorkout, result: "done" | "skipped" | null) => {
+    if (!block.blockId) return;
+    const { data, error } = await supabase.rpc("set_my_block_result", { p_block: block.blockId, p_result: result });
+    if (error || !data) {
+      Alert.alert("Couldn't save", error?.message ?? "Please try again.");
+      return;
+    }
+    setBlockResults((prev) => ({ ...prev, [block.blockId!]: result }));
+  };
 
   const saveProgress = async (next: ProgramSession, completed: boolean) => {
     if (!program) return;
@@ -642,11 +653,11 @@ export default function ExerciseLibraryScreen() {
       .order("log_date", { ascending: false })
       .limit(20);
     const lastDate = earlier?.[0]?.log_date;
-    const usual = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
+    const usual = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise, intro ? 2 : 1) : null;
     // Deload week (0115): about 70% of the usual weight, and no gauge set.
     const next = deloadToday && calendarToday ? deloadSuggestion(usual, exercise) : usual;
     setSuggestion(next);
-    setGaugeDue(!(deloadToday && calendarToday) && !!programRow && needsGauge(earlier ?? [], data ?? [], programRow.reps));
+    setGaugeDue(!(deloadToday && calendarToday) && !!programRow && needsGauge(earlier ?? [], data ?? [], programRow.reps, exercise.name));
     const working = (data ?? []).filter((s) => !s.warm_up);
     const lastToday = working[working.length - 1]?.weight_kg;
     const start = lastToday ? String(lastToday) : next?.weight ? String(next.weight) : "";
@@ -689,7 +700,7 @@ export default function ExerciseLibraryScreen() {
       return;
     }
     if (!effort && !warmUp && !gauge) {
-      Alert.alert("Missing effort", "Pick how the set felt.");
+      Alert.alert("Missing effort", "Pick how many more good reps you could have done.");
       return;
     }
     const workingDone = todaysSets.filter((s) => !s.warm_up).length;
@@ -851,12 +862,14 @@ export default function ExerciseLibraryScreen() {
                       <Text style={styles.todayHint}>
                         {block.daySlot != null ? `${sessionTitle(block.program, block.daySlot)} · ` : ""}
                         {block.exercises.length} exercise{block.exercises.length === 1 ? "" : "s"}
+                        {resultOf(block) === "done" ? " · Done ✓" : resultOf(block) === "skipped" ? " · Couldn't do it" : ""}
                       </Text>
                     </View>
                     <Text style={styles.todayOpen}>{part === `extra-${i}` ? "Close ▴" : "Open ›"}</Text>
                   </Pressable>
                 ))}
-                {(!program || todaysWorkout.length === 0) && calendarExtras.length === 0 && (
+                {client && <TodayPlanRows clientId={client.id} refreshKey={refresh} onCount={setPlanRows} />}
+                {(!program || todaysWorkout.length === 0) && calendarExtras.length === 0 && planRows === 0 && (
                   <Text style={styles.todayRest}>
                     {program ? "😌 Rest day. Let your body recover." : "Nothing planned for today."}
                   </Text>
@@ -1085,13 +1098,15 @@ export default function ExerciseLibraryScreen() {
                   .sort((a, b) => a.sort_order - b.sort_order)
                   .map((row) => {
                     if (row.kind === "cardio") {
+                      const ticked = cardioDone.includes(row.id);
                       return (
-                        <View key={row.id} style={[styles.programRow, styles.cardioRow]}>
+                        <Pressable key={row.id} style={[styles.programRow, styles.cardioRow]} onPress={() => toggleCardio(row)}>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.name}>🔥 Cardio</Text>
                             <Text style={styles.category}>{cardioLabel(row)}</Text>
                           </View>
-                        </View>
+                          <Text style={[styles.setsDone, ticked && { color: "#22C55E" }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
+                        </Pressable>
                       );
                     }
                     const ex = exercises.find((e) => e.id === row.exercise_id) ?? exercises.find((e) => e.name === row.exercise_name);
@@ -1113,6 +1128,26 @@ export default function ExerciseLibraryScreen() {
                       </View>
                     );
                   })}
+                {block.blockId &&
+                  (resultOf(block) ? (
+                    <View style={styles.nameRow}>
+                      <Text style={[styles.resultTitle, { flex: 1 }]}>
+                        {resultOf(block) === "done" ? "✅ Done. Your coach can see it." : "Marked as couldn't do it. Your coach can see it."}
+                      </Text>
+                      <Pressable onPress={() => setBlockResult(block, null)} hitSlop={8}>
+                        <Text style={styles.changeLink}>Undo</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View style={styles.sessionButtons}>
+                      <Pressable style={styles.completeButton} onPress={() => setBlockResult(block, "done")}>
+                        <Text style={styles.completeText}>Done ✓</Text>
+                      </Pressable>
+                      <Pressable style={styles.moveButton} onPress={() => setBlockResult(block, "skipped")}>
+                        <Text style={styles.moveText}>Couldn't do it</Text>
+                      </Pressable>
+                    </View>
+                  ))}
               </View>
             ))}
             {client && (
@@ -1291,7 +1326,7 @@ export default function ExerciseLibraryScreen() {
                   changes. Log the weight and your reps, and the app works out the right weight for the rest of your sets.
                 </Text>
                 <Text style={styles.warmUpText}>
-                  {intro ? "Don't go to failure: no set does in your first 6 weeks, this one included." : "Don't go to failure on this set."}
+                  {intro ? `Don't go to failure: no set does in your first ${introLength}, this one included.` : "Don't go to failure on this set."}
                 </Text>
                 {selected && needsSafeties(selected.name) && <Text style={styles.warmUpText}>{SAFETIES_NOTE}</Text>}
               </View>
@@ -1336,10 +1371,10 @@ export default function ExerciseLibraryScreen() {
               </View>
             </View>
 
-            {!warmUpDue && !gaugeDue && <Text style={styles.fieldLabel}>How did it feel?</Text>}
+            {!warmUpDue && !gaugeDue && <Text style={styles.fieldLabel}>{EFFORT_QUESTION}</Text>}
             {!warmUpDue && !gaugeDue && intro && (
               <Text style={styles.introNote}>
-                Your first 6 weeks: stop each set when you could still do 1-2 more good reps. Going to failure comes after your intro program.
+                Your first {introLength}: stop each set when you could still do 1-2 more good reps. Going to failure comes after your intro program.
               </Text>
             )}
             {!warmUpDue && !gaugeDue && <View style={styles.effortRow}>
@@ -1363,6 +1398,11 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : gaugeDue ? "Log gauge set" : "Log set"}</Text>
               )}
             </Pressable>
+            {selected && (
+              <Pressable style={styles.filmButton} onPress={() => film.filmOrPick(selected.name)} disabled={film.uploading}>
+                {film.uploading ? <ActivityIndicator color={BRAND_GOLD} /> : <Text style={styles.filmText}>🎥 Film this set for my coach</Text>}
+              </Pressable>
+            )}
 
             {absDue && (
               <View style={styles.absBox}>
@@ -1487,6 +1527,8 @@ const styles = StyleSheet.create({
   effortChipTextSelected: { color: "#0F172A" },
   button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center" },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
+  filmButton: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },
+  filmText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 15 },
   loggedSetRow: {
     flexDirection: "row",
     justifyContent: "space-between",

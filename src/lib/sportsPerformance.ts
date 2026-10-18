@@ -54,7 +54,7 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
           heading: "The basics",
           points: [
             "Each program runs 6 or 8 weeks (the lower back stretch 4), three sessions a week (Monday, Wednesday and Friday), and builds as it goes.",
-            "8-week programs have an easy week 4 and a test week 8 at half the sets.",
+            "8-week programs have an easy week 4 and a test week 8 at half the sets. In the test week the client tests their best clean set on the main lifts (Sports Strength) or measures a broad jump and a throw (Explosive Power 3).",
             "Mobility and Flexibility are in the picker for home clients too; the others need a gym, a field or both.",
             "Each program has its own warm-up and nutrition notes, shown to the client with the workout.",
           ],

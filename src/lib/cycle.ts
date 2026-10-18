@@ -139,6 +139,56 @@ export const CYCLE_PHASES: Record<CyclePhaseKey, CyclePhase> = {
 
 export const PHASE_ORDER: CyclePhaseKey[] = ["menstrual", "follicular", "ovulation", "luteal"];
 
+// Perimenopause and menopause (nutrition review, 2026-10-18): for women about
+// 40 to 55 whose periods are changing or have stopped, where the phase guide
+// doesn't fit. Menopause Society 2022/2023 position statements, IMS 2024 white
+// paper on lifestyle, LIFTMOR (Watson et al. 2018) on heavier lifting and
+// impact for bone, ESCEO on protein. Anything medical is "talk to your doctor".
+export const MENOPAUSE_HEADING = "Perimenopause and menopause";
+export const MENOPAUSE_GUIDE: GuidelineGroup[] = [
+  {
+    icon: "🌡️",
+    heading: MENOPAUSE_HEADING,
+    hook: "From your 40s, periods can become irregular, then stop. What you do in the gym and the kitchen makes a big difference now.",
+    points: [
+      { emoji: "🔄", title: "What's happening", text: "Perimenopause is the few years of change before your last period, often starting in your 40s. Menopause is when you've had no period for 12 months, on average around 51. Oestrogen swings up and down, then falls." },
+      { emoji: "🔥", title: "Common symptoms", text: "Hot flushes and night sweats, poorer sleep, mood changes, brain fog, joint aches, and periods that come closer together, further apart, heavier or lighter." },
+      { emoji: "🦴", title: "Muscle and bone", text: "Lower oestrogen speeds up muscle and bone loss, most of all in the years around your last period. Strength training and eating enough protein slow it down." },
+      { emoji: "📏", title: "Fat moves to the middle", text: "Fat tends to shift to your belly, even if your weight stays the same. Measure your waist, not just your weight." },
+      { emoji: "🗓️", title: "Your cycle tracker", text: "If your periods are irregular or have stopped, the phase guide won't fit. In the cycle tracker, turn on \"My periods are irregular or have stopped\" and go by how you feel each day." },
+      { emoji: "🩺", title: "Talk to your doctor", text: "About hot flushes, sleep, mood, or heavy or irregular bleeding. Ask about all your options, including hormone therapy (HRT, also called MHT). That's a decision to make with your doctor." },
+    ],
+    closing: "This is general information, not medical advice. Any bleeding after a year with no period: see your doctor.",
+  },
+  {
+    icon: "🏋️",
+    heading: "Menopause: how to train",
+    hook: "Lift heavier than you think, and add a little impact. Your muscles and bones respond at any age.",
+    points: [
+      { emoji: "💪", title: "Strength train 2 to 3 times a week", text: "Work your whole body with weights that feel hard by the last 2 or 3 reps. Add weight slowly over the weeks. Heavier weights, built up with good form, are safe for most women and do the most for bone." },
+      { emoji: "🦘", title: "Some impact for your bones", text: "Small jumps, skipping, hopping or a bouncy step-up, as your joints allow. Start with 10 to 20 low jumps a few days a week and build up slowly." },
+      { emoji: "⚖️", title: "Balance and walking", text: "Balance work (standing on one leg, step-ups) helps prevent falls, and brisk walking or cycling keeps your heart healthy." },
+      { emoji: "🩺", title: "Check first if", text: "You have osteoporosis or have broken a bone from a small fall, or you leak urine when you jump. Your doctor or a physio can tell you what's safe. Leaking is common and a pelvic floor physio can help." },
+      { emoji: "😴", title: "Train to how you slept", text: "After a bad night, keep the session but go a bit lighter. Joint aches are common: change the exercise before you skip it." },
+    ],
+    closing: "Your coach can set your program up for this. Tell them if your periods have changed.",
+  },
+  {
+    icon: "🥛",
+    heading: "Menopause: food, sleep and hot flushes",
+    hook: "More protein, enough calcium and vitamin D, and a cool, dark bedroom.",
+    points: [
+      { emoji: "🍗", title: "Protein at every meal", text: "About 1.2 to 1.6 g per kg of body weight a day, spread over your meals with about 25 to 30 g at each: meat, fish, eggs, milk, maas, yoghurt, beans or lentils. Your muscles need more now to respond to training." },
+      { emoji: "🥛", title: "Calcium", text: "About 1,000 to 1,200 mg a day, mostly from food: milk, maas, yoghurt, cheese, and tinned sardines or pilchards with the bones. A cup of milk has about 300 mg." },
+      { emoji: "☀️", title: "Vitamin D", text: "From safe sun, oily fish and eggs. Many people are low. Ask your doctor whether you need a test or a supplement." },
+      { emoji: "⚡", title: "Creatine (optional)", text: "3 to 5 g a day may help muscle and strength alongside strength training. Research on bone is still mixed. Check with your doctor if you have kidney problems." },
+      { emoji: "🔥", title: "Hot flushes", text: "Dress in layers, keep a fan handy and notice your triggers. Alcohol, caffeine, spicy food and hot drinks set them off for many women." },
+      { emoji: "🌙", title: "Sleep", text: "Keep the bedroom cool and dark, wake at the same time every day, and cut back on alcohol and late caffeine. Poor sleep for weeks? Talk to your doctor: there's help that works." },
+      { emoji: "🚫", title: "No crash diets", text: "Big cuts speed up muscle and bone loss. A small deficit with high protein and strength training is the way to lose fat now." },
+    ],
+  },
+];
+
 /** The written guide shown on the Women's Health Reset page. */
 export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
   {
@@ -177,6 +227,23 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
       { emoji: "🚫", title: "Don't crash diet", text: "Eating too little for how much you train (RED-S) can make periods irregular or stop them, and weakens your bones. No period for 3 months while training or dieting? See your doctor." },
     ],
   },
+  // Nutrition review (2026-10-18): iron and low energy availability are the
+  // most common, most missed problems in women who train (IOC REDs consensus
+  // 2023; Pedlar et al. 2018).
+  {
+    icon: "🩸",
+    heading: "Iron and eating enough",
+    hook: "Low iron and not eating enough are two of the most common problems in women who train, and both are easy to miss.",
+    points: [
+      { emoji: "⚠️", title: "Signs to watch", text: "Missed or stopped periods, injuries that keep coming back or a stress fracture, tired all the time, low mood, getting ill often, or training getting worse instead of better." },
+      { emoji: "🍽️", title: "Eat enough for your training", text: "Eating too little for how much you train (RED-S) upsets your hormones, weakens your bones and stalls your progress, even if your weight doesn't change. Don't cut food hard while training hard." },
+      { emoji: "🥩", title: "Iron-rich food", text: "Red meat, liver, chicken, fish and eggs are the best sources. Beans, lentils and iron-fortified bread and maize meal help too. The iron in spinach is poorly absorbed." },
+      { emoji: "🍊", title: "Help it absorb", text: "Have vitamin C with iron-rich meals (citrus, peppers, tomatoes). Keep tea and coffee for an hour or so away from those meals." },
+      { emoji: "🩸", title: "Heavy periods", text: "Heavy periods lose a lot of iron. Soaking a pad or tampon every hour or two, or periods longer than 7 days, are worth seeing your doctor about." },
+      { emoji: "🧪", title: "Get a ferritin test", text: "Tired, breathless or pale? Ask your doctor for a ferritin (iron) blood test. Only take iron if the test shows you need it: too much is harmful." },
+    ],
+    closing: "No period for 3 months, a stress fracture, or worried about food or your weight? See your doctor. A registered dietitian can help you eat enough.",
+  },
   {
     icon: "💊",
     heading: "Supplements by phase",
@@ -195,9 +262,11 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
       { emoji: "🩸", title: "Very heavy bleeding", text: "Soaking a pad or tampon every hour or two, or bleeding between periods." },
       { emoji: "😣", title: "Pain that stops your day", text: "Pain that stops you from getting through your day." },
       { emoji: "📆", title: "Irregular cycles", text: "Cycles shorter than 21 days or longer than 35 days, again and again." },
+      { emoji: "🌡️", title: "Changes after 40", text: "Hot flushes, night sweats, poor sleep, mood changes or periods changing: talk to your doctor about perimenopause. Any bleeding after a year with no period: see your doctor." },
     ],
     closing: "This guide is general information, not medical advice. If you're on hormonal contraception, your natural phases may not apply.",
   },
+  ...MENOPAUSE_GUIDE,
 ];
 
 export const DEFAULT_CYCLE_LENGTH = 28;
@@ -215,6 +284,30 @@ export function averageCycleLength(periodStarts: string[]): number {
   const recent = gaps.slice(-6);
   if (recent.length === 0) return DEFAULT_CYCLE_LENGTH;
   return Math.round(recent.reduce((a, b) => a + b, 0) / recent.length);
+}
+
+/**
+ * Whether her logged periods look irregular enough that the phase guide may
+ * not fit, so the tracker can suggest the "irregular or stopped" setting.
+ * Follows the STRAW+10 signs of perimenopause: cycle lengths that keep
+ * differing by 7 days or more (3 times in her last six cycles, so one long
+ * cycle or a missed log isn't enough), or 60 days or more since her last
+ * logged period. Gaps under 18 days are double entries.
+ */
+export function cycleLooksIrregular(periodStarts: string[], today: string): boolean {
+  const sorted = [...new Set(periodStarts.filter((d) => d <= today))].sort();
+  const last = sorted[sorted.length - 1];
+  if (!last) return false;
+  if (daysBetween(last, today) >= 60) return true;
+  const gaps: number[] = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = daysBetween(sorted[i - 1], sorted[i]);
+    if (gap >= 18) gaps.push(gap);
+  }
+  const recent = gaps.slice(-6);
+  let bigChanges = 0;
+  for (let i = 1; i < recent.length; i++) if (Math.abs(recent[i] - recent[i - 1]) >= 7) bigChanges++;
+  return bigChanges >= 3;
 }
 
 export function daysBetween(fromIso: string, toIso: string): number {

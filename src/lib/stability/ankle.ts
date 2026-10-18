@@ -18,7 +18,7 @@ export const ANKLE: StabilityAreaGuide = {
     "A stable ankle also protects the knee and hip above it: when the foot can't hold its position, the knee caves in to make up for it.",
   ],
   chooseLevel: {
-    rehab: `You sprained or injured the ankle in the last few months, or it still feels weak, swells or 'gives way'. Start here once you can walk without limping. ${REHAB_REFER}`,
+    rehab: `You sprained or injured the ankle in the last few months, or it still feels weak, swells or 'gives way'. Gentle range-of-motion and holds can start in the first days, as comfort allows: you don't have to wait until you walk without a limp. ${REHAB_REFER}`,
     beginner: "No current injury, but you can't stand on one leg for 30 seconds with your eyes open, or do 15 single-leg heel raises.",
     intermediate: "You can balance 30 seconds on one leg with eyes open and do 15-20 single-leg heel raises on each side.",
     advanced: "You can balance 15+ seconds on one leg with eyes closed, do 25 single-leg heel raises, and hop and land on one leg without wobbling. For running, court and field sports.",
@@ -277,9 +277,9 @@ export const ANKLE: StabilityAreaGuide = {
 
 ANKLE.programs = [
   program("ankle", "rehab", {
-    who: "After an ankle sprain or injury once you can walk without a limp, or an ankle that keeps rolling or feels unsteady.",
+    who: "After an ankle sprain or injury (gentle movement and holds can start in the first days, as comfort allows), or an ankle that keeps rolling or feels unsteady.",
     goal: "Calm the ankle down, rebuild calf and shin strength, and retrain balance so it stops giving way.",
-    resistance: "Wear shoes for the first 2 weeks if the ankle feels unsure, then go barefoot.",
+    resistance: "Wear shoes for the first 2 weeks if the ankle feels unsure, then go barefoot. For sport, wear a lace-up ankle brace or tape for 6-12 months after a sprain: it cuts the chance of spraining it again.",
     finishTest: "25 single-leg heel raises on the injured side (or within 2-3 of the good side), 10-15 seconds balancing with eyes closed (or within 2-3 seconds of the good side), and 10 pain-free hops on that leg.",
     phases: [
       phase(1, 2, "Settle and wake it up", "Gentle movement and holds to calm the ankle and switch the muscles on.", [

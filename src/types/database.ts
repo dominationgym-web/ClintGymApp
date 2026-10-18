@@ -188,6 +188,10 @@ export type DeloadCheck = {
   due: boolean;
   last_deload: string | null;
   planned_deload: string | null;
+  /** The program's own next easy week on the calendar (0121). */
+  program_easy_next?: string | null;
+  /** An easy week built into the program is on the calendar or due in the next 2 program weeks (0121). */
+  program_easy_soon?: boolean;
 };
 
 // Proof of payment sent through the app (0117): a client's to their trainer,
@@ -680,6 +684,9 @@ export type ClientCalendarBlock = {
   position: number;
   created_at: string;
   removed_at: string | null;
+  // The client's answer (0123): Done, or Couldn't do it. Null until then.
+  result: "done" | "skipped" | null;
+  result_at: string | null;
 }
 
 // When the trainer last tapped Reset on a batch of workouts for a client
@@ -1032,6 +1039,7 @@ export interface Database {
         Returns: { workout_date: string; program_id: string; program_name: string; program_trainer_id: string | null }[];
       };
       mark_workout_makeup: { Args: { p_date: string }; Returns: WorkoutSession };
+      set_my_block_result: { Args: { p_block: string; p_result: "done" | "skipped" | null }; Returns: boolean };
       set_client_problem_status: {
         Args: { p_client: string; p_status: "fixing" | "fixed"; p_problem?: string };
         Returns: undefined;

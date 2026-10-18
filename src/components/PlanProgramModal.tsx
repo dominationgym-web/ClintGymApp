@@ -5,6 +5,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate } from "@/lib/dates";
 import { firstWeekEnd } from "@/lib/weeklyPlans";
 import { loadProgramExercises } from "@/lib/programQueries";
+import { programEasyWeeks } from "@/lib/deload";
 import { PROGRAM_FAMILIES, PROGRAM_GROUPS, programFamily, programGroupHeading, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import { monthLabel, monthOf, programSlots } from "@/lib/trainingCalendar";
 import {
@@ -13,12 +14,15 @@ import {
   planProgramDates,
   sessionsPerWeek,
   splitAlongside,
+  splitNote,
+  weeksToFinish,
   suggestedSplit,
   TRAINING_SPLITS,
   WEEK_CHOICES,
   type SplitKey,
 } from "@/lib/trainingSplits";
-import { findArea, findProgram, LEVELS, levelInfo, STABILITY_AREAS, stabilityStartMessage } from "@/lib/stability";
+import { findArea, findProgram, LEVELS, levelInfo, STABILITY_AREAS } from "@/lib/stability";
+import RehabRedFlagCheck from "@/components/stability/RehabRedFlagCheck";
 import type { StabilityArea, StabilityLevel } from "@/lib/stability";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
@@ -35,6 +39,8 @@ function dayHeading(date: string): string {
 // Rehab → pick a program → pick the split → Activate, and the program's
 // sessions are laid over those weekdays from that day (GRIZZ, 2026-10-17).
 // One page at a time, so nothing to scroll through. Sunday is always rest.
+// With startWith (the foundation card's Approve, review 2026-10-18), it opens
+// on that program's split page, so every program goes on the calendar.
 export default function PlanProgramModal({
   date,
   clientId,
@@ -43,6 +49,7 @@ export default function PlanProgramModal({
   trainingPlace,
   programs,
   resetNotice,
+  startWith = null,
   onSingleWorkout,
   onDone,
   onClose,
@@ -54,7 +61,8 @@ export default function PlanProgramModal({
   trainingPlace: ExercisePlace;
   programs: Program[];
   resetNotice: string | null;
-  onSingleWorkout: (date: string) => void;
+  startWith?: Program | null;
+  onSingleWorkout?: (date: string) => void;
   onDone: (what: "calendar" | "stability") => void;
   onClose: () => void;
 }) {
@@ -65,7 +73,11 @@ export default function PlanProgramModal({
   const [slots, setSlots] = useState<number[] | null>(null);
   const [split, setSplit] = useState<SplitKey>("mon_wed_fri");
   const [weeks, setWeeks] = useState(4);
+  // The program's own easy weeks (review 2026-10-18), to show where they land.
+  const [easyWeeks, setEasyWeeks] = useState<number[]>([]);
   const [area, setArea] = useState<StabilityArea | null>(null);
+  // Rehab level tapped: the red-flag tick-list shows before it starts.
+  const [checkingFlags, setCheckingFlags] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -76,7 +88,9 @@ export default function PlanProgramModal({
     setProgram(null);
     setSlots(null);
     setArea(null);
-  }, [date, trainingPlace]);
+    setCheckingFlags(false);
+    if (startWith) pickProgram(startWith);
+  }, [date, trainingPlace, startWith?.id]);
 
   const pickProgram = async (p: Program) => {
     setProgram(p);
@@ -84,17 +98,34 @@ export default function PlanProgramModal({
     setWeeks(defaultWeeks(p.weeks));
     const { data } = await loadProgramExercises(p.id);
     const list = programSlots(data ?? []);
+    setEasyWeeks(programEasyWeeks(data ?? []));
     setSlots(list);
     setSplit(suggestedSplit(sessionsPerWeek(list)));
   };
 
   const back = () => {
-    if (program) return setProgram(null);
+    if (program) return startWith ? onClose() : setProgram(null);
+    if (checkingFlags) return setCheckingFlags(false);
     if (area) return setArea(null);
     setType(null);
   };
 
+  // A split with a different number of days than the program: the length
+  // becomes what it takes to finish the whole program on those days.
+  const fullLength = (key: SplitKey) =>
+    slots && program && (program.weeks ?? 1) > 1 && findSplit(key).days.length !== sessionsPerWeek(slots)
+      ? weeksToFinish(slots.length, findSplit(key).days.length)
+      : null;
+  const pickSplit = (key: SplitKey) => {
+    setSplit(key);
+    if (program) setWeeks(fullLength(key) ?? defaultWeeks(program.weeks));
+  };
+
   const plan = date && slots ? planProgramDates(date, findSplit(split).days, slots, weeks) : [];
+  const note =
+    slots && program && (program.weeks ?? 1) > 1
+      ? splitNote(plan, sessionsPerWeek(slots), findSplit(split).days.length, slots.length, easyWeeks)
+      : null;
 
   const activate = async () => {
     if (!date || !program || plan.length === 0) return;
@@ -236,9 +267,8 @@ export default function PlanProgramModal({
           const { error } = ended.error
             ? ended
             : await supabase.from("client_stability_programs").insert({ client_id: clientId, area: a, level: l, started_on: date });
-          if (!error && trainerId) {
-            await supabase.from("coach_messages").insert({ client_id: clientId, trainer_id: trainerId, body: stabilityStartMessage(clientName, a, l) });
-          }
+          // No automatic note (GRIZZ: never ready-made messages from trainer
+          // to client). It shows on their calendar in purple.
           setBusy(false);
           if (error) return Alert.alert("Couldn't start the program", error.message);
           onDone("stability");
@@ -272,7 +302,7 @@ export default function PlanProgramModal({
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
           <View style={styles.header}>
-            {type && (
+            {(type || program) && (
               <Pressable onPress={back} hitSlop={10} accessibilityLabel="Back">
                 <Text style={styles.back}>‹</Text>
               </Pressable>
@@ -287,7 +317,7 @@ export default function PlanProgramModal({
           {resetNotice ? <Text style={styles.reset}>🌿 {resetNotice}</Text> : null}
           <ScrollView contentContainerStyle={{ paddingBottom: 4 }}>
             {/* Step 1: what kind of training. */}
-            {!type && date && (
+            {!type && !program && date && (
               <>
                 <Text style={styles.step}>What does {clientName} want to focus on?</Text>
                 {PROGRAM_GROUPS.map((g) => {
@@ -311,9 +341,11 @@ export default function PlanProgramModal({
                   </View>
                   <Text style={styles.chevron}>›</Text>
                 </Pressable>
-                <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
-                  <Text style={styles.singleText}>Or just one workout for this day</Text>
-                </Pressable>
+                {onSingleWorkout && (
+                  <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
+                    <Text style={styles.singleText}>Or just one workout for this day</Text>
+                  </Pressable>
+                )}
               </>
             )}
 
@@ -358,7 +390,7 @@ export default function PlanProgramModal({
                     No full {place} programs here yet. Pick one workout for this day instead.
                   </Text>
                 )}
-                {date && (
+                {date && onSingleWorkout && (
                   <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
                     <Text style={styles.singleText}>Or just one workout for this day</Text>
                   </Pressable>
@@ -383,7 +415,7 @@ export default function PlanProgramModal({
                       {TRAINING_SPLITS.map((s) => {
                         const on = s.key === split;
                         return (
-                          <Pressable key={s.key} style={[styles.splitRow, on && styles.splitRowOn]} onPress={() => setSplit(s.key)}>
+                          <Pressable key={s.key} style={[styles.splitRow, on && styles.splitRowOn]} onPress={() => pickSplit(s.key)}>
                             <Text style={[styles.splitLabel, on && styles.splitLabelOn]}>{s.label}</Text>
                             <View style={styles.dots}>
                               {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
@@ -398,7 +430,7 @@ export default function PlanProgramModal({
                     </View>
                     <Text style={styles.step}>For how long?</Text>
                     <View style={styles.chips}>
-                      {[...new Set([...WEEK_CHOICES, defaultWeeks(program.weeks)])]
+                      {[...new Set([...WEEK_CHOICES, defaultWeeks(program.weeks), ...(fullLength(split) ? [fullLength(split) as number] : [])])]
                         .sort((a, b) => a - b)
                         .map((w) => (
                           <Pressable key={w} style={[styles.chip, w === weeks && styles.chipOn]} onPress={() => setWeeks(w)}>
@@ -406,6 +438,7 @@ export default function PlanProgramModal({
                           </Pressable>
                         ))}
                     </View>
+                    {note && <Text style={styles.splitNote}>⚠️ {note}</Text>}
                     {plan.length > 0 && (
                       <Text style={styles.summary}>
                         {plan.length} workouts, first one {dayHeading(plan[0].date)}.
@@ -434,10 +467,27 @@ export default function PlanProgramModal({
                 </View>
               </>
             )}
+            {type === "rehab" && area && checkingFlags && (
+              <RehabRedFlagCheck
+                area={area}
+                clientName={clientName}
+                onClear={() => {
+                  setCheckingFlags(false);
+                  startStability(area, "rehab");
+                }}
+                onRefer={onClose}
+              />
+            )}
             {type === "rehab" &&
               area &&
+              !checkingFlags &&
               LEVELS.map((l) => (
-                <Pressable key={l.level} style={styles.program} onPress={() => startStability(area, l.level)} disabled={busy}>
+                <Pressable
+                  key={l.level}
+                  style={styles.program}
+                  onPress={() => (l.level === "rehab" ? setCheckingFlags(true) : startStability(area, l.level))}
+                  disabled={busy}
+                >
                   <Text style={styles.programName}>
                     {l.icon} {l.label} · {l.weeks} weeks
                   </Text>
@@ -490,6 +540,7 @@ const styles = StyleSheet.create({
   chipText: { color: "#CBD5E1", fontWeight: "700" },
   chipTextOn: { color: "#0F172A" },
   summary: { color: "#CBD5E1", fontSize: 13, marginTop: 12 },
+  splitNote: { color: "#FDE68A", fontSize: 13, lineHeight: 18, marginTop: 12 },
   activate: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 12 },
   activateText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
 });

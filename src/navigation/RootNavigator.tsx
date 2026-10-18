@@ -166,13 +166,35 @@ function PendingAccessScreen() {
       {client && trainer ? (
         <SendProofOfPayment to="trainer" payerId={client.id} trainerId={trainer.id} receiverName={trainerDisplayName(trainer)} />
       ) : null}
-      <Text style={styles.sectionHeading}>International - PayPal</Text>
-      <Text style={styles.body}>PayPal details will be sent to you directly by your trainer.</Text>
+      <AbroadPayment trainer={trainer} />
       <Pressable style={styles.logoutButton} onPress={signOut}>
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
       <DeleteAccountButton />
     </ScrollView>
+  );
+}
+
+// Paying from outside South Africa (app-flow review C9, 2026-10-18). The app
+// only knows the trainer's EFT details, so this just says to ask the trainer.
+// It shows straight away when the trainer is outside South Africa (0096), and
+// otherwise sits behind one tap so South African clients aren't sent looking
+// for a way to pay that isn't there.
+function AbroadPayment({ trainer }: { trainer: Trainer | null }) {
+  const [open, setOpen] = useState(false);
+  const abroad = !!trainer?.signup_country && trainer.signup_country !== "ZA";
+  if (!abroad && !open) {
+    return (
+      <Pressable onPress={() => setOpen(true)} hitSlop={8} style={{ marginTop: 16 }} accessibilityRole="button">
+        <Text style={[styles.body, styles.link]}>Paying from outside South Africa? ›</Text>
+      </Pressable>
+    );
+  }
+  return (
+    <>
+      <Text style={styles.sectionHeading}>Paying from outside South Africa</Text>
+      <Text style={styles.body}>Ask your trainer how to pay from abroad. They'll send you the details directly.</Text>
+    </>
   );
 }
 
@@ -256,4 +278,5 @@ const styles = StyleSheet.create({
   trainerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
   trainerName: { color: "#fff", fontSize: 16, fontWeight: "700" },
   logoutText: { color: "#64748B", fontSize: 14, fontWeight: "600" },
+  link: { color: "#22C55E", fontWeight: "600" },
 });

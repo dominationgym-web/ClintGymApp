@@ -5,6 +5,7 @@ import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientStabilityProgram, StabilityLog } from "@/types/database";
 import StabilityHowTo from "@/components/stability/StabilityHowTo";
+import RehabRedFlagCheck from "@/components/stability/RehabRedFlagCheck";
 import {
   assessExercise,
   findArea,
@@ -14,7 +15,6 @@ import {
   levelInfo,
   phaseFor,
   STABILITY_AREAS,
-  stabilityStartMessage,
   stabilityWeek,
   targetText,
   unitLabel,
@@ -47,6 +47,8 @@ export default function TrainerStabilityCard({
   const [adding, setAdding] = useState(false);
   const [area, setArea] = useState<StabilityArea | null>(null);
   const [level, setLevel] = useState<StabilityLevel | null>(null);
+  // A new Rehab program waits for the red-flag tick-list (review 2026-10-18).
+  const [flagsCleared, setFlagsCleared] = useState(false);
   const [busy, setBusy] = useState(false);
   // Every exercise opens its video and how-to, so the trainer can do and coach
   // it too (GRIZZ, 2026-10-16).
@@ -108,10 +110,8 @@ export default function TrainerStabilityCard({
       setBusy(false);
       return Alert.alert("Couldn't start the program", error.message);
     }
-    // Tell the client it's there and where to find it.
-    if (trainerId) {
-      await supabase.from("coach_messages").insert({ client_id: clientId, trainer_id: trainerId, body: stabilityStartMessage(clientName, a, l) });
-    }
+    // No automatic note (GRIZZ: never ready-made messages from trainer to
+    // client). It shows on their calendar and in their ☰ menu.
     setBusy(false);
     setAdding(false);
     setArea(null);
@@ -128,7 +128,7 @@ export default function TrainerStabilityCard({
       ? current.level === l
         ? `${clientName} starts ${name} again from week 1 today. Their logs so far are kept.`
         : `This ends ${clientName}'s ${findArea(a).title} ${levelInfo(current.level).label} program (logs are kept) and starts ${name} from week 1 today.`
-      : `${clientName} starts ${name} (${findProgram(a, l).weeks} weeks) today. They'll get a message telling them where to find it.`;
+      : `${clientName} starts ${name} (${findProgram(a, l).weeks} weeks) today. It shows on their calendar and under ☰ menu → My stability program.`;
     Alert.alert(`Start ${name}?`, text, [
       { text: "Cancel", style: "cancel" },
       { text: "Start", onPress: () => start(a, l) },
@@ -245,7 +245,7 @@ export default function TrainerStabilityCard({
             <>
               <Text style={styles.pickLabel}>2. Which level?</Text>
               {LEVELS.map((l) => (
-                <Pressable key={l.level} style={[styles.levelRow, level === l.level && styles.levelRowOn]} onPress={() => setLevel(l.level)}>
+                <Pressable key={l.level} style={[styles.levelRow, level === l.level && styles.levelRowOn]} onPress={() => (setLevel(l.level), setFlagsCleared(false))}>
                   <Text style={styles.levelTitle}>
                     {l.icon} {l.label} · {l.weeks} weeks
                   </Text>
@@ -254,7 +254,15 @@ export default function TrainerStabilityCard({
               ))}
             </>
           )}
-          {area && level && (
+          {area && level === "rehab" && !flagsCleared && (
+            <RehabRedFlagCheck
+              area={area}
+              clientName={clientName}
+              onClear={() => setFlagsCleared(true)}
+              onRefer={() => (setAdding(false), setArea(null), setLevel(null))}
+            />
+          )}
+          {area && level && (level !== "rehab" || flagsCleared) && (
             <>
               <Text style={styles.pickLabel}>3. The exercises (tap for the video and how-to)</Text>
               {[...new Set(findProgram(area, level).phases.flatMap((ph) => ph.items.map((i) => i.ex)))].map((key) => {
@@ -275,8 +283,8 @@ export default function TrainerStabilityCard({
           )}
           <View style={styles.actions}>
             <Pressable
-              style={[styles.startBtn, (!area || !level || busy) && { opacity: 0.5 }]}
-              disabled={!area || !level || busy}
+              style={[styles.startBtn, (!area || !level || busy || (level === "rehab" && !flagsCleared)) && { opacity: 0.5 }]}
+              disabled={!area || !level || busy || (level === "rehab" && !flagsCleared)}
               onPress={() => area && level && confirmStart(area, level)}
             >
               {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.startText}>Start it</Text>}

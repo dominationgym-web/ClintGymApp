@@ -3,6 +3,7 @@
 // each saying what the change will do for them. Rules only, no AI model, so
 // it's instant, free and always says the same thing for the same answers.
 import type { Checkin } from "@/types/database";
+import { addDays } from "@/lib/programSchedule";
 
 export type FeedbackTip = {
   key: string;
@@ -180,18 +181,20 @@ export function checkinFeedback(all: Recent[], today: string, weightKg?: number 
 
   // Meals.
   const meals = average(week.map((c) => Number(c.meals_total) || 0).filter((m) => m > 0));
+  // How many meals doesn't change fat loss when the food is the same
+  // (review 2026-10-18), so with few meals the tip is only about protein.
   if (meals !== null && meals < 3) {
     tips.push({
       key: "meals",
       icon: "🍽",
-      title: "Eat regular meals",
+      title: "Make each meal count for protein",
       because: `You're eating about ${one(Math.round(meals * 10) / 10)} meals a day.`,
-      doThis: "Eat 3 to 5 meals a day, each with a palm of protein. Use the meal plan maker under Nutrition if you need ideas.",
-      itWill: "Steady energy, less snacking and overeating later, and enough protein to build and keep muscle.",
+      doThis: "Two or three meals is fine if it suits you. Make each one protein-heavy: about 2 palms of protein (meat, fish, eggs, maas, yoghurt or beans), plus veg. Use the meal plan maker under Nutrition if you need ideas.",
+      itWill: "Enough protein to build and keep muscle, and meals that keep you full for longer.",
       priority: 60,
     });
   } else if (meals !== null && meals >= 3) {
-    wins.push({ text: `You're eating ${one(Math.round(meals))} meals a day. Regular meals keep your energy steady.`, strength: 1 });
+    wins.push({ text: `You're eating ${one(Math.round(meals))} meals a day, each a chance to get your protein in.`, strength: 1 });
   }
 
   // Tiredness.
@@ -244,15 +247,24 @@ export function checkinFeedback(all: Recent[], today: string, weightKg?: number 
 }
 
 // Alcohol message (GRIZZ, 2026-10-16): motivational, never derogatory. After
-// a big session, a kind nudge to limit it plus water and electrolytes. Each
+// a big session, a kind nudge to limit it plus water and a proper meal. Each
 // alcohol-free day after that gets more praise and a different benefit. If
 // they drink again after a good run, a coach's "you were doing so well", then
 // back on it tomorrow. Always a reminder that honest answers only help them.
+// Review 2026-10-18: units explained, no "disappointed", and after several
+// heavy drinking days in 2 weeks a gentle pointer to a doctor or SANCA.
 export const HEAVY_DAY_UNITS = 4;
 export const HEAVY_SESSION_UNITS = 8;
+// About 60 g of alcohol in a day (heavy drinking, WHO), at about 8 g a unit.
+export const HEAVY_EPISODE_UNITS = 7;
+// That many heavy days in the last 2 weeks brings the doctor or SANCA line.
+export const HEAVY_EPISODES_FOR_HELP = 2;
+export const UNIT_LINE = "(1 unit is about 1 tot of spirits, half a 340 ml beer, or a small 125 ml glass of wine.)";
+const HELP_LINE =
+  "If cutting down feels hard, talk to your doctor or SANCA (sanca.org.za). It's confidential, and asking for help is a strong move.";
 export const EVOLVE_TAGLINE = "Our aim is to evolve daily, 1% at a time.";
 const HONESTY = `Thanks for being honest. It only helps you, and it's the long term that matters. ${EVOLVE_TAGLINE}`;
-const RECOVERY = "After a drinking session, drink extra water and take electrolytes to rehydrate and recover faster.";
+const RECOVERY = "After a drinking session, drink extra water and have a proper meal.";
 const BENEFITS = [
   "Your sleep is deeper, so you recover better from training.",
   "Your body is back to burning fat instead of clearing alcohol.",
@@ -267,11 +279,12 @@ const BENEFITS = [
  * no check-in are skipped, so the streak counts check-ins logged alcohol-free.
  */
 export function alcoholMessage(all: Pick<Checkin, "checkin_date" | "alcohol_units">[], today: string): AlcoholMessage | null {
-  const units = all
-    .filter((c) => c.checkin_date <= today)
-    .sort((a, b) => b.checkin_date.localeCompare(a.checkin_date))
-    .map((c) => Number(c.alcohol_units) || 0);
+  const rows = all.filter((c) => c.checkin_date <= today).sort((a, b) => b.checkin_date.localeCompare(a.checkin_date));
+  const units = rows.map((c) => Number(c.alcohol_units) || 0);
   if (units.length === 0) return null;
+  const twoWeeksAgo = addDays(today, -13);
+  const heavyDays = rows.filter((c) => c.checkin_date >= twoWeeksAgo && (Number(c.alcohol_units) || 0) >= HEAVY_EPISODE_UNITS).length;
+  const help = heavyDays >= HEAVY_EPISODES_FOR_HELP ? ` You've had ${heavyDays} big drinking days in the last 2 weeks. ${HELP_LINE}` : "";
 
   if (units[0] > 0) {
     // The drinking days at the top make up this session.
@@ -284,7 +297,7 @@ export function alcoholMessage(all: Pick<Checkin, "checkin_date" | "alcohol_unit
       return {
         kind: "slipped",
         title: "🍷 Back on it tomorrow",
-        text: `You were doing so well, ${dry} days alcohol-free. I'm a little disappointed, but one session doesn't undo your progress. Start a new streak tomorrow. ${RECOVERY} ${HONESTY}`,
+        text: `You were doing so well, ${dry} days alcohol-free. One session doesn't undo your progress. Start a new streak tomorrow. ${RECOVERY}${help} ${HONESTY}`,
       };
     }
     const total = session.reduce((t, u) => t + u, 0);
@@ -292,7 +305,7 @@ export function alcoholMessage(all: Pick<Checkin, "checkin_date" | "alcohol_unit
     return {
       kind: "session",
       title: heavy ? "🍷 Time to limit the alcohol" : "🍷 Keep the alcohol low",
-      text: `${heavy ? `That was a big session, ${one(total)} units.` : `You logged ${one(total)} units.`} Limiting alcohol gives you better sleep and recovery, faster fat loss and a steadier mood. Let's aim for alcohol-free days this week. ${RECOVERY} ${HONESTY}`,
+      text: `${heavy ? `That was a big session, ${one(total)} units.` : `You logged ${one(total)} units.`} ${UNIT_LINE} Limiting alcohol gives you better sleep and recovery, faster fat loss and a steadier mood. Let's aim for alcohol-free days this week. ${RECOVERY}${help} ${HONESTY}`,
     };
   }
 
