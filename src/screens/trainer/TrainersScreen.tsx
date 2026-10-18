@@ -95,7 +95,7 @@ export default function TrainersScreen() {
     if (t.approved) {
       Alert.alert(
         `Block ${name}?`,
-        "They'll see a waiting screen instead of their clients, and no new clients can join them. You can approve them again later.",
+        "They'll see an \"account paused\" screen instead of their clients, and no new clients can join them. You can approve them again later.",
         [
           { text: "Cancel", style: "cancel" },
           { text: "Block", style: "destructive", onPress: () => setApproved(t, false) },

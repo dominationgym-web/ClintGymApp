@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
 import { TRAINING_LEVELS } from "@/lib/foundation";
+import InjuryList from "@/components/InjuryList";
 
 function YesNo({
   label,
@@ -159,6 +160,9 @@ export default function IntakeFormScreen() {
 
   const [hasHealthCondition, setHasHealthCondition] = useState<boolean | null>(null);
   const [healthDetail, setHealthDetail] = useState("");
+  // Injuries go straight into the client's injury list (client_injuries), the
+  // same one Profile and the trainer's injury check use.
+  const [hasInjury, setHasInjury] = useState<boolean | null>(null);
   const [smoker, setSmoker] = useState<boolean | null>(null);
   const [stressed, setStressed] = useState<boolean | null>(null);
   const [caffeineAmount, setCaffeineAmount] = useState("");
@@ -190,6 +194,21 @@ export default function IntakeFormScreen() {
     if (!experience) {
       Alert.alert("Your training experience", "Tap the option under Your goals that fits you best.");
       return;
+    }
+    if (hasInjury === null) {
+      Alert.alert("Any injuries or pain?", "Tap Yes or No under Health & lifestyle.");
+      return;
+    }
+    if (hasInjury) {
+      const { count } = await supabase
+        .from("client_injuries")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", client.id)
+        .is("healed_on", null);
+      if (!count) {
+        Alert.alert("Your injury", "Tap Add an injury under Health & lifestyle and pick where it is, or change your answer to No.");
+        return;
+      }
     }
     if (!age.trim() || goals.length === 0 || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
       Alert.alert("Almost done", "Fill in at least your age, goals, occupation, breakfast, and training habits.");
@@ -223,6 +242,7 @@ export default function IntakeFormScreen() {
       last_caffeine_time: lastCaffeineTime.trim() || "Not answered",
       has_health_condition_or_medication: yn(hasHealthCondition),
       high_stress_or_anxiety: yn(stressed),
+      injuries_or_pain: yn(hasInjury),
     };
 
     if (!eatsBreakfast) {
@@ -243,6 +263,8 @@ export default function IntakeFormScreen() {
     setSaving(true);
     const { error } = await supabase.from("clients").update({
         intake_responses: responses,
+        // Shown as their goals on Profile and the trainer's Overview; the trainer can change them.
+        goals: responses.training_for_event ? `${responses.training_goals} (${responses.training_for_event})` : responses.training_goals,
         sex: sex === "Male" ? "male" : "female",
         training_level: TRAINING_LEVELS.find((l) => l.label === experience)?.key ?? null,
       }).eq("id", client.id);
@@ -389,6 +411,13 @@ export default function IntakeFormScreen() {
             placeholderTextColor="#64748B"
             multiline
           />
+        </View>
+      )}
+      <YesNo label="Any injuries or pain?" value={hasInjury} onChange={setHasInjury} />
+      {hasInjury && (
+        <View style={styles.field}>
+          <Text style={styles.activityHint}>Add each one: where it is and a short note. Your coach plans around them.</Text>
+          <InjuryList clientId={client.id} role="client" />
         </View>
       )}
       <YesNo label="Do you often feel highly stressed, or suffer with anxiety?" value={stressed} onChange={setStressed} />

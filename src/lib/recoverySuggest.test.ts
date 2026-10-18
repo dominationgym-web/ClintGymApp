@@ -22,8 +22,9 @@ describe("suggestRecovery", () => {
 
   it("puts pain and tiredness first", () => {
     const s = suggestRecovery({ ...empty, checkins: [checkin({ pain: true, painArea: "Lower back", fatigue: true })] }, today);
-    expect(s.map((x) => x.activity)).toEqual(["stretching", "sleep"]);
+    expect(s.map((x) => x.activity)).toEqual(["easy_movement", "sleep"]);
     expect(s[0].reason).toContain("lower back");
+    expect(s[0].reason).toContain("Don't stretch a fresh strain hard");
   });
 
   it("treats poor sleep as tiredness", () => {
@@ -32,7 +33,15 @@ describe("suggestRecovery", () => {
 
   it("spots a hard day and a big leg day yesterday", () => {
     const s = suggestRecovery({ ...empty, sets: sets("2026-10-16", 10, "failure", true) }, today);
-    expect(s.map((x) => x.activity)).toEqual(["cold", "foam_rolling"]);
+    expect(s.map((x) => x.activity)).toEqual(["easy_movement", "foam_rolling"]);
+  });
+
+  it("only suggests cold after leg day on Sports Recovery", () => {
+    const legDay = sets("2026-10-16", 10, "failure", true);
+    expect(suggestRecovery({ ...empty, sets: legDay, recoveryProgram: "training" }, today).map((x) => x.activity)).not.toContain("cold");
+    const sports = suggestRecovery({ ...empty, sets: legDay, recoveryProgram: "sports" }, today);
+    expect(sports[0].activity).toBe("cold");
+    expect(sports[0].reason).toContain("Not within 4 hours of weights");
   });
 
   it("asks for a rest day (active recovery) after 5 days in a row", () => {

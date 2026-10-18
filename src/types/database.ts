@@ -171,6 +171,16 @@ export type ClientInjury = {
   created_at: string;
 };
 
+// A flagged exercise the trainer kept anyway, with why (0119).
+export type ClientInjuryKeep = {
+  id: string;
+  client_id: string;
+  exercise_key: string;
+  areas: string[];
+  reason: string;
+  created_at: string;
+};
+
 // Whether a client is due a deload week (0115, deload_check()).
 export type DeloadCheck = {
   weeks: number;
@@ -279,6 +289,8 @@ export type Client = {
   phone: string | null;
   goals: string | null;
   injuries: string | null;
+  // The trainer marked the intake injuries as healed (0119): the injury check ignores them.
+  injuries_healed_on?: string | null;
   // Always null since 0061: notes live in client_trainer_notes, which only
   // the trainer can read.
   trainer_notes: string | null;
@@ -506,7 +518,7 @@ export type WorkoutLog = {
   effort: SetEffort;
   /** A warm-up set (0079): not a working set, set_number 0. */
   warm_up?: boolean;
-  /** The gauge set (0104): first set of a new exercise, taken to failure. */
+  /** The gauge set (0104): first set of a new exercise, stopped 1-2 reps short of failure (0118). */
   gauge?: boolean;
   created_at: string;
 }
@@ -596,7 +608,7 @@ export type ClientDietPlan = {
 // The client's own meal plan, made by the app (0077, src/lib/mealPlanMaker.ts).
 export type ClientMealPlan = {
   client_id: string;
-  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain"; diet?: "everything" | "vegetarian" | "pescatarian" };
+  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain"; diet?: "everything" | "vegetarian" | "pescatarian"; dairyFree?: boolean };
   targets: { kcal: number; protein: number; carbs: number; fat: number };
   training_day: DietDay;
   rest_day: DietDay;
@@ -855,6 +867,12 @@ export interface Database {
         Row: ClientInjury;
         Insert: Partial<ClientInjury>;
         Update: Partial<ClientInjury>;
+        Relationships: [];
+      };
+      client_injury_keeps: {
+        Row: ClientInjuryKeep;
+        Insert: Partial<ClientInjuryKeep>;
+        Update: Partial<ClientInjuryKeep>;
         Relationships: [];
       };
       recovery_activities: {

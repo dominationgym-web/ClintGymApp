@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { Habit } from "@/types/database";
 import { calculateHabitTier, DAYS_PER_TIER, STREAK_TIERS } from "@/lib/habitStreak";
 import { parseReminderTime } from "@/lib/reminderTime";
+import { scheduleHabitReminders } from "@/lib/notifications";
 import { findHabit, isRunning } from "@/lib/habitLibrary";
 import { BRAND_GOLD } from "@/lib/brand";
 import ChooseHabitsModal from "@/components/ChooseHabitsModal";
@@ -76,9 +78,13 @@ export default function HabitsScreen() {
     }
   }, [client]);
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
+  // Reload whenever the tab comes back into view, so a habit the coach just
+  // added shows up without a pull-down.
+  useFocusEffect(
+    useCallback(() => {
+      load().finally(() => setLoading(false));
+    }, [load])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -104,6 +110,12 @@ export default function HabitsScreen() {
     const updated = habits.map((h) => (h.id === habit.id ? { ...h, active_days: nextDays } : h));
     setHabits(updated);
   };
+
+  // Keep the phone's habit reminders in step with the list (the reminder used
+  // to only save a time).
+  useEffect(() => {
+    if (!loading) scheduleHabitReminders(habits);
+  }, [habits, loading]);
 
   const toggleReminder = async (habit: Habit) => {
     const nextEnabled = !habit.reminder_enabled;
@@ -288,7 +300,7 @@ export default function HabitsScreen() {
 
                 <Pressable style={styles.reminderToggleRow} onPress={() => toggleReminder(h)}>
                   <View style={[styles.checkbox, h.reminder_enabled && styles.checkboxChecked]} />
-                  <Text style={styles.fieldLabel}>Remind me (coming soon - saves your preferred time for now)</Text>
+                  <Text style={styles.fieldLabel}>Remind me on this habit's days</Text>
                 </Pressable>
                 {h.reminder_enabled && (
                   <View style={styles.reminderTimeRow}>

@@ -17,6 +17,7 @@ import { upcomingSleepReminders } from "@/lib/sleep";
 import { SUPPLEMENT_PREP_BODY, SUPPLEMENT_PREP_TITLE, supplementPrepDates, upcomingPhases } from "@/lib/cycle";
 import { upcomingResetReminders } from "@/lib/resetProgram";
 import { parseIsoDate, todayIso } from "@/lib/dates";
+import { habitReminderSlots } from "@/lib/reminderTime";
 
 type NotificationsModule = typeof import("expo-notifications");
 
@@ -245,6 +246,69 @@ export async function scheduleResetReminders(startedOn: string | null, enabled: 
   } catch (e) {
     console.warn("Couldn't schedule the Reset reminders", e);
   }
+}
+
+const HABIT_ID_PREFIX = "habit-";
+
+/**
+ * Weekly reminders for the client's habits at the time they saved, on each of
+ * the habit's days. Replaces the ones already scheduled, so call it whenever
+ * the habit list changes (the Habits tab does, each time it opens).
+ */
+export async function scheduleHabitReminders(
+  habits: Parameters<typeof habitReminderSlots>[0]
+): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    const scheduled = await N.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier.startsWith(HABIT_ID_PREFIX))
+        .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
+    );
+    const slots = habitReminderSlots(habits, todayIso());
+    if (slots.length === 0 || !(await canNotify(N))) return;
+    for (const slot of slots) {
+      await N.scheduleNotificationAsync({
+        identifier: slot.id,
+        content: { title: `✅ ${slot.habitName}`, body: "Time for your habit. Tick it off on the Habits tab." },
+        trigger: {
+          type: N.SchedulableTriggerInputTypes.WEEKLY,
+          weekday: slot.weekday,
+          hour: slot.hour,
+          minute: slot.minute,
+          channelId: REMINDERS_CHANNEL,
+        },
+      });
+    }
+  } catch (e) {
+    console.warn("Couldn't schedule the habit reminders", e);
+  }
+}
+
+// Taps already handled, so the one that opened the app isn't handled twice.
+const handledTaps = new Set<string>();
+
+/**
+ * Calls `handle` with the push's data whenever a notification is tapped,
+ * including the tap that opened the app from closed. Returns the unsubscribe.
+ */
+export function onNotificationTap(handle: (data: Record<string, unknown>) => void): () => void {
+  const N = notifications();
+  if (!N) return () => undefined;
+  const take = (response: { notification: { request: { identifier: string; content: { data?: unknown } } } } | null) => {
+    if (!response) return;
+    const { identifier, content } = response.notification.request;
+    if (handledTaps.has(identifier)) return;
+    handledTaps.add(identifier);
+    if (content.data && typeof content.data === "object") handle(content.data as Record<string, unknown>);
+  };
+  N.getLastNotificationResponseAsync()
+    .then(take)
+    .catch(() => undefined);
+  const subscription = N.addNotificationResponseReceivedListener(take);
+  return () => subscription.remove();
 }
 
 /** Clears this phone's reminders, so the next person to sign in doesn't get them. */

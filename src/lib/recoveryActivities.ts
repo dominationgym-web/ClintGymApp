@@ -51,7 +51,7 @@ export const RECOVERY_ACTIVITIES: RecoveryActivity[] = [
     icon: "moon",
     what: "Sleep is when your muscles repair and your energy, hormones and mood reset.",
     benefits: "Physical and mental recovery.",
-    how: ["Same bedtime and wake time every day.", "Screens off and lights low for the last 30-60 minutes.", "Cool, dark, quiet room; no caffeine after lunch."],
+    how: ["Same bedtime and wake time every day.", "Screens off and lights low for the last 30-60 minutes.", "Cool, dark, quiet room; last caffeine at least 8 hours before bed."],
     minutes: 480,
     durationLabel: "7-9 hours a night",
     safety: "Still tired after good sleep for weeks? Tell your coach or see a doctor.",

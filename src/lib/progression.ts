@@ -29,13 +29,36 @@ export function repRange(reps: string | null | undefined): { low: number; high: 
 const LOWER_BODY = ["Legs", "Glutes", "Posterior Chain", "Hamstrings", "Quads"];
 const BIG_LOWER = /squat|deadlift|leg press|hip thrust|rdl|romanian/i;
 
-/** How much to add: 5kg on big lower-body barbell or machine lifts, 2.5kg everywhere else. */
-export function weightStep(exercise: { name: string; category: string | null }): number {
+/**
+ * How much to add, in steps the gym actually has: kettlebells go up 4kg,
+ * dumbbells 2kg (2.5kg once they're 10kg or more, where most racks change
+ * step), big lower-body barbell or machine lifts 5kg, everything else 2.5kg.
+ */
+export function weightStep(exercise: { name: string; category: string | null }, currentKg?: number | null): number {
+  if (/kettlebell|\bkb\b/i.test(exercise.name)) return 4;
+  if (/dumbbell|\bdb\b/i.test(exercise.name)) return currentKg != null && currentKg >= 10 ? 2.5 : 2;
   const lower = exercise.category !== null && LOWER_BODY.includes(exercise.category);
-  if (lower && BIG_LOWER.test(exercise.name) && !/dumbbell|db|kettlebell|single|split|bulgarian|goblet/i.test(exercise.name)) {
+  if (lower && BIG_LOWER.test(exercise.name) && !/single|split|bulgarian|goblet/i.test(exercise.name)) {
     return 5;
   }
   return 2.5;
+}
+
+// Heavy squats, hinges, lunges and rows load the spine or the legs hard, so
+// they get no ab work between sets (abs between sets) and keep a proper rest
+// even on the "Faster" pace.
+const HEAVY_LOWER_OR_SPINE =
+  /squat|deadlift|\brdl\b|romanian|good morning|hip thrust|lunge|step[- ]?up|leg press|clean|snatch|bent[- ]over row|barbell row|pendlay|t[- ]bar row|trap bar|hex bar/i;
+const LIGHT = /bodyweight|air squat|jump|wall sit|sissy|banded|band /i;
+
+/** Heavy lower-body or spine-loading lifts: squats, deadlifts, RDLs, hip thrusts, lunges, heavy rows. */
+export function heavyLowerOrSpine(name: string): boolean {
+  return HEAVY_LOWER_OR_SPINE.test(name) && !LIGHT.test(name);
+}
+
+/** Heavy compound lifts: the ones above plus barbell bench and overhead pressing. */
+export function heavyCompound(name: string): boolean {
+  return heavyLowerOrSpine(name) || (/barbell|smith|bench press|military|push press/i.test(name) && /press/i.test(name));
 }
 
 const kg = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)}kg`;
@@ -54,7 +77,7 @@ export function suggestNext(
   const last = `Last time: ${kg(top)} × ${working.map((s) => s.reps).join(", ")}`;
   const range = repRange(reps);
   const failed = working.some((s) => s.effort === "failure");
-  const step = weightStep(exercise);
+  const step = weightStep(exercise, top);
 
   if (range) {
     if (working.every((s) => s.reps >= range.high) && !failed) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clockSeconds,
   compareRound,
+  dropPlanText,
   dropRange,
   formatRoundTime,
   isDropSetProgram,
@@ -27,10 +28,12 @@ describe("drop sets", () => {
     expect(needsLevelNote(null)).toBe(true);
     expect(needsLevelNote("intermediate")).toBe(false);
   });
-  it("uses fewer drops on plate-loaded lifts", () => {
-    expect(dropRange("Leg Press")).toEqual({ min: 6, max: 8 });
-    expect(dropRange("Smith Machine Squat")).toEqual({ min: 6, max: 8 });
-    expect(dropRange("Cable Curl")).toEqual({ min: 8, max: 10 });
+  it("uses 2-3 drops, and fewer, short of failure, on Smith squats and leg presses", () => {
+    expect(dropRange("Leg Press")).toEqual({ min: 1, max: 2, toFailure: false });
+    expect(dropRange("Smith Machine Squat")).toEqual({ min: 1, max: 2, toFailure: false });
+    expect(dropRange("Cable Curl")).toEqual({ min: 2, max: 3, toFailure: true });
+    expect(dropPlanText(2, dropRange("Cable Curl"))).toContain("2-3 drops of about 20-25%");
+    expect(dropPlanText(2, dropRange("Leg Press"))).toContain("never to failure");
   });
   it("adds up time only while the clock runs", () => {
     let c = startClock(newClock(), 0);
@@ -42,11 +45,11 @@ describe("drop sets", () => {
     c = pauseClock(pauseClock(c, 60_000), 70_000);
     expect(clockSeconds(c, 90_000)).toBe(20);
   });
-  it("formats and compares round times", () => {
+  it("formats times and compares rounds on total reps", () => {
     expect(formatRoundTime(65)).toBe("1:05");
-    expect(compareRound({ seconds: 100, totalReps: 50 }, null)).toMatch(/time to beat/);
-    expect(compareRound({ seconds: 95, totalReps: 52 }, { seconds: 100, totalReps: 50 })).toBe("0:05 faster than last time, 2 more reps.");
-    expect(compareRound({ seconds: 130, totalReps: 48 }, { seconds: 100, totalReps: 50 })).toBe("0:30 slower than last time, 2 fewer reps.");
-    expect(compareRound({ seconds: 100, totalReps: 50 }, { seconds: 100, totalReps: 50 })).toBe("Same time as last time, same reps.");
+    expect(compareRound({ seconds: 100, totalReps: 50 }, null)).toMatch(/number to beat/);
+    expect(compareRound({ seconds: 95, totalReps: 52 }, { seconds: 100, totalReps: 50 })).toBe("2 more reps than last time.");
+    expect(compareRound({ seconds: 130, totalReps: 48 }, { seconds: 100, totalReps: 50 })).toBe("2 fewer reps than last time.");
+    expect(compareRound({ seconds: 90, totalReps: 50 }, { seconds: 100, totalReps: 50 })).toBe("Same total reps as last time.");
   });
 });

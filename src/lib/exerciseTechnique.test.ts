@@ -21,7 +21,7 @@ describe("exercise technique guides", () => {
     expect(pattern("Snatch Grip Deadlift", "Full Body")).toBe("Deadlift");
     expect(pattern("Tricep Kickback", "Triceps")).toBe("Triceps kickback");
     expect(pattern("Cable Kickback", "Glutes")).toBe("Glute kickback");
-    expect(pattern("Dumbbell Seated Overhead Press", "Overhead Press")).toBe("Overhead press (optional)");
+    expect(pattern("Dumbbell Seated Overhead Press", "Overhead Press")).toBe("Overhead press");
     expect(pattern("Incline Dumbbell Press", "Push")).toBe("Chest press");
     expect(pattern("Close-Grip Lat Pulldown", "Pull")).toBe("Lat pulldown");
     expect(pattern("Close-Grip Bench Press", "Triceps")).toBe("Close-grip press");

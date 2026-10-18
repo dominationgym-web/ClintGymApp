@@ -12,6 +12,8 @@ import {
   dayTotals,
   INTAKE_ACTIVITY_LEVELS,
   intakeDetails,
+  REFERRAL_NOTE,
+  referralReasons,
   sumTotals,
   targetStatus,
   type DietDay,
@@ -37,13 +39,15 @@ import {
 } from "@/lib/mealPlanMaker";
 import type { ClientMealPlan } from "@/types/database";
 
-// The insulin spike, in GRIZZ's terms (2026-10-12).
+// Carbs and insulin, in line with the trainer guide (nutrition review,
+// 2026-10-18): fat loss comes from the calorie deficit, not from cutting carbs.
 const INSULIN_SPIKE =
-  "When you eat carbs, your blood sugar goes up and your body releases insulin to bring it down. A big plate of carbs gives a big insulin spike. While insulin is high, your body stores energy (as fat if you don't need it) and stops burning stored fat. A sugar crash and cravings often follow. Fewer carbs, or carbs eaten when your muscles need them, keep the spikes small.";
+  "When you eat carbs, your blood sugar goes up and your body releases insulin to move that sugar into your muscles and liver. That's normal and healthy. Insulin does slow fat burning for a few hours after a meal, but over weeks your fat loss depends on how much you eat in total, not on insulin. Studies that match calories find the same fat loss on lower-carb and higher-carb diets.";
 const LOSE_CARBS =
-  "To lose weight your plan is low carb. Fewer carbs means smaller insulin spikes, so your body keeps burning stored fat between meals and you get fewer cravings. Protein keeps you full and protects your muscle, and the few carbs you do get sit around your training, when your muscles use them.";
+  "Your plan is a calorie deficit: a bit less food than your body uses, so it takes the rest from stored fat. Protein, fibre and whole foods (vegetables, fruit, beans and lentils) keep you full, so the deficit is easier to stick to. If you prefer fewer carbs, swap some for protein or veg. That's fine, but it doesn't burn more fat when the calories are the same.";
 const TIMED_CARBS =
-  "Your carbs are timed around your training. Before training they give you energy, and after training your muscles soak them up to refuel and grow, so the insulin goes to work in the muscle instead of storing fat. Your other meals stay lower in carbs to keep insulin spikes small.";
+  "Your carbs are timed around your training. Before training they give you energy, and after training your muscles use them to refuel and recover. Your other meals have a bit less carbs and more protein and veg. It's about energy for your sessions; your total calories are what decide fat loss or gain.";
+const SNACK_SALT = "Biltong is high in salt, so go easier on it if you have high blood pressure.";
 
 /** A day of meals, with a Swap button on each food when `onSwap` is given. */
 export function MealDayView({
@@ -65,7 +69,7 @@ export function MealDayView({
           {status && status.state !== "on" ? ` · ${status.by} ${status.state}` : ""}
         </Text>
         <Text style={styles.macros}>
-          Protein {totals.protein} g · Carbs {totals.carbs} g · Fat {totals.fat} g
+          Protein {totals.protein} g · Carbs {totals.carbs} g · Fat {totals.fat} g · Fibre {totals.fibre} g
         </Text>
       </View>
       {day.meals.map((meal, m) => {
@@ -102,9 +106,10 @@ export function MealDayView({
 // section. It walks them through a page at a time: their height, weight, age
 // and activity, their goal, whether they want Daily Evolution to work out a
 // plan, how many meals they eat and when they train, and whether they eat
-// meat. Losing weight is low carb; otherwise the carbs go around training.
-// Every plan has a protein snack (biltong for meat eaters). Tap Swap to change
-// a food for another with the same protein, carbs or fat.
+// meat or dairy. Most carbs go around training. Every plan has a protein snack
+// (biltong for meat eaters) with fruit. Tap Swap to change a food for another
+// with the same protein, carbs or fat. Clients the intake says should see a
+// doctor or dietitian first (see referralReasons) only get "Stay the same".
 type Details = { height: string; weight: string; age: string; sex: DietSex | null; activity: string };
 
 const STEPS = ["details", "goal", "offer", "meals", "diet"] as const;
@@ -118,6 +123,7 @@ export default function MealPlanMaker() {
   const [details, setDetails] = useState<Details>({ height: "", weight: "", age: "", sex: null, activity: "" });
   const [goal, setGoal] = useState<MealGoal>("maintain");
   const [diet, setDiet] = useState<MealDiet>("everything");
+  const [dairyFree, setDairyFree] = useState(false);
   const [explain, setExplain] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -158,6 +164,7 @@ export default function MealPlanMaker() {
         setTraining(mine.settings.training);
         if (mine.settings.goal) setGoal(mine.settings.goal);
         if (mine.settings.diet) setDiet(mine.settings.diet);
+        if (mine.settings.dairyFree) setDairyFree(true);
         if (!mine.settings.training) setDayKind("rest");
       } else {
         setEditing(true);
@@ -180,6 +187,20 @@ export default function MealPlanMaker() {
     body.height_cm >= 100 && body.height_cm <= 250 && body.weight_kg >= 25 && body.weight_kg <= 400 && body.age >= 12 && body.age <= 100 && !!body.sex && !!factor;
   const base = detailsOk ? bmr(body) : null;
   const need = detailsOk ? dailyNeed(body) : null;
+  // Diabetes, kidney disease, pregnancy, an eating disorder or under 18: no
+  // calorie deficit (or surplus) until a doctor or dietitian says so.
+  const referral = client ? referralReasons(client, detailsOk ? body.age : null) : [];
+  const goals = referral.length ? MEAL_GOALS.filter((g) => g.key === "maintain") : MEAL_GOALS;
+  const safeGoal: MealGoal = referral.length && goal !== "coach" ? "maintain" : goal;
+  const kcalFor = (g: MealGoal) => (need ? goalKcal(need, g, coachKcal, { sex: body.sex, bmr: base }) : 0);
+  const referralBox = referral.length ? (
+    <View style={[styles.insulinBox, { borderLeftColor: "#F87171" }]}>
+      <Text style={[styles.insulinTitle, { color: "#F87171" }]}>🩺 Check with a doctor or dietitian first</Text>
+      <Text style={styles.insulinText}>
+        Because of {referral.join(" and ")}, {REFERRAL_NOTE.charAt(0).toLowerCase() + REFERRAL_NOTE.slice(1)}
+      </Text>
+    </View>
+  ) : null;
 
   const header = (
     <View style={styles.headerRow}>
@@ -206,19 +227,19 @@ export default function MealPlanMaker() {
               stay the same, eat what your body uses.{"\n"}• To build muscle, eat a bit more than your body uses, and train
               hard. The extra food gives your body what it needs to build new muscle.
             </Text>
-            <Text style={styles.explainHead}>3. The insulin spike</Text>
+            <Text style={styles.explainHead}>3. Carbs and insulin</Text>
             <Text style={styles.explain}>{INSULIN_SPIKE}</Text>
-            <Text style={styles.explainHead}>4. Your carbs</Text>
+            <Text style={styles.explainHead}>4. Your carbs, protein and fibre</Text>
             <Text style={styles.explain}>
-              • Losing weight: your plan is low carb, with the few carbs you get in the meals before and after training.{"\n"}•
-              Building muscle or staying the same: most of the carbs go in the meal before training and the reload meal after
-              it, when your muscles soak them up. Your other meals stay lower in carbs. You get a training-day plan and a
-              rest-day plan.
+              • Most of the carbs go in the meal before training and the reload meal after it, when they fuel your session. You
+              get a training-day plan and a rest-day plan.{"\n"}• Losing weight: protein is a bit higher, because it keeps you full
+              and protects your muscle.{"\n"}• Every day has vegetables, a fruit, beans or lentils and (unless you're dairy-free)
+              milk, yoghurt or cottage cheese, for at least 25 g of fibre.
             </Text>
             <Text style={styles.explainHead}>5. Your protein snack</Text>
             <Text style={styles.explain}>
-              Every plan has a protein snack between meals to help you reach your protein. Lean biltong works really well,
-              especially if you don't eat a lot. Vegetarians and pescatarians get Greek yoghurt instead.
+              Every plan has a protein snack with a piece of fruit between meals to help you reach your protein. Lean biltong works
+              really well, especially if you don't eat a lot. {SNACK_SALT} Vegetarians and pescatarians get Greek yoghurt instead.
             </Text>
             <Text style={styles.explainHead}>6. Don't like a food?</Text>
             <Text style={styles.explain}>
@@ -281,8 +302,8 @@ export default function MealPlanMaker() {
     if (!client || !need) return;
     const cleaned = times.slice(0, count).map(cleanTime);
     if (cleaned.some((t) => !t)) return Alert.alert("Meal times", "Type each time like 07:00 or 13:30.");
-    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal, diet };
-    const targets = macroTargets(goalKcal(need, goal, coachKcal), body.weight_kg, goal);
+    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree };
+    const targets = macroTargets(kcalFor(safeGoal), body.weight_kg, safeGoal, body.height_cm);
     save({
       client_id: client.id,
       settings,
@@ -324,7 +345,7 @@ export default function MealPlanMaker() {
           {explainer}
           <Text style={styles.helper}>
             No problem. Your body uses about {need?.toLocaleString()} kcal a day
-            {goal === "lose" ? ", so aim a bit under that to lose weight" : goal === "gain" ? ", so aim a bit over that to build muscle" : ""}.
+            {safeGoal === "lose" ? ", so aim a bit under that to lose weight" : safeGoal === "gain" ? ", so aim a bit over that to build muscle" : ""}.
             Come back here any time and Daily Evolution will work out a meal plan for you.
           </Text>
           <Pressable style={[styles.button, styles.primary, { flex: 0, marginTop: 8 }]} onPress={() => { setDeclined(false); setStep(3); }}>
@@ -383,18 +404,20 @@ export default function MealPlanMaker() {
             <Text style={styles.label}>Do you want to lose weight, build muscle or stay the same?</Text>
             <View style={styles.chips}>
               {coachKcal ? chip(goal === "coach", "My coach's target", () => setGoal("coach")) : null}
-              {MEAL_GOALS.map((g) => chip(goal === g.key, g.label, () => setGoal(g.key), g.key))}
+              {goals.map((g) => chip(safeGoal === g.key, g.label, () => setGoal(g.key), g.key))}
             </View>
             {need ? (
               <Text style={styles.note}>
-                {goal === "coach"
+                {safeGoal === "coach"
                   ? `${coachKcal?.toLocaleString()} kcal a day, as your coach set it.`
-                  : `${MEAL_GOALS.find((g) => g.key === goal)?.detail}: ${goalKcal(need, goal, coachKcal).toLocaleString()} kcal a day.`}
+                  : `${MEAL_GOALS.find((g) => g.key === safeGoal)?.detail}: ${kcalFor(safeGoal).toLocaleString()} kcal a day.`}
+                {safeGoal === "lose" && need && kcalFor("lose") >= need ? " That's already the lowest safe amount for you, so the plan keeps you here." : ""}
               </Text>
             ) : null}
+            {referralBox}
             <View style={styles.insulinBox}>
-              <Text style={styles.insulinTitle}>{goal === "lose" ? "📉 Low carb, to burn fat" : "⏱️ Carbs timed around training"}</Text>
-              <Text style={styles.insulinText}>{goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
+              <Text style={styles.insulinTitle}>{safeGoal === "lose" ? "📉 How you lose fat" : "⏱️ Carbs timed around training"}</Text>
+              <Text style={styles.insulinText}>{safeGoal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
             </View>
           </View>
         )}
@@ -459,6 +482,11 @@ export default function MealPlanMaker() {
                 <Text style={[styles.note, { marginTop: 2 }, diet === d.key && styles.chipTextOn]}>{d.detail}</Text>
               </Pressable>
             ))}
+            <Text style={styles.label}>Milk, yoghurt and cheese?</Text>
+            <View style={styles.chips}>
+              {chip(!dairyFree, "I have dairy", () => setDairyFree(false))}
+              {chip(dairyFree, "No dairy (lactose or allergy)", () => setDairyFree(true))}
+            </View>
           </View>
         )}
 
@@ -506,13 +534,14 @@ export default function MealPlanMaker() {
           ))}
         </View>
       )}
+      {referralBox}
       <MealDayView day={day} targetKcal={plan.targets.kcal} onSwap={(meal, index) => setSwapping({ meal, index })} />
       <View style={styles.insulinBox}>
-        <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 Why it's low carb" : "⏱️ Why the carbs are where they are"}</Text>
+        <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
         <Text style={styles.insulinText}>{plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
       </View>
       <Text style={styles.note}>
-        Weights are for the food as listed, for example cooked rice. Swap keeps the same protein, carbs or fat.
+        Weights are for the food as listed, for example cooked rice. Swap keeps the same protein, carbs or fat. {SNACK_SALT}
       </Text>
       <View style={styles.buttons}>
         <Pressable
@@ -537,7 +566,7 @@ export default function MealPlanMaker() {
               <Text style={styles.helper}>Each option gives the same protein, carbs or fat.</Text>
               <ScrollView style={{ maxHeight: 420 }}>
                 {swapTarget &&
-                  swapOptions(swapTarget.food, plan.settings.diet).map((f) => (
+                  swapOptions(swapTarget.food, plan.settings.diet, plan.settings.dairyFree).map((f) => (
                     <Pressable key={f.name} style={styles.option} onPress={() => pickSwap(f.name)}>
                       <Text style={styles.optionName}>{f.name}</Text>
                       <Text style={styles.amount}>{amountLabel(swapItem(swapTarget, f.name))}</Text>

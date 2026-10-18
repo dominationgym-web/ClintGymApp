@@ -1,4 +1,4 @@
-import { d, phase, program } from "./common";
+import { d, phase, program, REHAB_REFER } from "./common";
 import type { StabilityAreaGuide } from "./types";
 
 // Knee: neuromuscular warm-ups (FIFA 11+, PEP) roughly halve ACL injuries;
@@ -16,10 +16,10 @@ export const KNEE: StabilityAreaGuide = {
     "Most serious knee injuries, including ACL tears, happen without contact: landing or cutting with the knee caving inwards. That's a control problem, and control can be trained.",
     "Warm-up programs built on these exact exercises (FIFA 11+, PEP) cut ACL injuries by about half and overall leg injuries by about a third in the studies, when done at least twice a week.",
     "Nordic hamstring curls cut hamstring strains by about half. Strong hamstrings also protect the ACL by stopping the shin sliding forward.",
-    "For kneecap pain and tendon pain, strengthening the quads and hips is the treatment with the best evidence. Long isometric holds (about 45 seconds) can ease tendon pain for hours.",
+    "For kneecap pain and tendon pain, strengthening the quads and hips is the treatment with the best evidence. Isometric holds are a gentle way to start loading a sore tendon. They don't reliably ease pain more than slow, heavy reps, so they're a starting point, not a painkiller.",
   ],
   chooseLevel: {
-    rehab: "Knee pain, a recent strain or sprain, after surgery once your surgeon or physio says strengthening can start, or a knee that hurts on stairs and squats.",
+    rehab: `Knee pain, an older strain or sprain, or a knee that hurts on stairs and squats. ${REHAB_REFER} After knee surgery (ACL, meniscus, kneecap), follow your surgeon or physio's protocol: this is not a post-surgery program.`,
     beginner: "No current injury, but your knee wobbles or caves in when you step down from a stair on one leg, or single-leg work feels shaky.",
     intermediate: "You can do 10 controlled single-leg step-downs from a normal stair each side with the knee staying over your toes.",
     advanced: "You can do controlled Bulgarian split squats with weight, a few Nordic curls, and land from a jump on one leg without the knee caving in. For sport and heavy leg training.",
@@ -29,6 +29,7 @@ export const KNEE: StabilityAreaGuide = {
     "Swelling that comes up within a few hours of an injury, or after every session.",
     "You can't take weight on it, or it hurts at night or at rest.",
     "Calf pain with swelling and warmth (see a doctor the same day).",
+    "A hot, red, swollen joint with a fever (urgent: see a doctor today).",
   ],
   exercises: [
     {
@@ -43,7 +44,7 @@ export const KNEE: StabilityAreaGuide = {
         "Hold the squeeze, relax fully for a few seconds, repeat.",
       ],
       lossOfControl: "Stop when you can't keep the squeeze as strong as at the start, or the muscle starts to shake and let go.",
-      resistance: "None. Squeeze as hard as is comfortable (pain no higher than 3/10).",
+      resistance: "None. Squeeze as hard as is comfortable (pain no higher than 5/10, see the pain rule).",
       easier: "Squeeze more gently.",
       harder: "Lift the straight leg a few centimetres while squeezing (straight leg raise).",
     },
@@ -107,7 +108,7 @@ export const KNEE: StabilityAreaGuide = {
         "Hold, breathing normally.",
       ],
       lossOfControl: "Stop the clock when you slide up or down, the knees cave in, or the legs start shaking hard enough to change position.",
-      resistance: "For sore knees or tendons: a height where pain stays at 3/10 or less, about 70% effort, 5 holds of 45 seconds with 2 minutes rest (this can ease tendon pain for hours). For training: deeper, then holding a plate.",
+      resistance: "For sore knees or tendons: a height where pain stays at 5/10 or less, about 70% effort, 5 holds of 45 seconds with 2 minutes rest. A gentle way to start loading a sore tendon, not a painkiller. For training: deeper, then holding a plate.",
       easier: "Higher up the wall.",
       harder: "Deeper, a plate on your lap, or one leg slightly lifted.",
     },
@@ -277,14 +278,14 @@ export const KNEE: StabilityAreaGuide = {
 
 KNEE.programs = [
   program("knee", "rehab", {
-    who: "Knee pain (kneecap or tendon), a recent strain or sprain, or after surgery once your surgeon or physio has cleared you to strengthen.",
+    who: "Knee pain (kneecap or tendon), or an older strain or sprain that has been assessed. Not a post-surgery program: after knee surgery, follow your surgeon or physio's protocol, and no jumping or landing until your physio clears it.",
     goal: "Ease pain with long holds, rebuild the quads and hamstrings, and retrain the knee to stay in line on one leg.",
     resistance: "Pain on stairs or squats should be the same or better from week to week. If it gets worse, go back a phase.",
-    finishTest: "10 slow step-downs from a normal stair each side with the knee over the toes, 45 seconds split squat hold each side, and 5 squat jumps landed quietly with no pain.",
+    finishTest: "10 slow step-downs from a normal stair each side with the knee over the toes, 45 seconds split squat hold each side, and 8 slow Bulgarian split squats each side, with nothing worse the next morning.",
     phases: [
       phase(1, 2, "Calm it and switch it on", "Holds to ease pain and wake the thigh muscle up.", [
         d("quad_set", 10, 10, { primer: true }),
-        d("wall_sit", 5, 30, { primer: true, note: "high, pain 3/10 max" }),
+        d("wall_sit", 5, 30, { primer: true, note: "high, pain 5/10 max" }),
         d("straight_leg_raise", 3, 10),
         d("glute_bridge", 3, 12),
       ]),
@@ -300,11 +301,13 @@ KNEE.programs = [
         d("sl_glute_bridge", 3, 10),
         d("tke", 3, 15),
       ]),
-      phase(7, 8, "Back to full use", "Moving strength and the first landings.", [
-        d("split_squat", 3, 10, { primer: true }),
+      // No jumps here (review 2026-10-18): landings come in Beginner and up,
+      // after slow, heavy strength work.
+      phase(7, 8, "Back to full use", "Slow, heavier strength. Jumping and landing come later, in the next levels.", [
+        d("split_squat", 3, 10, { primer: true, note: "3 sec down, 3 sec up" }),
         d("step_down", 3, 10, { primer: true }),
         d("sl_glute_bridge", 3, 12),
-        d("jump_land", 3, 5, { note: "only if pain-free" }),
+        d("bulgarian", 3, 8, { note: "slow, light weight" }),
       ]),
     ],
   }),

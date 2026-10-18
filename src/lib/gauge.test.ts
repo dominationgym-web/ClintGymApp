@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimatedMax, gaugeWeight, inIntro, needsGauge } from "@/lib/gauge";
+import { estimatedMax, gaugeWeight, inIntro, needsGauge, needsSafeties } from "@/lib/gauge";
 
 const bench = { name: "Barbell Bench Press", category: "Chest" };
 
@@ -16,28 +16,56 @@ describe("needsGauge", () => {
   });
 });
 
+describe("estimatedMax", () => {
+  it("adds the reps left in the tank and caps the reps at 12", () => {
+    expect(estimatedMax(60, 9, 1)).toBeCloseTo(80);
+    expect(estimatedMax(50, 20)).toBeCloseTo(estimatedMax(50, 12));
+  });
+});
+
 describe("gaugeWeight", () => {
   it("works out the weight for the top of the range with reps in reserve", () => {
-    // 50kg × 15 to failure → about 75kg max. Intro: 10 + 2 reps → 75 / 1.4 ≈ 53.6 → 52.5kg.
-    expect(estimatedMax(50, 15)).toBeCloseTo(75);
-    expect(gaugeWeight({ weight: 50, reps: 15 }, "8-10", bench, true)?.weight).toBe(52.5);
-    // After the intro, 1 rep in reserve: 75 / (1 + 11/30) ≈ 54.9 → 52.5kg.
-    expect(gaugeWeight({ weight: 50, reps: 15 }, "8-10", bench, false)?.weight).toBe(52.5);
+    // 60kg × 9 with 1 left → 10 reps → 80kg max. Intro: 10 + 2 reps → 80 / 1.4 ≈ 57.1 → 55kg.
+    expect(gaugeWeight({ weight: 60, reps: 9 }, "8-10", bench, true)?.weight).toBe(55);
+    // After the intro, 1 rep in reserve: 80 / (1 + 11/30) ≈ 58.5 → 57.5kg.
+    expect(gaugeWeight({ weight: 60, reps: 9 }, "8-10", bench, false)?.weight).toBe(57.5);
   });
 
   it("brings the weight down when the gauge weight was too heavy", () => {
+    // 60 × 5 (+1) → 72kg max; 10-12 + 2 → 72 / 1.467 ≈ 49.1 → 47.5kg.
     expect(gaugeWeight({ weight: 60, reps: 5 }, "10-12", bench, true)?.weight).toBe(47.5);
   });
 
-  it("rounds light weights to whole kilos and big lower-body lifts to 5kg", () => {
-    expect(gaugeWeight({ weight: 8, reps: 20 }, "12-15", { name: "Dumbbell Curl", category: "Biceps" }, true)?.weight).toBe(8);
-    expect(gaugeWeight({ weight: 100, reps: 12 }, "8-10", { name: "Barbell Back Squat", category: "Legs" }, true)?.weight).toBe(100);
+  it("treats very high-rep gauge sets as a rough guess", () => {
+    const r = gaugeWeight({ weight: 50, reps: 15 }, "8-10", bench, true);
+    // Capped at 12 reps: 50 × 1.4 = 70kg max → 70 / 1.4 = 50kg.
+    expect(r?.weight).toBe(50);
+    expect(r?.advice).toContain("rough guess");
+    expect(gaugeWeight({ weight: 60, reps: 9 }, "8-10", bench, true)?.advice).not.toContain("rough guess");
   });
 
-  it("says how hard to push", () => {
-    expect(gaugeWeight({ weight: 50, reps: 15 }, "8-10", bench, true)?.advice).toContain("2 more good reps");
-    expect(gaugeWeight({ weight: 50, reps: 15 }, "8-10", bench, false)?.advice).toContain("1 more good rep");
-    expect(gaugeWeight({ weight: 50, reps: 15 }, "30 sec", bench, true)).toBeNull();
+  it("rounds to weights the gym has", () => {
+    expect(gaugeWeight({ weight: 8, reps: 11 }, "12-15", { name: "Dumbbell Curl", category: "Biceps" }, true)?.weight).toBe(6);
+    expect(gaugeWeight({ weight: 100, reps: 11 }, "8-10", { name: "Barbell Back Squat", category: "Legs" }, true)?.weight).toBe(100);
+    expect(gaugeWeight({ weight: 24, reps: 11 }, "8-10", { name: "Kettlebell Romanian Deadlift", category: "Hamstrings" }, true)?.weight).toBe(24);
+  });
+
+  it("says how hard to push, and never says failure", () => {
+    const r = gaugeWeight({ weight: 60, reps: 9 }, "8-10", bench, true);
+    expect(r?.advice).toContain("2 more good reps");
+    expect(r?.advice).not.toMatch(/failure/);
+    expect(gaugeWeight({ weight: 60, reps: 9 }, "8-10", bench, false)?.advice).toContain("1 more good rep");
+    expect(gaugeWeight({ weight: 60, reps: 9 }, "30 sec", bench, true)).toBeNull();
+  });
+});
+
+describe("needsSafeties", () => {
+  it("is for free-weight barbell squats and bench presses", () => {
+    expect(needsSafeties("Barbell Back Squat")).toBe(true);
+    expect(needsSafeties("Barbell Bench Press")).toBe(true);
+    expect(needsSafeties("Smith Machine Squat")).toBe(false);
+    expect(needsSafeties("Dumbbell Bench Press")).toBe(false);
+    expect(needsSafeties("Leg Press")).toBe(false);
   });
 });
 

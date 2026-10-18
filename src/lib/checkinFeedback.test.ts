@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alcoholMessage, checkinFeedback, EVOLVE_TAGLINE, sleepHours } from "./checkinFeedback";
+import { alcoholMessage, checkinFeedback, EVOLVE_TAGLINE, sleepHours, waterTargetLitres } from "./checkinFeedback";
 
 const day = (date: string, over: Partial<Parameters<typeof checkinFeedback>[0][number]> = {}) => ({
   checkin_date: date,
@@ -60,6 +60,22 @@ describe("checkinFeedback", () => {
     );
     expect(fb.days).toBe(1);
     expect(fb.tips.map((t) => t.key)).toEqual(["pain"]);
+  });
+
+  it("sets the water target from body weight (nutrition review, 2026-10-18)", () => {
+    expect(waterTargetLitres(55)).toBe(1.8);
+    expect(waterTargetLitres(90)).toBe(3);
+    expect(waterTargetLitres(null)).toBe(2);
+    const week = (litres: number) => ["2026-10-10", "2026-10-11", "2026-10-12"].map((d) => day(d, { water_litres: litres }));
+    expect(checkinFeedback(week(1.8), "2026-10-12", 55).tips.map((t) => t.key)).not.toContain("water");
+    expect(checkinFeedback(week(2.5), "2026-10-12", 90).tips.map((t) => t.key)).toContain("water");
+  });
+
+  it("doesn't offer white rice as the low-GI swap or blame insulin", () => {
+    const tip = checkinFeedback([day("2026-10-12", { high_gi_count: 4 })], "2026-10-12").tips.find((t) => t.key === "highGi")!;
+    expect(tip.doThis).not.toMatch(/sweet potato, rice/);
+    expect(tip.doThis).toMatch(/basmati or brown rice/);
+    expect(tip.itWill).not.toMatch(/insulin/i);
   });
 
   it("never suggests oats", () => {

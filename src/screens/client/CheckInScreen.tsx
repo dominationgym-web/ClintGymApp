@@ -1,4 +1,5 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
+import { intakeDetails } from "@/lib/dietPlan";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import WellbeingQuestions from "@/components/WellbeingQuestions";
@@ -226,7 +227,7 @@ export default function CheckInScreen() {
         <ProgressPhotoReminder />
         <Text style={styles.title}>You're checked in for today ✅</Text>
         <CheckinFeedbackCard
-          feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso())}
+          feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso(), client ? intakeDetails(client).weight_kg : null)}
         />
         {client && <RecoverySuggestionCard clientId={client.id} refreshKey={saved} />}
         {missing.length > 0 && (

@@ -1,8 +1,9 @@
 import NotificationsPrompt from "@/components/NotificationsPrompt";
-import { registerForCoachMessages } from "@/lib/notifications";
-import React, { useEffect, useState } from "react";
+import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications";
+import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
+import React, { useEffect, useRef, useState } from "react";
 import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { createNavigationContainerRef, NavigationContainer } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
 import AuthNavigator from "@/navigation/AuthNavigator";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -47,9 +48,32 @@ function useLockedOut(role: string | null, profile: unknown) {
   return locked;
 }
 
+// Tapping a notification opens the screen it is about (notificationRoutes.ts).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const navigationRef = createNavigationContainerRef<any>();
+
+function openRoute(route: NotificationRoute) {
+  if (route.stack === "client") navigationRef.navigate("ClientTabs", { screen: route.screen });
+  else if (route.screen === "ClientDetail")
+    navigationRef.navigate("ClientDetail", { clientId: route.clientId, tab: route.tab, open: route.open });
+  else if (route.screen === "Billing") navigationRef.navigate("Billing");
+  else navigationRef.navigate("TrainerTabs", { screen: route.screen });
+}
+
 export default function RootNavigator() {
   const { role, loading, client, trainer } = useAuth();
   const locked = useLockedOut(role, role === "trainer" ? trainer : client);
+  // A tap that arrives before the screens are ready waits here.
+  const pendingRoute = useRef<NotificationRoute | null>(null);
+  useEffect(() => {
+    if (!role) return;
+    return onNotificationTap((data) => {
+      const route = notificationRoute(data, role);
+      if (!route) return;
+      if (navigationRef.isReady()) openRoute(route);
+      else pendingRoute.current = route;
+    });
+  }, [role]);
 
   if (loading) {
     return (
@@ -61,7 +85,13 @@ export default function RootNavigator() {
 
   return (
     <KeyboardSafe>
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={() => {
+        if (pendingRoute.current) openRoute(pendingRoute.current);
+        pendingRoute.current = null;
+      }}
+    >
       {role === "trainer" && trainer && needsAgreement(trainer, TRAINER_AGREEMENT_VERSION) ? (
         <TrainerAgreementScreen />
       ) : role === "trainer" && trainer?.approved && locked ? (
@@ -154,12 +184,16 @@ function PendingTrainerScreen() {
   useEffect(() => {
     registerForCoachMessages();
   }, []);
+  // approved_at stays set once the owner has approved them, so a trainer with
+  // it but no approval has been blocked, not newly applied.
+  const blocked = !!trainer?.approved_at;
   return (
     <View style={styles.centered}>
-      <Text style={styles.title}>Thanks for applying</Text>
+      <Text style={styles.title}>{blocked ? "Your account has been paused" : "Thanks for applying"}</Text>
       <Text style={styles.body}>
-        Your trainer account is waiting for approval. Once it's approved, open the app again and you'll be able to
-        set up your profile and invite your clients.
+        {blocked
+          ? "The app owner has paused your trainer account. Your clients and their data are safe. Please contact the app owner to switch it back on."
+          : "Your trainer account is waiting for approval. Once it's approved, open the app again and you'll be able to set up your profile and invite your clients."}
       </Text>
       {trainer ? <Text style={[styles.body, { marginTop: 12 }]}>Signed in as {trainer.email}</Text> : null}
       <Pressable style={styles.logoutButton} onPress={signOut}>

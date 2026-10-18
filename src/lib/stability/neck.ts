@@ -1,4 +1,4 @@
-import { d, phase, program } from "./common";
+import { d, phase, program, REHAB_REFER } from "./common";
 import { SHOULDER } from "./shoulder";
 import type { StabilityAreaGuide, StabilityExercise } from "./types";
 
@@ -16,13 +16,13 @@ export const NECK: StabilityAreaGuide = {
   accent: "#FB923C",
   summary: "Deep neck strength for posture and headaches, and a strong neck for contact sports.",
   why: [
-    "Your head weighs about 5 kg, and the further it pokes forward (looking at phones, desks, driving) the heavier it acts on the neck. The small deep muscles at the front of the neck, which hold the head over the shoulders, are weak in most people with neck pain and tension headaches.",
+    "Necks get sore when they're loaded more, or for longer, than they're used to: long hours at a desk or phone, poor sleep and stress all play a part. Posture plays a smaller part than people think. The small deep muscles at the front of the neck are often weak in people with neck pain and tension headaches.",
     "Training those deep muscles with a simple chin-tuck nod, then building general neck strength, is one of the best-supported treatments for ongoing neck pain.",
     "In contact sports, a stronger neck slows the head down when you're hit. One large study found every extra pound of neck strength went with about 5% lower odds of concussion.",
     "The neck works with the upper back and shoulder blades, so these programs include some shoulder-blade work too.",
   ],
   chooseLevel: {
-    rehab: "Neck pain or stiffness now, tension headaches, a mild neck strain, or after whiplash once a doctor has cleared you to exercise.",
+    rehab: `Neck pain or stiffness now, tension headaches, a mild neck strain, or after whiplash once a doctor has cleared you to exercise. ${REHAB_REFER}`,
     beginner: "No current pain, but your head pokes forward, your neck gets tight from desk work, or you can't hold a chin-tucked head lift for 20 seconds.",
     intermediate: "You can hold a chin-tucked head lift for 30+ seconds and do the hand-resisted holds in all four directions without pain.",
     advanced: "A strong, pain-free neck already; for rugby, combat sports, wrestling and other contact sports.",
@@ -30,6 +30,7 @@ export const NECK: StabilityAreaGuide = {
   redFlags: [
     "Dizziness, double vision, trouble speaking or swallowing, drop attacks or fainting with neck movement (stop and see a doctor straight away).",
     "Pain, numbness, pins and needles or weakness spreading down an arm.",
+    "Clumsy hands, dropping things, changes in walking or balance, or symptoms in both arms (possible pressure on the spinal cord: see a doctor soon).",
     "Neck pain after a head knock, fall or accident (get checked before exercising).",
     "Neck stiffness with fever and headache, or a headache unlike any you've had (urgent).",
   ],
@@ -93,7 +94,7 @@ export const NECK: StabilityAreaGuide = {
         "Put your hand on your forehead and push your head into it while your hand stops any movement. Hold.",
         "Repeat with the hand on the back of your head, then each side. Log the shortest of the four holds.",
       ],
-      lossOfControl: "Stop when the head starts to move, you can't keep the same push, or the pain goes above 3/10.",
+      lossOfControl: "Stop when the head starts to move, you can't keep the same push, or the pain goes above 5/10.",
       resistance: "Rehab: 2-3 out of 10 effort. Beginner: 4-5 out of 10. Intermediate: 6-7 out of 10. Never maximal.",
       easier: "Push more gently, or fewer directions.",
       harder: "Push a bit harder, then a band around the head.",

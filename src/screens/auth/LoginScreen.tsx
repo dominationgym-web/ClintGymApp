@@ -10,11 +10,13 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
 export default function LoginScreen({ navigation, route }: Props) {
   const coach = route.params?.coach === true;
-  const [email, setEmail] = useState("");
+  const [emailText, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    // Phone autofill often adds a space at the end; Supabase stores emails in lower case.
+    const email = emailText.trim().toLowerCase();
     if (!email || !password) {
       Alert.alert("Missing details", "Enter your email and password.");
       return;
@@ -56,7 +58,7 @@ export default function LoginScreen({ navigation, route }: Props) {
         placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
-        value={email}
+        value={emailText}
         onChangeText={setEmail}
       />
       <Text style={styles.label}>Password</Text>

@@ -50,7 +50,7 @@ export function foundationMessage(firstName: string, level: TrainingLevel, progr
   return [
     `Hi ${firstName}, welcome! Because ${LEVEL_PHRASE[level]}, your first 6 weeks are a foundation program: ${programName}.`,
     "Here's why we start here:",
-    "• It strengthens your joints, tendons and core so they're ready for heavier training. This is the best way to avoid injuries later on.",
+    "• It starts the slow job of strengthening your tendons, joints and core, which keeps adapting well past these 6 weeks. That's what lets you train hard safely later.",
     "• You learn every movement with good form while the weights are still light.",
     "• It gives me time to get to know you and how your body responds, so your main program fits you properly.",
     "Weeks 1-2: learn the movements. Weeks 3-4: add a set and build. Weeks 5-6: fewer reps and heavier weights.",

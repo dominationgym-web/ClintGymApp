@@ -1,10 +1,13 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { checkinFeedback } from "@/lib/checkinFeedback";
+import { intakeDetails } from "@/lib/dietPlan";
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput, Pressable, Alert, Switch } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import { describeTimeSince, toIsoDate, todayIso } from "@/lib/dates";
+import { describeTimeSince, parseIsoDate, toIsoDate, todayIso } from "@/lib/dates";
+import { renewedPlanDates } from "@/lib/planRenewal";
+import { clientGoals } from "@/lib/clientGoals";
 import DropSetRoundsCard from "@/components/DropSetRoundsCard";
 import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
 import { TRAINING_LEVELS, levelLabel } from "@/lib/foundation";
@@ -101,7 +104,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const [injuredAreas, setInjuredAreas] = useState<StabilityArea[]>([]);
   const planChanged = () => setPlanKey((k) => k + 1);
   // Which tap-to-open heading on the Training tab is open.
-  const [trainingOpen, setTrainingOpen] = useState<string | null>(null);
+  const [trainingOpen, setTrainingOpen] = useState<string | null>(route.params.open ?? null);
   const toggleTraining = (key: string) => setTrainingOpen((k) => (k === key ? null : key));
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
@@ -274,6 +277,66 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     }
     setHabits((prev) => prev.filter((h) => h.id !== habitId));
   };
+  // Removing deletes the habit and every day ticked off, so ask first.
+  const confirmDeleteHabit = (habit: Habit) =>
+    Alert.alert(
+      `Remove "${habit.name}"?`,
+      `This deletes the habit and its whole streak history for ${client?.name ?? "this client"}. It can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Remove", style: "destructive", onPress: () => deleteHabit(habit.id) },
+      ]
+    );
+
+  // Plan and payment, from the Overview: renew after a payment (the new plan
+  // starts when the current one ends) or close their access.
+  const renewPlan = () => {
+    if (!client) return;
+    const next = renewedPlanDates(client, new Date());
+    if (!next) return Alert.alert("No plan", "This client has no plan length picked.");
+    const renewing = client.access_status !== "expired";
+    Alert.alert(
+      renewing ? "Renew plan?" : "Activate client?",
+      `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: renewing ? "Renew" : "Activate",
+          onPress: async () => {
+            const { error } = await supabase.from("clients").update(next).eq("id", client.id);
+            if (error) return Alert.alert("Couldn't update", error.message);
+            setClient((c) => (c ? { ...c, ...next } : c));
+          },
+        },
+      ]
+    );
+  };
+  const markExpired = () => {
+    if (!client) return;
+    Alert.alert("Mark as expired?", `This closes ${client.name}'s access now. Are you sure?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Mark expired",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase.from("clients").update({ access_status: "expired" }).eq("id", client.id);
+          if (error) return Alert.alert("Couldn't update", error.message);
+          setClient((c) => (c ? { ...c, access_status: "expired" } : c));
+        },
+      },
+    ]);
+  };
+
+  // Goals: filled in from the intake form, and the trainer can change them.
+  const [goalsDraft, setGoalsDraft] = useState<string | null>(null);
+  const saveGoals = async () => {
+    if (goalsDraft === null) return;
+    const goals = goalsDraft.trim() || null;
+    const { error } = await supabase.from("clients").update({ goals }).eq("id", clientId);
+    if (error) return Alert.alert("Couldn't save goals", error.message);
+    setClient((c) => (c ? { ...c, goals } : c));
+    setGoalsDraft(null);
+  };
 
   const saveNotes = async () => {
     setSaving(true);
@@ -294,7 +357,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       archived ? `Bring ${client.name} back?` : `Archive ${client.name}?`,
       archived
         ? "All their old data is still here. They'll be asked to fill in the intake form again, so you can compare then and now below. Tap Activate on the Clients list once they've paid."
-        : "They move off your client lists and their access closes. Nothing is deleted: if they come back, open Archived on the Clients tab and tap Bring back.",
+        : "They move off your client lists and their access closes. Nothing is deleted: if they come back, open Dormant on the Clients tab and tap Bring back.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -417,6 +480,18 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                     Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
                   </Text>
                 )}
+                {!client.archived_at && (
+                  <View style={styles.planButtons}>
+                    <Pressable style={styles.planButton} onPress={renewPlan}>
+                      <Text style={styles.planButtonText}>{client.access_status === "expired" ? "Paid: activate" : "Paid: renew plan"}</Text>
+                    </Pressable>
+                    {client.access_status !== "expired" && (
+                      <Pressable style={styles.planButtonDanger} onPress={markExpired}>
+                        <Text style={styles.planButtonDangerText}>Mark expired</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 
@@ -485,11 +560,57 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               />
             )}
 
-            {client.injuries && <Text style={styles.body}>Injuries (sign-up form): {client.injuries}</Text>}
+            {client.injuries && (
+              <Text style={styles.body}>
+                Injuries (noted earlier): {client.injuries}
+                {client.injuries_healed_on ? ` (healed ${client.injuries_healed_on})` : ""}{" "}
+                {/* Marking it healed stops the injury check flagging it (0119). */}
+                <Text
+                  style={{ color: BRAND_GOLD, fontWeight: "700" }}
+                  onPress={async () => {
+                    const healed = client.injuries_healed_on ? null : todayIso();
+                    const { error } = await supabase.from("clients").update({ injuries_healed_on: healed }).eq("id", client.id);
+                    if (error) Alert.alert("Couldn't save", error.message);
+                    else {
+                      setClient((c) => (c ? { ...c, injuries_healed_on: healed } : c));
+                      setInjuryKey((k) => k + 1);
+                    }
+                  }}
+                >
+                  {client.injuries_healed_on ? "Not healed" : "Mark healed"}
+                </Text>
+              </Text>
+            )}
             <Text style={styles.libraryTitle}>🩹 Injuries</Text>
             <InjuryList clientId={client.id} role="trainer" clientName={client.name} onChanged={() => setInjuryKey((k) => k + 1)} />
-            {client.injuries && stabilityAreasFor(client.injuries).length > 0 && <RehabSuggestion clientName={client.name} texts={[client.injuries]} />}
-            {client.goals && <Text style={styles.body}>Goals: {client.goals}</Text>}
+            {client.injuries && !client.injuries_healed_on && stabilityAreasFor(client.injuries).length > 0 && <RehabSuggestion clientName={client.name} texts={[client.injuries]} />}
+            <Text style={styles.libraryTitle}>🎯 Goals</Text>
+            {goalsDraft === null ? (
+              <Pressable onPress={() => setGoalsDraft(clientGoals(client))} hitSlop={6}>
+                <Text style={styles.body}>{clientGoals(client) || "None yet."}</Text>
+                <Text style={styles.editLink}>Edit goals</Text>
+              </Pressable>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.textInput}
+                  multiline
+                  maxLength={500}
+                  value={goalsDraft}
+                  onChangeText={setGoalsDraft}
+                  placeholder="e.g. Lose 8kg by March, deadlift 100kg"
+                  placeholderTextColor="#64748B"
+                />
+                <View style={styles.planButtons}>
+                  <Pressable style={styles.planButton} onPress={saveGoals}>
+                    <Text style={styles.planButtonText}>Save goals</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setGoalsDraft(null)} hitSlop={6}>
+                    <Text style={styles.editLink}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
 
             <Text style={styles.sectionHeading}>Intake form</Text>
             {Object.keys(client.intake_responses ?? {}).length === 0 ? (
@@ -513,7 +634,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "checkins" && (
           <>
-            <CheckinFeedbackCard feedback={checkinFeedback(checkins, todayIso())} forTrainer />
+            <CheckinFeedbackCard feedback={checkinFeedback(checkins, todayIso(), intakeDetails(client).weight_kg)} forTrainer />
             <Text style={styles.sectionHeading}>Last 14 check-ins</Text>
             {checkins.length === 0 && <Text style={styles.helper}>No check-ins yet.</Text>}
             {checkins.map((c) => (
@@ -558,7 +679,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                       {h.chosen_by_client ? " · Chosen by client" : ""}
                     </Text>
                   </View>
-                  <Pressable onPress={() => deleteHabit(h.id)}>
+                  <Pressable onPress={() => confirmDeleteHabit(h)}>
                     <Text style={styles.habitDelete}>Remove</Text>
                   </Pressable>
                 </View>
@@ -628,21 +749,18 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {tab === "training" && (
           <>
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
-            {trainer && (
-              <FoundationOfferCard
-                client={client}
-                trainerId={trainer.id}
-                onChanged={(change) => {
-                  setClient((c) => (c ? { ...c, ...change } : c));
-                  if (change.foundation_status === "approved") setProgramKey((k) => k + 1);
-                }}
-              />
-            )}
+            <FoundationOfferCard
+              client={client}
+              onChanged={(change) => {
+                setClient((c) => (c ? { ...c, ...change } : c));
+                if (change.foundation_status === "approved") setProgramKey((k) => k + 1);
+              }}
+            />
             <InjuryCheckCard
               key={injuryKey}
               clientId={client.id}
               clientName={client.name}
-              injuries={client.injuries}
+              injuries={client.injuries_healed_on ? null : client.injuries}
               trainingPlace={client.training_place}
               refreshKey={planKey}
               onAreas={setInjuredAreas}
@@ -666,6 +784,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               trainerId={trainer?.id}
               onChanged={() => setStabilityDaysKey((k) => k + 1)}
             />
+            <TrainingSection title="🎥 Form videos" open={trainingOpen === "videos"} onToggle={() => toggleTraining("videos")}>
+              {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
+            </TrainingSection>
             <TrainingSection title="🏃 Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
               <OtherActivityCard clientId={client.id} role="trainer" />
             </TrainingSection>
@@ -709,7 +830,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 onChanged={planChanged}
                 injuries={injuredAreas}
               />
-              {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
               {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
               <View style={styles.libraryRow}>
                 <View style={{ flex: 1 }}>
@@ -883,6 +1003,12 @@ const styles = StyleSheet.create({
   },
   planLabel: { color: "#fff", fontWeight: "700", fontSize: 14 },
   planDate: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
+  planButtons: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 10, marginTop: 10 },
+  planButton: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 12 },
+  planButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
+  planButtonDanger: { borderWidth: 1, borderColor: "#EF4444", borderRadius: 6, paddingVertical: 7, paddingHorizontal: 12 },
+  planButtonDangerText: { color: "#EF4444", fontWeight: "700", fontSize: 12 },
+  editLink: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13, marginTop: 4, marginBottom: 8 },
   expired: { color: "#EF4444" },
   resetBox: {
     flexDirection: "row",

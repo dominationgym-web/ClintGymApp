@@ -1,17 +1,21 @@
 import { FOODS, type Food, type FoodGroup } from "@/lib/foods";
-import { findFood, gramsFor, itemTotals, type DietDay, type DietItem, type DietMeal } from "@/lib/dietPlan";
+import { findFood, gramsFor, itemTotals, sumTotals, type DietDay, type DietItem, type DietMeal } from "@/lib/dietPlan";
 
 // The client's own meal plan maker (GRIZZ, 2026-10-12): they pick how many
 // meals they eat, when, and when they train; the app builds a balanced day
 // with medium carbs. Most carbs go in the meal before training and the reload
-// meal after it, so the other meals stay low in carbs and insulin spikes stay
-// small. A rest-day version spreads the carbs out and keeps the evening
-// lighter. Any food can be swapped for another from the same group with the
-// same protein, carbs or fat.
+// meal after it, when they fuel the session best. A rest-day version spreads
+// the carbs out and keeps the evening lighter. Any food can be swapped for
+// another from the same group with the same protein, carbs or fat.
 //
 // Every plan gets a biltong snack to help reach the protein goal (GRIZZ,
-// 2026-10-12: it works well for ladies who don't eat a lot). Vegetarians and
-// pescatarians get a Greek yoghurt snack instead, and only foods they eat.
+// 2026-10-12: it works well for ladies who don't eat a lot), with a piece of
+// fruit. Vegetarians and pescatarians get a Greek yoghurt snack instead, and
+// only foods they eat. Biltong is only ever the snack, so at most once a day.
+//
+// Nutrition review (2026-10-18): every day gets veg at most meals, a fruit,
+// legumes in the main meals, a dairy food (unless dairy-free) and at least
+// about 25 g of fibre, and lands within the app's own "on target" margin.
 
 export type MealRole = "pre" | "post" | "meal";
 
@@ -32,10 +36,13 @@ export type MealPlanSettings = {
   training: string | null;
   goal?: MealGoal;
   diet?: MealDiet;
+  /** No milk, yoghurt, cheese or whey (lactose intolerance or allergy). */
+  dairyFree?: boolean;
 };
 
 const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey/i;
 const FISH = /salmon|hake|fish|tuna|prawn|sardine|pilchard/i;
+const DAIRY = /milk|yoghurt|cottage cheese|cheddar|feta|butter$|whey/i;
 
 /** Whether someone on this diet eats the food. */
 export function dietAllows(foodName: string, diet: MealDiet = "everything"): boolean {
@@ -44,22 +51,48 @@ export function dietAllows(foodName: string, diet: MealDiet = "everything"): boo
   return diet === "pescatarian" || !FISH.test(foodName);
 }
 
+/** Whether the food fits the client's diet and, if they're dairy-free, has no dairy. */
+export function foodAllowed(foodName: string, diet: MealDiet = "everything", dairyFree = false): boolean {
+  return dietAllows(foodName, diet) && !(dairyFree && DAIRY.test(foodName));
+}
+
 // The goal moves the day's calories off what the body uses (BMR plus
-// activity): eat less to lose weight, more to build muscle.
-export const MEAL_GOALS: { key: Exclude<MealGoal, "coach">; label: string; adjust: number; detail: string }[] = [
-  { key: "lose", label: "Lose weight", adjust: -400, detail: "About 400 kcal a day under what your body uses" },
-  { key: "maintain", label: "Stay the same", adjust: 0, detail: "Eat what your body uses" },
-  { key: "gain", label: "Build muscle", adjust: 300, detail: "About 300 kcal a day over what your body uses" },
+// activity): eat less to lose weight, more to build muscle. Losing weight is
+// a share of what the body uses (nutrition review, 2026-10-18), so a small
+// person isn't cut as hard as a big one.
+export const LOSE_SHARE = 0.18;
+export const GAIN_KCAL = 300;
+export const MEAL_GOALS: { key: Exclude<MealGoal, "coach">; label: string; detail: string }[] = [
+  { key: "lose", label: "Lose weight", detail: "About 15 to 20% under what your body uses" },
+  { key: "maintain", label: "Stay the same", detail: "Eat what your body uses" },
+  { key: "gain", label: "Build muscle", detail: "About 300 kcal a day over what your body uses" },
 ];
 
-// Never plan a day lower than this, whatever the goal.
-export const MIN_KCAL = 1200;
+// Never plan a weight-loss day below this, or below the BMR, without a
+// dietitian (nutrition review, 2026-10-18).
+export const MIN_KCAL: Record<"male" | "female", number> = { female: 1200, male: 1500 };
 
-/** The day's calories for a goal; "coach" uses the coach's own target. */
-export function goalKcal(need: number, goal: MealGoal, coachKcal: number | null): number {
+/** The lowest safe day for this person: their sex's floor or their BMR, whichever is higher. */
+export function kcalFloor(sex: "male" | "female" | null | undefined, bmrKcal?: number | null): number {
+  return Math.max(MIN_KCAL[sex ?? "female"], bmrKcal ?? 0);
+}
+
+/**
+ * The day's calories for a goal; "coach" uses the coach's own target. A
+ * weight-loss day never goes under the floor (and never over what the body
+ * uses: if the floor is above that, they eat what they use).
+ */
+export function goalKcal(
+  need: number,
+  goal: MealGoal,
+  coachKcal: number | null,
+  body: { sex?: "male" | "female" | null; bmr?: number | null } = {},
+): number {
   if (goal === "coach" && coachKcal) return coachKcal;
-  const adjust = MEAL_GOALS.find((g) => g.key === goal)?.adjust ?? 0;
-  return Math.max(MIN_KCAL, need + adjust);
+  if (goal === "gain") return need + GAIN_KCAL;
+  if (goal !== "lose") return need;
+  const cut = Math.round((need * (1 - LOSE_SHARE)) / 10) * 10;
+  return Math.min(need, Math.max(kcalFloor(body.sex, body.bmr), cut));
 }
 
 export type MacroTargets = { kcal: number; protein: number; carbs: number; fat: number };
@@ -91,23 +124,34 @@ export function cleanTime(text: string): string | null {
 }
 
 /**
- * Medium carbs: protein 2 g per kg (at most 250 g), fat about 27% of calories,
- * and carbs whatever is left (at least 80 g).
- *
- * Losing weight is low carb (GRIZZ, 2026-10-12): protein 2.2 g per kg, carbs
- * about 20% of calories (50 g to 150 g), and fat the rest. Fewer carbs mean
- * smaller insulin spikes, so the body burns more stored fat.
+ * The weight protein is worked out on. With a BMI over 30 it's the weight at
+ * a BMI of 25 for their height (nutrition review, 2026-10-18; the trainer
+ * guide says the same: "base it on goal weight"), so a 110 kg woman isn't
+ * given 240 g of protein. Without a height it's their weight.
  */
-export function macroTargets(kcal: number, weightKg: number, goal: MealGoal = "maintain"): MacroTargets {
-  if (goal === "lose") {
-    const protein = Math.min(250, Math.round(weightKg * 2.2));
-    const carbs = Math.min(150, Math.max(50, Math.round((kcal * 0.2) / 4)));
-    const fat = Math.max(30, Math.round((kcal - protein * 4 - carbs * 4) / 9));
-    return { kcal, protein, carbs, fat };
-  }
-  const protein = Math.min(250, Math.round(weightKg * 2));
-  const fat = Math.round((kcal * 0.27) / 9);
+export function proteinWeight(weightKg: number, heightCm?: number | null): number {
+  if (!heightCm) return weightKg;
+  const m = heightCm / 100;
+  return weightKg / (m * m) > 30 ? Math.round(25 * m * m) : weightKg;
+}
+
+/**
+ * Medium carbs: protein 2 g per kg (at most 250 g, and at most 40% of the
+ * calories), fat about 27% of calories, and carbs whatever is left (at least
+ * 80 g). The kg are the protein weight above.
+ *
+ * Losing weight (nutrition review, 2026-10-18): protein 2.2 g per kg, which
+ * keeps muscle and keeps you full, fat about 30% and carbs the rest. Fat loss
+ * comes from the calorie deficit, not from cutting carbs, so the plan keeps
+ * enough carbs for fruit, legumes and whole grains.
+ */
+export function macroTargets(kcal: number, weightKg: number, goal: MealGoal = "maintain", heightCm?: number | null): MacroTargets {
+  const perKg = goal === "lose" ? 2.2 : 2;
+  const protein = Math.min(250, Math.round((kcal * 0.4) / 4), Math.round(proteinWeight(weightKg, heightCm) * perKg));
+  let fat = Math.round((kcal * (goal === "lose" ? 0.3 : 0.27)) / 9);
   const carbs = Math.max(80, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  // The 80 g of carbs comes out of the fat, so the day still adds up.
+  if (protein * 4 + carbs * 4 + fat * 9 > kcal + 20) fat = Math.max(30, Math.round((kcal - protein * 4 - carbs * 4) / 9));
   return { kcal, protein, carbs, fat };
 }
 
@@ -213,29 +257,34 @@ export function fatShares(roles: MealRole[], trainingDay: boolean): number[] {
 
 type Slot = "breakfast" | "pre" | "post" | "main";
 
-const POOLS: Record<Slot, { protein: string[]; carbs: string[]; veg: boolean; fat: string[] }> = {
+const VEG = ["Broccoli", "Green beans", "Mixed salad leaves", "Spinach", "Cauliflower", "Peppers", "Baby marrow", "Butternut", "Cabbage", "Carrots"];
+
+// Biltong is only the snack, never in these pools, so it's at most once a day.
+// Legumes (lentils, chickpeas, beans) are in the main and reload meals for
+// fibre; the pre-workout meal stays low in fibre so it sits well.
+const POOLS: Record<Slot, { protein: string[]; carbs: string[]; veg: string[]; fat: string[] }> = {
   breakfast: {
-    protein: ["Eggs", "Whey protein powder", "Eggs", "Biltong, lean, medium"],
-    carbs: ["Pap / maize porridge (cooked)", "Wholewheat wrap", "Sweet potato (cooked)", "Baby potatoes (boiled)"],
-    veg: false,
+    protein: ["Eggs", "Whey protein powder", "Eggs", "Greek yoghurt, plain"],
+    carbs: ["Brown bread", "Pap / maize porridge (cooked)", "Wholewheat wrap", "Sweet potato (cooked)", "Baby potatoes (boiled)"],
+    veg: ["Spinach", "Tomato", "Mushrooms"],
     fat: ["Avocado", "Almonds", "Avocado", "Pumpkin seeds"],
   },
   pre: {
-    protein: ["Chicken breast (cooked)", "Whey protein powder", "Tuna in water (drained)", "Biltong, lean, medium", "Turkey breast (cooked)"],
+    protein: ["Chicken breast (cooked)", "Whey protein powder", "Tuna in water (drained)", "Turkey breast (cooked)"],
     carbs: ["White rice (cooked)", "Potatoes (boiled)", "Basmati rice (cooked)", "Pasta (cooked)", "Baby potatoes (boiled)"],
-    veg: false,
+    veg: [],
     fat: ["Almonds", "Avocado"],
   },
   post: {
     protein: ["Chicken breast (cooked)", "Lean beef mince (cooked)", "Hake / white fish (cooked)", "Ostrich steak (cooked)", "Lean turkey mince (cooked)"],
-    carbs: ["White rice (cooked)", "Potatoes (boiled)", "Basmati rice (cooked)", "Pasta (cooked)", "Sweet potato (cooked)"],
-    veg: true,
+    carbs: ["Basmati rice (cooked)", "Lentils (cooked)", "Potatoes (boiled)", "Chickpeas (cooked)", "Sweet potato (cooked)"],
+    veg: VEG,
     fat: ["Olive oil", "Avocado"],
   },
   main: {
     protein: ["Chicken breast (cooked)", "Beef steak (cooked)", "Salmon (cooked)", "Ostrich steak (cooked)", "Turkey breast (cooked)", "Hake / white fish (cooked)", "Lean beef mince (cooked)"],
-    carbs: ["Sweet potato (cooked)", "Brown rice (cooked)", "Quinoa (cooked)", "Baby potatoes (boiled)", "Wholewheat pasta (cooked)"],
-    veg: true,
+    carbs: ["Lentils (cooked)", "Sweet potato (cooked)", "Chickpeas (cooked)", "Brown rice (cooked)", "Kidney beans (cooked)", "Baby potatoes (boiled)", "Wholewheat pasta (cooked)", "Quinoa (cooked)"],
+    veg: VEG,
     fat: ["Avocado", "Olive oil", "Feta", "Mixed nuts, unsalted", "Pumpkin seeds"],
   },
 };
@@ -256,14 +305,28 @@ const NO_MEAT_PROTEIN: Record<MealDiet, Partial<Record<Slot, string[]>>> = {
   },
 };
 
-function proteinPool(slot: Slot, diet: MealDiet): string[] {
-  return NO_MEAT_PROTEIN[diet][slot] ?? POOLS[slot].protein.filter((f) => dietAllows(f, diet));
+type Prefs = { diet: MealDiet; dairyFree: boolean };
+
+function proteinPool(slot: Slot, { diet, dairyFree }: Prefs): string[] {
+  const list = (NO_MEAT_PROTEIN[diet][slot] ?? POOLS[slot].protein).filter((f) => foodAllowed(f, diet, dairyFree));
+  return list.length ? list : diet === "everything" ? ["Chicken breast (cooked)"] : diet === "pescatarian" ? ["Tuna in water (drained)"] : ["Eggs"];
 }
 
-/** The daily protein snack: biltong, or Greek yoghurt for non meat eaters. */
-export function proteinSnack(targets: MacroTargets, diet: MealDiet = "everything"): DietItem {
-  if (diet !== "everything") return { food: "Greek yoghurt, plain", grams: targets.protein >= 140 ? 250 : 175 };
-  return { food: "Biltong, lean, medium", grams: targets.protein >= 140 ? 60 : 30 };
+// A piece of fruit with the snack, different each day.
+const FRUIT = ["Apple", "Pear", "Berries", "Banana", "Raspberries"];
+// The daily dairy for meat eaters (vegetarians and pescatarians get it in the snack).
+const DAIRY_FOODS: DietItem[] = [
+  { food: "Low fat milk (ml)", grams: 250 },
+  { food: "Greek yoghurt, plain", grams: 150 },
+  { food: "Cottage cheese, low fat", grams: 100 },
+];
+
+/** The daily protein snack: biltong, or Greek yoghurt for non meat eaters (eggs or tuna if dairy-free). */
+export function proteinSnack(targets: MacroTargets, diet: MealDiet = "everything", dairyFree = false): DietItem {
+  const big = targets.protein >= 140;
+  if (diet === "everything") return { food: "Biltong, lean, medium", grams: big ? 60 : 30 };
+  if (!dairyFree) return { food: "Greek yoghurt, plain", grams: big ? 250 : 175 };
+  return diet === "pescatarian" ? { food: "Tuna in water (drained)", grams: big ? 120 : 80 } : { food: "Eggs", grams: big ? 150 : 100 };
 }
 
 /** When to have the snack: in the middle of the longest gap between meals. */
@@ -281,7 +344,8 @@ export function snackTime(times: string[]): string {
   return `${String(Math.floor(rounded / 60) % 24).padStart(2, "0")}:${String(rounded % 60).padStart(2, "0")}`;
 }
 
-const VEG = ["Broccoli", "Green beans", "Mixed salad leaves", "Spinach", "Cauliflower", "Peppers", "Baby marrow", "Butternut"];
+// Fibre a day (WHO 2023: at least 25 g).
+export const FIBRE_TARGET = 25;
 
 // Most of a food that makes sense in one meal; the rest of the protein comes
 // from the top-up food, if there is one.
@@ -313,40 +377,42 @@ function slotFor(role: MealRole, time: string, index: number): Slot {
 
 const item = (food: string, grams: number): DietItem => ({ food, grams });
 
-function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: number, diet: MealDiet): DietItem[] {
+function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: number, prefs: Prefs, extras: DietItem[] = []): DietItem[] {
   const pool = POOLS[slot];
-  const sides: DietItem[] = [];
-  if (pool.veg) sides.push(item(pick(VEG, n + slot.length), 100));
-  const vegCarbs = sides.reduce((t, i) => t + itemTotals(i).carbs, 0);
-  if (carbs - vegCarbs >= 10) {
+  const sides: DietItem[] = [...extras];
+  if (pool.veg.length) sides.push(item(pick(pool.veg, n + slot.length), slot === "breakfast" ? 100 : 150));
+  const sideCarbs = sides.reduce((t, i) => t + itemTotals(i).carbs, 0);
+  if (carbs - sideCarbs >= 10) {
     const carbName = pick(pool.carbs, n);
-    const grams = gramsFor(findFood(carbName) as Food, "carbs", carbs - vegCarbs);
+    const grams = gramsFor(findFood(carbName) as Food, "carbs", carbs - sideCarbs);
     if (grams <= MAX_CARB_GRAMS) {
       sides.push(item(carbName, grams));
     } else {
       // A big carb meal (building muscle) gets two carb foods, not a mountain of one.
       sides.push(item(carbName, MAX_CARB_GRAMS));
-      const left = carbs - vegCarbs - itemTotals(sides[sides.length - 1]).carbs;
-      const second = pool.carbs.find((c) => c !== carbName && !/potato|wrap/i.test(c)) ?? "White rice (cooked)";
+      const left = carbs - sideCarbs - itemTotals(sides[sides.length - 1]).carbs;
+      const second = pool.carbs.find((c) => c !== carbName && !/potato|wrap|bread|lentil|chickpea|bean/i.test(c)) ?? "White rice (cooked)";
       if (left >= 10) sides.push(item(second, gramsFor(findFood(second) as Food, "carbs", left)));
     }
   }
-  // Carbs and veg bring some protein too, so the protein food makes up the rest.
+  // Carbs, veg and dairy bring some protein too, so the protein food makes up the rest.
   const sideProtein = sides.reduce((t, i) => t + itemTotals(i).protein, 0);
-  const wanted = Math.max(protein * 0.7, protein - sideProtein);
-  const proteinName = pick(proteinPool(slot, diet), n);
+  const wanted = Math.max(protein * 0.5, protein - sideProtein);
+  const proteinName = pick(proteinPool(slot, prefs), n);
   const proteinItems = [item(proteinName, gramsFor(findFood(proteinName) as Food, "protein", wanted))];
   const max = MAX_GRAMS[proteinName];
   if (max && proteinItems[0].grams > max) {
     proteinItems[0] = item(proteinName, max);
     const topUp = TOP_UP[proteinName];
     const left = wanted - itemTotals(proteinItems[0]).protein;
-    if (topUp && left >= 5) proteinItems.push(item(topUp, gramsFor(findFood(topUp) as Food, "protein", left)));
+    if (topUp && foodAllowed(topUp, prefs.diet, prefs.dairyFree) && left >= 5)
+      proteinItems.push(item(topUp, gramsFor(findFood(topUp) as Food, "protein", left)));
   }
   const items = [...proteinItems, ...sides];
   const fatSoFar = items.reduce((t, i) => t + itemTotals(i).fat, 0);
-  if (fat - fatSoFar >= 4) {
-    const fatName = pick(pool.fat.filter((f) => dietAllows(f, diet)), n);
+  const fats = pool.fat.filter((f) => foodAllowed(f, prefs.diet, prefs.dairyFree));
+  if (fat - fatSoFar >= 4 && fats.length) {
+    const fatName = pick(fats, n);
     items.push(item(fatName, gramsFor(findFood(fatName) as Food, "fat", fat - fatSoFar)));
   }
   return items;
@@ -361,29 +427,97 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
   const roles = mealRoles(times, trainingDay ? settings.training : null);
   const carbs = carbShares(roles, times, trainingDay);
   const fats = fatShares(roles, trainingDay);
-  const diet = settings.diet ?? "everything";
-  // The snack's protein, carbs and fat come off what the meals need.
-  const snack = proteinSnack(targets, diet);
-  const s = itemTotals(snack);
-  const proteinEach = Math.max(0, targets.protein - s.protein) / times.length;
-  const carbsLeft = Math.max(0, targets.carbs - s.carbs);
-  const fatLeft = Math.max(0, targets.fat - s.fat);
+  const prefs: Prefs = { diet: settings.diet ?? "everything", dairyFree: !!settings.dairyFree };
+  // The snack (protein plus a fruit) and the meat eater's daily dairy are set
+  // first; their protein, carbs and fat come off what the meals need.
+  const snackItems = [proteinSnack(targets, prefs.diet, prefs.dairyFree), item(pick(FRUIT, variety), 0)];
+  snackItems[1].grams = findFood(snackItems[1].food)?.usual ?? 120;
+  const dairy = prefs.diet === "everything" && !prefs.dairyFree ? [DAIRY_FOODS[((variety % 3) + 3) % 3]] : [];
+  const fixed = sumTotals([...snackItems, ...dairy]);
+  const proteinEach = Math.max(0, targets.protein - fixed.protein) / times.length;
+  const carbsLeft = Math.max(0, targets.carbs - fixed.carbs);
+  const fatLeft = Math.max(0, targets.fat - fixed.fat);
   const meals: DietMeal[] = times.map((time, i) => ({
     name: mealLabel(time, roles[i]),
-    items: buildMeal(slotFor(roles[i], time, i), proteinEach, carbsLeft * carbs[i], fatLeft * fats[i], variety + i * 3, diet),
+    items: buildMeal(slotFor(roles[i], time, i), proteinEach, carbsLeft * carbs[i], fatLeft * fats[i], variety + i * 3, prefs, i === 0 ? dairy : []),
   }));
   const at = snackTime(times);
-  const snackMeal: DietMeal = { name: `${at} · Protein snack`, items: [snack] };
+  const snackMeal: DietMeal = { name: `${at} · Protein snack`, items: snackItems };
   const index = times.findIndex((t) => minutes(t) > minutes(at));
   meals.splice(index === -1 ? meals.length : index, 0, snackMeal);
-  return trimFats({ meals }, targets.kcal);
+  let day = fitKcal({ meals }, targets.kcal);
+  // Fitting the calories can trim some fibre, so check it twice.
+  for (let round = 0; round < 2 && dayFibre(day) < FIBRE_TARGET; round++) day = fitKcal(addFibre(day), targets.kcal);
+  return day;
 }
 
-// Rounding, veg and the protein foods' own fat can push a day over its
-// calories; trim the added fats (oil, nuts, avocado) to bring it back.
+// Short of fibre: more veg at the meals that have it, then a spoon of chia
+// seeds with the snack.
+function addFibre(day: DietDay): DietDay {
+  let meals = day.meals;
+  // A little over the target, as fitting the calories afterwards can trim some.
+  const aim = FIBRE_TARGET + 2;
+  const fibre = () => sumTotals(meals.flatMap((m) => m.items)).fibre;
+  const veg = new Set([...VEG, ...POOLS.breakfast.veg]);
+  for (let round = 0; round < 3 && fibre() < aim; round++) {
+    meals = meals.map((m) => ({ ...m, items: m.items.map((it) => (veg.has(it.food) ? { ...it, grams: it.grams + 50 } : it)) }));
+  }
+  if (fibre() < aim) {
+    const snack = meals.findIndex((m) => m.name.includes("Protein snack"));
+    const grams = Math.min(36, Math.ceil(((aim - fibre()) / 34) * 100 / 12) * 12);
+    meals = meals.map((m, i) => (i === snack ? { ...m, items: [...m.items, item("Chia seeds", grams)] } : m));
+  }
+  return { meals };
+}
+
+const dayFibre = (day: DietDay) => sumTotals(day.meals.flatMap((m) => m.items)).fibre;
+const kcalOf = (day: DietDay) => day.meals.reduce((t, m) => t + m.items.reduce((a, i) => a + itemTotals(i).kcal, 0), 0);
+
+// Rounding, veg, fruit and the protein foods' own fat can push a day off its
+// calories: trim the added fats (oil, nuts, avocado) first, then the carbs,
+// or add carbs if it's short. Eggs, tofu and yoghurt can bring more fat than
+// the day has room for, so a day still over gets a little less of its
+// protein foods (at most a fifth). The day lands within the "on target" margin.
+function fitKcal(day: DietDay, kcal: number): DietDay {
+  let fitted = trimFats(day, kcal);
+  for (let round = 0; round < 3; round++) {
+    const off = kcalOf(fitted) - kcal;
+    if (Math.abs(off) <= 25) break;
+    // Cutting keeps the legumes (they bring the fibre) when there's another carb to cut.
+    const carb = (name: string, keepFibre: boolean) => {
+      const food = findFood(name);
+      return food?.group === "Carbs" && !(keepFibre && (food.fibre ?? 0) >= 5);
+    };
+    const all = fitted.meals.flatMap((m) => m.items);
+    const keepFibre = off > 0 && all.some((i) => carb(i.food, true));
+    const carbKcal = all.reduce((t, i) => t + (carb(i.food, keepFibre) ? itemTotals(i).kcal : 0), 0);
+    if (carbKcal <= 0) break;
+    const factor = Math.min(1.6, Math.max(0.4, (carbKcal - off) / carbKcal));
+    fitted = scale(fitted, (name) => carb(name, keepFibre), factor);
+  }
+  const over = kcalOf(fitted) - kcal;
+  if (over > 25) {
+    const protein = (name: string) => findFood(name)?.group === "Protein" && !/biltong/i.test(name);
+    const proteinKcal = fitted.meals.flatMap((m) => m.items).reduce((t, i) => t + (protein(i.food) ? itemTotals(i).kcal : 0), 0);
+    if (proteinKcal > 0) fitted = scale(fitted, protein, Math.max(0.8, (proteinKcal - over) / proteinKcal));
+  }
+  return fitted;
+}
+
+// Every matching food times `factor`, to the nearest 5 g.
+function scale(day: DietDay, matches: (name: string) => boolean, factor: number): DietDay {
+  return {
+    meals: day.meals.map((m) => ({
+      ...m,
+      items: m.items
+        .map((it) => (matches(it.food) ? { ...it, grams: Math.round((it.grams * factor) / 5) * 5 } : it))
+        .filter((it) => it.grams >= 5),
+    })),
+  };
+}
+
 function trimFats(day: DietDay, kcal: number): DietDay {
-  const total = day.meals.reduce((t, m) => t + m.items.reduce((a, i) => a + itemTotals(i).kcal, 0), 0);
-  let over = total - kcal - 25;
+  let over = kcalOf(day) - kcal - 25;
   if (over <= 0) return day;
   const meals = day.meals.map((m) => ({
     ...m,
@@ -411,10 +545,10 @@ const SWAP_KEEPS: Record<FoodGroup, "protein" | "carbs" | "fat" | "fibre" | "wei
 };
 
 /** Foods that can replace this one: the rest of its group. */
-export function swapOptions(foodName: string, diet: MealDiet = "everything"): Food[] {
+export function swapOptions(foodName: string, diet: MealDiet = "everything", dairyFree = false): Food[] {
   const food = findFood(foodName);
   if (!food) return [];
-  return FOODS.filter((f) => f.group === food.group && f.name !== food.name && dietAllows(f.name, diet));
+  return FOODS.filter((f) => f.group === food.group && f.name !== food.name && foodAllowed(f.name, diet, dairyFree));
 }
 
 /** The new food, with the amount that gives the same protein, carbs or fat. */

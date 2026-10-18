@@ -19,7 +19,7 @@ import type {
 
 export * from "./types";
 import { levelInfo } from "./common";
-export { LEVELS, levelInfo, STABILITY_BASICS } from "./common";
+export { LEVELS, levelInfo, PAIN_RULE, REHAB_REFER, STABILITY_BASICS } from "./common";
 export { stabilityAreasFor } from "./injuryMatch";
 
 // From the ground up, the order GRIZZ listed them.

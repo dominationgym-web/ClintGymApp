@@ -1,4 +1,4 @@
-import { d, phase, program } from "./common";
+import { d, phase, program, REHAB_REFER } from "./common";
 import { KNEE } from "./knee";
 import type { StabilityAreaGuide, StabilityExercise } from "./types";
 
@@ -20,7 +20,7 @@ export const HIP: StabilityAreaGuide = {
     "The deep hip muscles control rotation. Training them through a full range (hip airplanes, Cossack squats) protects the hip joint itself and makes squats and lunges feel smoother.",
   ],
   chooseLevel: {
-    rehab: "Groin or hip strain, hip or buttock pain, pain at the side of the hip when lying on it, or after a hip problem once a doctor or physio has cleared you to strengthen.",
+    rehab: `Groin or hip strain, hip or buttock pain, pain at the side of the hip when lying on it, or after a hip problem once a doctor or physio has cleared you to strengthen. ${REHAB_REFER}`,
     beginner: "No current injury, but your hip drops or your knee caves in on one-leg moves, or a side plank on your knees is hard to hold for 30 seconds.",
     intermediate: "You can hold a side plank on your knees for 30+ seconds and a short Copenhagen plank for 15+ seconds each side.",
     advanced: "You can hold a long-lever Copenhagen plank for 20+ seconds and do single-leg deadlifts with weight without your hips twisting. For sport and heavy lifting.",
@@ -30,6 +30,8 @@ export const HIP: StabilityAreaGuide = {
     "Pain that wakes you at night, or comes with fever or feeling unwell.",
     "Pain spreading down the leg with pins and needles or numbness (often from the back).",
     "A pop and sudden pain in the groin or hamstring during sport.",
+    "Groin or hip pain that builds with running or hopping, especially if you eat little or have just upped your mileage (possible stress fracture: stop impact and see a doctor).",
+    "A hot, red, swollen joint with a fever (urgent: see a doctor today).",
   ],
   exercises: [
     {
@@ -43,7 +45,7 @@ export const HIP: StabilityAreaGuide = {
         "Squeeze your knees together into it. Keep breathing and keep your lower back relaxed.",
         "Hold, then relax for a few seconds.",
       ],
-      lossOfControl: "Stop when you can't keep the same squeeze, the groin pain goes above 3/10, or you start holding your breath.",
+      lossOfControl: "Stop when you can't keep the same squeeze, the groin pain goes above 5/10, or you start holding your breath.",
       resistance: "Start at half effort and build up to 7/10. This is the first exercise used after a groin strain.",
       easier: "Squeeze more gently, or with the legs straighter.",
       harder: "Squeeze harder, then move on to the short Copenhagen plank.",
@@ -107,7 +109,7 @@ export const HIP: StabilityAreaGuide = {
         "Lift your hips and bottom leg so your body is straight. The top inner thigh is holding you up.",
         "Hold. The side you log is the top leg (the one on the bench).",
       ],
-      lossOfControl: "Stop the clock when your hips drop, you rotate forward or back, or the groin pain goes above 3/10.",
+      lossOfControl: "Stop the clock when your hips drop, you rotate forward or back, or the groin pain goes above 5/10.",
       resistance: "Bodyweight. Short lever (knee on the bench) is the safe start.",
       easier: "Let the bottom foot rest on the floor and just take some weight.",
       harder: "Longer hold, then the long-lever version (foot on the bench).",

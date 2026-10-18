@@ -134,7 +134,7 @@ export const RESET_GUIDES: Record<ResetHabitKey, HabitGuide> = {
     ],
     tips: [
       "Sleeping in on weekends feels good but makes Monday harder.",
-      "Avoid caffeine after about 2pm.",
+      "Have your last caffeine at least 8 hours before bed.",
     ],
     easier: "Bad night? Still get up at your normal time and get morning daylight. Don't nap long.",
   },

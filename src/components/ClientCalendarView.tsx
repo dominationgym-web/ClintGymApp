@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
@@ -49,6 +49,7 @@ export default function ClientCalendarView({
   onSwapsChanged,
   catchUpDates = [],
   onCatchUp,
+  refreshKey = 0,
 }: {
   clientId: string;
   /** The exercises the client can see, for the swap choices. */
@@ -61,6 +62,8 @@ export default function ClientCalendarView({
   /** Missed days this week that can be done today (weekend catch-up, 0101). */
   catchUpDates?: string[];
   onCatchUp?: (date: string) => void;
+  /** Bumped by the workout screen when it comes back into view, to reload the plan. */
+  refreshKey?: number;
 }) {
   const today = todayIso();
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
@@ -77,6 +80,14 @@ export default function ClientCalendarView({
   const [dayRows, setDayRows] = useState<ProgramExercise[]>([]);
   const [daySwaps, setDaySwaps] = useState<ExerciseSwaps>({});
   const [swapping, setSwapping] = useState<ProgramExercise | null>(null);
+  // Reload each time the screen comes back into view, so a week the coach has
+  // just planned shows without changing week or restarting the app.
+  const [focusKey, setFocusKey] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setFocusKey((k) => k + 1);
+    }, [])
+  );
 
   useEffect(() => {
     setDayRows([]);
@@ -106,7 +117,7 @@ export default function ClientCalendarView({
     ]).then(([rows, extra, stabilityDays]) => {
       if (rows.length > 0 || extra.length > 0 || stabilityDays.length > 0) setHasAny(true);
     });
-  }, [clientId, today]);
+  }, [clientId, today, refreshKey, focusKey]);
 
   const range = { from: monday, to: addDays(monday, 6) };
   useEffect(() => {
@@ -142,7 +153,7 @@ export default function ClientCalendarView({
         return next;
       });
     });
-  }, [clientId, monday]);
+  }, [clientId, monday, refreshKey, focusKey]);
 
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
   const recovery = useRecoveryCalendar(clientId, range.from, range.to);
@@ -227,9 +238,10 @@ export default function ClientCalendarView({
             today={today}
             selected={selected}
             onPressDay={(date) => {
-              // At the weekend a day with nothing on it goes straight to the
-              // missed workout (GRIZZ, 2026-10-17).
+              // At the weekend, tapping today with nothing on it goes straight
+              // to the missed workout (GRIZZ, 2026-10-17). Other empty days just open.
               const empty =
+                date === today &&
                 !entries.some((e) => e.workout_date === date) && !blocks.some((b) => b.workout_date === date) && !stability.map[date];
               if (empty && catchUpDates.length > 0 && onCatchUp) {
                 onCatchUp(catchUpDates[0]);

@@ -1,5 +1,6 @@
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
 import { isFunctionalProgram, programFamily, slotOf, WEEKDAY_NAMES, type ProgramFamily } from "@/lib/programs";
+import { heavyCompound } from "@/lib/progression";
 import type { ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
 
 // Training calendar (0069): the trainer puts a workout on each training day
@@ -144,7 +145,7 @@ export const PACE_OPTIONS: { key: WorkoutPace; label: string; guide: string }[] 
     key: "faster",
     label: "Faster",
     guide:
-      "Heart rate up. Use a weight you can move for the top of the rep range. Lift in 1 second, lower in 2, and rest 45 seconds between sets. Supersets stay back to back.",
+      "Heart rate up. Use a weight you can move for the top of the rep range. Lift in 1 second, lower in 2, and rest 45 seconds between sets, but keep at least 90 seconds on heavy squats, deadlifts, presses and rows. Supersets stay back to back.",
   },
   {
     key: "planned",
@@ -155,20 +156,28 @@ export const PACE_OPTIONS: { key: WorkoutPace; label: string; guide: string }[] 
     key: "slower",
     label: "Slower",
     guide:
-      "Heavier and more controlled. Lower for 3 seconds, pause for 1, then lift strong. Rest 90 seconds to 2 minutes so you're ready for the next heavy set.",
+      "Heavier and more controlled. Lower for 3 seconds, pause for 1, then lift strong. Rest at least 90 seconds, and never less than your coach set, so you're ready for the next heavy set.",
   },
 ];
 
-/** The rest after a set at this pace. 0 (straight into a superset partner) always stays 0. */
-export function paceRest(restSeconds: number, pace: WorkoutPace): number {
+/** The shortest rest "Faster" gives a heavy compound lift (squats, deadlifts, barbell presses and rows). */
+export const FASTER_HEAVY_REST = 90;
+
+/**
+ * The rest after a set at this pace. 0 (straight into a superset partner)
+ * always stays 0. Slower never shortens the coach's rest: short rests go up
+ * by 30 seconds (to at least 90, at most 150) and longer ones stay as set.
+ * Faster cuts rests to 45 seconds, but heavy compound lifts keep at least 90.
+ */
+export function paceRest(restSeconds: number, pace: WorkoutPace, exerciseName = ""): number {
   if (restSeconds === 0 || pace === "planned") return restSeconds;
-  if (pace === "faster") return Math.min(restSeconds, 45);
-  return Math.min(Math.max(restSeconds + 30, 90), 150);
+  if (pace === "faster") return Math.min(restSeconds, heavyCompound(exerciseName) ? FASTER_HEAVY_REST : 45);
+  return Math.max(restSeconds, Math.min(Math.max(restSeconds + 30, 90), 150));
 }
 
 export function withPace(rows: ProgramExercise[], pace: WorkoutPace): ProgramExercise[] {
   if (pace === "planned") return rows;
-  return rows.map((r) => (r.kind === "cardio" ? r : { ...r, rest_seconds: paceRest(r.rest_seconds, pace) }));
+  return rows.map((r) => (r.kind === "cardio" ? r : { ...r, rest_seconds: paceRest(r.rest_seconds, pace, r.exercise_name) }));
 }
 
 export type CalendarMove = "missed" | "caughtUp";

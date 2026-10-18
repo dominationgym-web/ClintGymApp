@@ -14,3 +14,22 @@ describe("supplement cards", () => {
     expect(new Set(SUPPLEMENTS.map((s) => s.name)).size).toBe(SUPPLEMENTS.length);
   });
 });
+
+describe("doses (nutrition review, 2026-10-18)", () => {
+  const card = (name: string) => SUPPLEMENTS.find((s) => s.name.startsWith(name))!;
+  it("keeps magnesium within the 350 mg supplement limit", () => {
+    expect(card("Magnesium").how).toMatch(/200 to 350 mg/);
+    expect(card("Magnesium").how).not.toMatch(/400/);
+  });
+  it("warns about ashwagandha and the liver, and omega-3 and heart rhythm", () => {
+    expect(card("Ashwagandha").careful).toMatch(/liver/);
+    expect(card("Ashwagandha").careful).toMatch(/thyroid/);
+    expect(card("Omega-3").careful).toMatch(/irregular heartbeat/);
+    expect(card("Omega-3").careful).toMatch(/blood thinners/);
+  });
+  it("gives caffeine per ISSN and beta-alanine as a daily build-up", () => {
+    expect(card("Caffeine").how).toMatch(/3 to 6 mg per kg of body weight, about 60 minutes before/);
+    expect(card("Beta-alanine").level).not.toBe("Training days");
+    expect(card("Beta-alanine").how).toMatch(/every day/);
+  });
+});

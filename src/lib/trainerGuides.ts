@@ -126,7 +126,7 @@ const NUTRITION: TrainerGuide = {
   title: "Nutrition for coaches",
   icon: "🥩",
   accent: "#22C55E",
-  summary: "Protein, carbs and insulin, vegetables, hydration and essential fats, based on current research.",
+  summary: "Protein, carbs and insulin, vegetables, hydration, essential fats and when to refer, based on current research.",
   topics: [
     {
       title: "Protein",
@@ -294,6 +294,41 @@ const NUTRITION: TrainerGuide = {
         },
       ],
     },
+    {
+      // Nutrition review (2026-10-18): scope of practice and referral.
+      title: "Nutrition: when to refer",
+      icon: "🩺",
+      intro: "Trainers give general healthy-eating advice and calorie and macro estimates for healthy adults. Diets for medical conditions are a registered dietitian's job.",
+      groups: [
+        {
+          heading: "Within your scope",
+          points: [
+            "General advice in line with the South African food-based dietary guidelines: protein at each meal, plenty of vegetables, fruit and legumes, whole-food carbs, milk, maas or yoghurt, and water.",
+            "Calorie and macro estimates for healthy adults. Mifflin-St Jeor is accurate to about 10% either way, so adjust from 2 to 3 weeks of real weight trend.",
+            "A deficit of about 15 to 20% (0.5 to 1% of body weight a week), never under about 1,200 kcal for women or 1,500 kcal for men, and never under BMR.",
+          ],
+        },
+        {
+          heading: "Refer to a doctor or registered dietitian",
+          points: [
+            "Diabetes or prediabetes, especially on medication: deficits and low-carb plans can cause low blood sugar.",
+            "Kidney or liver disease: high-protein plans can be unsafe.",
+            "Pregnancy or breastfeeding: no calorie deficit.",
+            "Eating disorder signs or history: rapid weight loss, missed periods, fear of foods, purging or compulsive exercise. Calorie counting can make it worse.",
+            "Under 18: maintenance eating only, no deficit plan.",
+            "Food allergies, or weight loss nobody can explain.",
+          ],
+        },
+        {
+          heading: "How the app helps",
+          points: [
+            "If the intake's health answer mentions diabetes, kidney disease, pregnancy or breastfeeding, or an eating disorder, or the client is under 18, the meal plan maker only offers maintenance and asks them to check with a doctor or dietitian. The diet planner shows you the same note.",
+            "The diet planner warns when a target is under the floors above, under BMR, or more than 25% under what the body uses.",
+            "Find a registered dietitian at adsa.org.za (registered with the HPCSA).",
+          ],
+        },
+      ],
+    },
   ],
 };
 
@@ -314,7 +349,7 @@ const TRAINING: TrainerGuide = {
           points: [
             "Muscle grows from sets taken close to failure. Aim to finish most work sets with 0 to 3 reps left in the tank.",
             "About 10 to 20 hard sets per muscle per week works for most people. Beginners grow well on less.",
-            "Training each muscle twice a week tends to beat once a week for the same total sets.",
+            "When weekly sets are the same, how often you train a muscle makes little difference to growth. Splitting the sets over 2 or more days mainly keeps every set high quality and sessions shorter. For strength, practising a lift more often helps a little more.",
             "Any rep range from about 5 to 30 builds muscle if the set is hard enough. 6 to 15 is the most time-efficient for most clients.",
           ],
         },
@@ -369,7 +404,7 @@ const TRAINING: TrainerGuide = {
         {
           heading: "Injury watch",
           points: [
-            "Front-of-shoulder pain usually means elbows flaring or the shoulder rolling forward. Tuck the elbows and reset the shoulder blades.",
+            "Front-of-shoulder pain usually means the load went up faster than the shoulder has adapted. Drop the weight or range for a while, tuck the elbows a little, and build rotator-cuff and upper-back strength. Posture plays a smaller part than people think.",
           ],
         },
       ],
@@ -552,7 +587,7 @@ const TRAINING: TrainerGuide = {
           heading: "Front delts",
           points: [
             "Chest pressing already trains the front delts heavily. Extra front raises are rarely needed.",
-            "Overhead pressing is optional. Many coaches skip it to protect the shoulders, and the delts can grow fully without it.",
+            "Overhead pressing is a safe, useful lift for healthy shoulders, and important for throwing, fighting and overhead sports. For pure size it isn't required, because chest pressing and lateral raises cover the delts. If it pinches, swap it for a landmine press or a high-incline press.",
           ],
         },
         {
@@ -573,8 +608,10 @@ const TRAINING: TrainerGuide = {
           heading: "How it works",
           points: [
             "The first time a client does an exercise, their first working set is a gauge set.",
-            "They pick a weight they think they can lift for the program's reps and do as many good reps as they can, until they can't do one more with good form.",
-            "From that weight and those reps the app estimates their one-rep max, then works out the weight for the top of the rep range with reps kept in reserve. That weight goes in the box for their other sets.",
+            "They pick a weight they think they can lift about 6 to 10 times and do a hard set, stopping when they think 1 or 2 good reps are left, or as soon as a rep slows right down or changes shape. It is never taken to failure.",
+            "On barbell squats and bench press they set the safety pins (or bars) just below the bottom of the rep, or use a spotter. The app reminds them on those lifts.",
+            "From that weight, the reps they did and the reps they had left, the app estimates their one-rep max, then works out the weight for the top of the rep range with reps kept in reserve. That weight goes in the box for their other sets.",
+            "The estimate is only reliable up to about 12 reps. If they did more, the app treats it as a rough guess and moves them up from their next sessions.",
             "Every exercise gets its own gauge set. After that, Try this weight next keeps adjusting the weight from each session, so the app's suggestions get closer as it learns their strength.",
           ],
         },
@@ -582,14 +619,14 @@ const TRAINING: TrainerGuide = {
           heading: "No failure in the intro",
           points: [
             "In the first 6 weeks, or while on a Foundation program, clients stop each set 2 reps short of failure. The app works out their weight that way and reminds them under every set.",
-            "After the intro the app aims for 1 rep short. The gauge set is the only set taken to failure early on.",
+            "After the intro the app aims for 1 rep short. The gauge set follows the same rule: no set goes to failure in the intro, the gauge set included.",
             "Why: new lifters' form breaks down near failure, and their joints and tendons adapt more slowly than their muscles. Building the habit of good reps first keeps them training without injury.",
           ],
         },
         {
           heading: "Explaining it to your client",
           points: [
-            "\"For each new exercise, your first set tells the app what you can lift. Pick a weight you think you can do about 10 times and go until you can't do another good rep. The app then sets your weight for the rest.\"",
+            "\"For each new exercise, your first set tells the app what you can lift. Pick a weight you think you can do about 6 to 10 times, and stop when you have 1 or 2 good reps left. The app then sets your weight for the rest.\"",
             "\"For every other set, finish when you could still do 1 or 2 more good reps. We'll start pushing to failure once your intro program is done.\"",
             "The gauge set shows in their training log as 🎯 Gauge set, so you can check the weight they picked and the reps they managed.",
           ],
@@ -692,6 +729,56 @@ const RECOVERY: TrainerGuide = {
             "Poor sleep, low mood, irritability or high resting heart rate.",
             "Joint aches, constant soreness or getting sick often.",
             "Fix: cut sets by a third for a week, check sleep and food, and move hard sessions further apart.",
+            "Tired most days for 2-3 weeks despite sleeping well: suggest they see their GP (low iron, thyroid or under-eating are common causes).",
+          ],
+        },
+      ],
+    },
+    {
+      title: "Working with injured clients",
+      icon: "🩹",
+      intro: "You can train clients around pain and help them get stronger after an injury. You can't diagnose or treat an injury: that's for a doctor, physio or biokineticist.",
+      groups: [
+        {
+          heading: "What's in and out of your scope",
+          points: [
+            "In: training around a niggle, changing exercises and load, and running a Rehab stability program once there are no red flags or a professional has cleared training.",
+            "Out: saying what the injury is, promising it's safe, or building a program around an injury nobody has assessed.",
+            "Fresh injuries (the last 1-2 weeks) and anything after surgery: refer first. After surgery, the surgeon's or physio's protocol comes first.",
+          ],
+        },
+        {
+          heading: "Red flags: refer before you train it",
+          points: [
+            "Pain at night or at rest, numbness or tingling, swelling, or pain after a fall or accident.",
+            "Pain above about 7 out of 10, or not improving after 2 weeks.",
+            "Fever or feeling unwell with the pain, a hot red swollen joint, a history of cancer, or unexplained weight loss.",
+            "Emergency: numbness around the groin or bottom, or new trouble with the bladder or bowel. Chest pain or breathlessness with arm or shoulder pain.",
+            "Each area's red flags are listed in Stability & Rehab programming.",
+          ],
+        },
+        {
+          heading: "Who to refer to",
+          points: [
+            "Biokineticist: exercise-based rehab, especially the later stages of getting back to full training. HPCSA registered.",
+            "Physiotherapist: assessment and hands-on treatment of new or unclear injuries.",
+            "Doctor or GP: red flags, suspected fractures, anything with fever, numbness or feeling unwell, and pain that keeps getting worse.",
+          ],
+        },
+        {
+          heading: "The pain rule",
+          points: [
+            "Some pain during exercise is OK: up to about 5 out of 10, as long as it has settled by the next morning and isn't creeping up week to week.",
+            "More than that, or worse the next morning: ease off a step, then build back up.",
+            "The same rule is used in the stability programs and the client's check-in tips.",
+          ],
+        },
+        {
+          heading: "Modify before you swap",
+          points: [
+            "Most painful exercises can stay with a change: lighter load, shorter range, slower tempo, or a supported version (a hand on the wall, a bench, a machine).",
+            "Movement is good for most back and knee pain. Avoiding it for good tends to make things worse.",
+            "The injury check on the client's Training tab is a name check, not a clinical assessment. Use it as a prompt, keep an exercise with a reason when it makes sense, and watch how they respond.",
           ],
         },
       ],

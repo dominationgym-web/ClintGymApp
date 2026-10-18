@@ -5,7 +5,10 @@
 // Day 1 is the first day of a period. Phase lengths follow a typical cycle and
 // stretch or shrink with her own average cycle length. Everyone is different,
 // so the guide says to go by how she feels, and the phases are a guide, not a
-// rule. Nothing here is medical advice.
+// rule. Research finds little consistent change in strength or performance
+// across the cycle for most women (nutrition review, 2026-10-18), so the
+// training and food tips are "some women notice", led by her own symptoms.
+// Nothing here is medical advice.
 import type { GuidelineGroup } from "@/lib/sleep";
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
 
@@ -42,70 +45,65 @@ export const CYCLE_PHASES: Record<CyclePhaseKey, CyclePhase> = {
       "Gentle movement often eases cramps.",
     ],
     nutrition: [
-      "Eat iron-rich food to replace what you lose: red meat, eggs, spinach, lentils and beans.",
-      "Have vitamin C with it (citrus, peppers, tomatoes) to help your body take in the iron.",
+      "Eat iron-rich food to replace what you lose: red meat, liver, eggs, lentils and beans. The iron in spinach is poorly absorbed, so don't rely on it.",
+      "Have vitamin C with it (citrus, peppers, tomatoes) to help your body take in the iron from beans and lentils.",
       "Warm, comforting meals like soups and stews go down well.",
       "Drink plenty of water. It helps with bloating and headaches.",
     ],
     supplements: [
-      "Magnesium (200 to 400 mg in the evening) can ease cramps and help you sleep.",
+      "Magnesium (200 to 350 mg in the evening) may ease cramps for some women.",
       "Omega-3 fish oil can take the edge off period pain.",
       "Iron only if your periods are heavy or a blood test shows you're low. Ask your doctor first.",
     ],
-    reminder: "Period phase: go gentle today, eat iron-rich food, and take your magnesium tonight.",
+    reminder: "Period phase: train to how you feel today, and eat iron-rich food.",
   },
   follicular: {
     key: "follicular",
     name: "Build phase",
     emoji: "🌒",
-    tagline: "After your period. Oestrogen is rising, and so is your energy.",
+    tagline: "After your period. Oestrogen is rising, and many women feel their energy rise too.",
     feel: [
-      "Energy, mood and motivation climb day by day.",
-      "You usually recover faster and feel stronger.",
-      "A great time to try new things and push yourself.",
+      "Some women notice energy, mood and motivation climb day by day.",
+      "Others feel much the same all month. Both are normal.",
     ],
     training: [
-      "Your best window for hard training: heavier weights, new personal bests, intervals.",
-      "Add a little weight or an extra set while you feel strong.",
-      "Learn new exercises now while your focus is sharp.",
+      "Train as normal. If you feel strong and fresh, it's a good time to push: add a little weight or an extra set.",
+      "Feel flat? Go by how you feel, not the calendar. Research finds little difference in strength across the cycle for most women.",
     ],
     nutrition: [
-      "Your body handles carbs well now. Have rice, potatoes, sweet potato or fruit around training.",
+      "Have carbs like rice, potatoes, sweet potato or fruit around training to fuel it, as in any phase.",
       "Keep protein high at every meal to build muscle: meat, fish, eggs, yoghurt.",
       "Fresh, light meals with lots of vegetables suit this phase.",
     ],
     supplements: [
-      "Keep up your basics: vitamin D, omega-3 and magnesium.",
-      "Creatine (3 to 5 g a day) supports strength and is safe to take every day.",
+      "No special supplements needed. If you take creatine (3 to 5 g a day), keep taking it every day.",
       "A protein shake is a handy way to hit your protein after training.",
     ],
-    reminder: "Build phase: energy is rising, so push your training and keep your protein high.",
+    reminder: "Build phase: if your energy is up, push your training a little, and keep your protein high.",
   },
   ovulation: {
     key: "ovulation",
     name: "Peak phase",
     emoji: "🌕",
-    tagline: "Around ovulation. Hormones peak and you'll often feel your strongest.",
+    tagline: "Around ovulation. Hormones peak, and some women notice they feel their best.",
     feel: [
-      "Energy, confidence and strength are usually at their highest.",
+      "Some women notice more energy and confidence. Others notice no change.",
       "Some women feel a twinge on one side of the lower belly. That's normal.",
-      "You may feel more social and outgoing.",
     ],
     training: [
-      "Go for it: heavy lifts, sprints and personal bests.",
-      "Warm up properly. Joints can be a little looser now, so control every rep.",
+      "Feel good? Train hard as normal. Adjust to how you feel on the day.",
+      "Warm up properly and control every rep, as always.",
       "Take extra care with landing, jumping and twisting movements.",
     ],
     nutrition: [
       "Keep carbs around training to fuel your hardest sessions.",
-      "Eat plenty of fibre (vegetables, fruit, whole grains) to help your body clear used hormones.",
+      "Eat plenty of fibre (vegetables, fruit, beans, whole grains) for your gut and steady energy.",
       "Drink more water if you're training hard or it's hot.",
     ],
     supplements: [
-      "Stay on your basics: vitamin D, omega-3, magnesium and creatine.",
-      "Electrolytes help on sweaty, hard training days.",
+      "No special supplements needed. Electrolytes help on sweaty, hard training days.",
     ],
-    reminder: "Peak phase: a great day for a strong session. Warm up well and control every rep.",
+    reminder: "Peak phase: feeling good? Have a strong session. Warm up well and go by how you feel.",
   },
   luteal: {
     key: "luteal",
@@ -119,24 +117,23 @@ export const CYCLE_PHASES: Record<CyclePhaseKey, CyclePhase> = {
     ],
     training: [
       "Early on, keep training normally.",
-      "Later on, aim for steady, moderate sessions: keep the weight, but do fewer heavy sets and take longer rests.",
+      "If PMS hits later on, steady, moderate sessions are fine: keep the weight, but do fewer heavy sets and take longer rests.",
       "Walks, swimming and pilates help with mood and bloating.",
-      "Expect workouts to feel harder. That's your hormones, not you going backwards.",
+      "Some women find workouts feel harder now. If you do, that's your hormones, not you going backwards.",
     ],
     nutrition: [
-      "You burn a bit more now, so a small extra snack (about 100 to 200 calories) is fine.",
+      "You burn a little more now, so a small extra snack (about 100 to 150 calories) is fine.",
       "Have protein and fibre at every meal to keep cravings in check.",
       "Craving chocolate? Pick dark chocolate. It's rich in magnesium.",
       "Cut back on salt, alcohol and caffeine to ease bloating, sore breasts and poor sleep.",
       "Complex carbs like sweet potato, brown rice and beans help mood and sleep.",
     ],
     supplements: [
-      "Magnesium every evening helps with PMS, mood and sleep.",
-      "Vitamin B6 (up to 50 mg a day) can ease PMS for some women.",
-      "Calcium (from dairy or a supplement) has been shown to reduce PMS symptoms.",
-      "Omega-3 every day.",
+      "Magnesium in the evening may help with PMS for some women (200 to 350 mg).",
+      "Vitamin B6 may ease PMS for some women. Keep supplements to 10 mg a day or less unless your doctor advises more, and count the B6 in any multivitamin or magnesium-B6 product. Stop and see your doctor if you get tingling or numbness in your hands or feet.",
+      "Calcium (from milk, maas, yoghurt or a supplement) has been shown to reduce PMS symptoms.",
     ],
-    reminder: "Wind-down phase: steady training, protein at every meal, and magnesium tonight.",
+    reminder: "Wind-down phase: train to how you feel, and have protein and fibre at every meal.",
   },
 };
 
@@ -150,7 +147,7 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
     hook: "Work with your cycle, not against it.",
     points: [
       { emoji: "🌊", title: "Your body changes all month", text: "Your hormones change through the month, and so do your energy, strength, hunger and mood." },
-      { emoji: "🤝", title: "Work with it", text: "Rather than fighting that, we work with it: push hard when your body is ready, and ease off when it isn't." },
+      { emoji: "🤝", title: "Work with it", text: "For most women, research finds little change in strength across the cycle, but symptoms are real. Some women notice phases; track yours and adjust on the days they affect you." },
       { emoji: "🗓️", title: "Log your period", text: "Log the first day of each period below. The app works out which phase you're in and shows you what to do each day." },
       { emoji: "📏", title: "Your own length", text: "A typical cycle is 21 to 35 days. The app learns your own length as you log more periods." },
     ],
@@ -173,16 +170,17 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
     heading: "Every day, all month",
     hook: "The basics matter in every phase.",
     points: [
-      { emoji: "🥗", title: "Eat well", text: "Protein at every meal, plenty of vegetables, and 2 to 3 litres of water." },
+      { emoji: "🥗", title: "Eat well", text: "Protein at every meal, plenty of vegetables, fruit and beans, milk, maas or yoghurt, and about 30 to 35 ml of water per kg of body weight." },
+      { emoji: "🩸", title: "Watch your iron", text: "Women who train, have heavy periods or eat little red meat are often low in iron. Tired, breathless or pale? Ask your doctor for a ferritin (iron) blood test." },
       { emoji: "😴", title: "Sleep 7 to 9 hours", text: "Poor sleep throws hormones off more than almost anything else." },
       { emoji: "🧘", title: "Manage stress", text: "Walks outside, breathing, time off your phone. High stress can upset your cycle." },
-      { emoji: "🚫", title: "Don't crash diet", text: "Eating too little can make periods irregular or stop them altogether." },
+      { emoji: "🚫", title: "Don't crash diet", text: "Eating too little for how much you train (RED-S) can make periods irregular or stop them, and weakens your bones. No period for 3 months while training or dieting? See your doctor." },
     ],
   },
   {
     icon: "💊",
     heading: "Supplements by phase",
-    hook: "Most women do well on a simple base all month: vitamin D, omega-3 and magnesium.",
+    hook: "If you eat well, you don't need supplements for your cycle. Magnesium, omega-3 or calcium may help if you have clear PMS or period pain.",
     points: PHASE_ORDER.flatMap((key) =>
       CYCLE_PHASES[key].supplements.map((text) => ({ emoji: CYCLE_PHASES[key].emoji, title: CYCLE_PHASES[key].name, text }))
     ),
@@ -192,7 +190,8 @@ export const WOMENS_HEALTH_GUIDE: GuidelineGroup[] = [
     icon: "🩺",
     heading: "When to see a doctor",
     points: [
-      { emoji: "⏸️", title: "No period for 3 months", text: "Your period stops for 3 months or more and you're not pregnant." },
+      { emoji: "⏸️", title: "No period for 3 months", text: "Your period stops for 3 months or more and you're not pregnant. While training or dieting, it's a sign you're not eating enough (RED-S)." },
+      { emoji: "🩸", title: "Tired and low on iron?", text: "Tired, breathless or pale, especially with heavy periods: ask for a ferritin (iron) test." },
       { emoji: "🩸", title: "Very heavy bleeding", text: "Soaking a pad or tampon every hour or two, or bleeding between periods." },
       { emoji: "😣", title: "Pain that stops your day", text: "Pain that stops you from getting through your day." },
       { emoji: "📆", title: "Irregular cycles", text: "Cycles shorter than 21 days or longer than 35 days, again and again." },
@@ -282,16 +281,18 @@ export function upcomingPhases(periodStarts: string[], fromIso: string, days: nu
 // the period and the days around it (GRIZZ, 2026-10-14), so she has them in
 // time. Taken from the Period and Wind-down supplements above.
 export const SUPPLEMENT_PREP_DAYS = 7;
+// Only for women who use them for PMS or period pain (nutrition review,
+// 2026-10-18): B6 at 10 mg a day or less.
 export const SUPPLEMENT_PREP_LIST = [
-  "Magnesium, for cramps, mood and sleep",
-  "Omega-3 fish oil, for period pain",
-  "Vitamin B6, for PMS",
-  "Calcium, for PMS",
+  "Magnesium, if it helps your cramps or PMS (200 to 350 mg)",
+  "Omega-3 fish oil, if it helps your period pain",
+  "Calcium, if it helps your PMS",
+  "Vitamin B6, only if it helps your PMS, and 10 mg a day or less",
   "Iron, only if your periods are heavy and your doctor agrees",
 ];
 export const SUPPLEMENT_PREP_TITLE = "🛒 Your period is due in about a week";
 export const SUPPLEMENT_PREP_BODY =
-  "Check you have your supplements ready: magnesium, omega-3, vitamin B6 and calcium (iron only if your doctor says so).";
+  "If you use supplements for PMS or period pain, check you have them ready. Vitamin B6: 10 mg a day or less. Iron only if your doctor says so.";
 
 /** The predicted start of each of her next `count` periods after `fromIso`. */
 export function nextPeriodStarts(periodStarts: string[], fromIso: string, count: number): string[] {

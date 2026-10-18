@@ -19,6 +19,7 @@ import WatchLink from "@/components/WatchLink";
 import FoldSection from "@/components/FoldSection";
 import { trainerDisplayName } from "@/lib/trainers";
 import { STATUS_FLAGS } from "@/lib/statusFlags";
+import { clientGoals } from "@/lib/clientGoals";
 import type { ClientStatusFlag, Trainer } from "@/types/database";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -260,13 +261,13 @@ export default function ClientProfileScreen() {
 
       <FoldSection icon="🎯" title="Goals and injuries" open={openFold === "goals"} onToggle={() => fold("goals")}>
         <Text style={styles.sectionHeading}>Goals</Text>
-        <Text style={styles.body}>{client.goals || "Not set yet - your trainer will add this."}</Text>
+        <Text style={styles.body}>{clientGoals(client) || "None yet. Tell your coach what you want to achieve and they can add it here."}</Text>
         <Text style={styles.sectionHeading}>My injuries</Text>
         <Text style={styles.body}>List every injury, one at a time, so your coach can keep your program safe. Tap Healed once it's better.</Text>
         <InjuryList clientId={client.id} role="client" />
         {client.injuries ? (
           <>
-            <Text style={styles.sectionHeading}>From your sign-up form</Text>
+            <Text style={styles.sectionHeading}>Noted earlier</Text>
             <Text style={styles.body}>{client.injuries}</Text>
           </>
         ) : null}
@@ -289,7 +290,7 @@ export default function ClientProfileScreen() {
 
       <FoldSection icon="⚙️" title="Account" open={openFold === "account"} onToggle={() => fold("account")}>
         <Pressable style={styles.logoutButton} onPress={signOut}>
-          <Text style={styles.buttonText}>Log out</Text>
+          <Text style={styles.logoutText}>Log out</Text>
         </Pressable>
         <DeleteAccountButton />
       </FoldSection>
@@ -347,4 +348,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonText: { color: "#0F172A", fontWeight: "700" },
+  logoutText: { color: "#fff", fontWeight: "700" },
 });

@@ -1,4 +1,4 @@
-import { d, phase, program } from "./common";
+import { d, phase, program, REHAB_REFER } from "./common";
 import { HIP } from "./hip";
 import type { StabilityAreaGuide, StabilityExercise } from "./types";
 
@@ -17,12 +17,12 @@ export const CORE: StabilityAreaGuide = {
   summary: "A trunk that stays still while your arms and legs move: the key to a healthy lower back.",
   why: [
     "Your core's main job isn't crunching: it's stopping movement. It holds the spine still while your arms and legs push, pull, carry and land, so the force goes where you want it instead of into your lower back.",
-    "Research on back health shows that endurance (how long you can hold good position) matters more than raw strength. People with weak back-extensor endurance are more likely to develop low back pain.",
-    "The 'big 3' (curl-up, side plank, bird dog) from spine researcher Stuart McGill train the whole trunk with very little load on the discs, so they're safe even with a sore back.",
+    "Back pain is very common and rarely means damage. Staying active and getting stronger in any way you enjoy helps most. Trunk endurance (how long you can hold a good position) is a useful thing to build, and one older study linked weak back-extensor endurance with more back pain.",
+    "The 'big 3' (curl-up, side plank, bird dog) from spine researcher Stuart McGill are a comfortable place to start with a sore back. They're not the only good option: any exercise you'll keep doing helps.",
     "Balance matters too: as a guide, your side plank should be at least 75% of your back-extension hold, and your front holds shouldn't be much longer than your back holds.",
   ],
   chooseLevel: {
-    rehab: "Low back pain now or in the last few months, a back that 'goes' every so often, or after a back injury once a doctor or physio has cleared you to exercise.",
+    rehab: `Low back pain now or in the last few months, a back that 'goes' every so often, or after a back injury once a doctor or physio has cleared you to exercise. ${REHAB_REFER}`,
     beginner: "No current back pain, but you can't hold a plank for 45 seconds or a side plank for 30 seconds with good form.",
     intermediate: "You can hold a 60-second plank, a 30-second side plank each side and a 45-second back-extension hold.",
     advanced: "You can hold 60-second side planks, a 90-second back-extension hold, and do ab wheel rollouts with a flat back. For heavy lifting and contact sport.",
@@ -31,7 +31,9 @@ export const CORE: StabilityAreaGuide = {
     "Numbness around the groin or bottom, or new trouble controlling your bladder or bowel (go to the emergency room).",
     "Pain spreading below the knee with numbness, pins and needles or weakness in the leg.",
     "Back pain with fever, unexplained weight loss, or pain that's worst at night and doesn't ease when you change position.",
-    "Back pain after a fall or accident.",
+    "Back pain after a fall or accident, or new back pain if you're over 50, use steroids or have osteoporosis (possible fracture).",
+    "A history of cancer, with new back pain.",
+    "Feeling generally unwell, a weakened immune system or injecting drugs, with back pain (possible infection).",
   ],
   exercises: [
     {
@@ -142,7 +144,7 @@ export const CORE: StabilityAreaGuide = {
         "Hold, breathing normally.",
       ],
       lossOfControl: "Stop the clock when your upper body drops below level, you arch up above level, or the lower back starts to hurt.",
-      resistance: "Bodyweight. Under about 60 seconds goes with a higher risk of low back pain; 2 minutes is a good target. Then hold a plate.",
+      resistance: "Bodyweight. One older study linked holds under about 60 seconds with more back pain; it's a guide, not a cut-off. 2 minutes is a good target. Then hold a plate.",
       easier: "On the floor: lie face down and lift the chest a few centimetres (superman hold).",
       harder: "Hold a plate on your chest.",
     },
@@ -268,7 +270,7 @@ CORE.programs = [
   program("core", "rehab", {
     who: "Low back pain now or recently, a back that 'goes' every few months, or after a back injury once a doctor or physio has cleared you to exercise.",
     goal: "Calm the back down with low-load holds, then build trunk endurance so it stops flaring up.",
-    resistance: "Walking every day (start with 10-15 minutes, a few times a day if needed) is one of the best things for a sore back. Avoid sit-ups and touching your toes first thing in the morning while it's sore.",
+    resistance: "Walking every day (start with 10-15 minutes, a few times a day if needed) is one of the best things for a sore back. Back pain rarely means damage: keep moving, and if a movement flares it, do less of it for a while rather than avoiding it for good.",
     finishTest: "60-second back-extension hold, 45-second side plank each side, and 10 dead bugs with the back flat, all pain-free.",
     phases: [
       phase(1, 2, "The big 3, gently", "McGill's three exercises with short holds and very little load.", [
