@@ -62,7 +62,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       title: "Today's workout",
       where: "Exercises tab",
       points: [
-        "Your workout for today is at the top. Tap an exercise to open it and log your sets.",
+        "The Exercises tab opens on Today: just what's on for the day (your workout and any extra session like stretching), or a rest day. Tap it to open the workout, then tap an exercise to log your sets. Your calendar and Other exercise are under tap-to-open headings below.",
         "Tap 📖 How to do it on any exercise to watch the demo video and see what it works, the steps, and tips to get the most from it. Tap the green Do set button beside the exercise, or at the bottom of the guide, to log your set.",
         "The first exercise for each body part starts with one warm-up set at half your start weight. It's logged as a warm-up and doesn't count as a working set.",
         "Log the weight, the reps and how the set felt. The rest timer starts by itself, and supersets take you straight to the next exercise.",
@@ -77,7 +77,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Training at home? List your equipment under 🏠 My home equipment on your Profile (dumbbells, kettlebells, bench, bands, a photo of your multi station...). Your workouts then only use what you have. Add to it whenever you buy something new.",
         "When you finish, tap Complete workout. If you couldn't finish or couldn't train, say why. Your coach sees a green, orange or red dot.",
         "🌙 Deload week: when your coach gives you a lighter week, your workouts say Deload week: do half the sets at about 70% of your usual weights (the app suggests the weight) and stop 3 or more reps before failure. Your normal program carries on the week after.",
-        "🏃 Other exercise (under your calendar): did a walk, run, ride, hike, swim or sport outside your program? Tap + Log exercise and add how long, and if you have them the distance, average heart rate and how hard it felt. Your coach sees it and the app counts it when it suggests your recovery.",
+        "🏃 Other exercise (Exercises tab, under the Other exercise heading): did a walk, run, ride, hike, swim or sport outside your program? Tap + Log exercise and add how long, and if you have them the distance, average heart rate and how hard it felt. Your coach sees it and the app counts it when it suggests your recovery.",
       ],
     },
     {
