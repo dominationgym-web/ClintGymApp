@@ -161,6 +161,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Pick a ready-made program: Training Recovery (gym and muscle), Sports Recovery (runners, cyclists, team sports) or Lifestyle Recovery (health and consistency). Your coach can pick it for you.",
         "Eight activities: Sleep, Hydration & nutrition, Active recovery, Breathing & relaxation, Mobility & stretching, Massage & foam rolling, Cold shower / ice bath and Sauna / heat. Tap one for what it does, how long, the benefits and safety.",
         "Log it for today (how long, and a note on soreness, energy or how you feel) or plan it for a day. Planned ones show on your calendar in bright green; tap ✓ Done or Skip in your Daily Log.",
+        "🧘 Full body stretch: open Mobility & stretching (or a stretching suggestion) and tap Follow the full body stretch routine. 12 easy stretches from neck to calves, one per page with how to do it, how long to hold and a video link. About 12 minutes, and it logs itself when you tap Done.",
         "🌿 Recovery suggested for you: the app looks at your training (days in a row, how hard you pushed, big leg days) and check-ins (pain, tiredness, poor sleep, stress) and suggests what would help most, on Recovery and your Check-in. Your coach sees what you plan, do and skip.",
       ],
     },

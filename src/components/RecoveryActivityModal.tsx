@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Tex
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { IconName } from "@/components/ScreenTabBar";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import FullBodyStretchRoutine from "@/components/FullBodyStretchRoutine";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import {
@@ -48,6 +49,8 @@ export default function RecoveryActivityModal({
   const [minutes, setMinutes] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  // Following the full body stretch routine, one stretch per page.
+  const [routine, setRoutine] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -56,20 +59,21 @@ export default function RecoveryActivityModal({
     setDay(today);
     setMinutes(findRecoveryActivity(key)?.minutes ?? null);
     setNotes("");
+    setRoutine(false);
   }, [visible, activity, completing?.id]);
 
   const info = findRecoveryActivity(picked);
 
-  const logDone = async () => {
+  const logDone = async (done = minutes) => {
     if (!info) return;
     setSaving(true);
     const note = notes.trim() || null;
     const { error } = completing
       ? await supabase
           .from("recovery_activities")
-          .update({ done_on: today, skipped: false, minutes, notes: note })
+          .update({ done_on: today, skipped: false, minutes: done, notes: note })
           .eq("id", completing.id)
-      : await planRecovery(clientId, info.key, today, { done: true, minutes: minutes ?? undefined, reason, notes: note });
+      : await planRecovery(clientId, info.key, today, { done: true, minutes: done ?? undefined, reason, notes: note });
     setSaving(false);
     if (error) return Alert.alert("Couldn't save", error.message);
     onSaved();
@@ -103,6 +107,8 @@ export default function RecoveryActivityModal({
                   ))}
                 </View>
               </>
+            ) : routine ? (
+              <FullBodyStretchRoutine onFinished={(m) => logDone(m)} onClose={() => setRoutine(false)} />
             ) : (
               <>
                 <View style={styles.headRow}>
@@ -128,6 +134,12 @@ export default function RecoveryActivityModal({
                   </>
                 )}
 
+                {info.key === "stretching" && (
+                  <Pressable style={styles.routineButton} onPress={() => setRoutine(true)}>
+                    <Text style={styles.routineTitle}>🧘 Follow the full body stretch routine</Text>
+                    <Text style={styles.routineText}>12 easy stretches with videos, about 12 minutes. Logs itself when you finish.</Text>
+                  </Pressable>
+                )}
                 <Text style={styles.subhead}>{completing ? "How long did you do it?" : "Did it today? How long?"}</Text>
                 <View style={styles.chips}>
                   {durationChoices(info).map((m) => (
@@ -144,7 +156,7 @@ export default function RecoveryActivityModal({
                   placeholderTextColor="#64748B"
                   multiline
                 />
-                <Pressable style={styles.doneButton} onPress={logDone} disabled={saving}>
+                <Pressable style={styles.doneButton} onPress={() => logDone()} disabled={saving}>
                   {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.doneText}>✓ Log as done today</Text>}
                 </Pressable>
 
@@ -176,6 +188,9 @@ export default function RecoveryActivityModal({
 }
 
 const styles = StyleSheet.create({
+  routineButton: { borderWidth: 1, borderColor: RECOVERY_GREEN, borderRadius: 10, padding: 12, marginTop: 14 },
+  routineTitle: { color: RECOVERY_GREEN, fontWeight: "700", fontSize: 15 },
+  routineText: { color: "#CBD5E1", fontSize: 13, marginTop: 4 },
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
   sheet: { flexGrow: 0, maxHeight: "92%", backgroundColor: "#1E293B", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20 },
   title: { color: "#fff", fontSize: 20, fontWeight: "800" },
