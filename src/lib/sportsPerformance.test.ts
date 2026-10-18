@@ -7,16 +7,18 @@ import { programFamily } from "./programs";
 import { techniqueFor } from "./exerciseTechnique";
 
 const migration = readFileSync(join(__dirname, "../../supabase/migrations/0093_sports_performance_programs.sql"), "utf8");
+// Later additions to the same headings (Flexibility 4 – Lower Back Release, 0112).
+const programMigrations = migration + readFileSync(join(__dirname, "../../supabase/migrations/0112_lower_back_stretch_program.sql"), "utf8");
 
 describe("Sports Performance programs", () => {
-  it("has 3 programs of 6-8 weeks for each of the 5 areas", () => {
+  it("has at least 3 programs for each of the 5 areas", () => {
     for (const c of ["power", "speed", "strength", "mobility", "flexibility"]) {
-      expect(SPORTS_PROGRAMS.filter((p) => p.category === c)).toHaveLength(3);
+      expect(SPORTS_PROGRAMS.filter((p) => p.category === c).length).toBeGreaterThanOrEqual(3);
     }
   });
   it("describes the programs the migration adds, by their exact names", () => {
     for (const p of SPORTS_PROGRAMS) {
-      expect(migration).toContain(`'${p.name}', place, ${p.weeks},`);
+      expect(programMigrations).toContain(`'${p.name}', place, ${p.weeks},`);
     }
   });
   it("puts each one under its own Sports Performance heading in the picker", () => {
