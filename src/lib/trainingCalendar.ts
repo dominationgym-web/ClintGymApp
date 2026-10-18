@@ -239,3 +239,43 @@ export function functionalShortName(name: string, withNumber = true): string {
   const head = name.split(" – ")[0];
   return shortWorkoutName(withNumber ? head.replace(/^Flexibility\b/, "Flex") : head.replace(/\s+\d+$/, ""));
 }
+
+// The client's week view (GRIZZ, 2026-10-18: "only a weekly calendar ...
+// Monday to Sunday ... make the slots bigger so they can see what body part
+// they training, as well as any recovery or mobility or stability").
+
+/** The Monday of the week `iso` falls in. */
+export function mondayOf(iso: string): string {
+  const date = parseIsoDate(iso);
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return toIsoDate(date);
+}
+
+/** The 7 dates of the week starting `monday`. */
+export function weekDates(monday: string): string[] {
+  const start = parseIsoDate(monday);
+  return Array.from({ length: 7 }, (_, i) => toIsoDate(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)));
+}
+
+/** "19 – 25 Oct", or "27 Oct – 2 Nov" across two months. */
+export function weekLabel(monday: string): string {
+  const [first, , , , , , last] = weekDates(monday).map(parseIsoDate);
+  const month = (d: Date) => d.toLocaleDateString("en-ZA", { month: "short" });
+  return first.getMonth() === last.getMonth()
+    ? `${first.getDate()} – ${last.getDate()} ${month(last)}`
+    : `${first.getDate()} ${month(first)} – ${last.getDate()} ${month(last)}`;
+}
+
+/** The body parts a workout trains, most-worked first, at most `max`: "Chest · Triceps · Shoulders". */
+export function bodyPartsLabel(categories: (string | null | undefined)[], max = 3): string {
+  const counts = new Map<string, number>();
+  for (const c of categories) {
+    if (!c) continue;
+    counts.set(c, (counts.get(c) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, max)
+    .map(([c]) => c)
+    .join(" · ");
+}

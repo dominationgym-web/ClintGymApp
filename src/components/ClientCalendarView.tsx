@@ -12,8 +12,19 @@ import { forPlace, swapOptions, withHomeAlternatives, type HomeFit } from "@/lib
 import { getExerciseSwaps, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
 import ExerciseGuideButton from "@/components/ExerciseGuide";
-import { applyMoves, calendarDayLabels, FUNCTIONAL_TEAL, functionalShortName, monthOf, monthRange, shortWorkoutName, slotLabel, type CalendarMonth } from "@/lib/trainingCalendar";
-import TrainingCalendar from "@/components/TrainingCalendar";
+import { addDays } from "@/lib/programSchedule";
+import {
+  applyMoves,
+  bodyPartsLabel,
+  exercisesForSlot,
+  FUNCTIONAL_TEAL,
+  functionalShortName,
+  mondayOf,
+  shortWorkoutName,
+  slotLabel,
+  weekDates,
+} from "@/lib/trainingCalendar";
+import WeekCalendar, { type WeekDayPlan } from "@/components/WeekCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
@@ -23,7 +34,9 @@ import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, Pro
 
 // The client's own training calendar (0069), always open at the top of their
 // workout screen (GRIZZ, 2026-10-18: "already open. So they dont need to
-// click"). Only shows once their coach has planned something.
+// click"). One week at a time, Monday to Sunday, with each day's workout and
+// the body parts it trains (GRIZZ, 2026-10-18). Only shows once their coach
+// has planned something.
 // Tapping a day lists its exercises, and from today on each can be changed
 // for that day if the gym will be busy (0047). Extra blocks the coach added
 // to a day (mobility, flexibility, fight..., 0098) show under its workout.
@@ -51,11 +64,13 @@ export default function ClientCalendarView({
 }) {
   const today = todayIso();
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
-  const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
+  const [monday, setMonday] = useState(mondayOf(today));
   const [entries, setEntries] = useState<ClientCalendarWorkout[]>([]);
   const [blocks, setBlocks] = useState<ClientCalendarBlock[]>([]);
   const [dayExtras, setDayExtras] = useState<CalendarDayWorkout[]>([]);
   const [names, setNames] = useState<Record<string, Pick<Program, "name" | "trainer_id">>>({});
+  // The week's programs' exercises, for the body parts each day trains.
+  const [programRows, setProgramRows] = useState<Record<string, ProgramExercise[]>>({});
   const [hasAny, setHasAny] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   // The selected day's workout and any swaps made for it.
@@ -93,8 +108,9 @@ export default function ClientCalendarView({
     });
   }, [clientId, today]);
 
+  const range = { from: monday, to: addDays(monday, 6) };
   useEffect(() => {
-    const { from, to } = monthRange(month);
+    const { from, to } = range;
     Promise.all([loadCalendarBlocks(clientId, from, to), loadCalendarWorkouts(clientId, from, to)]).then(async ([extra, rows]) => {
       setBlocks(extra);
       if (extra.length > 0) setHasAny(true);
@@ -102,13 +118,32 @@ export default function ClientCalendarView({
       setEntries(rows);
       if (rows.length > 0) setHasAny(true);
       const missing = [...new Set([...rows.map((r) => r.program_id), ...extraIds])].filter((id) => !names[id]);
-      if (missing.length === 0) return;
-      const { data } = await supabase.from("programs").select("id, name, trainer_id").in("id", missing);
-      setNames((prev) => ({ ...prev, ...Object.fromEntries((data ?? []).map((p) => [p.id, p])) }));
+      if (missing.length > 0) {
+        const { data } = await supabase.from("programs").select("id, name, trainer_id").in("id", missing);
+        setNames((prev) => ({ ...prev, ...Object.fromEntries((data ?? []).map((p) => [p.id, p])) }));
+      }
+      // Paged, as Supabase returns at most 1000 rows.
+      const need = [...new Set(rows.map((r) => r.program_id))].filter((id) => !programRows[id]);
+      if (need.length === 0) return;
+      const found: ProgramExercise[] = [];
+      for (let page = 0; ; page++) {
+        const { data } = await supabase
+          .from("program_exercises")
+          .select("*")
+          .in("program_id", need)
+          .order("id")
+          .range(page * 1000, page * 1000 + 999);
+        found.push(...((data ?? []) as ProgramExercise[]));
+        if (!data || data.length < 1000) break;
+      }
+      setProgramRows((prev) => {
+        const next = { ...prev };
+        for (const id of need) next[id] = found.filter((r) => r.program_id === id);
+        return next;
+      });
     });
-  }, [clientId, month]);
+  }, [clientId, monday]);
 
-  const range = monthRange(month);
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
   const recovery = useRecoveryCalendar(clientId, range.from, range.to);
   const stability = useStabilityCalendar(clientId, range.from, range.to);
@@ -116,23 +151,49 @@ export default function ClientCalendarView({
 
   if (!hasAny) return null;
 
+  const categoryOf = (row: Pick<ProgramExercise, "exercise_id" | "exercise_name">) =>
+    exercises.find((e) => e.id === row.exercise_id)?.category ??
+    exercises.find((e) => e.name === row.exercise_name)?.category ??
+    null;
   // Training in gold; mobility and flexibility apart, in teal (GRIZZ, 2026-10-18).
-  const { labels, functional } = calendarDayLabels(entries, blocks, (id) => names[id], (p) =>
+  const nameOf = (p: Pick<Program, "name" | "trainer_id">) =>
     isFunctionalProgram(p)
       ? functionalShortName(p.name, !!p.trainer_id)
       : p.trainer_id
         ? shortWorkoutName(p.name)
-        : shortWorkoutName(displayProgramName(p), false),
-  );
-  const moved = applyMoves(labels, Object.values(sessions));
+        : shortWorkoutName(displayProgramName(p), false);
+  const plans: Record<string, WeekDayPlan> = {};
+  const mainLabels: Record<string, string> = {};
+  for (const date of weekDates(monday)) {
+    const plan: WeekDayPlan = { extras: [] };
+    const entry = entries.find((e) => e.workout_date === date);
+    const p = entry ? names[entry.program_id] : undefined;
+    if (entry && p) {
+      if (isFunctionalProgram(p)) plan.extras.push({ title: nameOf(p), functional: true });
+      else {
+        const rows = exercisesForSlot(programRows[entry.program_id] ?? [], entry.day_slot).filter((r) => r.kind !== "cardio");
+        plan.main = { title: nameOf(p), parts: bodyPartsLabel(rows.map(categoryOf)), deload: !!entry.deload };
+        mainLabels[date] = plan.main.title;
+      }
+    }
+    for (const b of blocks) {
+      if (b.workout_date !== date) continue;
+      const bp = names[b.program_id];
+      if (bp) plan.extras.push({ title: nameOf(bp), functional: isFunctionalProgram(bp) });
+    }
+    plans[date] = plan;
+  }
+  const moved = applyMoves(mainLabels, Object.values(sessions));
+  // A workout made up at the weekend shows on the day it was done.
+  for (const s of Object.values(sessions)) {
+    if (s.makeup_for && plans[s.session_date] && !plans[s.session_date].main && plans[s.makeup_for]?.main) {
+      plans[s.session_date] = { ...plans[s.session_date], main: plans[s.makeup_for].main };
+    }
+  }
   const picked = selected ? entries.find((e) => e.workout_date === selected) : null;
   const pickedProgram = picked ? names[picked.program_id] : null;
   const canChange = !!selected && selected >= today;
   const planned = atHome ? withHomeAlternatives(dayRows, exercises, fit).rows : dayRows;
-  const categoryOf = (row: ProgramExercise) =>
-    exercises.find((e) => e.id === row.exercise_id)?.category ??
-    exercises.find((e) => e.name === row.exercise_name)?.category ??
-    null;
   const swapCategory = swapping ? categoryOf(swapping) : null;
   const swapChoices = swapping
     ? forPlace(swapOptions(exercises, swapCategory, [swapping.exercise_id, daySwaps[swapping.id]?.id ?? null]), atHome ? "home" : "gym", fit)
@@ -153,14 +214,16 @@ export default function ClientCalendarView({
         <Text style={styles.title}>📅 Your training calendar</Text>
       </View>
       <View style={{ marginTop: 10 }}>
-          <TrainingCalendar
-            month={month}
-            onChangeMonth={setMonth}
-            labels={moved.labels}
+          <WeekCalendar
+            monday={monday}
+            onChangeWeek={(direction) => {
+              setMonday(addDays(monday, direction * 7));
+              setSelected(null);
+            }}
+            plans={plans}
             moves={moved.moves}
             recovery={recovery}
             stability={stability.map}
-            functional={functional}
             today={today}
             selected={selected}
             onPressDay={(date) => {
