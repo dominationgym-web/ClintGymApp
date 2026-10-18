@@ -139,7 +139,7 @@ export const UNDERSTANDING_INSULIN = {
     ],
   },
   whoFor: [
-    { emoji: "🐢", title: "Overweight or insulin resistant", text: "Cut sugar and sugary drinks first, and have carbs from whole foods with protein and veg. Fewer carbs is fine if it helps your hunger." },
+    { emoji: "🐢", title: "Overweight or insulin resistant", text: "Cut sugar and sugary drinks first, and have carbs from whole foods with protein and veg. Fewer carbs is fine if it helps your hunger and blood sugar. Training and losing even 5 to 10% of your weight make your body handle insulin much better." },
     { emoji: "💪", title: "Big and muscular", text: "More carbs around training fuel hard sessions and help you recover." },
   ],
   order: {
