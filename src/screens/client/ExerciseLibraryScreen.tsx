@@ -43,6 +43,7 @@ import { AB_REPS, abExerciseFor, absBetweenSets } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { suggestNext, type Suggestion } from "@/lib/progression";
 import { gaugeWeight, inIntro, needsGauge, type GaugeResult } from "@/lib/gauge";
+import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
@@ -126,6 +127,8 @@ export default function ExerciseLibraryScreen() {
   // One day of a weekly program on today's calendar (its slot), and extra
   // blocks the coach added for today (0098, GRIZZ, 2026-10-16).
   const [calendarSlot, setCalendarSlot] = useState<number | null>(null);
+  // Today's calendar workout is in a deload week (0115).
+  const [deloadToday, setDeloadToday] = useState(false);
   const [calendarExtras, setCalendarExtras] = useState<CalendarDayWorkout[]>([]);
   const [pace, setPace] = useState<WorkoutPace>("planned");
   // How today's workout went, once the client has finished it (0076).
@@ -237,6 +240,7 @@ export default function ExerciseLibraryScreen() {
       if (!error && data) setExercises(data);
       setCalendarExtras(calendar?.extras ?? []);
       setCalendarSlot(calendar?.main?.daySlot ?? null);
+      setDeloadToday(!!calendar?.main?.deload);
       const main = calendar?.main ?? null;
       if (main && client) {
         const assignment = active?.assignment ?? {
@@ -611,9 +615,11 @@ export default function ExerciseLibraryScreen() {
       .order("log_date", { ascending: false })
       .limit(20);
     const lastDate = earlier?.[0]?.log_date;
-    const next = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
+    const usual = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise) : null;
+    // Deload week (0115): about 70% of the usual weight, and no gauge set.
+    const next = deloadToday && calendarToday ? deloadSuggestion(usual, exercise) : usual;
     setSuggestion(next);
-    setGaugeDue(!!programRow && needsGauge(earlier ?? [], data ?? [], programRow.reps));
+    setGaugeDue(!(deloadToday && calendarToday) && !!programRow && needsGauge(earlier ?? [], data ?? [], programRow.reps));
     const working = (data ?? []).filter((s) => !s.warm_up);
     const lastToday = working[working.length - 1]?.weight_kg;
     const start = lastToday ? String(lastToday) : next?.weight ? String(next.weight) : "";
@@ -836,6 +842,15 @@ export default function ExerciseLibraryScreen() {
                 )}
                 {lightened && (
                   <Text style={styles.carried}>Your coach made today's session lighter to give your muscles time to recover.</Text>
+                )}
+                {deloadToday && calendarToday && (
+                  <View style={styles.deload}>
+                    <Text style={styles.deloadTitle}>🌙 Deload week</Text>
+                    <Text style={styles.deloadText}>
+                      Your coach has given you a lighter week so your body can recover and come back stronger: half the sets, about 70% of
+                      your usual weights, and stop 3 or more reps before failure. Your normal program carries on next week.
+                    </Text>
+                  </View>
                 )}
                 {program.program.description ? (
                   <Pressable style={styles.howTo} onPress={() => setOpenInfo(openInfo === "how" ? null : "how")}>
@@ -1309,6 +1324,9 @@ export default function ExerciseLibraryScreen() {
 }
 
 const styles = StyleSheet.create({
+  deload: { borderWidth: 1, borderColor: DELOAD_BLUE, borderRadius: 10, padding: 10, marginTop: 8 },
+  deloadTitle: { color: DELOAD_BLUE, fontWeight: "700", fontSize: 14 },
+  deloadText: { color: "#E2E8F0", fontSize: 13, lineHeight: 18, marginTop: 4 },
   doSetRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   absBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
   absButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },

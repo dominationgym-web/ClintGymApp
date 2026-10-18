@@ -202,7 +202,7 @@ export const FUNCTIONAL_TEAL = "#2DD4BF";
  * apart, in teal, whether they are the day's workout or an extra block.
  */
 export function calendarDayLabels(
-  entries: { workout_date: string; program_id: string }[],
+  entries: { workout_date: string; program_id: string; deload?: boolean }[],
   blocks: { workout_date: string; program_id: string }[],
   program: (id: string) => Pick<Program, "name" | "trainer_id"> | undefined,
   label: (p: Pick<Program, "name" | "trainer_id">) => string,
@@ -218,7 +218,8 @@ export function calendarDayLabels(
     const p = entry ? program(entry.program_id) : undefined;
     if (p) {
       if (isFunctionalProgram(p)) fun.push(label(p));
-      else main = label(p);
+      // A deload week's workout (0115) says so instead of the workout's name.
+      else main = entry?.deload ? "🌙 Deload" : label(p);
     }
     for (const b of blocks) {
       if (b.workout_date !== date) continue;

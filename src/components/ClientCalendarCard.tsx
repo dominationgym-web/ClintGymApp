@@ -35,6 +35,7 @@ import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import StabilityDayPlanner from "@/components/stability/StabilityDayPlanner";
 import WeeklyPlanCard from "@/components/WeeklyPlanCard";
+import DeloadCard from "@/components/DeloadCard";
 import ProgramSummary from "@/components/ProgramSummary";
 import PlanProgramModal from "@/components/PlanProgramModal";
 import type { StabilityArea } from "@/lib/stability";
@@ -321,6 +322,16 @@ export default function ClientCalendarCard({
         programs={programs}
         refreshKey={planKey}
         onChanged={async () => {
+          await Promise.all([loadMonth(), loadUsed()]);
+          onPlanChanged?.();
+        }}
+      />
+      <DeloadCard
+        clientId={clientId}
+        clientName={clientName}
+        refreshKey={planKey}
+        onAdded={async () => {
+          setPlanKey((k) => k + 1);
           await Promise.all([loadMonth(), loadUsed()]);
           onPlanChanged?.();
         }}
