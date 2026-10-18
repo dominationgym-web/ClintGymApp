@@ -45,12 +45,15 @@ import type {
   BillingPlan,
   BillingSettings,
   ClientActivation,
+  PaymentProof,
   Trainer,
   TrainerBillingMonth,
   TrainerBillingStatus,
   TrainerPayment,
 } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import PaymentProofModal from "@/components/PaymentProofModal";
+import { proofWhen } from "@/lib/paymentProofs";
 import { countryName } from "@/lib/phoneCountry";
 
 // The owner's billing view (0064): who owes what, this month's client count
@@ -71,6 +74,9 @@ export default function BillingScreen() {
   const [planFor, setPlanFor] = useState<Trainer | null>(null);
   const [payFor, setPayFor] = useState<Trainer | null>(null);
   const [freeUseFor, setFreeUseFor] = useState<Trainer | null>(null);
+  // Trainers' proofs of payment sent through the app, not checked yet (0117).
+  const [proofs, setProofs] = useState<PaymentProof[]>([]);
+  const [viewing, setViewing] = useState<PaymentProof | null>(null);
   const today = todayIso();
 
   const load = useCallback(async () => {
@@ -82,6 +88,14 @@ export default function BillingScreen() {
       supabase.from("trainer_payments").select("*").order("paid_on", { ascending: false }),
       supabase.from("client_activations").select("*").order("activated_on", { ascending: false }),
     ]);
+    const { data: proofRows } = await supabase
+      .from("payment_proofs")
+      .select("*")
+      .eq("to_owner", true)
+      .eq("status", "new")
+      .order("created_at", { ascending: false });
+    setProofs((proofRows as PaymentProof[] | null) ?? []);
+    if (proofRows?.length) setOpen((o) => (o === "outstanding" ? "proofs" : o));
     const err = s.error ?? t.error ?? cur.error ?? m.error ?? p.error ?? a.error;
     if (err) Alert.alert("Couldn't load billing", err.message);
     const all = t.data ?? [];
@@ -243,6 +257,26 @@ export default function BillingScreen() {
           {settings.free_clients}. They're worked out on the 1st and due by the {settings.client_fees_due_day}th.
         </Text>
       ) : null}
+
+      {proofs.length > 0
+        ? section("proofs", "🧾 Proof of payment", String(proofs.length), () =>
+            proofs.map((p) => {
+              const t = byId[p.trainer_id];
+              return (
+                <View key={p.id} style={styles.line}>
+                  <Text style={styles.lineName}>{t ? trainerDisplayName(t) : "A trainer"}</Text>
+                  <Text style={styles.lineDetail}>
+                    Sent {proofWhen(p.created_at)}
+                    {p.amount ? ` · ${p.amount}` : ""}
+                  </Text>
+                  <Pressable onPress={() => setViewing(p)} hitSlop={8}>
+                    <Text style={styles.link}>View and record payment</Text>
+                  </Pressable>
+                </View>
+              );
+            }),
+          )
+        : null}
 
       {section("outstanding", "Outstanding", outstanding.length ? String(outstanding.length) : null, () =>
         outstanding.length === 0 ? (
@@ -411,6 +445,18 @@ export default function BillingScreen() {
         ) : null,
       )}
 
+      <PaymentProofModal
+        proof={viewing}
+        from={viewing && byId[viewing.trainer_id] ? trainerDisplayName(byId[viewing.trainer_id]) : "a trainer"}
+        confirmLabel="✓ Paid, record the payment"
+        onConfirm={(p) => {
+          setViewing(null);
+          const t = byId[p.trainer_id];
+          if (t) setPayFor(t);
+        }}
+        onReviewed={load}
+        onClose={() => setViewing(null)}
+      />
       {planFor ? <SetPlanModal trainer={planFor} onClose={() => setPlanFor(null)} onSaved={load} /> : null}
       {freeUseFor && settings ? (
         <FreeUseModal trainer={freeUseFor} settings={settings} onClose={() => setFreeUseFor(null)} onSaved={load} />

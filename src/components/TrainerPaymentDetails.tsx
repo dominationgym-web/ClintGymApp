@@ -6,11 +6,13 @@ import type { EftDetails } from "@/types/database";
 type Props = {
   eftDetails: EftDetails | null | undefined;
   popWhatsapp: string | null | undefined;
+  /** A Send proof of payment button follows (0117). */
+  proofInApp?: boolean;
 };
 
 // A trainer's own EFT details and proof-of-payment number (0029), each row
 // tap-to-copy. Shown after client signup and on the client's Profile.
-export default function TrainerPaymentDetails({ eftDetails, popWhatsapp }: Props) {
+export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofInApp = false }: Props) {
   const rows = eftRows(eftDetails);
 
   const copy = async (value: string, label: string) => {
@@ -48,7 +50,9 @@ export default function TrainerPaymentDetails({ eftDetails, popWhatsapp }: Props
       <Text style={styles.body}>
         Use your name as the payment reference so your trainer can match it to your account.
       </Text>
-      {popWhatsapp ? (
+      {proofInApp ? (
+        <Text style={styles.body}>Then send your proof of payment with the button below. It goes straight to the right person.</Text>
+      ) : popWhatsapp ? (
         <Text style={styles.body}>
           Then send proof of payment to <Text style={styles.inline}>{popWhatsapp}</Text> on WhatsApp.
         </Text>

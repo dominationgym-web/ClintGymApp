@@ -184,7 +184,8 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       points: [
         "Add progress photos every 6 weeks. The app reminds you. Photos show change the scale can't.",
         "Set your flag so your coach knows how you're doing: All good, I'd like some feedback, or Urgent, I need guidance. The app also asks you this the first time you open it each day.",
-        "Each part of your Profile is a heading you tap to open: How are you doing?, Messages from your coach, Progress photos, Goals and injuries, Paying your trainer and Account (log out).",
+        "Each part of your Profile is a heading you tap to open: How are you doing?, Messages from your coach, Progress photos, Goals and injuries, ⌚ My devices (link your watch), Paying your trainer and Account (log out).",
+        "🧾 Paid your trainer? Open Paying your trainer, add the amount if you like, tap Send proof of payment and pick a screenshot from your banking app or take a photo of the slip. Your trainer is told straight away, and you see here once they confirm it.",
         "🩹 My injuries (Profile → Goals and injuries): add every injury, one at a time, with where it is and what it is. Tap Healed once it's better. Your coach uses this to keep exercises that could hurt it out of your program. On the daily check-in you can also tap more than one place that hurts.",
       ],
     },
@@ -229,6 +230,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       points: [
         "Four tabs sort your clients: Active (training now), Waiting approval (new signups and returning clients), Awaiting payment (plan ended in the last 30 days) and Dormant (archived, or plan ended over 30 days ago).",
         "Activate a client once they've paid. Only an expired plan locks the app.",
+        "🧾 When a client sends proof of payment in the app, you get a notification and their row on the Clients tab shows Proof of payment sent. Tap View to see the slip, check it is in your account, then tap Paid, activate them. Not in my account yet lets them know to check it.",
         "Dots show who needs attention. Tap a client to open everything about them.",
         "Share your trainer code (Profile tab) so new clients join you when they sign up.",
         "🗄 Old clients: open a client and tap Archive this client at the bottom of their Overview. They leave your lists and their access closes, but nothing is deleted. If they start again, open the Dormant tab on the Clients tab and tap Bring back. They fill in the intake form again, and a Then vs now card on their Overview compares their first time with you against now.",
@@ -311,6 +313,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "🎁 On free use? You pay no monthly subscription. Six months in, a per-client fee starts for each active client. Your plan card shows the date, and the app reminds you 30 days and 7 days before.",
         "🤝 Referrals: share your referral code with other trainers. Each one approved gives you 25% off a month, and 4 make a free month. A pop-up shows how many you've earned and banked once a week, and Profile > Plan & refer shows them any time. Banked referrals come off your plan payment, or off your client fees if you're on free use.",
         "💵 Profile > Income: set what your clients pay you a month, either a price table (Fully Online, or 1-on-1 clients using the app for 1, 2, 3 or 4 extra days a week) or one monthly fee for everyone. Then open each client and tap their package under What they pay you. Income adds up what your active clients bring in each month. Clients don't see your prices.",
+        "🧾 App owner only: trainers can send proof of payment for their app fees from their plan card. It shows at the top of Billing on the Trainers tab: tap View and record payment to check the slip and record it in one go.",
         "📊 App owner only: Profile > Tracker shows every trainer's active clients, what clients pay their trainers, the monthly client fees and trainer subs, split South Africa (rand) and International (dollars). Tap Each trainer for one line per trainer.",
       ],
     },

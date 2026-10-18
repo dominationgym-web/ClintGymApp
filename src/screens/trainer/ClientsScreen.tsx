@@ -7,7 +7,9 @@ import { bringBackChanges } from "@/lib/comeback";
 import { CLIENT_GROUPS, clientGroup, type ClientGroup } from "@/lib/clientGroups";
 import { useAuth } from "@/context/AuthContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
-import type { AccessStatus, Client } from "@/types/database";
+import PaymentProofModal from "@/components/PaymentProofModal";
+import { waitingByPerson } from "@/lib/paymentProofs";
+import type { AccessStatus, Client, PaymentProof } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 
 type Props = TrainerTabScreenProps<"Clients">;
@@ -34,6 +36,20 @@ export default function ClientsScreen({ navigation }: Props) {
   const [problemLevels, setProblemLevels] = useState<Record<string, ProblemLevel>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Proof of payment sent through the app and not checked yet (0117), by client.
+  const [proofs, setProofs] = useState<Record<string, PaymentProof>>({});
+  const [viewing, setViewing] = useState<PaymentProof | null>(null);
+
+  const loadProofs = useCallback(async () => {
+    if (!trainer) return;
+    const { data } = await supabase
+      .from("payment_proofs")
+      .select("*")
+      .eq("trainer_id", trainer.id)
+      .eq("to_owner", false)
+      .eq("status", "new");
+    setProofs(waitingByPerson((data as PaymentProof[] | null) ?? []));
+  }, [trainer]);
 
   const load = useCallback(async () => {
     if (!trainer) return;
@@ -44,6 +60,7 @@ export default function ClientsScreen({ navigation }: Props) {
       .order("plan_expires_at", { ascending: true, nullsFirst: true });
     const list = data ?? [];
     setClients(list);
+    loadProofs();
     // One request signs every photo on the list.
     signAvatarUrls(list.map((c) => c.avatar_path ?? "")).then(setAvatarUrls);
     supabase
@@ -80,48 +97,52 @@ export default function ClientsScreen({ navigation }: Props) {
     setRefreshing(false);
   };
 
-  // Activate a client: confirm payment received, set dates, move to active status
+  // Activate a client: payment received, set dates, move to active status
+  const activateNow = async (client: Client) => {
+    if (!client.plan_type) {
+      Alert.alert("Error", "No plan type selected for this client.");
+      return;
+    }
+
+    const today = new Date();
+    const planDays =
+      client.plan_type === "intro_1mo" ? 30 :
+      client.plan_type === "sub_6mo" ? 180 :
+      365; // sub_12mo
+
+    const expiryDate = new Date(today);
+    expiryDate.setDate(expiryDate.getDate() + planDays);
+
+    const updates = {
+      access_status: "active" as const,
+      plan_started_at: toIsoDate(today),
+      plan_expires_at: toIsoDate(expiryDate),
+    };
+
+    const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
+    if (!error) {
+      setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
+    } else {
+      Alert.alert("Error", "Failed to activate client.");
+    }
+  };
+
+  // With a proof of payment waiting, Activate opens it so it can be checked first.
   const activateClient = async (client: Client) => {
+    if (proofs[client.id]) {
+      setViewing(proofs[client.id]);
+      return;
+    }
     Alert.alert(
       "Activate client?",
       `Confirm payment received for ${client.name}. Their access will activate now.`,
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Activate",
-          style: "default",
-          onPress: async () => {
-            if (!client.plan_type) {
-              Alert.alert("Error", "No plan type selected for this client.");
-              return;
-            }
-
-            const today = new Date();
-            const planDays =
-              client.plan_type === "intro_1mo" ? 30 :
-              client.plan_type === "sub_6mo" ? 180 :
-              365; // sub_12mo
-
-            const expiryDate = new Date(today);
-            expiryDate.setDate(expiryDate.getDate() + planDays);
-
-            const updates = {
-              access_status: "active" as const,
-              plan_started_at: toIsoDate(today),
-              plan_expires_at: toIsoDate(expiryDate),
-            };
-
-            const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
-            if (!error) {
-              setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
-            } else {
-              Alert.alert("Error", "Failed to activate client.");
-            }
-          },
-        },
+        { text: "Activate", style: "default", onPress: () => activateNow(client) },
       ]
     );
   };
+  const viewingClient = viewing ? allClients.find((c) => c.id === viewing.client_id) ?? null : null;
 
   // Mark client as expired: revoke access, move to expired status
   const markExpired = async (client: Client) => {
@@ -226,6 +247,11 @@ export default function ClientsScreen({ navigation }: Props) {
                     <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
                   )}
                 </View>
+                {proofs[item.id] && (
+                  <Pressable onPress={() => setViewing(proofs[item.id])} hitSlop={6} style={styles.proofChip}>
+                    <Text style={styles.proofChipText}>🧾 Proof of payment sent · View</Text>
+                  </Pressable>
+                )}
               </View>
               {item.archived_at ? (
                 <Pressable style={styles.actionButton} onPress={() => bringBack(item)}>
@@ -244,6 +270,17 @@ export default function ClientsScreen({ navigation }: Props) {
           );
         }}
         ListEmptyComponent={<Text style={styles.helper}>{current.empty}</Text>}
+      />
+      <PaymentProofModal
+        proof={viewing}
+        from={viewingClient?.name ?? "your client"}
+        confirmLabel={viewingClient?.access_status === "expired" ? "✓ Paid, activate them" : "✓ Paid"}
+        onConfirm={() => {
+          if (viewingClient?.access_status === "expired") activateNow(viewingClient);
+          setViewing(null);
+        }}
+        onReviewed={loadProofs}
+        onClose={() => setViewing(null)}
       />
     </View>
   );
@@ -289,6 +326,8 @@ const styles = StyleSheet.create({
   expiry: { color: "#64748B", fontSize: 12 },
   actionButton: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 12 },
   actionButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
+  proofChip: { alignSelf: "flex-start", backgroundColor: "#3A2F0B", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 },
+  proofChipText: { color: "#D4AF37", fontWeight: "700", fontSize: 12 },
   dangerButton: { backgroundColor: "#EF4444", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 10 },
   dangerButtonText: { color: "#fff", fontWeight: "700", fontSize: 12 },
 });

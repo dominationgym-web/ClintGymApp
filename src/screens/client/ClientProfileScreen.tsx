@@ -14,6 +14,8 @@ import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
 import { DailyQuoteCard } from "@/components/DailyQuote";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
+import SendProofOfPayment from "@/components/SendProofOfPayment";
+import WatchLink from "@/components/WatchLink";
 import FoldSection from "@/components/FoldSection";
 import { trainerDisplayName } from "@/lib/trainers";
 import { STATUS_FLAGS } from "@/lib/statusFlags";
@@ -270,9 +272,18 @@ export default function ClientProfileScreen() {
         ) : null}
       </FoldSection>
 
+      <FoldSection icon="⌚" title="My devices" open={openFold === "devices"} onToggle={() => fold("devices")}>
+        <Text style={styles.body}>
+          Link your watch or fitness tracker so your runs, rides, walks and swims go to your coach by themselves. Samsung,
+          Garmin and Polar watches sync through your phone's health app (turn it on in their app's settings).
+        </Text>
+        <WatchLink clientId={client.id} />
+      </FoldSection>
+
       {trainer ? (
         <FoldSection icon="💳" title="Paying your trainer" open={openFold === "pay"} onToggle={() => fold("pay")}>
-          <TrainerPaymentDetails eftDetails={trainer.eft_details} popWhatsapp={trainer.pop_whatsapp} />
+          <TrainerPaymentDetails eftDetails={trainer.eft_details} popWhatsapp={trainer.pop_whatsapp} proofInApp />
+          <SendProofOfPayment to="trainer" payerId={client.id} trainerId={trainer.id} receiverName={trainerDisplayName(trainer)} />
         </FoldSection>
       ) : null}
 

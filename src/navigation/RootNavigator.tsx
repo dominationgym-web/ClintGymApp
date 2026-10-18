@@ -12,6 +12,7 @@ import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
+import SendProofOfPayment from "@/components/SendProofOfPayment";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
 import { supabase } from "@/lib/supabase";
 import { needsAgreement, trainerDisplayName } from "@/lib/trainers";
@@ -131,7 +132,10 @@ function PendingAccessScreen() {
           <Text style={styles.trainerName}>{trainerDisplayName(trainer)}</Text>
         </View>
       ) : null}
-      <TrainerPaymentDetails eftDetails={trainer?.eft_details} popWhatsapp={trainer?.pop_whatsapp} />
+      <TrainerPaymentDetails eftDetails={trainer?.eft_details} popWhatsapp={trainer?.pop_whatsapp} proofInApp={!!trainer} />
+      {client && trainer ? (
+        <SendProofOfPayment to="trainer" payerId={client.id} trainerId={trainer.id} receiverName={trainerDisplayName(trainer)} />
+      ) : null}
       <Text style={styles.sectionHeading}>International - PayPal</Text>
       <Text style={styles.body}>PayPal details will be sent to you directly by your trainer.</Text>
       <Pressable style={styles.logoutButton} onPress={signOut}>

@@ -180,6 +180,22 @@ export type DeloadCheck = {
   planned_deload: string | null;
 };
 
+// Proof of payment sent through the app (0117): a client's to their trainer,
+// or a trainer's app fees to the owner (to_owner).
+export type PaymentProof = {
+  id: string;
+  payer_id: string;
+  client_id: string | null;
+  trainer_id: string;
+  to_owner: boolean;
+  storage_path: string;
+  amount: string | null;
+  note: string | null;
+  status: "new" | "confirmed" | "not_received";
+  reviewed_at: string | null;
+  created_at: string;
+};
+
 // Exercise outside the programs (0114): walks, runs, rides, hikes and more.
 export type ClientActivity = {
   id: string;
@@ -848,6 +864,7 @@ export interface Database {
         Relationships: [];
       };
       client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
+      payment_proofs: { Row: PaymentProof; Insert: Partial<PaymentProof>; Update: Partial<PaymentProof>; Relationships: [] };
       client_daily_summaries: {
         Row: ClientDailySummary;
         Insert: Partial<ClientDailySummary>;
