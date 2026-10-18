@@ -75,7 +75,7 @@
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "Reads the workouts from your watch (runs, rides, walks, swims and more), with their distance and heart rate, so they show in Other exercise for your coach.",
-          "NSHealthUpdateUsageDescription": false,
+          "NSHealthUpdateUsageDescription": "Daily Evolution only reads your workouts. It never writes or changes anything in Apple Health.",
           "background": false
         }
       ],
