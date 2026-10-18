@@ -192,6 +192,10 @@ export type ClientActivity = {
   avg_hr: number | null;
   effort: "easy" | "moderate" | "hard" | null;
   notes: string | null;
+  // From the client's watch through Apple Health or Health Connect (0116),
+  // with the workout's id there; null when the client typed it in.
+  source?: "apple_health" | "health_connect" | null;
+  external_id?: string | null;
   created_at: string;
 };
 

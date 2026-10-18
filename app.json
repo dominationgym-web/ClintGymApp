@@ -30,7 +30,10 @@
       "permissions": [
         "CAMERA",
         "READ_MEDIA_VIDEO",
-        "READ_MEDIA_IMAGES"
+        "READ_MEDIA_IMAGES",
+        "android.permission.health.READ_EXERCISE",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_DISTANCE"
       ]
     },
     "web": {
@@ -67,6 +70,23 @@
         {
           "locationWhenInUsePermission": "Checks which country you're in once, when you apply as a trainer, so you're charged the right prices. Only your country is saved."
         }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Reads the workouts from your watch (runs, rides, walks, swims and more), with their distance and heart rate, so they show in Other exercise for your coach.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
       ]
     ],
     "owner": "grizzly75",
@@ -75,7 +95,7 @@
         "projectId": "6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8"
       }
     },
-    "runtimeVersion": "2026-10-11-firebase",
+    "runtimeVersion": "2026-10-18-health",
     "updates": {
       "url": "https://u.expo.dev/6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8",
       "checkAutomatically": "ON_LOAD",

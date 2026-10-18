@@ -3,8 +3,8 @@
 // data with no imports, so the site script can load it straight from Node.
 // Bump the version when the wording changes: signups record which one they
 // agreed to.
-export const PRIVACY_POLICY_VERSION = "2026-10-11";
-export const PRIVACY_POLICY_LAST_UPDATED = "11 October 2026";
+export const PRIVACY_POLICY_VERSION = "2026-10-18";
+export const PRIVACY_POLICY_LAST_UPDATED = "18 October 2026";
 
 export const PRIVACY_CONTACT_EMAIL = "dominationgym@gmail.com";
 
@@ -17,7 +17,7 @@ export const PRIVACY_POLICY_SECTIONS: { heading: string; body: string }[] = [
   {
     heading: "2. What is collected",
     body:
-      "Account details (name, email, phone), coaching information (goals, injuries, intake-form answers), daily check-in data (alcohol, sleep, water, meals, screen time, reading/breathing habits, pain, fatigue or distress you choose to report), status updates you set yourself, habits, training and workout logs, training videos and progress photos you upload, a cycle log if you choose to keep one, your plan and payment status, private notes your trainer makes about you, and a device token so the app can send you notifications.\n\nCard or bank login details are never collected - EFT/PayPal payment happens outside the app. Your password is never visible to your trainer.",
+      "Account details (name, email, phone), coaching information (goals, injuries, intake-form answers), daily check-in data (alcohol, sleep, water, meals, screen time, reading/breathing habits, pain, fatigue or distress you choose to report), status updates you set yourself, habits, training and workout logs, exercise you do outside your program (and, only if you link your watch, the workouts in Apple Health or Health Connect: type, date, time, distance and average heart rate), training videos and progress photos you upload, a cycle log if you choose to keep one, your plan and payment status, private notes your trainer makes about you, and a device token so the app can send you notifications.\n\nCard or bank login details are never collected - EFT/PayPal payment happens outside the app. Your password is never visible to your trainer.",
   },
   {
     heading: "3. Why it is collected",
@@ -32,7 +32,7 @@ export const PRIVACY_POLICY_SECTIONS: { heading: string; body: string }[] = [
   {
     heading: "5. Health-related information",
     body:
-      "Sleep, alcohol use, your cycle log, and any distress, pain, or health notes are \"special personal information\" under POPIA, which is only processed because you give explicit, informed consent at signup. You can withdraw consent any time by telling your trainer, though they may no longer be able to coach you effectively without it.",
+      "Sleep, alcohol use, your cycle log, and any distress, pain, or health notes are \"special personal information\" under POPIA, which is only processed because you give explicit, informed consent at signup. Workouts read from Apple Health or Health Connect are only used to show your exercise to you and your trainer; they are never used for advertising or shared with anyone else, and you can unlink your watch any time. You can withdraw consent any time by telling your trainer, though they may no longer be able to coach you effectively without it.",
   },
   {
     heading: "6. Where it's stored",
