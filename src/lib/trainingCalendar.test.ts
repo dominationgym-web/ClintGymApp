@@ -14,7 +14,7 @@ import {
   exercisesForSlot,
   programSlots,
   slotLabel,
- calendarDayLabels, functionalShortName } from "@/lib/trainingCalendar";
+ calendarDayLabels, functionalShortName, mondayOf, weekDates, weekLabel, bodyPartsLabel } from "@/lib/trainingCalendar";
 import type { ProgramExercise } from "@/types/database";
 
 describe("months", () => {
@@ -165,5 +165,20 @@ describe("calendarDayLabels", () => {
   it("shortens functional names for a cell", () => {
     expect(functionalShortName("Flexibility 4 – Lower Back Release")).toBe("Flex 4");
     expect(functionalShortName("Flexibility 4 – Lower Back Release", false)).toBe("Flexibility");
+  });
+});
+
+describe("week view", () => {
+  it("finds the Monday and the 7 days of a week", () => {
+    expect(mondayOf("2026-10-18")).toBe("2026-10-12"); // Sunday
+    expect(mondayOf("2026-10-19")).toBe("2026-10-19"); // Monday
+    expect(weekDates("2026-10-26")).toEqual(["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31", "2026-11-01"]);
+    expect(weekLabel("2026-10-19")).toBe("19 – 25 Oct");
+    expect(weekLabel("2026-10-26")).toBe("26 Oct – 1 Nov");
+  });
+
+  it("names the body parts a workout trains, most first", () => {
+    expect(bodyPartsLabel(["Triceps", "Chest", "Chest", null, "Chest", "Triceps", "Shoulders", "Abs"])).toBe("Chest · Triceps · Shoulders");
+    expect(bodyPartsLabel([])).toBe("");
   });
 });
