@@ -680,6 +680,22 @@ export type ClientStabilityProgram = {
   created_at: string;
 };
 
+// A program the trainer planned from the calendar, put on one week at a time
+// (0113). placed_until is the last day on the calendar so far.
+export type ClientProgramPlan = {
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  program_id: string;
+  start_date: string;
+  split_days: number[];
+  weeks: number;
+  placed_until: string;
+  asked_until: string | null;
+  ended_at: string | null;
+  created_at: string;
+};
+
 // A day the trainer put a stability program on the client's calendar (0110).
 // Taken off by setting removed_at.
 export type ClientStabilityDay = {
@@ -882,6 +898,12 @@ export interface Database {
         Update: Partial<ClientStabilityProgram>;
         Relationships: [];
       };
+      client_program_plans: {
+        Row: ClientProgramPlan;
+        Insert: Partial<ClientProgramPlan>;
+        Update: Partial<ClientProgramPlan>;
+        Relationships: [];
+      };
       client_stability_days: {
         Row: ClientStabilityDay;
         Insert: Partial<ClientStabilityDay>;
@@ -905,6 +927,7 @@ export interface Database {
     Functions: {
       acknowledge_habit_win: { Args: { p_win: string; p_message: string }; Returns: undefined };
       mark_video_viewed: { Args: { p_video: string }; Returns: undefined };
+      plan_workouts_left: { Args: { p_plan_id: string }; Returns: number };
       record_workout_session: {
         Args: {
           p_title: string;

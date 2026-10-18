@@ -34,6 +34,7 @@ import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import StabilityDayPlanner from "@/components/stability/StabilityDayPlanner";
+import WeeklyPlanCard from "@/components/WeeklyPlanCard";
 import ProgramSummary from "@/components/ProgramSummary";
 import PlanProgramModal from "@/components/PlanProgramModal";
 import type { StabilityArea } from "@/lib/stability";
@@ -110,6 +111,8 @@ export default function ClientCalendarCard({
   const [busy, setBusy] = useState(false);
   // The day a whole program is being planned from.
   const [planning, setPlanning] = useState<string | null>(null);
+  // Bumped when a program is planned, so the week-by-week card reloads.
+  const [planKey, setPlanKey] = useState(0);
 
   const loadMonth = useCallback(async () => {
     const { from, to } = monthRange(month);
@@ -312,6 +315,16 @@ export default function ClientCalendarCard({
         Tap the day {clientName} starts, pick the type, the program and the days they train, and the calendar fills itself.
         Tap any day after to change it.
       </Text>
+      <WeeklyPlanCard
+        clientId={clientId}
+        clientName={clientName}
+        programs={programs}
+        refreshKey={planKey}
+        onChanged={async () => {
+          await Promise.all([loadMonth(), loadUsed()]);
+          onPlanChanged?.();
+        }}
+      />
       {loading ? (
         <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
       ) : (
@@ -418,6 +431,7 @@ export default function ClientCalendarCard({
           }
           else {
             await Promise.all([loadMonth(), loadUsed()]);
+            setPlanKey((k) => k + 1);
             onPlanChanged?.();
           }
         }}

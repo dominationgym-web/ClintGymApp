@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Tex
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate } from "@/lib/dates";
+import { firstWeekEnd } from "@/lib/weeklyPlans";
 import { loadProgramExercises } from "@/lib/programQueries";
 import { PROGRAM_FAMILIES, PROGRAM_GROUPS, programFamily, programGroupHeading, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import { monthLabel, monthOf, programSlots } from "@/lib/trainingCalendar";
@@ -111,8 +112,34 @@ export default function PlanProgramModal({
     ]);
     const currentName = current ? programs.find((p) => p.id === current.program_id)?.name : null;
     const taken = (existing ?? []).map((e) => e.workout_date);
-    const summary = `${plan.length} sessions on ${findSplit(split).label} for ${weeks} weeks, from ${dayHeading(plan[0].date)} to ${dayHeading(end)}.`;
+    // One week at a time (GRIZZ, 2026-10-18, 0113): only the first week goes
+    // on now; the trainer adds each next week with Go ahead when the client
+    // has 2 workouts left.
+    const weekEnd = firstWeekEnd({ start_date: date, weeks });
+    const week1 = plan.filter((p) => p.date <= weekEnd);
+    const more = plan.some((p) => p.date > weekEnd);
+    const summary =
+      `${findSplit(split).label} for ${weeks} week${weeks === 1 ? "" : "s"}, from ${dayHeading(plan[0].date)}.` +
+      (more
+        ? ` Week 1 (${week1.length} session${week1.length === 1 ? "" : "s"}) goes on the calendar now. When ${clientName} has 2 workouts left, you'll be asked to go ahead with the next week, so you can make changes first.`
+        : "");
     const now = new Date().toISOString();
+    const savePlan = async () => {
+      if (!more) return null;
+      const trainer = trainerId ?? (await supabase.auth.getUser()).data.user?.id;
+      if (!trainer) return { message: "Sign in again to plan week by week." };
+      return (
+        await supabase.from("client_program_plans").insert({
+          client_id: clientId,
+          trainer_id: trainer,
+          program_id: program.id,
+          start_date: date,
+          split_days: findSplit(split).days,
+          weeks,
+          placed_until: weekEnd,
+        })
+      ).error;
+    };
 
     const finish = (error: { message: string } | null | undefined) => {
       setBusy(false);
@@ -132,11 +159,12 @@ export default function PlanProgramModal({
       const added = cleared.error
         ? cleared
         : await supabase.from("client_calendar_workouts").insert(
-            plan.map((p) => ({ client_id: clientId, workout_date: p.date, program_id: program.id, day_slot: p.slot, created_at: now })),
+            week1.map((p) => ({ client_id: clientId, workout_date: p.date, program_id: program.id, day_slot: p.slot, created_at: now })),
           );
       // Only the calendar shows from now on, so the old main program stops.
       const stopped = !added.error && current ? await supabase.from("client_programs").delete().eq("client_id", clientId) : null;
-      finish(added.error ?? stopped?.error);
+      const planned = added.error || stopped?.error ? null : await savePlan();
+      finish(added.error ?? stopped?.error ?? planned);
     };
 
     // Stretching, mobility or rehab on top of their training (GRIZZ,
@@ -144,7 +172,7 @@ export default function PlanProgramModal({
     // session as an extra block under their workout.
     const alongside = async () => {
       setBusy(true);
-      const { mains, extras } = splitAlongside(plan, taken);
+      const { mains, extras } = splitAlongside(week1, taken);
       const nextPosition = (day: string) =>
         Math.max(0, ...(blocks ?? []).filter((b) => b.workout_date === day).map((b) => b.position)) + 1;
       const [a, b] = await Promise.all([
@@ -159,7 +187,8 @@ export default function PlanProgramModal({
             )
           : null,
       ]);
-      finish(a?.error ?? b?.error);
+      const planned = a?.error || b?.error ? null : await savePlan();
+      finish(a?.error ?? b?.error ?? planned);
     };
 
     if (taken.length === 0) {
