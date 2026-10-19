@@ -175,8 +175,10 @@ export function trainersPage(escape) {
   .fine { color: var(--muted); font-size: 13px; margin-top: 10px; }
   .control { background: linear-gradient(180deg, #1A2338, var(--card)); border: 2px solid var(--gold); border-radius: 18px; padding: 24px; margin: 0 0 28px; }
   .control h2 { color: var(--gold); font-size: clamp(22px, 4.5vw, 30px); margin: 0 0 6px; text-transform: uppercase; letter-spacing: .02em; }
-  .control ul { margin: 12px 0; padding-left: 20px; }
-  .control li { margin-bottom: 8px; }
+  .pts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+  .pts div { background: rgba(15,23,42,.6); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .pts b { display: block; color: #fff; margin-bottom: 2px; }
+  .pts span { color: var(--muted); font-size: 14px; }
   .control .strong { color: #fff; font-weight: 800; font-size: 18px; margin: 12px 0 0; }
   .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
   .price { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
@@ -185,6 +187,8 @@ export function trainersPage(escape) {
   .price .amount { color: var(--gold); font-size: 36px; font-weight: 800; margin: 6px 0; }
   .price .amount span { color: var(--muted); font-size: 16px; font-weight: 400; }
   .price ul { margin: 0; padding-left: 20px; }
+  .save { display: inline-block; margin-left: 6px; background: #13301F; color: #86EFAC; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 700; }
+  .price li { margin-bottom: 4px; }
   .price .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
   .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 40px; }
   .why div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -239,14 +243,16 @@ export function trainersPage(escape) {
   footer a { margin-right: 16px; }
   .sticky { display: none; }
   @media (max-width: 760px) {
-    .why, .modes, .steps, .prices { grid-template-columns: 1fr; }
+    .why, .modes, .steps, .prices, .pts { grid-template-columns: 1fr; }
+    body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
     .control { padding: 18px; }
     .slide.on { grid-template-columns: 1fr; padding: 18px; gap: 18px; }
     .phone { max-width: 320px; width: 100%; margin: 0 auto; }
     .screen { min-height: 0; }
     .tabs { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; }
     .tab { flex: none; }
-    .sticky { display: block; position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(15,23,42,.96); border-top: 1px solid var(--line); }
+    .sticky { display: block; transition: transform .2s ease; position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(15,23,42,.96); border-top: 1px solid var(--line); }
+    .sticky.hide { transform: translateY(110%); }
     .sticky .cta { display: block; text-align: center; font-size: 17px; padding: 13px; }
   }
 </style>
@@ -269,17 +275,14 @@ export function trainersPage(escape) {
 
 <section class="control">
   <h2>Your clients. Your business. Your control.</h2>
-  <p class="lead">Daily Evolution is built exclusively around personal trainers and coaches.</p>
-  <ul>
-    <li>No client can use the coaching platform without being connected to an approved trainer.</li>
-    <li>Every trainer has a unique reference code that clients must use to join.</li>
-    <li>Each trainer manages their own private client network.</li>
-    <li>Trainers can't access or view another trainer's clients.</li>
-    <li>You control your clients' access to your coaching.</li>
-    <li>When a client's subscription expires or payment is outstanding, you can suspend their access in line with the platform's payment rules.</li>
-    <li>Clients can only use their programmes and coaching while you've authorised them.</li>
-  </ul>
-  <p class="strong">Daily Evolution doesn't replace personal trainers. It empowers them.</p>
+  <p class="lead">Daily Evolution is built for trainers, not to replace them.</p>
+  <div class="pts">
+    <div><b>🔒 Exclusive access</b><span>Clients can only join through an approved trainer's unique reference code.</span></div>
+    <div><b>🛡 Private client network</b><span>Your clients are managed separately from every other trainer.</span></div>
+    <div><b>🎛 Complete coaching control</b><span>Manage programmes, client access and payment status.</span></div>
+    <div><b>⭐ Your own branding</b><span>Build your coaching business under your own identity.</span></div>
+  </div>
+  <p class="strong">We don't replace personal trainers. We empower them.</p>
 </section>
 
 <div class="why">
@@ -288,11 +291,13 @@ export function trainersPage(escape) {
   <div><b>Less admin</b><p>Check-ins, daily summaries and payments come to you. No more chasing.</p></div>
 </div>
 
+<div id="demo">
 <h2 class="section">See what it does</h2>
 <p class="section">Tap through what sets it apart: injury-aware programming, intelligent progression with fatigue monitoring and deload suggestions, nutrition, recovery and payment tracking.</p>
 <div class="tabs" role="tablist">${tabs}</div>
 ${slides}
 <div class="nav"><button type="button" id="prev">‹ Back</button><button type="button" id="next">Next ›</button></div>
+</div>
 
 <div class="modes">${modes}</div>
 
@@ -311,8 +316,8 @@ ${slides}
     <div class="where">🌍 International <em>Proposed USD pricing</em></div>
     <div class="amount">$50<span>/month</span></div>
     <ul>
-      <li>6 months: $250 upfront</li>
-      <li>12 months: $450 upfront</li>
+      <li>6 months: $250 upfront <span class="save">Save $50</span></li>
+      <li>12 months: $450 upfront <span class="save">Save $150</span></li>
       <li>$10/month per additional active client</li>
     </ul>
     <p class="note">Proposed until the payment provider and currency arrangements are confirmed.</p>
@@ -341,7 +346,7 @@ ${slides}
 
 <footer><a href="/privacy">Privacy policy</a><a href="/support">Support</a><a href="/app/">Trainer login</a></footer>
 </div>
-<div class="sticky"><a class="cta" href="${SIGNUP}">Start your free 30-day trial</a></div>
+<div class="sticky hide"><a class="cta" href="${SIGNUP}">Start your free 30-day trial</a></div>
 <script>
   (function () {
     var tabs = document.querySelectorAll(".tab"), slides = document.querySelectorAll(".slide"), cur = 0;
@@ -357,6 +362,30 @@ ${slides}
     for (var k = 0; k < tabs.length; k++) tabs[k].addEventListener("click", function () { show(Number(this.dataset.i)); });
     document.getElementById("prev").addEventListener("click", function () { show(cur - 1); });
     document.getElementById("next").addEventListener("click", function () { show(cur + 1); });
+
+    // The pinned phone button stays out of the way: it hides while the demo
+    // or another trial button is on screen, and while the reader scrolls down
+    // through the page. It slides back in when they scroll up. The page has
+    // bottom padding, so the end of the page is never under it.
+    var sticky = document.querySelector(".sticky");
+    var watched = Array.prototype.slice.call(document.querySelectorAll(".wrap .cta"));
+    watched.push(document.getElementById("demo"));
+    var seen = new Set(), goingDown = true, lastY = window.scrollY;
+    function update() { sticky.classList.toggle("hide", seen.size > 0 || goingDown); }
+    window.addEventListener("scroll", function () {
+      var y = window.scrollY;
+      if (Math.abs(y - lastY) < 8) return;
+      goingDown = y > lastY;
+      lastY = y;
+      update();
+    }, { passive: true });
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target); });
+        update();
+      });
+      watched.forEach(function (el) { io.observe(el); });
+    }
   })();
 </script>
 </body>
