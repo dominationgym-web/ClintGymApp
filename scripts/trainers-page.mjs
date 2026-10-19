@@ -308,6 +308,8 @@ ${slides}
     <div class="where">🇿🇦 South Africa</div>
     <div class="amount">R400<span>/month</span></div>
     <ul>
+      <li>6 months: R2 000 upfront <span class="save">Save R400</span></li>
+      <li>12 months: R3 800 upfront <span class="save">Save R1 000</span></li>
       <li>First 5 active clients included</li>
       <li>R100/month per additional active client</li>
     </ul>
