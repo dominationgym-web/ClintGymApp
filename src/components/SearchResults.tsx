@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 
 export type SearchItem = {

@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import { splitKinds, toggleKind, WELLBEING_TOPICS, type WellbeingAnswer, type WellbeingForm, type WellbeingKey } from "@/lib/wellbeing";
 
 // Pain, fatigue and mental exhaustion on the check-in (0055). Each needs a tap:

@@ -10,9 +10,9 @@ import {
   Modal,
   Alert,
   Switch,
-  TextInput,
   Keyboard,
 } from "react-native";
+import TextInput from "@/components/TextInput";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";

@@ -8,9 +8,9 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   View,
 } from "react-native";
+import TextInput from "@/components/TextInput";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";

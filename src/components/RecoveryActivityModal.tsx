@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { IconName } from "@/components/ScreenTabBar";
 import KeyboardSafe from "@/components/KeyboardSafe";

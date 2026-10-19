@@ -9,9 +9,9 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   View,
 } from "react-native";
+import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";

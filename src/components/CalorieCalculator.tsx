@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { estimateCalories, parseGrams, type MacroKey } from "@/lib/nutrition";
 

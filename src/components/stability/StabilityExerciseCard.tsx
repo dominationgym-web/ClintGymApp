@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import StabilityHowTo from "@/components/stability/StabilityHowTo";
 import { BRAND_GOLD } from "@/lib/brand";
 import {

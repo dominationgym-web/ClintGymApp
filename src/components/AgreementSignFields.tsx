@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TrainerAgreementContent from "@/screens/auth/TrainerAgreementContent";
 

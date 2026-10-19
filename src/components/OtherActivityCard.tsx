@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";

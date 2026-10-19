@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
 import { FOODS, type Food, type FoodGroup } from "@/lib/foods";

@@ -3,7 +3,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
-  TextInput,
   FlatList,
   StyleSheet,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import {
   AppState,
   useWindowDimensions,
 } from "react-native";
+import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";

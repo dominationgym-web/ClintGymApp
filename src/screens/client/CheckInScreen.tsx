@@ -10,7 +10,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   StyleSheet,
   ScrollView,
@@ -19,6 +18,7 @@ import {
   AppState,
   Platform,
 } from "react-native";
+import TextInput from "@/components/TextInput";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";

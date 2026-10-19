@@ -3,7 +3,8 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList, ClientTabParamList } from "@/navigation/types";
 import InjuryList from "@/components/InjuryList";
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
+import TextInput from "@/components/TextInput";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";
