@@ -36,8 +36,8 @@ import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, Pro
 // The client's own training calendar (0069), always open at the top of their
 // workout screen (GRIZZ, 2026-10-18: "already open. So they dont need to
 // click"). One week at a time, Monday to Sunday, with each day's workout and
-// the body parts it trains (GRIZZ, 2026-10-18). Only shows once their coach
-// has planned something.
+// the body parts it trains (GRIZZ, 2026-10-18). It always shows, even before
+// their coach has planned anything (GRIZZ, 2026-10-19: "Only show today").
 // Tapping a day opens it in a pop-up page (app-flow review C5, 2026-10-18), so
 // the week and Today below stay where they are. It lists the day's exercises, and from today on each can be changed
 // for that day if the gym will be busy (0047). Extra blocks the coach added
@@ -162,7 +162,6 @@ export default function ClientCalendarView({
   const stability = useStabilityCalendar(clientId, range.from, range.to);
   const dayStability = selected ? stability.map[selected] ?? [] : [];
 
-  if (!hasAny) return null;
 
   const categoryOf = (row: Pick<ProgramExercise, "exercise_id" | "exercise_name">) =>
     exercises.find((e) => e.id === row.exercise_id)?.category ??
@@ -253,7 +252,13 @@ export default function ClientCalendarView({
             }}
             marks={marks}
           />
-          {!selected && <Text style={styles.helper}>Your coach plans your workouts here. Tap a day to see what's on.</Text>}
+          {!selected && (
+            <Text style={styles.helper}>
+              {hasAny
+                ? "Your coach plans your workouts here. Tap a day to see what's on."
+                : "Your coach hasn't put workouts on your calendar yet. They'll show here as soon as they do."}
+            </Text>
+          )}
       </View>
       <Modal visible={!!selected} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelected(null)}>
         <SafeAreaView style={styles.sheet} edges={["top", "bottom"]}>
