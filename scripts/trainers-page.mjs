@@ -365,22 +365,42 @@ ${slides}
     document.getElementById("prev").addEventListener("click", function () { show(cur - 1); });
     document.getElementById("next").addEventListener("click", function () { show(cur + 1); });
 
-    // The pinned phone button stays out of the way: it hides while the demo
-    // or another trial button is on screen, and while the reader scrolls down
-    // through the page. It slides back in when they scroll up. The page has
-    // bottom padding, so the end of the page is never under it.
+    // The pinned phone button never covers anything (GRIZZ, 2026-10-19): it
+    // only shows when the strip of screen it would sit on is empty background
+    // (a gap between sections or the space at the end of the page), never
+    // while the demo or another trial button is on screen, and not while
+    // the reader is scrolling down.
     var sticky = document.querySelector(".sticky");
     var watched = Array.prototype.slice.call(document.querySelectorAll(".wrap .cta"));
     watched.push(document.getElementById("demo"));
-    var seen = new Set(), goingDown = true, lastY = window.scrollY;
-    function update() { sticky.classList.toggle("hide", seen.size > 0 || goingDown); }
+    var seen = new Set(), goingDown = true, lastY = window.scrollY, timer = null;
+    var EMPTY = { HTML: 1, BODY: 1 };
+    function stripIsEmpty() {
+      var h = sticky.offsetHeight || 76, vh = window.innerHeight, w = window.innerWidth;
+      var xs = [12, w / 4, w / 2, (3 * w) / 4, w - 12], ys = [vh - h, vh - h / 2, vh - 4];
+      sticky.style.visibility = "hidden";
+      try {
+        for (var i = 0; i < xs.length; i++) for (var j = 0; j < ys.length; j++) {
+          var el = document.elementFromPoint(xs[i], ys[j]);
+          if (el && !EMPTY[el.tagName] && !el.classList.contains("wrap") && !el.classList.contains("hero") && !el.classList.contains("final")) return false;
+        }
+        return true;
+      } finally {
+        sticky.style.visibility = "";
+      }
+    }
+    function update() {
+      var show = seen.size === 0 && !goingDown && stripIsEmpty();
+      sticky.classList.toggle("hide", !show);
+    }
     window.addEventListener("scroll", function () {
       var y = window.scrollY;
-      if (Math.abs(y - lastY) < 8) return;
-      goingDown = y > lastY;
-      lastY = y;
-      update();
+      if (Math.abs(y - lastY) >= 8) { goingDown = y > lastY; lastY = y; }
+      if (goingDown) sticky.classList.add("hide");
+      clearTimeout(timer);
+      timer = setTimeout(function () { goingDown = false; update(); }, 150);
     }, { passive: true });
+    window.addEventListener("resize", update);
     if ("IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) { if (e.isIntersecting) seen.add(e.target); else seen.delete(e.target); });
