@@ -9,7 +9,9 @@ export type MenuItem = { key: string; title: string; summary: string; icon?: str
 
 // The search button and the "three lines" menu button in the top right of
 // every tab. The menu drops down a list of extra pages that don't warrant
-// their own tab at the bottom.
+// their own tab at the bottom. Condensed to one short line per topic so every
+// topic shows at once with no scrolling; the page only opens when its topic is
+// tapped (GRIZZ, 2026-10-19). The summary is kept for screen readers.
 export default function MenuButton({ items }: { items: MenuItem[] }) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -62,16 +64,18 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
                     item.onPress();
                   }}
                   accessibilityRole="button"
+                  accessibilityLabel={item.title}
+                  accessibilityHint={item.summary}
                 >
                   {item.icon ? (
                     <View style={styles.itemIcon}>
                       <Text style={styles.itemIconText}>{item.icon}</Text>
                     </View>
                   ) : null}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    <Text style={styles.itemSummary}>{item.summary}</Text>
-                  </View>
+                  <Text style={styles.itemTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.chevron}>›</Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -94,18 +98,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   menuHeading: { color: "#64748B", fontSize: 12, fontWeight: "700", paddingHorizontal: 16, paddingVertical: 8 },
-  item: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 },
+  item: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 7 },
   itemIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: "#0F172A",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
-  itemIconText: { fontSize: 20 },
+  itemIconText: { fontSize: 17 },
   itemPressed: { backgroundColor: "#334155" },
-  itemTitle: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  itemSummary: { color: "#94A3B8", fontSize: 13, marginTop: 2 },
+  itemTitle: { flex: 1, color: "#fff", fontSize: 15, fontWeight: "600" },
+  chevron: { color: "#64748B", fontSize: 20, marginLeft: 8 },
 });
