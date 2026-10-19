@@ -120,6 +120,20 @@ export function daysLabel(days: number[]): string {
 }
 
 /** Taps a weekday on or off in the trainer's own pick (Monday to Saturday). */
+/**
+ * Once or twice a week (GRIZZ, 2026-10-19: one flexibility session a week,
+ * the program spread over a longer time): the start day's weekday, and for
+ * twice a week the day 3 later, so there are 2 rest days in between. Sunday
+ * is rest, so a Sunday start trains from Monday.
+ */
+export function timesAWeekDays(startIso: string, times: 1 | 2): number[] {
+  const weekday = weekdayOfIso(startIso);
+  const first = weekday === 7 ? 1 : weekday;
+  if (times === 1) return [first];
+  const second = ((first + 3 - 1) % 6) + 1;
+  return [first, second].sort((a, b) => a - b);
+}
+
 export function toggleDay(days: number[], day: number): number[] {
   if (day < 1 || day > 6) return days;
   return days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort((a, b) => a - b);
