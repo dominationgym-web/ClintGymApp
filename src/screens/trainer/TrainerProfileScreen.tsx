@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AppUpdateLine from "@/components/AppUpdateLine";
 import {
   ActivityIndicator,
   Alert,
@@ -315,6 +316,7 @@ export default function TrainerProfileScreen() {
               <Text style={styles.logoutText}>Log out</Text>
             </Pressable>
             {trainer.is_owner ? null : <DeleteAccountButton />}
+            <AppUpdateLine />
           </>
         )}
       </ScrollView>

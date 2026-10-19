@@ -846,6 +846,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               injuries={injuredAreas}
               stabilityKey={stabilityDaysKey}
             />
+            {/* Right under the calendar, so the trainer sees how to tell the client (GRIZZ, 2026-10-19). */}
+            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
             <TrainerStabilityCard
               key={stabilityKey}
               clientId={client.id}
@@ -897,7 +899,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 trainingPlace={client.training_place}
                 injuries={injuredAreas}
               />
-              {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
               <View style={styles.libraryRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.libraryTitle}>Abs between sets</Text>
