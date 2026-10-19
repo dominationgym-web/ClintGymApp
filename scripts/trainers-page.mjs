@@ -148,9 +148,9 @@ export function trainersPage(escape) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Daily Evolution for Personal Trainers</title>
-<meta name="description" content="The coaching app that thinks like a coach: smart programming, injury checks, safe nutrition, recovery tracking and your business in one place. Try it free for 2 weeks.">
+<meta name="description" content="The coaching app that thinks like a coach: smart programming, injury checks, safe nutrition, recovery tracking and your business in one place. Try it free for 30 days.">
 <meta property="og:title" content="Daily Evolution for Personal Trainers">
-<meta property="og:description" content="Smart programming, injury checks, safe nutrition, recovery tracking and your business in one app. Try it free for 2 weeks.">
+<meta property="og:description" content="Smart programming, injury checks, safe nutrition, recovery tracking and your business in one app. Try it free for 30 days.">
 <meta property="og:image" content="/icon.png">
 <meta property="og:type" content="website">
 <link rel="icon" href="/icon.png">
@@ -246,7 +246,7 @@ export function trainersPage(escape) {
   <div class="eyebrow">For personal trainers</div>
   <h1>The coaching app that thinks like a coach.</h1>
   <p class="sub">Most trainer apps just hand out workouts. Daily Evolution plans, adjusts and protects your clients for you, and keeps track of who has paid, so you can coach more people, better, in less time.</p>
-  <a class="cta" href="${SIGNUP}">Start your free 2-week trial</a>
+  <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
   <div class="fine">No card needed. Apply in a few minutes.</div>
 </section>
 
@@ -268,19 +268,19 @@ ${slides}
 <p class="section">Three steps, then your clients can join.</p>
 <div class="steps">
   <div><b>Apply</b><p>Sign up as a trainer and sign the trainer agreement.</p></div>
-  <div><b>Get approved</b><p>We check your details. Your 2-week free trial starts when you're approved.</p></div>
+  <div><b>Get approved</b><p>We check your details. Your 30-day free trial starts when you're approved.</p></div>
   <div><b>Invite clients</b><p>Give them your trainer code. They download the app and join you.</p></div>
 </div>
 
 <section class="final">
   <h2 class="section">Coach better. Work less.</h2>
-  <p class="section">Try every feature free for 2 weeks.</p>
+  <p class="section">Try every feature free for 30 days.</p>
   <a class="cta" href="${SIGNUP}">Start your free trial</a>
 </section>
 
 <footer><a href="/privacy">Privacy policy</a><a href="/support">Support</a><a href="/app/">Trainer login</a></footer>
 </div>
-<div class="sticky"><a class="cta" href="${SIGNUP}">Start your free 2-week trial</a></div>
+<div class="sticky"><a class="cta" href="${SIGNUP}">Start your free 30-day trial</a></div>
 <script>
   (function () {
     var tabs = document.querySelectorAll(".tab"), slides = document.querySelectorAll(".slide"), cur = 0;

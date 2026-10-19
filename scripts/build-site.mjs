@@ -68,7 +68,7 @@ const pages = {
 <p>Building a better you.</p>
 <p>Daily Evolution is a coaching app for personal trainers and their clients: daily check-ins, habits with streaks, training programs and progress tracking, all in one place.</p>
 <p>The app is available to clients of trainers who use Daily Evolution. Ask your trainer for their trainer code to sign up.</p>
-<p><strong>Are you a personal trainer?</strong> <a href="/trainers">See what Daily Evolution does for you, and try it free for 2 weeks</a>.</p>`,
+<p><strong>Are you a personal trainer?</strong> <a href="/trainers">See what Daily Evolution does for you, and try it free for 30 days</a>.</p>`,
   ),
   "trainers.html": trainersPage(escape),
   "privacy.html": page(
