@@ -229,6 +229,18 @@ export type ClientActivity = {
   created_at: string;
 };
 
+// One night's sleep from the client's watch (0124), dated the morning they woke.
+export type ClientSleep = {
+  client_id: string;
+  sleep_date: string;
+  bed_at: string;
+  wake_at: string;
+  asleep_minutes: number;
+  awake_minutes: number;
+  source: "apple_health" | "health_connect";
+  updated_at: string;
+};
+
 // The trainer's daily summary of a client's energy and needs (0114).
 export type ClientDailySummary = {
   id: string;
@@ -889,6 +901,7 @@ export interface Database {
         Relationships: [];
       };
       client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
+      client_sleep: { Row: ClientSleep; Insert: Partial<ClientSleep>; Update: Partial<ClientSleep>; Relationships: [] };
       payment_proofs: { Row: PaymentProof; Insert: Partial<PaymentProof>; Update: Partial<PaymentProof>; Relationships: [] };
       client_daily_summaries: {
         Row: ClientDailySummary;

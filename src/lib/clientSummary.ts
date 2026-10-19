@@ -51,6 +51,8 @@ export type SummaryInputs = {
   openProblems: string[];
   /** Injuries not yet healed. */
   injuries: string[];
+  /** Nights from the client's watch (0124), dated the morning they woke. */
+  sleep?: { sleep_date: string; asleep_minutes: number }[];
 };
 
 export type WeekFacts = {
@@ -60,8 +62,11 @@ export type WeekFacts = {
   checkinDays: number;
   /** Days the client opened the app and answered something (check-in or status). */
   activeDays: number;
+  /** Average hours a night: the watch's asleep time where there is one, else the check-in's bed and wake times. */
   sleepHours: number | null;
   sleepQuality: number | null;
+  /** Hours asleep each night the watch recorded, oldest first. */
+  watchSleep: { date: string; hours: number }[];
   alcoholUnits: number;
   waterLitres: number | null;
   painDays: number;
@@ -143,6 +148,7 @@ export function weekFacts(input: SummaryInputs, today: string): WeekFacts {
   const sessions = input.sessions.filter((s) => inWeek(s.session_date));
   const sets = input.sets.filter((s) => inWeek(s.log_date));
   const activities = input.activities.filter((a) => inWeek(a.activity_date));
+  const watchNights = (input.sleep ?? []).filter((n) => inWeek(n.sleep_date) && n.asleep_minutes > 0);
 
   const doneDays = new Set(sessions.filter((s) => s.status !== "missed").map((s) => s.session_date));
   const madeUp = new Set(sessions.map((s) => s.makeup_for).filter((d): d is string => !!d));
@@ -164,13 +170,23 @@ export function weekFacts(input: SummaryInputs, today: string): WeekFacts {
     checkinDays: new Set(checkins.map((c) => c.checkin_date)).size,
     activeDays: new Set([...checkins.map((c) => c.checkin_date), ...flags.map((f) => f.date)]).size,
     sleepHours: (() => {
-      const h = avg(checkins.map((c) => sleepHours(c.sleep_bed_time, c.sleep_wake_time)).filter((x): x is number => x !== null));
+      const byDay = new Map<string, number>();
+      for (const c of checkins) {
+        const h = sleepHours(c.sleep_bed_time, c.sleep_wake_time);
+        if (h !== null) byDay.set(c.checkin_date, h);
+      }
+      for (const n of watchNights) byDay.set(n.sleep_date, n.asleep_minutes / 60);
+      const h = avg([...byDay.values()]);
       return h === null ? null : half(h);
     })(),
     sleepQuality: (() => {
       const q = avg(checkins.map((c) => c.sleep_quality).filter((x): x is NonNullable<typeof x> => x !== null));
       return q === null ? null : half(q);
     })(),
+    watchSleep: watchNights
+      .slice()
+      .sort((a, b) => a.sleep_date.localeCompare(b.sleep_date))
+      .map((n) => ({ date: n.sleep_date, hours: Math.round((n.asleep_minutes / 60) * 10) / 10 })),
     alcoholUnits: checkins.reduce((t, c) => t + (Number(c.alcohol_units) || 0), 0),
     waterLitres: (() => {
       const w = avg(checkins.map((c) => Number(c.water_litres) || 0));
