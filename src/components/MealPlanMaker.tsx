@@ -34,8 +34,10 @@ import {
   makeDay,
   MAX_MEALS,
   MIN_MEALS,
+  leaveOutFood,
   swapItem,
   swapOptions,
+  whyFoodMatters,
   type MealPlanSettings,
 } from "@/lib/mealPlanMaker";
 import type { ClientMealPlan } from "@/types/database";
@@ -50,15 +52,17 @@ const TIMED_CARBS =
   "Your carbs are timed around your training. Before training they give you energy, and after training your muscles use them to refuel and recover. Your other meals have a bit less carbs and more protein and veg. It's about energy for your sessions; your total calories are what decide fat loss or gain.";
 const SNACK_SALT = "Biltong is high in salt, so go easier on it if you have high blood pressure.";
 
-/** A day of meals, with a Swap button on each food when `onSwap` is given. */
+/** A day of meals, with Swap and Leave out on each food when `onSwap` / `onLeaveOut` are given. */
 export function MealDayView({
   day,
   targetKcal,
   onSwap,
+  onLeaveOut,
 }: {
   day: DietDay;
   targetKcal: number | null;
   onSwap?: (meal: number, index: number) => void;
+  onLeaveOut?: (meal: number, index: number) => void;
 }) {
   const totals = dayTotals(day);
   const status = targetKcal ? targetStatus(totals.kcal, targetKcal) : null;
@@ -92,6 +96,11 @@ export function MealDayView({
                 {onSwap && (
                   <Pressable onPress={() => onSwap(m, i)} hitSlop={8}>
                     <Text style={styles.swap}>⇄ Swap</Text>
+                  </Pressable>
+                )}
+                {onLeaveOut && (
+                  <Pressable onPress={() => onLeaveOut(m, i)} hitSlop={8} accessibilityLabel={`Leave out ${item.food}`}>
+                    <Text style={styles.leaveOut}>✕</Text>
                   </Pressable>
                 )}
               </View>
@@ -135,6 +144,8 @@ export default function MealPlanMaker() {
   const [training, setTraining] = useState<string | null>("17:30");
   const [dayKind, setDayKind] = useState<"training" | "rest">("training");
   const [swapping, setSwapping] = useState<{ meal: number; index: number } | null>(null);
+  // The food the client wants to leave out, while they're asked if they're sure.
+  const [leaving, setLeaving] = useState<{ meal: number; index: number } | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -245,7 +256,8 @@ export default function MealPlanMaker() {
             <Text style={styles.explainHead}>6. Don't like a food?</Text>
             <Text style={styles.explain}>
               Tap ⇄ Swap next to it and pick something you like. The app changes the weight so you still get the same amount of
-              protein, carbs or fat. Tap New ideas for a fresh set of foods, or Change my meals to change your details or goal.
+              protein, carbs or fat. Or tap ✕ to leave it out: the app tells you why it's there, and can top up the other foods
+              like it so you still get the same. Tap New ideas for a fresh set of foods, or Change my meals to change your details or goal.
             </Text>
             <Text style={styles.explain}>Your coach can see your plan. If your coach makes you a diet plan, follow theirs first.</Text>
           </ScrollView>
@@ -522,6 +534,20 @@ export default function MealPlanMaker() {
     setSwapping(null);
   };
 
+  const leaveTarget: DietItem | null = leaving ? day.meals[leaving.meal]?.items[leaving.index] ?? null : null;
+  const leaveOut = (rebalance: boolean) => {
+    if (!leaving || !leaveTarget) return;
+    const result = leaveOutFood(day, leaving.meal, leaving.index, rebalance);
+    save(dayKind === "training" ? { ...plan, training_day: result.day } : { ...plan, rest_day: result.day });
+    setLeaving(null);
+    if (rebalance && !result.rebalanced) {
+      Alert.alert(
+        "Left out",
+        `There's nothing else like ${leaveTarget.food} on this day to top up, so the day is a little lower now. Tap New ideas for a fresh plan, or ⇄ Swap another food.`,
+      );
+    }
+  };
+
   return (
     <View>
       {header}
@@ -536,13 +562,18 @@ export default function MealPlanMaker() {
         </View>
       )}
       {referralBox}
-      <MealDayView day={day} targetKcal={plan.targets.kcal} onSwap={(meal, index) => setSwapping({ meal, index })} />
+      <MealDayView
+        day={day}
+        targetKcal={plan.targets.kcal}
+        onSwap={(meal, index) => setSwapping({ meal, index })}
+        onLeaveOut={(meal, index) => setLeaving({ meal, index })}
+      />
       <View style={styles.insulinBox}>
         <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
         <Text style={styles.insulinText}>{plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
       </View>
       <Text style={styles.note}>
-        Weights are for the food as listed, for example cooked rice. Swap keeps the same protein, carbs or fat. {SNACK_SALT}
+        Weights are for the food as listed, for example cooked rice. Swap keeps the same protein, carbs or fat. Tap ✕ to leave a food out. {SNACK_SALT}
       </Text>
       <View style={styles.buttons}>
         <Pressable
@@ -581,11 +612,46 @@ export default function MealPlanMaker() {
           </View>
         </KeyboardSafe>
       </Modal>
+
+      <Modal visible={!!leaveTarget} animationType="slide" transparent onRequestClose={() => setLeaving(null)}>
+        <View style={styles.backdrop}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Leave out {leaveTarget?.food}?</Text>
+            <Text style={styles.explainHead}>Why it's in your plan</Text>
+            <Text style={styles.explain}>{leaveTarget ? whyFoodMatters(leaveTarget.food) : ""}</Text>
+            <Text style={[styles.helper, { marginTop: 12 }]}>
+              If you leave it out, the app can top up the other foods like it on this day, so you still get the same.
+            </Text>
+            <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => leaveOut(true)} disabled={saving}>
+              <Text style={styles.primaryText}>Leave it out and top up the others</Text>
+            </Pressable>
+            <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => leaveOut(false)} disabled={saving}>
+              <Text style={styles.secondaryText}>Leave it out, change nothing else</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.button, styles.secondary, styles.stacked]}
+              onPress={() => {
+                const target = leaving;
+                setLeaving(null);
+                // iPhones won't open a sheet while another is still closing.
+                setTimeout(() => setSwapping(target), 400);
+              }}
+            >
+              <Text style={styles.secondaryText}>⇄ Swap it for something else</Text>
+            </Pressable>
+            <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => setLeaving(null)}>
+              <Text style={styles.secondaryText}>Keep it</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  stacked: { flex: 0, marginTop: 10 },
+  leaveOut: { color: "#F87171", fontWeight: "800", fontSize: 15, marginLeft: 14 },
   helper: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 8 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
   headerTitle: { color: "#fff", fontWeight: "800", fontSize: 15, flex: 1 },
