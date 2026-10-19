@@ -32,7 +32,9 @@ import {
   type CheckinForm,
   type CheckinValues,
 } from "@/lib/checkinForm";
-import type { Checkin } from "@/types/database";
+import type { Checkin, ClientSleep } from "@/types/database";
+import { syncHealthOnOpen } from "@/lib/healthLink";
+import { clockTime, sleepLength } from "@/lib/sleepSync";
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -70,6 +72,8 @@ export default function CheckInScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [step]);
   const [form, setForm] = useState<CheckinForm>(EMPTY_CHECKIN_FORM);
+  // Last night from the client's watch (0124), which fills in the sleep times.
+  const [watchNight, setWatchNight] = useState<ClientSleep | null>(null);
   // The day the screen was loaded for. The tab stays mounted, so if the app is
   // left open overnight the screen has to notice that a new day has started.
   const loadedFor = useRef<string | null>(null);
@@ -110,6 +114,23 @@ export default function CheckInScreen() {
     setEditing(false);
     setStep(0);
     setForm(data ? formFromCheckin(data) : EMPTY_CHECKIN_FORM);
+    setWatchNight(null);
+    // Fill in the sleep times from the watch when they're still blank.
+    if (!data?.sleep_bed_time || !data?.sleep_wake_time) {
+      await syncHealthOnOpen(client.id);
+      const { data: night } = await supabase
+        .from("client_sleep")
+        .select("*")
+        .eq("client_id", client.id)
+        .eq("sleep_date", today)
+        .maybeSingle();
+      if (night && loadedFor.current === today) {
+        setWatchNight(night);
+        setForm((prev) =>
+          prev.bedTime.trim() || prev.wakeTime.trim() ? prev : { ...prev, bedTime: clockTime(night.bed_at), wakeTime: clockTime(night.wake_at) },
+        );
+      }
+    }
   }, [client, loadWeek]);
 
   const reloadIfNewDay = useCallback(() => {
@@ -299,6 +320,11 @@ export default function CheckInScreen() {
         {step === 1 && (
           <>
             <Text style={styles.sectionHeading}>Sleep times (24-hour clock, e.g. 22:30)</Text>
+            {watchNight && (
+              <Text style={styles.watchNote}>
+                ⌚ From your watch: {sleepLength(watchNight.asleep_minutes)} asleep. Change the times if they're wrong.
+              </Text>
+            )}
             <View style={styles.row}>
               {(
                 [
@@ -434,6 +460,7 @@ const styles = StyleSheet.create({
   centerText: { textAlign: "center" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 16, textAlign: "center" },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 18, marginBottom: 8 },
+  watchNote: { color: "#22C55E", fontSize: 12, marginTop: -4, marginBottom: 8 },
   label: { color: "#E2E8F0", fontSize: 14 },
   inputLabel: { color: "#94A3B8", fontSize: 12, marginBottom: 4 },
   hint: { color: "#64748B", fontSize: 13, marginBottom: 10 },

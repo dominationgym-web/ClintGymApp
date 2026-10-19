@@ -35,7 +35,7 @@ export default function WatchLink({ clientId, onSynced }: { clientId: string; on
       onSynced?.();
       Alert.alert(
         "Watch linked",
-        `${added ? `${added} workout${added === 1 ? "" : "s"} from the last 2 weeks added to Other exercise. ` : ""}From now on, workouts from ${source ? healthAppName(source) : "your health app"} come in by themselves each time you open the Training tab.`,
+        `${added ? `${added} workout${added === 1 ? "" : "s"} from the last 2 weeks added to Other exercise. ` : ""}From now on, workouts from ${source ? healthAppName(source) : "your health app"} come in by themselves each time you open the Training tab, and your sleep each time you open the app.`,
       );
     } else if (result === "needs_app") {
       Alert.alert("Health Connect needed", "Your phone needs Google's free Health Connect app. Install it, then tap Link my watch again.", [
@@ -43,7 +43,7 @@ export default function WatchLink({ clientId, onSynced }: { clientId: string; on
         { text: "Get Health Connect", onPress: openHealthConnectInStore },
       ]);
     } else if (result === "denied") {
-      Alert.alert("Not linked", "Allow Daily Evolution to read exercise, heart rate and distance in Health Connect, then try again.");
+      Alert.alert("Not linked", "Allow Daily Evolution to read exercise, heart rate, distance and sleep in Health Connect, then try again.");
     } else {
       Alert.alert("Couldn't link", "Your phone's health app isn't available right now.");
     }

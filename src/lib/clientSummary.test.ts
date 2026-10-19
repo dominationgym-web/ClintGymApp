@@ -52,6 +52,26 @@ describe("weekFacts", () => {
     expect(f.sleepHours).toBe(8);
   });
 
+  it("uses the watch's sleep over typed times, and lists each night", () => {
+    const f = weekFacts(
+      base({
+        checkins: [checkin("2026-10-17"), checkin("2026-10-18")],
+        sleep: [
+          { sleep_date: "2026-10-18", asleep_minutes: 300 },
+          { sleep_date: "2026-10-16", asleep_minutes: 360 },
+          { sleep_date: "2026-10-10", asleep_minutes: 480 },
+        ],
+      }),
+      TODAY,
+    );
+    // 17th typed 8 h, 18th watch 5 h (not the typed 8 h), 16th watch 6 h.
+    expect(f.sleepHours).toBe(6.5);
+    expect(f.watchSleep).toEqual([
+      { date: "2026-10-16", hours: 6 },
+      { date: "2026-10-18", hours: 5 },
+    ]);
+  });
+
   it("counts a planned day as missed only once it has passed with nothing done", () => {
     const f = weekFacts(
       base({

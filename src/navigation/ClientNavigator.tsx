@@ -21,6 +21,7 @@ import RecoveryScreen from "@/screens/client/RecoveryScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
 import DailyStartPopup from "@/components/DailyStartPopup";
+import HealthSyncOnOpen from "@/components/HealthSyncOnOpen";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -59,6 +60,7 @@ export default function ClientNavigator() {
   return (
     <>
       <DailyStartPopup />
+      <HealthSyncOnOpen />
       <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
         <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} />
         <Stack.Screen

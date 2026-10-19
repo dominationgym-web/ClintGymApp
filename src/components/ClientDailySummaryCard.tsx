@@ -16,6 +16,7 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
   const [facts, setFacts] = useState<WeekFacts | null>(null);
   const [result, setResult] = useState<SummaryResult | null>(null);
   const [writing, setWriting] = useState(false);
+  const [showSleep, setShowSleep] = useState(false);
 
   const load = useCallback(
     async (force = false) => {
@@ -63,6 +64,19 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
             {facts.otherActivities.length ? ` · Other exercise ${facts.otherActivities.length}` : ""}
             {facts.sleepHours !== null ? ` · Sleep ${facts.sleepHours}h` : ""}
           </Text>
+          {facts.watchSleep.length > 0 && (
+            <Pressable onPress={() => setShowSleep((v) => !v)} hitSlop={6}>
+              <Text style={styles.sleepToggle}>
+                ⌚ Sleep from their watch ({facts.watchSleep.length} night{facts.watchSleep.length === 1 ? "" : "s"}) {showSleep ? "▾" : "▸"}
+              </Text>
+            </Pressable>
+          )}
+          {showSleep &&
+            facts.watchSleep.map((n) => (
+              <Text key={n.date} style={[styles.sleepNight, n.hours < 6 && styles.sleepShort]}>
+                {new Date(`${n.date}T12:00:00`).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}: {n.hours} h asleep
+              </Text>
+            ))}
           <Text style={styles.summary}>{result.summary.summary}</Text>
           {result.summary.suggestions.length > 0 && (
             <View style={{ marginTop: 8 }}>
@@ -104,6 +118,9 @@ const styles = StyleSheet.create({
   energyText: { fontWeight: "700", fontSize: 12 },
   helper: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   stats: { color: "#CBD5E1", fontSize: 12, marginTop: 8 },
+  sleepToggle: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginTop: 6 },
+  sleepNight: { color: "#E2E8F0", fontSize: 12, marginTop: 2, marginLeft: 8 },
+  sleepShort: { color: "#F97316" },
   summary: { color: "#fff", fontSize: 14, lineHeight: 20, marginTop: 8 },
   subTitle: { color: "#fff", fontWeight: "700", fontSize: 13, marginBottom: 2 },
   suggestion: { color: "#E2E8F0", fontSize: 13, lineHeight: 19, marginTop: 2 },
