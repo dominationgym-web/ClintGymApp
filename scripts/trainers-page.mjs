@@ -11,34 +11,9 @@ const SIGNUP = "/app/?signup=trainer";
 // One tap-through slide per feature: what it does, and a mock of the screen.
 const FEATURES = [
   {
-    key: "programming",
-    tab: "Programming",
-    title: "Intelligent programming",
-    lead: "Plan a client's training in a few taps, and let the app do the maths.",
-    points: [
-      "Tap a day, pick Gym, Performance, Functional or Rehab, choose the split and the weeks. The calendar fills itself.",
-      "A gauge set works out each client's working weight the first time they do an exercise.",
-      "Weights go up from their real reps and effort, capped at about 10% a jump.",
-      "The app spots fatigue and tells you when a deload week is due. One tap adds it.",
-    ],
-    demo: `
-      <div class="m-title">📅 Training calendar</div>
-      <div class="week">
-        <div class="d"><b>Mon</b><span class="g">Upper 1</span><i>Chest · Back</i></div>
-        <div class="d"><b>Tue</b><span class="t">Mobility</span></div>
-        <div class="d"><b>Wed</b><span class="g">Lower 1</span><i>Quads · Glutes</i></div>
-        <div class="d"><b>Thu</b><span class="p">Knee rehab</span></div>
-        <div class="d"><b>Fri</b><span class="g">Upper 2</span><i>Shoulders · Arms</i></div>
-        <div class="d"><b>Sat</b><span class="r">Recovery</span></div>
-        <div class="d"><b>Sun</b><span class="m">Rest</span></div>
-      </div>
-      <div class="m-card blue">🌙 <b>Time for a deload week</b><br>6 weeks in a row, sleep down, more sets to failure. Half the sets at about 70% next week?</div>
-      <div class="m-card">🎯 <b>Gauge set</b>: Leg press. They pick a weight they can do well; the app sets their working weight from it.</div>`,
-  },
-  {
     key: "injury",
-    tab: "Injury",
-    title: "Injury awareness",
+    tab: "Injury-aware",
+    title: "Injury-aware programming",
     lead: "Every plan you give is checked against your client's injuries and pain.",
     points: [
       "Injuries are asked on the intake form and kept with healed dates.",
@@ -53,6 +28,32 @@ const FEATURES = [
       <div class="m-card amber"><b>⚠ Barbell back squat</b><br>Loads the knee deeply.<div class="chips"><span>Box squat</span><span>Leg press, short range</span><span>Glute bridge</span></div></div>
       <div class="m-card amber"><b>⚠ Romanian deadlift</b><br>Loads the lower back.<div class="chips"><span>Hip thrust</span><span>Cable pull-through</span><span>Back extension, light</span></div></div>
       <div class="m-card green">✓ The other 4 exercises are fine for her injuries.</div>`,
+  },
+  {
+    key: "progression",
+    tab: "Progression",
+    title: "Intelligent progression",
+    lead: "Plan a client's training in a few taps, and let the app do the maths.",
+    points: [
+      "Tap a day, pick Gym, Performance, Functional or Rehab, choose the split and the weeks. The calendar fills itself.",
+      "A gauge set works out each client's working weight the first time they do an exercise.",
+      "Weights go up from their real reps and effort, capped at about 10% a jump.",
+      "Fatigue monitoring: weeks in a row, sets to failure, tiredness, poor sleep, missed workouts and stalled progress.",
+      "Automatic deload suggestions when fatigue adds up. One tap adds the easy week.",
+    ],
+    demo: `
+      <div class="m-title">📅 Training calendar</div>
+      <div class="week">
+        <div class="d"><b>Mon</b><span class="g">Upper 1</span><i>Chest · Back</i></div>
+        <div class="d"><b>Tue</b><span class="t">Mobility</span></div>
+        <div class="d"><b>Wed</b><span class="g">Lower 1</span><i>Quads · Glutes</i></div>
+        <div class="d"><b>Thu</b><span class="p">Knee rehab</span></div>
+        <div class="d"><b>Fri</b><span class="g">Upper 2</span><i>Shoulders · Arms</i></div>
+        <div class="d"><b>Sat</b><span class="r">Recovery</span></div>
+        <div class="d"><b>Sun</b><span class="m">Rest</span></div>
+      </div>
+      <div class="m-card blue">🌙 <b>Time for a deload week</b><br>6 weeks in a row, sleep down, more sets to failure. Half the sets at about 70% next week?</div>
+      <div class="m-card">🎯 <b>Gauge set</b>: Leg press. They pick a weight they can do well; the app sets their working weight from it.</div>`,
   },
   {
     key: "nutrition",
@@ -80,11 +81,12 @@ const FEATURES = [
   {
     key: "recovery",
     tab: "Recovery",
-    title: "Recovery you can see",
+    title: "Recovery and fatigue",
     lead: "Know how each client is really doing before you plan their next session.",
     points: [
       "A quick daily check-in: sleep, pain, tiredness and stress.",
       "Sleep and workouts come in from their watch through Apple Health or Health Connect.",
+      "Tiredness, stress and pain show as alerts you mark Busy fixing or Fixed.",
       "A daily summary for each client: their energy, and what to do about it.",
       "Recovery suggestions for them (sleep, stretching, active recovery) based on their training load.",
     ],
@@ -96,10 +98,10 @@ const FEATURES = [
       <div class="m-card green"><b>Suggestions</b><br>• Lighten Thursday's legs or swap in mobility.<br>• Sleep is short: an earlier bedtime will help more than more training.</div>`,
   },
   {
-    key: "business",
-    tab: "Business",
-    title: "Your business, handled",
-    lead: "Clients, payments and income in one place, under your own brand.",
+    key: "payments",
+    tab: "Payments",
+    title: "Payment tracking",
+    lead: "Know who has paid, who owes and what you earn, under your own brand.",
     points: [
       "Your logo and your own code: clients join you, not a marketplace.",
       "See who's active, waiting for approval, owes you money or has gone quiet.",
@@ -171,6 +173,19 @@ export function trainersPage(escape) {
   .cta { display: inline-block; background: var(--gold); color: #111; font-weight: 800; font-size: 18px; padding: 15px 28px; border-radius: 12px; text-decoration: none; }
   .cta:hover { filter: brightness(1.08); }
   .fine { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .control { background: linear-gradient(180deg, #1A2338, var(--card)); border: 2px solid var(--gold); border-radius: 18px; padding: 24px; margin: 0 0 28px; }
+  .control h2 { color: var(--gold); font-size: clamp(22px, 4.5vw, 30px); margin: 0 0 6px; text-transform: uppercase; letter-spacing: .02em; }
+  .control ul { margin: 12px 0; padding-left: 20px; }
+  .control li { margin-bottom: 8px; }
+  .control .strong { color: #fff; font-weight: 800; font-size: 18px; margin: 12px 0 0; }
+  .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .price { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .price .where { color: #fff; font-weight: 700; }
+  .price .where em { display: inline-block; margin-left: 6px; font-style: normal; font-size: 12px; color: #F59E0B; border: 1px solid #F59E0B; border-radius: 999px; padding: 1px 8px; }
+  .price .amount { color: var(--gold); font-size: 36px; font-weight: 800; margin: 6px 0; }
+  .price .amount span { color: var(--muted); font-size: 16px; font-weight: 400; }
+  .price ul { margin: 0; padding-left: 20px; }
+  .price .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
   .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 40px; }
   .why div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
   .why b { color: #fff; display: block; margin-bottom: 4px; }
@@ -224,7 +239,8 @@ export function trainersPage(escape) {
   footer a { margin-right: 16px; }
   .sticky { display: none; }
   @media (max-width: 760px) {
-    .why, .modes, .steps { grid-template-columns: 1fr; }
+    .why, .modes, .steps, .prices { grid-template-columns: 1fr; }
+    .control { padding: 18px; }
     .slide.on { grid-template-columns: 1fr; padding: 18px; gap: 18px; }
     .phone { max-width: 320px; width: 100%; margin: 0 auto; }
     .screen { min-height: 0; }
@@ -247,7 +263,23 @@ export function trainersPage(escape) {
   <h1>The coaching app that thinks like a coach.</h1>
   <p class="sub">Most trainer apps just hand out workouts. Daily Evolution plans, adjusts and protects your clients for you, and keeps track of who has paid, so you can coach more people, better, in less time.</p>
   <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
-  <div class="fine">No card needed. Apply in a few minutes.</div>
+  <div class="fine"><strong>No credit card required.</strong> Apply in a few minutes.</div>
+  <div class="fine">Your clients remain under your coaching control. No independent client access.</div>
+</section>
+
+<section class="control">
+  <h2>Your clients. Your business. Your control.</h2>
+  <p class="lead">Daily Evolution is built exclusively around personal trainers and coaches.</p>
+  <ul>
+    <li>No client can use the coaching platform without being connected to an approved trainer.</li>
+    <li>Every trainer has a unique reference code that clients must use to join.</li>
+    <li>Each trainer manages their own private client network.</li>
+    <li>Trainers can't access or view another trainer's clients.</li>
+    <li>You control your clients' access to your coaching.</li>
+    <li>When a client's subscription expires or payment is outstanding, you can suspend their access in line with the platform's payment rules.</li>
+    <li>Clients can only use their programmes and coaching while you've authorised them.</li>
+  </ul>
+  <p class="strong">Daily Evolution doesn't replace personal trainers. It empowers them.</p>
 </section>
 
 <div class="why">
@@ -257,12 +289,39 @@ export function trainersPage(escape) {
 </div>
 
 <h2 class="section">See what it does</h2>
-<p class="section">Tap through the five things that set it apart.</p>
+<p class="section">Tap through what sets it apart: injury-aware programming, intelligent progression with fatigue monitoring and deload suggestions, nutrition, recovery and payment tracking.</p>
 <div class="tabs" role="tablist">${tabs}</div>
 ${slides}
 <div class="nav"><button type="button" id="prev">‹ Back</button><button type="button" id="next">Next ›</button></div>
 
 <div class="modes">${modes}</div>
+
+<h2 class="section">Simple pricing</h2>
+<p class="section">Free for 30 days, then pay only for what you use.</p>
+<div class="prices">
+  <div class="price">
+    <div class="where">🇿🇦 South Africa</div>
+    <div class="amount">R400<span>/month</span></div>
+    <ul>
+      <li>First 5 active clients included</li>
+      <li>R100/month per additional active client</li>
+    </ul>
+  </div>
+  <div class="price">
+    <div class="where">🌍 International <em>Proposed USD pricing</em></div>
+    <div class="amount">$50<span>/month</span></div>
+    <ul>
+      <li>6 months: $250 upfront</li>
+      <li>12 months: $450 upfront</li>
+      <li>$10/month per additional active client</li>
+    </ul>
+    <p class="note">Proposed until the payment provider and currency arrangements are confirmed.</p>
+  </div>
+</div>
+<div class="final" style="padding: 0 0 36px">
+  <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
+  <div class="fine"><strong>No credit card required.</strong> Nothing is charged during your trial.</div>
+</div>
 
 <h2 class="section">Up and running today</h2>
 <p class="section">Three steps, then your clients can join.</p>
@@ -275,7 +334,9 @@ ${slides}
 <section class="final">
   <h2 class="section">Coach better. Work less.</h2>
   <p class="section">Try every feature free for 30 days.</p>
-  <a class="cta" href="${SIGNUP}">Start your free trial</a>
+  <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
+  <div class="fine"><strong>No credit card required.</strong></div>
+  <div class="fine">Your clients remain under your coaching control. No independent client access.</div>
 </section>
 
 <footer><a href="/privacy">Privacy policy</a><a href="/support">Support</a><a href="/app/">Trainer login</a></footer>
