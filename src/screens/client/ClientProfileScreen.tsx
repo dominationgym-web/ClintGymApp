@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AppUpdateLine from "@/components/AppUpdateLine";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList, ClientTabParamList } from "@/navigation/types";
@@ -318,6 +319,7 @@ export default function ClientProfileScreen() {
           <Text style={styles.logoutText}>Log out</Text>
         </Pressable>
         <DeleteAccountButton />
+        <AppUpdateLine />
       </FoldSection>
     </ScrollView>
   );

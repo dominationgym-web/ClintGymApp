@@ -18,6 +18,7 @@ import {
   splitNote,
   weeksToFinish,
   suggestedSplit,
+  timesAWeekDays,
   toggleDay,
   TRAINING_SPLITS,
   WEEK_CHOICES,
@@ -432,6 +433,19 @@ export default function PlanProgramModal({
                       {sessionsPerWeek(slots)} sessions a week as written. Sunday is always a rest day.
                     </Text>
                     <View style={styles.splitTable}>
+                      {date &&
+                        ([1, 2] as const).map((times) => {
+                          const days = timesAWeekDays(date, times);
+                          const on = split === "own" && daysLabel(ownDays) === daysLabel(days);
+                          return (
+                            <Pressable key={`times-${times}`} style={[styles.splitRow, on && styles.splitRowOn]} onPress={() => pickOwnDays(days)}>
+                              <Text style={[styles.splitLabel, on && styles.splitLabelOn]}>
+                                {times === 1 ? "Once a week" : "Twice a week"} ({daysLabel(days)})
+                              </Text>
+                              <Text style={styles.ownHint}>The program is spread over more weeks.</Text>
+                            </Pressable>
+                          );
+                        })}
                       {TRAINING_SPLITS.map((s) => {
                         const on = s.key === split;
                         return (
