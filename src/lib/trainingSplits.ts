@@ -111,3 +111,33 @@ export function splitAlongside<T extends { date: string }>(plan: T[], takenDates
   const taken = new Set(takenDates);
   return { mains: plan.filter((p) => !taken.has(p.date)), extras: plan.filter((p) => taken.has(p.date)) };
 }
+
+const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** Picked days as a label, e.g. "Tue · Fri". */
+export function daysLabel(days: number[]): string {
+  return [...days].sort((a, b) => a - b).map((d) => DAY_SHORT[d - 1]).join(" · ");
+}
+
+/** Taps a weekday on or off in the trainer's own pick (Monday to Saturday). */
+export function toggleDay(days: number[], day: number): number[] {
+  if (day < 1 || day > 6) return days;
+  return days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort((a, b) => a - b);
+}
+
+/**
+ * Days that change every week (GRIZZ, 2026-10-19: a client who trains twice
+ * a week on different days): the next week's picked days from `from` to `to`
+ * get the program's sessions in order, carrying on after the `done` sessions
+ * already placed.
+ */
+export function planWeekDates(from: string, to: string, days: number[], slots: number[], done: number): { date: string; slot: number }[] {
+  if (slots.length === 0 || days.length === 0) return [];
+  const out: { date: string; slot: number }[] = [];
+  for (let date = from; date <= to; date = addDays(date, 1)) {
+    const weekday = weekdayOfIso(date);
+    if (weekday === 7 || !days.includes(weekday)) continue;
+    out.push({ date, slot: slots[(done + out.length) % slots.length] });
+  }
+  return out;
+}

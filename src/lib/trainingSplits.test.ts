@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  daysLabel,
   defaultWeeks,
   findSplit,
   planProgramDates,
+  planWeekDates,
   sessionsPerWeek,
   splitAlongside,
   splitNote,
   suggestedSplit,
+  toggleDay,
   TRAINING_SPLITS,
   weekdayOfIso,
   weeksToFinish,
@@ -96,3 +99,30 @@ describe("a program on a split with a different number of days", () => {
   });
 });
 
+describe("trainer's own days", () => {
+  it("taps days on and off, Monday to Saturday only", () => {
+    expect(toggleDay([2], 5)).toEqual([2, 5]);
+    expect(toggleDay([2, 5], 2)).toEqual([5]);
+    expect(toggleDay([2], 7)).toEqual([2]);
+    expect(daysLabel([5, 2])).toBe("Tue · Fri");
+  });
+
+  it("repeats picked days weekly like any split", () => {
+    const plan = planProgramDates("2026-10-19", [2, 5], [1, 2, 3], 2);
+    expect(plan).toEqual([
+      { date: "2026-10-20", slot: 1 },
+      { date: "2026-10-23", slot: 2 },
+      { date: "2026-10-27", slot: 3 },
+      { date: "2026-10-30", slot: 1 },
+    ]);
+  });
+
+  it("carries the program on in order when next week's days are different", () => {
+    // Week 1 placed 2 sessions; week 2 is Mon and Thu.
+    expect(planWeekDates("2026-10-26", "2026-11-01", [1, 4], [1, 2, 3], 2)).toEqual([
+      { date: "2026-10-26", slot: 3 },
+      { date: "2026-10-29", slot: 1 },
+    ]);
+    expect(planWeekDates("2026-10-26", "2026-11-01", [], [1, 2], 0)).toEqual([]);
+  });
+});
