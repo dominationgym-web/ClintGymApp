@@ -7,7 +7,7 @@ import { todayIso } from "@/lib/dates";
 import { parseWeight } from "@/lib/weightInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatRest } from "@/lib/programs";
-import { suggestNext, type Suggestion } from "@/lib/progression";
+import { EFFORT_LABEL, EFFORT_OPTIONS, EFFORT_QUESTION, suggestNext, type Suggestion } from "@/lib/progression";
 import { techniqueFor } from "@/lib/exerciseTechnique";
 import ExerciseGuideButton, { ExerciseGuideContent, MuscleNotWeight, WatchOnlineLink } from "@/components/ExerciseGuide";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -22,16 +22,6 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 export type LogExercise = { id: string | null; name: string; category: string | null; external_url: string | null };
 export type LogTarget = { setsLabel: string; sets: number; reps: string; restSeconds: number };
 
-const EFFORT_OPTIONS: { key: SetEffort; label: string }[] = [
-  { key: "comfortable", label: "Comfortable" },
-  { key: "close_to_failure", label: "Close to failure" },
-  { key: "failure", label: "Failure" },
-];
-const EFFORT_LABEL: Record<SetEffort, string> = {
-  comfortable: "Comfortable",
-  close_to_failure: "Close to failure",
-  failure: "Failure",
-};
 
 // Log weight, reps and effort for one exercise, with the rest timer, the
 // weight suggestion from last time and the how-to guide. Used by the Women's
@@ -104,7 +94,7 @@ export default function LogSetModal({
       return;
     }
     if (!effort) {
-      Alert.alert("Missing effort", "Pick how the set felt.");
+      Alert.alert("Missing effort", "Pick how many more good reps you could have done.");
       return;
     }
     setLogging(true);
@@ -217,7 +207,7 @@ export default function LogSetModal({
               />
             </View>
           </View>
-          <Text style={styles.label}>How did it feel?</Text>
+          <Text style={styles.label}>{EFFORT_QUESTION}</Text>
           <View style={styles.effortRow}>
             {EFFORT_OPTIONS.map((o) => (
               <Pressable key={o.key} style={[styles.chip, effort === o.key && styles.chipOn]} onPress={() => setEffort(o.key)}>

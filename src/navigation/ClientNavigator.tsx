@@ -40,13 +40,14 @@ function ClientTabs() {
         tabBarInactiveTintColor: "#64748B",
       }}
     >
+      {/* 4 tabs, or 5 with the Reset (app-flow review C1, 2026-10-18): Training sits next
+          to Check-in, and form videos are filmed from the set log (Profile keeps the list). */}
       <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
+      <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
       <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
       {client?.lifestyle_reset_started_at && (
         <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />
       )}
-      <Tab.Screen name="Training" component={VideoUploadScreen} options={{ title: "Video log", tabBarIcon: tabIcon("videocam") }} />
-      <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Exercises", tabBarIcon: tabIcon("library") }} />
       <Tab.Screen name="Profile" component={ClientProfileScreen} options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }} />
     </Tab.Navigator>
   );
@@ -71,6 +72,7 @@ export default function ClientNavigator() {
         <Stack.Screen name="AppGuide" component={ClientAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
         <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
         <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
+        <Stack.Screen name="FormVideos" component={VideoUploadScreen} options={{ title: "Form videos", headerBackTitle: "Back" }} />
       </Stack.Navigator>
     </>
   );

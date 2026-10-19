@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { EFFORT_LABEL as PROGRESSION_EFFORT_LABEL } from "@/lib/progression";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { groupTrainingLog } from "@/lib/trainingLog";
 import { todayIso } from "@/lib/dates";
@@ -6,11 +7,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { SESSION_COLORS, SESSION_LABELS, STAR_GOLD } from "@/lib/workoutSessions";
 import type { WorkoutLog, WorkoutSession } from "@/types/database";
 
-const EFFORT_LABEL: Record<string, string> = {
-  comfortable: "Comfortable",
-  close_to_failure: "Close to failure",
-  failure: "Failure",
-};
+const EFFORT_LABEL: Record<string, string> = PROGRESSION_EFFORT_LABEL;
 
 // The client's last two weeks of training, one row per calendar day. Tap a day
 // to open what they logged. A dot shows how the workout went and ⭐ that they

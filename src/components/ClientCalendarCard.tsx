@@ -19,16 +19,17 @@ import {
   functionalShortName,
   monthLabel,
   monthOf,
-  monthRange,
+  mondayOf,
   exercisesForSlot,
   programSlots,
   shortWorkoutName,
   slotLabel,
   usedInBatch,
   usedWorkoutIds,
-  type CalendarMonth,
+  weekDates,
 } from "@/lib/trainingCalendar";
-import TrainingCalendar from "@/components/TrainingCalendar";
+import { addDays } from "@/lib/programSchedule";
+import WeekCalendar, { type WeekDayPlan } from "@/components/WeekCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
@@ -55,8 +56,8 @@ function dayHeading(date: string): string {
   return `${WEEKDAY_NAMES[(d.getDay() + 6) % 7]} ${d.getDate()} ${monthLabel(monthOf(date))}`;
 }
 
-// On the trainer's view of a client (Training tab): their month as a
-// calendar (0069). Tap a day to put a workout on it. Workouts already used
+// On the trainer's view of a client (Training tab): their calendar (0069),
+// one week at a time like the client's (GRIZZ, 2026-10-18: week by week). Tap a day to put a workout on it. Workouts already used
 // for this client show "Used" in red until the whole batch is used or the
 // trainer taps Reset for that batch, so the same workout isn't repeated by
 // accident.
@@ -95,7 +96,7 @@ export default function ClientCalendarCard({
   const today = todayIso();
   // The Reset warning pops up once per visit, then stays as a banner in the picker.
   const resetWarned = useRef(false);
-  const [month, setMonth] = useState<CalendarMonth>(monthOf(today));
+  const [monday, setMonday] = useState(mondayOf(today));
   const [monthEntries, setMonthEntries] = useState<ClientCalendarWorkout[]>([]);
   const [monthBlocks, setMonthBlocks] = useState<ClientCalendarBlock[]>([]);
   const [allEntries, setAllEntries] = useState<Pick<ClientCalendarWorkout, "program_id" | "created_at" | "day_slot">[]>([]);
@@ -115,12 +116,13 @@ export default function ClientCalendarCard({
   // Bumped when a program is planned, so the week-by-week card reloads.
   const [planKey, setPlanKey] = useState(0);
 
+  const range = { from: monday, to: addDays(monday, 6) };
   const loadMonth = useCallback(async () => {
-    const { from, to } = monthRange(month);
+    const [from, to] = [monday, addDays(monday, 6)];
     const [entries, blocks] = await Promise.all([loadCalendarWorkouts(clientId, from, to), loadCalendarBlocks(clientId, from, to)]);
     setMonthEntries(entries);
     setMonthBlocks(blocks);
-  }, [clientId, month]);
+  }, [clientId, monday]);
 
   const loadUsed = useCallback(async () => {
     const [{ data: entries }, { data: batchResets }] = await Promise.all([
@@ -145,9 +147,8 @@ export default function ClientCalendarCard({
   const entryOn = (date: string) => monthEntries.find((e) => e.workout_date === date) ?? null;
   const blocksOn = (date: string) => monthBlocks.filter((b) => b.workout_date === date && byId.has(b.program_id));
   // Training in gold; mobility and flexibility apart, in teal (GRIZZ, 2026-10-18).
-  const { labels, functional } = calendarDayLabels(monthEntries, monthBlocks, (id) => byId.get(id), (p) =>
-    isFunctionalProgram(p) ? functionalShortName(p.name) : shortWorkoutName(p.name),
-  );
+  const shortName = (p: Pick<Program, "name" | "trainer_id">) => (isFunctionalProgram(p) ? functionalShortName(p.name) : shortWorkoutName(p.name));
+  const { labels } = calendarDayLabels(monthEntries, monthBlocks, (id) => byId.get(id), shortName);
   const selectedEntry = selected ? entryOn(selected) : null;
   const selectedProgram = selectedEntry ? byId.get(selectedEntry.program_id) ?? null : null;
   const selectedBlocks = selected ? blocksOn(selected) : [];
@@ -177,12 +178,34 @@ export default function ClientCalendarCard({
   }, [loadSelectedExercises]);
 
   // Dots and gold stars for how each day's workout went (0076).
-  const range = monthRange(month);
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
   const recovery = useRecoveryCalendar(clientId, range.from, range.to);
   const [stabilityReload, setStabilityReload] = useState(0);
   const stability = useStabilityCalendar(clientId, range.from, range.to, `${String(stabilityKey)}-${stabilityReload}`);
   const moved = applyMoves(labels, Object.values(sessions));
+  // Each day of the week: the workout and the session's title (the body
+  // parts it trains) in gold, extra blocks under it, as on the client's week.
+  const plans: Record<string, WeekDayPlan> = {};
+  for (const date of weekDates(monday)) {
+    const plan: WeekDayPlan = { extras: [] };
+    const entry = entryOn(date);
+    const p = entry ? byId.get(entry.program_id) : undefined;
+    if (entry && p) {
+      if (isFunctionalProgram(p)) plan.extras.push({ title: shortName(p), functional: true });
+      else plan.main = { title: shortName(p), parts: entry.day_slot != null ? (p.day_titles[entry.day_slot - 1] ?? "") : "", deload: !!entry.deload };
+    }
+    for (const b of blocksOn(date)) {
+      const bp = byId.get(b.program_id);
+      if (bp) plan.extras.push({ title: shortName(bp), functional: isFunctionalProgram(bp) });
+    }
+    plans[date] = plan;
+  }
+  // A workout made up at the weekend shows on the day it was done.
+  for (const s of Object.values(sessions)) {
+    if (s.makeup_for && plans[s.session_date] && !plans[s.session_date].main && plans[s.makeup_for]?.main) {
+      plans[s.session_date] = { ...plans[s.session_date], main: plans[s.makeup_for].main };
+    }
+  }
 
   const pressDay = (date: string) => {
     setSelected(date);
@@ -339,14 +362,16 @@ export default function ClientCalendarCard({
       {loading ? (
         <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
       ) : (
-        <TrainingCalendar
-          month={month}
-          onChangeMonth={setMonth}
-          labels={moved.labels}
+        <WeekCalendar
+          monday={monday}
+          onChangeWeek={(direction) => {
+            setMonday(addDays(monday, direction * 7));
+            setSelected(null);
+          }}
+          plans={plans}
           moves={moved.moves}
           recovery={recovery}
           stability={stability.map}
-          functional={functional}
           today={today}
           selected={selected}
           onPressDay={pressDay}
@@ -393,6 +418,12 @@ export default function ClientCalendarCard({
               <View key={b.id} style={styles.block}>
                 <Text style={[styles.blockName, isFunctionalProgram(p) && { color: FUNCTIONAL_TEAL }]}>{p.name}</Text>
                 {b.day_slot != null && <Text style={styles.daySlot}>{slotLabel(p, b.day_slot)}</Text>}
+                {/* The client's tick on an extra block (0123). */}
+                {b.result && (
+                  <Text style={[styles.daySlot, { color: b.result === "done" ? "#22C55E" : "#F59E0B" }]}>
+                    {b.result === "done" ? "✅ Done" : "⚠️ Couldn't do it"}
+                  </Text>
+                )}
                 <ProgramSummary program={p} exercises={blockExercises[b.id] ?? []} onPressExercise={setChanging} onlySlot={b.day_slot} />
                 <Pressable style={[styles.clearButton, styles.blockOff]} onPress={() => takeOffBlock(b, p.name)}>
                   <Text style={styles.clearText}>Take it off</Text>
@@ -419,7 +450,7 @@ export default function ClientCalendarCard({
         </View>
       )}
       <View style={styles.legend}>
-        <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up · 🤸 mobility & flexibility · 🌿 recovery · 🧘 stability</Text>
+        <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up</Text>
       </View>
       <PlanProgramModal
         date={planning}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimatedMax, gaugeWeight, inIntro, needsGauge, needsSafeties } from "@/lib/gauge";
+import { estimatedMax, gaugeWeight, inIntro, introWeeks, needsGauge, needsSafeties } from "@/lib/gauge";
 
 const bench = { name: "Barbell Bench Press", category: "Chest" };
 
@@ -13,6 +13,13 @@ describe("needsGauge", () => {
     expect(needsGauge([{ weight_kg: 40, reps: 10, effort: "comfortable" }], [], "8-10")).toBe(false);
     expect(needsGauge([], [{ weight_kg: 40, reps: 12, effort: "failure" }], "8-10")).toBe(false);
     expect(needsGauge([], [], "30 sec")).toBe(false);
+  });
+
+  it("covers one-side reps, but not bodyweight moves", () => {
+    expect(needsGauge([], [], "12-15 each side", "Dumbbell Bulgarian Split Squat")).toBe(true);
+    expect(needsGauge([], [], "8 each side", "Bird Dog")).toBe(false);
+    expect(needsGauge([], [], "8-10", "Push-Up")).toBe(false);
+    expect(needsGauge([], [], "5", "Weighted Pull-Up")).toBe(true);
   });
 });
 
@@ -74,5 +81,15 @@ describe("inIntro", () => {
     expect(inIntro("Strength 12-week program", "2026-10-01", "2026-10-17")).toBe(true);
     expect(inIntro("Strength 12-week program", "2026-08-01", "2026-10-17")).toBe(false);
     expect(inIntro("Beginner Foundation - Strength", "2026-08-01", "2026-10-17")).toBe(true);
+  });
+
+  it("is 2 weeks for advanced clients, and none without a plan start", () => {
+    expect(inIntro("Strength 12-week program", "2026-10-01", "2026-10-17", "advanced")).toBe(false);
+    expect(inIntro("Strength 12-week program", "2026-10-10", "2026-10-17", "advanced")).toBe(true);
+    expect(inIntro("Strength 12-week program", null, "2026-10-17", "advanced")).toBe(false);
+    expect(inIntro("Strength 12-week program", null, "2026-10-17", "beginner")).toBe(true);
+    expect(inIntro("Strength 12-week program", "2026-10-01", "2026-10-17", "intermediate")).toBe(true);
+    expect(introWeeks("advanced")).toBe(2);
+    expect(introWeeks("never")).toBe(6);
   });
 });

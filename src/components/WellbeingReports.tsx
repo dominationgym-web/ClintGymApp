@@ -7,7 +7,7 @@ import { cleanMessage, MAX_MESSAGE_LENGTH } from "@/lib/coachMessages";
 import RehabSuggestion from "@/components/stability/RehabSuggestion";
 import { reportsByTopic, WELLBEING_TOPICS, type WellbeingKey, type WellbeingReport } from "@/lib/wellbeing";
 
-// On the trainer's Notes tab: what the client reported on their check-ins
+// On the trainer's Check-ins tab (review 2026-10-18, moved from Notes): what the client reported on their check-ins
 // (0055), in three sections (Injury or pain, Fatigue, Mental exhaustion), so
 // the trainer can adjust their program. Tap a section to open it, and send
 // the client a check-in note about it (GRIZZ, 2026-10-17): it shows at the top

@@ -31,17 +31,15 @@ import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
-import OwnerTracker from "@/components/OwnerTracker";
 import TrainerIncome from "@/components/TrainerIncome";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices, EftDetails } from "@/types/database";
 
-type TabKey = "code" | "tracker" | "income" | "refer" | "details" | "payments" | "account";
+type TabKey = "code" | "income" | "refer" | "details" | "payments" | "account";
 
 const TABS: ScreenTab<TabKey>[] = [
   { key: "code", label: "Code & logo", icon: "qr-code" },
-  { key: "tracker", label: "Tracker", icon: "stats-chart" },
   { key: "income", label: "Income", icon: "cash" },
   { key: "refer", label: "Plan & refer", icon: "gift" },
   { key: "details", label: "Details", icon: "person" },
@@ -76,8 +74,9 @@ export default function TrainerProfileScreen() {
   }, [trainer?.id, tab]);
 
   if (!trainer) return null;
-  // Owner only: the tracker across all trainers (0105). Trainers get Plan & refer instead.
-  const tabs = TABS.filter((t) => (trainer.is_owner ? t.key !== "refer" : t.key !== "tracker"));
+  // The owner has no plan or referrals. Their tracker across all trainers
+  // (0105) is under Trainers → Billing, with the rest of the money.
+  const tabs = TABS.filter((t) => !trainer.is_owner || t.key !== "refer");
   const today = todayIso();
   const trial = trialLabel(trainer.trial_ends_at, today);
   const trialLeft = trialDaysLeft(trainer.trial_ends_at, today);
@@ -189,14 +188,16 @@ export default function TrainerProfileScreen() {
             <View style={styles.codeBox}>
               <Text style={styles.label}>Your trainer code</Text>
               <Text style={styles.code}>{trainer.join_code}</Text>
-              <Text style={styles.hint}>New clients type this when they sign up, so they join you.</Text>
+              <Text style={[styles.hint, { textAlign: "center" }]}>
+                New clients type this when they sign up, so they join you.
+                {trainer.is_owner ? "" : " It's also your referral code: a trainer who signs up with it counts as your referral (Plan & refer)."}
+              </Text>
               <Pressable style={styles.secondaryButton} onPress={shareCode}>
                 <Text style={styles.secondaryButtonText}>Share my code</Text>
               </Pressable>
             </View>
           </>
         )}
-        {tab === "tracker" && trainer.is_owner && <OwnerTracker />}
         {tab === "income" && <TrainerIncome />}
         {tab === "refer" && (
           <>
@@ -213,7 +214,7 @@ export default function TrainerProfileScreen() {
             ) : null}
 
             <View style={styles.codeBox}>
-              <Text style={styles.label}>Your referral code</Text>
+              <Text style={styles.label}>Your referral code (the same as your trainer code)</Text>
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
                 Another trainer enters this when they sign up. For each one who's approved, you get {REFERRAL_DISCOUNT_PERCENT}% off

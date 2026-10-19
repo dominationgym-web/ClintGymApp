@@ -4,10 +4,9 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { SUPPLEMENT_LEVELS, type Supplement, type SupplementLevel } from "@/lib/supplements";
 
 export const LEVEL_COLOURS: Record<SupplementLevel, string> = {
-  Proven: "#22C55E",
-  "Training days": BRAND_GOLD,
+  "Worth it": "#22C55E",
   "Might help": "#60A5FA",
-  "Save your money": "#F87171",
+  Skip: "#F87171",
 };
 
 // One supplement, broken down so the client can decide for themselves: a

@@ -96,9 +96,23 @@ describe("alcoholMessage", () => {
     expect(m.title).toMatch(/limit/);
     expect(m.text).toMatch(/sleep/);
     expect(m.text).toMatch(/water/);
-    expect(m.text).toMatch(/electrolytes/);
+    expect(m.text).toMatch(/proper meal/);
+    expect(m.text).not.toMatch(/electrolytes/);
+    expect(m.text).toMatch(/1 unit is about 1 tot/);
     expect(m.text).toMatch(/honest/);
+    // Under 7 units a day: no doctor line yet.
+    expect(m.text).not.toMatch(/SANCA/);
     once(m.text);
+  });
+
+  it("points to a doctor or SANCA after 2 heavy days in 2 weeks", () => {
+    const rows = [a("2026-10-03", 9), a("2026-10-04", 0), a("2026-10-10", 8), a("2026-10-11", 2)];
+    const m = alcoholMessage(rows, "2026-10-11")!;
+    expect(m.text).toMatch(/2 big drinking days in the last 2 weeks/);
+    expect(m.text).toMatch(/SANCA/);
+    // A heavy day more than 2 weeks back doesn't count.
+    const older = alcoholMessage([a("2026-09-20", 9), a("2026-09-21", 0), a("2026-10-10", 8)], "2026-10-10")!;
+    expect(older.text).not.toMatch(/SANCA/);
   });
 
   it("praises the first alcohol-free day with benefits", () => {
@@ -118,13 +132,13 @@ describe("alcoholMessage", () => {
     once(m4.text);
   });
 
-  it("is disappointed but kind when they drink after a 5-day streak", () => {
+  it("is kind, never disappointed, when they drink after a 5-day streak", () => {
     const rows = [a("2026-10-05", 6), ...["06", "07", "08", "09", "10"].map((d) => a(`2026-10-${d}`, 0)), a("2026-10-11", 5)];
     const m = alcoholMessage(rows, "2026-10-11")!;
     expect(m.kind).toBe("slipped");
     expect(m.text).toMatch(/You were doing so well, 5 days alcohol-free/);
     expect(m.text).toMatch(/tomorrow/);
-    expect(m.text).toMatch(/electrolytes/);
+    expect(m.text).not.toMatch(/disappointed/);
     once(m.text);
   });
 

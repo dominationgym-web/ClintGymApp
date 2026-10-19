@@ -20,3 +20,25 @@ export async function setCycleReminderEnabled(enabled: boolean): Promise<void> {
     console.warn("Couldn't save the cycle reminder setting", e);
   }
 }
+
+// "My periods are irregular or have stopped" (perimenopause, menopause or
+// cycles that vary a lot; nutrition review, 2026-10-18). When on, the tracker
+// hides the phase guide and the phone stops the phase reminders and the
+// Saturday "log your period" nudge. Off unless she turns it on.
+const IRREGULAR_KEY = "cycleIrregular";
+
+export async function getCycleIrregular(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(IRREGULAR_KEY)) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export async function setCycleIrregular(irregular: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(IRREGULAR_KEY, irregular ? "true" : "false");
+  } catch (e) {
+    console.warn("Couldn't save the irregular periods setting", e);
+  }
+}

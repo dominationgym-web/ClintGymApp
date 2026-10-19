@@ -47,6 +47,43 @@ export function defaultWeeks(programWeeks: number | null | undefined): number {
   return programWeeks && programWeeks > 1 ? programWeeks : 4;
 }
 
+/** Weeks to get through every session of the program once on `daysPerWeek` days. */
+export function weeksToFinish(sessions: number, daysPerWeek: number): number {
+  return daysPerWeek > 0 ? Math.ceil(sessions / daysPerWeek) : 0;
+}
+
+/**
+ * A program on a split with a different number of days (review 2026-10-18):
+ * the sessions still go in order, so its easy weeks come after the same
+ * training as written, just in a different calendar week. The trainer sees
+ * how long it takes and where the easy weeks land, and the length defaults
+ * to the whole program. Null when the split matches.
+ */
+export function splitNote(
+  plan: { date: string; slot: number }[],
+  perWeek: number,
+  daysPerWeek: number,
+  sessions: number,
+  easyWeeks: number[],
+): string | null {
+  if (perWeek === daysPerWeek || plan.length === 0) return null;
+  const weeks = weeksToFinish(sessions, daysPerWeek);
+  const start = plan[0].date;
+  const calendarWeek = (date: string) => Math.floor((parseIsoDate(date).getTime() - parseIsoDate(start).getTime()) / (7 * 86_400_000)) + 1;
+  const landed = easyWeeks
+    .map((w) => {
+      const first = plan.find((p) => Math.floor((p.slot - 1) / 7) + 1 === w);
+      return first ? `program week ${w} from calendar week ${calendarWeek(first.date)}` : null;
+    })
+    .filter((x): x is string => !!x);
+  const pace =
+    daysPerWeek < perWeek
+      ? `This program has ${perWeek} sessions a week. On ${daysPerWeek} days it takes ${weeks} weeks to finish.`
+      : `This program has ${perWeek} sessions a week. On ${daysPerWeek} days it finishes in ${weeks} weeks, with less rest between sessions for the same muscles. Leave a day between hard sessions for the same body parts where you can.`;
+  const easy = landed.length ? ` Its easy weeks stay after the same training: ${landed.join(", ")}.` : "";
+  return pace + easy;
+}
+
 /**
  * Each training date from `start` for `weeks` weeks on the split's weekdays,
  * with the program session (slot) it gets. Sessions go in order and start

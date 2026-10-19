@@ -55,6 +55,7 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import PaymentProofModal from "@/components/PaymentProofModal";
 import { proofWhen } from "@/lib/paymentProofs";
 import { countryName } from "@/lib/phoneCountry";
+import OwnerTracker from "@/components/OwnerTracker";
 
 // The owner's billing view (0064): who owes what, this month's client count
 // and fees per trainer, the monthly log, 6-month totals, each trainer's plan
@@ -413,6 +414,9 @@ export default function BillingScreen() {
           })
         ),
       )}
+
+      {/* Money in one place (review 2026-10-18): the tracker moved here from Profile. */}
+      {section("tracker", "📊 Tracker: all trainers' clients and income", null, () => <OwnerTracker />)}
 
       {section("prices", "Prices and lockout", null, () =>
         settings ? (

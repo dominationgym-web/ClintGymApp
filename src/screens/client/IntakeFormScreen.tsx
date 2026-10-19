@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
 import { TRAINING_LEVELS } from "@/lib/foundation";
 import InjuryList from "@/components/InjuryList";
+import { firstIntakeProblem, INTAKE_PAGES, intakePageProblem, type IntakeRequired } from "@/lib/intakePages";
 
 function YesNo({
   label,
@@ -120,6 +121,12 @@ const CAFFEINE_AMOUNTS = ["None", "1 cup", "2-3 cups", "4+ cups"];
 export default function IntakeFormScreen() {
   const { client, refreshProfile } = useAuth();
   const [saving, setSaving] = useState(false);
+  // One page per section, like the check-in (app-flow review C6, 2026-10-18).
+  const [page, setPage] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [page]);
 
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("");
@@ -172,48 +179,52 @@ export default function IntakeFormScreen() {
 
   const yn = (v: boolean | null) => (v === null ? "Not answered" : v ? "Yes" : "No");
 
-  const handleSubmit = async () => {
-    if (!sex) {
-      Alert.alert("Male or female?", "Tap Male or Female under About you.");
+  const required: IntakeRequired = {
+    sex,
+    age,
+    heightCm,
+    weightKg,
+    activity,
+    goals,
+    experience,
+    occupationType,
+    eatsBreakfast,
+    currentlyTraining,
+    hasInjury,
+  };
+
+  // An injury answered Yes needs at least one injury on the list.
+  const injuriesListed = async () => {
+    if (!hasInjury) return true;
+    const { count } = await supabase
+      .from("client_injuries")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", client.id)
+      .is("healed_on", null);
+    if (count) return true;
+    Alert.alert("Your injury", "Tap Add an injury and pick where it is, or change your answer to No.");
+    return false;
+  };
+
+  const next = () => {
+    const problem = intakePageProblem(page, required);
+    if (problem) {
+      Alert.alert(problem.title, problem.message);
       return;
     }
+    setPage(page + 1);
+  };
+
+  const handleSubmit = async () => {
+    const gap = firstIntakeProblem(required);
+    if (gap) {
+      setPage(gap.page);
+      Alert.alert(gap.problem.title, gap.problem.message);
+      return;
+    }
+    if (!(await injuriesListed())) return;
     const height = Number(heightCm.replace(",", "."));
     const weight = Number(weightKg.replace(",", "."));
-    if (!(height >= 100 && height <= 250)) {
-      Alert.alert("Your height", "Type your height in centimetres, for example 175.");
-      return;
-    }
-    if (!(weight >= 25 && weight <= 400)) {
-      Alert.alert("Your weight", "Type your weight in kilograms, for example 82.");
-      return;
-    }
-    if (!activity) {
-      Alert.alert("How active are you?", "Tap the option under About you that fits you best.");
-      return;
-    }
-    if (!experience) {
-      Alert.alert("Your training experience", "Tap the option under Your goals that fits you best.");
-      return;
-    }
-    if (hasInjury === null) {
-      Alert.alert("Any injuries or pain?", "Tap Yes or No under Health & lifestyle.");
-      return;
-    }
-    if (hasInjury) {
-      const { count } = await supabase
-        .from("client_injuries")
-        .select("id", { count: "exact", head: true })
-        .eq("client_id", client.id)
-        .is("healed_on", null);
-      if (!count) {
-        Alert.alert("Your injury", "Tap Add an injury under Health & lifestyle and pick where it is, or change your answer to No.");
-        return;
-      }
-    }
-    if (!age.trim() || goals.length === 0 || !occupationType || eatsBreakfast === null || currentlyTraining === null) {
-      Alert.alert("Almost done", "Fill in at least your age, goals, occupation, breakfast, and training habits.");
-      return;
-    }
 
     const responses: Record<string, string> = {
       age: age.trim(),
@@ -277,10 +288,20 @@ export default function IntakeFormScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20 }}>
+    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Before we get started</Text>
-      <Text style={styles.intro}>Quick taps, no essays. Two minutes and your trainer knows your routine.</Text>
+      {page === 0 && <Text style={styles.intro}>Quick taps, no essays. Two minutes and your trainer knows your routine.</Text>}
+      <View style={styles.dots}>
+        {INTAKE_PAGES.map((label, i) => (
+          <View key={label} style={[styles.dot, i <= page && styles.dotOn]} />
+        ))}
+      </View>
+      <Text style={styles.pageCount}>
+        {page + 1} of {INTAKE_PAGES.length}
+      </Text>
 
+      {page === 0 && (
+      <>
       <Text style={styles.sectionHeading}>About you</Text>
       <ChoiceField label="Are you male or female?" options={["Male", "Female"]} value={sex} onChange={setSex} />
       <View style={styles.field}>
@@ -329,6 +350,10 @@ export default function IntakeFormScreen() {
         <Text style={styles.activityHint}>{INTAKE_ACTIVITY_LEVELS.find((a) => a.label === activity)?.detail}</Text>
       ) : null}
 
+      </>
+      )}
+      {page === 1 && (
+      <>
       <Text style={styles.sectionHeading}>Your goals</Text>
       <MultiChoiceField
         label="What are you wanting to achieve from your training? (pick all that apply)"
@@ -358,6 +383,10 @@ export default function IntakeFormScreen() {
         <Text style={styles.activityHint}>{TRAINING_LEVELS.find((l) => l.label === experience)?.detail}</Text>
       ) : null}
 
+      </>
+      )}
+      {page === 2 && (
+      <>
       <Text style={styles.sectionHeading}>Work</Text>
       <ChoiceField label="What kind of work do you do?" options={OCCUPATION_TYPES} value={occupationType} onChange={setOccupationType} />
       {occupationType === "Other" && (
@@ -377,6 +406,10 @@ export default function IntakeFormScreen() {
       <TimeField label="Finish time" value={workFinish} onChangeText={setWorkFinish} />
       <TimeField label="Time you usually get home" value={homeArrival} onChangeText={setHomeArrival} />
 
+      </>
+      )}
+      {page === 3 && (
+      <>
       <Text style={styles.sectionHeading}>Meals</Text>
       <YesNo label="Do you eat breakfast?" value={eatsBreakfast} onChange={setEatsBreakfast} />
       {eatsBreakfast === false && <TimeField label="Time of your first meal" value={firstMealTime} onChangeText={setFirstMealTime} />}
@@ -384,11 +417,19 @@ export default function IntakeFormScreen() {
       <YesNo label="Do you get a proper lunch break?" value={properLunchBreak} onChange={setProperLunchBreak} />
       <YesNo label="Do you actually eat during it?" value={eatsDuringLunch} onChange={setEatsDuringLunch} />
 
+      </>
+      )}
+      {page === 4 && (
+      <>
       <Text style={styles.sectionHeading}>Daily structure</Text>
       <TimeField label="Wake time" value={wakeTime} onChangeText={setWakeTime} />
       <TimeField label="Bedtime" value={bedtime} onChangeText={setBedtime} />
       <YesNo label="Kids or caregiving that shapes your day?" value={hasCaregiving} onChange={setHasCaregiving} />
 
+      </>
+      )}
+      {page === 5 && (
+      <>
       <Text style={styles.sectionHeading}>Training habits</Text>
       <YesNo label="Are you training at the moment? (gym, home or with another coach)" value={currentlyTraining} onChange={setCurrentlyTraining} />
       {currentlyTraining && (
@@ -399,6 +440,10 @@ export default function IntakeFormScreen() {
         </>
       )}
 
+      </>
+      )}
+      {page === 6 && (
+      <>
       <Text style={styles.sectionHeading}>Health &amp; lifestyle</Text>
       <YesNo label="Any health conditions or medication we should know about?" value={hasHealthCondition} onChange={setHasHealthCondition} />
       {hasHealthCondition && (
@@ -411,13 +456,6 @@ export default function IntakeFormScreen() {
             placeholderTextColor="#64748B"
             multiline
           />
-        </View>
-      )}
-      <YesNo label="Any injuries or pain?" value={hasInjury} onChange={setHasInjury} />
-      {hasInjury && (
-        <View style={styles.field}>
-          <Text style={styles.activityHint}>Add each one: where it is and a short note. Your coach plans around them.</Text>
-          <InjuryList clientId={client.id} role="client" />
         </View>
       )}
       <YesNo label="Do you often feel highly stressed, or suffer with anxiety?" value={stressed} onChange={setStressed} />
@@ -439,9 +477,36 @@ export default function IntakeFormScreen() {
         <TimeField label="Time of your last one" value={lastCaffeineTime} onChangeText={setLastCaffeineTime} />
       )}
 
-      <Pressable style={styles.button} onPress={handleSubmit} disabled={saving}>
-        {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Submit</Text>}
-      </Pressable>
+      </>
+      )}
+
+      {page === 7 && (
+      <>
+      <Text style={styles.sectionHeading}>Injuries</Text>
+      <YesNo label="Any injuries or pain?" value={hasInjury} onChange={setHasInjury} />
+      {hasInjury && (
+        <View style={styles.field}>
+          <Text style={styles.activityHint}>Add each one: where it is and a short note. Your coach plans around them.</Text>
+          <InjuryList clientId={client.id} role="client" />
+        </View>
+      )}
+      </>
+      )}
+
+      {page < INTAKE_PAGES.length - 1 ? (
+        <Pressable style={styles.button} onPress={next}>
+          <Text style={styles.buttonText}>Next: {INTAKE_PAGES[page + 1]} ›</Text>
+        </Pressable>
+      ) : (
+        <Pressable style={styles.button} onPress={handleSubmit} disabled={saving}>
+          {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Submit</Text>}
+        </Pressable>
+      )}
+      {page > 0 && (
+        <Pressable style={styles.backButton} onPress={() => setPage(page - 1)} disabled={saving}>
+          <Text style={styles.backText}>‹ Back</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -473,6 +538,12 @@ const styles = StyleSheet.create({
   pillSelected: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   pillText: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
   pillTextSelected: { color: "#0F172A" },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 24, marginBottom: 40 },
+  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 24, marginBottom: 6 },
+  backButton: { padding: 14, alignItems: "center", marginBottom: 40 },
+  backText: { color: "#94A3B8", fontWeight: "600", fontSize: 15 },
+  dots: { flexDirection: "row", gap: 6, marginTop: 8 },
+  dot: { flex: 1, height: 4, borderRadius: 2, backgroundColor: "#334155" },
+  dotOn: { backgroundColor: "#22C55E" },
+  pageCount: { color: "#64748B", fontSize: 12, marginTop: 6 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
 });

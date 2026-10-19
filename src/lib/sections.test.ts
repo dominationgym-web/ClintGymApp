@@ -6,8 +6,8 @@ describe("SECTIONS", () => {
     expect(SECTIONS.map((s) => s.title)).toEqual([
       "Nutrition",
       "Supplementation",
-      "Sleep & Recovery",
-      "Women's Health Reset",
+      "Sleep",
+      "Cycle tracker",
     ]);
   });
 

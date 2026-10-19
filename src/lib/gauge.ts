@@ -14,8 +14,8 @@ import { repRange, weightStep, type LoggedSet } from "@/lib/progression";
 // about 12 reps, so above that the reps are capped at 12 and the result is
 // only a rough guess. From the max it works out the weight for the top of the
 // rep range plus the reps they should keep in reserve. During the intro
-// (their first 6 weeks, or while on a Foundation program) that's 2 reps short
-// of failure; after it, 1.
+// (their first 6 weeks, 2 for advanced clients, or while on a Foundation
+// program) that's 2 reps short of failure; after it, 1.
 
 /** Reps assumed left in the tank at the end of the gauge set. */
 export const GAUGE_RIR = 1;
@@ -23,14 +23,31 @@ export const GAUGE_RIR = 1;
 export const EPLEY_MAX_REPS = 12;
 
 export const INTRO_DAYS = 42;
-const intro = (programName: string | null | undefined, planStartedAt: string | null | undefined, today: string) =>
-  /foundation/i.test(programName ?? "") ||
-  !planStartedAt ||
-  (Date.parse(today) - Date.parse(planStartedAt)) / 86_400_000 < INTRO_DAYS;
+/** Advanced clients (review 2026-10-18) know their effort well: a 2-week intro, and none without a plan start. */
+export const ADVANCED_INTRO_DAYS = 14;
 
-/** Whether the client is still in their intro: no sets to failure yet. */
-export function inIntro(programName: string | null | undefined, planStartedAt: string | null | undefined, today: string): boolean {
-  return intro(programName, planStartedAt, today);
+type Level = "never" | "beginner" | "intermediate" | "advanced" | null | undefined;
+
+/** How many weeks the intro lasts for this training level. */
+export function introWeeks(level?: Level): number {
+  return (level === "advanced" ? ADVANCED_INTRO_DAYS : INTRO_DAYS) / 7;
+}
+
+/**
+ * Whether the client is still in their intro: no sets to failure yet. A
+ * Foundation program always is. Otherwise the first 6 weeks of their plan
+ * (or with no plan start yet), or just the first 2 for an advanced client.
+ */
+export function inIntro(
+  programName: string | null | undefined,
+  planStartedAt: string | null | undefined,
+  today: string,
+  level?: Level,
+): boolean {
+  if (/foundation/i.test(programName ?? "")) return true;
+  const advanced = level === "advanced";
+  if (!planStartedAt) return !advanced;
+  return (Date.parse(today) - Date.parse(planStartedAt)) / 86_400_000 < (advanced ? ADVANCED_INTRO_DAYS : INTRO_DAYS);
 }
 
 /** Reps to keep in reserve on working sets. */
@@ -38,13 +55,18 @@ export function repsInReserve(isIntro: boolean): number {
   return isIntro ? 2 : 1;
 }
 
+// Bodyweight, band and core moves have no weight to find.
+const NO_WEIGHT =
+  /bodyweight|body weight|band|stretch|bird dog|dead bug|plank|push[- ]?up|pull[- ]?up|chin[- ]?up|\bdips?\b|nordic|jump|hop|bound|circle|clam|crunch|sit[- ]?up|mountain|burpee|crawl|mobility|rotation|copenhagen|wall /i;
+
 /**
  * Whether this set should be the gauge set: a weighted exercise with a rep
  * range, never done before (no earlier working sets with a weight), and no
  * working set yet today.
  */
-export function needsGauge(earlier: LoggedSet[], today: LoggedSet[], reps: string | null | undefined): boolean {
+export function needsGauge(earlier: LoggedSet[], today: LoggedSet[], reps: string | null | undefined, exerciseName?: string): boolean {
   if (!repRange(reps)) return false;
+  if (exerciseName && NO_WEIGHT.test(exerciseName) && !/weighted/i.test(exerciseName)) return false;
   const weighted = (s: LoggedSet) => !s.warm_up && s.weight_kg !== null && s.weight_kg > 0;
   return !earlier.some(weighted) && !today.some((s) => !s.warm_up);
 }

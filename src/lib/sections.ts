@@ -49,8 +49,9 @@ export const SECTIONS: Section[] = [
     key: "sleepRecovery",
     icon: "🌙",
     accent: "#60A5FA",
-    title: "Sleep & Recovery",
-    summary: "Simple habits for better sleep and faster recovery.",
+    // Was "Sleep & Recovery", next to the Recovery item (app-flow review C7, 2026-10-18).
+    title: "Sleep",
+    summary: "Simple habits for better sleep, and an evening wind-down tip. Recovery activities are under Recovery.",
     topics: [],
     content: SLEEP_GUIDELINES,
   },
@@ -58,7 +59,8 @@ export const SECTIONS: Section[] = [
     key: "womensHealthReset",
     icon: "🌸",
     accent: "#F472B6",
-    title: "Women's Health Reset",
+    // Was "Women's Health Reset", easily mixed up with the 12-week Reset tab (C7).
+    title: "Cycle tracker",
     summary: "Train, eat and supplement with your cycle, not against it. Log your period and the app guides you through each phase.",
     topics: [],
     content: WOMENS_HEALTH_GUIDE,

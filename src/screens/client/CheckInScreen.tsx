@@ -1,9 +1,10 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { intakeDetails } from "@/lib/dietPlan";
 import { checkinFeedback } from "@/lib/checkinFeedback";
-import NotificationsPrompt from "@/components/NotificationsPrompt";
 import WellbeingQuestions from "@/components/WellbeingQuestions";
 import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
+// Coach messages, the plan-ending banner and one tap-to-open line of reminders (C3).
+import TodayNotices from "@/components/TodayNotices";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -18,11 +19,6 @@ import {
   AppState,
   Platform,
 } from "react-native";
-import ProgressPhotoReminder from "@/components/ProgressPhotoReminder";
-import SleepReminder from "@/components/SleepReminder";
-import ResetReminderBanner from "@/components/reset/ResetReminderBanner";
-import { CycleTodayBanner } from "@/components/CycleTracker";
-import { CoachMessageCard } from "@/components/CoachMessages";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -219,12 +215,7 @@ export default function CheckInScreen() {
     const missing = unansweredSections(formFromCheckin(saved));
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-        <NotificationsPrompt who="client" />
-        <CoachMessageCard />
-        <SleepReminder />
-        <CycleTodayBanner />
-        <ResetReminderBanner />
-        <ProgressPhotoReminder />
+        <TodayNotices />
         <Text style={styles.title}>You're checked in for today ✅</Text>
         <CheckinFeedbackCard
           feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso(), client ? intakeDetails(client).weight_kg : null)}
@@ -287,13 +278,7 @@ export default function CheckInScreen() {
       >
         {step === 0 && (
           <>
-            <NotificationsPrompt who="client" />
-            <CoachMessageCard />
-            <SleepReminder />
-            <CycleTodayBanner />
-            <ResetReminderBanner />
-            <ProgressPhotoReminder />
-            {client && !saved && <RecoverySuggestionCard clientId={client.id} />}
+            <TodayNotices extra={client && !saved ? <RecoverySuggestionCard clientId={client.id} /> : null} />
           </>
         )}
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>

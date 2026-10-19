@@ -35,7 +35,7 @@ export default function WatchLink({ clientId, onSynced }: { clientId: string; on
       onSynced?.();
       Alert.alert(
         "Watch linked",
-        `${added ? `${added} workout${added === 1 ? "" : "s"} from the last 2 weeks added to Other exercise. ` : ""}From now on, workouts from ${source ? healthAppName(source) : "your health app"} come in by themselves each time you open the Exercises tab.`,
+        `${added ? `${added} workout${added === 1 ? "" : "s"} from the last 2 weeks added to Other exercise. ` : ""}From now on, workouts from ${source ? healthAppName(source) : "your health app"} come in by themselves each time you open the Training tab.`,
       );
     } else if (result === "needs_app") {
       Alert.alert("Health Connect needed", "Your phone needs Google's free Health Connect app. Install it, then tap Link my watch again.", [

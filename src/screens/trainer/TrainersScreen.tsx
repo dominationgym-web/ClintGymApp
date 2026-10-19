@@ -80,16 +80,6 @@ export default function TrainersScreen() {
     ]);
   };
 
-  const useCredit = (t: Trainer) =>
-    Alert.alert(
-      `Use ${REFERRAL_DISCOUNT_PERCENT}% off for ${trainerDisplayName(t)}?`,
-      `Tap this once you've taken ${REFERRAL_DISCOUNT_PERCENT}% off their fee, so the app keeps count.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Mark as used", onPress: () => updateTrainer(t, { referral_credits_used: t.referral_credits_used + 1 }) },
-      ],
-    );
-
   const confirm = (t: Trainer) => {
     const name = trainerDisplayName(t);
     if (t.approved) {
@@ -210,11 +200,8 @@ export default function TrainersScreen() {
                     {rewards.earned} referral{rewards.earned === 1 ? "" : "s"} · {rewards.unusedPercent}% off to give
                     {rewards.freeMonths > 0 ? ` (${rewards.freeMonths} free month${rewards.freeMonths === 1 ? "" : "s"})` : ""}
                   </Text>
-                  {rewards.unused > 0 ? (
-                    <Pressable onPress={() => useCredit(item)} hitSlop={8} disabled={busyId === item.id}>
-                      <Text style={styles.extraLink}>Mark {REFERRAL_DISCOUNT_PERCENT}% used</Text>
-                    </Pressable>
-                  ) : null}
+                  {/* Referral credit is used or paid out only in Billing (review 2026-10-18). */}
+                  {rewards.unused > 0 ? <Text style={styles.detail}>Use it in Billing when you record their payment.</Text> : null}
                 </View>
               ) : null}
             <Pressable

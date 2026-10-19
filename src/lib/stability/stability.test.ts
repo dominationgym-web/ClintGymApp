@@ -9,7 +9,8 @@ import {
   phaseFor,
   setsFor,
   STABILITY_AREAS,
-  stabilityStartMessage,
+  rehabRedFlags,
+  REHAB_GENERAL_FLAGS,
   stabilityVideoNames,
   stabilityWeek,
   targetText,
@@ -165,11 +166,14 @@ describe("assessExercise", () => {
   });
 });
 
-describe("stabilityStartMessage", () => {
-  it("names the program and where to find it", () => {
-    const msg = stabilityStartMessage("Thandi Mokoena", "knee", "rehab");
-    expect(msg).toMatch(/^Thandi, I've started you on the Knee stability program \(Rehab, 8 weeks\)/);
-    expect(msg).toContain("My stability program");
+describe("rehabRedFlags", () => {
+  it("puts the general flags first, then the area's own", () => {
+    for (const a of STABILITY_AREAS) {
+      const flags = rehabRedFlags(a.area);
+      expect(flags.slice(0, REHAB_GENERAL_FLAGS.length)).toEqual(REHAB_GENERAL_FLAGS);
+      expect(flags.slice(REHAB_GENERAL_FLAGS.length)).toEqual(a.redFlags);
+      expect(a.redFlags.length).toBeGreaterThan(0);
+    }
   });
 });
 

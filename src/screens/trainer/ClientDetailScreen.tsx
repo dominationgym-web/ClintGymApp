@@ -50,14 +50,21 @@ import ComebackCompareCard from "@/components/ComebackCompareCard";
 import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
+import FoldSection from "@/components/FoldSection";
+import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
+// What the client ticked at sign-up. Only shown for reference: the trainer's
+// own price picker ("What they pay you") is the one that counts for income
+// (review 2026-10-18).
 const PACKAGE_LABEL: Record<string, string> = {
   training_only: "Training only",
   training_nutrition: "Training + Nutrition",
   training_nutrition_lifestyle: "Training + Nutrition + Lifestyle",
 };
+
+const PLAN_LABEL: Record<string, string> = { intro_1mo: "1 Month", sub_6mo: "6 Month", sub_12mo: "12 Month" };
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -106,6 +113,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   // Which tap-to-open heading on the Training tab is open.
   const [trainingOpen, setTrainingOpen] = useState<string | null>(route.params.open ?? null);
   const toggleTraining = (key: string) => setTrainingOpen((k) => (k === key ? null : key));
+  // Which tap-to-open heading on the Overview is open (review 2026-10-18: a shorter Overview).
+  const [overviewOpen, setOverviewOpen] = useState<string | null>(null);
+  const toggleOverview = (key: string) => setOverviewOpen((k) => (k === key ? null : key));
   const [client, setClient] = useState<Client | null>(null);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -168,7 +178,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const [newHabitName, setNewHabitName] = useState("");
   const [newHabitReps, setNewHabitReps] = useState(1);
   const [newHabitStart, setNewHabitStart] = useState(() => todayIso());
-  const [newHabitEnd, setNewHabitEnd] = useState("");
+  // Weeks it runs, or null for no end.
+  const [newHabitWeeks, setNewHabitWeeks] = useState<number | null>(null);
   const [addingHabit, setAddingHabit] = useState(false);
 
   const loadHabits = async () => {
@@ -255,8 +266,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       name: newHabitName.trim(),
       active_days: [0, 1, 2, 3, 4, 5, 6],
       reps_target: newHabitReps,
-      start_date: newHabitStart || todayIso(),
-      end_date: newHabitEnd || null,
+      start_date: newHabitStart,
+      end_date: habitEndDate(newHabitStart, newHabitWeeks),
     });
     setAddingHabit(false);
     if (error) {
@@ -265,7 +276,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     }
     setNewHabitName("");
     setNewHabitReps(1);
-    setNewHabitEnd("");
+    setNewHabitWeeks(null);
     await loadHabits();
   };
 
@@ -455,87 +466,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <ComebackCompareCard client={client} />
             <TrainingLevelBanner level={client.training_level} />
             <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
-            {client.package_type && (
-              <View style={styles.packageBadge}>
-                <Text style={styles.packageBadgeText}>{PACKAGE_LABEL[client.package_type] ?? client.package_type}</Text>
-              </View>
-            )}
-
-            <ClientPricePicker
-              clientId={client.id}
-              value={client.price_package}
-              onChanged={(next) => setClient((c) => (c ? { ...c, price_package: next } : c))}
-            />
-
-            {client.plan_type && (
-              <View style={styles.planBox}>
-                <Text style={styles.planLabel}>{client.plan_type === 'intro_1mo' ? '1 Month' : client.plan_type === 'sub_6mo' ? '6 Month' : '12 Month'} Plan</Text>
-                {client.plan_started_at && (
-                  <Text style={styles.planDate}>
-                    Started: {new Date(client.plan_started_at).toLocaleDateString()}
-                  </Text>
-                )}
-                {client.plan_expires_at && (
-                  <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
-                    Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
-                  </Text>
-                )}
-                {!client.archived_at && (
-                  <View style={styles.planButtons}>
-                    <Pressable style={styles.planButton} onPress={renewPlan}>
-                      <Text style={styles.planButtonText}>{client.access_status === "expired" ? "Paid: activate" : "Paid: renew plan"}</Text>
-                    </Pressable>
-                    {client.access_status !== "expired" && (
-                      <Pressable style={styles.planButtonDanger} onPress={markExpired}>
-                        <Text style={styles.planButtonDangerText}>Mark expired</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                )}
-              </View>
-            )}
-
-            <View style={styles.resetBox}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.resetTitle}>12-Week {resetName(client.sex)}</Text>
-                {client.lifestyle_reset_started_at ? (
-                  <Text style={styles.helper}>
-                    {client.reset_started_on
-                      ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)} (started ${client.reset_started_on})`
-                      : "Enrolled. Waiting for them to tap Start"}
-                  </Text>
-                ) : (
-                  <Text style={styles.helper}>Not enrolled</Text>
-                )}
-              </View>
-              <Pressable style={styles.resetButton} onPress={toggleLifestyleReset}>
-                <Text style={styles.resetButtonText}>
-                  {client.lifestyle_reset_started_at ? "End program" : "Enroll"}
-                </Text>
-              </Pressable>
-            </View>
-            {client.intake_responses?.high_stress_or_anxiety === "Yes" && (
-              <View style={styles.stressFlag}>
-                <Text style={styles.stressFlagText}>
-                  ⚠️ On the intake form they said they often feel highly stressed or suffer with anxiety.
-                  {!client.lifestyle_reset_started_at
-                    ? ` The ${resetName(client.sex)} could be a good fit: tap Enroll above.`
-                    : " Ease them in and keep an eye on sleep and recovery."}
-                </Text>
-              </View>
-            )}
-            {client.reset_started_on && client.lifestyle_reset_started_at && (
-              <View style={styles.resetNotes}>
-                <Text style={styles.resetTitle}>Reset notes</Text>
-                <TrainerResetNotes clientId={client.id} />
-              </View>
-            )}
-
-            <Text style={styles.sectionHeading}>Messages to {client.name}</Text>
+            <Text style={styles.sectionHeading}>Check-in notes to {client.name}</Text>
             {messages.length === 0 ? (
-              <Text style={styles.helper}>No messages sent yet.</Text>
+              <Text style={styles.helper}>No notes sent yet.</Text>
             ) : (
-              messages.map((m) => (
+              messages.slice(0, 3).map((m) => (
                 <View key={m.id} style={styles.messageRow}>
                   <Text style={styles.body}>{m.body}</Text>
                   <Text style={styles.helper}>
@@ -544,8 +479,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 </View>
               ))
             )}
+            {/* The one way to message a client (review 2026-10-18): the trainer's own words, shown at the top of their Check-in. */}
             <Pressable style={styles.button} onPress={() => setReplying(true)}>
-              <Text style={styles.buttonText}>Send a message</Text>
+              <Text style={styles.buttonText}>💬 Send {client.name.split(" ")[0]} a check-in note</Text>
             </Pressable>
             {trainer && replying && (
               <ReplyToClientModal
@@ -560,80 +496,207 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               />
             )}
 
-            {client.injuries && (
-              <Text style={styles.body}>
-                Injuries (noted earlier): {client.injuries}
-                {client.injuries_healed_on ? ` (healed ${client.injuries_healed_on})` : ""}{" "}
-                {/* Marking it healed stops the injury check flagging it (0119). */}
-                <Text
-                  style={{ color: BRAND_GOLD, fontWeight: "700" }}
-                  onPress={async () => {
-                    const healed = client.injuries_healed_on ? null : todayIso();
-                    const { error } = await supabase.from("clients").update({ injuries_healed_on: healed }).eq("id", client.id);
-                    if (error) Alert.alert("Couldn't save", error.message);
-                    else {
-                      setClient((c) => (c ? { ...c, injuries_healed_on: healed } : c));
-                      setInjuryKey((k) => k + 1);
-                    }
-                  }}
-                >
-                  {client.injuries_healed_on ? "Not healed" : "Mark healed"}
+            {/* The rest under tap-to-open headings (review 2026-10-18: GRIZZ hates scrolling). */}
+            <FoldSection
+              icon="💳"
+              title="Plan & payment"
+              hint={
+                client.plan_type
+                  ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString()}` : ""}`
+                  : "No plan picked"
+              }
+              open={overviewOpen === "plan"}
+              onToggle={() => toggleOverview("plan")}
+            >
+              <ClientPricePicker
+                clientId={client.id}
+                value={client.price_package}
+                onChanged={(next) => setClient((c) => (c ? { ...c, price_package: next } : c))}
+              />
+              {client.package_type && (
+                <Text style={styles.helper}>
+                  At sign-up they ticked "{PACKAGE_LABEL[client.package_type] ?? client.package_type}". That's only for reference: "What they pay you" above is the one that counts.
                 </Text>
-              </Text>
-            )}
-            <Text style={styles.libraryTitle}>🩹 Injuries</Text>
-            <InjuryList clientId={client.id} role="trainer" clientName={client.name} onChanged={() => setInjuryKey((k) => k + 1)} />
-            {client.injuries && !client.injuries_healed_on && stabilityAreasFor(client.injuries).length > 0 && <RehabSuggestion clientName={client.name} texts={[client.injuries]} />}
-            <Text style={styles.libraryTitle}>🎯 Goals</Text>
-            {goalsDraft === null ? (
-              <Pressable onPress={() => setGoalsDraft(clientGoals(client))} hitSlop={6}>
-                <Text style={styles.body}>{clientGoals(client) || "None yet."}</Text>
-                <Text style={styles.editLink}>Edit goals</Text>
-              </Pressable>
-            ) : (
-              <>
-                <TextInput
-                  style={styles.textInput}
-                  multiline
-                  maxLength={500}
-                  value={goalsDraft}
-                  onChangeText={setGoalsDraft}
-                  placeholder="e.g. Lose 8kg by March, deadlift 100kg"
-                  placeholderTextColor="#64748B"
-                />
-                <View style={styles.planButtons}>
-                  <Pressable style={styles.planButton} onPress={saveGoals}>
-                    <Text style={styles.planButtonText}>Save goals</Text>
-                  </Pressable>
-                  <Pressable onPress={() => setGoalsDraft(null)} hitSlop={6}>
-                    <Text style={styles.editLink}>Cancel</Text>
-                  </Pressable>
+              )}
+              {client.plan_type && (
+                <View style={styles.planBox}>
+                  <Text style={styles.planLabel}>{PLAN_LABEL[client.plan_type] ?? "12 Month"} Plan</Text>
+                  {client.plan_started_at && (
+                    <Text style={styles.planDate}>
+                      Started: {new Date(client.plan_started_at).toLocaleDateString()}
+                    </Text>
+                  )}
+                  {client.plan_expires_at && (
+                    <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
+                      Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
+                    </Text>
+                  )}
+                  {!client.archived_at && (
+                    <View style={styles.planButtons}>
+                      <Pressable style={styles.planButton} onPress={renewPlan}>
+                        <Text style={styles.planButtonText}>{client.access_status === "expired" ? "Paid: activate" : "Paid: renew plan"}</Text>
+                      </Pressable>
+                      {client.access_status !== "expired" && (
+                        <Pressable style={styles.planButtonDanger} onPress={markExpired}>
+                          <Text style={styles.planButtonDangerText}>Mark expired</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
                 </View>
-              </>
-            )}
+              )}
+            </FoldSection>
 
-            <Text style={styles.sectionHeading}>Intake form</Text>
-            {Object.keys(client.intake_responses ?? {}).length === 0 ? (
-              <Text style={styles.helper}>No intake form completed yet.</Text>
-            ) : (
-              <View style={styles.intakeBox}>
-                {Object.entries(client.intake_responses).map(([key, value]) => (
-                  <View key={key} style={styles.intakeRow}>
-                    <Text style={styles.intakeLabel}>{formatIntakeLabel(key)}</Text>
-                    <Text style={styles.intakeValue}>{String(value)}</Text>
-                  </View>
-                ))}
+            <FoldSection
+              icon="🌿"
+              title={`12-Week ${resetName(client.sex)}`}
+              hint={
+                (client.lifestyle_reset_started_at
+                  ? client.reset_started_on
+                    ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)}`
+                    : "Enrolled, waiting for them to tap Start"
+                  : "Not enrolled") +
+                (client.intake_responses?.high_stress_or_anxiety === "Yes" ? " · ⚠️ stressed or anxious (intake)" : "")
+              }
+              open={overviewOpen === "reset"}
+              onToggle={() => toggleOverview("reset")}
+            >
+              <View style={styles.resetBox}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helper}>
+                    {client.lifestyle_reset_started_at
+                      ? client.reset_started_on
+                        ? `On week ${Math.min(resetWeekNumber(client.reset_started_on, todayIso()), RESET_WEEKS_TOTAL)} (started ${client.reset_started_on})`
+                        : "Enrolled. Waiting for them to tap Start"
+                      : "Not enrolled"}
+                  </Text>
+                </View>
+                <Pressable style={styles.resetButton} onPress={toggleLifestyleReset}>
+                  <Text style={styles.resetButtonText}>
+                    {client.lifestyle_reset_started_at ? "End program" : "Enroll"}
+                  </Text>
+                </Pressable>
               </View>
-            )}
+              {client.intake_responses?.high_stress_or_anxiety === "Yes" && (
+                <View style={styles.stressFlag}>
+                  <Text style={styles.stressFlagText}>
+                    ⚠️ On the intake form they said they often feel highly stressed or suffer with anxiety.
+                    {!client.lifestyle_reset_started_at
+                      ? ` The ${resetName(client.sex)} could be a good fit: tap Enroll above.`
+                      : " Ease them in and keep an eye on sleep and recovery."}
+                  </Text>
+                </View>
+              )}
+              {client.reset_started_on && client.lifestyle_reset_started_at && (
+                <View style={styles.resetNotes}>
+                  <Text style={styles.resetTitle}>Reset notes</Text>
+                  <TrainerResetNotes clientId={client.id} />
+                </View>
+              )}
+            </FoldSection>
+
+            <FoldSection
+              icon="🩹"
+              title="Injuries"
+              hint={client.injuries && !client.injuries_healed_on ? `Noted earlier: ${client.injuries}` : null}
+              open={overviewOpen === "injuries"}
+              onToggle={() => toggleOverview("injuries")}
+            >
+              {client.injuries && (
+                <Text style={styles.body}>
+                  Injuries (noted earlier): {client.injuries}
+                  {client.injuries_healed_on ? ` (healed ${client.injuries_healed_on})` : ""}{" "}
+                  {/* Marking it healed stops the injury check flagging it (0119). */}
+                  <Text
+                    style={{ color: BRAND_GOLD, fontWeight: "700" }}
+                    onPress={async () => {
+                      const healed = client.injuries_healed_on ? null : todayIso();
+                      const { error } = await supabase.from("clients").update({ injuries_healed_on: healed }).eq("id", client.id);
+                      if (error) Alert.alert("Couldn't save", error.message);
+                      else {
+                        setClient((c) => (c ? { ...c, injuries_healed_on: healed } : c));
+                        setInjuryKey((k) => k + 1);
+                      }
+                    }}
+                  >
+                    {client.injuries_healed_on ? "Not healed" : "Mark healed"}
+                  </Text>
+                </Text>
+              )}
+              <InjuryList clientId={client.id} role="trainer" clientName={client.name} onChanged={() => setInjuryKey((k) => k + 1)} />
+              {client.injuries && !client.injuries_healed_on && stabilityAreasFor(client.injuries).length > 0 && <RehabSuggestion clientName={client.name} texts={[client.injuries]} />}
+            </FoldSection>
+
+            <FoldSection
+              icon="🎯"
+              title="Goals"
+              hint={clientGoals(client) || "None yet"}
+              open={overviewOpen === "goals"}
+              onToggle={() => toggleOverview("goals")}
+            >
+              {goalsDraft === null ? (
+                <Pressable onPress={() => setGoalsDraft(clientGoals(client))} hitSlop={6}>
+                  <Text style={styles.body}>{clientGoals(client) || "None yet."}</Text>
+                  <Text style={styles.editLink}>Edit goals</Text>
+                </Pressable>
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.textInput}
+                    multiline
+                    maxLength={500}
+                    value={goalsDraft}
+                    onChangeText={setGoalsDraft}
+                    placeholder="e.g. Lose 8kg by March, deadlift 100kg"
+                    placeholderTextColor="#64748B"
+                  />
+                  <View style={styles.planButtons}>
+                    <Pressable style={styles.planButton} onPress={saveGoals}>
+                      <Text style={styles.planButtonText}>Save goals</Text>
+                    </Pressable>
+                    <Pressable onPress={() => setGoalsDraft(null)} hitSlop={6}>
+                      <Text style={styles.editLink}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </FoldSection>
+
+            <FoldSection
+              icon="📝"
+              title="Intake form"
+              hint={Object.keys(client.intake_responses ?? {}).length === 0 ? "Not filled in yet" : null}
+              open={overviewOpen === "intake"}
+              onToggle={() => toggleOverview("intake")}
+            >
+              {Object.keys(client.intake_responses ?? {}).length === 0 ? (
+                <Text style={styles.helper}>No intake form completed yet.</Text>
+              ) : (
+                <View style={styles.intakeBox}>
+                  {Object.entries(client.intake_responses).map(([key, value]) => (
+                    <View key={key} style={styles.intakeRow}>
+                      <Text style={styles.intakeLabel}>{formatIntakeLabel(key)}</Text>
+                      <Text style={styles.intakeValue}>{String(value)}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </FoldSection>
+
             {!client.archived_at && (
-              <Pressable style={styles.archiveButton} onPress={archiveOrBringBack}>
-                <Text style={styles.archiveButtonText}>🗄 Archive this client</Text>
-              </Pressable>
+              <FoldSection icon="🗄" title="Archive" open={overviewOpen === "archive"} onToggle={() => toggleOverview("archive")}>
+                <Text style={styles.helper}>For a client who has stopped. Nothing is deleted and you can bring them back.</Text>
+                <Pressable style={styles.archiveButton} onPress={archiveOrBringBack}>
+                  <Text style={styles.archiveButtonText}>🗄 Archive this client</Text>
+                </Pressable>
+              </FoldSection>
             )}
           </>
         )}
         {tab === "checkins" && (
           <>
+            {/* Body and mind reports here, where the red dot is (review 2026-10-18). */}
+            <WellbeingReports clientId={client.id} clientName={client.name} />
             <CheckinFeedbackCard feedback={checkinFeedback(checkins, todayIso(), intakeDetails(client).weight_kg)} forTrainer />
             <Text style={styles.sectionHeading}>Last 14 check-ins</Text>
             {checkins.length === 0 && <Text style={styles.helper}>No check-ins yet.</Text>}
@@ -645,6 +708,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   Sleep {c.sleep_quality ?? "-"}/5 · Water {c.water_litres}L · Alcohol {c.alcohol_units}u · High-GI{" "}
                   {c.high_gi_count}
                   {c.wound_down !== null && ` · Wind-down ${c.wound_down ? "yes" : "no"}`}
+                  {c.sleep_bed_time && c.sleep_wake_time ? ` · Bed ${c.sleep_bed_time.slice(0, 5)}, up ${c.sleep_wake_time.slice(0, 5)}` : ""}
+                  {` · Meals ${c.meals_total}`}
+                  {c.pain_status === "reported" ? " · 🩹 Pain" : ""}
+                  {c.fatigue_status === "reported" ? " · 😴 Tired" : ""}
+                  {c.mental_status === "reported" ? " · 🧠 Stressed" : ""}
                 </Text>
               </View>
             ))}
@@ -717,27 +785,22 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 </Pressable>
               </View>
 
-              <View style={styles.dateRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Start date</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#64748B"
-                    value={newHabitStart}
-                    onChangeText={setNewHabitStart}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>End date (optional)</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Ongoing"
-                    placeholderTextColor="#64748B"
-                    value={newHabitEnd}
-                    onChangeText={setNewHabitEnd}
-                  />
-                </View>
+              {/* Quick taps instead of typed dates (review 2026-10-18), so a typo can't break it. */}
+              <Text style={styles.fieldLabel}>Starts</Text>
+              <View style={styles.chipRow}>
+                {habitStartChoices(todayIso()).map((c) => (
+                  <Pressable key={c.label} style={[styles.dateChip, newHabitStart === c.date && styles.dateChipOn]} onPress={() => setNewHabitStart(c.date)}>
+                    <Text style={[styles.dateChipText, newHabitStart === c.date && styles.dateChipTextOn]}>{c.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={styles.fieldLabel}>How long</Text>
+              <View style={styles.chipRow}>
+                {HABIT_LENGTHS.map((w) => (
+                  <Pressable key={String(w)} style={[styles.dateChip, newHabitWeeks === w && styles.dateChipOn]} onPress={() => setNewHabitWeeks(w)}>
+                    <Text style={[styles.dateChipText, newHabitWeeks === w && styles.dateChipTextOn]}>{habitLengthLabel(w)}</Text>
+                  </Pressable>
+                ))}
               </View>
 
               <Pressable style={styles.button} onPress={addHabit} disabled={addingHabit}>
@@ -753,7 +816,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               client={client}
               onChanged={(change) => {
                 setClient((c) => (c ? { ...c, ...change } : c));
-                if (change.foundation_status === "approved") setProgramKey((k) => k + 1);
+                if (change.foundation_status === "approved") {
+                  // The calendar reloads with the new program, and the injury check runs.
+                  setProgramKey((k) => k + 1);
+                  planChanged();
+                }
               }}
             />
             <InjuryCheckCard
@@ -767,6 +834,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             />
             {/* Calendar first (GRIZZ, 2026-10-17): tap a day to start a program. The rest is tucked under tap-to-open headings. */}
             <ClientCalendarCard
+              key={programKey}
               clientId={client.id}
               clientName={client.name}
               trainingPlace={client.training_place}
@@ -826,8 +894,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 clientId={client.id}
                 clientName={client.name}
                 trainingPlace={client.training_place}
-                resetNotice={resetNotice(client, todayIso())}
-                onChanged={planChanged}
                 injuries={injuredAreas}
               />
               {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
@@ -875,9 +941,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "notes" && (
           <>
-            <WellbeingReports clientId={client.id} clientName={client.name} />
             <Text style={styles.sectionHeading}>Private notes</Text>
-            <Text style={styles.notesHelper}>Only you see these. To message {client.name}, open a section above and tap Send a check-in note.</Text>
+            <Text style={styles.notesHelper}>Only you see these.</Text>
             <TextInput
               style={styles.notesInput}
               multiline
@@ -908,7 +973,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
           dot:
             t.key === "overview"
               ? (problemColor(problemLevel(problems)) ?? null)
-              : t.key === "checkins" || t.key === "notes"
+              : t.key === "checkins"
                 ? (problemColor(problemLevel(problems.filter((p) => p.topic !== "flag"))) ?? null)
                 : null,
         }))}
@@ -984,15 +1049,6 @@ const styles = StyleSheet.create({
   libraryRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
   libraryTitle: { color: "#fff", fontSize: 15, fontWeight: "700", marginBottom: 2 },
   memberSince: { color: BRAND_GOLD, fontSize: 13, fontWeight: "600" },
-  packageBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#1E293B",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 8,
-  },
-  packageBadgeText: { color: "#22C55E", fontSize: 12, fontWeight: "600" },
   planBox: {
     backgroundColor: "#1E293B",
     borderRadius: 10,
@@ -1087,5 +1143,9 @@ const styles = StyleSheet.create({
   },
   stepperButtonText: { color: "#22C55E", fontSize: 18, fontWeight: "700" },
   stepperValue: { color: "#fff", fontSize: 16, fontWeight: "700", minWidth: 20, textAlign: "center" },
-  dateRow: { flexDirection: "row", gap: 10 },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  dateChip: { backgroundColor: "#0F172A", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  dateChipOn: { backgroundColor: BRAND_GOLD },
+  dateChipText: { color: "#CBD5E1", fontWeight: "700", fontSize: 13 },
+  dateChipTextOn: { color: "#0F172A" },
 });

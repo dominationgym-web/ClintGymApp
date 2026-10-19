@@ -301,7 +301,7 @@ HIP.programs = [
   program("hip", "rehab", {
     who: "A groin or hip strain, buttock or side-of-hip pain, or after a hip problem once a doctor or physio has cleared you to strengthen.",
     goal: "Settle pain, rebuild the inner and outer hip muscles, and get the pelvis level and controlled on one leg.",
-    resistance: "Groin strains: squeezes and short Copenhagen holds come first; don't stretch the groin hard while it's healing.",
+    resistance: "Groin strains: squeezes and short Copenhagen holds come first; don't stretch the groin hard while it's healing. Pain at the side of the hip (often a sore tendon): avoid crossing your legs, sleeping on the sore side and standing hanging on one hip. Start with holds pushing the leg out to the side, standing or lying on your back, instead of clamshells and side-lying leg raises, which squash the tendon. Add those once the holds are comfortable.",
     finishTest: "25-second long Copenhagen hold each side, 10 single-leg deadlifts each side without the hips opening, and no pain on side lunges.",
     phases: [
       phase(1, 2, "Settle it", "Gentle holds and switching the side glutes on.", [

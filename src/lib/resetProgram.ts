@@ -196,7 +196,7 @@ export const RESET_WEEKS: ResetWeek[] = [
     focus: "Notice how your cycle, sleep and stress change your energy.",
     habits: ALL_HABITS,
     todo: [
-      "Log your period in Women's Health Reset (menu) if you haven't",
+      "Log your period in Cycle tracker (menu) if you haven't",
       "Train harder on high-energy days, lighter on low ones",
       "3 strength sessions, 3-4 cardio",
     ],

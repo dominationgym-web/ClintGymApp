@@ -819,7 +819,7 @@ const CALF_RAISE: ExerciseTechnique = {
     "Pause in the stretch for a second.",
     "Rise up as high as you can onto your toes.",
   ],
-  tips: ["The pause at the bottom stops you bouncing. Calves love a full stretch.", "Seated raises work the lower calf. Standing raises work the upper calf."],
+  tips: ["The pause at the bottom stops you bouncing. Calves love a full stretch.", "Seated (bent-knee) raises work the deeper soleus more. Standing (straight-knee) raises work the bigger gastrocnemius more."],
   adapt: ["Hold onto something for balance.", "Achilles sore? Don't go as low, and keep it slow."],
 };
 

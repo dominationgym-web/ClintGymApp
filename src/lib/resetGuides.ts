@@ -97,11 +97,11 @@ export const RESET_GUIDES: Record<ResetHabitKey, HabitGuide> = {
       "Warm up for 5 minutes: walk, then a light set of your first exercise.",
       "Pick a weight you could lift 2-3 more reps with at the end of each set.",
       "Rest 1-2 minutes between sets.",
-      "Log the weight, reps and how it felt in your Training Log (Exercises tab).",
+      "Log the weight, reps and how it felt in your Training Log (Training tab).",
     ],
     tips: [
       "Good form first, then add weight slowly.",
-      "Not sure how to do a movement? Open it in the Exercises tab to watch the video.",
+      "Not sure how to do a movement? Open it in the Training tab to watch the video.",
       "You should leave feeling better than when you arrived, not wrecked.",
     ],
     easier: "Low energy or stressed? Do the session with lighter weights, or just the first two exercises. Still counts.",

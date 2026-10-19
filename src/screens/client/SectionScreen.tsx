@@ -15,9 +15,8 @@ import MealPlanMaker from "@/components/MealPlanMaker";
 import SupplementCard, { LEVEL_COLOURS, SupplementLevelsKey } from "@/components/SupplementCard";
 import { SUPPLEMENTS, type SupplementLevel } from "@/lib/supplements";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
-import InsulinGuide from "@/components/InsulinGuide";
-import { UNDERSTANDING_CARBS } from "@/lib/nutrition";
-import { CarbsGuide, GuideGroupCard } from "@/components/GuideBreakdown";
+import CarbsInShort, { CARBS_IN_SHORT } from "@/components/CarbsInShort";
+import { GuideGroupCard } from "@/components/GuideBreakdown";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/context/AuthContext";
@@ -41,9 +40,9 @@ export default function SectionScreen({ route }: Props) {
     parts.push({ title: "Work out your own meal plan and diet", icon: "🤖", body: <MealPlanMaker /> });
     parts.push({ title: "Meal builder", icon: "🍽️", body: <MealBuilder /> });
     parts.push({ title: "Calorie calculator", icon: "🔢", body: <CalorieCalculator /> });
-    // Right under the calorie calculator (GRIZZ, 2026-10-12).
-    parts.push({ title: "Understanding Insulin", icon: "📈", body: <InsulinGuide /> });
-    parts.push({ title: UNDERSTANDING_CARBS.title, icon: "🍚", body: <CarbsGuide /> });
+    // Right under the calorie calculator (GRIZZ, 2026-10-12). One short card; the
+    // full Understanding Insulin and Understanding Carbs open inside it (2026-10-18).
+    parts.push({ title: CARBS_IN_SHORT.title, icon: "🍚", body: <CarbsInShort /> });
     parts.push({ title: "Build your plate", icon: "🥦", body: <FoodGroupExamples /> });
   }
   if (section.key === "womensHealthReset") parts.push({ title: "Cycle tracker", icon: "🗓️", body: <CycleTracker /> });

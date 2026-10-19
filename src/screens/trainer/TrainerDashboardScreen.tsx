@@ -21,6 +21,8 @@ type Props = TrainerTabScreenProps<"Dashboard">;
 interface ClientStatus {
   client: Client;
   todaysCheckin: Checkin | null;
+  // A workout done today, in full or in part (0076).
+  trainedToday: boolean;
   distressFlag: boolean;
   // Problems not yet fixed (0075), and the dot they give: red while one is
   // open, orange while they're all being fixed.
@@ -221,6 +223,13 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       .in("client_id", clients.map((c) => c.id))
       .order("created_at", { ascending: true });
 
+    const { data: sessionRows } = await supabase
+      .from("workout_sessions")
+      .select("client_id, status")
+      .eq("session_date", todayIso())
+      .in("client_id", clients.map((c) => c.id));
+    const trained = new Set((sessionRows ?? []).filter((r) => r.status !== "missed").map((r) => r.client_id));
+
     const checkinByClient = new Map((checkins ?? []).map((c) => [c.client_id, c]));
     const problemsByClient = unfixedByClient(problemRows ?? []);
 
@@ -229,7 +238,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       const problems = problemsByClient.get(client.id) ?? [];
       const level = problemLevel(problems);
       // Today's report only lifts the client up the list while it's still new.
-      return { client, todaysCheckin, problems, level, distressFlag: level === "red" && (todaysCheckin?.distress_flag ?? false) };
+      return { client, todaysCheckin, trainedToday: trained.has(client.id), problems, level, distressFlag: level === "red" && (todaysCheckin?.distress_flag ?? false) };
     });
 
     result.sort((a, b) => priority(a) - priority(b));
@@ -333,20 +342,26 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     <View style={styles.container}>
       <Text style={styles.title}>Today's compliance</Text>
       <NotificationsPrompt who="trainer" />
-      {needsYou.length > 0 && (
-        <View style={styles.needsCard}>
-          <Text style={styles.needsTitle}>Needs you</Text>
-          {needsYou.map((item, i) => (
-            <Pressable key={item.key} style={[styles.needsRow, i > 0 && styles.needsRowLine]} onPress={item.onPress}>
-              <Text style={styles.suggestionBannerText}>{item.text}</Text>
-              <Text style={styles.suggestionBannerLink}>{item.link} ›</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      {trainer && <HabitWinsCard trainerId={trainer.id} />}
       <FlatList
         data={rows}
+        // Needs you and Habit wins scroll with the list, so a small phone still
+        // has room for the clients (review 2026-10-18).
+        ListHeaderComponent={
+          <>
+            {needsYou.length > 0 && (
+              <View style={styles.needsCard}>
+                <Text style={styles.needsTitle}>Needs you</Text>
+                {needsYou.map((item, i) => (
+                  <Pressable key={item.key} style={[styles.needsRow, i > 0 && styles.needsRowLine]} onPress={item.onPress}>
+                    <Text style={styles.suggestionBannerText}>{item.text}</Text>
+                    <Text style={styles.suggestionBannerLink}>{item.link} ›</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+            {trainer && <HabitWinsCard trainerId={trainer.id} />}
+          </>
+        }
         keyExtractor={(r) => r.client.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => {
@@ -401,7 +416,14 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                   </View>
                 )}
               </View>
-              <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
+              {/* Labelled, so it's clear what the dot means; plus who trained today. */}
+              <View style={styles.statusCol}>
+                <View style={styles.statusLine}>
+                  <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
+                  <Text style={styles.statusText}>{item.todaysCheckin ? "Checked in" : "No check-in yet"}</Text>
+                </View>
+                {item.trainedToday && <Text style={styles.trainedText}>🏋️ Trained today</Text>}
+              </View>
             </Pressable>
           );
         }}
@@ -476,7 +498,11 @@ const styles = StyleSheet.create({
   fixedButton: { borderColor: "#22C55E" },
   fixedText: { color: "#22C55E", fontWeight: "700", fontSize: 13 },
   replyNote: { color: "#86EFAC", fontSize: 12, marginTop: 4 },
-  statusDot: { width: 12, height: 12, borderRadius: 6 },
+  statusCol: { alignItems: "flex-end", gap: 4, marginLeft: 8 },
+  statusLine: { flexDirection: "row", alignItems: "center", gap: 6 },
+  statusText: { color: "#94A3B8", fontSize: 11, fontWeight: "600" },
+  trainedText: { color: "#22C55E", fontSize: 11, fontWeight: "700" },
+  statusDot: { width: 10, height: 10, borderRadius: 5 },
   dotGreen: { backgroundColor: "#22C55E" },
   dotRed: { backgroundColor: "#EF4444" },
   helper: { color: "#64748B", textAlign: "center", marginTop: 40 },

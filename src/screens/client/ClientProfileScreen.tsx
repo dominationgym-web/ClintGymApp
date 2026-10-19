@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { ClientStackParamList, ClientTabParamList } from "@/navigation/types";
 import InjuryList from "@/components/InjuryList";
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, ActivityIndicator, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -42,6 +45,16 @@ export default function ClientProfileScreen() {
   const [trainer, setTrainer] = useState<Trainer | null>(null);
   // Which tap-to-open heading is open (one at a time, none at first).
   const [openFold, setOpenFold] = useState<string | null>(null);
+  const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
+  // The plan-ending banner on Check-in opens Paying your trainer straight away (C8).
+  const route = useRoute<RouteProp<ClientTabParamList, "Profile">>();
+  const openParam = route.params?.open;
+  useEffect(() => {
+    if (openParam) {
+      setOpenFold(openParam);
+      navigation.setParams({ open: undefined } as never);
+    }
+  }, [openParam]);
   const trainerId = client?.trainer_id;
 
   // The client's own trainer, for their logo and payment details (0029).
@@ -247,6 +260,17 @@ export default function ClientProfileScreen() {
 
       <FoldSection icon="💬" title="Messages from your coach" open={openFold === "messages"} onToggle={() => fold("messages")}>
         <CoachMessageHistory bare />
+      </FoldSection>
+
+      {/* Was the Video log tab (app-flow review C2, 2026-10-18); opens its own page. */}
+      <FoldSection
+        icon="🎥"
+        title="Form videos"
+        hint="Your videos and your coach's feedback"
+        open={false}
+        onToggle={() => navigation.navigate("FormVideos")}
+      >
+        {null}
       </FoldSection>
 
       <FoldSection icon="📸" title="Progress photos" open={openFold === "photos"} onToggle={() => fold("photos")}>
