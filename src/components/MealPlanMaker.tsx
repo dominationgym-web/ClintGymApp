@@ -224,7 +224,7 @@ export default function MealPlanMaker() {
             </Text>
             <Text style={styles.explainHead}>2. Your goal</Text>
             <Text style={styles.explain}>
-              • To lose weight, eat a bit less than your body uses. It then takes the difference from your stored fat.{"\n"}• To
+              • To lose fat, eat a bit less than your body uses. It then takes the difference from your stored fat.{"\n"}• To
               stay the same, eat what your body uses.{"\n"}• To build muscle, eat a bit more than your body uses, and train
               hard. The extra food gives your body what it needs to build new muscle.
             </Text>
@@ -233,7 +233,7 @@ export default function MealPlanMaker() {
             <Text style={styles.explainHead}>4. Your carbs, protein and fibre</Text>
             <Text style={styles.explain}>
               • Most of the carbs go in the meal before training and the reload meal after it, when they fuel your session. You
-              get a training-day plan and a rest-day plan.{"\n"}• Losing weight: protein is a bit higher, because it keeps you full
+              get a training-day plan and a rest-day plan.{"\n"}• Fat loss: protein is a bit higher, because it keeps you full
               and protects your muscle.{"\n"}• Every day has vegetables, a fruit, beans or lentils and (unless you're dairy-free)
               milk, yoghurt or cottage cheese, for at least 25 g of fibre.
             </Text>
@@ -346,7 +346,7 @@ export default function MealPlanMaker() {
           {explainer}
           <Text style={styles.helper}>
             No problem. Your body uses about {need?.toLocaleString()} kcal a day
-            {safeGoal === "lose" ? ", so aim a bit under that to lose weight" : safeGoal === "gain" ? ", so aim a bit over that to build muscle" : ""}.
+            {safeGoal === "lose" ? ", so aim a bit under that to lose fat" : safeGoal === "gain" ? ", so aim a bit over that to build muscle" : ""}.
             Come back here any time and Daily Evolution will work out a meal plan for you.
           </Text>
           <Pressable style={[styles.button, styles.primary, { flex: 0, marginTop: 8 }]} onPress={() => { setDeclined(false); setStep(3); }}>
@@ -402,7 +402,7 @@ export default function MealPlanMaker() {
 
         {page === "goal" && (
           <View>
-            <Text style={styles.label}>Do you want to lose weight, build muscle or stay the same?</Text>
+            <Text style={styles.label}>Do you want to lose fat, build muscle or stay the same?</Text>
             <View style={styles.chips}>
               {coachKcal ? chip(goal === "coach", "My coach's target", () => setGoal("coach")) : null}
               {goals.map((g) => chip(safeGoal === g.key, g.label, () => setGoal(g.key), g.key))}

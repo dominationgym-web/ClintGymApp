@@ -109,7 +109,7 @@ function MultiChoiceField({
 const GOAL_OPTIONS = [
   "Gain muscle",
   "Get stronger",
-  "Lose weight",
+  "Lose fat",
   "General health and wellbeing",
   "Improve mental fortitude",
   "Training for something specific",
