@@ -80,6 +80,10 @@ export type BillingSettings = {
   free_clients: number;
   client_fees_due_day: number;
   lockout_enabled: boolean;
+  // Card payments on the website (0126), off until the store launch.
+  card_billing_enabled: boolean;
+  card_currencies: BillingCurrency[];
+  usd_zar_rate: number;
   updated_at: string;
 };
 

@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, shortDate } from "@/lib/billing";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
+import CardPayment from "@/components/CardPayment";
 import type { BillingSettings, EftDetails, Trainer, TrainerBillingStatus } from "@/types/database";
 
 // A trainer's own plan (0064): what they pay, when it's due, client fees owed,
 // and where to pay (the app owner's EFT details). Nothing shows until the
 // owner has set their plan.
+//
+// Website-first billing (GRIZZ, 2026-10-19): trainers pay on the website (the
+// web version), by card (0126) or EFT. The phone apps sell nothing, so there
+// they only show where the plan stands, with no prices or ways to pay.
+const SELLS = Platform.OS === "web";
+
 export default function TrainerPlanCard({ trainer, showPayment = false }: { trainer: Trainer; showPayment?: boolean }) {
   const [status, setStatus] = useState<TrainerBillingStatus | null>(null);
   const [settings, setSettings] = useState<BillingSettings | null>(null);
@@ -51,21 +58,22 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
           <Text style={styles.title}>🎁 You're on free use</Text>
           <Text style={styles.line}>No monthly subscription.</Text>
           <Text style={styles.line}>
-            From {shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))} you pay{" "}
-            {money(settings.prices[currency].client, currency)} a month for each active client. The app reminds you
-            before then.
+            {SELLS
+              ? `From ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))} you pay ${money(settings.prices[currency].client, currency)} a month for each active client. The app reminds you before then.`
+              : `Per-client fees start ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))}.`}
           </Text>
           <Text style={styles.line}>Banked referrals come off your client fees.</Text>
         </>
       ) : (
         <>
           <Text style={styles.title}>
-            Your plan: {PLAN_LABEL[status.billing_plan!]} · {money(planPrice(settings.prices, currency, status.billing_plan!), currency)}
+            Your plan: {PLAN_LABEL[status.billing_plan!]}
+            {SELLS ? ` · ${money(planPrice(settings.prices, currency, status.billing_plan!), currency)}` : ""}
           </Text>
           <Text style={[styles.line, state.kind === "overdue" && styles.warn]}>{planStateLabel(state)}</Text>
         </>
       )}
-      {status.client_fees_from && !freeUse ? (
+      {SELLS && status.client_fees_from && !freeUse ? (
         <Text style={styles.line}>
           Client fees from {shortDate(status.client_fees_from)}: {money(settings.prices[currency].client, currency)} a month for
           each active client above {settings.free_clients}.
@@ -73,13 +81,14 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
       ) : null}
       {owed > 0 ? (
         <Text style={[styles.line, Number(status.client_fees_overdue) > 0 && styles.warn]}>
-          Client fees owed: {money(owed, currency)}
+          {SELLS ? `Client fees owed: ${money(owed, currency)}` : "Client fees are due"}
           {Number(status.client_fees_overdue) > 0 ? " (overdue)" : ""}
         </Text>
       ) : null}
-      {(showPayment || due) && owner ? (
+      {SELLS ? <CardPayment trainerId={trainer.id} /> : null}
+      {SELLS && (showPayment || due) && owner ? (
         <>
-          <Text style={styles.payTitle}>How to pay</Text>
+          <Text style={styles.payTitle}>Or pay by EFT</Text>
           <TrainerPaymentDetails eftDetails={owner.eft_details} popWhatsapp={owner.pop_whatsapp} proofInApp />
           <SendProofOfPayment to="owner" payerId={trainer.id} trainerId={trainer.id} receiverName="Daily Evolution" />
         </>

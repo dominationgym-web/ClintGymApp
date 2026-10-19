@@ -2,7 +2,7 @@ import NotificationsPrompt from "@/components/NotificationsPrompt";
 import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications";
 import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
 import React, { useEffect, useRef, useState } from "react";
-import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet, Platform } from "react-native";
 import { createNavigationContainerRef, NavigationContainer } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
 import AuthNavigator from "@/navigation/AuthNavigator";
@@ -15,6 +15,7 @@ import TrainerLogo from "@/components/TrainerLogo";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
+import { CardPaymentReturn } from "@/components/CardPayment";
 import { supabase } from "@/lib/supabase";
 import { needsAgreement, trainerDisplayName } from "@/lib/trainers";
 import TrainerAgreementScreen from "@/screens/trainer/TrainerAgreementScreen";
@@ -85,6 +86,7 @@ export default function RootNavigator() {
 
   return (
     <KeyboardSafe>
+    {role === "trainer" ? <CardPaymentReturn /> : null}
     <NavigationContainer
       ref={navigationRef}
       onReady={() => {
@@ -234,8 +236,9 @@ function TrainerLockedScreen() {
     <ScrollView style={{ backgroundColor: "#0F172A" }} contentContainerStyle={styles.pendingContainer}>
       <Text style={styles.title}>Your account is paused</Text>
       <Text style={[styles.body, { marginBottom: 16 }]}>
-        Your Daily Evolution payment is outstanding. Pay using the details below and send proof of payment. Your access
-        comes back as soon as it's confirmed. Your clients and their data are safe in the meantime.
+        {Platform.OS === "web"
+          ? "Your Daily Evolution payment is outstanding. Pay by card or EFT below. Your access comes back as soon as it's confirmed. Your clients and their data are safe in the meantime."
+          : "Your Daily Evolution payment is outstanding. Your access comes back as soon as it's paid. Your clients and their data are safe in the meantime."}
       </Text>
       {trainer ? <TrainerPlanCard trainer={trainer} showPayment /> : null}
       <Pressable style={styles.logoutButton} onPress={signOut}>
