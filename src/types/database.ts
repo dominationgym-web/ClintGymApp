@@ -782,6 +782,10 @@ export type ClientProgramPlan = {
   split_days: number[];
   weeks: number;
   placed_until: string;
+  // Different days each week (0125): Go ahead asks for next week's days.
+  days_vary: boolean;
+  // Program sessions placed so far, for days_vary plans.
+  sessions_placed: number | null;
   asked_until: string | null;
   ended_at: string | null;
   created_at: string;

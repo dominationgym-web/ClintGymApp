@@ -13,10 +13,12 @@ import {
   findSplit,
   planProgramDates,
   sessionsPerWeek,
+  daysLabel,
   splitAlongside,
   splitNote,
   weeksToFinish,
   suggestedSplit,
+  toggleDay,
   TRAINING_SPLITS,
   WEEK_CHOICES,
   type SplitKey,
@@ -71,7 +73,11 @@ export default function PlanProgramModal({
   const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
   const [program, setProgram] = useState<Program | null>(null);
   const [slots, setSlots] = useState<number[] | null>(null);
-  const [split, setSplit] = useState<SplitKey>("mon_wed_fri");
+  const [split, setSplit] = useState<SplitKey | "own">("mon_wed_fri");
+  // The trainer's own days (GRIZZ, 2026-10-19), the same every week or
+  // picked again each week when the client trains on different days.
+  const [ownDays, setOwnDays] = useState<number[]>([]);
+  const [daysVary, setDaysVary] = useState(false);
   const [weeks, setWeeks] = useState(4);
   // The program's own easy weeks (review 2026-10-18), to show where they land.
   const [easyWeeks, setEasyWeeks] = useState<number[]>([]);
@@ -101,6 +107,8 @@ export default function PlanProgramModal({
     setEasyWeeks(programEasyWeeks(data ?? []));
     setSlots(list);
     setSplit(suggestedSplit(sessionsPerWeek(list)));
+    setOwnDays([]);
+    setDaysVary(false);
   };
 
   const back = () => {
@@ -112,19 +120,26 @@ export default function PlanProgramModal({
 
   // A split with a different number of days than the program: the length
   // becomes what it takes to finish the whole program on those days.
-  const fullLength = (key: SplitKey) =>
-    slots && program && (program.weeks ?? 1) > 1 && findSplit(key).days.length !== sessionsPerWeek(slots)
-      ? weeksToFinish(slots.length, findSplit(key).days.length)
+  const fullLength = (days: number[]) =>
+    slots && program && (program.weeks ?? 1) > 1 && days.length > 0 && days.length !== sessionsPerWeek(slots)
+      ? weeksToFinish(slots.length, days.length)
       : null;
   const pickSplit = (key: SplitKey) => {
     setSplit(key);
-    if (program) setWeeks(fullLength(key) ?? defaultWeeks(program.weeks));
+    if (program) setWeeks(fullLength(findSplit(key).days) ?? defaultWeeks(program.weeks));
   };
+  const pickOwnDays = (days: number[]) => {
+    setSplit("own");
+    setOwnDays(days);
+    if (program) setWeeks(fullLength(days) ?? defaultWeeks(program.weeks));
+  };
+  const chosenDays = split === "own" ? ownDays : findSplit(split).days;
+  const chosenLabel = split === "own" ? daysLabel(ownDays) : findSplit(split).label;
 
-  const plan = date && slots ? planProgramDates(date, findSplit(split).days, slots, weeks) : [];
+  const plan = date && slots ? planProgramDates(date, chosenDays, slots, weeks) : [];
   const note =
     slots && program && (program.weeks ?? 1) > 1
-      ? splitNote(plan, sessionsPerWeek(slots), findSplit(split).days.length, slots.length, easyWeeks)
+      ? splitNote(plan, sessionsPerWeek(slots), chosenDays.length, slots.length, easyWeeks)
       : null;
 
   const activate = async () => {
@@ -149,10 +164,13 @@ export default function PlanProgramModal({
     const weekEnd = firstWeekEnd({ start_date: date, weeks });
     const week1 = plan.filter((p) => p.date <= weekEnd);
     const more = plan.some((p) => p.date > weekEnd);
+    const vary = split === "own" && daysVary && more;
     const summary =
-      `${findSplit(split).label} for ${weeks} week${weeks === 1 ? "" : "s"}, from ${dayHeading(plan[0].date)}.` +
+      (vary
+        ? `${chosenLabel} in week 1, then days you pick each week, for ${weeks} weeks, from ${dayHeading(plan[0].date)}.`
+        : `${chosenLabel} for ${weeks} week${weeks === 1 ? "" : "s"}, from ${dayHeading(plan[0].date)}.`) +
       (more
-        ? ` Week 1 (${week1.length} session${week1.length === 1 ? "" : "s"}) goes on the calendar now. When ${clientName} has 2 workouts left, you'll be asked to go ahead with the next week, so you can make changes first.`
+        ? ` Week 1 (${week1.length} session${week1.length === 1 ? "" : "s"}) goes on the calendar now. When ${clientName} has 2 workouts left, you'll be asked to go ahead with the next week${vary ? " and pick its days" : ""}, so you can make changes first.`
         : "");
     const now = new Date().toISOString();
     const savePlan = async () => {
@@ -165,7 +183,9 @@ export default function PlanProgramModal({
           trainer_id: trainer,
           program_id: program.id,
           start_date: date,
-          split_days: findSplit(split).days,
+          split_days: chosenDays,
+          days_vary: vary,
+          sessions_placed: week1.length,
           weeks,
           placed_until: weekEnd,
         })
@@ -427,10 +447,43 @@ export default function PlanProgramModal({
                           </Pressable>
                         );
                       })}
+                      <View style={[styles.splitRow, styles.ownRow, split === "own" && styles.splitRowOn]}>
+                        <Pressable onPress={() => pickOwnDays(ownDays)}>
+                          <Text style={[styles.splitLabel, split === "own" && styles.splitLabelOn]}>
+                            Pick days{split === "own" && ownDays.length ? `: ${daysLabel(ownDays)}` : ""}
+                          </Text>
+                          <Text style={styles.ownHint}>Tap the days {clientName} trains with you.</Text>
+                        </Pressable>
+                        <View style={styles.dayButtons}>
+                          {["M", "T", "W", "T", "F", "S"].map((d, i) => {
+                            const on = split === "own" && ownDays.includes(i + 1);
+                            return (
+                              <Pressable key={i} style={[styles.dayButton, on && styles.dayButtonOn]} onPress={() => pickOwnDays(toggleDay(split === "own" ? ownDays : [], i + 1))}>
+                                <Text style={[styles.dayButtonText, on && styles.dayButtonTextOn]}>{d}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                        {split === "own" && (
+                          <View style={styles.chips}>
+                            <Pressable style={[styles.chip, !daysVary && styles.chipOn]} onPress={() => setDaysVary(false)}>
+                              <Text style={[styles.chipText, !daysVary && styles.chipTextOn]}>🔁 Repeat weekly</Text>
+                            </Pressable>
+                            <Pressable style={[styles.chip, daysVary && styles.chipOn]} onPress={() => setDaysVary(true)}>
+                              <Text style={[styles.chipText, daysVary && styles.chipTextOn]}>🎲 Different days each week</Text>
+                            </Pressable>
+                          </View>
+                        )}
+                        {split === "own" && daysVary && (
+                          <Text style={styles.ownHint}>
+                            These are week 1's days. Each week you'll pick the next week's days, and the program carries on in order.
+                          </Text>
+                        )}
+                      </View>
                     </View>
                     <Text style={styles.step}>For how long?</Text>
                     <View style={styles.chips}>
-                      {[...new Set([...WEEK_CHOICES, defaultWeeks(program.weeks), ...(fullLength(split) ? [fullLength(split) as number] : [])])]
+                      {[...new Set([...WEEK_CHOICES, defaultWeeks(program.weeks), ...(fullLength(chosenDays) ? [fullLength(chosenDays) as number] : [])])]
                         .sort((a, b) => a - b)
                         .map((w) => (
                           <Pressable key={w} style={[styles.chip, w === weeks && styles.chipOn]} onPress={() => setWeeks(w)}>
@@ -530,6 +583,13 @@ const styles = StyleSheet.create({
   splitRowOn: { borderColor: BRAND_GOLD, backgroundColor: "#2A2410" },
   splitLabel: { color: "#CBD5E1", fontWeight: "700", fontSize: 14, flex: 1 },
   splitLabelOn: { color: BRAND_GOLD },
+  ownRow: { flexDirection: "column", alignItems: "stretch", gap: 8 },
+  ownHint: { color: "#94A3B8", fontSize: 12, lineHeight: 17, marginTop: 2 },
+  dayButtons: { flexDirection: "row", gap: 6 },
+  dayButton: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: "#475569", alignItems: "center" },
+  dayButtonOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
+  dayButtonText: { color: "#CBD5E1", fontWeight: "800" },
+  dayButtonTextOn: { color: "#0F172A" },
   dots: { flexDirection: "row", gap: 3 },
   dot: { width: 18, textAlign: "center", color: "#475569", fontSize: 11, fontWeight: "800" },
   dotOn: { color: "#fff" },

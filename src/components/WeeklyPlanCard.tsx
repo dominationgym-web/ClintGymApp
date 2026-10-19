@@ -5,7 +5,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { loadProgramExercises } from "@/lib/programQueries";
 import { programSlots } from "@/lib/trainingCalendar";
-import { splitAlongside } from "@/lib/trainingSplits";
+import { daysLabel, planWeekDates, splitAlongside, toggleDay } from "@/lib/trainingSplits";
 import { nextPlanWeek, planSessionsBetween, planWeekOf } from "@/lib/weeklyPlans";
 import type { ClientProgramPlan, Program } from "@/types/database";
 
@@ -28,6 +28,8 @@ export default function WeeklyPlanCard({
 }) {
   const [plans, setPlans] = useState<(ClientProgramPlan & { left: number })[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  // A plan on different days each week: the days being picked for its next week.
+  const [picking, setPicking] = useState<{ id: string; days: number[] } | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -54,12 +56,17 @@ export default function WeeklyPlanCard({
 
   // Puts the next week on: empty days get the session as their workout, days
   // that already have one get it as an extra block, so nothing is wiped.
-  const goAhead = async (plan: ClientProgramPlan) => {
+  const goAhead = async (plan: ClientProgramPlan, days?: number[]) => {
     const next = nextPlanWeek(plan);
     if (!next) return;
+    if (plan.days_vary && !days) return setPicking({ id: plan.id, days: plan.split_days });
     setBusy(plan.id);
     const { data: rows } = await loadProgramExercises(plan.program_id);
-    const sessions = planSessionsBetween(plan, programSlots(rows ?? []), next.from, next.to);
+    const slots = programSlots(rows ?? []);
+    const sessions =
+      plan.days_vary && days
+        ? planWeekDates(next.from, next.to, days, slots, plan.sessions_placed ?? 0)
+        : planSessionsBetween(plan, slots, next.from, next.to);
     const [{ data: existing }, { data: blocks }] = await Promise.all([
       supabase
         .from("client_calendar_workouts")
@@ -105,9 +112,13 @@ export default function WeeklyPlanCard({
           )
         : null,
     ]);
-    const error =
-      a?.error ?? b?.error ?? (await supabase.from("client_program_plans").update({ placed_until: next.to }).eq("id", plan.id)).error;
+    const placed =
+      plan.days_vary && days
+        ? { placed_until: next.to, split_days: days, sessions_placed: (plan.sessions_placed ?? 0) + sessions.length }
+        : { placed_until: next.to };
+    const error = a?.error ?? b?.error ?? (await supabase.from("client_program_plans").update(placed).eq("id", plan.id)).error;
     setBusy(null);
+    setPicking(null);
     if (error) return Alert.alert("Couldn't add the week", error.message);
     load();
     onChanged();
@@ -156,9 +167,21 @@ export default function WeeklyPlanCard({
                   {plan.left === 1 ? "" : "s"} left on the calendar. Add week {next.week}, or make changes first if they're struggling, it's
                   too easy or they have a problem.
                 </Text>
-                <Pressable style={styles.go} onPress={() => goAhead(plan)} disabled={busy === plan.id}>
-                  <Text style={styles.goText}>{busy === plan.id ? "Adding…" : `✅ Go ahead: add week ${next.week}`}</Text>
-                </Pressable>
+                {picking?.id === plan.id ? (
+                  <DayPicker
+                    week={next.week}
+                    days={picking.days}
+                    busy={busy === plan.id}
+                    onChange={(days) => setPicking({ id: plan.id, days })}
+                    onAdd={() => goAhead(plan, picking.days)}
+                  />
+                ) : (
+                  <Pressable style={styles.go} onPress={() => goAhead(plan)} disabled={busy === plan.id}>
+                    <Text style={styles.goText}>
+                      {busy === plan.id ? "Adding…" : plan.days_vary ? `✅ Go ahead: pick week ${next.week}'s days` : `✅ Go ahead: add week ${next.week}`}
+                    </Text>
+                  </Pressable>
+                )}
                 <View style={styles.row}>
                   <Pressable style={styles.secondary} onPress={makeChanges}>
                     <Text style={styles.secondaryText}>Make changes first</Text>
@@ -169,12 +192,25 @@ export default function WeeklyPlanCard({
                 </View>
               </>
             ) : (
-              <Text style={styles.body}>
-                Week by week: you'll be asked to add week {next.week} when {clientName} has 2 workouts left.{" "}
-                <Text style={styles.link} onPress={() => goAhead(plan)}>
-                  Add it now
+              <>
+                <Text style={styles.body}>
+                  Week by week{plan.days_vary ? " on different days" : ""}: you'll be asked to add week {next.week} when {clientName} has 2 workouts left.{" "}
+                  {picking?.id !== plan.id && (
+                    <Text style={styles.link} onPress={() => goAhead(plan)}>
+                      Add it now
+                    </Text>
+                  )}
                 </Text>
-              </Text>
+                {picking?.id === plan.id && (
+                  <DayPicker
+                    week={next.week}
+                    days={picking.days}
+                    busy={busy === plan.id}
+                    onChange={(days) => setPicking({ id: plan.id, days })}
+                    onAdd={() => goAhead(plan, picking.days)}
+                  />
+                )}
+              </>
             )}
           </View>
         );
@@ -183,7 +219,48 @@ export default function WeeklyPlanCard({
   );
 }
 
+// Next week's days for a plan on different days each week.
+function DayPicker({
+  week,
+  days,
+  busy,
+  onChange,
+  onAdd,
+}: {
+  week: number;
+  days: number[];
+  busy: boolean;
+  onChange: (days: number[]) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <View style={styles.picker}>
+      <Text style={styles.pickerTitle}>Which days in week {week}?</Text>
+      <View style={styles.row}>
+        {["M", "T", "W", "T", "F", "S"].map((d, i) => {
+          const on = days.includes(i + 1);
+          return (
+            <Pressable key={i} style={[styles.dayButton, on && styles.dayButtonOn]} onPress={() => onChange(toggleDay(days, i + 1))}>
+              <Text style={[styles.dayButtonText, on && styles.dayButtonTextOn]}>{d}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Pressable style={[styles.go, days.length === 0 && styles.goOff]} onPress={onAdd} disabled={busy || days.length === 0}>
+        <Text style={styles.goText}>{busy ? "Adding…" : days.length ? `✅ Add week ${week}: ${daysLabel(days)}` : "Pick at least one day"}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  picker: { marginTop: 10 },
+  pickerTitle: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  dayButton: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: "#475569", alignItems: "center" },
+  dayButtonOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
+  dayButtonText: { color: "#CBD5E1", fontWeight: "800" },
+  dayButtonTextOn: { color: "#0F172A" },
+  goOff: { opacity: 0.5 },
   card: {
     backgroundColor: "#0F172A",
     borderRadius: 10,
