@@ -204,6 +204,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       title: "Search and the suggestion box",
       where: "Search 🔍 and Menu ☰",
       points: [
+        "Menu ☰ shows every topic as one short line, so you see them all at once. Tap a topic to open it.",
         "Search finds any exercise, guide or tip in the app.",
         "The suggestion box sends ideas straight to the team. We read every one.",
       ],
@@ -311,6 +312,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "Coaching guides",
       where: "Menu ☰",
       points: [
+        "Menu ☰ shows every topic as one short line, so you see them all at once. Tap a topic to open it.",
         "🩺 When to refer (top of the menu): your scope as a trainer, who to refer to (GP, physio, biokineticist, registered dietitian, psychologist, SADAG 0800 567 567), the red flags, and mental health.",
         "Client retention, nutrition for coaches, training each body part, recovery, and women's health (perimenopause and menopause, iron and RED-S), written for trainers.",
         "Clients have their own guides on nutrition, supplements, sleep and the Health Reset (including perimenopause and menopause, and iron), so you can point them there.",
