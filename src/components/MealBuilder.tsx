@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { FOOD_GROUPS, FOODS, foodUnits, itemTotals, mealTotals, type Food, type FoodGroup, type MealItem } from "@/lib/foods";
 import { parseGrams } from "@/lib/nutrition";

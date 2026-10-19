@@ -8,9 +8,9 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
+import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { alertSummary, cleanMessage, MAX_MESSAGE_LENGTH } from "@/lib/coachMessages";

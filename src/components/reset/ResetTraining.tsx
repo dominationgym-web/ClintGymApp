@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { getResetSwaps, saveResetSwaps, type ResetSwap } from "@/lib/exerciseSwaps";

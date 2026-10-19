@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import TextInput from "@/components/TextInput";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
@@ -206,8 +207,8 @@ const styles = StyleSheet.create({
   tableHeading: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13, marginTop: 12, marginBottom: 2 },
   tableRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#334155", paddingVertical: 6 },
   cell: { color: "#E2E8F0", fontSize: 14, flex: 1 },
-  inputWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#0F172A", borderRadius: 8, paddingHorizontal: 10, width: 120 },
-  symbol: { color: "#94A3B8", fontWeight: "700" },
+  inputWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#F8FAFC", borderRadius: 8, paddingHorizontal: 10, width: 120 },
+  symbol: { color: "#334155", fontWeight: "700" },
   input: { flex: 1, color: "#fff", paddingVertical: 8, paddingHorizontal: 6, fontSize: 15 },
   hint: { color: "#64748B", fontSize: 12, marginTop: 8 },
   button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 12, alignItems: "center", marginTop: 14 },

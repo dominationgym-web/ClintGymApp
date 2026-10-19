@@ -6,12 +6,12 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  TextInput,
   Pressable,
   Alert,
   RefreshControl,
   Keyboard,
 } from "react-native";
+import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { toIsoDate, todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";

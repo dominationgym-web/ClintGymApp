@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, TextInput, Pressable, Text, StyleSheet, type TextInputProps } from "react-native";
+import { View, Pressable, Text, StyleSheet, type TextInputProps } from "react-native";
+import TextInput from "@/components/TextInput";
 
 type Props = Omit<TextInputProps, "secureTextEntry" | "style"> & {
   style?: TextInputProps["style"];
@@ -29,5 +30,5 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   toggle: { position: "absolute", right: 14, top: 0, bottom: 12, justifyContent: "center" },
-  toggleText: { color: "#22C55E", fontWeight: "600", fontSize: 13 },
+  toggleText: { color: "#15803D", fontWeight: "700", fontSize: 13 },
 });
