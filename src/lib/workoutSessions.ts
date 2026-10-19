@@ -48,7 +48,7 @@ const describe = (b: ReturnType<typeof best>) =>
 
 /**
  * Exercises where today beat the last time the client did them: a heavier top
- * weight, or more reps at the same top weight (more reps for bodyweight work).
+ * weight (more than 10% heavier only with at least the same reps), or more reps at the same top weight (more reps for bodyweight work).
  * `earlier` holds sets from before today; only each exercise's latest day counts.
  */
 export function findImprovements(allToday: SetLike[], allEarlier: SetLike[]): Improvement[] {
@@ -64,7 +64,13 @@ export function findImprovements(allToday: SetLike[], allEarlier: SetLike[]): Im
     const lastDay = before.reduce((d, s) => (s.log_date > d ? s.log_date : d), "");
     const last = best(before.filter((s) => s.log_date === lastDay));
     const now = best(sets);
-    const heavier = now.weight !== null && last.weight !== null && now.weight > last.weight;
+    // A jump of more than 10% only counts when the reps held up too (GRIZZ,
+    // 2026-10-19): they may drop reps to lift it, but that earns no star.
+    const heavier =
+      now.weight !== null &&
+      last.weight !== null &&
+      now.weight > last.weight &&
+      (now.weight <= last.weight * 1.1 || now.topReps >= last.topReps);
     const moreReps = now.weight === last.weight && now.reps > last.reps;
     if (heavier || moreReps) result.push({ exercise: sets[0].exercise_name, before: describe(last), after: describe(now) });
   }
