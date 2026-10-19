@@ -562,3 +562,64 @@ export function swapItem(current: DietItem, newFood: string): DietItem {
   const grams = gramsFor(to, keep, amount);
   return { food: to.name, grams: grams > 0 ? grams : current.grams };
 }
+
+// Leaving a food out (GRIZZ, 2026-10-19): the client is asked if they're
+// sure, told why the food is there, and can have what it gave spread over the
+// other foods that give the same thing.
+
+/** Why a food is in the plan, by what it is. */
+export function whyFoodMatters(foodName: string): string {
+  const food = findFood(foodName);
+  if (!food) return "It's part of what makes your day add up to your target.";
+  switch (food.group) {
+    case "Veg":
+      return "Vegetables give fibre, vitamins and minerals for very few calories. They fill you up, help your gut and digestion, and help your body recover from training.";
+    case "Fibre":
+      return "Beans and lentils give fibre and slow carbs, with some protein. They keep you full for longer, keep your energy steady and feed the good bacteria in your gut.";
+    case "Protein":
+      return "Protein keeps and builds your muscle, helps you recover from training and keeps you full, which matters most when you're losing fat.";
+    case "Carbs":
+      return "Carbs are the fuel for your training. Around your workouts they give you energy for the session and refill your muscles afterwards.";
+    case "Fats":
+      return "Healthy fats keep your hormones working, help your body take in vitamins A, D, E and K, and are good for your heart.";
+    default:
+      return (food.fibre ?? 0) > 0
+        ? "Fruit gives fibre, vitamins and antioxidants, and a natural sweet option that helps you stick to the plan."
+        : "Dairy gives protein and calcium for strong bones, and helps you recover from training.";
+  }
+}
+
+// What leaving a food out is made up with: vegetables and beans by fibre
+// (from other vegetables, beans and fruit), the rest by the number a swap
+// keeps, from the same kind of food.
+function makeUpKey(group: FoodGroup): "protein" | "carbs" | "fat" | "fibre" {
+  const keep = SWAP_KEEPS[group];
+  return keep === "weight" ? "fibre" : keep;
+}
+
+/**
+ * The day without that food. With `rebalance`, the other foods of the same
+ * kind (protein foods for a protein, vegetables, beans and fruit for a
+ * vegetable) go up to give what it gave, at most double, to the nearest
+ * 5 g. `rebalanced` is false when nothing else could make it up.
+ */
+export function leaveOutFood(day: DietDay, meal: number, index: number, rebalance: boolean): { day: DietDay; rebalanced: boolean } {
+  const removed = day.meals[meal]?.items[index];
+  if (!removed) return { day, rebalanced: false };
+  const without: DietDay = {
+    meals: day.meals.map((m, mi) => (mi !== meal ? m : { ...m, items: m.items.filter((_, ii) => ii !== index) })),
+  };
+  const food = findFood(removed.food);
+  if (!rebalance || !food) return { day: without, rebalanced: false };
+  const key = makeUpKey(food.group);
+  const lost = itemTotals(removed)[key];
+  const same = (name: string) => {
+    const f = findFood(name);
+    if (!f) return false;
+    if (key !== "fibre") return f.group === food.group;
+    return (f.fibre ?? 0) > 0 && (f.group === "Veg" || f.group === "Fibre" || f.group === "Fruit & dairy");
+  };
+  const have = sumTotals(without.meals.flatMap((m) => m.items.filter((it) => same(it.food))))[key];
+  if (lost <= 0 || have <= 0) return { day: without, rebalanced: false };
+  return { day: scale(without, same, Math.min(2, (have + lost) / have)), rebalanced: true };
+}
