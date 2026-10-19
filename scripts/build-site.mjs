@@ -1,5 +1,6 @@
 // Builds the small public website the App Store and Google Play ask for: the
-// privacy policy, how to delete your account, and a support page. The wording
+// privacy policy, how to delete your account, a support page, and the For
+// Personal Trainers page adverts link to (scripts/trainers-page.mjs). The wording
 // comes from src/lib/privacyPolicy.ts, the same text the app shows at signup.
 //
 //   node --experimental-strip-types scripts/build-site.mjs [outDir]
@@ -13,6 +14,7 @@ import {
   PRIVACY_POLICY_LAST_UPDATED,
   PRIVACY_POLICY_SECTIONS,
 } from "../src/lib/privacyPolicy.ts";
+import { trainersPage } from "./trainers-page.mjs";
 
 const outDir = process.argv[2] ?? "site-dist";
 mkdirSync(outDir, { recursive: true });
@@ -53,7 +55,7 @@ const page = (title, body) => `<!doctype html>
 <main>
 <header><img src="/icon.png" alt=""><a href="/">Daily Evolution</a></header>
 ${body}
-<nav><a href="/privacy">Privacy policy</a><a href="/delete-account">Delete your account</a><a href="/support">Support</a><a href="/app/">Trainer login on a laptop</a></nav>
+<nav><a href="/trainers">For personal trainers</a><a href="/privacy">Privacy policy</a><a href="/delete-account">Delete your account</a><a href="/support">Support</a><a href="/app/">Trainer login on a laptop</a></nav>
 </main>
 </body>
 </html>
@@ -65,8 +67,10 @@ const pages = {
     `<h1>Daily Evolution</h1>
 <p>Building a better you.</p>
 <p>Daily Evolution is a coaching app for personal trainers and their clients: daily check-ins, habits with streaks, training programs and progress tracking, all in one place.</p>
-<p>The app is available to clients of trainers who use Daily Evolution. Ask your trainer for their trainer code to sign up.</p>`,
+<p>The app is available to clients of trainers who use Daily Evolution. Ask your trainer for their trainer code to sign up.</p>
+<p><strong>Are you a personal trainer?</strong> <a href="/trainers">See what Daily Evolution does for you, and try it free for 30 days</a>.</p>`,
   ),
+  "trainers.html": trainersPage(escape),
   "privacy.html": page(
     "Privacy policy",
     `<h1>Privacy policy</h1>
