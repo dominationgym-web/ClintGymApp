@@ -6,7 +6,7 @@
 
 export type TrainingLevel = "never" | "beginner" | "intermediate" | "advanced";
 export type FoundationLevel = "Beginner" | "Intermediate";
-export type FoundationGoal = "Bodybuilding" | "Weight loss" | "Strength" | "Fitness";
+export type FoundationGoal = "Bodybuilding" | "Fat loss" | "Strength" | "Fitness";
 
 export const TRAINING_LEVELS: { key: TrainingLevel; label: string; detail: string }[] = [
   { key: "never", label: "Never trained", detail: "I've never followed a training program." },
@@ -15,7 +15,7 @@ export const TRAINING_LEVELS: { key: TrainingLevel; label: string; detail: strin
   { key: "advanced", label: "Advanced", detail: "3+ years of consistent, structured training." },
 ];
 
-export const FOUNDATION_GOALS: FoundationGoal[] = ["Bodybuilding", "Weight loss", "Strength", "Fitness"];
+export const FOUNDATION_GOALS: FoundationGoal[] = ["Bodybuilding", "Fat loss", "Strength", "Fitness"];
 
 export const levelLabel = (level: TrainingLevel | null | undefined) =>
   TRAINING_LEVELS.find((l) => l.key === level)?.label ?? "Not answered";
@@ -27,10 +27,11 @@ export function foundationLevelFor(level: TrainingLevel | null | undefined): Fou
   return null;
 }
 
-/** The goal the client's intake answers point to; weight loss first, then muscle, then strength. */
+/** The goal the client's intake answers point to; fat loss first, then muscle, then strength. */
 export function foundationGoalFor(trainingGoals: string | null | undefined): FoundationGoal {
   const goals = (trainingGoals ?? "").toLowerCase();
-  if (goals.includes("lose weight")) return "Weight loss";
+  // "Lose weight" was the intake answer before 2026-10-19 (now "Lose fat").
+  if (goals.includes("lose fat") || goals.includes("lose weight")) return "Fat loss";
   if (goals.includes("gain muscle")) return "Bodybuilding";
   if (goals.includes("get stronger")) return "Strength";
   return "Fitness";

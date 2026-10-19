@@ -63,7 +63,7 @@ export function foodAllowed(foodName: string, diet: MealDiet = "everything", dai
 export const LOSE_SHARE = 0.18;
 export const GAIN_KCAL = 300;
 export const MEAL_GOALS: { key: Exclude<MealGoal, "coach">; label: string; detail: string }[] = [
-  { key: "lose", label: "Lose weight", detail: "About 15 to 20% under what your body uses" },
+  { key: "lose", label: "Lose fat", detail: "About 15 to 20% under what your body uses" },
   { key: "maintain", label: "Stay the same", detail: "Eat what your body uses" },
   { key: "gain", label: "Build muscle", detail: "About 300 kcal a day over what your body uses" },
 ];

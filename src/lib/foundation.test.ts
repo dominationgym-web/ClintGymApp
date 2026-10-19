@@ -11,7 +11,8 @@ describe("foundation programs", () => {
   });
 
   it("picks the goal from the intake answers", () => {
-    expect(foundationGoalFor("Gain muscle, Lose weight")).toBe("Weight loss");
+    expect(foundationGoalFor("Gain muscle, Lose weight")).toBe("Fat loss");
+    expect(foundationGoalFor("Gain muscle, Lose fat")).toBe("Fat loss");
     expect(foundationGoalFor("Gain muscle")).toBe("Bodybuilding");
     expect(foundationGoalFor("Get stronger")).toBe("Strength");
     expect(foundationGoalFor("General health and wellbeing")).toBe("Fitness");
@@ -19,7 +20,7 @@ describe("foundation programs", () => {
   });
 
   it("names the program as the migration does", () => {
-    expect(foundationProgramName("Beginner", "Weight loss")).toBe("Beginner Foundation - Weight loss");
+    expect(foundationProgramName("Beginner", "Fat loss")).toBe("Beginner Foundation - Fat loss");
   });
 
   it("writes the client's note", () => {

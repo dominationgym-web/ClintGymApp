@@ -288,7 +288,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "🧘 Functional: mobility and flexibility programs, plus a link to the 🛡️ stability & injury prevention programs, which run alongside a client's main program.",
         "The same three groups show when you choose a client's program or put a workout on their calendar. Tap + Build a program to make your own.",
         "Open any program and tap ▶ Check all exercises to see every exercise, week by week, before you give it to a client. Tap an exercise, or ▶ beside it, to watch its demo video and read how to do it.",
-        "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Weight loss, Strength and Fitness. They start lighter, with time on joint stability, core strength and good technique, so clients build up to heavier training.",
+        "🌱 Beginner & Intermediate: 6-week foundation programs for Bodybuilding, Fat loss, Strength and Fitness. They start lighter, with time on joint stability, core strength and good technique, so clients build up to heavier training.",
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 15 ab reps between sets (none after heavy squats, hinges, lunges or rows, and at most 10 rounds a workout). When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
         "Clients can change an exercise when the gym is busy, always for the same body part.",
