@@ -230,6 +230,17 @@ export type ClientActivity = {
 };
 
 // One night's sleep from the client's watch (0124), dated the morning they woke.
+// Pre-start health and safety form for the Longevity programs (0131).
+export type ClientPrestartForm = {
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  filled_on: string;
+  answers: Record<string, unknown>;
+  risk_level: "green" | "amber" | "red";
+  created_at: string;
+};
+
 // "This hurts" (0129): an exercise a client said hurt, and what they tried instead.
 export type ClientExercisePain = {
   id: string;
@@ -918,6 +929,7 @@ export interface Database {
       };
       client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
       client_sleep: { Row: ClientSleep; Insert: Partial<ClientSleep>; Update: Partial<ClientSleep>; Relationships: [] };
+      client_prestart_forms: { Row: ClientPrestartForm; Insert: Partial<ClientPrestartForm>; Update: Partial<ClientPrestartForm>; Relationships: [] };
       client_exercise_pain: { Row: ClientExercisePain; Insert: Partial<ClientExercisePain>; Update: Partial<ClientExercisePain>; Relationships: [] };
       payment_proofs: { Row: PaymentProof; Insert: Partial<PaymentProof>; Update: Partial<PaymentProof>; Relationships: [] };
       client_daily_summaries: {

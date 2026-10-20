@@ -10,6 +10,7 @@ describe("trainer guides", () => {
       "training",
       "recovery",
       "womensHealth",
+      "longevity",
       "sportsPerformance",
     ]);
     expect(trainerGuide("training")?.topics.map((t) => t.title)).toEqual([
