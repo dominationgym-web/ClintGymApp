@@ -15,7 +15,16 @@ const AMBER = "#F59E0B";
 // works muscles the client trained hard yesterday. The trainer can leave it,
 // move the session to tomorrow (weekly programs), or use a suggested lighter
 // session for today and tweak the sets first.
-export default function RecoveryCheckCard({ clientId, clientName }: { clientId: string; clientName: string }) {
+export default function RecoveryCheckCard({
+  clientId,
+  clientName,
+  onShow,
+}: {
+  clientId: string;
+  clientName: string;
+  /** Whether it has something to show, for the Things to check line. */
+  onShow?: (shown: boolean) => void;
+}) {
   const today = todayIso();
   const [check, setCheck] = useState<RecoveryCheck | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +40,8 @@ export default function RecoveryCheckCard({ clientId, clientName }: { clientId: 
     load();
   }, [load]);
 
+  const shown = !loading && !!check;
+  useEffect(() => onShow?.(shown), [shown, onShow]);
   if (loading || !check) return null;
   const { active, clash } = check;
   const assignment = active.assignment;

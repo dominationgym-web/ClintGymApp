@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientStabilityProgram, StabilityLog } from "@/types/database";
 import StabilityHowTo from "@/components/stability/StabilityHowTo";
-import RehabRedFlagCheck from "@/components/stability/RehabRedFlagCheck";
 import {
   assessExercise,
   findArea,
@@ -14,7 +13,6 @@ import {
   LEVELS,
   levelInfo,
   phaseFor,
-  STABILITY_AREAS,
   stabilityWeek,
   targetText,
   unitLabel,
@@ -44,11 +42,6 @@ export default function TrainerStabilityCard({
   const [programs, setPrograms] = useState<ClientStabilityProgram[]>([]);
   const [logs, setLogs] = useState<StabilityLog[]>([]);
   const [open, setOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [area, setArea] = useState<StabilityArea | null>(null);
-  const [level, setLevel] = useState<StabilityLevel | null>(null);
-  // A new Rehab program waits for the red-flag tick-list (review 2026-10-18).
-  const [flagsCleared, setFlagsCleared] = useState(false);
   const [busy, setBusy] = useState(false);
   // Every exercise opens its video and how-to, so the trainer can do and coach
   // it too (GRIZZ, 2026-10-16).
@@ -113,9 +106,6 @@ export default function TrainerStabilityCard({
     // No automatic note (GRIZZ: never ready-made messages from trainer to
     // client). It shows on their calendar and in their ☰ menu.
     setBusy(false);
-    setAdding(false);
-    setArea(null);
-    setLevel(null);
     setOpen(true);
     load();
     onChanged?.();
@@ -151,15 +141,17 @@ export default function TrainerStabilityCard({
     ]);
   };
 
+  // New ones start from the calendar: tap a day, then Rehab (GRIZZ, 2026-10-20:
+  // one way in). This card follows the ones running.
+  if (programs.length === 0) return null;
+
   return (
     <View style={styles.card}>
       <Pressable style={styles.header} onPress={() => setOpen((o) => !o)}>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>🛡️ Stability programs</Text>
           <Text style={styles.sub}>
-            {programs.length === 0
-              ? `None yet. Tap to give ${clientName} one.`
-              : programs.map((p) => `${findArea(p.area).title} ${levelInfo(p.level).label}`).join(" · ")}
+            {programs.map((p) => `${findArea(p.area).title} ${levelInfo(p.level).label}`).join(" · ")}
           </Text>
         </View>
         <Text style={styles.arrow}>{open ? "▲" : "▼"}</Text>
@@ -224,78 +216,6 @@ export default function TrainerStabilityCard({
             </View>
           );
         })}
-      {open && !adding && (
-        <Pressable style={styles.addBtn} onPress={() => setAdding(true)}>
-          <Text style={styles.addText}>+ Give {clientName} a stability program</Text>
-        </Pressable>
-      )}
-      {open && adding && (
-        <View style={styles.program}>
-          <Text style={styles.pickLabel}>1. Which area?</Text>
-          <View style={styles.chips}>
-            {STABILITY_AREAS.map((a) => (
-              <Pressable key={a.area} style={[styles.chip, area === a.area && styles.chipOn]} onPress={() => setArea(a.area)}>
-                <Text style={[styles.chipText, area === a.area && styles.chipTextOn]}>
-                  {a.icon} {a.title}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          {area && (
-            <>
-              <Text style={styles.pickLabel}>2. Which level?</Text>
-              {LEVELS.map((l) => (
-                <Pressable key={l.level} style={[styles.levelRow, level === l.level && styles.levelRowOn]} onPress={() => (setLevel(l.level), setFlagsCleared(false))}>
-                  <Text style={styles.levelTitle}>
-                    {l.icon} {l.label} · {l.weeks} weeks
-                  </Text>
-                  <Text style={styles.levelWho}>{findArea(area).chooseLevel[l.level]}</Text>
-                </Pressable>
-              ))}
-            </>
-          )}
-          {area && level === "rehab" && !flagsCleared && (
-            <RehabRedFlagCheck
-              area={area}
-              clientName={clientName}
-              onClear={() => setFlagsCleared(true)}
-              onRefer={() => (setAdding(false), setArea(null), setLevel(null))}
-            />
-          )}
-          {area && level && (level !== "rehab" || flagsCleared) && (
-            <>
-              <Text style={styles.pickLabel}>3. The exercises (tap for the video and how-to)</Text>
-              {[...new Set(findProgram(area, level).phases.flatMap((ph) => ph.items.map((i) => i.ex)))].map((key) => {
-                const ex = findExercise(area, key)!;
-                return (
-                  <View key={key} style={styles.row}>
-                    <Pressable onPress={() => setOpenEx((o) => (o === `pick-${key}` ? null : `pick-${key}`))} accessibilityRole="button">
-                      <Text style={styles.exName}>
-                        {ex.name}
-                        <Text style={styles.target}>  {openEx === `pick-${key}` ? "▲" : "▶ video"}</Text>
-                      </Text>
-                    </Pressable>
-                    {howTo(`pick-${key}`, ex)}
-                  </View>
-                );
-              })}
-            </>
-          )}
-          <View style={styles.actions}>
-            <Pressable
-              style={[styles.startBtn, (!area || !level || busy || (level === "rehab" && !flagsCleared)) && { opacity: 0.5 }]}
-              disabled={!area || !level || busy || (level === "rehab" && !flagsCleared)}
-              onPress={() => area && level && confirmStart(area, level)}
-            >
-              {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.startText}>Start it</Text>}
-            </Pressable>
-            <Pressable style={styles.smallBtn} onPress={() => (setAdding(false), setArea(null), setLevel(null))}>
-              <Text style={styles.smallBtnText}>Cancel</Text>
-            </Pressable>
-          </View>
-          <Text style={styles.sub}>To read the full programs first: ☰ menu → Stability & Rehab programming (tap any exercise for its video).</Text>
-        </View>
-      )}
     </View>
   );
 }

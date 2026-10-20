@@ -1,7 +1,7 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert, Switch } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -115,8 +115,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const [injuredAreas, setInjuredAreas] = useState<StabilityArea[]>([]);
   const planChanged = () => setPlanKey((k) => k + 1);
   // Which tap-to-open heading on the Training tab is open.
-  const [trainingOpen, setTrainingOpen] = useState<string | null>(route.params.open ?? null);
+  // Opened from an alert (recovery check, foundation, training level): its "things to check" line starts open.
+  const [trainingOpen, setTrainingOpen] = useState<string | null>(route.params.open ?? (route.params.tab === "training" ? "checks" : null));
   const toggleTraining = (key: string) => setTrainingOpen((k) => (k === key ? null : key));
+  // Which alert cards have something to show, for the "things to check" line.
+  const [checks, setChecks] = useState<Record<string, boolean>>({});
+  const shown = useMemo(() => {
+    const report = (key: string) => (on: boolean) => setChecks((c) => (c[key] === on ? c : { ...c, [key]: on }));
+    return { recovery: report("recovery"), injury: report("injury"), preStart: report("preStart"), pain: report("pain") };
+  }, []);
   // Which tap-to-open heading on the Overview is open (review 2026-10-18: a shorter Overview).
   const [overviewOpen, setOverviewOpen] = useState<string | null>(null);
   const toggleOverview = (key: string) => setOverviewOpen((k) => (k === key ? null : key));
@@ -852,35 +859,13 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 <Text style={styles.liveButtonText}>▶ Start workout with {client.name.split(" ")[0]}</Text>
               </Pressable>
             )}
-            <RecoveryCheckCard clientId={client.id} clientName={client.name} />
-            <FoundationOfferCard
-              client={client}
-              onChanged={(change) => {
-                setClient((c) => (c ? { ...c, ...change } : c));
-                if (change.foundation_status === "approved") {
-                  // The calendar reloads with the new program, and the injury check runs.
-                  setProgramKey((k) => k + 1);
-                  planChanged();
-                }
-              }}
-            />
-            <InjuryCheckCard
-              key={injuryKey}
-              clientId={client.id}
-              clientName={client.name}
-              injuries={client.injuries_healed_on ? null : client.injuries}
-              trainingPlace={client.training_place}
-              refreshKey={planKey}
-              onAreas={setInjuredAreas}
-            />
-            <PreStartCard clientId={client.id} clientName={client.name} age={intakeDetails(client).age} refreshKey={planKey} />
-            <ExercisePainList clientId={client.id} clientName={client.name} />
             {/* Calendar first (GRIZZ, 2026-10-17): tap a day to start a program. The rest is tucked under tap-to-open headings. */}
             <ClientCalendarCard
               key={programKey}
               clientId={client.id}
               clientName={client.name}
               trainingPlace={client.training_place}
+              trainingLevel={client.training_level}
               resetNotice={resetNotice(client, todayIso())}
               trainerId={trainer?.id}
               onStabilityStarted={() => setStabilityKey((k) => k + 1)}
@@ -890,6 +875,37 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             />
             {/* Right under the calendar, so the trainer sees how to tell the client (GRIZZ, 2026-10-19). */}
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} onSent={markSent} />}
+            {/* Alerts tucked under one line (GRIZZ, 2026-10-20: simpler Training tab). They still load, so the line counts them. */}
+            <ChecksFold
+              count={Object.values(checks).filter(Boolean).length + (client.foundation_status === "suggested" ? 1 : 0)}
+              open={trainingOpen === "checks"}
+              onToggle={() => toggleTraining("checks")}
+            >
+              <RecoveryCheckCard clientId={client.id} clientName={client.name} onShow={shown.recovery} />
+              <FoundationOfferCard
+                client={client}
+                onChanged={(change) => {
+                  setClient((c) => (c ? { ...c, ...change } : c));
+                  if (change.foundation_status === "approved") {
+                    // The calendar reloads with the new program, and the injury check runs.
+                    setProgramKey((k) => k + 1);
+                    planChanged();
+                  }
+                }}
+              />
+              <InjuryCheckCard
+                key={injuryKey}
+                clientId={client.id}
+                clientName={client.name}
+                injuries={client.injuries_healed_on ? null : client.injuries}
+                trainingPlace={client.training_place}
+                refreshKey={planKey}
+                onAreas={setInjuredAreas}
+                onShow={shown.injury}
+              />
+              <PreStartCard clientId={client.id} clientName={client.name} age={intakeDetails(client).age} refreshKey={planKey} onShow={shown.preStart} />
+              <ExercisePainList clientId={client.id} clientName={client.name} onShow={shown.pain} />
+            </ChecksFold>
             <TrainerStabilityCard
               key={stabilityKey}
               clientId={client.id}
@@ -1037,6 +1053,23 @@ const LEVEL_LOOK: Record<string, { emoji: string; color: string }> = {
 // Overview so the trainer is reminded every time they open the client
 // (GRIZZ, 2026-10-14).
 // A tap-to-open heading on the Training tab.
+/** "🔔 3 things to check": the client's alerts under one tap-to-open line. Hidden while there's nothing. */
+function ChecksFold({ count, open, onToggle, children }: { count: number; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <View style={count > 0 ? [styles.trainingSection, styles.checksFold, open && styles.trainingSectionOpen] : undefined}>
+      {count > 0 && (
+        <Pressable style={styles.trainingSectionHeader} onPress={onToggle} accessibilityRole="button">
+          <Text style={styles.trainingSectionTitle}>
+            🔔 {count} thing{count === 1 ? "" : "s"} to check
+          </Text>
+          <Text style={styles.trainingSectionChevron}>{open ? "▴" : "▾"}</Text>
+        </Pressable>
+      )}
+      <View style={open && count > 0 ? styles.trainingSectionBody : { display: "none" }}>{children}</View>
+    </View>
+  );
+}
+
 function TrainingSection({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
     <View style={[styles.trainingSection, open && styles.trainingSectionOpen]}>
@@ -1065,6 +1098,7 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 }
 
 const styles = StyleSheet.create({
+  checksFold: { borderColor: "#F59E0B" },
   liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginBottom: 12 },
   liveButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   archivedBanner: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 12 },

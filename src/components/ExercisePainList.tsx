@@ -7,7 +7,16 @@ import { painAreaLabel, shortDate, type ExercisePain } from "@/lib/painSwap";
 // which exercises hurt them in the last 8 weeks, where, and what they tried
 // instead. To change it for good, tap the exercise in their program or
 // calendar day (ExerciseChangeModal).
-export default function ExercisePainList({ clientId, clientName }: { clientId: string; clientName: string }) {
+export default function ExercisePainList({
+  clientId,
+  clientName,
+  onShow,
+}: {
+  clientId: string;
+  clientName: string;
+  /** Whether it has something to show, for the Things to check line. */
+  onShow?: (shown: boolean) => void;
+}) {
   const [rows, setRows] = useState<ExercisePain[]>([]);
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -21,6 +30,7 @@ export default function ExercisePainList({ clientId, clientName }: { clientId: s
       .order("created_at", { ascending: false })
       .then(({ data }) => setRows(data ?? []));
   }, [clientId]);
+  useEffect(() => onShow?.(rows.length > 0), [rows.length, onShow]);
   if (rows.length === 0) return null;
   const shown = open ? rows : rows.slice(0, 3);
   return (

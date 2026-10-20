@@ -34,6 +34,7 @@ export default function InjuryCheckCard({
   trainingPlace,
   refreshKey,
   onAreas,
+  onShow,
 }: {
   clientId: string;
   clientName: string;
@@ -44,6 +45,8 @@ export default function InjuryCheckCard({
   refreshKey: number;
   /** The injured areas found, so other exercise pickers can show red and green too. */
   onAreas?: (areas: StabilityArea[]) => void;
+  /** Whether it has something to show, for the Things to check line. */
+  onShow?: (shown: boolean) => void;
 }) {
   const [areas, setAreas] = useState<StabilityArea[]>([]);
   const [flagged, setFlagged] = useState<Flagged[]>([]);
@@ -154,6 +157,9 @@ export default function InjuryCheckCard({
   const names = areas.map((a) => findArea(a).title.toLowerCase()).join(", ");
   const shown = showAll ? flagged : flagged.slice(0, 3);
   const clear = flagged.length === 0;
+
+  const hasAreas = !loading && areas.length > 0;
+  useEffect(() => onShow?.(hasAreas), [hasAreas, onShow]);
 
   const signModal = (
     <Modal visible={!!sign} transparent animationType="fade" onRequestClose={() => setSign(null)}>

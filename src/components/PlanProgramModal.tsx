@@ -6,7 +6,8 @@ import { parseIsoDate } from "@/lib/dates";
 import { firstWeekEnd } from "@/lib/weeklyPlans";
 import { loadProgramExercises } from "@/lib/programQueries";
 import { programEasyWeeks } from "@/lib/deload";
-import { PROGRAM_FAMILIES, PROGRAM_GROUPS, programFamily, programGroupHeading, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
+import { WEEKDAY_NAMES } from "@/lib/programs";
+import { levelOf, PROGRAM_GOALS, programGoal, programsForGoal, type GoalChoice } from "@/lib/programGoals";
 import { monthLabel, monthOf, programSlots } from "@/lib/trainingCalendar";
 import {
   BLOCK_WEEKS,
@@ -26,20 +27,18 @@ import {
 import { findArea, findProgram, LEVELS, levelInfo, STABILITY_AREAS } from "@/lib/stability";
 import RehabRedFlagCheck from "@/components/stability/RehabRedFlagCheck";
 import type { StabilityArea, StabilityLevel } from "@/lib/stability";
-import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
 import { isOlderAdultProgram } from "@/lib/preStart";
 
-type PlanType = ProgramGroup | "rehab";
 
 function dayHeading(date: string): string {
   const d = parseIsoDate(date);
   return `${WEEKDAY_NAMES[(d.getDay() + 6) % 7]} ${d.getDate()} ${monthLabel(monthOf(date))}`;
 }
 
-// Tap a day on the client's calendar → pick Gym, Performance, Functional or
-// Rehab → pick a program → tap the days the client trains → Activate, and the program's
+// Tap a day on the client's calendar → pick the client's goal → the program
+// that fits their level shows first (src/lib/programGoals.ts) → pick it → tap the days the client trains → Activate, and the program's
 // sessions are laid over those weekdays from that day (GRIZZ, 2026-10-17).
 // One page at a time, so nothing to scroll through. Sunday is always rest.
 // With startWith (the foundation card's Approve, review 2026-10-18), it opens
@@ -50,6 +49,7 @@ export default function PlanProgramModal({
   clientName,
   trainerId,
   trainingPlace,
+  trainingLevel = null,
   programs,
   resetNotice,
   startWith = null,
@@ -62,6 +62,8 @@ export default function PlanProgramModal({
   clientName: string;
   trainerId?: string;
   trainingPlace: ExercisePlace;
+  // From the intake form: picks the best-fit program for their goal.
+  trainingLevel?: string | null;
   programs: Program[];
   resetNotice: string | null;
   startWith?: Program | null;
@@ -69,9 +71,7 @@ export default function PlanProgramModal({
   onDone: (what: "calendar" | "stability") => void;
   onClose: () => void;
 }) {
-  const [type, setType] = useState<PlanType | null>(null);
-  const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
-  const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
+  const [type, setType] = useState<GoalChoice | null>(null);
   const [program, setProgram] = useState<Program | null>(null);
   const [allSlots, setSlots] = useState<number[] | null>(null);
   // Longevity programs: the block to start at (GRIZZ, 2026-10-20). 1 for every other program.
@@ -94,8 +94,6 @@ export default function PlanProgramModal({
   useEffect(() => {
     if (!date) return;
     setType(null);
-    setPlace(trainingPlace);
-    setOpenFamily(null);
     setProgram(null);
     setSlots(null);
     setArea(null);
@@ -298,13 +296,9 @@ export default function PlanProgramModal({
     ]);
   };
 
-  const here = programs.filter((p) => p.kind === "weekly" && p.place === place);
-  const families =
-    type && type !== "rehab"
-      ? PROGRAM_FAMILIES.filter((f) => f.group === type)
-          .map((f) => ({ ...f, programs: here.filter((p) => programFamily(p) === f.key) }))
-          .filter((f) => f.programs.length > 0)
-      : [];
+  const level = levelOf(trainingLevel);
+  const fits = type && type !== "rehab" ? programsForGoal(programs, type, trainingPlace, level) : { best: null, others: [] };
+  const goals = PROGRAM_GOALS.filter((g) => g.key !== "own" || programs.some((p) => p.kind === "weekly" && programGoal(p) === "own"));
 
   const title = !date
     ? ""
@@ -315,7 +309,7 @@ export default function PlanProgramModal({
           ? `${findArea(area).title}: which level?`
           : "Rehab & stability"
         : type
-          ? "Pick a program"
+          ? (PROGRAM_GOALS.find((g) => g.key === type)?.title ?? "Pick a program")
           : `Start on ${dayHeading(date)}`;
 
   return (
@@ -340,28 +334,17 @@ export default function PlanProgramModal({
             {/* Step 1: what kind of training. */}
             {!type && !program && date && (
               <>
-                <Text style={styles.step}>What does {clientName} want to focus on?</Text>
-                {PROGRAM_GROUPS.map((g) => {
-                  const { title: t, icon } = programGroupHeading(g, place);
-                  return (
-                    <Pressable key={g.key} style={styles.typeRow} onPress={() => setType(g.key)}>
-                      <Text style={styles.typeIcon}>{icon}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.typeTitle}>{t}</Text>
-                        <Text style={styles.typeSummary}>{g.summary}</Text>
-                      </View>
-                      <Text style={styles.chevron}>›</Text>
-                    </Pressable>
-                  );
-                })}
-                <Pressable style={styles.typeRow} onPress={() => setType("rehab")}>
-                  <Text style={styles.typeIcon}>🛡️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.typeTitle}>Rehab</Text>
-                    <Text style={styles.typeSummary}>Stability and injury programs for ankle, knee, hip, core, shoulder, wrist and neck</Text>
-                  </View>
-                  <Text style={styles.chevron}>›</Text>
-                </Pressable>
+                <Text style={styles.step}>What's {clientName}'s goal?</Text>
+                {goals.map((g) => (
+                  <Pressable key={g.key} style={styles.typeRow} onPress={() => setType(g.key)}>
+                    <Text style={styles.typeIcon}>{g.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.typeTitle}>{g.title}</Text>
+                      <Text style={styles.typeSummary}>{g.summary}</Text>
+                    </View>
+                    <Text style={styles.chevron}>›</Text>
+                  </Pressable>
+                ))}
                 {onSingleWorkout && (
                   <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
                     <Text style={styles.singleText}>Or just one workout for this day</Text>
@@ -373,43 +356,32 @@ export default function PlanProgramModal({
             {/* Step 2: the programs of that kind, under tap-to-open headings. */}
             {type && type !== "rehab" && !program && (
               <>
-                <GymHomeTabs
-                  current={place}
-                  onChange={(next) => {
-                    setPlace(next);
-                    setOpenFamily(null);
-                  }}
-                  accent={BRAND_GOLD}
-                  labels={PROGRAM_PLACE_LABELS}
-                />
-                {families.map((f) => {
-                  const isOpen = openFamily === f.key || families.length === 1;
-                  return (
-                    <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
-                      <Pressable style={styles.familyHeader} onPress={() => setOpenFamily(isOpen ? null : f.key)}>
-                        <Text style={styles.typeIcon}>{f.icon}</Text>
-                        <Text style={[styles.familyTitle, { flex: 1 }]}>{f.title}</Text>
-                        <Text style={styles.count}>{f.programs.length}</Text>
-                        <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
-                      </Pressable>
-                      {isOpen &&
-                        f.programs.map((p) => (
-                          <Pressable key={p.id} style={styles.program} onPress={() => pickProgram(p)}>
-                            <Text style={styles.programName}>{p.name}</Text>
-                            {p.description ? (
-                              <Text style={styles.description} numberOfLines={2}>
-                                {p.description}
-                              </Text>
-                            ) : null}
-                          </Pressable>
-                        ))}
-                    </View>
-                  );
-                })}
-                {families.length === 0 && (
-                  <Text style={styles.description}>
-                    No full {place} programs here yet. Pick one workout for this day instead.
-                  </Text>
+                {fits.best && (
+                  <>
+                    <Text style={styles.step}>Best fit{level ? ` for a ${level === "beginner" ? "beginner" : level}` : ""}</Text>
+                    <Pressable style={[styles.program, styles.bestFit]} onPress={() => pickProgram(fits.best!)}>
+                      <Text style={styles.programName}>⭐ {fits.best.name}</Text>
+                      {fits.best.description ? (
+                        <Text style={styles.description} numberOfLines={2}>
+                          {fits.best.description}
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                  </>
+                )}
+                {fits.others.length > 0 && <Text style={styles.step}>{fits.best ? "Or another one" : "Pick a program"}</Text>}
+                {fits.others.map((p) => (
+                  <Pressable key={p.id} style={styles.program} onPress={() => pickProgram(p)}>
+                    <Text style={styles.programName}>{p.name}</Text>
+                    {p.description ? (
+                      <Text style={styles.description} numberOfLines={2}>
+                        {p.description}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ))}
+                {!fits.best && fits.others.length === 0 && (
+                  <Text style={styles.description}>No programs for this goal yet. Pick one workout for this day instead.</Text>
                 )}
                 {date && onSingleWorkout && (
                   <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
@@ -534,6 +506,7 @@ export default function PlanProgramModal({
 }
 
 const styles = StyleSheet.create({
+  bestFit: { borderWidth: 1.5, borderColor: BRAND_GOLD },
   backdrop: { flex: 1, backgroundColor: "rgba(2,6,23,0.8)", justifyContent: "center", padding: 16 },
   sheet: { backgroundColor: "#0F172A", borderRadius: 16, padding: 16, maxHeight: "90%", borderWidth: 1, borderColor: "#1E293B" },
   header: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
@@ -549,11 +522,6 @@ const styles = StyleSheet.create({
   chevron: { color: "#94A3B8", fontSize: 18 },
   single: { alignItems: "center", paddingVertical: 12, marginTop: 8 },
   singleText: { color: BRAND_GOLD, fontWeight: "700" },
-  family: { backgroundColor: "#1E293B", borderRadius: 12, marginTop: 8, padding: 4 },
-  familyOpen: { borderWidth: 1, borderColor: BRAND_GOLD },
-  familyHeader: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10 },
-  familyTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  count: { color: BRAND_GOLD, fontWeight: "800" },
   program: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, margin: 6, marginTop: 6, borderWidth: 1, borderColor: "#1E293B" },
   programName: { color: "#fff", fontWeight: "700", fontSize: 14 },
   description: { color: "#94A3B8", fontSize: 13, marginTop: 4 },
