@@ -183,6 +183,24 @@ export default function BillingScreen() {
     );
   };
 
+  // Card payments on the website (0136): off until the store launch.
+  const toggleCards = async (value: boolean) => {
+    const go = async () => {
+      const { error } = await supabase.from("billing_settings").update({ card_billing_enabled: value, updated_at: new Date().toISOString() }).eq("id", 1);
+      if (error) Alert.alert("Couldn't update", error.message);
+      await load();
+    };
+    if (!value) return go();
+    Alert.alert(
+      "Switch on card payments?",
+      "Trainers can pay by card on the website, and saved cards are charged automatically each morning for anything that's due. Only switch this on once the Paystack live key is added.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Switch on", style: "destructive", onPress: go },
+      ],
+    );
+  };
+
   const payOutReferrals = (t: Trainer) => {
     const unused = unusedCredits(t);
     const currency = t.billing_currency ?? "USD";
@@ -444,7 +462,22 @@ export default function BillingScreen() {
                 accessibilityLabel="Lock out unpaid trainers"
               />
             </View>
-            <Text style={styles.muted}>To change a price, ask in the project chat.</Text>
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.lineName}>Card payments (Paystack)</Text>
+                <Text style={styles.muted}>
+                  Off: only you can try it, on the website. On: trainers pay by card on the website, and saved cards pay
+                  automatically. Dollar bills are charged in rand at R{settings.usd_zar_rate} to the dollar.
+                </Text>
+              </View>
+              <Switch
+                value={settings.card_billing_enabled}
+                onValueChange={toggleCards}
+                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                accessibilityLabel="Card payments"
+              />
+            </View>
+            <Text style={styles.muted}>To change a price or the exchange rate, ask in the project chat.</Text>
           </>
         ) : null,
       )}

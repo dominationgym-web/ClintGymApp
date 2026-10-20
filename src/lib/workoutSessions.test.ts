@@ -25,6 +25,13 @@ describe("findImprovements", () => {
     expect(findImprovements(today, earlier)).toEqual([{ exercise: "Squat", before: "60kg × 10", after: "65kg × 8" }]);
   });
 
+  it("stars a jump of more than 10% only when the reps held up", () => {
+    const earlier = [set("2026-10-05", 60, 10)];
+    expect(findImprovements([set("2026-10-12", 70, 8)], earlier)).toEqual([]);
+    expect(findImprovements([set("2026-10-12", 70, 10)], earlier)).toEqual([{ exercise: "Squat", before: "60kg × 10", after: "70kg × 10" }]);
+    expect(findImprovements([set("2026-10-12", 66, 6)], earlier)).toHaveLength(1);
+  });
+
   it("stars more reps at the same weight", () => {
     const today = [set("2026-10-12", 60, 10), set("2026-10-12", 60, 9)];
     const earlier = [set("2026-10-05", 60, 9), set("2026-10-05", 60, 8)];
