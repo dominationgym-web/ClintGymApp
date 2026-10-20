@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
-import { FOOD_GROUPS, FOODS, foodUnits, itemTotals, mealTotals, type Food, type FoodGroup, type MealItem } from "@/lib/foods";
+import { FOOD_GROUPS, FOODS, foodUnits, itemTotals, mealTotals, searchFoods, type Food, type FoodGroup, type MealItem } from "@/lib/foods";
 import { parseGrams } from "@/lib/nutrition";
 
 type Row = { id: number; food: Food; amountText: string; unitIndex: number };
@@ -20,6 +20,8 @@ export default function MealBuilder() {
   const [group, setGroup] = useState<FoodGroup>("Protein");
   const [rows, setRows] = useState<Row[]>([]);
   const [nextId, setNextId] = useState(1);
+  const [search, setSearch] = useState("");
+  const shown = search.trim() ? searchFoods(search) : FOODS.filter((f) => f.group === group);
 
   const add = (food: Food) => {
     setRows((prev) => [...prev, { id: nextId, food, amountText: String(food.usual), unitIndex: 0 }]);
@@ -51,21 +53,32 @@ export default function MealBuilder() {
         </View>
       </View>
 
+      <TextInput
+        style={styles.search}
+        value={search}
+        onChangeText={setSearch}
+        placeholder="🔍 Search foods, e.g. snoek or zucchini"
+        placeholderTextColor="#64748B"
+        accessibilityLabel="Search foods"
+      />
+      {!search.trim() && (
+        <View style={styles.chips}>
+          {FOOD_GROUPS.map((g) => (
+            <Pressable
+              key={g}
+              onPress={() => setGroup(g)}
+              style={[styles.groupChip, g === group && styles.groupChipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: g === group }}
+            >
+              <Text style={[styles.groupChipText, g === group && styles.groupChipTextActive]}>{g}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <View style={styles.chips}>
-        {FOOD_GROUPS.map((g) => (
-          <Pressable
-            key={g}
-            onPress={() => setGroup(g)}
-            style={[styles.groupChip, g === group && styles.groupChipActive]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: g === group }}
-          >
-            <Text style={[styles.groupChipText, g === group && styles.groupChipTextActive]}>{g}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={styles.chips}>
-        {FOODS.filter((f) => f.group === group).map((f) => (
+        {shown.length === 0 && <Text style={styles.text}>No foods match "{search.trim()}".</Text>}
+        {shown.map((f) => (
           <Pressable key={f.name} onPress={() => add(f)} style={styles.foodChip} accessibilityRole="button" accessibilityLabel={`Add ${f.name}`}>
             <Text style={styles.foodChipText}>+ {f.name}</Text>
           </Pressable>
@@ -157,6 +170,7 @@ const styles = StyleSheet.create({
   rowName: { color: "#fff", fontSize: 15, fontWeight: "600", flex: 1, marginRight: 8 },
   remove: { color: "#94A3B8", fontSize: 16 },
   rowAmount: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  search: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, fontSize: 16, marginTop: 12 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, fontSize: 16, width: 80 },
   unitChip: { borderWidth: 1, borderColor: "#334155", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10 },
   unitChipActive: { borderColor: BRAND_GOLD },

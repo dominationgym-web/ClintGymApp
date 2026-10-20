@@ -11,36 +11,18 @@ const SIGNUP = "/app/?signup=trainer";
 // One tap-through slide per feature: what it does, and a mock of the screen.
 const FEATURES = [
   {
-    key: "injury",
-    tab: "Injury-aware",
-    title: "Injury-aware programming",
-    lead: "Every plan you give is checked against your client's injuries and pain.",
-    points: [
-      "Injuries are asked on the intake form and kept with healed dates.",
-      "Pain reported in check-ins (knee, lower back...) feeds the same check.",
-      "Risky exercises are flagged straight away, each with 3 safer swaps.",
-      "Keep one anyway and your reason is saved: a record that protects you.",
-      "28 stability and rehab programs, ankle to neck, run alongside the main plan.",
-    ],
-    demo: `
-      <div class="m-title">🩹 Injury check</div>
-      <div class="m-sub">Sarah · Left knee (open) · Lower back pain reported Tue</div>
-      <div class="m-card amber"><b>⚠ Barbell back squat</b><br>Loads the knee deeply.<div class="chips"><span>Box squat</span><span>Leg press, short range</span><span>Glute bridge</span></div></div>
-      <div class="m-card amber"><b>⚠ Romanian deadlift</b><br>Loads the lower back.<div class="chips"><span>Hip thrust</span><span>Cable pull-through</span><span>Back extension, light</span></div></div>
-      <div class="m-card green">✓ The other 4 exercises are fine for her injuries.</div>`,
-  },
-  {
     key: "progression",
-    tab: "Progression",
-    title: "Intelligent progression",
-    lead: "Plan a client's training in a few taps, and let the app do the maths.",
+    tab: "Programming",
+    title: "Intelligent Programming",
+    tagline: "Smarter training. Less planning.",
+    lead: "Build complete training programmes in minutes.",
     points: [
-      "Tap a day, pick Gym, Performance, Functional or Rehab, choose the split and the weeks. The calendar fills itself.",
-      "A gauge set works out each client's working weight the first time they do an exercise.",
-      "Weights go up from their real reps and effort, capped at about 10% a jump.",
-      "Fatigue monitoring: weeks in a row, sets to failure, tiredness, poor sleep, missed workouts and stalled progress.",
-      "Automatic deload suggestions when fatigue adds up. One tap adds the easy week.",
+      "Automatically calculate suggested starting weights from a gauge set.",
+      "Adjust training loads using actual performance.",
+      "Monitor fatigue and suggest deload weeks.",
+      "Plan workouts directly onto your client's calendar.",
     ],
+    closer: "Spend less time programming. More time coaching.",
     demo: `
       <div class="m-title">📅 Training calendar</div>
       <div class="week">
@@ -56,16 +38,38 @@ const FEATURES = [
       <div class="m-card">🎯 <b>Gauge set</b>: Leg press. They pick a weight they can do well; the app sets their working weight from it.</div>`,
   },
   {
+    key: "injury",
+    tab: "Injury-aware",
+    title: "Injury-Aware Training",
+    tagline: "Your client's safety matters.",
+    lead: "Daily Evolution helps you identify potential training risks before they become problems.",
+    points: [
+      "Flags exercises that conflict with reported injuries or pain.",
+      "Suggests three alternative exercises.",
+      "Tracks injuries, pain and recovery progress.",
+      "Records your decisions and programme adjustments.",
+    ],
+    closer: "Better information. More confident coaching decisions.",
+    demo: `
+      <div class="m-title">🩹 Injury check</div>
+      <div class="m-sub">Sarah · Left knee (open) · Lower back pain reported Tue</div>
+      <div class="m-card amber"><b>⚠ Barbell back squat</b><br>Loads the knee deeply.<div class="chips"><span>Box squat</span><span>Leg press, short range</span><span>Glute bridge</span></div></div>
+      <div class="m-card amber"><b>⚠ Romanian deadlift</b><br>Loads the lower back.<div class="chips"><span>Hip thrust</span><span>Cable pull-through</span><span>Back extension, light</span></div></div>
+      <div class="m-card green">✓ The other 4 exercises are fine for her injuries.</div>`,
+  },
+  {
     key: "nutrition",
     tab: "Nutrition",
-    title: "Nutrition that's safe",
-    lead: "Meal plans built on proper calorie maths, with safety checks built in.",
+    title: "Intelligent Nutrition",
+    tagline: "Nutrition planning without the admin.",
+    lead: "Give your clients structured nutrition guidance without building every plan from scratch.",
     points: [
-      "Calories from the Mifflin-St Jeor formula, with a sensible deficit for fat loss.",
-      "Never below what the body burns at rest, and a floor for men and women.",
-      "Clients with diabetes, kidney disease, pregnancy, or under 18 are kept at maintenance and pointed to a professional.",
-      "A meal plan maker and a hand-portion guide clients actually follow.",
+      "Calculate personalised calorie and macro targets.",
+      "Generate meal plans aligned with client goals.",
+      "Track nutrition progress and adherence.",
+      "Identify clients who may need specialist nutritional guidance.",
     ],
+    closer: "Less time calculating. More time helping clients succeed.",
     demo: `
       <div class="m-title">🍽 Daily targets</div>
       <div class="targets">
@@ -81,15 +85,16 @@ const FEATURES = [
   {
     key: "recovery",
     tab: "Recovery",
-    title: "Recovery and fatigue",
-    lead: "Know how each client is really doing before you plan their next session.",
+    title: "Recovery & Rehabilitation",
+    tagline: "Training is only half the equation.",
+    lead: "Help clients recover, manage fatigue and stay consistent.",
     points: [
-      "A quick daily check-in: sleep, pain, tiredness and stress.",
-      "Sleep and workouts come in from their watch through Apple Health or Health Connect.",
-      "Tiredness, stress and pain show as alerts you mark Busy fixing or Fixed.",
-      "A daily summary for each client: their energy, and what to do about it.",
-      "Recovery suggestions for them (sleep, stretching, active recovery) based on their training load.",
+      "Ready-made recovery and rehabilitation programmes.",
+      "Track sleep, fatigue, soreness and reported pain.",
+      "Suggest recovery activities and lighter training weeks.",
+      "Monitor recovery alongside training progress.",
     ],
+    closer: "Smarter recovery. Better-informed training decisions.",
     demo: `
       <div class="m-title">🧠 Daily summary · James</div>
       <div class="pill low">Energy: Low</div>
@@ -99,16 +104,17 @@ const FEATURES = [
   },
   {
     key: "payments",
-    tab: "Payments",
-    title: "Payment tracking",
-    lead: "Know who has paid, who owes and what you earn, under your own brand.",
+    tab: "Business",
+    title: "Business & Client Management",
+    tagline: "Your clients. Your business. Your control.",
+    lead: "Run your coaching business from one central platform.",
     points: [
-      "Your logo and your own code: clients join you, not a marketplace.",
-      "See who's active, waiting for approval, owes you money or has gone quiet.",
-      "Clients upload proof of payment; you tap Paid and they're in.",
-      "Set your prices for online and in-person packages, and see your monthly income.",
-      "Use it on your phone, or on a laptop for planning at your desk.",
+      "Your own branding and unique trainer reference code.",
+      "Private client network with trainer-controlled access.",
+      "Track payments, packages and monthly income.",
+      "Manage online, in-person and hybrid coaching clients.",
     ],
+    closer: "Less administration. More time to grow your business.",
     demo: `
       <div class="m-title">👥 Clients</div>
       <div class="group">Active · 18</div>
@@ -134,8 +140,10 @@ export function trainersPage(escape) {
     (f, i) => `<section class="slide${i === 0 ? " on" : ""}" data-i="${i}" role="tabpanel" aria-label="${escape(f.title)}">
   <div class="copy">
     <h2>${escape(f.title)}</h2>
+    <p class="tagline">${escape(f.tagline)}</p>
     <p class="lead">${escape(f.lead)}</p>
     <ul>${f.points.map((p) => `<li>${escape(p)}</li>`).join("")}</ul>
+    <p class="closer">${escape(f.closer)}</p>
   </div>
   <div><div class="phone" aria-hidden="true"><div class="screen">${f.demo}</div></div><div class="caption">Example screen</div></div>
 </section>`,
@@ -202,7 +210,9 @@ export function trainersPage(escape) {
   .slide { display: none; grid-template-columns: 1fr 320px; gap: 32px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
   .slide.on { display: grid; }
   .slide h2 { color: var(--gold); margin: 0 0 6px; font-size: 24px; }
-  .lead { color: #fff; font-size: 17px; margin: 0 0 12px; }
+  .tagline { color: #fff; font-size: 19px; font-weight: 800; margin: 0 0 6px; }
+  .lead { color: var(--text); font-size: 16px; margin: 0 0 12px; }
+  .closer { color: var(--gold); font-weight: 700; margin: 12px 0 0; }
   .slide ul { margin: 0; padding-left: 20px; }
   .slide li { margin-bottom: 8px; color: var(--text); }
   .nav { display: flex; justify-content: space-between; margin-top: 12px; }
@@ -293,7 +303,7 @@ export function trainersPage(escape) {
 
 <div id="demo">
 <h2 class="section">See what it does</h2>
-<p class="section">Tap through what sets it apart: injury-aware programming, intelligent progression with fatigue monitoring and deload suggestions, nutrition, recovery and payment tracking.</p>
+<p class="section">Tap through the five things that set it apart: programming, injury-aware training, nutrition, recovery and business management.</p>
 <div class="tabs" role="tablist">${tabs}</div>
 ${slides}
 <div class="nav"><button type="button" id="prev">‹ Back</button><button type="button" id="next">Next ›</button></div>
@@ -309,7 +319,7 @@ ${slides}
     <div class="amount">R400<span>/month</span></div>
     <ul>
       <li>6 months: R2 000 upfront <span class="save">Save R400</span></li>
-      <li>12 months: R3 800 upfront <span class="save">Save R1 000</span></li>
+      <li>12 months: R3 600 upfront <span class="save">3 months free</span></li>
       <li>First 5 active clients included</li>
       <li>R100/month per additional active client</li>
     </ul>

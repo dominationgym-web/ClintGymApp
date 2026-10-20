@@ -40,9 +40,11 @@ export type MealPlanSettings = {
   dairyFree?: boolean;
 };
 
-const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey/i;
-const FISH = /salmon|hake|fish|tuna|prawn|sardine|pilchard/i;
-const DAIRY = /milk|yoghurt|cottage cheese|cheddar|feta|butter$|whey/i;
+const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey|wors|venison|bacon|\bham\b/i;
+const FISH = /salmon|hake|fish|tuna|prawn|sardine|pilchard|snoek|kingklip|cod|tilapia|trout|mackerel|mussel/i;
+const DAIRY = /milk|yoghurt|cottage cheese|cheddar|feta|^butter$|whey|mozzarella|parmesan|halloumi|ricotta|ghee|amasi|kefir|skyr|quark/i;
+// Plant milks are what dairy-free clients drink instead.
+const PLANT_MILK = /almond milk|soy milk/i;
 
 /** Whether someone on this diet eats the food. */
 export function dietAllows(foodName: string, diet: MealDiet = "everything"): boolean {
@@ -53,7 +55,7 @@ export function dietAllows(foodName: string, diet: MealDiet = "everything"): boo
 
 /** Whether the food fits the client's diet and, if they're dairy-free, has no dairy. */
 export function foodAllowed(foodName: string, diet: MealDiet = "everything", dairyFree = false): boolean {
-  return dietAllows(foodName, diet) && !(dairyFree && DAIRY.test(foodName));
+  return dietAllows(foodName, diet) && !(dairyFree && DAIRY.test(foodName) && !PLANT_MILK.test(foodName));
 }
 
 // The goal moves the day's calories off what the body uses (BMR plus

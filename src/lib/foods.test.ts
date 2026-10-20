@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FOODS, FOOD_GROUPS, foodUnits, mealTotals, type MealItem } from "./foods";
+import { FOODS, FOOD_GROUPS, foodUnits, mealTotals, searchFoods, type MealItem } from "./foods";
+import { foodAllowed } from "./mealPlanMaker";
 
 const food = (name: string) => {
   const f = FOODS.find((x) => x.name === name);
@@ -39,8 +40,56 @@ describe("meal builder", () => {
     expect(mealTotals([])).toEqual({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
   });
 
-  it("puts every food in a known group and never lists oats", () => {
+  it("puts every food in a known group", () => {
     for (const f of FOODS) expect(FOOD_GROUPS).toContain(f.group);
-    expect(JSON.stringify(FOODS).toLowerCase()).not.toMatch(/\boats?\b/);
+  });
+
+  it("lists oats as rolled or steel-cut, not instant", () => {
+    expect(searchFoods("oats").map((f) => f.name)).toEqual(["Oats, rolled or steel-cut (dry)"]);
+    expect(JSON.stringify(FOODS).toLowerCase()).not.toContain("instant");
+  });
+
+  it("has one entry per name, with calories that match the macros", () => {
+    expect(new Set(FOODS.map((f) => f.name)).size).toBe(FOODS.length);
+    // Very high fibre foods (psyllium) carry fewer calories than their carbs suggest.
+    for (const f of FOODS.filter((x) => (x.fibre ?? 0) < 20)) {
+      const fromMacros = 4 * f.protein + 4 * f.carbs + 9 * f.fat;
+      expect(Math.abs(fromMacros - f.kcal), f.name).toBeLessThanOrEqual(Math.max(20, f.kcal * 0.12));
+    }
+  });
+});
+
+describe("finding foods", () => {
+  const names = (text: string) => searchFoods(text).map((f) => f.name);
+
+  it("finds foods by the names used in other countries", () => {
+    expect(names("zucchini")).toEqual(["Baby marrow"]);
+    expect(names("eggplant")).toEqual(["Brinjal / aubergine (cooked)"]);
+    expect(names("ugali")).toEqual(["Stiff pap (cooked)"]);
+    expect(names("shrimp")).toEqual(["Prawns (cooked)"]);
+  });
+
+  it("needs every word typed and ignores case", () => {
+    expect(names("WHITE fish")).toEqual(expect.arrayContaining(["Hake / white fish (cooked)", "Cod (cooked)", "Kingklip (cooked)"]));
+    expect(names("white fish")).not.toContain("Salmon (cooked)");
+    expect(names("  ")).toEqual([]);
+  });
+
+  it("has South African favourites", () => {
+    for (const n of ["Boerewors (cooked)", "Samp (cooked)", "Snoek (cooked)", "Chakalaka", "Amasi / maas (ml)", "Morogo (cooked)", "Gem squash (cooked)"])
+      expect(food(n).name).toBe(n);
+  });
+
+  it("keeps new meat, fish and dairy away from clients who don't eat them", () => {
+    expect(foodAllowed("Boerewors (cooked)", "vegetarian")).toBe(false);
+    expect(foodAllowed("Ham, lean", "pescatarian")).toBe(false);
+    expect(foodAllowed("Snoek (cooked)", "pescatarian")).toBe(true);
+    expect(foodAllowed("Snoek (cooked)", "vegetarian")).toBe(false);
+    expect(foodAllowed("Halloumi", "everything", true)).toBe(false);
+    expect(foodAllowed("Amasi / maas (ml)", "everything", true)).toBe(false);
+    expect(foodAllowed("Soy milk, unsweetened (ml)", "everything", true)).toBe(true);
+    expect(foodAllowed("Peanut butter", "everything", true)).toBe(true);
+    expect(foodAllowed("Butter", "everything", true)).toBe(false);
+    expect(foodAllowed("Tempeh", "vegetarian", true)).toBe(true);
   });
 });
