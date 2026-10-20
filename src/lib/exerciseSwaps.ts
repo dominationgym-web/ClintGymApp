@@ -2,11 +2,18 @@
 // the phone and only for the day, so tomorrow's program is back to normal.
 // Maps a program_exercises row id to the exercise used instead.
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getLiveClient } from "@/lib/supabase";
 
 export type ExerciseSwap = { id: string; name: string };
 export type ExerciseSwaps = Record<string, ExerciseSwap>;
 
-const key = (date: string) => `exerciseSwaps:${date}`;
+// In a live 1-on-1 session (0134) the trainer's phone keeps each client's
+// ticks and swaps apart.
+const scope = () => {
+  const live = getLiveClient();
+  return live ? `${live}:` : "";
+};
+const key = (date: string) => `exerciseSwaps:${scope()}${date}`;
 
 export async function getExerciseSwaps(date: string): Promise<ExerciseSwaps> {
   try {
@@ -26,7 +33,7 @@ export async function saveExerciseSwaps(date: string, swaps: ExerciseSwaps): Pro
 }
 
 // Cardio blocks (0048) the client ticked off today, by program_exercises row id.
-const cardioKey = (date: string) => `cardioDone:${date}`;
+const cardioKey = (date: string) => `cardioDone:${scope()}${date}`;
 
 export async function getCardioDone(date: string): Promise<string[]> {
   try {

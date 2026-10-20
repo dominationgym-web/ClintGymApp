@@ -43,6 +43,22 @@ export function suggestedSplit(perWeek: number): SplitKey {
 }
 
 /** A sensible length: the program's own weeks when it has several, else 4. */
+// Longevity programs run in 8-week blocks (GRIZZ, 2026-10-20: "Allow trainers
+// to choose when a client progresses or repeats a block"): the trainer can
+// start a client at block 1, 2 or 3, and the plan uses the sessions from that
+// block on (client_program_plans.first_slot, 0135).
+export const BLOCK_WEEKS = 8;
+
+/** The first session slot of a block: block 2 starts at week 9's Monday. */
+export function blockFirstSlot(block: number): number {
+  return (block - 1) * BLOCK_WEEKS * 7 + 1;
+}
+
+/** The program's sessions from a slot on, or all of them. */
+export function slotsFrom(slots: number[], firstSlot: number | null | undefined): number[] {
+  return firstSlot ? slots.filter((s) => s >= firstSlot) : slots;
+}
+
 export function defaultWeeks(programWeeks: number | null | undefined): number {
   return programWeeks && programWeeks > 1 ? programWeeks : 4;
 }

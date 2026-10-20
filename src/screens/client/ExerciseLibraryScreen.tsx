@@ -32,7 +32,8 @@ import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
 import { parseWeight } from "@/lib/weightInput";
-import { useAuth } from "@/context/AuthContext";
+import { useWorkoutClient } from "@/context/LiveClientContext";
+import MedicalHoldNotice from "@/components/MedicalHoldNotice";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession } from "@/types/database";
 import WorkoutReasonModal from "@/components/WorkoutReasonModal";
 import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
@@ -98,7 +99,10 @@ import TodayPlanRows from "@/components/TodayPlanRows";
 import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 
 export default function ExerciseLibraryScreen() {
-  const { client, refreshProfile } = useAuth();
+  // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
+  const { client, refreshProfile, live } = useWorkoutClient();
+  // Serious symptoms on a check-in (0133) hold every workout until the trainer clears it.
+  const [hold, setHold] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Exercise | null>(null);
@@ -208,6 +212,7 @@ export default function ExerciseLibraryScreen() {
   useEffect(() => {
     const load = async () => {
       loadedFor.current = todayIso();
+      if (client) supabase.rpc("has_medical_hold", { p_client: client.id }).then(({ data: held }) => setHold(!!held));
       const [{ data, error }, active, { data: logged }, todaysSwaps, { data: sessionRow }, { data: missedRows }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         client ? loadClientProgram(client.id) : Promise.resolve(null),
@@ -372,7 +377,7 @@ export default function ExerciseLibraryScreen() {
   // only shows for clients who aren't on a program yet.
   const showReference = !program;
   // What's open on the Today view (GRIZZ, 2026-10-18: "they must click on the program for it to open").
-  const part = openPart ?? null;
+  const part = hold ? null : (openPart ?? null);
   const togglePart = (key: string) => setOpenPart(part === key ? null : key);
   const choosePlace = (next: ExercisePlace) => {
     setPlace(next);
@@ -862,10 +867,11 @@ export default function ExerciseLibraryScreen() {
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
           <>
-            {client && atHome && equipmentList(client.home_equipment).length === 0 && (
+            {hold && <MedicalHoldNotice live={live} />}
+            {client && !live && atHome && equipmentList(client.home_equipment).length === 0 && (
               <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
             )}
-            {client && (
+            {client && !live && (
               <ClientCalendarView
                 clientId={client.id}
                 exercises={exercises}
@@ -885,7 +891,7 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.todayDate}>
                   {new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
                 </Text>
-                {program && todaysWorkout.length > 0 && (
+                {!hold && program && todaysWorkout.length > 0 && (
                   <Pressable style={[styles.todayRow, part === "main" && styles.todayRowOpen]} onPress={() => togglePart("main")}>
                     <Text style={styles.todayIcon}>{deloadToday && calendarToday ? "🌙" : catchUpFor ? "🔁" : "🏋️"}</Text>
                     <View style={{ flex: 1 }}>
@@ -903,7 +909,7 @@ export default function ExerciseLibraryScreen() {
                     )}
                   </Pressable>
                 )}
-                {calendarExtras.map((block, i) => (
+                {!hold && calendarExtras.map((block, i) => (
                   <Pressable
                     key={`row-${block.program.id}-${i}`}
                     style={[styles.todayRow, part === `extra-${i}` && styles.todayRowOpen]}
@@ -921,7 +927,7 @@ export default function ExerciseLibraryScreen() {
                     <Text style={styles.todayOpen}>{part === `extra-${i}` ? "Close ▴" : "Open ›"}</Text>
                   </Pressable>
                 ))}
-                {client && <TodayPlanRows clientId={client.id} refreshKey={refresh} onCount={setPlanRows} />}
+                {client && !live && !hold && <TodayPlanRows clientId={client.id} refreshKey={refresh} onCount={setPlanRows} />}
                 {(!program || todaysWorkout.length === 0) && calendarExtras.length === 0 && planRows === 0 && (
                   <Text style={styles.todayRest}>
                     {program ? "😌 Rest day. Let your body recover." : "Nothing planned for today."}
@@ -1234,7 +1240,7 @@ export default function ExerciseLibraryScreen() {
                   ))}
               </View>
             ))}
-            {client && (
+            {client && !live && (
               <FoldSection icon="🏃" title="Other exercise" hint="Log a walk, run, ride or hike" open={part === "other"} onToggle={() => togglePart("other")}>
                 <OtherActivityCard clientId={client.id} role="client" />
               </FoldSection>
@@ -1496,7 +1502,7 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : gaugeDue ? "Log gauge set" : "Log set"}</Text>
               )}
             </Pressable>
-            {selected && (
+            {selected && !live && (
               <Pressable style={styles.filmButton} onPress={() => film.filmOrPick(selected.name)} disabled={film.uploading}>
                 {film.uploading ? <ActivityIndicator color={BRAND_GOLD} /> : <Text style={styles.filmText}>🎥 Film this set for my coach</Text>}
               </Pressable>

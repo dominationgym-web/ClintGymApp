@@ -42,7 +42,8 @@ import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import DietPlanner from "@/components/DietPlanner";
 import ClientOwnMealPlan from "@/components/ClientOwnMealPlan";
-import WorkoutsSavedButton from "@/components/WorkoutsSavedButton";
+import WorkoutsSavedButton, { sendWorkoutLoaded } from "@/components/WorkoutsSavedButton";
+import { workoutFingerprint } from "@/lib/workoutChanges";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
 import TrainerStabilityCard from "@/components/stability/TrainerStabilityCard";
 import RehabSuggestion from "@/components/stability/RehabSuggestion";
@@ -149,14 +150,45 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       },
     ]);
   };
+  // Workout changes not yet sent with Save and tell (GRIZZ, 2026-10-20): a
+  // snapshot of the client's training when the screen opens (and after each
+  // send), compared when the trainer leaves.
+  const sentPrint = useRef<string | null>(null);
+  const leaving = useRef(false);
+  const markSent = () => {
+    workoutFingerprint(clientId).then((p) => (sentPrint.current = p));
+  };
+  useEffect(markSent, [clientId]);
+  const confirmLeaveWorkouts = async (leave: () => void) => {
+    const before = sentPrint.current;
+    const now = before == null || !trainer ? before : await workoutFingerprint(clientId).catch(() => before);
+    if (before == null || now === before || !trainer) return leave();
+    const name = client?.name ?? "your client";
+    Alert.alert(`Send ${name} their workout?`, `You changed ${name}'s workouts. Send them a notification that their workout is loaded?`, [
+      { text: "Stay", style: "cancel" },
+      { text: "Leave without sending", style: "destructive", onPress: leave },
+      {
+        text: `Send to ${name}`,
+        onPress: async () => {
+          const error = await sendWorkoutLoaded(clientId, trainer.id);
+          if (error) Alert.alert("Couldn't send", error);
+          else leave();
+        },
+      },
+    ]);
+  };
   useEffect(
     () =>
       navigation.addListener("beforeRemove", (e) => {
-        if (!dietDirty.current) return;
+        if (leaving.current) return;
         e.preventDefault();
-        confirmLeaveDiet(() => navigation.dispatch(e.data.action));
+        const leave = () => {
+          leaving.current = true;
+          navigation.dispatch(e.data.action);
+        };
+        confirmLeaveDiet(() => confirmLeaveWorkouts(leave));
       }),
-    [navigation]
+    [navigation, client, trainer]
   );
   // Problems not yet fixed (0075): red dot while one is open, orange while
   // they're all being fixed.
@@ -468,7 +500,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <ClientDailySummaryCard clientId={client.id} clientName={client.name} />
             <ComebackCompareCard client={client} />
             <TrainingLevelBanner level={client.training_level} />
-            <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
+            <ClientProblems clientId={client.id} clientName={client.name} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
             <Text style={styles.sectionHeading}>Check-in notes to {client.name}</Text>
             {messages.length === 0 ? (
               <Text style={styles.helper}>No notes sent yet.</Text>
@@ -814,6 +846,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "training" && (
           <>
+            {/* Live 1-on-1 (0134, GRIZZ, 2026-10-20): the client's own workout screen on the trainer's phone. Their own trainer only. */}
+            {trainer && client.trainer_id === trainer.id && (
+              <Pressable style={styles.liveButton} onPress={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}>
+                <Text style={styles.liveButtonText}>▶ Start workout with {client.name.split(" ")[0]}</Text>
+              </Pressable>
+            )}
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
             <FoundationOfferCard
               client={client}
@@ -851,7 +889,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               stabilityKey={stabilityDaysKey}
             />
             {/* Right under the calendar, so the trainer sees how to tell the client (GRIZZ, 2026-10-19). */}
-            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} />}
+            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} onSent={markSent} />}
             <TrainerStabilityCard
               key={stabilityKey}
               clientId={client.id}
@@ -1027,6 +1065,8 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 }
 
 const styles = StyleSheet.create({
+  liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginBottom: 12 },
+  liveButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   archivedBanner: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 12 },
   archivedText: { color: "#CBD5E1", fontSize: 13 },
   archiveButton: { borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 24 },

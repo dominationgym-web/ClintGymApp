@@ -5,7 +5,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { loadProgramExercises } from "@/lib/programQueries";
 import { programSlots } from "@/lib/trainingCalendar";
-import { daysLabel, planWeekDates, splitAlongside, toggleDay } from "@/lib/trainingSplits";
+import { daysLabel, planWeekDates, slotsFrom, splitAlongside, toggleDay } from "@/lib/trainingSplits";
 import { nextPlanWeek, planSessionsBetween, planWeekOf } from "@/lib/weeklyPlans";
 import type { ClientProgramPlan, Program } from "@/types/database";
 
@@ -62,7 +62,7 @@ export default function WeeklyPlanCard({
     if (plan.days_vary && !days) return setPicking({ id: plan.id, days: plan.split_days });
     setBusy(plan.id);
     const { data: rows } = await loadProgramExercises(plan.program_id);
-    const slots = programSlots(rows ?? []);
+    const slots = slotsFrom(programSlots(rows ?? []), plan.first_slot);
     const sessions =
       plan.days_vary && days
         ? planWeekDates(next.from, next.to, days, slots, plan.sessions_placed ?? 0)

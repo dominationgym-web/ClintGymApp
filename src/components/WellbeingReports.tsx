@@ -33,7 +33,7 @@ export default function WellbeingReports({ clientId, clientName }: { clientId: s
       .from("client_problems")
       .select("id")
       .eq("client_id", clientId)
-      .eq("topic", topic)
+      .eq("topic", topic === "symptoms" ? "medical" : topic)
       .neq("status", "fixed")
       .order("created_at", { ascending: false })
       .limit(1)
@@ -53,7 +53,7 @@ export default function WellbeingReports({ clientId, clientName }: { clientId: s
       .from("checkins")
       .select("*")
       .eq("client_id", clientId)
-      .or("pain_status.eq.reported,fatigue_status.eq.reported,mental_status.eq.reported")
+      .or("pain_status.eq.reported,fatigue_status.eq.reported,mental_status.eq.reported,balance_status.eq.reported,symptoms_status.eq.reported")
       .order("checkin_date", { ascending: false })
       .limit(60)
       .then(({ data }) => setReports(reportsByTopic(data ?? [])));

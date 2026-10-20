@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Tex
 import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
+import { useWorkoutClient } from "@/context/LiveClientContext";
 import { todayIso } from "@/lib/dates";
 import { parseWeight } from "@/lib/weightInput";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -39,7 +39,7 @@ export default function LogSetModal({
   note?: string;
   onClose: (setsLogged: number) => void;
 }) {
-  const { client } = useAuth();
+  const { client } = useWorkoutClient();
   const [todaysSets, setTodaysSets] = useState<WorkoutLog[]>([]);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [weight, setWeight] = useState("");
