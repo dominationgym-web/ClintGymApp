@@ -500,7 +500,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <ClientDailySummaryCard clientId={client.id} clientName={client.name} />
             <ComebackCompareCard client={client} />
             <TrainingLevelBanner level={client.training_level} />
-            <ClientProblems clientId={client.id} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
+            <ClientProblems clientId={client.id} clientName={client.name} problems={problems} onChanged={reloadProblems} onReply={() => setReplying(true)} />
             <Text style={styles.sectionHeading}>Check-in notes to {client.name}</Text>
             {messages.length === 0 ? (
               <Text style={styles.helper}>No notes sent yet.</Text>
@@ -846,6 +846,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "training" && (
           <>
+            {/* Live 1-on-1 (0134, GRIZZ, 2026-10-20): the client's own workout screen on the trainer's phone. Their own trainer only. */}
+            {trainer && client.trainer_id === trainer.id && (
+              <Pressable style={styles.liveButton} onPress={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}>
+                <Text style={styles.liveButtonText}>▶ Start workout with {client.name.split(" ")[0]}</Text>
+              </Pressable>
+            )}
             <RecoveryCheckCard clientId={client.id} clientName={client.name} />
             <FoundationOfferCard
               client={client}
@@ -1059,6 +1065,8 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 }
 
 const styles = StyleSheet.create({
+  liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginBottom: 12 },
+  liveButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   archivedBanner: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 12 },
   archivedText: { color: "#CBD5E1", fontSize: 13 },
   archiveButton: { borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 24 },

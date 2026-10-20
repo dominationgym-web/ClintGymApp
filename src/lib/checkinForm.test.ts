@@ -73,6 +73,10 @@ const savedCheckin: Checkin = {
   mental_status: "ok",
   mental_cause: null,
   mental_notes: null,
+  balance_status: "ok",
+  balance_notes: null,
+  symptoms_status: "ok",
+  symptoms: null,
   created_at: "2026-10-08T05:00:00Z",
 };
 
@@ -107,6 +111,10 @@ describe("formFromCheckin", () => {
       mental_status: "ok",
       mental_cause: null,
       mental_notes: null,
+      balance_status: "ok",
+      balance_notes: null,
+      symptoms_status: "ok",
+      symptoms: null,
       distress_flag: true,
       distress_notes: "Fatigue (Lack of sleep): Baby up all night",
     });
@@ -117,7 +125,7 @@ describe("validateCheckinForm", () => {
   const allOk = { status: "ok" as const, kind: "", notes: "" };
   const form = (changes: Partial<CheckinForm>): CheckinForm => ({
     ...EMPTY_CHECKIN_FORM,
-    wellbeing: { pain: allOk, fatigue: allOk, mental: allOk },
+    wellbeing: { pain: allOk, fatigue: allOk, mental: allOk, balance: allOk, symptoms: allOk },
     ...changes,
   });
 
@@ -145,6 +153,8 @@ describe("validateCheckinForm", () => {
     const result = validateCheckinForm(form({ woundDown: false }));
     expect(result.ok && Object.keys(result.values).sort()).toEqual([
       "alcohol_units",
+      "balance_notes",
+      "balance_status",
       "distress_flag",
       "distress_notes",
       "fatigue_cause",
@@ -161,6 +171,8 @@ describe("validateCheckinForm", () => {
       "sleep_bed_time",
       "sleep_quality",
       "sleep_wake_time",
+      "symptoms",
+      "symptoms_status",
       "water_litres",
       "wound_down",
     ]);
@@ -176,5 +188,7 @@ describe("unansweredSections", () => {
   it("lists what is still blank", () => {
     expect(unansweredSections(EMPTY_CHECKIN_FORM)).toEqual(["sleep times", "sleep quality", "water", "meals", "wind-down", "body and mind"]);
     expect(unansweredSections(formFromCheckin(savedCheckin))).toEqual(["sleep times"]);
+    // A check-in from before the new questions asks for them.
+    expect(unansweredSections(formFromCheckin({ ...savedCheckin, symptoms_status: null }))).toEqual(["sleep times", "body and mind"]);
   });
 });

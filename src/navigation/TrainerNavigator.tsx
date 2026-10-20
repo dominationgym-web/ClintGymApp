@@ -21,6 +21,8 @@ import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
+import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
+import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
@@ -68,6 +70,16 @@ export default function TrainerNavigator() {
       <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
         <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
         <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+        <Stack.Screen
+          name="LiveWorkout"
+          options={({ route }) => ({ title: `Live session · ${route.params.name.split(" ")[0]}`, headerBackTitle: "Back" })}
+        >
+          {({ route }) => (
+            <LiveClientProvider clientId={route.params.clientId}>
+              <ExerciseLibraryScreen />
+            </LiveClientProvider>
+          )}
+        </Stack.Screen>
         <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
         <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />

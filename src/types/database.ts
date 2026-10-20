@@ -447,7 +447,9 @@ export type WorkoutSession = {
 
 // A problem a client raised: a body-and-mind report on a check-in or a red /
 // orange flag (0075). The trainer moves it open -> fixing -> fixed.
-export type ClientProblemTopic = "pain" | "fatigue" | "mental" | "flag";
+// balance and medical from the check-in since 0133; a medical problem holds workouts.
+export type ClientProblemTopic = "pain" | "fatigue" | "mental" | "flag" | "balance" | "medical";
+export type MedicalClearance = "medical_cleared" | "reported_in_error";
 export type ClientProblemStatus = "open" | "fixing" | "fixed";
 export type ClientProblem = {
   id: string;
@@ -463,6 +465,11 @@ export type ClientProblem = {
   followup_sent_at: string | null;
   client_reply: string | null;
   client_replied_at: string | null;
+  // How a serious-symptoms hold was cleared (0133).
+  clearance: MedicalClearance | null;
+  cleared_by: string | null;
+  cleared_on: string | null;
+  clearance_note: string | null;
   created_at: string;
 }
 
@@ -514,6 +521,11 @@ export type Checkin = {
   mental_status: "ok" | "reported" | null;
   mental_cause: string | null;
   mental_notes: string | null;
+  // Dizziness or balance worries, and serious symptoms (0133).
+  balance_status: "ok" | "reported" | null;
+  balance_notes: string | null;
+  symptoms_status: "ok" | "reported" | null;
+  symptoms: string | null;
   created_at: string;
 }
 
@@ -548,6 +560,8 @@ export type SetEffort = "comfortable" | "close_to_failure" | "failure";
 export type WorkoutLog = {
   id: string;
   client_id: string;
+  // Who logged it: the client, or their trainer in a live session (0134).
+  logged_by?: string | null;
   exercise_id: string | null;
   exercise_name: string;
   log_date: string;
@@ -809,6 +823,8 @@ export type ClientProgramPlan = {
   days_vary: boolean;
   // Program sessions placed so far, for days_vary plans.
   sessions_placed: number | null;
+  // Longevity "Start at block" (0135): the plan uses the sessions from this slot on.
+  first_slot?: number | null;
   asked_until: string | null;
   ended_at: string | null;
   created_at: string;
@@ -1081,6 +1097,11 @@ export interface Database {
         Returns: { workout_date: string; program_id: string; program_name: string; program_trainer_id: string | null }[];
       };
       mark_workout_makeup: { Args: { p_date: string }; Returns: WorkoutSession };
+      has_medical_hold: { Args: { p_client: string }; Returns: boolean };
+      clear_medical_hold: {
+        Args: { p_problem: string; p_clearance: MedicalClearance; p_cleared_by: string; p_cleared_on: string; p_note?: string | null };
+        Returns: undefined;
+      };
       set_my_block_result: { Args: { p_block: string; p_result: "done" | "skipped" | null }; Returns: boolean };
       set_client_problem_status: {
         Args: { p_client: string; p_status: "fixing" | "fixed"; p_problem?: string };
