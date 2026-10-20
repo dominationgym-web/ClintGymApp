@@ -5,6 +5,7 @@
 import { SPORTS_PERFORMANCE_GUIDE } from "@/lib/sportsPerformance";
 import { REFERRAL_GUIDE } from "@/lib/referralGuide";
 import { WOMENS_HEALTH_TRAINER_GUIDE } from "@/lib/womensHealthTrainerGuide";
+import { LONGEVITY_TRAINER_GUIDE } from "@/lib/longevityTrainerGuide";
 // A heading with its plain-text points (the client menu guides use emoji rows instead).
 type GuideGroup = { heading: string; points: string[]; icon?: string };
 
@@ -16,7 +17,7 @@ export type GuideTopic = {
   groups: GuideGroup[];
 };
 
-export type TrainerGuideKey = "retention" | "nutrition" | "training" | "recovery" | "sportsPerformance" | "womensHealth" | "referral";
+export type TrainerGuideKey = "retention" | "nutrition" | "training" | "recovery" | "sportsPerformance" | "womensHealth" | "longevity" | "referral";
 
 export type TrainerGuide = {
   key: TrainerGuideKey;
@@ -796,6 +797,7 @@ export const TRAINER_GUIDES: TrainerGuide[] = [
   TRAINING,
   RECOVERY,
   WOMENS_HEALTH_TRAINER_GUIDE,
+  LONGEVITY_TRAINER_GUIDE,
   SPORTS_PERFORMANCE_GUIDE,
 ];
 

@@ -25,6 +25,8 @@ import TrainerProgressPhotos from "@/components/TrainerProgressPhotos";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ClientProgramPicker from "@/components/ClientProgramPicker";
 import InjuryCheckCard from "@/components/InjuryCheckCard";
+import ExercisePainList from "@/components/ExercisePainList";
+import PreStartCard from "@/components/PreStartCard";
 import InjuryList from "@/components/InjuryList";
 import ClientDailySummaryCard from "@/components/ClientDailySummaryCard";
 import type { StabilityArea } from "@/lib/stability";
@@ -833,6 +835,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               refreshKey={planKey}
               onAreas={setInjuredAreas}
             />
+            <PreStartCard clientId={client.id} clientName={client.name} age={intakeDetails(client).age} refreshKey={planKey} />
+            <ExercisePainList clientId={client.id} clientName={client.name} />
             {/* Calendar first (GRIZZ, 2026-10-17): tap a day to start a program. The rest is tucked under tap-to-open headings. */}
             <ClientCalendarCard
               key={programKey}

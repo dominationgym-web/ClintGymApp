@@ -371,6 +371,13 @@ export const PROGRAM_GROUPS = [
     icon: "🧘",
     summary: "Stability, mobility and flexibility",
   },
+  // Older adult programs (GRIZZ, 2026-10-20: "put it in its own section").
+  {
+    key: "longevity",
+    title: "Longevity (60+)",
+    icon: "🌳",
+    summary: "Strength, balance and independence for older adults",
+  },
 ] as const;
 
 export type ProgramGroup = (typeof PROGRAM_GROUPS)[number]["key"];
@@ -402,6 +409,7 @@ export const PROGRAM_FAMILIES = [
   { key: "fight", group: "performance", title: "Fight sports: 8-week conditioning", icon: "🥊" },
   { key: "sportsMobility", group: "functional", title: "Mobility", icon: "🔄" },
   { key: "sportsFlexibility", group: "functional", title: "Flexibility", icon: "🧘" },
+  { key: "olderAdult", group: "longevity", title: "Strength, mobility & longevity: 18 months", icon: "🌳" },
 ] as const;
 
 export type ProgramFamily = (typeof PROGRAM_FAMILIES)[number]["key"];
@@ -422,6 +430,9 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   const name = program.name.toLowerCase();
   // Sports Performance programs (0093): "Speed 2 – Top Speed". Checked first,
   // since some of their names say "strength" or "lower body".
+  // Older adult programs (0130): "Older Adult 1 - Beginner Foundation". Before
+  // the foundation check, since the first one's name says foundation.
+  if (name.startsWith("older adult ")) return "olderAdult";
   if (name.startsWith("explosive power ")) return "sportsPower";
   if (name.startsWith("speed ")) return "sportsSpeed";
   if (name.startsWith("sports strength ")) return "sportsStrength";
