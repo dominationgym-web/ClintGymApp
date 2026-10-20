@@ -1,6 +1,7 @@
 // Foods for the meal builder in the Nutrition section. Values are per 100 g
 // (per 100 ml for milk), rounded from standard food tables, and labelled
-// cooked or raw where it matters. Never add oats (the coach's rule).
+// cooked or raw where it matters. Oats are listed as rolled or steel-cut only
+// (GRIZZ, 2026-10-20), not the processed instant kind.
 
 export type FoodGroup = "Protein" | "Carbs" | "Fibre" | "Veg" | "Fats" | "Fruit & dairy";
 
@@ -131,6 +132,8 @@ export const FOODS: Food[] = [
   { name: "Rice cakes", group: "Carbs", kcal: 387, protein: 8, carbs: 81, fat: 2.8, fibre: 4.2, units: [{ label: "cake", grams: 9 }], usual: 2 },
   { name: "Wholewheat wrap", group: "Carbs", kcal: 290, protein: 9, carbs: 48, fat: 7, fibre: 6, units: [{ label: "wrap", grams: 60 }], aka: ["tortilla"], usual: 1 },
   { name: "Baby potatoes (boiled)", group: "Carbs", kcal: 80, protein: 1.9, carbs: 17.5, fat: 0.1, fibre: 1.6, usual: 200 },
+  { name: "Oats, rolled or steel-cut (dry)", group: "Carbs", kcal: 379, protein: 13.2, carbs: 67.7, fat: 6.5, fibre: 10.1, aka: ["oatmeal", "porridge"], usual: 40 },
+  { name: "Oat porridge, made with water", group: "Carbs", kcal: 71, protein: 2.5, carbs: 12, fat: 1.5, fibre: 1.7, aka: ["oatmeal", "porridge"], usual: 250 },
   { name: "Stiff pap (cooked)", group: "Carbs", kcal: 110, protein: 2.6, carbs: 23.5, fat: 0.5, fibre: 1.6, aka: ["phutu", "uphuthu", "ugali", "sadza", "nshima", "krummelpap", "mieliepap"], usual: 200 },
   { name: "Maize meal (dry)", group: "Carbs", kcal: 354, protein: 7.6, carbs: 77, fat: 1.4, fibre: 3, aka: ["mielie meal", "mealie meal", "polenta", "cornmeal"], usual: 60 },
   { name: "Samp (cooked)", group: "Carbs", kcal: 89, protein: 2, carbs: 19, fat: 0.5, fibre: 2.6, aka: ["umngqusho", "hominy"], usual: 150 },

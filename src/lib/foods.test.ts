@@ -40,9 +40,13 @@ describe("meal builder", () => {
     expect(mealTotals([])).toEqual({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
   });
 
-  it("puts every food in a known group and never lists oats", () => {
+  it("puts every food in a known group", () => {
     for (const f of FOODS) expect(FOOD_GROUPS).toContain(f.group);
-    expect(JSON.stringify(FOODS).toLowerCase()).not.toMatch(/\boats?\b/);
+  });
+
+  it("lists oats as rolled or steel-cut, not instant", () => {
+    expect(searchFoods("oats").map((f) => f.name)).toEqual(["Oats, rolled or steel-cut (dry)"]);
+    expect(JSON.stringify(FOODS).toLowerCase()).not.toContain("instant");
   });
 
   it("has one entry per name, with calories that match the macros", () => {
