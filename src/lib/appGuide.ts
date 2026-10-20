@@ -134,7 +134,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Work out your own meal plan: type your height, weight, age and activity, pick your goal, how many meals you eat, when you train and whether you eat meat, and the app builds your day around your BMR. Most carbs sit around your training, and every day has veg, fruit, beans or lentils and dairy (or pick dairy-free). A protein snack (biltong) with fruit is added to help you reach your protein. If a health condition needs a doctor or dietitian first, the plan stays at maintenance. Don't like a food? Tap Swap and it keeps the same protein or carbs. Tap ✕ to leave a food out: the app asks if you're sure, says why that food is there, and can top up the other foods like it so the day still adds up.",
         "If your coach builds you a diet, it shows here too.",
         "Carbs and insulin: one short card on what really matters (calories decide fat loss, whole-food carbs are healthy, cut sugar first), with the insulin resistance tips. Tap Read more for the full Understanding Insulin and Understanding Carbs.",
-        "The calorie calculator adds up any meal if you like to count.",
+        "The calorie calculator adds up any meal if you like to count. It has over 180 foods, South African and international: type in the search box to find one, and other countries' names work too (zucchini, eggplant, ugali, shrimp).",
       ],
     },
     {

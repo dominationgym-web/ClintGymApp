@@ -3,7 +3,7 @@ import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "
 import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
-import { FOODS, type Food, type FoodGroup } from "@/lib/foods";
+import { FOODS, searchFoods, type Food, type FoodGroup } from "@/lib/foods";
 import {
   DEFAULT_TARGET,
   PLANNER_GROUPS,
@@ -75,7 +75,7 @@ export default function DietFoodPicker({
   if (mealName == null) return null;
 
   const term = search.trim().toLowerCase();
-  const foods = term ? FOODS.filter((f) => f.name.toLowerCase().includes(term)) : FOODS.filter((f) => f.group === group);
+  const foods = term ? searchFoods(term) : FOODS.filter((f) => f.group === group);
   const number = Number(amount.replace(",", "."));
   const grams = food ? gramsFor(food, setBy, number) : 0;
   const totals = food ? itemTotals({ food: food.name, grams }) : null;
