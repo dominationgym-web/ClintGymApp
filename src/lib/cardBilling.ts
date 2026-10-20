@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { BillingCurrency } from "@/types/database";
 
-// Trainers pay Daily Evolution by card on the website (0126, GRIZZ
+// Trainers pay Daily Evolution by card on the website (0136, GRIZZ
 // 2026-10-19). The card-billing Edge Function works out what's owed and
 // talks to Paystack; the app only asks it and opens Paystack's page.
 

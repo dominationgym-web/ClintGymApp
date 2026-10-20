@@ -14,7 +14,7 @@ import type { BillingSettings, EftDetails, Trainer, TrainerBillingStatus } from 
 // owner has set their plan.
 //
 // Website-first billing (GRIZZ, 2026-10-19): trainers pay on the website (the
-// web version), by card (0126) or EFT. The phone apps sell nothing, so there
+// web version), by card (0136) or EFT. The phone apps sell nothing, so there
 // they only show where the plan stands, with no prices or ways to pay.
 const SELLS = Platform.OS === "web";
 

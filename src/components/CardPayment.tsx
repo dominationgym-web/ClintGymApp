@@ -18,7 +18,7 @@ import {
 } from "@/lib/cardBilling";
 import type { TrainerPayment } from "@/types/database";
 
-// Paying Daily Evolution by card, on the website only (0126, GRIZZ
+// Paying Daily Evolution by card, on the website only (0136, GRIZZ
 // 2026-10-19: website-first billing, so the phone apps sell nothing). What's
 // owed now, the saved card with automatic monthly payments, and past payments.
 // Nothing shows until the owner switches card billing on.

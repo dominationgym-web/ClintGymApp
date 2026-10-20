@@ -183,7 +183,7 @@ export default function BillingScreen() {
     );
   };
 
-  // Card payments on the website (0126): off until the store launch.
+  // Card payments on the website (0136): off until the store launch.
   const toggleCards = async (value: boolean) => {
     const go = async () => {
       const { error } = await supabase.from("billing_settings").update({ card_billing_enabled: value, updated_at: new Date().toISOString() }).eq("id", 1);

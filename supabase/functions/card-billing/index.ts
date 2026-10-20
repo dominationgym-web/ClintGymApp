@@ -1,4 +1,4 @@
-// Trainers pay Daily Evolution by card on the website (0126, GRIZZ
+// Trainers pay Daily Evolution by card on the website (0136, GRIZZ
 // 2026-10-19: website-first billing). Paystack takes the card on its own
 // secure page; this function works out what's owed, starts the payment, and
 // records each successful charge as a trainer_payments row (the same rows the
