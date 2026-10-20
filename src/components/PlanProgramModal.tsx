@@ -9,6 +9,9 @@ import { programEasyWeeks } from "@/lib/deload";
 import { PROGRAM_FAMILIES, PROGRAM_GROUPS, programFamily, programGroupHeading, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import { monthLabel, monthOf, programSlots } from "@/lib/trainingCalendar";
 import {
+  BLOCK_WEEKS,
+  blockFirstSlot,
+  slotsFrom,
   defaultWeeks,
   findSplit,
   planProgramDates,
@@ -18,6 +21,7 @@ import {
   splitNote,
   weeksToFinish,
   suggestedSplit,
+  timesAWeekDays,
   toggleDay,
   TRAINING_SPLITS,
   WEEK_CHOICES,
@@ -29,6 +33,7 @@ import type { StabilityArea, StabilityLevel } from "@/lib/stability";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
+import { isOlderAdultProgram } from "@/lib/preStart";
 
 type PlanType = ProgramGroup | "rehab";
 
@@ -72,7 +77,13 @@ export default function PlanProgramModal({
   const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
   const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
   const [program, setProgram] = useState<Program | null>(null);
-  const [slots, setSlots] = useState<number[] | null>(null);
+  const [allSlots, setSlots] = useState<number[] | null>(null);
+  // Longevity programs: the block to start at (GRIZZ, 2026-10-20). 1 for every other program.
+  const [block, setBlock] = useState(1);
+  const blocks = program && isOlderAdultProgram(program.name) ? Math.floor((program.weeks ?? 0) / BLOCK_WEEKS) : 0;
+  const firstSlot = block > 1 ? blockFirstSlot(block) : null;
+  const slots = allSlots && slotsFrom(allSlots, firstSlot);
+  const weeksLeft = (p: Program, b: number) => (p.weeks ?? 1) - (b - 1) * BLOCK_WEEKS;
   const [split, setSplit] = useState<SplitKey | "own">("mon_wed_fri");
   // The trainer's own days (GRIZZ, 2026-10-19), the same every week or
   // picked again each week when the client trains on different days.
@@ -101,6 +112,7 @@ export default function PlanProgramModal({
   const pickProgram = async (p: Program) => {
     setProgram(p);
     setSlots(null);
+    setBlock(1);
     setWeeks(defaultWeeks(p.weeks));
     const { data } = await loadProgramExercises(p.id);
     const list = programSlots(data ?? []);
@@ -120,26 +132,30 @@ export default function PlanProgramModal({
 
   // A split with a different number of days than the program: the length
   // becomes what it takes to finish the whole program on those days.
-  const fullLength = (days: number[]) =>
-    slots && program && (program.weeks ?? 1) > 1 && days.length > 0 && days.length !== sessionsPerWeek(slots)
-      ? weeksToFinish(slots.length, days.length)
+  const fullLength = (days: number[], list = slots) =>
+    list && program && (program.weeks ?? 1) > 1 && days.length > 0 && days.length !== sessionsPerWeek(list)
+      ? weeksToFinish(list.length, days.length)
       : null;
   const pickSplit = (key: SplitKey) => {
     setSplit(key);
-    if (program) setWeeks(fullLength(findSplit(key).days) ?? defaultWeeks(program.weeks));
+    if (program) setWeeks(fullLength(findSplit(key).days) ?? defaultWeeks(weeksLeft(program, block)));
   };
   const pickOwnDays = (days: number[]) => {
     setSplit("own");
     setOwnDays(days);
-    if (program) setWeeks(fullLength(days) ?? defaultWeeks(program.weeks));
+    if (program) setWeeks(fullLength(days) ?? defaultWeeks(weeksLeft(program, block)));
   };
   const chosenDays = split === "own" ? ownDays : findSplit(split).days;
   const chosenLabel = split === "own" ? daysLabel(ownDays) : findSplit(split).label;
+  const pickBlock = (b: number) => {
+    setBlock(b);
+    if (program && allSlots) setWeeks(fullLength(chosenDays, slotsFrom(allSlots, b > 1 ? blockFirstSlot(b) : null)) ?? defaultWeeks(weeksLeft(program, b)));
+  };
 
   const plan = date && slots ? planProgramDates(date, chosenDays, slots, weeks) : [];
   const note =
     slots && program && (program.weeks ?? 1) > 1
-      ? splitNote(plan, sessionsPerWeek(slots), chosenDays.length, slots.length, easyWeeks)
+      ? splitNote(plan, sessionsPerWeek(slots), chosenDays.length, slots.length, easyWeeks.map((w) => w - (block - 1) * BLOCK_WEEKS).filter((w) => w > 0))
       : null;
 
   const activate = async () => {
@@ -186,6 +202,7 @@ export default function PlanProgramModal({
           split_days: chosenDays,
           days_vary: vary,
           sessions_placed: week1.length,
+          first_slot: firstSlot,
           weeks,
           placed_until: weekEnd,
         })
@@ -427,11 +444,39 @@ export default function PlanProgramModal({
                   <Text style={styles.description}>This program has no exercises yet.</Text>
                 ) : (
                   <>
+                    {blocks > 1 && (
+                      <>
+                        <Text style={styles.step}>Start at which block?</Text>
+                        <View style={styles.chips}>
+                          {Array.from({ length: blocks }, (_, i) => i + 1).map((b) => (
+                            <Pressable key={`block-${b}`} style={[styles.chip, b === block && styles.chipOn]} onPress={() => pickBlock(b)}>
+                              <Text style={[styles.chipText, b === block && styles.chipTextOn]}>
+                                Block {b} (weeks {(b - 1) * BLOCK_WEEKS + 1}-{b * BLOCK_WEEKS})
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                        <Text style={styles.description}>Pick a later block when {clientName} is ready to progress, or the same block again to repeat it.</Text>
+                      </>
+                    )}
                     <Text style={styles.step}>Which days will {clientName} train?</Text>
                     <Text style={styles.description}>
                       {sessionsPerWeek(slots)} sessions a week as written. Sunday is always a rest day.
                     </Text>
                     <View style={styles.splitTable}>
+                      {date &&
+                        ([1, 2] as const).map((times) => {
+                          const days = timesAWeekDays(date, times);
+                          const on = split === "own" && daysLabel(ownDays) === daysLabel(days);
+                          return (
+                            <Pressable key={`times-${times}`} style={[styles.splitRow, on && styles.splitRowOn]} onPress={() => pickOwnDays(days)}>
+                              <Text style={[styles.splitLabel, on && styles.splitLabelOn]}>
+                                {times === 1 ? "Once a week" : "Twice a week"} ({daysLabel(days)})
+                              </Text>
+                              <Text style={styles.ownHint}>The program is spread over more weeks.</Text>
+                            </Pressable>
+                          );
+                        })}
                       {TRAINING_SPLITS.map((s) => {
                         const on = s.key === split;
                         return (
@@ -483,7 +528,7 @@ export default function PlanProgramModal({
                     </View>
                     <Text style={styles.step}>For how long?</Text>
                     <View style={styles.chips}>
-                      {[...new Set([...WEEK_CHOICES, defaultWeeks(program.weeks), ...(fullLength(chosenDays) ? [fullLength(chosenDays) as number] : [])])]
+                      {[...new Set([...WEEK_CHOICES, defaultWeeks(weeksLeft(program, block)), ...(fullLength(chosenDays) ? [fullLength(chosenDays) as number] : [])])]
                         .sort((a, b) => a - b)
                         .map((w) => (
                           <Pressable key={w} style={[styles.chip, w === weeks && styles.chipOn]} onPress={() => setWeeks(w)}>

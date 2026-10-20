@@ -122,7 +122,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
       <Text style={styles.title}>Coach on Daily Evolution</Text>
       <Text style={styles.body}>
         Sign up as a trainer to run your own clients on the app. Your account is checked and approved before
-        clients can join you, and then you get a free 2-week trial.
+        clients can join you, and then you get a free 30-day trial.
       </Text>
       <Text style={styles.body}>
         📍 Please have your location on. We check your country once so you're charged the right prices. Only your

@@ -7,7 +7,14 @@ import type { ClientTabParamList, TrainerTabParamList } from "@/navigation/types
 // clients and programs. Every search word has to appear, in any order.
 
 export function searchWords(query: string): string[] {
-  return query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return query
+    .trim()
+    .toLowerCase()
+    // The app says "Fat loss" where it used to say "Weight loss" (GRIZZ,
+    // 2026-10-19), so searching the old words still finds it.
+    .replace(/\bweight[\s-]*loss\b|\blos(?:e|ing)\s+weight\b/g, "fat loss")
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
 export function matchesAll(text: string, words: string[]): boolean {

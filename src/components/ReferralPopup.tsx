@@ -67,7 +67,7 @@ export default function ReferralPopup() {
 
   const share = () =>
     Share.share({
-      message: `I coach my clients on the Daily Evolution app. Sign up as a trainer and enter my referral code ${trainer.join_code} to get a free 2-week trial.`,
+      message: `I coach my clients on the Daily Evolution app. Sign up as a trainer and enter my referral code ${trainer.join_code} to get a free 30-day trial.`,
     });
 
   return (
@@ -82,7 +82,7 @@ export default function ReferralPopup() {
           {firstTime ? (
             <>
               <Text style={styles.step}>1. Share your referral code with another trainer.</Text>
-              <Text style={styles.step}>2. They enter it when they sign up and get a free 2-week trial.</Text>
+              <Text style={styles.step}>2. They enter it when they sign up and get a free 30-day trial.</Text>
               <Text style={styles.step}>
                 3. Once they're approved, you get {REFERRAL_DISCOUNT_PERCENT}% off a month. {REFERRALS_PER_FREE_MONTH} referrals = a
                 free month.

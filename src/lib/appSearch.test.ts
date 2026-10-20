@@ -8,6 +8,12 @@ describe("searchWords and matchesAll", () => {
     expect(matchesAll("Your progress photos", ["photos", "progress"])).toBe(true);
     expect(matchesAll("Your progress photos", ["photos", "video"])).toBe(false);
   });
+  it("treats weight loss as fat loss", () => {
+    expect(searchWords("Weight loss")).toEqual(["fat", "loss"]);
+    expect(searchWords("lose weight program")).toEqual(["fat", "loss", "program"]);
+    expect(matchesAll("Beginner Foundation - Fat loss", searchWords("weight-loss"))).toBe(true);
+    expect(searchWords("weight")).toEqual(["weight"]);
+  });
   it("finds nothing for an empty search", () => {
     expect(matchesAll("anything", [])).toBe(false);
   });

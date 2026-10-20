@@ -1,7 +1,7 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { intakeDetails } from "@/lib/dietPlan";
 import { checkinFeedback } from "@/lib/checkinFeedback";
-import WellbeingQuestions from "@/components/WellbeingQuestions";
+import WellbeingQuestions, { StopAdvice } from "@/components/WellbeingQuestions";
 import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 // Coach messages, the plan-ending banner and one tap-to-open line of reminders (C3).
 import TodayNotices from "@/components/TodayNotices";
@@ -238,6 +238,7 @@ export default function CheckInScreen() {
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <TodayNotices />
         <Text style={styles.title}>You're checked in for today ✅</Text>
+        {saved.symptoms_status === "reported" && <StopAdvice />}
         <CheckinFeedbackCard
           feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso(), client ? intakeDetails(client).weight_kg : null)}
         />

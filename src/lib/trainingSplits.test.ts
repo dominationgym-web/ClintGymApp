@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  blockFirstSlot,
+  slotsFrom,
   daysLabel,
   defaultWeeks,
   findSplit,
@@ -9,6 +11,7 @@ import {
   splitAlongside,
   splitNote,
   suggestedSplit,
+  timesAWeekDays,
   toggleDay,
   TRAINING_SPLITS,
   weekdayOfIso,
@@ -124,5 +127,33 @@ describe("trainer's own days", () => {
       { date: "2026-10-29", slot: 1 },
     ]);
     expect(planWeekDates("2026-10-26", "2026-11-01", [], [1, 2], 0)).toEqual([]);
+  });
+});
+
+describe("timesAWeekDays", () => {
+  // 2026-10-21 is a Wednesday, 2026-10-25 a Sunday.
+  it("trains on the start day once a week", () => {
+    expect(timesAWeekDays("2026-10-21", 1)).toEqual([3]);
+    expect(timesAWeekDays("2026-10-25", 1)).toEqual([1]);
+  });
+  it("leaves 2 rest days between twice-a-week sessions, never on a Sunday", () => {
+    expect(timesAWeekDays("2026-10-21", 2)).toEqual([3, 6]);
+    expect(timesAWeekDays("2026-10-22", 2)).toEqual([1, 4]);
+    expect(timesAWeekDays("2026-10-25", 2)).toEqual([1, 4]);
+  });
+  it("spreads an 18-session program over 18 weeks once a week", () => {
+    const plan = planProgramDates("2026-10-21", timesAWeekDays("2026-10-21", 1), Array.from({ length: 18 }, (_, i) => i + 1), weeksToFinish(18, 1));
+    expect(plan).toHaveLength(18);
+    expect(plan[17].date).toBe("2027-02-17");
+  });
+});
+
+describe("start at block (0135)", () => {
+  it("uses the sessions from that block on", () => {
+    const slots = [1, 3, 5, 57, 59, 61, 113, 115, 117];
+    expect(blockFirstSlot(1)).toBe(1);
+    expect(blockFirstSlot(2)).toBe(57);
+    expect(slotsFrom(slots, blockFirstSlot(2))).toEqual([57, 59, 61, 113, 115, 117]);
+    expect(slotsFrom(slots, null)).toEqual(slots);
   });
 });

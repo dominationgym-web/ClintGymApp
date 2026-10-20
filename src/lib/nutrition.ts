@@ -9,7 +9,7 @@ export const NUTRITION_GUIDE: GuidelineGroup[] = [
     hook: "These are guidelines to support your health, not your specific goals.",
     points: [
       { emoji: "🍽️", title: "Everyday eating", text: "These portions are for general, everyday eating. Your meals will change as your needs change." },
-      { emoji: "⚖️", title: "Losing weight", text: "If you're trying to lose weight, there will be adjustments to these guidelines." },
+      { emoji: "⚖️", title: "Fat loss", text: "If you're trying to lose fat, there will be adjustments to these guidelines." },
       { emoji: "🏋️", title: "Gaining weight", text: "If you're trying to gain weight, there will be adjustments too." },
       { emoji: "🥑", title: "Health and wellbeing", text: "If you're looking to improve your health and wellbeing, you might need to increase your healthy fat intake." },
     ],
@@ -156,7 +156,7 @@ export const UNDERSTANDING_INSULIN = {
   },
   goals: [
     { emoji: "🏃", goal: "Want to get fit?" },
-    { emoji: "⚖️", goal: "Want to lose weight?" },
+    { emoji: "⚖️", goal: "Want to lose fat?" },
     { emoji: "🏋️", goal: "Want to put on muscle?" },
   ],
   goalsLine: "There's a specific way to eat and train for each one. It's horses for courses: there is no one shoe fits all. For fat loss, it's a calorie deficit you can stick to, with enough protein.",

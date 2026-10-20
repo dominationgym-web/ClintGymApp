@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
-import { carbShares, cleanTime, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions } from "./mealPlanMaker";
+import { carbShares, cleanTime, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, leaveOutFood, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions, whyFoodMatters } from "./mealPlanMaker";
 import { TARGET_MARGIN } from "./dietPlan";
 
 const targets = macroTargets(2400, 80);
@@ -197,5 +197,49 @@ describe("plan quality (nutrition review, 2026-10-18)", () => {
     expect(foodAllowed("Greek yoghurt, plain", "vegetarian", true)).toBe(false);
     expect(foodAllowed("Eggs", "vegetarian", true)).toBe(true);
     expect(swapOptions("Chicken breast (cooked)", "everything", true).some((f) => /whey/i.test(f.name))).toBe(false);
+  });
+});
+
+describe("leaving a food out", () => {
+  const day = {
+    meals: [
+      { name: "Lunch", items: [{ food: "Chicken breast (cooked)", grams: 150 }, { food: "Broccoli", grams: 100 }] },
+      { name: "Dinner", items: [{ food: "Beef steak (cooked)", grams: 150 }, { food: "Green beans", grams: 100 }, { food: "Apple", grams: 150 }] },
+    ],
+  };
+
+  it("says why the food is there", () => {
+    expect(whyFoodMatters("Broccoli")).toMatch(/fibre, vitamins/);
+    expect(whyFoodMatters("Chicken breast (cooked)")).toMatch(/muscle/);
+    expect(whyFoodMatters("Apple")).toMatch(/Fruit/);
+    expect(whyFoodMatters("Greek yoghurt, plain")).toMatch(/calcium/);
+  });
+
+  it("can leave it out with nothing else changed", () => {
+    const { day: out, rebalanced } = leaveOutFood(day, 0, 1, false);
+    expect(rebalanced).toBe(false);
+    expect(out.meals[0].items.map((i) => i.food)).toEqual(["Chicken breast (cooked)"]);
+    expect(out.meals[1]).toEqual(day.meals[1]);
+  });
+
+  it("tops up the fibre from the other vegetables and fruit when a vegetable goes", () => {
+    const before = dayTotals(day).fibre;
+    const { day: out, rebalanced } = leaveOutFood(day, 0, 1, true);
+    expect(rebalanced).toBe(true);
+    expect(Math.abs(dayTotals(out).fibre - before)).toBeLessThanOrEqual(1);
+    // The meat isn't touched.
+    expect(out.meals[1].items[0]).toEqual({ food: "Beef steak (cooked)", grams: 150 });
+  });
+
+  it("tops up the protein from the other protein foods", () => {
+    const before = dayTotals(day).protein;
+    const { day: out } = leaveOutFood(day, 0, 0, true);
+    expect(Math.abs(dayTotals(out).protein - before)).toBeLessThanOrEqual(2);
+    expect(out.meals[1].items[1]).toEqual({ food: "Green beans", grams: 100 });
+  });
+
+  it("says when nothing else can make it up", () => {
+    const single = { meals: [{ name: "Lunch", items: [{ food: "Chicken breast (cooked)", grams: 150 }, { food: "Broccoli", grams: 100 }] }] };
+    expect(leaveOutFood(single, 0, 0, true).rebalanced).toBe(false);
   });
 });

@@ -4,22 +4,27 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { PROBLEM_LABELS, PROBLEM_ORANGE, PROBLEM_RED } from "@/lib/clientProblems";
 import type { ClientProblem } from "@/types/database";
+import MedicalClearanceModal from "@/components/MedicalClearanceModal";
 
 // The client's open problems at the top of their Overview tab (0075). Busy
 // fixing turns the red dot orange, and the app checks in with the client the
 // next day; Fixed makes the dot go away.
 export default function ClientProblems({
   clientId,
+  clientName = "the client",
   problems,
   onChanged,
   onReply,
 }: {
   clientId: string;
+  clientName?: string;
   problems: ClientProblem[];
   onChanged: () => void;
   onReply?: () => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
+  // Serious symptoms (0133) clear only through the medical check.
+  const [clearing, setClearing] = useState<ClientProblem | null>(null);
   const unfixed = problems.filter((p) => p.status !== "fixed");
   if (unfixed.length === 0) return null;
 
@@ -33,10 +38,20 @@ export default function ClientProblems({
 
   return (
     <View style={styles.wrap}>
+      <MedicalClearanceModal
+        problem={clearing}
+        clientName={clientName}
+        onClose={() => setClearing(null)}
+        onCleared={() => {
+          setClearing(null);
+          onChanged();
+        }}
+      />
       <Text style={styles.heading}>Problems to deal with</Text>
       {unfixed.map((p) => {
         const { icon, title } = PROBLEM_LABELS[p.topic];
-        const fixing = p.status === "fixing";
+        const medical = p.topic === "medical";
+        const fixing = p.status === "fixing" && !medical;
         return (
           <View key={p.id} style={[styles.card, { borderColor: fixing ? PROBLEM_ORANGE : PROBLEM_RED }]}>
             <View style={styles.headRow}>
@@ -51,6 +66,12 @@ export default function ClientProblems({
               Reported {p.reported_on}
               {p.last_reported_on !== p.reported_on ? ` · again ${p.last_reported_on}` : ""}
             </Text>
+            {medical && (
+              <Text style={[styles.meta, { color: "#FCA5A5" }]}>
+                Their workouts are on hold. They were told to stop exercising and get medical help. Clear it once a doctor or other health
+                professional has assessed them.
+              </Text>
+            )}
             {fixing && (
               <Text style={styles.meta}>
                 {p.followup_sent_at
@@ -70,14 +91,20 @@ export default function ClientProblems({
                   <Text style={styles.buttonText}>💬 Reply</Text>
                 </Pressable>
               )}
-              {!fixing && (
+              {!fixing && !medical && (
                 <Pressable style={[styles.button, styles.fixing]} onPress={() => setStatus(p, "fixing")} disabled={!!busy}>
                   {busy === p.id + "fixing" ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>🟠 Busy fixing</Text>}
                 </Pressable>
               )}
-              <Pressable style={[styles.button, styles.fixed]} onPress={() => setStatus(p, "fixed")} disabled={!!busy}>
-                {busy === p.id + "fixed" ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>✅ Fixed</Text>}
-              </Pressable>
+              {medical ? (
+                <Pressable style={[styles.button, styles.fixed]} onPress={() => setClearing(p)} disabled={!!busy}>
+                  <Text style={styles.buttonText}>🩺 Clear the hold</Text>
+                </Pressable>
+              ) : (
+                <Pressable style={[styles.button, styles.fixed]} onPress={() => setStatus(p, "fixed")} disabled={!!busy}>
+                  {busy === p.id + "fixed" ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>✅ Fixed</Text>}
+                </Pressable>
+              )}
             </View>
           </View>
         );

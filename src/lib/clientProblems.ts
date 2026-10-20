@@ -8,6 +8,8 @@ export const PROBLEM_LABELS: Record<ClientProblemTopic, { icon: string; title: s
   fatigue: { icon: "😴", title: "Fatigue" },
   mental: { icon: "🧠", title: "Mental exhaustion" },
   flag: { icon: "🚩", title: "Asked for help" },
+  balance: { icon: "💫", title: "Dizziness or balance" },
+  medical: { icon: "🚨", title: "Serious symptoms, workouts on hold" },
 };
 
 export const PROBLEM_RED = "#EF4444";
@@ -15,11 +17,14 @@ export const PROBLEM_ORANGE = "#F59E0B";
 
 export type ProblemLevel = "red" | "orange" | null;
 
-type Pick_ = Pick<ClientProblem, "status">;
+type Pick_ = Pick<ClientProblem, "status"> & Partial<Pick<ClientProblem, "topic">>;
 
-/** Red while any problem is still open, orange while all are being fixed. */
+/**
+ * Red while any problem is still open, orange while all are being fixed. A
+ * serious-symptoms hold (0133) stays red until it's cleared.
+ */
 export function problemLevel(problems: Pick_[]): ProblemLevel {
-  if (problems.some((p) => p.status === "open")) return "red";
+  if (problems.some((p) => p.status === "open" || (p.topic === "medical" && p.status !== "fixed"))) return "red";
   if (problems.some((p) => p.status === "fixing")) return "orange";
   return null;
 }

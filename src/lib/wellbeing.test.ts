@@ -3,7 +3,7 @@ import { EMPTY_WELLBEING, reportedTopics, reportsByTopic, splitKinds, toggleKind
 import type { Checkin } from "@/types/database";
 
 const ok = { status: "ok" as const, kind: "", notes: "" };
-const allOk: WellbeingForm = { pain: ok, fatigue: ok, mental: ok };
+const allOk: WellbeingForm = { pain: ok, fatigue: ok, mental: ok, balance: ok, symptoms: ok };
 
 describe("validateWellbeing", () => {
   it("needs every topic answered", () => {
@@ -27,6 +27,8 @@ describe("validateWellbeing", () => {
       pain: { status: "reported", kind: "Knee", notes: " Sore on stairs " },
       fatigue: ok,
       mental: { status: "reported", kind: "Kids", notes: "Exams week" },
+      balance: ok,
+      symptoms: ok,
     });
     expect(result.ok && result.values).toMatchObject({
       pain_area: "Knee",
@@ -61,5 +63,43 @@ describe("several pain areas", () => {
     expect(toggleKind("Knee", "Neck")).toBe("Neck, Knee");
     expect(toggleKind("Neck, Knee", "Neck")).toBe("Knee");
     expect(splitKinds("Neck, Knee")).toEqual(["Neck", "Knee"]);
+  });
+});
+
+describe("dizziness and serious symptoms (0133)", () => {
+  it("saves them without a note, what it was and the note in one column", () => {
+    const result = validateWellbeing({
+      ...allOk,
+      balance: { status: "reported", kind: "Nearly fell", notes: " on the stairs " },
+      symptoms: { status: "reported", kind: "Chest pain or tightness, Fainting or nearly fainting", notes: "" },
+    });
+    expect(result.ok && result.values).toMatchObject({
+      balance_status: "reported",
+      balance_notes: "Nearly fell: on the stairs",
+      symptoms_status: "reported",
+      symptoms: "Chest pain or tightness, Fainting or nearly fainting",
+      distress_flag: true,
+    });
+  });
+
+  it("still needs what it was", () => {
+    expect(validateWellbeing({ ...allOk, symptoms: { status: "reported", kind: "", notes: "" } }).ok).toBe(false);
+  });
+
+  it("reads them back from a saved check-in", () => {
+    const row = {
+      checkin_date: "2026-10-20",
+      pain_status: "ok",
+      fatigue_status: "ok",
+      mental_status: "ok",
+      balance_status: "reported",
+      balance_notes: "Dizzy or light-headed: after standing up",
+      symptoms_status: "reported",
+      symptoms: "Sudden severe breathlessness",
+    } as unknown as Checkin;
+    const reports = reportsByTopic([row]);
+    expect(reports.balance[0]).toMatchObject({ kind: "Dizzy or light-headed", notes: "after standing up" });
+    expect(reports.symptoms[0]).toMatchObject({ kind: "Sudden severe breathlessness", notes: "" });
+    expect(reportedTopics(row)).toEqual(["Dizziness or balance", "Serious symptoms"]);
   });
 });

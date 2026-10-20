@@ -32,7 +32,8 @@ import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
 import { parseWeight } from "@/lib/weightInput";
-import { useAuth } from "@/context/AuthContext";
+import { useWorkoutClient } from "@/context/LiveClientContext";
+import MedicalHoldNotice from "@/components/MedicalHoldNotice";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession } from "@/types/database";
 import WorkoutReasonModal from "@/components/WorkoutReasonModal";
 import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
@@ -56,6 +57,9 @@ import DropSetLogger from "@/components/DropSetLogger";
 import { isDropSetProgram, roundsForLevel } from "@/lib/dropSets";
 import { equipmentList, homeFit } from "@/lib/equipment";
 import ExerciseSwapModal from "@/components/ExerciseSwapModal";
+import PainSwapModal from "@/components/PainSwapModal";
+import { lastPainFor, painAreaLabel, shortDate, type ExercisePain } from "@/lib/painSwap";
+import type { StabilityArea } from "@/lib/stability";
 import {
   cardioLabel,
   dayTitle,
@@ -95,7 +99,10 @@ import TodayPlanRows from "@/components/TodayPlanRows";
 import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 
 export default function ExerciseLibraryScreen() {
-  const { client, refreshProfile } = useAuth();
+  // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
+  const { client, refreshProfile, live } = useWorkoutClient();
+  // Serious symptoms on a check-in (0133) hold every workout until the trainer clears it.
+  const [hold, setHold] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Exercise | null>(null);
@@ -157,6 +164,9 @@ export default function ExerciseLibraryScreen() {
   // Change exercise (0047): today's swaps, and the program line being swapped.
   const [swaps, setSwaps] = useState<ExerciseSwaps>({});
   const [swapping, setSwapping] = useState<ProgramExercise | null>(null);
+  // "This hurts" (0129): the exercise that hurts, and every time they said one did.
+  const [hurting, setHurting] = useState<ProgramExercise | null>(null);
+  const [pains, setPains] = useState<ExercisePain[]>([]);
   // Cardio blocks (0048) ticked off today.
   const [cardioDone, setCardioDone] = useState<string[]>([]);
   // The program's how-to and nutrition notes open on tap, so the workout stays near the top.
@@ -202,6 +212,7 @@ export default function ExerciseLibraryScreen() {
   useEffect(() => {
     const load = async () => {
       loadedFor.current = todayIso();
+      if (client) supabase.rpc("has_medical_hold", { p_client: client.id }).then(({ data: held }) => setHold(!!held));
       const [{ data, error }, active, { data: logged }, todaysSwaps, { data: sessionRow }, { data: missedRows }] = await Promise.all([
         supabase.from("exercises").select("*").order("sort_order"),
         client ? loadClientProgram(client.id) : Promise.resolve(null),
@@ -240,6 +251,14 @@ export default function ExerciseLibraryScreen() {
       const calendar = client ? await loadCalendarWorkoutFor(client.id, makeUp ?? todayIso()) : null;
       setTodaySession(sessionRow ?? null);
       setSwaps(todaysSwaps);
+      if (client)
+        supabase
+          .from("client_exercise_pain")
+          .select("*")
+          .eq("client_id", client.id)
+          .order("created_at", { ascending: false })
+          .limit(200)
+          .then(({ data: painRows }) => setPains(painRows ?? []));
       setCardioDone(await getCardioDone(todayIso()));
       if (!error && data) setExercises(data);
       setCalendarExtras(calendar?.extras ?? []);
@@ -358,7 +377,7 @@ export default function ExerciseLibraryScreen() {
   // only shows for clients who aren't on a program yet.
   const showReference = !program;
   // What's open on the Today view (GRIZZ, 2026-10-18: "they must click on the program for it to open").
-  const part = openPart ?? null;
+  const part = hold ? null : (openPart ?? null);
   const togglePart = (key: string) => setOpenPart(part === key ? null : key);
   const choosePlace = (next: ExercisePlace) => {
     setPlace(next);
@@ -391,6 +410,45 @@ export default function ExerciseLibraryScreen() {
     saveExerciseSwaps(todayIso(), next);
     setSwapping(null);
   };
+
+  // From the set log: close it first, since two pop-ups can't open at once.
+  const hurtsFromLog = (row: ProgramExercise) => {
+    setSelected(null);
+    setTimeout(() => setHurting(row), 400);
+  };
+
+  // Saves the report for the coach, then swaps today's exercise for the one
+  // they're trying (or leaves the planned one in place if they leave it out).
+  const reportPain = async (area: StabilityArea, instead: Exercise | null) => {
+    if (!hurting || !client) return;
+    const row = hurting;
+    setHurting(null);
+    const { data, error } = await supabase
+      .from("client_exercise_pain")
+      .insert({
+        client_id: client.id,
+        exercise_id: row.exercise_id,
+        exercise_name: row.exercise_name,
+        area,
+        tried_exercise_id: instead?.id ?? null,
+        tried_name: instead?.name ?? null,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    setPains((prev) => [data, ...prev]);
+    if (instead) {
+      const next = { ...swaps, [row.id]: { id: instead.id, name: instead.name } };
+      setSwaps(next);
+      saveExerciseSwaps(todayIso(), next);
+    } else {
+      Alert.alert("Left out today", `Your coach can see that ${row.exercise_name} hurt your ${painAreaLabel(area).toLowerCase()}.`);
+    }
+  };
+  const painLibrary = forPlace(exercises, atHome ? "home" : "gym", fit);
 
   const swapCategory = swapping ? categoryOf(swapping) : null;
   const swapChoices = swapping
@@ -809,10 +867,11 @@ export default function ExerciseLibraryScreen() {
         keyExtractor={(e) => e.id}
         ListHeaderComponent={
           <>
-            {client && atHome && equipmentList(client.home_equipment).length === 0 && (
+            {hold && <MedicalHoldNotice live={live} />}
+            {client && !live && atHome && equipmentList(client.home_equipment).length === 0 && (
               <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
             )}
-            {client && (
+            {client && !live && (
               <ClientCalendarView
                 clientId={client.id}
                 exercises={exercises}
@@ -832,7 +891,7 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.todayDate}>
                   {new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
                 </Text>
-                {program && todaysWorkout.length > 0 && (
+                {!hold && program && todaysWorkout.length > 0 && (
                   <Pressable style={[styles.todayRow, part === "main" && styles.todayRowOpen]} onPress={() => togglePart("main")}>
                     <Text style={styles.todayIcon}>{deloadToday && calendarToday ? "🌙" : catchUpFor ? "🔁" : "🏋️"}</Text>
                     <View style={{ flex: 1 }}>
@@ -850,7 +909,7 @@ export default function ExerciseLibraryScreen() {
                     )}
                   </Pressable>
                 )}
-                {calendarExtras.map((block, i) => (
+                {!hold && calendarExtras.map((block, i) => (
                   <Pressable
                     key={`row-${block.program.id}-${i}`}
                     style={[styles.todayRow, part === `extra-${i}` && styles.todayRowOpen]}
@@ -868,7 +927,7 @@ export default function ExerciseLibraryScreen() {
                     <Text style={styles.todayOpen}>{part === `extra-${i}` ? "Close ▴" : "Open ›"}</Text>
                   </Pressable>
                 ))}
-                {client && <TodayPlanRows clientId={client.id} refreshKey={refresh} onCount={setPlanRows} />}
+                {client && !live && !hold && <TodayPlanRows clientId={client.id} refreshKey={refresh} onCount={setPlanRows} />}
                 {(!program || todaysWorkout.length === 0) && calendarExtras.length === 0 && planRows === 0 && (
                   <Text style={styles.todayRest}>
                     {program ? "😌 Rest day. Let your body recover." : "Nothing planned for today."}
@@ -1041,9 +1100,40 @@ export default function ExerciseLibraryScreen() {
                           />
                           {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
                           {!swaps[row.id] && gymName(row) && <Text style={styles.swappedText}>🏠 Home version of {gymName(row)}</Text>}
-                          <Pressable onPress={() => openSwap(row)} hitSlop={8} style={{ alignSelf: "flex-start" }}>
-                            <Text style={styles.changeLink}>⇄ Change exercise</Text>
-                          </Pressable>
+                          {(() => {
+                            // It hurt last time: say so, and offer what they tried instead.
+                            const hurt = swaps[row.id] ? null : lastPainFor(pains, row);
+                            if (!hurt) return null;
+                            const tried = hurt.tried_exercise_id ? exercises.find((e) => e.id === hurt.tried_exercise_id) : null;
+                            return (
+                              <View style={styles.hurtBox}>
+                                <Text style={styles.hurtText}>
+                                  😣 Hurt your {painAreaLabel(hurt.area).toLowerCase()} on {shortDate(hurt.created_at)}
+                                  {hurt.tried_name ? `. You tried ${hurt.tried_name} instead.` : "."}
+                                </Text>
+                                {tried && (
+                                  <Pressable
+                                    hitSlop={6}
+                                    onPress={() => {
+                                      const next = { ...swaps, [row.id]: { id: tried.id, name: tried.name } };
+                                      setSwaps(next);
+                                      saveExerciseSwaps(todayIso(), next);
+                                    }}
+                                  >
+                                    <Text style={styles.hurtUse}>Use {tried.name} again</Text>
+                                  </Pressable>
+                                )}
+                              </View>
+                            );
+                          })()}
+                          <View style={styles.rowLinks}>
+                            <Pressable onPress={() => openSwap(row)} hitSlop={8}>
+                              <Text style={styles.changeLink}>⇄ Change exercise</Text>
+                            </Pressable>
+                            <Pressable onPress={() => setHurting(row)} hitSlop={8}>
+                              <Text style={styles.changeLink}>😣 This hurts</Text>
+                            </Pressable>
+                          </View>
                         </View>
                         <Text style={[styles.setsDone, done >= row.sets && { color: "#22C55E" }]}>
                           {done >= row.sets ? "Done ✓" : `${done}/${row.sets}`}
@@ -1150,7 +1240,7 @@ export default function ExerciseLibraryScreen() {
                   ))}
               </View>
             ))}
-            {client && (
+            {client && !live && (
               <FoldSection icon="🏃" title="Other exercise" hint="Log a walk, run, ride or hike" open={part === "other"} onToggle={() => togglePart("other")}>
                 <OtherActivityCard clientId={client.id} role="client" />
               </FoldSection>
@@ -1239,6 +1329,13 @@ export default function ExerciseLibraryScreen() {
         onCancel={() => setReasonFor(null)}
         onSend={sendReason}
       />
+      <PainSwapModal
+        exercise={hurting ? { exercise_id: hurting.exercise_id, exercise_name: hurting.exercise_name, category: categoryOf(hurting) } : null}
+        library={painLibrary}
+        hurtIds={[...pains.map((p) => p.exercise_id), hurting ? plannedRow(hurting).exercise_id : null]}
+        onPick={reportPain}
+        onClose={() => setHurting(null)}
+      />
       <ExerciseSwapModal
         visible={!!swapping}
         exerciseName={swapping?.exercise_name ?? null}
@@ -1288,10 +1385,17 @@ export default function ExerciseLibraryScreen() {
                 {targetNext ? supersetLabel(target, targetNext) : `rest ${formatRest(target.rest_seconds)}`}
               </Text>
             )}
-            {target && target.kind !== "cardio" && todaysSets.every((s) => s.warm_up) && (
-              <Pressable onPress={() => changeFromLog(target)} hitSlop={8} style={{ alignSelf: "flex-start", marginBottom: 10 }}>
-                <Text style={styles.changeLink}>⇄ Gym busy? Change exercise</Text>
-              </Pressable>
+            {target && target.kind !== "cardio" && (
+              <View style={[styles.rowLinks, { marginBottom: 10 }]}>
+                {todaysSets.every((s) => s.warm_up) && (
+                  <Pressable onPress={() => changeFromLog(target)} hitSlop={8}>
+                    <Text style={styles.changeLink}>⇄ Gym busy? Change exercise</Text>
+                  </Pressable>
+                )}
+                <Pressable onPress={() => hurtsFromLog(target)} hitSlop={8}>
+                  <Text style={styles.changeLink}>😣 This hurts</Text>
+                </Pressable>
+              </View>
             )}
             {warmUpDue &&
               (() => {
@@ -1398,7 +1502,7 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : gaugeDue ? "Log gauge set" : "Log set"}</Text>
               )}
             </Pressable>
-            {selected && (
+            {selected && !live && (
               <Pressable style={styles.filmButton} onPress={() => film.filmOrPick(selected.name)} disabled={film.uploading}>
                 {film.uploading ? <ActivityIndicator color={BRAND_GOLD} /> : <Text style={styles.filmText}>🎥 Film this set for my coach</Text>}
               </Pressable>
@@ -1562,6 +1666,10 @@ const styles = StyleSheet.create({
   },
   swappedText: { color: BRAND_GOLD, fontSize: 12, marginTop: 2 },
   changeLink: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 6 },
+  rowLinks: { flexDirection: "row", flexWrap: "wrap", gap: 16, alignSelf: "flex-start" },
+  hurtBox: { backgroundColor: "#3B1D1D", borderRadius: 8, padding: 8, marginTop: 6 },
+  hurtText: { color: "#FCA5A5", fontSize: 12, fontWeight: "600" },
+  hurtUse: { color: "#22C55E", fontSize: 12, fontWeight: "800", marginTop: 4 },
   swapBack: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, padding: 12, alignItems: "center", marginBottom: 10 },
   swapBackText: { color: BRAND_GOLD, fontWeight: "700" },
   swapRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },

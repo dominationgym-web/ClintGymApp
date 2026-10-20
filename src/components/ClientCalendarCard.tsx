@@ -211,9 +211,18 @@ export default function ClientCalendarCard({
     setSelected(date);
     // A day the client already trained shows how it went instead of the picker.
     if (entryOn(date) || sessions[date] || blocksOn(date).length > 0 || stability.map[date]) return;
-    // From today on, an empty day starts a whole program; a past day gets one workout.
-    if (date >= today) openPlanner(date);
-    else openPicker(date);
+    // A past day gets one workout. From today on the trainer picks one workout
+    // or a whole program (GRIZZ, 2026-10-19: one workout on a random day was
+    // hidden at the bottom of the planner).
+    if (date < today) {
+      openPicker(date);
+      return;
+    }
+    Alert.alert(`What goes on ${dayHeading(date)}?`, undefined, [
+      { text: "One workout", onPress: () => openPicker(date) },
+      { text: "A whole program", onPress: () => openPlanner(date) },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const openPlanner = (date: string) => {

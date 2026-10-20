@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Platform } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
@@ -14,6 +14,13 @@ export default function LoginScreen({ navigation, route }: Props) {
   const [emailText, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // The website's "Start your free trial" button opens /app/?signup=trainer,
+  // which goes straight to the trainer application (For Personal Trainers page).
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("signup") === "trainer") navigation.navigate("TrainerSignup");
+  }, [navigation]);
 
   const handleLogin = async () => {
     // Phone autofill often adds a space at the end; Supabase stores emails in lower case.

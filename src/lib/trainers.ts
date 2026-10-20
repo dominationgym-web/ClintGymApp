@@ -37,7 +37,7 @@ export function logoStoragePath(trainerId: string, mimeType: string | null | und
 }
 
 // Free trial and referral rewards (0060).
-export const TRIAL_DAYS = 14;
+export const TRIAL_DAYS = 30;
 export const REFERRAL_DISCOUNT_PERCENT = 25;
 export const REFERRALS_PER_FREE_MONTH = 100 / REFERRAL_DISCOUNT_PERCENT;
 
