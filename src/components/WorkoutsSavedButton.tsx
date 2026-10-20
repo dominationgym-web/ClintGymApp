@@ -5,6 +5,12 @@ import { BRAND_GOLD } from "@/lib/brand";
 
 export const WORKOUT_LOADED_MESSAGE = "Your workout is loaded and ready. Open the app to see it. 💪";
 
+/** Tells the client their workout is loaded. Returns the error message, if any. */
+export async function sendWorkoutLoaded(clientId: string, trainerId: string): Promise<string | null> {
+  const { error } = await supabase.from("coach_messages").insert({ client_id: clientId, trainer_id: trainerId, body: WORKOUT_LOADED_MESSAGE });
+  return error?.message ?? null;
+}
+
 // The trainer's Save on a client's Training tab (GRIZZ, 2026-10-12). Program,
 // calendar and exercise changes are kept as they're made; Save tells the
 // client their workout is loaded. It goes as a coach message (0034), so it
@@ -13,25 +19,27 @@ export default function WorkoutsSavedButton({
   clientId,
   clientName,
   trainerId,
+  onSent,
 }: {
   clientId: string;
   clientName: string;
   trainerId: string;
+  /** After the client is told, so leaving the screen doesn't ask again. */
+  onSent?: () => void;
 }) {
   const [sending, setSending] = useState(false);
   const [sentAt, setSentAt] = useState<Date | null>(null);
 
   const save = async () => {
     setSending(true);
-    const { error } = await supabase
-      .from("coach_messages")
-      .insert({ client_id: clientId, trainer_id: trainerId, body: WORKOUT_LOADED_MESSAGE });
+    const error = await sendWorkoutLoaded(clientId, trainerId);
     setSending(false);
     if (error) {
-      Alert.alert("Couldn't send", error.message);
+      Alert.alert("Couldn't send", error);
       return;
     }
     setSentAt(new Date());
+    onSent?.();
   };
 
   const time = sentAt?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
