@@ -31,7 +31,7 @@ import WatchOnlineLink from "@/components/WatchOnlineLink";
 import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
-import { parseWeight } from "@/lib/weightInput";
+import { parseWeight, isBodyweight } from "@/lib/weightInput";
 import { useWorkoutClient } from "@/context/LiveClientContext";
 import MedicalHoldNotice from "@/components/MedicalHoldNotice";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession } from "@/types/database";
@@ -778,8 +778,8 @@ export default function ExerciseLibraryScreen() {
     }
     const warmUp = warmUpDue;
     const gauge = gaugeDue && !warmUp;
-    if (gauge && parseWeight(weight) == null) {
-      Alert.alert("Missing weight", "Enter the weight you picked for your gauge set.");
+    if (gauge && parseWeight(weight) == null && !isBodyweight(weight)) {
+      Alert.alert("Missing weight", "Enter the weight you picked for your gauge set, or 0 if it's bodyweight only.");
       return;
     }
     if (!effort && !warmUp && !gauge) {
@@ -1464,7 +1464,8 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.warmUpText}>
                   Your coach isn't there to pick your weight, so this set finds it. Pick a weight you think you can lift about 6-10 times.
                   Do a hard set, and stop when you think you have 1-2 good reps left, or as soon as a rep slows right down or your form
-                  changes. Log the weight and your reps, and the app works out the right weight for the rest of your sets.
+                  changes. Log the weight and your reps, and the app works out the right weight for the rest of your sets. No weight
+                  needed (bodyweight only)? Put 0.
                 </Text>
                 <Text style={styles.warmUpText}>
                   {intro ? `Don't go to failure: no set does in your first ${introLength}, this one included.` : "Don't go to failure on this set."}
