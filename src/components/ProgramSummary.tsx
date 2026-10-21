@@ -15,6 +15,7 @@ export default function ProgramSummary({
   onPressExercise,
   collapsible = false,
   onlySlot = null,
+  tapHint,
 }: {
   program: Program;
   exercises: ProgramExercise[];
@@ -23,6 +24,8 @@ export default function ProgramSummary({
   collapsible?: boolean;
   /** Just this session of a weekly program, for a single day on the calendar (GRIZZ, 2026-10-16). */
   onlySlot?: number | null;
+  /** What tapping an exercise does, when it isn't changing it for one client. */
+  tapHint?: string;
 }) {
   const [info, setInfo] = useState<ProgramExercise | null>(null);
   const [shown, setShown] = useState(!collapsible);
@@ -39,7 +42,7 @@ export default function ProgramSummary({
     <View>
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
       {onPressExercise ? (
-        <Text style={styles.tapHint}>✎ Tap an exercise to change it, or its sets and reps, for this client. Tap the green ▶ to watch it.</Text>
+        <Text style={styles.tapHint}>{tapHint ?? "✎ Tap an exercise to change it, or its sets and reps, for this client. Tap the green ▶ to watch it."}</Text>
       ) : collapsible ? (
         <Pressable onPress={() => setShown(!shown)} hitSlop={6} accessibilityRole="button" style={styles.checkButton}>
           <Text style={styles.checkText}>
@@ -86,6 +89,8 @@ export default function ProgramSummary({
                           ? `  ✎ changed, was ${r.changed_from.exercise_name}`
                           : `  ✎ changed, was ${r.changed_from.sets} x ${r.changed_from.reps}`}
                       </Text>
+                    ) : r.swapped_from ? (
+                      <Text style={styles.was}>{`  ⇄ for now, was ${r.swapped_from.exercise_name}`}</Text>
                     ) : null}
                   </Text>
                 );
