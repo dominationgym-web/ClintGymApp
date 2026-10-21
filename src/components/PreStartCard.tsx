@@ -25,21 +25,20 @@ const shortDay = (iso: string) => {
   return `${d} ${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]} ${y}`;
 };
 
-// Pre-start health and safety form (0131), on the client's Training tab for
-// anyone 50 or over, on a Longevity program, or with a form already. Shows
+// Pre-start health and safety form (0131), on the client's Training tab once
+// they're on a Longevity program, or with a form already. Not by age alone
+// (GRIZZ, 2026-10-21: "Most 50 to 70 year olds are healthy and functional"). Shows
 // the app's risk check from the latest form, the re-test date (every 8
 // weeks) and the tests against the first one. Picking a Longevity program
 // for a client without a form puts up a sign asking for it first.
 export default function PreStartCard({
   clientId,
   clientName,
-  age,
   refreshKey,
   onShow,
 }: {
   clientId: string;
   clientName: string;
-  age: number | null;
   /** Whether it has something to show, for the Things to check line. */
   onShow?: (shown: boolean) => void;
   /** Bumped after any program pick. */
@@ -76,7 +75,7 @@ export default function PreStartCard({
     });
   }, [load, refreshKey]);
 
-  const shown = loaded && (forms.length > 0 || onProgram || (age != null && age >= 50));
+  const shown = loaded && (forms.length > 0 || onProgram);
   useEffect(() => onShow?.(shown), [shown, onShow]);
   if (!shown) return null;
 
@@ -129,7 +128,7 @@ export default function PreStartCard({
         {signModal}
         <Text style={styles.title}>🌳 Pre-start health & safety form</Text>
         <Text style={styles.text}>
-          {onProgram ? `${clientName} is on a Longevity program but has no form yet.` : `${clientName} is ${age}.`} Fill it in with them before
+          {`${clientName} is on a Longevity program but has no form yet.`} Fill it in with them before
           they start: health, medication, falls, pain, blood pressure and 5 quick movement tests. The app checks it for risks.
         </Text>
         <Pressable style={styles.button} onPress={() => setFilling(true)}>
