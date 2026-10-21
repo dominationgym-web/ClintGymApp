@@ -487,9 +487,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {/* Live in-person session (0134/0137, GRIZZ, 2026-10-21): right on top of every tab. The client's own workout
             screen on the trainer's phone; add any exercise as you go. Their own trainer only. */}
         {trainer && client.trainer_id === trainer.id && (
-          <Pressable style={styles.liveButton} onPress={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}>
-            <Text style={styles.liveButtonText}>▶ Start live session</Text>
-          </Pressable>
+          <View style={styles.liveRow}>
+            <Pressable style={[styles.liveButton, { flex: 1 }]} onPress={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}>
+              <Text style={styles.liveButtonText}>▶ Start live session</Text>
+            </Pressable>
+            {/* Group live session (0138): up to 4 clients at once, this one first. */}
+            <Pressable style={styles.groupButton} onPress={() => navigation.navigate("GroupLive", { clientId: client.id })}>
+              <Text style={styles.groupButtonText}>👥 Group</Text>
+            </Pressable>
+          </View>
         )}
         {tab === "overview" && (
           <>
@@ -1082,7 +1088,10 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 
 const styles = StyleSheet.create({
   checksFold: { borderColor: "#F59E0B" },
-  liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginTop: 14, marginBottom: 4 },
+  liveRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 4 },
+  liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  groupButton: { borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", borderWidth: 2, borderColor: "#22C55E" },
+  groupButtonText: { color: "#22C55E", fontWeight: "800", fontSize: 16 },
   liveButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   archivedBanner: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 12 },
   archivedText: { color: "#CBD5E1", fontSize: 13 },

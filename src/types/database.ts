@@ -1101,6 +1101,16 @@ export interface Database {
         };
         Returns: WorkoutSession;
       };
+      record_live_session_for: {
+        Args: {
+          p_client: string;
+          p_title: string;
+          p_sets_done: number;
+          p_sets_planned: number;
+          p_improvements?: { exercise: string; before: string; after: string }[];
+        };
+        Returns: WorkoutSession;
+      };
       my_missed_workouts: {
         Args: Record<string, never>;
         Returns: { workout_date: string; program_id: string; program_name: string; program_trainer_id: string | null }[];

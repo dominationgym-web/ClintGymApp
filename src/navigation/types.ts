@@ -58,6 +58,8 @@ export type TrainerStackParamList = {
   ClientDetail: { clientId: string; tab?: "training"; open?: "videos" };
   // Live 1-on-1: the client's own workout screen, run by their trainer (0134).
   LiveWorkout: { clientId: string; name: string };
+  // Group live session (0138): up to 4 clients at once, starting with this one.
+  GroupLive: { clientId?: string } | undefined;
   ProgramBuilder: undefined;
   Billing: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
