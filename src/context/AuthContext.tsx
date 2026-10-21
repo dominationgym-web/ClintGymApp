@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { AppState } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { keepIfSame } from "@/lib/keepIfSame";
 import { cancelAllReminders, unregisterForCoachMessages } from "@/lib/notifications";
 import type { Client, Trainer } from "@/types/database";
 
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (trainerRow) {
       loadedUserId.current = userId;
       setRole("trainer");
-      setTrainer(trainerRow);
+      setTrainer((current) => keepIfSame(current, trainerRow));
       setClient(null);
       return;
     }
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (clientRow) {
       loadedUserId.current = userId;
       setRole("client");
-      setClient(clientRow);
+      setClient((current) => keepIfSame(current, clientRow));
       setTrainer(null);
       return;
     }

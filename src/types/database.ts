@@ -645,6 +645,13 @@ export type ProgramExercise = {
   // A cardio block (0048): exercise_name is the machine or the trainer's own
   // words, reps is how long, e.g. "30 sec".
   kind: "exercise" | "cardio";
+  // A stand-in the trainer put in for now (0139), up to and including
+  // swap_until; after that the row's own exercise is back.
+  swap_exercise_id?: string | null;
+  swap_exercise_name?: string | null;
+  swap_until?: string | null;
+  // Set in the app while a stand-in is in place: the row's own exercise.
+  swapped_from?: { exercise_id: string | null; exercise_name: string };
   // Set in the app when the client's trainer changed this row for them
   // (0070): what the workout itself says.
   changed_from?: { exercise_id: string | null; exercise_name: string; sets: number; reps: string };

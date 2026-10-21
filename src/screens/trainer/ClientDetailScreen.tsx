@@ -902,7 +902,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 onAreas={setInjuredAreas}
                 onShow={shown.injury}
               />
-              <PreStartCard clientId={client.id} clientName={client.name} age={intakeDetails(client).age} refreshKey={planKey} onShow={shown.preStart} />
+              <PreStartCard clientId={client.id} clientName={client.name} refreshKey={planKey} onShow={shown.preStart} />
               <ExercisePainList clientId={client.id} clientName={client.name} onShow={shown.pain} />
             </ChecksFold>
             <TrainerStabilityCard

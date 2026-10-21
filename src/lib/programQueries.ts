@@ -1,9 +1,11 @@
 import { supabase } from "@/lib/supabase";
+import { todayIso } from "@/lib/dates";
 import { deloadExercises } from "@/lib/deload";
 import { withExtraCardio } from "@/lib/programs";
 import { withClientCardio } from "@/lib/clientExtras";
 import { applyExerciseChanges, type ChangeWrites } from "@/lib/exerciseChanges";
 import { exercisesForSlot } from "@/lib/trainingCalendar";
+import { withTemporarySwaps } from "@/lib/programSwaps";
 import type { ClientExerciseChange, ClientProgram, Program, ProgramExercise } from "@/types/database";
 
 export interface ActiveProgram {
@@ -54,14 +56,16 @@ export async function saveExerciseChanges({ upserts, removes }: ChangeWrites): P
   return results.find((r) => r?.error)?.error?.message ?? null;
 }
 
-export function loadProgramExercises(programId: string) {
-  return supabase
+/** A program's rows as clients do them today, with any stand-in the trainer put in for now (0139). */
+export async function loadProgramExercises(programId: string) {
+  const { data, error } = await supabase
     .from("program_exercises")
     .select("*")
     .eq("program_id", programId)
     .order("week_number", { ascending: true })
     .order("day_number", { ascending: true })
     .order("sort_order", { ascending: true });
+  return { data: data ? withTemporarySwaps(data, todayIso()) : data, error };
 }
 
 // Holds the exercises taken out of the built-in workouts (0073). Never listed.
@@ -156,7 +160,7 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
     const program = (programs ?? []).find((p) => p.id === pick.program_id);
     if (!program) return null;
     const own = (rows ?? []).filter((r) => r.program_id === pick.program_id);
-    const exercises = applyExerciseChanges(exercisesForSlot(own, pick.day_slot), changes);
+    const exercises = applyExerciseChanges(withTemporarySwaps(exercisesForSlot(own, pick.day_slot), date), changes);
     return { program, exercises: pick.deload ? deloadExercises(exercises) : exercises, daySlot: pick.day_slot, deload: !!pick.deload };
   };
   const built = entry ? build(entry) : null;

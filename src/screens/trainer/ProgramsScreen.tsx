@@ -11,6 +11,8 @@ import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import { PROGRAM_FAMILIES, programFamily, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import ProgramGroups from "@/components/ProgramGroups";
+import ProgramExerciseEditModal from "@/components/ProgramExerciseEditModal";
+import { useAuth } from "@/context/AuthContext";
 
 type Props = TrainerTabScreenProps<"Programs">;
 
@@ -20,6 +22,9 @@ type Props = TrainerTabScreenProps<"Programs">;
 // see its details. Switching one on happens on the client's own screen
 // (Training tab); this tab is for browsing and building.
 export default function ProgramsScreen({ navigation }: Props) {
+  const { trainer } = useAuth();
+  // The exercise being changed in one of the trainer's own workouts (0139).
+  const [editing, setEditing] = useState<ProgramExercise | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [exercises, setExercises] = useState<Record<string, ProgramExercise[]>>({});
   const [open, setOpen] = useState<string | null>(null);
@@ -98,113 +103,135 @@ export default function ProgramsScreen({ navigation }: Props) {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <Pressable style={styles.buildButton} onPress={() => navigation.navigate("ProgramBuilder")}>
-        <Text style={styles.buildButtonText}>+ Build a program</Text>
-      </Pressable>
-      <Text style={styles.helper}>To put a client on a program, open the client and go to their Training tab.</Text>
-      <View style={{ marginTop: 8 }}>
-        <GymHomeTabs
-          current={place}
-          onChange={(next) => {
-            setPlace(next);
-            setOpenGroup(null);
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <Pressable style={styles.buildButton} onPress={() => navigation.navigate("ProgramBuilder")}>
+          <Text style={styles.buildButtonText}>+ Build a program</Text>
+        </Pressable>
+        <Text style={styles.helper}>To put a client on a program, open the client and go to their Training tab.</Text>
+        <View style={{ marginTop: 8 }}>
+          <GymHomeTabs
+            current={place}
+            onChange={(next) => {
+              setPlace(next);
+              setOpenGroup(null);
+              setOpenFamily(null);
+            }}
+            accent={BRAND_GOLD}
+            labels={PROGRAM_PLACE_LABELS}
+          />
+        </View>
+
+        <ProgramGroups
+          place={place}
+          families={families}
+          open={openGroup}
+          onToggle={(g) => {
+            setOpenGroup(g);
             setOpenFamily(null);
           }}
-          accent={BRAND_GOLD}
-          labels={PROGRAM_PLACE_LABELS}
-        />
-      </View>
-
-      <ProgramGroups
-        place={place}
-        families={families}
-        open={openGroup}
-        onToggle={(g) => {
-          setOpenGroup(g);
-          setOpenFamily(null);
-        }}
-        extra={{
-          performance: (
-            <Pressable
-              style={styles.shortcut}
-              onPress={() => navigation.navigate("TrainerGuide", { guideKey: "sportsPerformance" })}
-            >
-              <Text style={styles.shortcutText}>🏅 Who each Sports Performance program suits ›</Text>
-            </Pressable>
-          ),
-          functional: (
-            <Pressable style={styles.shortcut} onPress={() => navigation.navigate("Stability")}>
-              <Text style={styles.shortcutText}>🛡️ Stability & Rehab programming ›</Text>
-              <Text style={styles.description}>
-                Ankle to neck, Rehab to Advanced. They run alongside the main program; give one from the client's
-                Training tab.
-              </Text>
-            </Pressable>
-          ),
-        }}
-        renderFamily={(f) => {
-          const list = f.programs;
-          const familyOpen = openFamily === f.key;
-          return (
-            <View key={f.key} style={styles.family}>
-              <Pressable style={styles.familyHeader} onPress={() => setOpenFamily(familyOpen ? null : f.key)}>
-                <Text style={styles.familyTitle}>
-                  {f.icon} {f.title}
-                </Text>
-                <Text style={styles.count}>
-                  {list.length} {familyOpen ? "▲" : "▼"}
+          extra={{
+            performance: (
+              <Pressable
+                style={styles.shortcut}
+                onPress={() => navigation.navigate("TrainerGuide", { guideKey: "sportsPerformance" })}
+              >
+                <Text style={styles.shortcutText}>🏅 Who each Sports Performance program suits ›</Text>
+              </Pressable>
+            ),
+            functional: (
+              <Pressable style={styles.shortcut} onPress={() => navigation.navigate("Stability")}>
+                <Text style={styles.shortcutText}>🛡️ Stability & Rehab programming ›</Text>
+                <Text style={styles.description}>
+                  Ankle to neck, Rehab to Advanced. They run alongside the main program; give one from the client's
+                  Training tab.
                 </Text>
               </Pressable>
-              {familyOpen && list.length === 0 && <Text style={styles.helper}>None yet. Tap "+ Build a program" above.</Text>}
-              {familyOpen &&
-                list.map((p) => (
-                  <Pressable key={p.id} style={styles.card} onPress={() => setOpen(open === p.id ? null : p.id)}>
-                    <View style={styles.cardHeader}>
-                      <Text style={styles.name}>{p.name}</Text>
-                      <Text style={styles.link}>{open === p.id ? "▲" : "▼"}</Text>
-                    </View>
-                    {open === p.id && (
-                      <>
-                        {p.description && <Text style={styles.description}>{p.description}</Text>}
-                        {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
-                        {exercises[p.id] ? (
-                          <ProgramSummary program={p} exercises={exercises[p.id]} collapsible />
-                        ) : loadFailed === p.id ? (
-                          <Pressable
-                            onPress={() => {
-                              setLoadFailed(null);
-                              setExercises((prev) => ({ ...prev }));
-                            }}
-                            hitSlop={8}
-                          >
-                            <Text style={styles.delete}>Couldn't load the exercises. Tap to try again.</Text>
-                          </Pressable>
-                        ) : (
-                          <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 10 }} />
-                        )}
-                        <Text style={styles.description}>
-                          ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
-                          workout screen. To change it for one client, tap it on that client's Training tab.
-                        </Text>
-                        {p.trainer_id && (
-                          <Pressable onPress={() => remove(p)} hitSlop={8}>
-                            <Text style={styles.delete}>Delete program</Text>
-                          </Pressable>
-                        )}
-                      </>
-                    )}
-                  </Pressable>
-                ))}
-            </View>
-          );
+            ),
+          }}
+          renderFamily={(f) => {
+            const list = f.programs;
+            const familyOpen = openFamily === f.key;
+            return (
+              <View key={f.key} style={styles.family}>
+                <Pressable style={styles.familyHeader} onPress={() => setOpenFamily(familyOpen ? null : f.key)}>
+                  <Text style={styles.familyTitle}>
+                    {f.icon} {f.title}
+                  </Text>
+                  <Text style={styles.count}>
+                    {list.length} {familyOpen ? "▲" : "▼"}
+                  </Text>
+                </Pressable>
+                {familyOpen && list.length === 0 && <Text style={styles.helper}>None yet. Tap "+ Build a program" above.</Text>}
+                {familyOpen &&
+                  list.map((p) => (
+                    <Pressable key={p.id} style={styles.card} onPress={() => setOpen(open === p.id ? null : p.id)}>
+                      <View style={styles.cardHeader}>
+                        <Text style={styles.name}>{p.name}</Text>
+                        <Text style={styles.link}>{open === p.id ? "▲" : "▼"}</Text>
+                      </View>
+                      {open === p.id && (
+                        <>
+                          {p.description && <Text style={styles.description}>{p.description}</Text>}
+                          {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
+                          {exercises[p.id] ? (
+                            p.trainer_id && p.trainer_id === trainer?.id ? (
+                              <ProgramSummary
+                                program={p}
+                                exercises={exercises[p.id]}
+                                onPressExercise={setEditing}
+                                tapHint="✎ Tap an exercise to change it for everyone on this workout, just for now or for good. Tap the green ▶ to watch it."
+                              />
+                            ) : (
+                              <ProgramSummary program={p} exercises={exercises[p.id]} collapsible />
+                            )
+                          ) : loadFailed === p.id ? (
+                            <Pressable
+                              onPress={() => {
+                                setLoadFailed(null);
+                                setExercises((prev) => ({ ...prev }));
+                              }}
+                              hitSlop={8}
+                            >
+                              <Text style={styles.delete}>Couldn't load the exercises. Tap to try again.</Text>
+                            </Pressable>
+                          ) : (
+                            <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 10 }} />
+                          )}
+                          <Text style={styles.description}>
+                            ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
+                            workout screen. To change it for one client, tap it on that client's Training tab.
+                          </Text>
+                          {p.trainer_id && (
+                            <Pressable onPress={() => remove(p)} hitSlop={8}>
+                              <Text style={styles.delete}>Delete program</Text>
+                            </Pressable>
+                          )}
+                        </>
+                      )}
+                    </Pressable>
+                  ))}
+              </View>
+            );
+          }}
+        />
+      </ScrollView>
+      <ProgramExerciseEditModal
+        row={editing}
+        place={place}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          const programId = editing?.program_id;
+          setEditing(null);
+          // Reload the program, so the list shows the change.
+          if (programId) setExercises(({ [programId]: _changed, ...rest }) => rest);
         }}
       />
-    </ScrollView>
+    </>
   );
 }
 
