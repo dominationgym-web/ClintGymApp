@@ -1,4 +1,5 @@
 import { heavyLowerOrSpine } from "@/lib/progression";
+import { extrasAllowed } from "@/lib/clientExtras";
 
 // Abs between sets (0083, GRIZZ 2026-10-12; 0118): on the upper body, lower
 // body, full body, Chest & Bi and Back & Tri workouts the client does 15 reps
@@ -39,11 +40,16 @@ export function abRoundsDone(sets: { warm_up?: boolean | null; exercise_name: st
   return sets.filter((s) => !s.warm_up && absAfterExercise(s.exercise_name)).length;
 }
 
+// On when the workout has abs built in, or the trainer turned them on for every
+// workout (abs_all, 0136), but never on Longevity, mobility or flexibility
+// (extrasAllowed), and never when the trainer switched them off.
 export function absBetweenSets(
-  program: { abs_between_sets?: boolean | null } | null | undefined,
-  client: { abs_between_sets?: boolean | null } | null | undefined,
+  program: { abs_between_sets?: boolean | null; name?: string; trainer_id?: string | null } | null | undefined,
+  client: { abs_between_sets?: boolean | null; abs_all?: boolean | null } | null | undefined,
 ): boolean {
-  return !!program?.abs_between_sets && client?.abs_between_sets !== false;
+  if (!program || client?.abs_between_sets === false) return false;
+  if (program.name != null && !extrasAllowed({ name: program.name, trainer_id: program.trainer_id ?? null }).abs) return false;
+  return !!program.abs_between_sets || !!client?.abs_all;
 }
 
 // The program's chosen ab exercise, or a different one each set, in order,

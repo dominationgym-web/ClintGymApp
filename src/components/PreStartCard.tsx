@@ -35,10 +35,13 @@ export default function PreStartCard({
   clientName,
   age,
   refreshKey,
+  onShow,
 }: {
   clientId: string;
   clientName: string;
   age: number | null;
+  /** Whether it has something to show, for the Things to check line. */
+  onShow?: (shown: boolean) => void;
   /** Bumped after any program pick. */
   refreshKey: number;
 }) {
@@ -73,7 +76,9 @@ export default function PreStartCard({
     });
   }, [load, refreshKey]);
 
-  if (!loaded || (forms.length === 0 && !onProgram && (age == null || age < 50))) return null;
+  const shown = loaded && (forms.length > 0 || onProgram || (age != null && age >= 50));
+  useEffect(() => onShow?.(shown), [shown, onShow]);
+  if (!shown) return null;
 
   const latest = forms[forms.length - 1] ?? null;
   const first = forms[0] ?? null;

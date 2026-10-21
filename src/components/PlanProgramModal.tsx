@@ -6,7 +6,8 @@ import { parseIsoDate } from "@/lib/dates";
 import { firstWeekEnd } from "@/lib/weeklyPlans";
 import { loadProgramExercises } from "@/lib/programQueries";
 import { programEasyWeeks } from "@/lib/deload";
-import { PROGRAM_FAMILIES, PROGRAM_GROUPS, programFamily, programGroupHeading, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
+import { WEEKDAY_NAMES } from "@/lib/programs";
+import { levelOf, PROGRAM_GOALS, programGoal, programsForGoal, type GoalChoice } from "@/lib/programGoals";
 import { monthLabel, monthOf, programSlots } from "@/lib/trainingCalendar";
 import {
   BLOCK_WEEKS,
@@ -21,29 +22,23 @@ import {
   splitNote,
   weeksToFinish,
   suggestedSplit,
-  timesAWeekDays,
   toggleDay,
-  TRAINING_SPLITS,
-  WEEK_CHOICES,
-  type SplitKey,
 } from "@/lib/trainingSplits";
 import { findArea, findProgram, LEVELS, levelInfo, STABILITY_AREAS } from "@/lib/stability";
 import RehabRedFlagCheck from "@/components/stability/RehabRedFlagCheck";
 import type { StabilityArea, StabilityLevel } from "@/lib/stability";
-import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
 import { isOlderAdultProgram } from "@/lib/preStart";
 
-type PlanType = ProgramGroup | "rehab";
 
 function dayHeading(date: string): string {
   const d = parseIsoDate(date);
   return `${WEEKDAY_NAMES[(d.getDay() + 6) % 7]} ${d.getDate()} ${monthLabel(monthOf(date))}`;
 }
 
-// Tap a day on the client's calendar → pick Gym, Performance, Functional or
-// Rehab → pick a program → pick the split → Activate, and the program's
+// Tap a day on the client's calendar → pick the client's goal → the program
+// that fits their level shows first (src/lib/programGoals.ts) → pick it → tap the days the client trains → Activate, and the program's
 // sessions are laid over those weekdays from that day (GRIZZ, 2026-10-17).
 // One page at a time, so nothing to scroll through. Sunday is always rest.
 // With startWith (the foundation card's Approve, review 2026-10-18), it opens
@@ -54,6 +49,7 @@ export default function PlanProgramModal({
   clientName,
   trainerId,
   trainingPlace,
+  trainingLevel = null,
   programs,
   resetNotice,
   startWith = null,
@@ -66,6 +62,8 @@ export default function PlanProgramModal({
   clientName: string;
   trainerId?: string;
   trainingPlace: ExercisePlace;
+  // From the intake form: picks the best-fit program for their goal.
+  trainingLevel?: string | null;
   programs: Program[];
   resetNotice: string | null;
   startWith?: Program | null;
@@ -73,9 +71,7 @@ export default function PlanProgramModal({
   onDone: (what: "calendar" | "stability") => void;
   onClose: () => void;
 }) {
-  const [type, setType] = useState<PlanType | null>(null);
-  const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
-  const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
+  const [type, setType] = useState<GoalChoice | null>(null);
   const [program, setProgram] = useState<Program | null>(null);
   const [allSlots, setSlots] = useState<number[] | null>(null);
   // Longevity programs: the block to start at (GRIZZ, 2026-10-20). 1 for every other program.
@@ -84,12 +80,10 @@ export default function PlanProgramModal({
   const firstSlot = block > 1 ? blockFirstSlot(block) : null;
   const slots = allSlots && slotsFrom(allSlots, firstSlot);
   const weeksLeft = (p: Program, b: number) => (p.weeks ?? 1) - (b - 1) * BLOCK_WEEKS;
-  const [split, setSplit] = useState<SplitKey | "own">("mon_wed_fri");
   // The trainer's own days (GRIZZ, 2026-10-19), the same every week or
   // picked again each week when the client trains on different days.
   const [ownDays, setOwnDays] = useState<number[]>([]);
   const [daysVary, setDaysVary] = useState(false);
-  const [weeks, setWeeks] = useState(4);
   // The program's own easy weeks (review 2026-10-18), to show where they land.
   const [easyWeeks, setEasyWeeks] = useState<number[]>([]);
   const [area, setArea] = useState<StabilityArea | null>(null);
@@ -100,8 +94,6 @@ export default function PlanProgramModal({
   useEffect(() => {
     if (!date) return;
     setType(null);
-    setPlace(trainingPlace);
-    setOpenFamily(null);
     setProgram(null);
     setSlots(null);
     setArea(null);
@@ -113,13 +105,13 @@ export default function PlanProgramModal({
     setProgram(p);
     setSlots(null);
     setBlock(1);
-    setWeeks(defaultWeeks(p.weeks));
     const { data } = await loadProgramExercises(p.id);
     const list = programSlots(data ?? []);
     setEasyWeeks(programEasyWeeks(data ?? []));
     setSlots(list);
-    setSplit(suggestedSplit(sessionsPerWeek(list)));
-    setOwnDays([]);
+    // The program's own number of days, ticked to start with (GRIZZ, 2026-10-20:
+    // "the trainer should just select the days of the week his client plans to use").
+    setOwnDays(findSplit(suggestedSplit(sessionsPerWeek(list))).days);
     setDaysVary(false);
   };
 
@@ -136,21 +128,11 @@ export default function PlanProgramModal({
     list && program && (program.weeks ?? 1) > 1 && days.length > 0 && days.length !== sessionsPerWeek(list)
       ? weeksToFinish(list.length, days.length)
       : null;
-  const pickSplit = (key: SplitKey) => {
-    setSplit(key);
-    if (program) setWeeks(fullLength(findSplit(key).days) ?? defaultWeeks(weeksLeft(program, block)));
-  };
-  const pickOwnDays = (days: number[]) => {
-    setSplit("own");
-    setOwnDays(days);
-    if (program) setWeeks(fullLength(days) ?? defaultWeeks(weeksLeft(program, block)));
-  };
-  const chosenDays = split === "own" ? ownDays : findSplit(split).days;
-  const chosenLabel = split === "own" ? daysLabel(ownDays) : findSplit(split).label;
-  const pickBlock = (b: number) => {
-    setBlock(b);
-    if (program && allSlots) setWeeks(fullLength(chosenDays, slotsFrom(allSlots, b > 1 ? blockFirstSlot(b) : null)) ?? defaultWeeks(weeksLeft(program, b)));
-  };
+  const chosenDays = ownDays;
+  const chosenLabel = daysLabel(ownDays);
+  // Always the whole program (or the rest of it from the block picked), spread
+  // over the days picked, so there's no "how long" to choose.
+  const weeks = program ? (fullLength(chosenDays) ?? defaultWeeks(weeksLeft(program, block))) : 4;
 
   const plan = date && slots ? planProgramDates(date, chosenDays, slots, weeks) : [];
   const note =
@@ -180,7 +162,7 @@ export default function PlanProgramModal({
     const weekEnd = firstWeekEnd({ start_date: date, weeks });
     const week1 = plan.filter((p) => p.date <= weekEnd);
     const more = plan.some((p) => p.date > weekEnd);
-    const vary = split === "own" && daysVary && more;
+    const vary = daysVary && more;
     const summary =
       (vary
         ? `${chosenLabel} in week 1, then days you pick each week, for ${weeks} weeks, from ${dayHeading(plan[0].date)}.`
@@ -314,13 +296,9 @@ export default function PlanProgramModal({
     ]);
   };
 
-  const here = programs.filter((p) => p.kind === "weekly" && p.place === place);
-  const families =
-    type && type !== "rehab"
-      ? PROGRAM_FAMILIES.filter((f) => f.group === type)
-          .map((f) => ({ ...f, programs: here.filter((p) => programFamily(p) === f.key) }))
-          .filter((f) => f.programs.length > 0)
-      : [];
+  const level = levelOf(trainingLevel);
+  const fits = type && type !== "rehab" ? programsForGoal(programs, type, trainingPlace, level) : { best: null, others: [] };
+  const goals = PROGRAM_GOALS.filter((g) => g.key !== "own" || programs.some((p) => p.kind === "weekly" && programGoal(p) === "own"));
 
   const title = !date
     ? ""
@@ -331,7 +309,7 @@ export default function PlanProgramModal({
           ? `${findArea(area).title}: which level?`
           : "Rehab & stability"
         : type
-          ? "Pick a program"
+          ? (PROGRAM_GOALS.find((g) => g.key === type)?.title ?? "Pick a program")
           : `Start on ${dayHeading(date)}`;
 
   return (
@@ -356,28 +334,17 @@ export default function PlanProgramModal({
             {/* Step 1: what kind of training. */}
             {!type && !program && date && (
               <>
-                <Text style={styles.step}>What does {clientName} want to focus on?</Text>
-                {PROGRAM_GROUPS.map((g) => {
-                  const { title: t, icon } = programGroupHeading(g, place);
-                  return (
-                    <Pressable key={g.key} style={styles.typeRow} onPress={() => setType(g.key)}>
-                      <Text style={styles.typeIcon}>{icon}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.typeTitle}>{t}</Text>
-                        <Text style={styles.typeSummary}>{g.summary}</Text>
-                      </View>
-                      <Text style={styles.chevron}>›</Text>
-                    </Pressable>
-                  );
-                })}
-                <Pressable style={styles.typeRow} onPress={() => setType("rehab")}>
-                  <Text style={styles.typeIcon}>🛡️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.typeTitle}>Rehab</Text>
-                    <Text style={styles.typeSummary}>Stability and injury programs for ankle, knee, hip, core, shoulder, wrist and neck</Text>
-                  </View>
-                  <Text style={styles.chevron}>›</Text>
-                </Pressable>
+                <Text style={styles.step}>What's {clientName}'s goal?</Text>
+                {goals.map((g) => (
+                  <Pressable key={g.key} style={styles.typeRow} onPress={() => setType(g.key)}>
+                    <Text style={styles.typeIcon}>{g.icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.typeTitle}>{g.title}</Text>
+                      <Text style={styles.typeSummary}>{g.summary}</Text>
+                    </View>
+                    <Text style={styles.chevron}>›</Text>
+                  </Pressable>
+                ))}
                 {onSingleWorkout && (
                   <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
                     <Text style={styles.singleText}>Or just one workout for this day</Text>
@@ -389,43 +356,32 @@ export default function PlanProgramModal({
             {/* Step 2: the programs of that kind, under tap-to-open headings. */}
             {type && type !== "rehab" && !program && (
               <>
-                <GymHomeTabs
-                  current={place}
-                  onChange={(next) => {
-                    setPlace(next);
-                    setOpenFamily(null);
-                  }}
-                  accent={BRAND_GOLD}
-                  labels={PROGRAM_PLACE_LABELS}
-                />
-                {families.map((f) => {
-                  const isOpen = openFamily === f.key || families.length === 1;
-                  return (
-                    <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
-                      <Pressable style={styles.familyHeader} onPress={() => setOpenFamily(isOpen ? null : f.key)}>
-                        <Text style={styles.typeIcon}>{f.icon}</Text>
-                        <Text style={[styles.familyTitle, { flex: 1 }]}>{f.title}</Text>
-                        <Text style={styles.count}>{f.programs.length}</Text>
-                        <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
-                      </Pressable>
-                      {isOpen &&
-                        f.programs.map((p) => (
-                          <Pressable key={p.id} style={styles.program} onPress={() => pickProgram(p)}>
-                            <Text style={styles.programName}>{p.name}</Text>
-                            {p.description ? (
-                              <Text style={styles.description} numberOfLines={2}>
-                                {p.description}
-                              </Text>
-                            ) : null}
-                          </Pressable>
-                        ))}
-                    </View>
-                  );
-                })}
-                {families.length === 0 && (
-                  <Text style={styles.description}>
-                    No full {place} programs here yet. Pick one workout for this day instead.
-                  </Text>
+                {fits.best && (
+                  <>
+                    <Text style={styles.step}>Best fit{level ? ` for a ${level === "beginner" ? "beginner" : level}` : ""}</Text>
+                    <Pressable style={[styles.program, styles.bestFit]} onPress={() => pickProgram(fits.best!)}>
+                      <Text style={styles.programName}>⭐ {fits.best.name}</Text>
+                      {fits.best.description ? (
+                        <Text style={styles.description} numberOfLines={2}>
+                          {fits.best.description}
+                        </Text>
+                      ) : null}
+                    </Pressable>
+                  </>
+                )}
+                {fits.others.length > 0 && <Text style={styles.step}>{fits.best ? "Or another one" : "Pick a program"}</Text>}
+                {fits.others.map((p) => (
+                  <Pressable key={p.id} style={styles.program} onPress={() => pickProgram(p)}>
+                    <Text style={styles.programName}>{p.name}</Text>
+                    {p.description ? (
+                      <Text style={styles.description} numberOfLines={2}>
+                        {p.description}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ))}
+                {!fits.best && fits.others.length === 0 && (
+                  <Text style={styles.description}>No programs for this goal yet. Pick one workout for this day instead.</Text>
                 )}
                 {date && onSingleWorkout && (
                   <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
@@ -449,7 +405,7 @@ export default function PlanProgramModal({
                         <Text style={styles.step}>Start at which block?</Text>
                         <View style={styles.chips}>
                           {Array.from({ length: blocks }, (_, i) => i + 1).map((b) => (
-                            <Pressable key={`block-${b}`} style={[styles.chip, b === block && styles.chipOn]} onPress={() => pickBlock(b)}>
+                            <Pressable key={`block-${b}`} style={[styles.chip, b === block && styles.chipOn]} onPress={() => setBlock(b)}>
                               <Text style={[styles.chipText, b === block && styles.chipTextOn]}>
                                 Block {b} (weeks {(b - 1) * BLOCK_WEEKS + 1}-{b * BLOCK_WEEKS})
                               </Text>
@@ -461,85 +417,35 @@ export default function PlanProgramModal({
                     )}
                     <Text style={styles.step}>Which days will {clientName} train?</Text>
                     <Text style={styles.description}>
-                      {sessionsPerWeek(slots)} sessions a week as written. Sunday is always a rest day.
+                      Tap their days. {sessionsPerWeek(slots)} sessions a week as written. Sunday is always a rest day.
                     </Text>
-                    <View style={styles.splitTable}>
-                      {date &&
-                        ([1, 2] as const).map((times) => {
-                          const days = timesAWeekDays(date, times);
-                          const on = split === "own" && daysLabel(ownDays) === daysLabel(days);
-                          return (
-                            <Pressable key={`times-${times}`} style={[styles.splitRow, on && styles.splitRowOn]} onPress={() => pickOwnDays(days)}>
-                              <Text style={[styles.splitLabel, on && styles.splitLabelOn]}>
-                                {times === 1 ? "Once a week" : "Twice a week"} ({daysLabel(days)})
-                              </Text>
-                              <Text style={styles.ownHint}>The program is spread over more weeks.</Text>
-                            </Pressable>
-                          );
-                        })}
-                      {TRAINING_SPLITS.map((s) => {
-                        const on = s.key === split;
+                    <View style={styles.dayButtons}>
+                      {["M", "T", "W", "T", "F", "S"].map((d, i) => {
+                        const on = ownDays.includes(i + 1);
                         return (
-                          <Pressable key={s.key} style={[styles.splitRow, on && styles.splitRowOn]} onPress={() => pickSplit(s.key)}>
-                            <Text style={[styles.splitLabel, on && styles.splitLabelOn]}>{s.label}</Text>
-                            <View style={styles.dots}>
-                              {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                                <Text key={i} style={[styles.dot, s.days.includes(i + 1) && styles.dotOn, i === 6 && styles.dotRest]}>
-                                  {d}
-                                </Text>
-                              ))}
-                            </View>
+                          <Pressable key={i} style={[styles.dayButton, on && styles.dayButtonOn]} onPress={() => setOwnDays(toggleDay(ownDays, i + 1))}>
+                            <Text style={[styles.dayButtonText, on && styles.dayButtonTextOn]}>{d}</Text>
                           </Pressable>
                         );
                       })}
-                      <View style={[styles.splitRow, styles.ownRow, split === "own" && styles.splitRowOn]}>
-                        <Pressable onPress={() => pickOwnDays(ownDays)}>
-                          <Text style={[styles.splitLabel, split === "own" && styles.splitLabelOn]}>
-                            Pick days{split === "own" && ownDays.length ? `: ${daysLabel(ownDays)}` : ""}
-                          </Text>
-                          <Text style={styles.ownHint}>Tap the days {clientName} trains with you.</Text>
+                    </View>
+                    {ownDays.length > 0 && (
+                      <View style={styles.chips}>
+                        <Pressable style={[styles.chip, !daysVary && styles.chipOn]} onPress={() => setDaysVary(false)}>
+                          <Text style={[styles.chipText, !daysVary && styles.chipTextOn]}>🔁 Same days every week</Text>
                         </Pressable>
-                        <View style={styles.dayButtons}>
-                          {["M", "T", "W", "T", "F", "S"].map((d, i) => {
-                            const on = split === "own" && ownDays.includes(i + 1);
-                            return (
-                              <Pressable key={i} style={[styles.dayButton, on && styles.dayButtonOn]} onPress={() => pickOwnDays(toggleDay(split === "own" ? ownDays : [], i + 1))}>
-                                <Text style={[styles.dayButtonText, on && styles.dayButtonTextOn]}>{d}</Text>
-                              </Pressable>
-                            );
-                          })}
-                        </View>
-                        {split === "own" && (
-                          <View style={styles.chips}>
-                            <Pressable style={[styles.chip, !daysVary && styles.chipOn]} onPress={() => setDaysVary(false)}>
-                              <Text style={[styles.chipText, !daysVary && styles.chipTextOn]}>🔁 Repeat weekly</Text>
-                            </Pressable>
-                            <Pressable style={[styles.chip, daysVary && styles.chipOn]} onPress={() => setDaysVary(true)}>
-                              <Text style={[styles.chipText, daysVary && styles.chipTextOn]}>🎲 Different days each week</Text>
-                            </Pressable>
-                          </View>
-                        )}
-                        {split === "own" && daysVary && (
-                          <Text style={styles.ownHint}>
-                            These are week 1's days. Each week you'll pick the next week's days, and the program carries on in order.
-                          </Text>
-                        )}
+                        <Pressable style={[styles.chip, daysVary && styles.chipOn]} onPress={() => setDaysVary(true)}>
+                          <Text style={[styles.chipText, daysVary && styles.chipTextOn]}>🎲 Different days each week</Text>
+                        </Pressable>
                       </View>
-                    </View>
-                    <Text style={styles.step}>For how long?</Text>
-                    <View style={styles.chips}>
-                      {[...new Set([...WEEK_CHOICES, defaultWeeks(weeksLeft(program, block)), ...(fullLength(chosenDays) ? [fullLength(chosenDays) as number] : [])])]
-                        .sort((a, b) => a - b)
-                        .map((w) => (
-                          <Pressable key={w} style={[styles.chip, w === weeks && styles.chipOn]} onPress={() => setWeeks(w)}>
-                            <Text style={[styles.chipText, w === weeks && styles.chipTextOn]}>{w} weeks</Text>
-                          </Pressable>
-                        ))}
-                    </View>
+                    )}
+                    {daysVary && ownDays.length > 0 && (
+                      <Text style={styles.ownHint}>Each week you'll pick the next week's days, and the program carries on in order.</Text>
+                    )}
                     {note && <Text style={styles.splitNote}>⚠️ {note}</Text>}
                     {plan.length > 0 && (
                       <Text style={styles.summary}>
-                        {plan.length} workouts, first one {dayHeading(plan[0].date)}.
+                        {plan.length} workouts over {weeks} week{weeks === 1 ? "" : "s"}, first one {dayHeading(plan[0].date)}.
                       </Text>
                     )}
                     <Pressable style={styles.activate} onPress={activate} disabled={busy || plan.length === 0}>
@@ -600,6 +506,7 @@ export default function PlanProgramModal({
 }
 
 const styles = StyleSheet.create({
+  bestFit: { borderWidth: 1.5, borderColor: BRAND_GOLD },
   backdrop: { flex: 1, backgroundColor: "rgba(2,6,23,0.8)", justifyContent: "center", padding: 16 },
   sheet: { backgroundColor: "#0F172A", borderRadius: 16, padding: 16, maxHeight: "90%", borderWidth: 1, borderColor: "#1E293B" },
   header: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
@@ -615,30 +522,15 @@ const styles = StyleSheet.create({
   chevron: { color: "#94A3B8", fontSize: 18 },
   single: { alignItems: "center", paddingVertical: 12, marginTop: 8 },
   singleText: { color: BRAND_GOLD, fontWeight: "700" },
-  family: { backgroundColor: "#1E293B", borderRadius: 12, marginTop: 8, padding: 4 },
-  familyOpen: { borderWidth: 1, borderColor: BRAND_GOLD },
-  familyHeader: { flexDirection: "row", alignItems: "center", gap: 10, padding: 10 },
-  familyTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  count: { color: BRAND_GOLD, fontWeight: "800" },
   program: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, margin: 6, marginTop: 6, borderWidth: 1, borderColor: "#1E293B" },
   programName: { color: "#fff", fontWeight: "700", fontSize: 14 },
   description: { color: "#94A3B8", fontSize: 13, marginTop: 4 },
-  splitTable: { marginTop: 8, gap: 6 },
-  splitRow: { flexDirection: "row", alignItems: "center", backgroundColor: "#1E293B", borderRadius: 10, padding: 10, borderWidth: 1.5, borderColor: "transparent" },
-  splitRowOn: { borderColor: BRAND_GOLD, backgroundColor: "#2A2410" },
-  splitLabel: { color: "#CBD5E1", fontWeight: "700", fontSize: 14, flex: 1 },
-  splitLabelOn: { color: BRAND_GOLD },
-  ownRow: { flexDirection: "column", alignItems: "stretch", gap: 8 },
   ownHint: { color: "#94A3B8", fontSize: 12, lineHeight: 17, marginTop: 2 },
   dayButtons: { flexDirection: "row", gap: 6 },
   dayButton: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: "#475569", alignItems: "center" },
   dayButtonOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
   dayButtonText: { color: "#CBD5E1", fontWeight: "800" },
   dayButtonTextOn: { color: "#0F172A" },
-  dots: { flexDirection: "row", gap: 3 },
-  dot: { width: 18, textAlign: "center", color: "#475569", fontSize: 11, fontWeight: "800" },
-  dotOn: { color: "#fff" },
-  dotRest: { color: "#334155" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   chip: { borderWidth: 1, borderColor: "#334155", borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12 },
   chipOn: { borderColor: BRAND_GOLD, backgroundColor: BRAND_GOLD },

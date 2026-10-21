@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import type { TrainerStackParamList, TrainerTabParamList } from "@/navigation/types";
 import TrainerDashboardScreen from "@/screens/trainer/TrainerDashboardScreen";
 import ClientsScreen from "@/screens/trainer/ClientsScreen";
+import GroupLiveScreen from "@/screens/trainer/GroupLiveScreen";
 import ClientDetailScreen from "@/screens/trainer/ClientDetailScreen";
 import TrainerProfileScreen from "@/screens/trainer/TrainerProfileScreen";
 import TrainersScreen from "@/screens/trainer/TrainersScreen";
@@ -80,6 +81,7 @@ export default function TrainerNavigator() {
             </LiveClientProvider>
           )}
         </Stack.Screen>
+        <Stack.Screen name="GroupLive" component={GroupLiveScreen} options={{ title: "Group live session", headerBackTitle: "Back" }} />
         <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
         <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />

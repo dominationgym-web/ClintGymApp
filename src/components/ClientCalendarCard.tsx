@@ -71,6 +71,7 @@ export default function ClientCalendarCard({
   clientId,
   clientName,
   trainingPlace,
+  trainingLevel = null,
   resetNotice = null,
   trainerId,
   onStabilityStarted,
@@ -81,6 +82,8 @@ export default function ClientCalendarCard({
   clientId: string;
   clientName: string;
   trainingPlace: ExercisePlace;
+  // From the intake form: the planner shows the best-fit program first.
+  trainingLevel?: string | null;
   trainerId?: string;
   // A rehab (stability) program started from the planner, so its card reloads.
   onStabilityStarted?: () => void;
@@ -467,6 +470,7 @@ export default function ClientCalendarCard({
         clientName={clientName}
         trainerId={trainerId}
         trainingPlace={trainingPlace}
+        trainingLevel={trainingLevel}
         programs={programs}
         resetNotice={resetNotice}
         onSingleWorkout={(date) => {

@@ -374,6 +374,9 @@ export type Client = {
   home_equipment: EquipmentItem[];
   // Abs between sets (0083): on unless the trainer switches it off.
   abs_between_sets: boolean;
+  // Abs and cardio the trainer added for every workout (0136, src/lib/clientExtras.ts).
+  abs_all?: boolean;
+  extra_cardio?: ExtraCardio[];
   // Training experience from the intake form, and whether the trainer has
   // dealt with the foundation program offer (0087).
   training_level: "never" | "beginner" | "intermediate" | "advanced" | null;
@@ -445,6 +448,8 @@ export type WorkoutSession = {
   reason: string | null;
   improvements: { exercise: string; before: string; after: string }[];
   star: boolean;
+  // Finished by the trainer in a live session with the client (0137).
+  in_person: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -1092,6 +1097,16 @@ export interface Database {
           p_sets_done: number;
           p_sets_planned: number;
           p_reason?: string | null;
+          p_improvements?: { exercise: string; before: string; after: string }[];
+        };
+        Returns: WorkoutSession;
+      };
+      record_live_session_for: {
+        Args: {
+          p_client: string;
+          p_title: string;
+          p_sets_done: number;
+          p_sets_planned: number;
           p_improvements?: { exercise: string; before: string; after: string }[];
         };
         Returns: WorkoutSession;
