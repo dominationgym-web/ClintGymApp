@@ -31,6 +31,7 @@ import InjuryList from "@/components/InjuryList";
 import ClientDailySummaryCard from "@/components/ClientDailySummaryCard";
 import type { StabilityArea } from "@/lib/stability";
 import ClientCalendarCard from "@/components/ClientCalendarCard";
+import ClientExtrasCard from "@/components/ClientExtrasCard";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
 import RecoveryCoachCard from "@/components/RecoveryCoachCard";
 import OtherActivityCard from "@/components/OtherActivityCard";
@@ -455,15 +456,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     const { error } = await supabase.from("clients").update({ library_access: next }).eq("id", clientId);
     if (error) {
       setClient((c) => (c ? { ...c, library_access: !next } : c));
-      Alert.alert("Couldn't update", error.message);
-    }
-  };
-
-  const toggleAbs = async (next: boolean) => {
-    setClient((c) => (c ? { ...c, abs_between_sets: next } : c));
-    const { error } = await supabase.from("clients").update({ abs_between_sets: next }).eq("id", clientId);
-    if (error) {
-      setClient((c) => (c ? { ...c, abs_between_sets: !next } : c));
       Alert.alert("Couldn't update", error.message);
     }
   };
@@ -913,6 +905,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               trainerId={trainer?.id}
               onChanged={() => setStabilityDaysKey((k) => k + 1)}
             />
+            {/* GRIZZ, 2026-10-21: abs and cardio for every workout, from one place (0136). */}
+            <TrainingSection title="💪 Abs and cardio" open={trainingOpen === "extras"} onToggle={() => toggleTraining("extras")}>
+              <ClientExtrasCard client={client} onChanged={(change) => setClient((c) => (c ? { ...c, ...change } : c))} />
+            </TrainingSection>
             <TrainingSection title="🎥 Form videos" open={trainingOpen === "videos"} onToggle={() => toggleTraining("videos")}>
               {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
             </TrainingSection>
@@ -957,20 +953,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 trainingPlace={client.training_place}
                 injuries={injuredAreas}
               />
-              <View style={styles.libraryRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.libraryTitle}>Abs between sets</Text>
-                  <Text style={styles.helper}>
-                    Ab reps after every set on the upper body, lower body, full body, Chest & Bi and Back & Tri workouts, and on your own programs where you added abs. The rest timer starts when {client.name} taps Complete.
-                  </Text>
-                </View>
-                <Switch
-                  value={client.abs_between_sets !== false}
-                  onValueChange={toggleAbs}
-                  trackColor={{ true: BRAND_GOLD, false: "#334155" }}
-                  accessibilityLabel="Abs between sets"
-                />
-              </View>
               <View style={styles.libraryRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.libraryTitle}>Full workout video library</Text>

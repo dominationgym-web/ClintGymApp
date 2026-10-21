@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { deloadExercises } from "@/lib/deload";
 import { withExtraCardio } from "@/lib/programs";
+import { withClientCardio } from "@/lib/clientExtras";
 import { applyExerciseChanges, type ChangeWrites } from "@/lib/exerciseChanges";
 import { exercisesForSlot } from "@/lib/trainingCalendar";
 import type { ClientExerciseChange, ClientProgram, Program, ProgramExercise } from "@/types/database";
@@ -138,7 +139,7 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
   const picks = [...(entry ? [entry] : []), ...blocks];
   if (picks.length === 0) return null;
   const ids = [...new Set(picks.map((p) => p.program_id))];
-  const [{ data: programs }, { data: rows }, changes] = await Promise.all([
+  const [{ data: programs }, { data: rows }, changes, { data: client }] = await Promise.all([
     supabase.from("programs").select("*").in("id", ids),
     supabase
       .from("program_exercises")
@@ -148,6 +149,8 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
       .order("day_number", { ascending: true })
       .order("sort_order", { ascending: true }),
     loadExerciseChanges(clientId),
+    // The trainer's extra cardio for this client (0136), on the main workout.
+    supabase.from("clients").select("extra_cardio").eq("id", clientId).maybeSingle(),
   ]);
   const build = (pick: { program_id: string; day_slot: number | null; deload?: boolean }): CalendarDayWorkout | null => {
     const program = (programs ?? []).find((p) => p.id === pick.program_id);
@@ -156,7 +159,8 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
     const exercises = applyExerciseChanges(exercisesForSlot(own, pick.day_slot), changes);
     return { program, exercises: pick.deload ? deloadExercises(exercises) : exercises, daySlot: pick.day_slot, deload: !!pick.deload };
   };
-  const main = entry ? build(entry) : null;
+  const built = entry ? build(entry) : null;
+  const main = built ? { ...built, exercises: withClientCardio(built.program, built.exercises, client?.extra_cardio) } : null;
   const extras = blocks
     .map((b): CalendarDayWorkout | null => {
       const built = build(b);
