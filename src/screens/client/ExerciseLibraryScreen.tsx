@@ -368,14 +368,16 @@ export default function ExerciseLibraryScreen() {
   // Without full library access the database also lets a client see other
   // exercises for their program's body parts (for Change exercise, 0047), but
   // the reference list still only shows their program's.
-  const browsable =
-    client?.library_access === false
+  // A live session (GRIZZ, 2026-10-21) can use any exercise, picked by what's free in the gym.
+  const browsable = live
+    ? exercises
+    : client?.library_access === false
       ? exercises.filter((e) => programExerciseIds.includes(e.id))
       : clientBrowsable(exercises, programExerciseIds);
   const shown = forPlace(browsable, place, fit);
   // The program card already lists today's exercises, so the reference list
   // only shows for clients who aren't on a program yet.
-  const showReference = !program;
+  const showReference = !program || live;
   // What's open on the Today view (GRIZZ, 2026-10-18: "they must click on the program for it to open").
   const part = hold ? null : (openPart ?? null);
   const togglePart = (key: string) => setOpenPart(part === key ? null : key);
@@ -502,8 +504,13 @@ export default function ExerciseLibraryScreen() {
 
   const recordSession = async (status: "complete" | "partial" | "missed", reason: string | null) => {
     if (!client) return null;
-    const planned = todaysWorkout.reduce((t, r) => t + r.sets, 0);
-    const done = todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0);
+    let planned = todaysWorkout.reduce((t, r) => t + r.sets, 0);
+    let done = todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0);
+    // A live session counts every set logged today, planned or added as you go.
+    if (live) {
+      done = Math.max(done, workingSetsToday());
+      planned = Math.max(planned, done);
+    }
     let improvements: ReturnType<typeof findImprovements> = [];
     if (status !== "missed" && allTodaysSets.length > 0) {
       const since = new Date();
@@ -520,7 +527,7 @@ export default function ExerciseLibraryScreen() {
     }
     setSavingProgress(true);
     const { data, error } = await supabase.rpc("record_workout_session", {
-      p_title: workoutTitle(),
+      p_title: live ? workoutTitle() || "Live session" : workoutTitle(),
       p_status: status,
       p_sets_done: done,
       p_sets_planned: planned,
@@ -574,6 +581,24 @@ export default function ExerciseLibraryScreen() {
         onPress: async () => {
           const saved = await recordSession("complete", null);
           if (saved) afterRecorded(saved);
+        },
+      },
+    ]);
+  };
+
+  // Live session (0137): saves today's sets to the client's profile as an in-person session.
+  const finishLive = () => {
+    const first = client?.name.split(" ")[0] ?? "the client";
+    Alert.alert("Finish live session?", `${workingSetsToday()} sets save to ${first}'s profile as an in-person session.`, [
+      { text: "Not yet", style: "cancel" },
+      {
+        text: "Finish",
+        onPress: async () => {
+          const saved = await recordSession("complete", null);
+          if (!saved) return;
+          if (session && sessionDue) await saveProgress(sessionAfterComplete(session, days, today), true);
+          const star = saved.improvements.length ? `\n\n⭐ Pushed up: ${saved.improvements.map((i) => `${i.exercise} ${i.before} → ${i.after}`).join(", ")}.` : "";
+          Alert.alert("Saved 🤝", `On ${first}'s profile as an in-person session.${star}`);
         },
       },
     ]);
@@ -868,6 +893,17 @@ export default function ExerciseLibraryScreen() {
         ListHeaderComponent={
           <>
             {hold && <MedicalHoldNotice live={live} />}
+            {live && !hold && (
+              <View style={styles.liveBar}>
+                <Text style={styles.liveBarText}>
+                  🤝 {workingSetsToday()} set{workingSetsToday() === 1 ? "" : "s"} logged
+                  {todaySession?.in_person ? " · saved" : ""}
+                </Text>
+                <Pressable style={styles.liveFinish} onPress={finishLive} disabled={savingProgress || workingSetsToday() === 0}>
+                  <Text style={styles.completeText}>{todaySession?.in_person ? "Save again" : "Finish live session"}</Text>
+                </Pressable>
+              </View>
+            )}
             {client && !live && atHome && equipmentList(client.home_equipment).length === 0 && (
               <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
             )}
@@ -1158,7 +1194,7 @@ export default function ExerciseLibraryScreen() {
                     ))}
                   </View>
                 )}
-                {todaysWorkout.length > 0 && todaySession?.status !== "complete" && (
+                {!live && todaysWorkout.length > 0 && todaySession?.status !== "complete" && (
                   <View style={styles.sessionButtons}>
                     <Pressable style={styles.completeButton} onPress={completeWorkout} disabled={savingProgress}>
                       <Text style={styles.completeText}>Complete workout</Text>
@@ -1245,8 +1281,9 @@ export default function ExerciseLibraryScreen() {
                 <OtherActivityCard clientId={client.id} role="client" />
               </FoldSection>
             )}
-            {showReference && <Text style={styles.title}>Exercise reference</Text>}
-            {!showReference ? null : client?.library_access === false ? (
+            {showReference && <Text style={styles.title}>{live ? "Add an exercise" : "Exercise reference"}</Text>}
+            {live && <Text style={styles.helper}>Pick whatever's free in the gym. Tap it to log sets.</Text>}
+            {!showReference ? null : !live && client?.library_access === false ? (
               <Text style={styles.helper}>
                 These are the exercises in your program. Ask your coach if you'd like the full exercise library.
               </Text>
@@ -1280,7 +1317,7 @@ export default function ExerciseLibraryScreen() {
         ListEmptyComponent={
           !showReference ? null : (
           <Text style={styles.helper}>
-            {client?.library_access === false ? "Your coach hasn't set up your program yet." : "No exercises match that search."}
+            {!live && client?.library_access === false ? "Your coach hasn't set up your program yet." : "No exercises match that search."}
           </Text>
           )
         }
@@ -1696,6 +1733,9 @@ const styles = StyleSheet.create({
   resultDot: { width: 12, height: 12, borderRadius: 6 },
   resultTitle: { color: "#fff", fontWeight: "700", fontSize: 14 },
   starLine: { color: STAR_GOLD, fontWeight: "700", fontSize: 13 },
+  liveBar: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#14532D", borderRadius: 12, padding: 12, marginBottom: 14 },
+  liveBarText: { color: "#fff", fontWeight: "700", flex: 1 },
+  liveFinish: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 14 },
   completeButton: { flex: 1, backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 10, alignItems: "center" },
   completeText: { color: "#0F172A", fontWeight: "800" },
   moveButton: { flex: 1, borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 10, alignItems: "center" },

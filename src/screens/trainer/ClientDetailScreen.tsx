@@ -484,6 +484,13 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             </Text>
           </View>
         </View>
+        {/* Live in-person session (0134/0137, GRIZZ, 2026-10-21): right on top of every tab. The client's own workout
+            screen on the trainer's phone; add any exercise as you go. Their own trainer only. */}
+        {trainer && client.trainer_id === trainer.id && (
+          <Pressable style={styles.liveButton} onPress={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}>
+            <Text style={styles.liveButtonText}>▶ Start live session</Text>
+          </Pressable>
+        )}
         {tab === "overview" && (
           <>
             {client.archived_at && (
@@ -845,12 +852,6 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "training" && (
           <>
-            {/* Live 1-on-1 (0134, GRIZZ, 2026-10-20): the client's own workout screen on the trainer's phone. Their own trainer only. */}
-            {trainer && client.trainer_id === trainer.id && (
-              <Pressable style={styles.liveButton} onPress={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}>
-                <Text style={styles.liveButtonText}>▶ Start workout with {client.name.split(" ")[0]}</Text>
-              </Pressable>
-            )}
             {/* Calendar first (GRIZZ, 2026-10-17): tap a day to start a program. The rest is tucked under tap-to-open headings. */}
             <ClientCalendarCard
               key={programKey}
@@ -1081,7 +1082,7 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 
 const styles = StyleSheet.create({
   checksFold: { borderColor: "#F59E0B" },
-  liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginBottom: 12 },
+  liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center", marginTop: 14, marginBottom: 4 },
   liveButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   archivedBanner: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 12 },
   archivedText: { color: "#CBD5E1", fontSize: 13 },

@@ -448,6 +448,8 @@ export type WorkoutSession = {
   reason: string | null;
   improvements: { exercise: string; before: string; after: string }[];
   star: boolean;
+  // Finished by the trainer in a live session with the client (0137).
+  in_person: boolean;
   created_at: string;
   updated_at: string;
 }

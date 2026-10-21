@@ -46,6 +46,7 @@ export default function TrainerTrainingLog({
               <Text style={[styles.label, !trained && styles.labelEmpty]}>{day.label}</Text>
               <Text style={styles.summary}>
                 {result?.star ? "⭐ " : ""}
+                {result?.in_person ? "🤝 " : ""}
                 {result && day.setCount === 0
                   ? SESSION_LABELS[result.status]
                   : trained
@@ -60,6 +61,7 @@ export default function TrainerTrainingLog({
                   {SESSION_LABELS[result.status]}
                   {result.status !== "missed" ? ` · ${result.sets_done}/${result.sets_planned} sets` : ""}
                 </Text>
+                {result.in_person ? <Text style={styles.set}>🤝 In person, live session with you</Text> : null}
                 {result.reason ? <Text style={styles.set}>Why: {result.reason}</Text> : null}
               </View>
             )}

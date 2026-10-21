@@ -19,6 +19,7 @@ export default function WorkoutSessionResult({ session }: { session: WorkoutSess
         </Text>
       </View>
       {session.title ? <Text style={styles.meta}>{session.title}</Text> : null}
+      {session.in_person ? <Text style={styles.meta}>🤝 In person, live session with the coach</Text> : null}
       {session.makeup_for ? <Text style={styles.meta}>🔁 Caught up {weekdayOf(session.makeup_for)}'s missed workout</Text> : null}
       {session.reason ? <Text style={styles.reason}>Why: {session.reason}</Text> : null}
       {session.improvements.map((i) => (
