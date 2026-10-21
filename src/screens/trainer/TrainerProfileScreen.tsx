@@ -30,6 +30,7 @@ import {
 } from "@/lib/trainers";
 import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
+import ClientAvatar from "@/components/ClientAvatar";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
 import TrainerIncome from "@/components/TrainerIncome";
@@ -58,6 +59,9 @@ export default function TrainerProfileScreen() {
   const [eft, setEft] = useState<EftDetails>(trainer?.eft_details ?? {});
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  // The picked picture, shown the moment it's saved (GRIZZ, 2026-10-21: a
+  // trainer's new logo saved but the screen kept showing the old one).
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("code");
   // Trainers who signed up with this trainer's code (0060).
   const [referrals, setReferrals] = useState<{ name: string; approved: boolean }[]>([]);
@@ -112,7 +116,9 @@ export default function TrainerProfileScreen() {
       if (trainer.logo_path && trainer.logo_path !== path) {
         await supabase.storage.from(TRAINER_LOGO_BUCKET).remove([trainer.logo_path]);
       }
+      setLogoPreview(asset.uri);
       await refreshProfile();
+      Alert.alert("✓ Logo saved", "Your clients see it on their Profile tab and when they sign up.");
     } catch (err) {
       Alert.alert("Couldn't save logo", err instanceof Error ? err.message : "Please try again.");
     } finally {
@@ -177,11 +183,15 @@ export default function TrainerProfileScreen() {
         {tab === "code" && (
           <>
             <Pressable style={styles.logoBlock} onPress={pickLogo} disabled={uploadingLogo}>
-              <TrainerLogo name={displayName} path={trainer.logo_path} size={96} />
+              {logoPreview ? (
+                <ClientAvatar name={displayName} url={logoPreview} size={96} />
+              ) : (
+                <TrainerLogo name={displayName} path={trainer.logo_path} size={96} />
+              )}
               {uploadingLogo ? (
                 <ActivityIndicator color="#22C55E" style={{ marginTop: 8 }} />
               ) : (
-                <Text style={styles.link}>{trainer.logo_path ? "Change logo" : "Add your logo"}</Text>
+                <Text style={styles.link}>{trainer.logo_path || logoPreview ? "Change logo" : "Add your logo"}</Text>
               )}
               <Text style={styles.hint}>Your clients see this in their app.</Text>
             </Pressable>
