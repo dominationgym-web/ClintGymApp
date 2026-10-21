@@ -89,7 +89,7 @@ export default function TrainerProfileScreen() {
 
   const shareReferral = () =>
     Share.share({
-      message: `I coach my clients on the Daily Evolution app. Sign up as a trainer and enter my referral code ${trainer.join_code} to get a free 2-week trial.`,
+      message: `I coach my clients on the Daily Evolution app. Sign up as a trainer and enter my referral code ${trainer.join_code} to get a free 30-day trial.`,
     });
   const displayName = trainerDisplayName(trainer);
 
