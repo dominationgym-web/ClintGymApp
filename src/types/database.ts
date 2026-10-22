@@ -73,11 +73,16 @@ export type BillingCurrency = "USD" | "ZAR";
 
 export type BillingPrices = Record<BillingCurrency, Record<BillingPlan | "client", number>>;
 
+// Client fee tiers (0141): each tier covers client numbers up to `upto`,
+// starting after the previous tier. Clients past the last tier are free.
+export type ClientTier = { upto: number } & Record<BillingCurrency, number>;
+
 export type BillingSettings = {
   id: number;
   prices: BillingPrices;
   free_client_months: number;
   free_clients: number;
+  client_tiers: ClientTier[];
   client_fees_due_day: number;
   lockout_enabled: boolean;
   // Card payments on the website (0136), off until the store launch.

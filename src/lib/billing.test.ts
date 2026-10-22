@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   amountsLabel,
+  clientFeeTotal,
+  clientTierLines,
   creditsUsable,
   feeCreditsUsable,
   freeUseFeesStart,
@@ -16,7 +18,7 @@ import {
   referralPopupDue,
   trainerCurrency,
 } from "@/lib/billing";
-import type { BillingPrices } from "@/types/database";
+import type { BillingPrices, ClientTier } from "@/types/database";
 
 const prices: BillingPrices = {
   USD: { monthly: 50, six_months: 250, yearly: 400, client: 10 },
@@ -125,5 +127,41 @@ describe("weekly referral pop-up", () => {
     expect(trainerCurrency({ billing_currency: "USD", signup_country: "ZA" })).toBe("USD");
     expect(referralCreditUseLine(true)).toContain("client fees");
     expect(referralCreditUseLine(false)).toContain("plan payment");
+  });
+});
+
+describe("tiered client fees (GRIZZ 2026-10-22)", () => {
+  const tiers: ClientTier[] = [
+    { upto: 10, ZAR: 50, USD: 5 },
+    { upto: 20, ZAR: 40, USD: 4 },
+    { upto: 30, ZAR: 30, USD: 3 },
+    { upto: 60, ZAR: 10, USD: 1 },
+  ];
+
+  it("matches the example totals with R200 / $20 a month and 5 clients included", () => {
+    const table: [number, number, number][] = [
+      [5, 200, 20], [10, 450, 45], [15, 650, 65], [20, 850, 85], [25, 1000, 100],
+      [30, 1150, 115], [40, 1250, 125], [50, 1350, 135], [60, 1450, 145], [61, 1450, 145], [120, 1450, 145],
+    ];
+    for (const [clients, zar, usd] of table) {
+      expect(200 + clientFeeTotal(tiers, "ZAR", clients, 5)).toBe(zar);
+      expect(20 + clientFeeTotal(tiers, "USD", clients, 5)).toBe(usd);
+    }
+  });
+
+  it("charges free-use trainers from their first client", () => {
+    expect(clientFeeTotal(tiers, "ZAR", 3, 0)).toBe(150);
+    expect(clientFeeTotal(tiers, "ZAR", 12, 0)).toBe(580);
+  });
+
+  it("lists the tiers after the included clients", () => {
+    expect(clientTierLines(tiers, "ZAR", 5)).toEqual([
+      "Clients 6-10: R50 each",
+      "Clients 11-20: R40 each",
+      "Clients 21-30: R30 each",
+      "Clients 31-60: R10 each",
+      "Clients 61+: free",
+    ]);
+    expect(clientTierLines(tiers, "USD", 0)[0]).toBe("Clients 1-10: $5 each");
   });
 });
