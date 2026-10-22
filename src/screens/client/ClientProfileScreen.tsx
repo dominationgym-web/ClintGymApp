@@ -22,6 +22,7 @@ import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import WatchLink from "@/components/WatchLink";
 import FoldSection from "@/components/FoldSection";
+import HistoryImportCard from "@/components/HistoryImportCard";
 import { trainerDisplayName } from "@/lib/trainers";
 import { STATUS_FLAGS } from "@/lib/statusFlags";
 import { clientGoals } from "@/lib/clientGoals";
@@ -284,6 +285,10 @@ export default function ClientProfileScreen() {
           <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
         </FoldSection>
       )}
+
+      <FoldSection icon="📥" title="Bring in my history" hint="From another fitness app" open={openFold === "history"} onToggle={() => fold("history")}>
+        <HistoryImportCard clientId={client.id} role="client" />
+      </FoldSection>
 
       <FoldSection icon="🎯" title="Goals and injuries" open={openFold === "goals"} onToggle={() => fold("goals")}>
         <Text style={styles.sectionHeading}>Goals</Text>

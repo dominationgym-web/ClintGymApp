@@ -7,7 +7,7 @@ export type NotificationRoute =
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
   | { stack: "trainer"; screen: "Billing" }
-  | { stack: "trainer"; screen: "ClientDetail"; clientId: string; tab?: "training"; open?: "videos" };
+  | { stack: "trainer"; screen: "ClientDetail"; clientId: string; tab?: "training"; open?: "videos" | "history" };
 
 const CLIENT_SCREENS: Record<string, "CheckIn" | "Habits" | "Exercises" | "Profile"> = {
   coach_message: "CheckIn",
@@ -45,6 +45,7 @@ export function notificationRoute(
   const raw = data?.clientId ?? data?.client_id;
   const clientId = typeof raw === "string" && raw ? raw : null;
   if (type === "form_video" && clientId) return { stack: "trainer", screen: "ClientDetail", clientId, tab: "training", open: "videos" };
+  if (type === "history_import" && clientId) return { stack: "trainer", screen: "ClientDetail", clientId, tab: "training", open: "history" };
   if (type === "payment_proof") return clientId ? { stack: "trainer", screen: "Clients" } : { stack: "trainer", screen: "Billing" };
   if (type === "client_signup" || type === "client_plan_expired" || type === "client_plan_expiring") return { stack: "trainer", screen: "Clients" };
   if (TRAINER_TRAINING_TYPES.has(type) && clientId) return { stack: "trainer", screen: "ClientDetail", clientId, tab: "training" };
