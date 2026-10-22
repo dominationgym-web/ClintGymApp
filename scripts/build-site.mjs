@@ -61,6 +61,8 @@ ${body}
 </html>
 `;
 
+const ANDROID_APK = "https://expo.dev/artifacts/eas/Z5EfxSaNnI3pW29JzWp92bZnSyaTKJ9AfKQ8JPjUwik.apk";
+
 const pages = {
   "index.html": page(
     "Building a better you",
@@ -89,6 +91,19 @@ ${PRIVACY_POLICY_SECTIONS.map((s) => `<h2>${escape(s.heading)}</h2>\n${paragraph
 </ol>
 <p>This permanently deletes your account, check-ins, habits, training logs, notes, progress photos, training videos and cycle log straight away. It can't be undone.</p>
 <p>If you can't open the app, email <a href="mailto:${PRIVACY_CONTACT_EMAIL}?subject=Delete%20my%20Daily%20Evolution%20account">${PRIVACY_CONTACT_EMAIL}</a> from the email address you signed up with, and your account will be deleted within 7 days.</p>`,
+  ),
+  // Short address to share the Android test app (GRIZZ, 2026-10-22). Point
+  // ANDROID_APK at each new preview build.
+  "android.html": page(
+    "Get the Android app",
+    `<h1>Get Daily Evolution for Android</h1>
+<p><a href="${ANDROID_APK}" style="display:inline-block;background:#D4AF37;color:#0F172A;font-weight:700;padding:14px 22px;border-radius:12px;text-decoration:none">Download the app</a></p>
+<ol>
+<li>If you already have Daily Evolution, uninstall it first.</li>
+<li>Tap <strong>Download the app</strong> above, then open the downloaded file and tap <strong>Install</strong>. If your phone asks, allow installs from your browser.</li>
+<li>Open the app and sign in, or sign up with your trainer's code.</li>
+</ol>
+<p class="muted">iPhone? Ask your trainer for the TestFlight link.</p>`,
   ),
   "support.html": page(
     "Support",
