@@ -38,6 +38,8 @@ import StabilityDayPlanner from "@/components/stability/StabilityDayPlanner";
 import WeeklyPlanCard from "@/components/WeeklyPlanCard";
 import DeloadCard from "@/components/DeloadCard";
 import ProgramSummary from "@/components/ProgramSummary";
+import { workoutAddOns, type AddOnClient } from "@/lib/workoutAddOns";
+import { withClientCardio } from "@/lib/clientExtras";
 import PlanProgramModal from "@/components/PlanProgramModal";
 import type { StabilityArea } from "@/lib/stability";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
@@ -78,6 +80,7 @@ export default function ClientCalendarCard({
   onPlanChanged,
   injuries = [],
   stabilityKey,
+  extras,
 }: {
   clientId: string;
   clientName: string;
@@ -95,6 +98,8 @@ export default function ClientCalendarCard({
   injuries?: StabilityArea[];
   // Set when the client is on the Health Reset (resetNotice in src/lib/resetProgram.ts).
   resetNotice?: string | null;
+  // The client's abs and extra cardio (0136), shown on each workout day.
+  extras?: AddOnClient | null;
 }) {
   const today = todayIso();
   // The Reset warning pops up once per visit, then stays as a banner in the picker.
@@ -165,7 +170,9 @@ export default function ClientCalendarCard({
     const changes = await loadExerciseChanges(clientId);
     if (selectedProgram && selectedEntry) {
       const { data } = await loadProgramExercises(selectedProgram.id);
-      setSelectedExercises(applyExerciseChanges(exercisesForSlot(data ?? [], selectedEntry.day_slot), changes));
+      // With the client's extra cardio in place, as they'll see it.
+      const rows = applyExerciseChanges(exercisesForSlot(data ?? [], selectedEntry.day_slot), changes);
+      setSelectedExercises(withClientCardio(selectedProgram, rows, extras?.extra_cardio));
     }
     const lists = await Promise.all(
       selectedBlocks.map(async (b) => {
@@ -174,7 +181,7 @@ export default function ClientCalendarCard({
       }),
     );
     setBlockExercises(Object.fromEntries(lists));
-  }, [selectedProgram?.id, selectedEntry?.day_slot, blockKey, clientId]);
+  }, [selectedProgram?.id, selectedEntry?.day_slot, blockKey, clientId, JSON.stringify(extras?.extra_cardio ?? [])]);
 
   useEffect(() => {
     loadSelectedExercises();
@@ -195,7 +202,13 @@ export default function ClientCalendarCard({
     const p = entry ? byId.get(entry.program_id) : undefined;
     if (entry && p) {
       if (isFunctionalProgram(p)) plan.extras.push({ title: shortName(p), functional: true });
-      else plan.main = { title: shortName(p), parts: entry.day_slot != null ? (p.day_titles[entry.day_slot - 1] ?? "") : "", deload: !!entry.deload };
+      else
+        plan.main = {
+          title: shortName(p),
+          parts: entry.day_slot != null ? (p.day_titles[entry.day_slot - 1] ?? "") : "",
+          deload: !!entry.deload,
+          addOns: workoutAddOns(p, extras),
+        };
     }
     for (const b of blocksOn(date)) {
       const bp = byId.get(b.program_id);
@@ -400,6 +413,7 @@ export default function ClientCalendarCard({
                 <Text style={styles.daySlot}>{slotLabel(selectedProgram, selectedEntry.day_slot)}</Text>
               )}
               {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
+              {workoutAddOns(selectedProgram, extras) ? <Text style={styles.addOns}>{workoutAddOns(selectedProgram, extras)}</Text> : null}
               <ProgramSummary
                 program={selectedProgram}
                 exercises={selectedExercises}
@@ -738,6 +752,7 @@ function WorkoutPicker({
 }
 
 const styles = StyleSheet.create({
+  addOns: { color: "#FCD34D", fontSize: 13, fontWeight: "600", marginTop: 4 },
   stabilityNote: { color: "#CBD5E1", fontSize: 13, marginHorizontal: 12, marginBottom: 12, marginTop: 4 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
   title: { color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 4 },

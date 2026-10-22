@@ -38,6 +38,8 @@ export type MealPlanSettings = {
   diet?: MealDiet;
   /** No milk, yoghurt, cheese or whey (lactose intolerance or allergy). */
   dairyFree?: boolean;
+  /** Foods the client left out, by name: never put in again (GRIZZ, 2026-10-22). */
+  avoid?: string[];
 };
 
 const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey|wors|venison|bacon|\bham\b/i;
@@ -307,11 +309,16 @@ const NO_MEAT_PROTEIN: Record<MealDiet, Partial<Record<Slot, string[]>>> = {
   },
 };
 
-type Prefs = { diet: MealDiet; dairyFree: boolean };
+type Prefs = { diet: MealDiet; dairyFree: boolean; avoid: string[] };
 
-function proteinPool(slot: Slot, { diet, dairyFree }: Prefs): string[] {
-  const list = (NO_MEAT_PROTEIN[diet][slot] ?? POOLS[slot].protein).filter((f) => foodAllowed(f, diet, dairyFree));
-  return list.length ? list : diet === "everything" ? ["Chicken breast (cooked)"] : diet === "pescatarian" ? ["Tuna in water (drained)"] : ["Eggs"];
+// Fits the diet, dairy-free, and isn't a food they left out.
+const ok = (name: string, prefs: Prefs) => foodAllowed(name, prefs.diet, prefs.dairyFree) && !prefs.avoid.includes(name);
+
+function proteinPool(slot: Slot, prefs: Prefs): string[] {
+  const list = (NO_MEAT_PROTEIN[prefs.diet][slot] ?? POOLS[slot].protein).filter((f) => ok(f, prefs));
+  if (list.length) return list;
+  const fallback = ["Chicken breast (cooked)", "Tuna in water (drained)", "Eggs", "Tofu, firm", "Egg whites"].filter((f) => ok(f, prefs));
+  return fallback.length ? fallback : ["Eggs"];
 }
 
 // A piece of fruit with the snack, different each day.
@@ -324,7 +331,17 @@ const DAIRY_FOODS: DietItem[] = [
 ];
 
 /** The daily protein snack: biltong, or Greek yoghurt for non meat eaters (eggs or tuna if dairy-free). */
-export function proteinSnack(targets: MacroTargets, diet: MealDiet = "everything", dairyFree = false): DietItem {
+export function proteinSnack(targets: MacroTargets, diet: MealDiet = "everything", dairyFree = false, avoid: string[] = []): DietItem {
+  const chosen = defaultSnack(targets, diet, dairyFree);
+  if (!avoid.includes(chosen.food)) return chosen;
+  // Left out: the same protein from another snack they eat.
+  const other = ["Biltong, lean, medium", "Greek yoghurt, plain", "Eggs", "Tuna in water (drained)", "Whey protein powder"].find(
+    (f) => foodAllowed(f, diet, dairyFree) && !avoid.includes(f),
+  );
+  return other ? swapAcross(chosen, other, "protein") : chosen;
+}
+
+function defaultSnack(targets: MacroTargets, diet: MealDiet, dairyFree: boolean): DietItem {
   const big = targets.protein >= 140;
   if (diet === "everything") return { food: "Biltong, lean, medium", grams: big ? 60 : 30 };
   if (!dairyFree) return { food: "Greek yoghurt, plain", grams: big ? 250 : 175 };
@@ -380,11 +397,13 @@ function slotFor(role: MealRole, time: string, index: number): Slot {
 const item = (food: string, grams: number): DietItem => ({ food, grams });
 
 function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: number, prefs: Prefs, extras: DietItem[] = []): DietItem[] {
-  const pool = POOLS[slot];
+  const all = POOLS[slot];
+  const pool = { veg: all.veg.filter((f) => ok(f, prefs)), carbs: all.carbs.filter((f) => ok(f, prefs)), fat: all.fat };
+  if (!pool.carbs.length) pool.carbs = ["White rice (cooked)", "Potatoes (boiled)", "Brown rice (cooked)"].filter((f) => ok(f, prefs) && findFood(f));
   const sides: DietItem[] = [...extras];
   if (pool.veg.length) sides.push(item(pick(pool.veg, n + slot.length), slot === "breakfast" ? 100 : 150));
   const sideCarbs = sides.reduce((t, i) => t + itemTotals(i).carbs, 0);
-  if (carbs - sideCarbs >= 10) {
+  if (carbs - sideCarbs >= 10 && pool.carbs.length) {
     const carbName = pick(pool.carbs, n);
     const grams = gramsFor(findFood(carbName) as Food, "carbs", carbs - sideCarbs);
     if (grams <= MAX_CARB_GRAMS) {
@@ -393,8 +412,8 @@ function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: n
       // A big carb meal (building muscle) gets two carb foods, not a mountain of one.
       sides.push(item(carbName, MAX_CARB_GRAMS));
       const left = carbs - sideCarbs - itemTotals(sides[sides.length - 1]).carbs;
-      const second = pool.carbs.find((c) => c !== carbName && !/potato|wrap|bread|lentil|chickpea|bean/i.test(c)) ?? "White rice (cooked)";
-      if (left >= 10) sides.push(item(second, gramsFor(findFood(second) as Food, "carbs", left)));
+      const second = pool.carbs.find((c) => c !== carbName && !/potato|wrap|bread|lentil|chickpea|bean/i.test(c)) ?? (ok("White rice (cooked)", prefs) ? "White rice (cooked)" : null);
+      if (second && left >= 10) sides.push(item(second, gramsFor(findFood(second) as Food, "carbs", left)));
     }
   }
   // Carbs, veg and dairy bring some protein too, so the protein food makes up the rest.
@@ -407,12 +426,12 @@ function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: n
     proteinItems[0] = item(proteinName, max);
     const topUp = TOP_UP[proteinName];
     const left = wanted - itemTotals(proteinItems[0]).protein;
-    if (topUp && foodAllowed(topUp, prefs.diet, prefs.dairyFree) && left >= 5)
+    if (topUp && ok(topUp, prefs) && left >= 5)
       proteinItems.push(item(topUp, gramsFor(findFood(topUp) as Food, "protein", left)));
   }
   const items = [...proteinItems, ...sides];
   const fatSoFar = items.reduce((t, i) => t + itemTotals(i).fat, 0);
-  const fats = pool.fat.filter((f) => foodAllowed(f, prefs.diet, prefs.dairyFree));
+  const fats = pool.fat.filter((f) => ok(f, prefs));
   if (fat - fatSoFar >= 4 && fats.length) {
     const fatName = pick(fats, n);
     items.push(item(fatName, gramsFor(findFood(fatName) as Food, "fat", fat - fatSoFar)));
@@ -429,12 +448,17 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
   const roles = mealRoles(times, trainingDay ? settings.training : null);
   const carbs = carbShares(roles, times, trainingDay);
   const fats = fatShares(roles, trainingDay);
-  const prefs: Prefs = { diet: settings.diet ?? "everything", dairyFree: !!settings.dairyFree };
+  const prefs: Prefs = { diet: settings.diet ?? "everything", dairyFree: !!settings.dairyFree, avoid: settings.avoid ?? [] };
   // The snack (protein plus a fruit) and the meat eater's daily dairy are set
   // first; their protein, carbs and fat come off what the meals need.
-  const snackItems = [proteinSnack(targets, prefs.diet, prefs.dairyFree), item(pick(FRUIT, variety), 0)];
-  snackItems[1].grams = findFood(snackItems[1].food)?.usual ?? 120;
-  const dairy = prefs.diet === "everything" && !prefs.dairyFree ? [DAIRY_FOODS[((variety % 3) + 3) % 3]] : [];
+  const fruit = FRUIT.filter((f) => ok(f, prefs));
+  const snackItems = [proteinSnack(targets, prefs.diet, prefs.dairyFree, prefs.avoid)];
+  if (fruit.length) {
+    const name = pick(fruit, variety);
+    snackItems.push(item(name, findFood(name)?.usual ?? 120));
+  }
+  const dairyFoods = DAIRY_FOODS.filter((d) => ok(d.food, prefs));
+  const dairy = prefs.diet === "everything" && !prefs.dairyFree && dairyFoods.length ? [dairyFoods[((variety % dairyFoods.length) + dairyFoods.length) % dairyFoods.length]] : [];
   const fixed = sumTotals([...snackItems, ...dairy]);
   const proteinEach = Math.max(0, targets.protein - fixed.protein) / times.length;
   const carbsLeft = Math.max(0, targets.carbs - fixed.carbs);
@@ -449,13 +473,13 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
   meals.splice(index === -1 ? meals.length : index, 0, snackMeal);
   let day = fitKcal({ meals }, targets.kcal);
   // Fitting the calories can trim some fibre, so check it twice.
-  for (let round = 0; round < 2 && dayFibre(day) < FIBRE_TARGET; round++) day = fitKcal(addFibre(day), targets.kcal);
+  for (let round = 0; round < 2 && dayFibre(day) < FIBRE_TARGET; round++) day = fitKcal(addFibre(day, !prefs.avoid.includes("Chia seeds")), targets.kcal);
   return day;
 }
 
 // Short of fibre: more veg at the meals that have it, then a spoon of chia
 // seeds with the snack.
-function addFibre(day: DietDay): DietDay {
+function addFibre(day: DietDay, chia = true): DietDay {
   let meals = day.meals;
   // A little over the target, as fitting the calories afterwards can trim some.
   const aim = FIBRE_TARGET + 2;
@@ -464,7 +488,7 @@ function addFibre(day: DietDay): DietDay {
   for (let round = 0; round < 3 && fibre() < aim; round++) {
     meals = meals.map((m) => ({ ...m, items: m.items.map((it) => (veg.has(it.food) ? { ...it, grams: it.grams + 50 } : it)) }));
   }
-  if (fibre() < aim) {
+  if (chia && fibre() < aim) {
     const snack = meals.findIndex((m) => m.name.includes("Protein snack"));
     const grams = Math.min(36, Math.ceil(((aim - fibre()) / 34) * 100 / 12) * 12);
     meals = meals.map((m, i) => (i === snack ? { ...m, items: [...m.items, item("Chia seeds", grams)] } : m));
@@ -611,17 +635,53 @@ export function leaveOutFood(day: DietDay, meal: number, index: number, rebalanc
   const without: DietDay = {
     meals: day.meals.map((m, mi) => (mi !== meal ? m : { ...m, items: m.items.filter((_, ii) => ii !== index) })),
   };
-  const food = findFood(removed.food);
-  if (!rebalance || !food) return { day: without, rebalanced: false };
+  if (!rebalance) return { day: without, rebalanced: false };
+  return makeUp(without, removed.food, [removed]);
+}
+
+/**
+ * The day with every serving of a food the client doesn't eat taken out, and
+ * what it gave spread over the other foods (GRIZZ, 2026-10-22: "If somebody
+ * doesn't want to eat something, then the program should split the macros
+ * between the other options").
+ */
+export function leaveOutEverywhere(day: DietDay, foodName: string): { day: DietDay; rebalanced: boolean } {
+  const removed = day.meals.flatMap((m) => m.items.filter((it) => it.food === foodName));
+  if (removed.length === 0) return { day, rebalanced: false };
+  const without: DietDay = { meals: day.meals.map((m) => ({ ...m, items: m.items.filter((it) => it.food !== foodName) })) };
+  return makeUp(without, foodName, removed);
+}
+
+// The other foods of the same kind (protein foods for a protein, vegetables,
+// beans and fruit for a vegetable) go up to give what was taken out, at most
+// double, to the nearest 5 g. With none of the same kind on the day, any
+// other food that gives it does.
+function makeUp(without: DietDay, foodName: string, removed: DietItem[]): { day: DietDay; rebalanced: boolean } {
+  const food = findFood(foodName);
+  if (!food) return { day: without, rebalanced: false };
   const key = makeUpKey(food.group);
-  const lost = itemTotals(removed)[key];
+  const lost = sumTotals(removed)[key];
   const same = (name: string) => {
     const f = findFood(name);
     if (!f) return false;
     if (key !== "fibre") return f.group === food.group;
     return (f.fibre ?? 0) > 0 && (f.group === "Veg" || f.group === "Fibre" || f.group === "Fruit & dairy");
   };
-  const have = sumTotals(without.meals.flatMap((m) => m.items.filter((it) => same(it.food))))[key];
-  if (lost <= 0 || have <= 0) return { day: without, rebalanced: false };
-  return { day: scale(without, same, Math.min(2, (have + lost) / have)), rebalanced: true };
+  // A real source of it: 5 g a 100 g (2 g of fibre), so broccoli doesn't stand in for chicken.
+  const anyGiving = (name: string) => itemTotals({ food: name, grams: 100 })[key] >= (key === "fibre" ? 2 : 5);
+  const items = without.meals.flatMap((m) => m.items);
+  if (lost <= 0) return { day: without, rebalanced: false };
+  for (const matches of [same, anyGiving]) {
+    const have = sumTotals(items.filter((it) => matches(it.food)))[key];
+    if (have > 0) return { day: scale(without, matches, Math.min(2, (have + lost) / have)), rebalanced: true };
+  }
+  return { day: without, rebalanced: false };
+}
+
+// The same amount of one macro from another food.
+function swapAcross(current: DietItem, newFood: string, keep: "protein" | "carbs" | "fat"): DietItem {
+  const to = findFood(newFood);
+  if (!to) return current;
+  const grams = gramsFor(to, keep, itemTotals(current)[keep]);
+  return { food: newFood, grams: grams > 0 ? grams : current.grams };
 }

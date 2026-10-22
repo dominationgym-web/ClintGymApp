@@ -9,7 +9,7 @@ const RECOVERY_GREEN = "#4ADE80";
 
 export type WeekDayPlan = {
   /** The day's main workout and the body parts it trains. */
-  main?: { title: string; parts: string; deload: boolean };
+  main?: { title: string; parts: string; deload: boolean; addOns?: string };
   /** Extra sessions on the day; functional ones (mobility, flexibility) show in teal. */
   extras: { title: string; functional: boolean }[];
 };
@@ -98,6 +98,8 @@ export default function WeekCalendar({
                     {main.title}
                   </Text>
                   {main.parts ? <Text style={styles.parts}>{main.parts}</Text> : null}
+                  {/* The client's abs and extra cardio, on the trainer's calendar (GRIZZ, 2026-10-22). */}
+                  {main.addOns ? <Text style={styles.addOns}>{main.addOns}</Text> : null}
                 </View>
               )}
               {move ? (
@@ -166,6 +168,7 @@ const styles = StyleSheet.create({
   star: { fontSize: 9 },
   mainTitle: { color: BRAND_GOLD, fontSize: 15, fontWeight: "800" },
   parts: { color: "#E2E8F0", fontSize: 13, marginTop: 1 },
+  addOns: { color: "#FCD34D", fontSize: 12, marginTop: 2 },
   moved: { fontSize: 12, fontWeight: "800" },
   tag: { fontSize: 13, fontWeight: "700" },
   rest: { color: "#64748B", fontSize: 14, marginTop: 8 },
