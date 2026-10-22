@@ -18,6 +18,7 @@ const CLIENT_SCREENS: Record<string, "CheckIn" | "Habits" | "Exercises" | "Profi
   achievement: "Exercises",
   habit_win: "Habits",
   plan_expiring: "Profile",
+  weigh_in: "Profile",
   plan_expired: "Profile",
 };
 

@@ -23,6 +23,7 @@ import SendProofOfPayment from "@/components/SendProofOfPayment";
 import WatchLink from "@/components/WatchLink";
 import FoldSection from "@/components/FoldSection";
 import HistoryImportCard from "@/components/HistoryImportCard";
+import ProgressCard from "@/components/ProgressCard";
 import { trainerDisplayName } from "@/lib/trainers";
 import { STATUS_FLAGS } from "@/lib/statusFlags";
 import { clientGoals } from "@/lib/clientGoals";
@@ -259,6 +260,10 @@ export default function ClientProfileScreen() {
           </Pressable>
         )}
 
+      </FoldSection>
+
+      <FoldSection icon="📊" title="My progress" hint="Lifts, cardio tests, weight and measurements" open={openFold === "progress"} onToggle={() => fold("progress")}>
+        <ProgressCard clientId={client.id} role="client" />
       </FoldSection>
 
       <FoldSection icon="💬" title="Messages from your coach" open={openFold === "messages"} onToggle={() => fold("messages")}>

@@ -23,7 +23,7 @@ export type ClientTabParamList = {
   Reset: undefined;
   Exercises: undefined;
   // open: the Profile heading to show opened, e.g. "pay" from the plan-ending banner.
-  Profile: { open?: "pay" } | undefined;
+  Profile: { open?: "pay" | "progress" } | undefined;
 };
 
 export type ClientStackParamList = {
