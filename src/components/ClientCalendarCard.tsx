@@ -298,45 +298,96 @@ export default function ClientCalendarCard({
     onPlanChanged?.();
   };
 
-  const clearDay = (entry: ClientCalendarWorkout) => {
-    Alert.alert("Take this workout off the calendar?", `${clientName} won't see it on ${dayHeading(entry.workout_date)}.`, [
-      { text: "Keep it", style: "cancel" },
-      {
-        text: "Take it off",
-        style: "destructive",
-        onPress: async () => {
-          const { error } = await supabase.from("client_calendar_workouts").delete().eq("id", entry.id);
-          if (error) {
-            Alert.alert("Couldn't remove it", error.message);
-            return;
-          }
-          await Promise.all([loadMonth(), loadUsed()]);
-        },
-      },
+  // Taking a day off asks whether it's just that day or the whole program
+  // (GRIZZ, 2026-10-22: "if we've loaded a whole program, we don't have to
+  // unload every single day separately"). The whole program means every day
+  // of it from today on, extra blocks too, and its weekly plan stops; days
+  // already done stay as the client's history.
+  const removeWholeProgram = async (programId: string) => {
+    const from = today;
+    const results = await Promise.all([
+      supabase.from("client_calendar_workouts").delete().eq("client_id", clientId).eq("program_id", programId).gte("workout_date", from),
+      // Taking a block off keeps its row, marked removed (0098).
+      supabase
+        .from("client_calendar_blocks")
+        .update({ removed_at: new Date().toISOString() })
+        .eq("client_id", clientId)
+        .eq("program_id", programId)
+        .gte("workout_date", from)
+        .is("removed_at", null),
+      supabase
+        .from("client_program_plans")
+        .update({ ended_at: new Date().toISOString() })
+        .eq("client_id", clientId)
+        .eq("program_id", programId)
+        .is("ended_at", null),
     ]);
+    const error = results.find((r) => r.error)?.error;
+    if (error) Alert.alert("Couldn't remove it", error.message);
+    await Promise.all([loadMonth(), loadUsed()]);
+    setPlanKey((k) => k + 1);
+    onPlanChanged?.();
   };
 
-  // Taking a block off keeps its row, marked removed (0098).
-  const takeOffBlock = (block: ClientCalendarBlock, name: string) => {
-    Alert.alert(`Take ${name} off this day?`, `${clientName} won't see it on ${dayHeading(block.workout_date)}.`, [
-      { text: "Keep it", style: "cancel" },
-      {
-        text: "Take it off",
-        style: "destructive",
-        onPress: async () => {
-          const { error } = await supabase
-            .from("client_calendar_blocks")
-            .update({ removed_at: new Date().toISOString() })
-            .eq("id", block.id);
-          if (error) {
-            Alert.alert("Couldn't remove it", error.message);
-            return;
-          }
-          await loadMonth();
-        },
-      },
+  // How many days of this program are on the calendar from today on.
+  const daysOfProgram = async (programId: string): Promise<number> => {
+    const [{ count: main }, { count: blocks }] = await Promise.all([
+      supabase.from("client_calendar_workouts").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("program_id", programId).gte("workout_date", today),
+      supabase
+        .from("client_calendar_blocks")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", clientId)
+        .eq("program_id", programId)
+        .gte("workout_date", today)
+        .is("removed_at", null),
     ]);
+    return (main ?? 0) + (blocks ?? 0);
   };
+
+  const askTakeOff = async (programId: string, name: string, date: string, justThisDay: () => Promise<void>) => {
+    const days = await daysOfProgram(programId);
+    const buttons: Parameters<typeof Alert.alert>[2] = [
+      { text: "Keep it", style: "cancel" },
+      { text: "Just this day", style: "destructive", onPress: justThisDay },
+    ];
+    // Only worth asking when the program has other days still to come.
+    if (days > 1 || (days === 1 && date < today)) {
+      buttons.push({
+        text: `Whole program (${days} days)`,
+        style: "destructive",
+        onPress: () =>
+          Alert.alert(`Take all of ${name} off?`, `Every day of it from today on comes off ${clientName}'s calendar. Days already done stay.`, [
+            { text: "Cancel", style: "cancel" },
+            { text: "Take it all off", style: "destructive", onPress: () => removeWholeProgram(programId) },
+          ]),
+      });
+    }
+    Alert.alert(`Take ${name} off?`, `Just ${dayHeading(date)}, or the whole program?`, buttons);
+  };
+
+  const clearDay = (entry: ClientCalendarWorkout) =>
+    askTakeOff(entry.program_id, byId.get(entry.program_id)?.name ?? "this workout", entry.workout_date, async () => {
+      const { error } = await supabase.from("client_calendar_workouts").delete().eq("id", entry.id);
+      if (error) {
+        Alert.alert("Couldn't remove it", error.message);
+        return;
+      }
+      await Promise.all([loadMonth(), loadUsed()]);
+    });
+
+  // Taking a block off keeps its row, marked removed (0098).
+  const takeOffBlock = (block: ClientCalendarBlock, name: string) =>
+    askTakeOff(block.program_id, name, block.workout_date, async () => {
+      const { error } = await supabase
+        .from("client_calendar_blocks")
+        .update({ removed_at: new Date().toISOString() })
+        .eq("id", block.id);
+      if (error) {
+        Alert.alert("Couldn't remove it", error.message);
+        return;
+      }
+      await loadMonth();
+    });
 
   const resetBatch = (batch: ProgramFamily, title: string) => {
     Alert.alert(`Reset ${title}?`, `Every workout in this batch becomes available for ${clientName} again.`, [
