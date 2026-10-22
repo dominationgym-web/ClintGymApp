@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
 import TextInput from "@/components/TextInput";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
@@ -289,7 +290,17 @@ export default function IntakeFormScreen() {
   };
 
   return (
-    <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
+    // Shown outside the app's navigator, so it keeps clear of the phone's clock
+    // itself. iOS's own top inset is off: it left a big gap above the title,
+    // and the form still slid under the clock when scrolled (GRIZZ, 2026-10-21).
+    <SafeAreaView style={styles.container} edges={["top"]}>
+    <ScrollView
+      ref={scrollRef}
+      style={styles.container}
+      contentContainerStyle={{ padding: 20 }}
+      contentInsetAdjustmentBehavior="never"
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>Before we get started</Text>
       {page === 0 && <Text style={styles.intro}>Quick taps, no essays. Two minutes and your trainer knows your routine.</Text>}
       <View style={styles.dots}>
@@ -509,6 +520,7 @@ export default function IntakeFormScreen() {
         </Pressable>
       )}
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
