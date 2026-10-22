@@ -56,6 +56,12 @@ type PickMode = "main" | "block";
 
 const RED = "#EF4444";
 
+// Opening a pop-up while another (or an alert) is still closing can leave an
+// invisible layer over the screen on Android, so the next one waits a moment.
+function afterPopup(open: () => void) {
+  setTimeout(open, 250);
+}
+
 function dayHeading(date: string): string {
   const d = parseIsoDate(date);
   return `${WEEKDAY_NAMES[(d.getDay() + 6) % 7]} ${d.getDate()} ${monthLabel(monthOf(date))}`;
@@ -235,18 +241,11 @@ export default function ClientCalendarCard({
     setSelected(date);
     // A day the client already trained shows how it went instead of the picker.
     if (entryOn(date) || sessions[date] || blocksOn(date).length > 0 || stability.map[date]) return;
-    // A past day gets one workout. From today on the trainer picks one workout
-    // or a whole program (GRIZZ, 2026-10-19: one workout on a random day was
-    // hidden at the bottom of the planner).
-    if (date < today) {
-      openPicker(date);
-      return;
-    }
-    Alert.alert(`What goes on ${dayHeading(date)}?`, undefined, [
-      { text: "One workout", onPress: () => openPicker(date) },
-      { text: "A whole program", onPress: () => openPlanner(date) },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    // A past day gets one workout. From today on the day box offers one
+    // workout or a whole program (GRIZZ, 2026-10-19). It used to ask in a pop-up
+    // that opened the planner straight from its button, which on Android could
+    // leave the screen frozen until Back (GRIZZ, 2026-10-22).
+    if (date < today) openPicker(date);
   };
 
   const openPlanner = (date: string) => {
@@ -254,7 +253,7 @@ export default function ClientCalendarCard({
       resetWarned.current = true;
       Alert.alert("On the Health Reset", `${resetNotice} Do you still want to plan a program?`, [
         { text: "Cancel", style: "cancel" },
-        { text: "Plan a program", onPress: () => setPlanning(date) },
+        { text: "Plan a program", onPress: () => afterPopup(() => setPlanning(date)) },
       ]);
       return;
     }
@@ -270,7 +269,7 @@ export default function ClientCalendarCard({
       resetWarned.current = true;
       Alert.alert("On the Health Reset", `${resetNotice} Do you still want to add a workout?`, [
         { text: "Cancel", style: "cancel" },
-        { text: "Add a workout", onPress: open },
+        { text: "Add a workout", onPress: () => afterPopup(open) },
       ]);
       return;
     }
@@ -528,8 +527,13 @@ export default function ClientCalendarCard({
             <>
               {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
               <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPicker(selected)}>
-                <Text style={styles.changeText}>＋ Add a workout</Text>
+                <Text style={styles.changeText}>＋ One workout</Text>
               </Pressable>
+              {selected >= today && selectedBlocks.length === 0 && (
+                <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPlanner(selected)}>
+                  <Text style={styles.changeText}>📋 A whole program from this day</Text>
+                </Pressable>
+              )}
             </>
           )}
           {selectedBlocks.map((b) => {
@@ -576,7 +580,7 @@ export default function ClientCalendarCard({
           <Pressable style={styles.addBlock} onPress={() => openPicker(selected, "block")}>
             <Text style={styles.addBlockText}>＋ Add a block (mobility, flexibility, fight…)</Text>
           </Pressable>
-          {selected >= today && (
+          {selected >= today && (selectedEntry || selectedBlocks.length > 0) && (
             <Pressable style={styles.addBlock} onPress={() => openPlanner(selected)}>
               <Text style={styles.addBlockText}>📋 Start a new program from this day</Text>
             </Pressable>
@@ -586,6 +590,9 @@ export default function ClientCalendarCard({
       <View style={styles.legend}>
         <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up</Text>
       </View>
+      {/* Mounted only while open, so a closed pop-up can't stay over the screen
+          and swallow taps on Android. */}
+      {planning && (
       <PlanProgramModal
         date={planning}
         clientId={clientId}
@@ -597,8 +604,10 @@ export default function ClientCalendarCard({
         resetNotice={resetNotice}
         onSingleWorkout={(date) => {
           setPlanning(null);
-          setPickMode("main");
-          setPicking(date);
+          afterPopup(() => {
+            setPickMode("main");
+            setPicking(date);
+          });
         }}
         onDone={async (what) => {
           setPlanning(null);
@@ -614,6 +623,8 @@ export default function ClientCalendarCard({
         }}
         onClose={() => setPlanning(null)}
       />
+      )}
+      {picking && (
       <WorkoutPicker
         date={picking}
         mode={pickMode}
@@ -630,6 +641,7 @@ export default function ClientCalendarCard({
         onReset={resetBatch}
         onClose={() => setPicking(null)}
       />
+      )}
       <ExerciseChangeModal
         row={changing}
         clientId={clientId}
