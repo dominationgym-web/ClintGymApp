@@ -7,6 +7,7 @@ import {
   loadAvailablePrograms,
   loadCalendarBlocks,
   loadCalendarWorkouts,
+  loadCardioSkips,
   loadExerciseChanges,
   loadProgramExercises,
 } from "@/lib/programQueries";
@@ -40,6 +41,8 @@ import DeloadCard from "@/components/DeloadCard";
 import ProgramSummary from "@/components/ProgramSummary";
 import { workoutAddOns, type AddOnClient } from "@/lib/workoutAddOns";
 import { withClientCardio } from "@/lib/clientExtras";
+import { cardioKey, cardioSkipped, withoutSkippedCardio, type CardioSkip } from "@/lib/cardioSkips";
+import { cardioLabel } from "@/lib/programs";
 import PlanProgramModal from "@/components/PlanProgramModal";
 import type { StabilityArea } from "@/lib/stability";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
@@ -121,6 +124,9 @@ export default function ClientCalendarCard({
   const [busy, setBusy] = useState(false);
   // The day a whole program is being planned from.
   const [planning, setPlanning] = useState<string | null>(null);
+  // Cardio the trainer took off (0140); bumped to reload them.
+  const [skips, setSkips] = useState<CardioSkip[]>([]);
+  const [skipKey, setSkipKey] = useState(0);
   // Bumped when a program is planned, so the week-by-week card reloads.
   const [planKey, setPlanKey] = useState(0);
 
@@ -167,7 +173,9 @@ export default function ClientCalendarCard({
   const loadSelectedExercises = useCallback(async () => {
     setSelectedExercises([]);
     setBlockExercises({});
-    const changes = await loadExerciseChanges(clientId);
+    const [changes, skipList] = await Promise.all([loadExerciseChanges(clientId), loadCardioSkips(clientId)]);
+    setSkips(skipList);
+    // Cardio taken off is left in, so the trainer can see it and put it back.
     if (selectedProgram && selectedEntry) {
       const { data } = await loadProgramExercises(selectedProgram.id);
       // With the client's extra cardio in place, as they'll see it.
@@ -181,7 +189,7 @@ export default function ClientCalendarCard({
       }),
     );
     setBlockExercises(Object.fromEntries(lists));
-  }, [selectedProgram?.id, selectedEntry?.day_slot, blockKey, clientId, JSON.stringify(extras?.extra_cardio ?? [])]);
+  }, [selectedProgram?.id, selectedEntry?.day_slot, blockKey, clientId, JSON.stringify(extras?.extra_cardio ?? []), skipKey]);
 
   useEffect(() => {
     loadSelectedExercises();
@@ -365,6 +373,34 @@ export default function ClientCalendarCard({
     Alert.alert(`Take ${name} off?`, `Just ${dayHeading(date)}, or the whole program?`, buttons);
   };
 
+  // Tap a cardio block to take it off (GRIZZ, 2026-10-22: two cardio blocks
+  // ended up at the end of a workout): just this day, or every week.
+  const takeOffCardio = (row: ProgramExercise) => {
+    if (!selected) return;
+    const date = selected;
+    const skip = async (workout_date: string | null) => {
+      const { error } = await supabase.from("client_cardio_skips").insert({ client_id: clientId, workout_date, cardio_key: cardioKey(row) });
+      // Already off (unique), nothing to do.
+      if (error && error.code !== "23505") Alert.alert("Couldn't take it off", error.message);
+      setSkipKey((k) => k + 1);
+    };
+    Alert.alert(`Take off ${cardioLabel(row)}?`, `${clientName} won't do this cardio. Take it off just ${dayHeading(date)}, or every week?`, [
+      { text: "Keep it", style: "cancel" },
+      { text: "Just this day", style: "destructive", onPress: () => skip(date) },
+      { text: "Every week", style: "destructive", onPress: () => skip(null) },
+    ]);
+  };
+  const putBackCardio = async (row: ProgramExercise) => {
+    if (!selected) return;
+    const key = cardioKey(row);
+    const ids = skips.filter((s) => s.cardio_key === key && (s.workout_date == null || s.workout_date === selected)).map((s) => s.id).filter((id): id is string => !!id);
+    if (ids.length) {
+      const { error } = await supabase.from("client_cardio_skips").delete().in("id", ids);
+      if (error) Alert.alert("Couldn't put it back", error.message);
+    }
+    setSkipKey((k) => k + 1);
+  };
+
   const clearDay = (entry: ClientCalendarWorkout) =>
     askTakeOff(entry.program_id, byId.get(entry.program_id)?.name ?? "this workout", entry.workout_date, async () => {
       const { error } = await supabase.from("client_calendar_workouts").delete().eq("id", entry.id);
@@ -467,10 +503,18 @@ export default function ClientCalendarCard({
               {workoutAddOns(selectedProgram, extras) ? <Text style={styles.addOns}>{workoutAddOns(selectedProgram, extras)}</Text> : null}
               <ProgramSummary
                 program={selectedProgram}
-                exercises={selectedExercises}
+                exercises={withoutSkippedCardio(selectedExercises, skips, selected)}
                 onPressExercise={setChanging}
+                onPressCardio={takeOffCardio}
                 onlySlot={selectedEntry.day_slot}
               />
+              {selectedExercises
+                .filter((r) => cardioSkipped(r, skips, selected))
+                .map((r) => (
+                  <Pressable key={`off-${r.id}`} onPress={() => putBackCardio(r)} hitSlop={6}>
+                    <Text style={styles.cardioOffLine}>Taken off: 🔥 {cardioLabel(r)}  ↩ Put back</Text>
+                  </Pressable>
+                ))}
               <View style={styles.dayButtons}>
                 <Pressable style={styles.changeButton} onPress={() => openPicker(selectedEntry.workout_date)}>
                   <Text style={styles.changeText}>Change workout</Text>
@@ -501,7 +545,20 @@ export default function ClientCalendarCard({
                     {b.result === "done" ? "✅ Done" : "⚠️ Couldn't do it"}
                   </Text>
                 )}
-                <ProgramSummary program={p} exercises={blockExercises[b.id] ?? []} onPressExercise={setChanging} onlySlot={b.day_slot} />
+                <ProgramSummary
+                  program={p}
+                  exercises={withoutSkippedCardio(blockExercises[b.id] ?? [], skips, b.workout_date)}
+                  onPressExercise={setChanging}
+                  onPressCardio={takeOffCardio}
+                  onlySlot={b.day_slot}
+                />
+                {(blockExercises[b.id] ?? [])
+                  .filter((r) => cardioSkipped(r, skips, b.workout_date))
+                  .map((r) => (
+                    <Pressable key={`off-${r.id}`} onPress={() => putBackCardio(r)} hitSlop={6}>
+                      <Text style={styles.cardioOffLine}>Taken off: 🔥 {cardioLabel(r)}  ↩ Put back</Text>
+                    </Pressable>
+                  ))}
                 <Pressable style={[styles.clearButton, styles.blockOff]} onPress={() => takeOffBlock(b, p.name)}>
                   <Text style={styles.clearText}>Take it off</Text>
                 </Pressable>
@@ -803,6 +860,7 @@ function WorkoutPicker({
 }
 
 const styles = StyleSheet.create({
+  cardioOffLine: { color: "#94A3B8", fontSize: 13, marginTop: 6 },
   addOns: { color: "#FCD34D", fontSize: 13, fontWeight: "600", marginTop: 4 },
   stabilityNote: { color: "#CBD5E1", fontSize: 13, marginHorizontal: 12, marginBottom: 12, marginTop: 4 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },

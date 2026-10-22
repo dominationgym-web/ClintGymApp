@@ -764,6 +764,10 @@ export type ClientWorkoutReset = {
 
 export type RecoveryAdjustment = { date: string; sets: Record<string, number> };
 
+// Cardio the trainer took off a client's workout (0140): one day, or every
+// week when workout_date is null. cardio_key is from src/lib/cardioSkips.ts.
+export type ClientCardioSkip = { id: string; client_id: string; workout_date: string | null; cardio_key: string; created_at: string };
+
 export type ExtraCardio = { after: number | null; name: string; reps: string };
 
 export type Habit = {
@@ -1039,6 +1043,12 @@ export interface Database {
         Row: ClientDietPlan;
         Insert: Partial<ClientDietPlan>;
         Update: Partial<ClientDietPlan>;
+        Relationships: [];
+      };
+      client_cardio_skips: {
+        Row: ClientCardioSkip;
+        Insert: Partial<ClientCardioSkip>;
+        Update: Partial<ClientCardioSkip>;
         Relationships: [];
       };
       client_exercise_changes: {

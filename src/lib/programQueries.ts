@@ -6,6 +6,7 @@ import { withClientCardio } from "@/lib/clientExtras";
 import { applyExerciseChanges, type ChangeWrites } from "@/lib/exerciseChanges";
 import { exercisesForSlot } from "@/lib/trainingCalendar";
 import { withTemporarySwaps } from "@/lib/programSwaps";
+import { withoutSkippedCardio, type CardioSkip } from "@/lib/cardioSkips";
 import type { ClientExerciseChange, ClientProgram, Program, ProgramExercise } from "@/types/database";
 
 export interface ActiveProgram {
@@ -36,6 +37,12 @@ export async function loadClientProgram(clientId: string): Promise<ActiveProgram
     program,
     exercises: withExtraCardio(applyExerciseChanges(exercises ?? [], changes), assignment.extra_cardio),
   };
+}
+
+/** Cardio the trainer took off this client's workouts (0140). */
+export async function loadCardioSkips(clientId: string): Promise<CardioSkip[]> {
+  const { data } = await supabase.from("client_cardio_skips").select("*").eq("client_id", clientId);
+  return (data as CardioSkip[] | null) ?? [];
 }
 
 /** The exercises, sets and reps a client's trainer changed for them (0070). */
@@ -156,15 +163,19 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
     // The trainer's extra cardio for this client (0136), on the main workout.
     supabase.from("clients").select("extra_cardio").eq("id", clientId).maybeSingle(),
   ]);
+  const skips = await loadCardioSkips(clientId);
   const build = (pick: { program_id: string; day_slot: number | null; deload?: boolean }): CalendarDayWorkout | null => {
     const program = (programs ?? []).find((p) => p.id === pick.program_id);
     if (!program) return null;
     const own = (rows ?? []).filter((r) => r.program_id === pick.program_id);
     const exercises = applyExerciseChanges(withTemporarySwaps(exercisesForSlot(own, pick.day_slot), date), changes);
-    return { program, exercises: pick.deload ? deloadExercises(exercises) : exercises, daySlot: pick.day_slot, deload: !!pick.deload };
+    const kept = withoutSkippedCardio(exercises, skips, date);
+    return { program, exercises: pick.deload ? deloadExercises(kept) : kept, daySlot: pick.day_slot, deload: !!pick.deload };
   };
   const built = entry ? build(entry) : null;
-  const main = built ? { ...built, exercises: withClientCardio(built.program, built.exercises, client?.extra_cardio) } : null;
+  const main = built
+    ? { ...built, exercises: withoutSkippedCardio(withClientCardio(built.program, built.exercises, client?.extra_cardio), skips, date) }
+    : null;
   const extras = blocks
     .map((b): CalendarDayWorkout | null => {
       const built = build(b);
