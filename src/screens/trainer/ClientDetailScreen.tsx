@@ -35,6 +35,8 @@ import ClientExtrasCard from "@/components/ClientExtrasCard";
 import RecoveryCheckCard from "@/components/RecoveryCheckCard";
 import RecoveryCoachCard from "@/components/RecoveryCoachCard";
 import OtherActivityCard from "@/components/OtherActivityCard";
+import HistoryImportCard from "@/components/HistoryImportCard";
+import ProgressCard from "@/components/ProgressCard";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { trainingLogStart } from "@/lib/trainingLog";
@@ -923,6 +925,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <TrainingSection title="🏃 Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
               <OtherActivityCard clientId={client.id} role="trainer" />
             </TrainingSection>
+            <TrainingSection title="📥 History from another app" open={trainingOpen === "history"} onToggle={() => toggleTraining("history")}>
+              <HistoryImportCard clientId={client.id} role="trainer" />
+            </TrainingSection>
             <TrainingSection title="🌿 Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
               <RecoveryCoachCard
                 clientId={client.id}
@@ -948,6 +953,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   onChanged={(items) => setClient((c) => (c ? { ...c, home_equipment: items } : c))}
                 />
               )}
+            </TrainingSection>
+            <TrainingSection title="📊 Progress graphs" open={trainingOpen === "progress"} onToggle={() => toggleTraining("progress")}>
+              <ProgressCard clientId={client.id} role="trainer" />
             </TrainingSection>
             <TrainingSection title="📈 Training log, last 2 weeks" open={trainingOpen === "log"} onToggle={() => toggleTraining("log")}>
               <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />

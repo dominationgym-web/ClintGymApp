@@ -15,6 +15,13 @@ describe("notificationRoute", () => {
       tab: "training",
       open: "videos",
     });
+    expect(notificationRoute({ type: "history_import", client_id: "c4" }, "trainer")).toEqual({
+      stack: "trainer",
+      screen: "ClientDetail",
+      clientId: "c4",
+      tab: "training",
+      open: "history",
+    });
     expect(notificationRoute({ type: "problem_reply", clientId: "c2" }, "trainer")).toEqual({ stack: "trainer", screen: "ClientDetail", clientId: "c2" });
     expect(notificationRoute({ type: "client_signup", clientId: "c3" }, "trainer")).toEqual({ stack: "trainer", screen: "Clients" });
   });

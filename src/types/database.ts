@@ -220,6 +220,34 @@ export type PaymentProof = {
 };
 
 // Exercise outside the programs (0114): walks, runs, rides, hikes and more.
+export type ClientCardioTest = {
+  id: string;
+  client_id: string;
+  test_date: string;
+  machine: string;
+  seconds: number;
+  distance_m: number | null;
+  calories: number | null;
+  logged_by: string;
+  created_at: string;
+};
+
+export type ClientBodyStat = {
+  id: string;
+  client_id: string;
+  measured_on: string;
+  weight_kg: number | null;
+  body_fat_pct: number | null;
+  waist_cm: number | null;
+  hips_cm: number | null;
+  chest_cm: number | null;
+  arm_cm: number | null;
+  thigh_cm: number | null;
+  note: string | null;
+  import_id: string | null;
+  created_at: string;
+};
+
 export type ClientActivity = {
   id: string;
   client_id: string;
@@ -350,6 +378,9 @@ export type Client = {
   package_type: PackageType | null;
   // Which of the trainer's prices this client pays (0106).
   price_package?: PricePackage | null;
+  // How often the trainer wants a weigh-in (0143).
+  weigh_in_every?: "week" | "2weeks" | "month" | null;
+  weigh_in_reminded_on?: string | null;
   // Their ready-made recovery program (0108): training, sports or lifestyle.
   recovery_program?: "training" | "sports" | "lifestyle" | null;
   // When the trainer was last told a deload week is due (0115).
@@ -968,6 +999,8 @@ export interface Database {
         Update: Partial<RecoveryActivityRow>;
         Relationships: [];
       };
+      client_cardio_tests: { Row: ClientCardioTest; Insert: Partial<ClientCardioTest>; Update: Partial<ClientCardioTest>; Relationships: [] };
+      client_body_stats: { Row: ClientBodyStat; Insert: Partial<ClientBodyStat>; Update: Partial<ClientBodyStat>; Relationships: [] };
       client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
       client_sleep: { Row: ClientSleep; Insert: Partial<ClientSleep>; Update: Partial<ClientSleep>; Relationships: [] };
       client_prestart_forms: { Row: ClientPrestartForm; Insert: Partial<ClientPrestartForm>; Update: Partial<ClientPrestartForm>; Relationships: [] };

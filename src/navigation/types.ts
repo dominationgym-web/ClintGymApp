@@ -23,7 +23,7 @@ export type ClientTabParamList = {
   Reset: undefined;
   Exercises: undefined;
   // open: the Profile heading to show opened, e.g. "pay" from the plan-ending banner.
-  Profile: { open?: "pay" } | undefined;
+  Profile: { open?: "pay" | "progress" } | undefined;
 };
 
 export type ClientStackParamList = {
@@ -55,7 +55,7 @@ export type TrainerStackParamList = {
   SuggestionBox: undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
-  ClientDetail: { clientId: string; tab?: "training"; open?: "videos" };
+  ClientDetail: { clientId: string; tab?: "training"; open?: "videos" | "history" };
   // Live 1-on-1: the client's own workout screen, run by their trainer (0134).
   LiveWorkout: { clientId: string; name: string };
   // Group live session (0138): up to 4 clients at once, starting with this one.
