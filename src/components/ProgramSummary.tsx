@@ -16,6 +16,7 @@ export default function ProgramSummary({
   collapsible = false,
   onlySlot = null,
   tapHint,
+  onPressCardio,
 }: {
   program: Program;
   exercises: ProgramExercise[];
@@ -26,6 +27,8 @@ export default function ProgramSummary({
   onlySlot?: number | null;
   /** What tapping an exercise does, when it isn't changing it for one client. */
   tapHint?: string;
+  /** Tapping a cardio block, e.g. to take it off the client's workout (0140). */
+  onPressCardio?: (row: ProgramExercise) => void;
 }) {
   const [info, setInfo] = useState<ProgramExercise | null>(null);
   const [shown, setShown] = useState(!collapsible);
@@ -73,7 +76,12 @@ export default function ProgramSummary({
             ) : (
               rows.map((r) => {
                 if (r.kind === "cardio") {
-                  return (
+                  return onPressCardio ? (
+                    <Pressable key={r.id} onPress={() => onPressCardio(r)} hitSlop={4} accessibilityRole="button" style={styles.cardioRow}>
+                      <Text style={[styles.line, { flex: 1 }]}>🔥 Cardio: {cardioLabel(r)}</Text>
+                      <Text style={styles.cardioOff}>✕</Text>
+                    </Pressable>
+                  ) : (
                     <Text key={r.id} style={styles.line}>
                       🔥 Cardio: {cardioLabel(r)}
                     </Text>
@@ -126,6 +134,8 @@ const styles = StyleSheet.create({
   week: { color: "#D4AF37", fontWeight: "800", fontSize: 14, marginTop: 6, marginBottom: 2 },
   line: { color: "#94A3B8", fontSize: 13, marginBottom: 2 },
   tappable: { color: "#CBD5E1", paddingVertical: 3 },
+  cardioRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
+  cardioOff: { color: "#F87171", fontWeight: "800", fontSize: 15, marginLeft: 10 },
   changed: { color: "#fff" },
   was: { color: "#D4AF37", fontSize: 12, fontWeight: "600" },
   tapHint: { color: "#D4AF37", fontSize: 12, marginTop: 6 },
