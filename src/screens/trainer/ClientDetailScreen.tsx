@@ -871,6 +871,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               onPlanChanged={planChanged}
               injuries={injuredAreas}
               stabilityKey={stabilityDaysKey}
+              extras={client}
             />
             {/* Right under the calendar, so the trainer sees how to tell the client (GRIZZ, 2026-10-19). */}
             {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} onSent={markSent} />}
