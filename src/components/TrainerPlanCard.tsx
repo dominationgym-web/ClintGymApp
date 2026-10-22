@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-nativ
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
-import { freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, shortDate } from "@/lib/billing";
+import { clientTierLines, freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, shortDate } from "@/lib/billing";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import CardPayment from "@/components/CardPayment";
@@ -59,7 +59,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
           <Text style={styles.line}>No monthly subscription.</Text>
           <Text style={styles.line}>
             {SELLS
-              ? `From ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))} you pay ${money(settings.prices[currency].client, currency)} a month for each active client. The app reminds you before then.`
+              ? `From ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))} you pay a monthly fee for each active client (${clientTierLines(settings.client_tiers ?? [], currency, 0).join(", ")}). The app reminds you before then.`
               : `Per-client fees start ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))}.`}
           </Text>
           <Text style={styles.line}>Banked referrals come off your client fees.</Text>
@@ -75,8 +75,8 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
       )}
       {SELLS && status.client_fees_from && !freeUse ? (
         <Text style={styles.line}>
-          Client fees from {shortDate(status.client_fees_from)}: {money(settings.prices[currency].client, currency)} a month for
-          each active client above {settings.free_clients}.
+          Client fees from {shortDate(status.client_fees_from)}, a month per active client:{" "}
+          {clientTierLines(settings.client_tiers ?? [], currency, settings.free_clients).join(", ")}.
         </Text>
       ) : null}
       {owed > 0 ? (

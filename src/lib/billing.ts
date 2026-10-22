@@ -1,7 +1,7 @@
 // Plain helpers for trainer billing (0064). Kept free of Supabase and React
 // Native imports so they can be unit tested.
 import { REFERRAL_DISCOUNT_PERCENT, trialDaysLeft } from "@/lib/trainers";
-import type { BillingCurrency, BillingPlan, BillingPrices, ClientActivation, TrainerBillingMonth, TrainerPayment } from "@/types/database";
+import type { BillingCurrency, BillingPlan, BillingPrices, ClientActivation, ClientTier, TrainerBillingMonth, TrainerPayment } from "@/types/database";
 
 export const PLANS: BillingPlan[] = ["monthly", "six_months", "yearly"];
 export const CURRENCIES: BillingCurrency[] = ["USD", "ZAR"];
@@ -33,6 +33,33 @@ export function money(amount: number, currency: BillingCurrency | null | undefin
 
 export function planPrice(prices: BillingPrices, currency: BillingCurrency, plan: BillingPlan): number {
   return Number(prices[currency]?.[plan] ?? 0);
+}
+
+/**
+ * Client fees for `active` clients when the first `included` are free
+ * (free-use trainers pass 0). Same sum as client_fee_total() in 0141.
+ */
+export function clientFeeTotal(tiers: ClientTier[], currency: BillingCurrency, active: number, included: number): number {
+  let total = 0;
+  let prev = 0;
+  for (const tier of tiers) {
+    total += Math.max(0, Math.min(active, tier.upto) - Math.max(included, prev)) * Number(tier[currency] ?? 0);
+    prev = tier.upto;
+  }
+  return total;
+}
+
+/** "Clients 6-10: R50 each", one line per tier, then "61+ free". */
+export function clientTierLines(tiers: ClientTier[], currency: BillingCurrency, included: number): string[] {
+  const lines: string[] = [];
+  let prev = 0;
+  for (const tier of tiers) {
+    const from = Math.max(prev, included) + 1;
+    if (from <= tier.upto) lines.push(`Clients ${from}-${tier.upto}: ${money(Number(tier[currency] ?? 0), currency)} each`);
+    prev = tier.upto;
+  }
+  if (tiers.length > 0) lines.push(`Clients ${prev + 1}+: free`);
+  return lines;
 }
 
 /** Each unused referral is 25% off one month of the trainer's plan. */

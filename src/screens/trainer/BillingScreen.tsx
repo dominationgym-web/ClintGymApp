@@ -20,6 +20,7 @@ import { addDays } from "@/lib/programSchedule";
 import { referralRewards, trainerDisplayName } from "@/lib/trainers";
 import {
   amountsLabel,
+  clientTierLines,
   creditsUsable,
   CURRENCIES,
   feeCreditsUsable,
@@ -392,9 +393,7 @@ export default function BillingScreen() {
                 ) : null}
                 {t.free_use_from ? (
                   <Text style={styles.lineDetail}>
-                    Free use since {shortDate(t.free_use_from)} ·{" "}
-                    {money(settings?.prices[t.billing_currency ?? "ZAR"].client ?? 0, t.billing_currency ?? "ZAR")} per active client a
-                    month from {shortDate(freeUseFeesStart(t.free_use_from))}
+                    Free use since {shortDate(t.free_use_from)} · client fees from {shortDate(freeUseFeesStart(t.free_use_from))}
                   </Text>
                 ) : null}
                 <View style={styles.actions}>
@@ -447,7 +446,12 @@ export default function BillingScreen() {
                     {PLAN_LABEL[p]}: {money(planPrice(settings.prices, c, p), c)}
                   </Text>
                 ))}
-                <Text style={styles.lineDetail}>Per client per month: {money(settings.prices[c].client, c)}</Text>
+                <Text style={styles.lineDetail}>First {settings.free_clients} active clients included, then a month:</Text>
+                {clientTierLines(settings.client_tiers ?? [], c, settings.free_clients).map((line) => (
+                  <Text key={line} style={styles.lineDetail}>
+                    {line}
+                  </Text>
+                ))}
               </View>
             ))}
             <View style={styles.switchRow}>
@@ -627,7 +631,7 @@ function FreeUseModal({
           <Text style={styles.modalTitle}>Free use for {trainerDisplayName(trainer)}</Text>
           <Text style={styles.lineDetail}>
             No monthly subscription from today. From {shortDate(feesFrom)} they pay{" "}
-            {money(settings.prices[currency].client, currency)} a month for every active client.
+            a monthly fee for every active client: {clientTierLines(settings.client_tiers ?? [], currency, 0).join(", ")}.
           </Text>
           <Text style={styles.muted}>
             The app reminds them and you 30 days and 7 days before, and on the day. Fees are worked out on the 1st of
