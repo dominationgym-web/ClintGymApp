@@ -34,7 +34,7 @@ import {
   makeDay,
   MAX_MEALS,
   MIN_MEALS,
-  leaveOutFood,
+  leaveOutEverywhere,
   swapItem,
   swapOptions,
   whyFoodMatters,
@@ -315,7 +315,8 @@ export default function MealPlanMaker() {
     if (!client || !need) return;
     const cleaned = times.slice(0, count).map(cleanTime);
     if (cleaned.some((t) => !t)) return Alert.alert("Meal times", "Type each time like 07:00 or 13:30.");
-    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree };
+    // Foods they left out stay out of every new plan.
+    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree, avoid: plan?.settings.avoid ?? [] };
     const targets = macroTargets(kcalFor(safeGoal), body.weight_kg, safeGoal, body.height_cm);
     save({
       client_id: client.id,
@@ -535,17 +536,24 @@ export default function MealPlanMaker() {
   };
 
   const leaveTarget: DietItem | null = leaving ? day.meals[leaving.meal]?.items[leaving.index] ?? null : null;
-  const leaveOut = (rebalance: boolean) => {
+  // Leaving a food out takes it off both days and out of every new plan, and
+  // the other foods make up what it gave (GRIZZ, 2026-10-22).
+  const leaveOut = () => {
     if (!leaving || !leaveTarget) return;
-    const result = leaveOutFood(day, leaving.meal, leaving.index, rebalance);
-    save(dayKind === "training" ? { ...plan, training_day: result.day } : { ...plan, rest_day: result.day });
+    const food = leaveTarget.food;
+    const training = leaveOutEverywhere(plan.training_day, food);
+    const rest = leaveOutEverywhere(plan.rest_day, food);
+    const avoid = [...new Set([...(plan.settings.avoid ?? []), food])];
+    save({ ...plan, settings: { ...plan.settings, avoid }, training_day: training.day, rest_day: rest.day });
     setLeaving(null);
-    if (rebalance && !result.rebalanced) {
-      Alert.alert(
-        "Left out",
-        `There's nothing else like ${leaveTarget.food} on this day to top up, so the day is a little lower now. Tap New ideas for a fresh plan, or ⇄ Swap another food.`,
-      );
+    const current = dayKind === "training" ? training : rest;
+    if (!current.rebalanced) {
+      Alert.alert("Left out", `Nothing else on this day gives what ${food} did, so it's a little lower now. Tap New ideas for a fresh plan without it.`);
     }
+  };
+  const putBack = (food: string) => {
+    const avoid = (plan.settings.avoid ?? []).filter((f) => f !== food);
+    save({ ...plan, settings: { ...plan.settings, avoid } });
   };
 
   return (
@@ -568,6 +576,19 @@ export default function MealPlanMaker() {
         onSwap={(meal, index) => setSwapping({ meal, index })}
         onLeaveOut={(meal, index) => setLeaving({ meal, index })}
       />
+      {(plan.settings.avoid ?? []).length > 0 && (
+        <View style={styles.avoidBox}>
+          <Text style={styles.avoidTitle}>You don't eat (left out of every plan)</Text>
+          <View style={styles.chips}>
+            {(plan.settings.avoid ?? []).map((f) => (
+              <Pressable key={f} style={styles.avoidChip} onPress={() => putBack(f)} accessibilityLabel={`Put ${f} back`}>
+                <Text style={styles.avoidText}>{f}  ↩</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.avoidHint}>Tap one to allow it again. It comes back next time you tap New ideas.</Text>
+        </View>
+      )}
       <View style={styles.insulinBox}>
         <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
         <Text style={styles.insulinText}>{plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
@@ -620,13 +641,10 @@ export default function MealPlanMaker() {
             <Text style={styles.explainHead}>Why it's in your plan</Text>
             <Text style={styles.explain}>{leaveTarget ? whyFoodMatters(leaveTarget.food) : ""}</Text>
             <Text style={[styles.helper, { marginTop: 12 }]}>
-              If you leave it out, the app can top up the other foods like it on this day, so you still get the same.
+              If you leave it out, the other foods go up to give you the same, and it stays out of your plan, on training and rest days and in New ideas.
             </Text>
-            <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => leaveOut(true)} disabled={saving}>
-              <Text style={styles.primaryText}>Leave it out and top up the others</Text>
-            </Pressable>
-            <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => leaveOut(false)} disabled={saving}>
-              <Text style={styles.secondaryText}>Leave it out, change nothing else</Text>
+            <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={leaveOut} disabled={saving}>
+              <Text style={styles.primaryText}>Leave it out</Text>
             </Pressable>
             <Pressable
               style={[styles.button, styles.secondary, styles.stacked]}
@@ -651,6 +669,11 @@ export default function MealPlanMaker() {
 
 const styles = StyleSheet.create({
   stacked: { flex: 0, marginTop: 10 },
+  avoidBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 8 },
+  avoidTitle: { color: "#fff", fontWeight: "700", marginBottom: 6 },
+  avoidChip: { backgroundColor: "#334155", borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
+  avoidText: { color: "#E2E8F0", fontWeight: "600", fontSize: 13 },
+  avoidHint: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   leaveOut: { color: "#F87171", fontWeight: "800", fontSize: 15, marginLeft: 14 },
   helper: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 8 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },

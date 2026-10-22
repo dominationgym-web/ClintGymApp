@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
-import { carbShares, cleanTime, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, leaveOutFood, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions, whyFoodMatters } from "./mealPlanMaker";
+import { carbShares, cleanTime, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, leaveOutEverywhere, leaveOutFood, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions, whyFoodMatters } from "./mealPlanMaker";
 import { TARGET_MARGIN } from "./dietPlan";
 
 const targets = macroTargets(2400, 80);
@@ -241,5 +241,30 @@ describe("leaving a food out", () => {
   it("says when nothing else can make it up", () => {
     const single = { meals: [{ name: "Lunch", items: [{ food: "Chicken breast (cooked)", grams: 150 }, { food: "Broccoli", grams: 100 }] }] };
     expect(leaveOutFood(single, 0, 0, true).rebalanced).toBe(false);
+  });
+});
+
+describe("foods the client doesn't eat", () => {
+  const settings = { meals: ["07:00", "12:30", "18:30"], training: "17:00", goal: "maintain" as const, diet: "everything" as const };
+  const foods = (d: ReturnType<typeof makeDay>) => d.meals.flatMap((m) => m.items.map((i) => i.food));
+
+  it("leaves a food out of every meal and makes up what it gave", () => {
+    const day = makeDay({ ...settings, avoid: [] }, targets, true, 0);
+    const veg = foods(day).find((f) => ["Broccoli", "Green beans", "Spinach", "Cauliflower", "Mixed salad leaves", "Peppers", "Baby marrow", "Butternut", "Cabbage", "Carrots", "Tomato", "Mushrooms"].includes(f)) as string;
+    expect(veg).toBeTruthy();
+    const before = dayTotals(day).fibre;
+    const { day: out, rebalanced } = leaveOutEverywhere(day, veg);
+    expect(rebalanced).toBe(true);
+    expect(foods(out)).not.toContain(veg);
+    expect(dayTotals(out).fibre).toBeGreaterThanOrEqual(before - 3);
+  });
+
+  it("never puts a left-out food in a new plan", () => {
+    for (let variety = 0; variety < 6; variety++) {
+      const avoid = ["Broccoli", "Chicken breast (cooked)", "Biltong, lean, medium", "Apple", "Avocado"];
+      const all = [...foods(makeDay({ ...settings, avoid }, targets, true, variety)), ...foods(makeDay({ ...settings, avoid }, targets, false, variety))];
+      for (const f of avoid) expect(all).not.toContain(f);
+      expect(all.length).toBeGreaterThan(5);
+    }
   });
 });
