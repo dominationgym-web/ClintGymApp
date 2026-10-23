@@ -44,6 +44,16 @@ export const OFF_SEASON_PROGRAMS: { name: string; summary: string }[] = [
   { name: "Off-Season – Mountain Biking", summary: "Legs for punchy climbs, upper body and grip for rough descents, sprint power and a big base." },
 ];
 
+// 12-week sport programs (GRIZZ, 2026-10-23): a Strength, an Endurance and a
+// Speed program for each off-season sport, built-ins in the database (0147).
+export const TWELVE_WEEK_SPORTS = ["Soccer", "Rugby", "American Football", "Baseball", "Basketball", "Tennis", "Enduro Riding", "Cycling", "Mountain Biking"];
+export const TWELVE_WEEK_FOCUSES: { focus: "Strength" | "Endurance" | "Speed"; summary: string }[] = [
+  { focus: "Strength", summary: "Four strength days a week that train every muscle twice, heavier each block, with sport-specific injury protection and an easy zone 2 day." },
+  { focus: "Endurance", summary: "A zone 2 base, intervals, tempo and a long session, with a short full-body strength session to keep strength and protect joints. A test on Tuesday of week 12." },
+  { focus: "Speed", summary: "Acceleration, top speed, change of direction and power, with full rest between sprints. Bike sports use bike sprints and fast spin-ups." },
+];
+export const TWELVE_WEEK_PROGRAMS: string[] = TWELVE_WEEK_FOCUSES.flatMap((f) => TWELVE_WEEK_SPORTS.map((s) => `12-Week ${f.focus} – ${s}`));
+
 const CATEGORIES: { category: SportsCategory; icon: string; heading: string; hook: string }[] = [
   { category: "power", icon: "💥", heading: "Explosive Power", hook: "Jump higher, hit harder, get off the mark faster." },
   { category: "speed", icon: "🚀", heading: "Speed", hook: "Speed is a skill: short, all-out sprints with full rest." },
@@ -57,7 +67,7 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
   title: "Sports Performance",
   icon: "🏅",
   accent: "#F59E0B",
-  summary: "16 programs for explosive power, speed, strength, mobility and flexibility (including a lower back stretch), 9 off-season sport programs, and who each one suits.",
+  summary: "16 programs for explosive power, speed, strength, mobility and flexibility (including a lower back stretch), 9 off-season sport programs, 27 twelve-week sport programs, and who each one suits.",
   topics: [
     {
       title: "How the programs work",
@@ -107,6 +117,24 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
           ],
         },
         ...OFF_SEASON_PROGRAMS.map((p) => ({ heading: p.name, points: [p.summary] })),
+      ],
+    },
+    {
+      title: "12-week sport programs",
+      icon: "📆",
+      intro: "A separate Strength, Endurance and Speed program for each sport (9 sports, 27 programs), under Sport strength, Sport endurance and Sport speed in the program picker (Sport goal).",
+      groups: [
+        {
+          heading: "How they work",
+          points: [
+            "Each runs 12 weeks in three 4-week blocks. Weeks 1-3, 5-7 and 9-11 build; weeks 4 and 8 are recovery weeks at half the sets; week 12 is a test week at half the sets.",
+            "Strength and Speed: Monday to Friday sessions, an easy zone 2 and mobility day on Wednesday, the sport or rest on Saturday and a full rest on Sunday. Endurance has 6 sessions with the long one on Saturday.",
+            "Put a client on the one that matches their goal for the season, or run them one after another: strength first, then speed, then endurance near the season.",
+            "Injury safety: Nordic curls and hip adduction guard hamstrings and groin, sprints start at 8/10 before going all-out, hard sprinting never comes on back-to-back days, depth jumps are from a low box (30-40 cm), and no set goes to failure. No overhead pressing.",
+            "Each program has its own nutrition notes and warm-up, shown to the client with the workout.",
+          ],
+        },
+        ...TWELVE_WEEK_FOCUSES.map((f) => ({ heading: `${f.focus} (all 9 sports)`, points: [f.summary, `For ${TWELVE_WEEK_SPORTS.join(", ")}.`] })),
       ],
     },
   ],

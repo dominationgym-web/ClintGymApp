@@ -27,7 +27,7 @@ export function programGoal(program: Pick<Program, "name" | "trainer_id">): Prog
   const name = program.name.toLowerCase();
   if (name.startsWith("older adult ")) return "longevity";
   if (name.startsWith("mobility ") || name.startsWith("flexibility ")) return "mobility";
-  if (/^(explosive power|speed |sports strength|fight conditioning|off-season)/.test(name)) return "sport";
+  if (/^(explosive power|speed |sports strength|fight conditioning|off-season|12-week (strength|endurance|speed) –)/.test(name)) return "sport";
   if (name.includes("bodybuilding")) return "muscle";
   if (name.includes("strength")) return "strength";
   if (name.includes("fat loss") || name.includes("weight loss")) return "fatLoss";

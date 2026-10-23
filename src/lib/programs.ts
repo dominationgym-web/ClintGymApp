@@ -408,6 +408,9 @@ export const PROGRAM_FAMILIES = [
   { key: "sprint", group: "performance", title: "Sprint & threshold intervals", icon: "⚡" },
   { key: "fight", group: "performance", title: "Fight sports: 8-week conditioning", icon: "🥊" },
   { key: "offSeason", group: "performance", title: "Off-season: 8-week sport programs", icon: "🏟️" },
+  { key: "sportStrength12", group: "performance", title: "Sport strength: 12 weeks", icon: "🏋️" },
+  { key: "sportEndurance12", group: "performance", title: "Sport endurance: 12 weeks", icon: "🫁" },
+  { key: "sportSpeed12", group: "performance", title: "Sport speed: 12 weeks", icon: "💨" },
   { key: "sportsMobility", group: "functional", title: "Mobility", icon: "🔄" },
   { key: "sportsFlexibility", group: "functional", title: "Flexibility", icon: "🧘" },
   { key: "olderAdult", group: "longevity", title: "Strength, mobility & longevity: 18 months", icon: "🌳" },
@@ -437,6 +440,11 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   // Off-season sport programs (0144): "Off-Season – Rugby". Checked early,
   // since their sport names don't fit the checks below.
   if (name.startsWith("off-season")) return "offSeason";
+  // 12-week sport programs (0147): "12-Week Strength – Soccer". Before the
+  // generic "12-week" goal block check and the strength/speed checks.
+  if (name.startsWith("12-week strength –")) return "sportStrength12";
+  if (name.startsWith("12-week endurance –")) return "sportEndurance12";
+  if (name.startsWith("12-week speed –")) return "sportSpeed12";
   if (name.startsWith("explosive power ")) return "sportsPower";
   if (name.startsWith("speed ")) return "sportsSpeed";
   if (name.startsWith("sports strength ")) return "sportsStrength";

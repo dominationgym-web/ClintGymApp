@@ -28,6 +28,8 @@ export default function WeeklyPlanCard({
 }) {
   const [plans, setPlans] = useState<(ClientProgramPlan & { left: number })[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  // The plan whose next week was just put on, so the loaded week stands out.
+  const [justAdded, setJustAdded] = useState<string | null>(null);
   // A plan on different days each week: the days being picked for its next week.
   const [picking, setPicking] = useState<{ id: string; days: number[] } | null>(null);
 
@@ -120,6 +122,7 @@ export default function WeeklyPlanCard({
     setBusy(null);
     setPicking(null);
     if (error) return Alert.alert("Couldn't add the week", error.message);
+    setJustAdded(plan.id);
     load();
     onChanged();
   };
@@ -157,9 +160,15 @@ export default function WeeklyPlanCard({
         const due = plan.left <= 2;
         return (
           <View key={plan.id} style={[styles.card, due && styles.due]}>
-            <Text style={styles.title}>
-              🗓 {program.name} · week {Math.max(1, onWeek)} of {plan.weeks}
-            </Text>
+            <Text style={styles.title}>🗓 {program.name}</Text>
+            <View style={[styles.loaded, justAdded === plan.id && styles.loadedNew]}>
+              <Text style={styles.loadedBig}>
+                {justAdded === plan.id ? "✅ " : ""}Week {next.week - 1} of {plan.weeks} loaded
+              </Text>
+              <Text style={styles.loadedSub}>
+                {justAdded === plan.id ? `Week ${next.week - 1} is now on ${clientName}'s calendar` : `On the calendar now. ${clientName} is on week ${Math.max(1, onWeek)}`}
+              </Text>
+            </View>
             {due ? (
               <>
                 <Text style={styles.body}>
@@ -271,6 +280,10 @@ const styles = StyleSheet.create({
   },
   due: { borderColor: BRAND_GOLD, backgroundColor: "#2A2410" },
   title: { color: "#fff", fontWeight: "800", fontSize: 14 },
+  loaded: { backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginTop: 8, borderLeftWidth: 4, borderLeftColor: BRAND_GOLD },
+  loadedNew: { backgroundColor: "#14532D", borderLeftColor: "#22C55E" },
+  loadedBig: { color: "#fff", fontWeight: "900", fontSize: 20 },
+  loadedSub: { color: "#E2E8F0", fontSize: 13, marginTop: 2 },
   body: { color: "#CBD5E1", fontSize: 13, lineHeight: 18, marginTop: 4 },
   link: { color: BRAND_GOLD, fontWeight: "800" },
   go: {
