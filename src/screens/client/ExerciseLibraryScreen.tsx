@@ -90,7 +90,7 @@ import {
   type ProgramSession,
 } from "@/lib/programSchedule";
 import { weekdayOf } from "@/lib/programSchedule";
-import { catchUpDate, isWeekend, orderByRestedMuscles, type MissedWorkout } from "@/lib/catchUp";
+import { catchUpChoices, catchUpDate, isWeekend, orderByRestedMuscles, type MissedWorkout } from "@/lib/catchUp";
 import { applyRecoveryAdjustment } from "@/lib/recovery";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -916,7 +916,7 @@ export default function ExerciseLibraryScreen() {
                 onSwapsChanged={(date) => {
                   if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
                 }}
-                catchUpDates={isWeekend(today) && !todaySession ? missed.map((m) => m.workout_date) : []}
+                catchUpDates={!todaySession ? catchUpChoices(today, missed).map((m) => m.workout_date) : []}
                 onCatchUp={setChosenDay}
                 refreshKey={refresh}
               />
@@ -969,9 +969,10 @@ export default function ExerciseLibraryScreen() {
                     {program ? "😌 Rest day. Let your body recover." : "Nothing planned for today."}
                   </Text>
                 )}
-                {program && todaysWorkout.length === 0 && missed.length > 0 && isWeekend(today) && !todaySession && (
+                {/* On a weekday yesterday's missed workout is offered here too, so it's seen without opening today's. */}
+                {program && (todaysWorkout.length === 0 || !isWeekend(today)) && !catchUpFor && catchUpChoices(today, missed).length > 0 && !todaySession && (
                   <View style={styles.catchUpChips}>
-                    {missed.map((m) => (
+                    {catchUpChoices(today, missed).map((m) => (
                       <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
                         <Text style={styles.catchUpChipText}>🔁 Catch up {weekdayOf(m.workout_date)}'s workout</Text>
                       </Pressable>
@@ -987,7 +988,7 @@ export default function ExerciseLibraryScreen() {
                     <Text style={styles.catchUpTitle}>🔁 Catching up {weekdayOf(catchUpFor)}'s missed workout</Text>
                     {!todaySession && (
                       <View style={styles.catchUpChips}>
-                        {missed
+                        {catchUpChoices(today, missed)
                           .filter((m) => m.workout_date !== catchUpFor)
                           .map((m) => (
                             <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
@@ -1003,16 +1004,16 @@ export default function ExerciseLibraryScreen() {
                 ) : (
                   <>
                     {calendarToday && <Text style={styles.fromCalendar}>📅 Today's workout from your training calendar</Text>}
-                    {missed.length > 0 && !todaySession && isWeekend(today) && (
+                    {catchUpChoices(today, missed).length > 0 && !todaySession && (
                       <View style={styles.catchUpChips}>
-                        {missed.map((m) => (
+                        {catchUpChoices(today, missed).map((m) => (
                           <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
                             <Text style={styles.catchUpChipText}>🔁 Catch up {weekdayOf(m.workout_date)}'s workout</Text>
                           </Pressable>
                         ))}
                       </View>
                     )}
-                    {missed.length > 0 && !isWeekend(today) && (
+                    {missed.length > 0 && catchUpChoices(today, missed).length === 0 && !isWeekend(today) && (
                       <Text style={styles.carried}>
                         Missed {weekdayOf(missed[0].workout_date)}'s workout? You can catch it up on Saturday or Sunday.
                       </Text>
