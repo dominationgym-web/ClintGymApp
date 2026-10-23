@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catchUpDate, isWeekend, orderByRestedMuscles } from "@/lib/catchUp";
+import { catchUpChoices, catchUpDate, isWeekend, orderByRestedMuscles } from "@/lib/catchUp";
 
 const SAT = "2026-10-17";
 const SUN = "2026-10-18";
@@ -50,5 +50,23 @@ describe("orderByRestedMuscles", () => {
 
   it("keeps the earliest first when nothing was trained yesterday", () => {
     expect(orderByRestedMuscles([{ workout_date: THU }, { workout_date: MON }], {}, []).map((m) => m.workout_date)).toEqual([MON, THU]);
+  });
+});
+
+describe("catching up yesterday on a weekday", () => {
+  const FRI = "2026-10-16";
+  const MON = "2026-10-19";
+  it("offers only yesterday's missed workout on a weekday, and every missed one at the weekend", () => {
+    expect(catchUpChoices(FRI, missed)).toEqual([{ workout_date: THU }]);
+    expect(catchUpChoices(THU, [{ workout_date: "2026-10-13" }])).toEqual([]);
+    expect(catchUpChoices(SAT, missed)).toEqual(missed);
+    expect(catchUpChoices(MON, [{ workout_date: SUN }])).toEqual([{ workout_date: SUN }]);
+  });
+  it("stays on today's workout unless the client picks yesterday's", () => {
+    expect(catchUpDate(FRI, missed, null, null)).toBeNull();
+    expect(catchUpDate(FRI, missed, null, THU)).toBe(THU);
+    expect(catchUpDate(FRI, missed, null, WED)).toBeNull();
+    expect(catchUpDate(FRI, missed, null, "today")).toBeNull();
+    expect(catchUpDate(FRI, missed, { makeup_for: THU }, null)).toBe(THU);
   });
 });

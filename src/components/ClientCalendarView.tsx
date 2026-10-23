@@ -239,8 +239,9 @@ export default function ClientCalendarView({
             today={today}
             selected={selected}
             onPressDay={(date) => {
-              // At the weekend, tapping today with nothing on it goes straight
-              // to the missed workout (GRIZZ, 2026-10-17). Other empty days just open.
+              // Tapping today with nothing on it goes straight to a missed workout
+              // it can catch up (GRIZZ, 2026-10-17: weekends, 2026-10-23: yesterday's
+              // on other days). Other empty days just open.
               const empty =
                 date === today &&
                 !entries.some((e) => e.workout_date === date) && !blocks.some((b) => b.workout_date === date) && !stability.map[date];

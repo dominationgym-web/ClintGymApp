@@ -1,9 +1,11 @@
-import { parseIsoDate } from "@/lib/dates";
+import { parseIsoDate, toIsoDate } from "@/lib/dates";
 import type { WorkoutSession } from "@/types/database";
 
 // Weekend catch-up (0101): a training calendar workout missed this week can
-// be done on Saturday or Sunday. The server works out which ones were missed
-// (my_missed_workouts); this decides which workout the screen opens on.
+// be done on Saturday or Sunday. On other days (GRIZZ, 2026-10-23) the client
+// can choose to do yesterday's missed workout instead of today's. The server
+// works out which ones were missed (my_missed_workouts); this decides which
+// workout the screen opens on and which ones the client can pick.
 
 export type MissedWorkout = {
   workout_date: string;
@@ -15,6 +17,22 @@ export type MissedWorkout = {
 export function isWeekend(iso: string): boolean {
   const day = parseIsoDate(iso).getDay();
   return day === 0 || day === 6;
+}
+
+function dayBefore(iso: string): string {
+  const d = parseIsoDate(iso);
+  d.setDate(d.getDate() - 1);
+  return toIsoDate(d);
+}
+
+/**
+ * The missed workouts the client can do today: any from this week at the
+ * weekend, otherwise only yesterday's.
+ */
+export function catchUpChoices<T extends Pick<MissedWorkout, "workout_date">>(today: string, missed: T[]): T[] {
+  if (isWeekend(today)) return missed;
+  const yesterday = dayBefore(today);
+  return missed.filter((m) => m.workout_date === yesterday);
 }
 
 /**
@@ -30,8 +48,9 @@ export function catchUpDate(
   chosen: string | null,
 ): string | null {
   if (todaySession) return todaySession.makeup_for ?? null;
-  if (!isWeekend(today)) return null;
   if (chosen === "today") return null;
+  // On a weekday the screen stays on today's workout unless they pick yesterday's.
+  if (!isWeekend(today)) return chosen && catchUpChoices(today, missed).some((m) => m.workout_date === chosen) ? chosen : null;
   if (chosen && missed.some((m) => m.workout_date === chosen)) return chosen;
   return missed[0]?.workout_date ?? null;
 }
