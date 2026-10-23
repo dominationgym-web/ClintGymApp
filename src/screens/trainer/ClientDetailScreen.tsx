@@ -204,7 +204,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   // they're all being fixed.
   const [problems, setProblems] = useState<ClientProblem[]>([]);
   // How each workout in the training log went, with gold stars (0076).
-  const { byDate: workoutSessions } = useWorkoutSessions(clientId, trainingLogStart(todayIso()), todayIso());
+  // Bumped each time the screen comes back into view, so a live session just
+  // finished shows in the training log without leaving the client.
+  const [trainingKey, setTrainingKey] = useState(0);
+  const { byDate: workoutSessions } = useWorkoutSessions(clientId, trainingLogStart(todayIso()), todayIso(), trainingKey);
   const reloadProblems = async () => {
     const { data } = await supabase
       .from("client_problems")
@@ -270,6 +273,25 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     setMessages(data ?? []);
   };
 
+  const loadWorkoutLogs = () =>
+    supabase
+      .from("workout_logs")
+      .select("*")
+      .eq("client_id", clientId)
+      .gte("log_date", trainingLogStart(todayIso()))
+      .order("log_date", { ascending: false })
+      .order("set_number", { ascending: true })
+      .limit(1000);
+
+  // Back from a live session (or anywhere else): reload the training log.
+  useEffect(() => {
+    return navigation.addListener("focus", async () => {
+      setTrainingKey((k) => k + 1);
+      const { data } = await loadWorkoutLogs();
+      if (data) setWorkoutLogs(data);
+    });
+  }, [navigation, clientId]);
+
   useEffect(() => {
     const load = async () => {
       const [{ data: clientRow }, { data: checkinRows }, { data: workoutRows }] = await Promise.all([
@@ -280,14 +302,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
           .eq("client_id", clientId)
           .order("checkin_date", { ascending: false })
           .limit(14),
-        supabase
-          .from("workout_logs")
-          .select("*")
-          .eq("client_id", clientId)
-          .gte("log_date", trainingLogStart(todayIso()))
-          .order("log_date", { ascending: false })
-          .order("set_number", { ascending: true })
-          .limit(1000),
+        loadWorkoutLogs(),
       ]);
       if (clientRow) setClient(clientRow);
       setCheckins(checkinRows ?? []);
