@@ -102,6 +102,8 @@ import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 export default function ExerciseLibraryScreen() {
   // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
   const { client, refreshProfile, live } = useWorkoutClient();
+  // The trainer training themselves (0146): their own row, so "my" wording.
+  const self = live && !!client && client.id === client.trainer_id;
   // Serious symptoms on a check-in (0133) hold every workout until the trainer clears it.
   const [hold, setHold] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -594,7 +596,8 @@ export default function ExerciseLibraryScreen() {
   // Live session (0137): saves today's sets to the client's profile as an in-person session.
   const finishLive = () => {
     const first = client?.name.split(" ")[0] ?? "the client";
-    Alert.alert("Finish live session?", `${workingSetsToday()} sets save to ${first}'s profile as an in-person session.`, [
+    const where = self ? "your training log" : `${first}'s profile as an in-person session`;
+    Alert.alert(self ? "Finish workout?" : "Finish live session?", `${workingSetsToday()} sets save to ${where}.`, [
       { text: "Not yet", style: "cancel" },
       {
         text: "Finish",
@@ -603,7 +606,7 @@ export default function ExerciseLibraryScreen() {
           if (!saved) return;
           if (session && sessionDue) await saveProgress(sessionAfterComplete(session, days, today), true);
           const star = saved.improvements.length ? `\n\n⭐ Pushed up: ${saved.improvements.map((i) => `${i.exercise} ${i.before} → ${i.after}`).join(", ")}.` : "";
-          Alert.alert("Saved 🤝", `On ${first}'s profile as an in-person session.${star}`);
+          Alert.alert(self ? "Saved 💪" : "Saved 🤝", self ? `In your training log.${star}` : `On ${first}'s profile as an in-person session.${star}`);
         },
       },
     ]);
@@ -901,11 +904,11 @@ export default function ExerciseLibraryScreen() {
             {live && !hold && (
               <View style={styles.liveBar}>
                 <Text style={styles.liveBarText}>
-                  🤝 {workingSetsToday()} set{workingSetsToday() === 1 ? "" : "s"} logged
-                  {todaySession?.in_person ? " · saved" : ""}
+                  {self ? "💪" : "🤝"} {workingSetsToday()} set{workingSetsToday() === 1 ? "" : "s"} logged
+                  {(self ? todaySession : todaySession?.in_person) ? " · saved" : ""}
                 </Text>
                 <Pressable style={styles.liveFinish} onPress={finishLive} disabled={savingProgress || workingSetsToday() === 0}>
-                  <Text style={styles.completeText}>{todaySession?.in_person ? "Save again" : "Finish live session"}</Text>
+                  <Text style={styles.completeText}>{(self ? todaySession : todaySession?.in_person) ? "Save again" : self ? "Finish workout" : "Finish live session"}</Text>
                 </Pressable>
               </View>
             )}

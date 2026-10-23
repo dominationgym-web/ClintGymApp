@@ -57,7 +57,8 @@ export type TrainerStackParamList = {
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   ClientDetail: { clientId: string; tab?: "training"; open?: "videos" | "history" };
   // Live 1-on-1: the client's own workout screen, run by their trainer (0134).
-  LiveWorkout: { clientId: string; name: string };
+  // `self`: the trainer training themselves (0146).
+  LiveWorkout: { clientId: string; name: string; self?: boolean };
   // Group live session (0138): up to 4 clients at once, starting with this one.
   GroupLive: { clientId?: string } | undefined;
   ProgramBuilder: undefined;

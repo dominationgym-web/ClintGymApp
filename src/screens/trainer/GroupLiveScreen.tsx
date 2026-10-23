@@ -71,7 +71,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
     supabase
       .from("clients")
       .select("*")
-      .eq("trainer_id", trainer.id)
+      .eq("trainer_id", trainer.id).neq("id", trainer.id)
       .order("name")
       .then(({ data }) => setClients((data ?? []).filter((c) => clientGroup(c, todayIso()) === "active")));
   }, [trainer]);

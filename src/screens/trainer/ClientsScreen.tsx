@@ -57,7 +57,7 @@ export default function ClientsScreen({ navigation }: Props) {
     const { data } = await supabase
       .from("clients")
       .select("*")
-      .eq("trainer_id", trainer.id)
+      .eq("trainer_id", trainer.id).neq("id", trainer.id)
       .order("plan_expires_at", { ascending: true, nullsFirst: true });
     const list = data ?? [];
     setClients(list);

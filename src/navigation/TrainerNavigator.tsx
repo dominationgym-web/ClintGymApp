@@ -73,7 +73,10 @@ export default function TrainerNavigator() {
         <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
         <Stack.Screen
           name="LiveWorkout"
-          options={({ route }) => ({ title: `Live session · ${route.params.name.split(" ")[0]}`, headerBackTitle: "Back" })}
+          options={({ route }) => ({
+            title: route.params.self ? "My workout" : `Live session · ${route.params.name.split(" ")[0]}`,
+            headerBackTitle: "Back",
+          })}
         >
           {({ route }) => (
             <LiveClientProvider clientId={route.params.clientId}>

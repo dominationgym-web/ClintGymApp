@@ -23,7 +23,7 @@ export default function TrainerSearchScreen({ navigation }: NativeStackScreenPro
   useEffect(() => {
     if (!trainer) return;
     Promise.all([
-      supabase.from("clients").select("*").eq("trainer_id", trainer.id).order("name"),
+      supabase.from("clients").select("*").eq("trainer_id", trainer.id).neq("id", trainer.id).order("name"),
       loadAvailablePrograms(),
       supabase.from("exercises").select("*").order("sort_order"),
     ]).then(([c, p, e]) => {
