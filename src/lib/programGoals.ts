@@ -14,7 +14,7 @@ export const PROGRAM_GOALS: { key: GoalChoice; title: string; icon: string; summ
   { key: "strength", title: "Get stronger", icon: "🏋️", summary: "Strength programs" },
   { key: "fatLoss", title: "Fat loss", icon: "🔥", summary: "Fat loss programs" },
   { key: "fitness", title: "Fitness", icon: "❤️", summary: "General fitness and conditioning" },
-  { key: "sport", title: "Sport", icon: "⚡", summary: "Sports strength, power, speed and fight sports" },
+  { key: "sport", title: "Sport", icon: "⚡", summary: "Sports strength, power, speed, fight sports and off-season programs" },
   { key: "mobility", title: "Mobility & flexibility", icon: "🧘", summary: "Move better and loosen up" },
   { key: "longevity", title: "60+ Longevity", icon: "🌳", summary: "Strength, balance and independence for older adults" },
   { key: "rehab", title: "Rehab", icon: "🛡️", summary: "Ankle, knee, hip, core, shoulder, wrist or neck" },
@@ -27,7 +27,7 @@ export function programGoal(program: Pick<Program, "name" | "trainer_id">): Prog
   const name = program.name.toLowerCase();
   if (name.startsWith("older adult ")) return "longevity";
   if (name.startsWith("mobility ") || name.startsWith("flexibility ")) return "mobility";
-  if (/^(explosive power|speed |sports strength|fight conditioning)/.test(name)) return "sport";
+  if (/^(explosive power|speed |sports strength|fight conditioning|off-season)/.test(name)) return "sport";
   if (name.includes("bodybuilding")) return "muscle";
   if (name.includes("strength")) return "strength";
   if (name.includes("fat loss") || name.includes("weight loss")) return "fatLoss";

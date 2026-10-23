@@ -363,7 +363,7 @@ export const PROGRAM_GROUPS = [
     key: "performance",
     title: "Performance",
     icon: "⚡",
-    summary: "Power, speed, sports strength, HIIT, sprints and fight conditioning",
+    summary: "Power, speed, sports strength, HIIT, sprints, fight conditioning and off-season sport programs",
   },
   {
     key: "functional",
@@ -407,6 +407,7 @@ export const PROGRAM_FAMILIES = [
   { key: "hiit", group: "performance", title: "HIIT", icon: "🔥" },
   { key: "sprint", group: "performance", title: "Sprint & threshold intervals", icon: "⚡" },
   { key: "fight", group: "performance", title: "Fight sports: 8-week conditioning", icon: "🥊" },
+  { key: "offSeason", group: "performance", title: "Off-season: 8-week sport programs", icon: "🏟️" },
   { key: "sportsMobility", group: "functional", title: "Mobility", icon: "🔄" },
   { key: "sportsFlexibility", group: "functional", title: "Flexibility", icon: "🧘" },
   { key: "olderAdult", group: "longevity", title: "Strength, mobility & longevity: 18 months", icon: "🌳" },
@@ -433,6 +434,9 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   // Older adult programs (0130): "Older Adult 1 - Beginner Foundation". Before
   // the foundation check, since the first one's name says foundation.
   if (name.startsWith("older adult ")) return "olderAdult";
+  // Off-season sport programs (0144): "Off-Season – Rugby". Checked early,
+  // since their sport names don't fit the checks below.
+  if (name.startsWith("off-season")) return "offSeason";
   if (name.startsWith("explosive power ")) return "sportsPower";
   if (name.startsWith("speed ")) return "sportsSpeed";
   if (name.startsWith("sports strength ")) return "sportsStrength";

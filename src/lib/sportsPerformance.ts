@@ -30,6 +30,20 @@ export const SPORTS_PROGRAMS: SportsProgram[] = [
   { name: "Flexibility 4 – Lower Back Release", weeks: 4, category: "flexibility", level: "Tight lower back", summary: "A short, gentle routine for the hips, glutes, hamstrings and spine." },
 ];
 
+// Off-season programs (GRIZZ, 2026-10-23): one 8-week gym program per sport,
+// built-ins in the database (0144). Names must match 0144 exactly.
+export const OFF_SEASON_PROGRAMS: { name: string; summary: string }[] = [
+  { name: "Off-Season – Soccer", summary: "Hamstrings that hold up to sprinting, strong hips and groin, a big engine and repeated-sprint speed." },
+  { name: "Off-Season – Rugby", summary: "Strength and size for contact, a strong neck and upper back, speed off the mark and repeat-effort fitness." },
+  { name: "Off-Season – American Football", summary: "Explosive hips for the first step, neck and shoulder strength, and conditioning shaped like a drive." },
+  { name: "Off-Season – Baseball", summary: "Rotational power for hitting and throwing, healthy shoulders and elbows, and fast first steps." },
+  { name: "Off-Season – Basketball", summary: "A higher jump, soft landings, tough ankles and knees, quick defensive slides and fitness for the whole game." },
+  { name: "Off-Season – Tennis", summary: "Quick lateral movement, rotational power for serves, healthy shoulders, elbows and wrists." },
+  { name: "Off-Season – Enduro Riding", summary: "Legs for the standing position, grip against arm pump, a strong neck, back and core, and a big engine." },
+  { name: "Off-Season – Cycling", summary: "More power on the pedals, a strong back and core for your position, a bigger base and a sharper sprint." },
+  { name: "Off-Season – Mountain Biking", summary: "Legs for punchy climbs, upper body and grip for rough descents, sprint power and a big base." },
+];
+
 const CATEGORIES: { category: SportsCategory; icon: string; heading: string; hook: string }[] = [
   { category: "power", icon: "💥", heading: "Explosive Power", hook: "Jump higher, hit harder, get off the mark faster." },
   { category: "speed", icon: "🚀", heading: "Speed", hook: "Speed is a skill: short, all-out sprints with full rest." },
@@ -43,7 +57,7 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
   title: "Sports Performance",
   icon: "🏅",
   accent: "#F59E0B",
-  summary: "16 programs for explosive power, speed, strength, mobility and flexibility (including a lower back stretch), and who each one suits.",
+  summary: "16 programs for explosive power, speed, strength, mobility and flexibility (including a lower back stretch), 9 off-season sport programs, and who each one suits.",
   topics: [
     {
       title: "How the programs work",
@@ -77,5 +91,23 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
         points: [`${p.weeks} weeks. Best for: ${p.level}.`, p.summary],
       })),
     })),
+    {
+      title: "Off-season",
+      icon: "🏟️",
+      intro: "One 8-week gym program per sport for the off-season, under Off-season in the program picker (Sport goal).",
+      groups: [
+        {
+          heading: "How they work",
+          points: [
+            "Field and court sports: Monday lower body strength plus a row, Tuesday conditioning, Wednesday easy zone 2 and mobility, Thursday upper body plus hip thrusts, Friday speed and power, Saturday play or rest, Sunday rest. Every muscle gets trained twice a week, which builds more strength and size than once.",
+            "Cycling and mountain biking: two strength days, an interval ride, a recovery ride, a sprint day and a long ride on Saturday. Enduro riding adds grip and neck work.",
+            "Weeks 1-3 build (sets go up), week 4 is a recovery week, weeks 5-7 turn strength into power, and week 8 is a test week before pre-season.",
+            "Injury safety: Nordic curls start at 2 sets and build (then 2 sets keep the protection), sprints are at 9/10 in weeks 1-3, the hard intervals start at 3 rounds, depth jumps are from a low box (30-40 cm), and no set goes to failure.",
+            "No overhead pressing. Each program has its own nutrition notes and warm-up.",
+          ],
+        },
+        ...OFF_SEASON_PROGRAMS.map((p) => ({ heading: p.name, points: [p.summary] })),
+      ],
+    },
   ],
 };

@@ -302,6 +302,8 @@ describe("programFamily", () => {
     expect(built("Drop Set Chest 1")).toBe("dropset");
     expect(built("Drop Set Back 3")).toBe("dropset");
     expect(built("Fight Conditioning – Wrestling")).toBe("fight");
+    expect(built("Off-Season – Rugby")).toBe("offSeason");
+    expect(built("Off-Season – Cycling")).toBe("offSeason");
     expect(built("Upper Body 3")).toBe("upperBody");
     expect(built("Upper Body Superset 4")).toBe("upperBody");
     expect(built("Lower Body Superset 2")).toBe("lowerBody");
@@ -322,6 +324,7 @@ describe("programFamily", () => {
     expect(groupOf("HIIT 7")).toBe("performance");
     expect(groupOf("Drop Set Calves 2")).toBe("gym");
     expect(groupOf("Fight Conditioning – Boxing")).toBe("performance");
+    expect(groupOf("Off-Season – Tennis")).toBe("performance");
     expect(groupOf("Mobility 2 – Spine & Shoulders")).toBe("functional");
     expect(groupOf("Flexibility 1 – Hips")).toBe("functional");
   });
