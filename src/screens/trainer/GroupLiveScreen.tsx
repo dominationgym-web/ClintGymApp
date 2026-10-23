@@ -16,6 +16,7 @@ import { parseWeight } from "@/lib/weightInput";
 import { findImprovements } from "@/lib/workoutSessions";
 import { exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
 import { MAX_GROUP, clientSets, nextSetNumber, setsByClient, slotFor, startWeight } from "@/lib/groupSession";
+import { SUPERSET_MAX, SUPERSET_MIN, roundProblem, type RoundEntry } from "@/lib/superset";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { Client, Exercise, SetEffort, WorkoutLog } from "@/types/database";
@@ -26,6 +27,8 @@ import type { Client, Exercise, SetEffort, WorkoutLog } from "@/types/database";
 // client's own id (0134 trainer policy), and each client keeps one colour and
 // letter (src/lib/groupSession.ts) on their card, on the set box and on its
 // Save button. Finish saves each client's day as in person (0138).
+// "⚡ Do a superset" (2026-10-23) ticks 2-4 of the session's exercises; each
+// card then logs a whole round of them for that person at once.
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "GroupLive">;
 type Step = { id: string | null; name: string; sets: number; reps: string };
@@ -65,6 +68,12 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const [category, setCategory] = useState<string | null>(null);
   const [place, setPlace] = useState<ExercisePlace>("gym");
   const [finished, setFinished] = useState(false);
+  // Superset (GRIZZ, 2026-10-23): the session's exercises done back to back,
+  // logged a whole round at a time per person.
+  const [superset, setSuperset] = useState<number[] | null>(null);
+  const [choosing, setChoosing] = useState<number[] | null>(null);
+  const [roundFor, setRoundFor] = useState<string | null>(null);
+  const [round, setRound] = useState<RoundEntry[]>([]);
 
   useEffect(() => {
     if (!trainer) return;
@@ -133,11 +142,61 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   };
 
   const step = steps[index] ?? null;
+  const supersetSteps = (superset ?? []).map((i) => steps[i]).filter((s): s is Step => !!s);
+
+  const toggleChoice = (i: number) =>
+    setChoosing((prev) =>
+      !prev ? [i] : prev.includes(i) ? prev.filter((x) => x !== i) : prev.length >= SUPERSET_MAX ? prev : [...prev, i],
+    );
+
+  const openRound = (id: string) => {
+    if (holds[id]) {
+      Alert.alert(`${first({ name: nameOf(id) })} is on a medical hold`, "No sets can be logged for them until the hold is cleared on their Overview.");
+      return;
+    }
+    setRound(supersetSteps.map((s) => ({ weight: startWeight(logs, earlier, id, s.name), reps: "", effort: null })));
+    setRoundFor(id);
+  };
+
+  const setRoundEntry = (i: number, change: Partial<RoundEntry>) =>
+    setRound((prev) => prev.map((e, at) => (at === i ? { ...e, ...change } : e)));
+
+  const saveRound = async () => {
+    const id = roundFor;
+    if (!id) return;
+    const picks = supersetSteps.map((s) => ({ exercise_id: s.id, exercise_name: s.name, row: null }));
+    const problem = roundProblem(picks, round);
+    if (problem) return Alert.alert("Check the round", problem);
+    const rows = supersetSteps
+      .map((s, i) => ({ s, e: round[i] }))
+      .filter(({ e }) => e && e.reps.trim() !== "")
+      .map(({ s, e }) => ({
+        client_id: id,
+        exercise_id: s.id,
+        exercise_name: s.name,
+        log_date: todayIso(),
+        set_number: nextSetNumber(logs, id, s.name),
+        weight_kg: parseWeight(e.weight),
+        reps: Number(e.reps),
+        effort: e.effort,
+        warm_up: false,
+        gauge: false,
+      }));
+    setSaving(true);
+    const { data, error } = await supabase.from("workout_logs").insert(rows).select();
+    setSaving(false);
+    if (error || !data) return Alert.alert("Couldn't save the round", error?.message ?? "Please try again.");
+    setLogs((prev) => [...prev, ...data]);
+    setRoundFor(null);
+    setToast(`✓ ${slotOf(id).letter} · Round saved to ${nameOf(id)}`);
+    setTimeout(() => setToast(null), 2500);
+  };
 
   const usePlan = (id: string | null) => {
     setPlanFrom(id);
     setSteps(stepsOf(id ? plans[id] : null));
     setIndex(0);
+    setSuperset(null);
     if (!id) setAdding(true);
   };
 
@@ -308,7 +367,54 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         )}
         <Text style={styles.helper}>{title}</Text>
 
-        {step ? (
+        {superset && supersetSteps.length >= SUPERSET_MIN ? (
+          <>
+            <View style={[styles.stepRow, { flexDirection: "column", alignItems: "stretch" }]}>
+              <Text style={[styles.stepCount, { textAlign: "center" }]}>⚡ Superset · one set of each, back to back</Text>
+              {supersetSteps.map((s, i) => (
+                <Text key={s.name} style={styles.supersetLine}>
+                  {i + 1}. {s.name} <Text style={styles.helper}>({s.sets} × {s.reps})</Text>
+                </Text>
+              ))}
+              <Pressable onPress={() => setSuperset(null)} hitSlop={8}>
+                <Text style={[styles.cancelText, { textAlign: "center", marginTop: 6 }]}>End superset</Text>
+              </Pressable>
+            </View>
+            <View style={styles.grid}>
+              {group.map((c) => {
+                const slot = slotOf(c.id);
+                return (
+                  <Pressable key={c.id} style={[styles.card, { borderColor: slot.color }]} onPress={() => openRound(c.id)}>
+                    <View style={styles.cardTop}>
+                      <View style={[styles.badge, { backgroundColor: slot.color }]}>
+                        <Text style={styles.badgeText}>{slot.letter}</Text>
+                      </View>
+                      <Text style={styles.cardName} numberOfLines={1}>
+                        {first(c)}
+                      </Text>
+                    </View>
+                    {holds[c.id] ? (
+                      <Text style={styles.hold}>🩺 On hold</Text>
+                    ) : (
+                      <>
+                        {supersetSteps.map((s, i) => {
+                          const last = clientSets(logs, c.id, s.name).at(-1);
+                          return (
+                            <Text key={s.name} style={styles.cardSet} numberOfLines={1}>
+                              {i + 1}. {clientSets(logs, c.id, s.name).length} sets
+                              {last ? ` · ${last.weight_kg != null ? `${last.weight_kg}kg × ` : ""}${last.reps}` : ""}
+                            </Text>
+                          );
+                        })}
+                        <Text style={[styles.tapHint, { color: slot.color }]}>+ Log {first(c)}'s round</Text>
+                      </>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : step ? (
           <>
             <View style={styles.stepRow}>
               <Pressable onPress={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0} hitSlop={10}>
@@ -376,6 +482,11 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         <Pressable style={styles.addButton} onPress={() => setAdding(true)}>
           <Text style={styles.addText}>+ Add an exercise</Text>
         </Pressable>
+        {!superset && (
+          <Pressable style={styles.addButton} onPress={() => setChoosing([])}>
+            <Text style={styles.addText}>⚡ Do a superset (2-4 exercises)</Text>
+          </Pressable>
+        )}
       </ScrollView>
 
       {toast && (
@@ -428,6 +539,97 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                   {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.finishText}>Save {first({ name: nameOf(entryFor) })}'s set</Text>}
                 </Pressable>
                 <Pressable style={styles.cancel} onPress={() => setEntryFor(null)}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </KeyboardSafe>
+      </Modal>
+
+      <Modal visible={!!choosing} animationType="slide" transparent onRequestClose={() => setChoosing(null)}>
+        <View style={styles.sheetWrap}>
+          {choosing && (
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>⚡ Pick 2-4 exercises, in the order you'll do them</Text>
+              <ScrollView style={{ maxHeight: 320 }}>
+                {steps.map((s, i) => {
+                  const at = choosing.indexOf(i);
+                  return (
+                    <Pressable key={`${s.name}-${i}`} style={[styles.pickRow, at >= 0 && { borderColor: BRAND_GOLD }]} onPress={() => toggleChoice(i)}>
+                      <View style={[styles.badge, { backgroundColor: at >= 0 ? BRAND_GOLD : "#334155" }]}>
+                        <Text style={styles.badgeText}>{at >= 0 ? at + 1 : ""}</Text>
+                      </View>
+                      <Text style={styles.pickName}>{s.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              {steps.length < SUPERSET_MIN && <Text style={styles.helper}>Add at least 2 exercises to the session first.</Text>}
+              <Pressable
+                style={[styles.saveButton, { backgroundColor: choosing.length >= SUPERSET_MIN ? BRAND_GOLD : "#334155" }]}
+                disabled={choosing.length < SUPERSET_MIN}
+                onPress={() => {
+                  setSuperset(choosing);
+                  setChoosing(null);
+                }}
+              >
+                <Text style={styles.finishText}>{choosing.length < SUPERSET_MIN ? "Pick at least 2" : `▶ Start superset (${choosing.length})`}</Text>
+              </Pressable>
+              <Pressable style={styles.cancel} onPress={() => setChoosing(null)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      </Modal>
+
+      {/* One round of the superset for one person, every box in their colour. */}
+      <Modal visible={!!roundFor} animationType="slide" transparent onRequestClose={() => setRoundFor(null)}>
+        <KeyboardSafe>
+          <View style={styles.sheetWrap}>
+            {roundFor && (
+              <View style={[styles.sheet, { borderColor: slotOf(roundFor).color, maxHeight: "92%" }]}>
+                <View style={[styles.banner, { backgroundColor: slotOf(roundFor).color }]}>
+                  <Text style={styles.bannerLetter}>{slotOf(roundFor).letter}</Text>
+                  <Text style={styles.bannerText} numberOfLines={1}>
+                    Round for {nameOf(roundFor).toUpperCase()}
+                  </Text>
+                </View>
+                <ScrollView keyboardShouldPersistTaps="handled">
+                  {supersetSteps.map((s, i) => (
+                    <View key={s.name} style={styles.roundBox}>
+                      <Text style={styles.sheetTitle}>
+                        {i + 1}. {s.name} · set {nextSetNumber(logs, roundFor, s.name)}
+                      </Text>
+                      <View style={styles.inputs}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.label}>Weight (kg)</Text>
+                          <TextInput style={styles.input} value={round[i]?.weight ?? ""} onChangeText={(v) => setRoundEntry(i, { weight: v })} keyboardType="decimal-pad" placeholder="Bodyweight" placeholderTextColor="#64748B" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.label}>Reps</Text>
+                          <TextInput style={styles.input} value={round[i]?.reps ?? ""} onChangeText={(v) => setRoundEntry(i, { reps: v })} keyboardType="number-pad" placeholder={s.reps} placeholderTextColor="#64748B" />
+                        </View>
+                      </View>
+                      <View style={[styles.chips, { marginTop: 8 }]}>
+                        {EFFORT_OPTIONS.map((o) => (
+                          <Pressable
+                            key={o.key}
+                            style={[styles.chip, round[i]?.effort === o.key && { backgroundColor: slotOf(roundFor).color }]}
+                            onPress={() => setRoundEntry(i, { effort: o.key })}
+                          >
+                            <Text style={[styles.chipText, round[i]?.effort === o.key && styles.chipTextOn]}>{o.label}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+                <Pressable style={[styles.saveButton, { backgroundColor: slotOf(roundFor).color }]} onPress={saveRound} disabled={saving}>
+                  {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.finishText}>Save {first({ name: nameOf(roundFor) })}'s round</Text>}
+                </Pressable>
+                <Pressable style={styles.cancel} onPress={() => setRoundFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
               </View>
@@ -562,5 +764,7 @@ const styles = StyleSheet.create({
   cancel: { paddingVertical: 12, alignItems: "center" },
   cancelText: { color: "#94A3B8", fontWeight: "700" },
   addHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  supersetLine: { color: "#fff", fontSize: 15, fontWeight: "700", marginTop: 4 },
+  roundBox: { borderBottomWidth: 1, borderBottomColor: "#334155", paddingBottom: 10, marginBottom: 10 },
   libRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 6 },
 });
