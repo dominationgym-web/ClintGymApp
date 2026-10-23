@@ -46,6 +46,7 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
       .from("clients")
       .select("id, name")
       .eq("trainer_id", trainerId)
+      .neq("id", trainerId)
       .is("archived_at", null)
       .in("id", [...new Set(list.map((w) => w.client_id))]);
     const names = new Map((clients ?? []).map((c) => [c.id, c.name]));

@@ -37,7 +37,7 @@ export default function TrainerIncome() {
     const { data } = await supabase
       .from("clients")
       .select("id, price_package, archived_at, access_status")
-      .eq("trainer_id", trainer.id);
+      .eq("trainer_id", trainer.id).neq("id", trainer.id);
     setClients((data as Row[] | null) ?? []);
   }, [trainer?.id]);
 

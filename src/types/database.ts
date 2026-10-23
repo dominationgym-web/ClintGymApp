@@ -1232,6 +1232,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { name: string; approved: boolean; created_at: string }[];
       };
+      start_my_training: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
     };
   };
 }

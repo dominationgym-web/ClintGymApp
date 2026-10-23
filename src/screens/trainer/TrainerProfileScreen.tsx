@@ -34,14 +34,16 @@ import ClientAvatar from "@/components/ClientAvatar";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
 import TrainerIncome from "@/components/TrainerIncome";
+import MyTraining from "@/components/MyTraining";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices, EftDetails } from "@/types/database";
 
-type TabKey = "code" | "income" | "refer" | "details" | "payments" | "account";
+type TabKey = "code" | "train" | "income" | "refer" | "details" | "payments" | "account";
 
 const TABS: ScreenTab<TabKey>[] = [
   { key: "code", label: "Code & logo", icon: "qr-code" },
+  { key: "train", label: "My training", icon: "barbell" },
   { key: "income", label: "Income", icon: "cash" },
   { key: "refer", label: "Plan & refer", icon: "gift" },
   { key: "details", label: "Details", icon: "person" },
@@ -318,6 +320,7 @@ export default function TrainerProfileScreen() {
             </Pressable>
           </>
         )}
+        {tab === "train" && <MyTraining />}
         {tab === "account" && (
           <>
             <Text style={styles.sectionHeading}>Signed in as</Text>

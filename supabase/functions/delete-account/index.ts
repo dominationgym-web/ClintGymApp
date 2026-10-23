@@ -45,7 +45,8 @@ Deno.serve(async (req) => {
     const { count, error: countError } = await admin
       .from("clients")
       .select("id", { count: "exact", head: true })
-      .eq("trainer_id", userId);
+      .eq("trainer_id", userId)
+      .neq("id", userId);
     if (countError) return json(500, { error: countError.message });
     if ((count ?? 0) > 0) {
       return json(409, {
@@ -66,6 +67,13 @@ Deno.serve(async (req) => {
       const { error: removeError } = await admin.storage.from(bucket).remove(files.map((f) => `${userId}/${f.name}`));
       if (removeError) return json(500, { error: `Couldn't delete ${bucket}: ${removeError.message}` });
     }
+  }
+
+  // A trainer's own training record (0146) goes first, so it can't hold up
+  // removing the trainer row it points at.
+  if (trainer) {
+    const { error: selfError } = await admin.from("clients").delete().eq("id", userId).eq("trainer_id", userId);
+    if (selfError) return json(500, { error: selfError.message });
   }
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
