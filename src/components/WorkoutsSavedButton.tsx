@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -19,16 +19,21 @@ export default function WorkoutsSavedButton({
   clientId,
   clientName,
   trainerId,
+  changeKey,
   onSent,
 }: {
   clientId: string;
   clientName: string;
   trainerId: string;
+  /** Changes when the client's workouts change, so the button asks to send again. */
+  changeKey?: number;
   /** After the client is told, so leaving the screen doesn't ask again. */
   onSent?: () => void;
 }) {
   const [sending, setSending] = useState(false);
   const [sentAt, setSentAt] = useState<Date | null>(null);
+  // A workout added after sending: back to "Save and tell" (GRIZZ, 2026-10-23).
+  useEffect(() => setSentAt(null), [changeKey]);
 
   const save = async () => {
     setSending(true);

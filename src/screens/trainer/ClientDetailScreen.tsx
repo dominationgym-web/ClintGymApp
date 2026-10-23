@@ -876,7 +876,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               extras={client}
             />
             {/* Right under the calendar, so the trainer sees how to tell the client (GRIZZ, 2026-10-19). */}
-            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} onSent={markSent} />}
+            {trainer && <WorkoutsSavedButton clientId={client.id} clientName={client.name} trainerId={trainer.id} changeKey={planKey} onSent={markSent} />}
             {/* Alerts tucked under one line (GRIZZ, 2026-10-20: simpler Training tab). They still load, so the line counts them. */}
             <ChecksFold
               count={Object.values(checks).filter(Boolean).length + (client.foundation_status === "suggested" ? 1 : 0)}
@@ -1063,7 +1063,11 @@ function ChecksFold({ count, open, onToggle, children }: { count: number; open: 
           <Text style={styles.trainingSectionChevron}>{open ? "▴" : "▾"}</Text>
         </Pressable>
       )}
-      <View style={open && count > 0 ? styles.trainingSectionBody : { display: "none" }}>{children}</View>
+      {/* Closed, the cards stay mounted but clipped, not display: "none": on
+          Android a card's pop-up (the injury check sign) opened from inside a
+          display: "none" view comes up invisible and blocks every tap until
+          Back closes it (GRIZZ, 2026-10-23: "the screen is still freezing"). */}
+      <View style={open && count > 0 ? styles.trainingSectionBody : styles.checksHidden}>{children}</View>
     </View>
   );
 }
@@ -1167,6 +1171,7 @@ const styles = StyleSheet.create({
   trainingSectionTitle: { color: "#fff", fontWeight: "800", fontSize: 16, flex: 1 },
   trainingSectionChevron: { color: "#94A3B8", fontSize: 18 },
   trainingSectionBody: { paddingHorizontal: 10, paddingBottom: 12 },
+  checksHidden: { height: 0, overflow: "hidden" },
   flex1: { flex: 1 },
   messageRow: { backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginBottom: 6 },
   intakeBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12 },
