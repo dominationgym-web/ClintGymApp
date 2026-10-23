@@ -38,6 +38,7 @@ import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession }
 import WorkoutReasonModal from "@/components/WorkoutReasonModal";
 import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
 import RestTimer from "@/components/RestTimer";
+import SupersetLogger from "@/components/SupersetLogger";
 import AchievementBadge from "@/components/AchievementBadge";
 import { checkAchievement } from "@/lib/achievementQueries";
 import type { ClientAchievement } from "@/types/database";
@@ -152,6 +153,10 @@ export default function ExerciseLibraryScreen() {
   // and taps Complete, which starts the rest timer. `rest` is that timer's length.
   // Gold achievement badge (0085) earned by the set just logged.
   const [badge, setBadge] = useState<ClientAchievement | null>(null);
+  // Superset logger (GRIZZ, 2026-10-23): 2-4 exercises logged a round at a time.
+  const [supersetOpen, setSupersetOpen] = useState(false);
+  // A badge earned in the superset logger shows once it closes (two pop-ups can't open at once).
+  const supersetBadge = useRef<ClientAchievement | null>(null);
   const [absDue, setAbsDue] = useState<{ rest: number; count: number } | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -979,6 +984,12 @@ export default function ExerciseLibraryScreen() {
                     ))}
                   </View>
                 )}
+                {!hold && (
+                  <Pressable style={styles.supersetButton} onPress={() => setSupersetOpen(true)} accessibilityRole="button">
+                    <Text style={styles.supersetButtonText}>⚡ Do a superset (2-4 exercises)</Text>
+                    <Text style={styles.supersetButtonSub}>Pick the exercises, start, then log the whole round after each set.</Text>
+                  </Pressable>
+                )}
               </View>
             )}
             {program && part === "main" && (
@@ -1347,6 +1358,24 @@ export default function ExerciseLibraryScreen() {
           onClose={() => setTimerOpen(false)}
         />
       )}
+      {client && (
+        <SupersetLogger
+          visible={supersetOpen}
+          client={client}
+          rows={todaysWorkout}
+          library={browsable}
+          todaysSets={allTodaysSets}
+          onSaved={(logs) => {
+            setAllTodaysSets((prev) => [...prev, ...logs]);
+            logs.forEach((l) => checkAchievement(client.id, l).then((b) => b && (supersetBadge.current = b)));
+          }}
+          onClose={() => {
+            setSupersetOpen(false);
+            if (supersetBadge.current) setBadge(supersetBadge.current);
+            supersetBadge.current = null;
+          }}
+        />
+      )}
       {program && client && dropMode && (
         <DropSetLogger
           visible={!!dropRow}
@@ -1692,6 +1721,9 @@ const styles = StyleSheet.create({
   },
   sessionWarmUpTitle: { color: BRAND_GOLD, fontWeight: "700", marginBottom: 4 },
   cardioRow: { borderLeftWidth: 3, borderLeftColor: "#F97316", paddingLeft: 8 },
+  supersetButton: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 12, marginTop: 10 },
+  supersetButtonText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15 },
+  supersetButtonSub: { color: "#CBD5E1", fontSize: 12, marginTop: 2 },
   timerButton: { backgroundColor: "#7F1D1D", borderColor: "#DC2626", borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 12 },
   timerButtonText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   timerButtonSub: { color: "#FECACA", fontSize: 13, marginTop: 2 },
