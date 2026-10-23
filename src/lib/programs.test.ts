@@ -320,11 +320,12 @@ describe("programFamily", () => {
     const groupOf = (name: string) => PROGRAM_FAMILIES.find((f) => f.key === built(name))?.group;
     expect(groupOf("Full body week")).toBe("gym");
     expect(groupOf("Beginner Foundation - Strength")).toBe("gym");
-    expect(groupOf("Explosive Power 1 – Jump Base")).toBe("performance");
+    expect(groupOf("Explosive Power 1 – Jump Base")).toBe("sport");
     expect(groupOf("HIIT 7")).toBe("performance");
     expect(groupOf("Drop Set Calves 2")).toBe("gym");
-    expect(groupOf("Fight Conditioning – Boxing")).toBe("performance");
-    expect(groupOf("Off-Season – Tennis")).toBe("performance");
+    expect(groupOf("Fight Conditioning – Boxing")).toBe("sport");
+    expect(groupOf("Off-Season – Tennis")).toBe("sport");
+    expect(groupOf("12-Week Speed – Cycling")).toBe("sport");
     expect(groupOf("Mobility 2 – Spine & Shoulders")).toBe("functional");
     expect(groupOf("Flexibility 1 – Hips")).toBe("functional");
   });
@@ -332,6 +333,7 @@ describe("programFamily", () => {
     expect(programGroupHeading(PROGRAM_GROUPS[0], "home").title).toBe("Home");
     expect(programGroupHeading(PROGRAM_GROUPS[0], "gym").title).toBe("Gym");
     expect(programGroupHeading(PROGRAM_GROUPS[1], "home").title).toBe("Performance");
+    expect(programGroupHeading(PROGRAM_GROUPS[2], "home").title).toBe("Sport");
   });
   it("puts the trainer's own programs together, whatever their name", () => {
     expect(programFamily({ name: "Legs and more", trainer_id: "t1" })).toBe("own");
