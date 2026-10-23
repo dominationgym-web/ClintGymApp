@@ -29,7 +29,6 @@ function draftFrom(prices: ClientPrices | null | undefined): Draft {
 export default function TrainerIncome() {
   const { trainer, refreshProfile } = useAuth();
   const [clients, setClients] = useState<Row[] | null>(null);
-  const [editing, setEditing] = useState(!trainer?.client_prices);
   const [draft, setDraft] = useState<Draft>(() => draftFrom(trainer?.client_prices));
   const [saving, setSaving] = useState(false);
 
@@ -71,7 +70,7 @@ export default function TrainerIncome() {
       return;
     }
     await refreshProfile();
-    setEditing(false);
+    Alert.alert("Prices saved", "Your monthly income below now uses these prices.");
   };
 
   const symbol = draft.currency === "ZAR" ? "R" : "$";
@@ -92,42 +91,10 @@ export default function TrainerIncome() {
 
   return (
     <>
-      <Text style={styles.heading}>Your monthly income</Text>
-      {!summary ? (
-        <ActivityIndicator color={BRAND_GOLD} />
-      ) : (
-        <>
-          <View style={styles.row}>
-            <View style={styles.stat}>
-              <Text style={styles.big}>{money(summary.total, currency)}</Text>
-              <Text style={styles.small}>a month</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.big}>{summary.active}</Text>
-              <Text style={styles.small}>active clients</Text>
-            </View>
-          </View>
-          {summary.lines.map((l) => (
-            <View key={l.key} style={styles.line}>
-              <Text style={styles.lineLabel}>
-                {l.label} · {l.clients} × {money(l.price, currency)}
-              </Text>
-              <Text style={styles.lineTotal}>{money(l.total, currency)}</Text>
-            </View>
-          ))}
-          {summary.unpriced > 0 && (
-            <Text style={styles.warn}>
-              {summary.unpriced} client{summary.unpriced === 1 ? " has" : "s have"} no price yet.{" "}
-              {prices?.mode === "flat" ? "Add your monthly fee below." : "Open each client and pick their package."}
-            </Text>
-          )}
-        </>
-      )}
-
-      <Pressable style={styles.toggle} onPress={() => setEditing((v) => !v)}>
-        <Text style={styles.toggleText}>{editing ? "▾" : "▸"} Your prices</Text>
-      </Pressable>
-      {editing && (
+      {/* GRIZZ 2026-10-23: the fee calculator stays open and easy to spot, not a drop-down. */}
+      <View style={styles.calc}>
+        <Text style={styles.calcTitle}>🧮 Calculate your fee structure here</Text>
+        <Text style={styles.calcIntro}>Fill in what you charge each client a month. Your monthly income below adds up from these prices.</Text>
         <View style={styles.box}>
           <Text style={styles.label}>Currency</Text>
           <View style={styles.chips}>
@@ -179,7 +146,40 @@ export default function TrainerIncome() {
             {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save prices</Text>}
           </Pressable>
         </View>
+      </View>
+
+      <Text style={styles.heading}>Your monthly income</Text>
+      {!summary ? (
+        <ActivityIndicator color={BRAND_GOLD} />
+      ) : (
+        <>
+          <View style={styles.row}>
+            <View style={styles.stat}>
+              <Text style={styles.big}>{money(summary.total, currency)}</Text>
+              <Text style={styles.small}>a month</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.big}>{summary.active}</Text>
+              <Text style={styles.small}>active clients</Text>
+            </View>
+          </View>
+          {summary.lines.map((l) => (
+            <View key={l.key} style={styles.line}>
+              <Text style={styles.lineLabel}>
+                {l.label} · {l.clients} × {money(l.price, currency)}
+              </Text>
+              <Text style={styles.lineTotal}>{money(l.total, currency)}</Text>
+            </View>
+          ))}
+          {summary.unpriced > 0 && (
+            <Text style={styles.warn}>
+              {summary.unpriced} client{summary.unpriced === 1 ? " has" : "s have"} no price yet.{" "}
+              {prices?.mode === "flat" ? "Add your monthly fee above." : "Open each client and pick their package."}
+            </Text>
+          )}
+        </>
       )}
+
       <Text style={styles.hint}>Test run: try your prices and see how it works. Clients don't see this.</Text>
     </>
   );
@@ -195,8 +195,9 @@ const styles = StyleSheet.create({
   lineLabel: { color: "#E2E8F0", fontSize: 13, flex: 1 },
   lineTotal: { color: "#fff", fontWeight: "700", fontSize: 13 },
   warn: { color: "#F59E0B", fontSize: 12, marginTop: 10 },
-  toggle: { marginTop: 16, paddingVertical: 8 },
-  toggleText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 15 },
+  calc: { borderWidth: 2, borderColor: BRAND_GOLD, borderRadius: 14, padding: 12, marginBottom: 18, backgroundColor: "#111827" },
+  calcTitle: { color: BRAND_GOLD, fontSize: 19, fontWeight: "800" },
+  calcIntro: { color: "#CBD5E1", fontSize: 13, marginTop: 4, marginBottom: 10 },
   box: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12 },
   label: { color: "#94A3B8", fontWeight: "600", marginTop: 6, marginBottom: 6 },
   chips: { flexDirection: "row", gap: 8, marginBottom: 6 },
