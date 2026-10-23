@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { OFF_SEASON_PROGRAMS, SPORTS_PROGRAMS, SPORTS_PERFORMANCE_GUIDE } from "./sportsPerformance";
+import { OFF_SEASON_PROGRAMS, SPORTS_PROGRAMS, SPORTS_PERFORMANCE_GUIDE, TWELVE_WEEK_PROGRAMS } from "./sportsPerformance";
 import { SPORTS_GUIDES, SPORTS_SEARCH, watchOnlineUrl } from "./sportsGuides";
 import { programFamily } from "./programs";
 import { programGoal } from "./programGoals";
@@ -70,5 +70,23 @@ describe("Off-season programs", () => {
   });
   it("has no overhead pressing", () => {
     expect(offSeason).not.toMatch(/\["[^"]*(overhead|military|push press|arnold|shoulder press)/i);
+  });
+});
+
+describe("12-week sport programs", () => {
+  const twelve = readFileSync(join(__dirname, "../../supabase/migrations/0147_sport_blocks_12_week.sql"), "utf8");
+  it("adds 27 programs, each in its own picker heading and under the Sport goal", () => {
+    expect(TWELVE_WEEK_PROGRAMS).toHaveLength(27);
+    const family = { Strength: "sportStrength12", Endurance: "sportEndurance12", Speed: "sportSpeed12" } as const;
+    for (const name of TWELVE_WEEK_PROGRAMS) {
+      expect(twelve).toContain(`add_sport_block('${name}'`);
+      const focus = name.split(" ")[1] as keyof typeof family;
+      expect(programFamily({ name, trainer_id: null })).toBe(family[focus]);
+      expect(programGoal({ name, trainer_id: null })).toBe("sport");
+    }
+    expect(JSON.stringify(SPORTS_PERFORMANCE_GUIDE)).toContain("12-week sport programs");
+  });
+  it("has no overhead pressing", () => {
+    expect(twelve).not.toMatch(/\["[^"]*(overhead|military|push press|arnold|shoulder press)/i);
   });
 });
