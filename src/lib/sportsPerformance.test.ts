@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { SPORTS_PROGRAMS, SPORTS_PERFORMANCE_GUIDE } from "./sportsPerformance";
+import { OFF_SEASON_PROGRAMS, SPORTS_PROGRAMS, SPORTS_PERFORMANCE_GUIDE } from "./sportsPerformance";
 import { SPORTS_GUIDES, SPORTS_SEARCH, watchOnlineUrl } from "./sportsGuides";
 import { programFamily } from "./programs";
+import { programGoal } from "./programGoals";
 import { techniqueFor } from "./exerciseTechnique";
 
 const migration = readFileSync(join(__dirname, "../../supabase/migrations/0093_sports_performance_programs.sql"), "utf8");
@@ -52,5 +53,22 @@ describe("Sports Performance guides", () => {
     expect(watchOnlineUrl("90/90 Hip Switch")).toBe("https://www.youtube.com/results?search_query=90%2090%20hip%20switch");
     expect(watchOnlineUrl("Cat-Cow")).toBe("https://www.youtube.com/results?search_query=cat%20cow%20stretch");
     for (const name of Object.keys(SPORTS_SEARCH)) expect(SPORTS_GUIDES[name], name).toBeDefined();
+  });
+});
+
+describe("Off-season programs", () => {
+  const offSeason = readFileSync(join(__dirname, "../../supabase/migrations/0144_off_season_programs.sql"), "utf8");
+  it("lists every off-season program the migration adds, under Off-season and the Sport goal", () => {
+    expect(OFF_SEASON_PROGRAMS).toHaveLength(9);
+    const text = JSON.stringify(SPORTS_PERFORMANCE_GUIDE);
+    for (const p of OFF_SEASON_PROGRAMS) {
+      expect(offSeason).toContain(`'${p.name}'`);
+      expect(text).toContain(p.name);
+      expect(programFamily({ name: p.name, trainer_id: null })).toBe("offSeason");
+      expect(programGoal({ name: p.name, trainer_id: null })).toBe("sport");
+    }
+  });
+  it("has no overhead pressing", () => {
+    expect(offSeason).not.toMatch(/\["[^"]*(overhead|military|push press|arnold|shoulder press)/i);
   });
 });
