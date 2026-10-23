@@ -161,6 +161,25 @@ export default function SignupScreen({ navigation }: Props) {
       Alert.alert("Couldn't sign up", authError?.message ?? "Unknown error");
       return;
     }
+    // With "Confirm email" switched on in Supabase, signUp gives no session
+    // (and a repeated signup is answered the same way), so the details below
+    // would be refused. Try signing in; if the email still needs confirming,
+    // say so plainly instead of showing a database error.
+    // A repeated signup also hands back a made-up user id, so take the real
+    // one from the sign-in.
+    let userId = authData.user.id;
+    if (!authData.session) {
+      const retry = await supabase.auth.signInWithPassword({ email, password });
+      if (retry.error || !retry.data.session) {
+        setLoading(false);
+        Alert.alert(
+          "Check your email",
+          "We sent you a link to confirm your email. Tap it, then come back here and tap Continue again with the same details."
+        );
+        return;
+      }
+      userId = retry.data.session.user.id;
+    }
 
     // access_status defaults to 'expired' at the database level and cannot
     // be set to anything else from here - see the "client inserts own
@@ -168,7 +187,6 @@ export default function SignupScreen({ navigation }: Props) {
     // trainer flips it to 'active' after confirming EFT/PayPal payment.
     // A brand-new login can briefly be refused as "issued at future";
     // retryIfIssuedInFuture waits that out (see src/lib/clockSkew.ts).
-    const userId = authData.user.id;
     const { error: clientError } = await retryIfIssuedInFuture(() =>
       supabase.from("clients").insert({
         id: userId,
