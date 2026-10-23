@@ -99,9 +99,10 @@ export const SPORTS_PERFORMANCE_GUIDE: TrainerGuide = {
         {
           heading: "How they work",
           points: [
-            "Field and court sports: Monday lower body strength, Tuesday conditioning, Wednesday easy zone 2 and mobility, Thursday upper body and trunk, Friday speed and power, Saturday play or rest, Sunday rest.",
+            "Field and court sports: Monday lower body strength plus a row, Tuesday conditioning, Wednesday easy zone 2 and mobility, Thursday upper body plus hip thrusts, Friday speed and power, Saturday play or rest, Sunday rest. Every muscle gets trained twice a week, which builds more strength and size than once.",
             "Cycling and mountain biking: two strength days, an interval ride, a recovery ride, a sprint day and a long ride on Saturday. Enduro riding adds grip and neck work.",
             "Weeks 1-3 build (sets go up), week 4 is a recovery week, weeks 5-7 turn strength into power, and week 8 is a test week before pre-season.",
+            "Injury safety: Nordic curls start at 2 sets and build (then 2 sets keep the protection), sprints are at 9/10 in weeks 1-3, the hard intervals start at 3 rounds, depth jumps are from a low box (30-40 cm), and no set goes to failure.",
             "No overhead pressing. Each program has its own nutrition notes and warm-up.",
           ],
         },
