@@ -49,7 +49,7 @@ export function clientFeeTotal(tiers: ClientTier[], currency: BillingCurrency, a
   return total;
 }
 
-/** "Clients 6-10: R50 each", one line per tier, then "61+ free". */
+/** "Clients 6-15: R50 each", one line per tier, then "66+ free". */
 export function clientTierLines(tiers: ClientTier[], currency: BillingCurrency, included: number): string[] {
   const lines: string[] = [];
   let prev = 0;
