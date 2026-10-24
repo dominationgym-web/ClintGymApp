@@ -58,6 +58,7 @@ function openRoute(route: NotificationRoute) {
   else if (route.screen === "ClientDetail")
     navigationRef.navigate("ClientDetail", { clientId: route.clientId, tab: route.tab, open: route.open });
   else if (route.screen === "Billing") navigationRef.navigate("Billing");
+  else if (route.screen === "TrainerProblems") navigationRef.navigate("TrainerProblems", { problemId: route.problemId });
   else navigationRef.navigate("TrainerTabs", { screen: route.screen });
 }
 

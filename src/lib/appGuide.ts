@@ -336,6 +336,19 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "problems",
+      icon: "🛠",
+      title: "Report a problem",
+      where: "Menu ☰ > Report a problem",
+      points: [
+        "Something not working? Pick what it's about, say what happened and tap Send. It goes straight to the app owner with your name on it, no email needed.",
+        "Their answer comes back on the same page, with a phone notification in the installed app. Tap the problem to read it and reply.",
+        "You'll see when it's 🛠 Being fixed and when it's ✅ Fixed. Still not right? Send a message on it and it opens again.",
+        "🛠 App owner only: the menu says Trainer problems. New ones show on your dashboard and send you a notification. Open one to see who sent it, email, call or WhatsApp them, see their clients, reply, and mark it Busy fixing or Fixed.",
+        "👥 App owner only: on the Trainers tab, each trainer shows their active clients and open problems. Open a trainer and tap Clients to see every client, whether they're active, and when they last checked in and trained.",
+      ],
+    },
+    {
       key: "profile",
       icon: "👤",
       title: "Your profile, logo and billing",

@@ -7,6 +7,7 @@ export type NotificationRoute =
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
   | { stack: "trainer"; screen: "Billing" }
+  | { stack: "trainer"; screen: "TrainerProblems"; problemId?: string }
   | { stack: "trainer"; screen: "ClientDetail"; clientId: string; tab?: "training"; open?: "videos" | "history" };
 
 const CLIENT_SCREENS: Record<string, "CheckIn" | "Habits" | "Exercises" | "Profile"> = {
@@ -52,6 +53,10 @@ export function notificationRoute(
   if (TRAINER_TRAINING_TYPES.has(type) && clientId) return { stack: "trainer", screen: "ClientDetail", clientId, tab: "training" };
   if (TRAINER_CLIENT_TYPES.has(type) && clientId) return { stack: "trainer", screen: "ClientDetail", clientId };
   if (type === "planning_reminder") return { stack: "trainer", screen: "Dashboard" };
+  if (type === "trainer_problem" || type === "trainer_problem_reply") {
+    const problemId = typeof data?.problemId === "string" && data.problemId ? data.problemId : undefined;
+    return { stack: "trainer", screen: "TrainerProblems", problemId };
+  }
   if (type === "trainer_signup" || type === "referral_signup") return { stack: "trainer", screen: "Trainers" };
   return null;
 }

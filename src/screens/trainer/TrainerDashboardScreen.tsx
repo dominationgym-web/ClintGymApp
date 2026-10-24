@@ -57,6 +57,8 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   // The owner's suggestion box: a banner while there are unread ones, and a
   // weekly phone reminder in the installed app (Expo Go only gets the banner).
   const [newSuggestions, setNewSuggestions] = useState(0);
+  // New problems from trainers (0151); the installed app also gets a push for each.
+  const [newProblems, setNewProblems] = useState(0);
   const isOwner = !!trainer?.is_owner;
 
   useEffect(() => {
@@ -185,7 +187,13 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     if (!isOwner) return;
     const { count } = await supabase.from("suggestions").select("id", { count: "exact", head: true }).eq("status", "new");
     setNewSuggestions(count ?? 0);
-  }, [isOwner]);
+    const problems = await supabase
+      .from("trainer_problems")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new")
+      .neq("trainer_id", trainer?.id ?? "");
+    setNewProblems(problems.count ?? 0);
+  }, [isOwner, trainer?.id]);
 
   useEffect(() => {
     // Recount whenever the dashboard comes back into view, e.g. after reading them.
@@ -330,6 +338,12 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       link: "Open",
       onPress: () => navigation.navigate("ClientDetail", { clientId: c.id, tab: "training" }),
     })),
+    newProblems > 0 && {
+      key: "problems",
+      text: `🛠 ${newProblems} new problem${newProblems === 1 ? "" : "s"} from trainers`,
+      link: "Open",
+      onPress: () => navigation.navigate("TrainerProblems"),
+    },
     newSuggestions > 0 && {
       key: "suggestions",
       text: `💡 ${newSuggestions} new suggestion${newSuggestions === 1 ? "" : "s"}`,

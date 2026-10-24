@@ -45,14 +45,16 @@ export type TrainerTabParamList = {
   Clients: undefined;
   Programs: undefined;
   TrainerProfile: undefined;
-  // Only for the app owner (0029).
-  Trainers: undefined;
+  // Only for the app owner (0029). openId opens that trainer's row, e.g. from a problem they sent (0151).
+  Trainers: { openId?: string } | undefined;
 };
 
 export type TrainerStackParamList = {
   TrainerTabs: NavigatorScreenParams<TrainerTabParamList> | undefined;
   Search: undefined;
   SuggestionBox: undefined;
+  // Trainer problems (0151): problemId opens that one, e.g. from its notification.
+  TrainerProblems: { problemId?: string } | undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   ClientDetail: { clientId: string; tab?: "training"; open?: "videos" | "history" };
