@@ -9,6 +9,8 @@ import { CLIENT_GROUPS, clientGroup, type ClientGroup } from "@/lib/clientGroups
 import { useAuth } from "@/context/AuthContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
 import PaymentProofModal from "@/components/PaymentProofModal";
+import WeighInPicker from "@/components/WeighInPicker";
+import type { WeighInEvery } from "@/lib/progress";
 import { waitingByPerson } from "@/lib/paymentProofs";
 import type { AccessStatus, Client, PaymentProof } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
@@ -27,6 +29,7 @@ export default function ClientsScreen({ navigation }: Props) {
   // Four tabs: Active / Waiting approval / Awaiting payment / Dormant (archived
   // clients from 0097 land under Dormant).
   const [group, setGroup] = useState<ClientGroup>("active");
+  const [askWeighIn, setAskWeighIn] = useState<Client | null>(null);
   const today = toIsoDate(new Date());
   const groupOf = (c: Client) => clientGroup(c, today);
   const clients = allClients.filter((c) => groupOf(c) === group);
@@ -113,9 +116,20 @@ export default function ClientsScreen({ navigation }: Props) {
     const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
     if (!error) {
       setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
+      // A client with no weigh-in schedule yet: ask how often they weigh and measure.
+      if (!client.weigh_in_every && client.id !== trainer?.id) setAskWeighIn(client);
     } else {
       Alert.alert("Error", "Failed to update the client's plan.");
     }
+  };
+
+  const pickWeighIn = async (key: WeighInEvery | null) => {
+    const who = askWeighIn;
+    setAskWeighIn(null);
+    if (!who || !key) return;
+    const { error } = await supabase.from("clients").update({ weigh_in_every: key, weigh_in_reminded_on: null }).eq("id", who.id);
+    if (error) return Alert.alert("Couldn't save it", error.message);
+    setClients((prev) => prev.map((c) => (c.id === who.id ? { ...c, weigh_in_every: key } : c)));
   };
 
   // With a proof of payment waiting, Activate / Renew opens it so it can be checked first.
@@ -235,6 +249,7 @@ export default function ClientsScreen({ navigation }: Props) {
         }}
         ListEmptyComponent={<Text style={styles.helper}>{current.empty}</Text>}
       />
+      <WeighInPicker name={askWeighIn?.name ?? "your client"} visible={!!askWeighIn} onPick={pickWeighIn} />
       <PaymentProofModal
         proof={viewing}
         from={viewingClient?.name ?? "your client"}
