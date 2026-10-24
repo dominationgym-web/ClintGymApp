@@ -25,7 +25,19 @@ export type SavedCard = {
   autopay: boolean;
 };
 
-export type CardBillingInfo = { enabled: boolean; quote: CardQuote | null; card: SavedCard | null };
+// mode is only sent to the owner: which Paystack key is set, if any.
+export type CardBillingInfo = { enabled: boolean; mode?: "test" | "live" | null; quote: CardQuote | null; card: SavedCard | null };
+
+export type CardCharge = {
+  reference: string;
+  trainer_id: string;
+  kind: "checkout" | "auto" | "card_check";
+  status: "pending" | "success" | "failed";
+  charged_currency: string;
+  charged_cents: number;
+  message: string | null;
+  created_at: string;
+};
 
 async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null; error: string | null }> {
   const { data, error } = await supabase.functions.invoke("card-billing", { body });
@@ -42,7 +54,7 @@ async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null;
 
 export const loadCardBilling = () => call<CardBillingInfo>({ action: "quote" });
 export const startCardCheckout = (autopay: boolean) => call<{ url: string }>({ action: "checkout", autopay });
-export const startSaveCard = () => call<{ url: string }>({ action: "save_card", autopay: true });
+export const startSaveCard = (autopay = true) => call<{ url: string }>({ action: "save_card", autopay });
 export const cancelCard = () => call<{ cancelled: boolean }>({ action: "cancel" });
 export const verifyCardPayment = (reference: string) => call<{ status: string }>({ action: "verify", reference });
 
