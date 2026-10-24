@@ -946,6 +946,41 @@ export type Suggestion = {
   created_at: string;
 };
 
+// Trainer problems (0151): a trainer reports a problem to the app owner from
+// the menu, and the two of them talk it through on it.
+export type TrainerProblemArea = "app" | "clients" | "programs" | "billing" | "other";
+export type TrainerProblemStatus = "new" | "fixing" | "fixed";
+export type TrainerProblem = {
+  id: string;
+  trainer_id: string;
+  trainer_name: string;
+  area: TrainerProblemArea;
+  body: string;
+  status: TrainerProblemStatus;
+  created_at: string;
+  updated_at: string;
+};
+export type TrainerProblemMessage = {
+  id: string;
+  problem_id: string;
+  author_id: string;
+  from_owner: boolean;
+  body: string;
+  created_at: string;
+};
+
+// One row of owner_trainer_clients() (0151): a trainer's client, for the owner.
+export type OwnerTrainerClientRow = {
+  id: string;
+  name: string;
+  access_status: AccessStatus;
+  plan_expires_at: string | null;
+  archived: boolean;
+  joined: string;
+  last_checkin: string | null;
+  last_workout: string | null;
+};
+
 // 0061. The trainer's private notes on a client.
 export type ClientTrainerNotes = {
   client_id: string;
@@ -1033,6 +1068,18 @@ export interface Database {
       push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
       cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
       suggestions: { Row: Suggestion; Insert: Partial<Suggestion>; Update: Partial<Suggestion>; Relationships: [] };
+      trainer_problems: {
+        Row: TrainerProblem;
+        Insert: Pick<TrainerProblem, "area" | "body">;
+        Update: never;
+        Relationships: [];
+      };
+      trainer_problem_messages: {
+        Row: TrainerProblemMessage;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       checkins: { Row: Checkin; Insert: Partial<Checkin>; Update: Partial<Checkin>; Relationships: [] };
       progress_photos: {
         Row: ProgressPhoto;
@@ -1219,6 +1266,9 @@ export interface Database {
       trainer_billing_status: { Args: { p_trainer: string }; Returns: TrainerBillingStatus[] };
       billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
       owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
+      owner_trainer_clients: { Args: { p_trainer: string }; Returns: OwnerTrainerClientRow[] };
+      send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };
+      set_trainer_problem_status: { Args: { p_problem: string; p_status: TrainerProblemStatus }; Returns: undefined };
       owner_client_income: {
         Args: Record<string, never>;
         Returns: { trainer_id: string; currency: BillingCurrency; income: number; priced: number; unpriced: number }[];

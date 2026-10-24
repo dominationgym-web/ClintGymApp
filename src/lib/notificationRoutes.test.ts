@@ -31,6 +31,15 @@ describe("notificationRoute", () => {
     expect(notificationRoute({ type: "payment_proof", client_id: "c1" }, "trainer")).toEqual({ stack: "trainer", screen: "Clients" });
   });
 
+  it("opens the problem a trainer sent, or the owner's reply", () => {
+    expect(notificationRoute({ type: "trainer_problem", problemId: "p1" }, "trainer")).toEqual({
+      stack: "trainer",
+      screen: "TrainerProblems",
+      problemId: "p1",
+    });
+    expect(notificationRoute({ type: "trainer_problem_reply" }, "trainer")).toEqual({ stack: "trainer", screen: "TrainerProblems", problemId: undefined });
+  });
+
   it("ignores unknown pushes and missing roles", () => {
     expect(notificationRoute({ type: "billing_summary" }, "trainer")).toBeNull();
     expect(notificationRoute({ type: "coach_message" }, null)).toBeNull();

@@ -7,16 +7,19 @@ import { REFERRAL_DISCOUNT_PERCENT, referralRewards, trainerDisplayName, trialDa
 import { addDays } from "@/lib/programSchedule";
 import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
-import type { Trainer } from "@/types/database";
-import { useNavigation } from "@react-navigation/native";
+import { clientCounts, openProblemsByTrainer, ownerClientLine } from "@/lib/trainerProblems";
+import type { OwnerTrainerClientRow, Trainer, TrainerProblem } from "@/types/database";
+import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { TrainerStackParamList } from "@/navigation/types";
+import type { TrainerStackParamList, TrainerTabParamList } from "@/navigation/types";
 
 // The app owner's list of every trainer (0029): approve new ones, or block one.
 // Also each trainer's free trial and referral rewards (0060): the owner can add
 // a week to a trial and mark a 25% referral discount as used.
 // Only the owner can load other trainers' rows or change `approved`; the
 // database enforces both, this tab is only shown to the owner.
+// Each trainer also shows their client count and open problems, and opens a
+// list of their clients (0151, GRIZZ 2026-10-24: track every trainer and client).
 export default function TrainersScreen() {
   const { trainer: me } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
@@ -27,9 +30,38 @@ export default function TrainersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   // Each trainer is a small row (name, email, time left or Paid); tap to open the rest.
-  const [openId, setOpenId] = useState<string | null>(null);
+  const route = useRoute<RouteProp<TrainerTabParamList, "Trainers">>();
+  const [openId, setOpenId] = useState<string | null>(route.params?.openId ?? null);
+  // Active / all clients per trainer (owner_tracker) and their unfixed problems.
+  const [clientTotals, setClientTotals] = useState<Map<string, { active: number; total: number }>>(new Map());
+  const [problems, setProblems] = useState<Pick<TrainerProblem, "trainer_id" | "status">[]>([]);
+  // The client list of the opened trainer, loaded when it's opened.
+  const [clientsOpen, setClientsOpen] = useState<string | null>(null);
+  const [clientRows, setClientRows] = useState<Record<string, OwnerTrainerClientRow[]>>({});
+
+  // Opened from a problem's "See their clients".
+  useEffect(() => {
+    if (route.params?.openId) {
+      setOpenId(route.params.openId);
+      showClients(route.params.openId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.openId]);
+
+  const showClients = async (trainerId: string) => {
+    setClientsOpen(trainerId);
+    const { data, error } = await supabase.rpc("owner_trainer_clients", { p_trainer: trainerId });
+    if (error) Alert.alert("Couldn't load their clients", error.message);
+    setClientRows((prev) => ({ ...prev, [trainerId]: data ?? [] }));
+  };
 
   const load = useCallback(async () => {
+    const [tracker, problemRows] = await Promise.all([
+      supabase.rpc("owner_tracker"),
+      supabase.from("trainer_problems").select("trainer_id, status").neq("status", "fixed"),
+    ]);
+    setClientTotals(new Map((tracker.data ?? []).map((r) => [r.trainer_id, { active: r.clients_active, total: r.clients_total }])));
+    setProblems(problemRows.data ?? []);
     const { data, error } = await supabase.from("trainers").select("*").order("created_at", { ascending: false });
     if (error) Alert.alert("Couldn't load trainers", error.message);
     // Waiting for approval first, then everyone else, newest first.
@@ -118,14 +150,29 @@ export default function TrainersScreen() {
     <FlatList
       style={styles.container}
       contentContainerStyle={{ padding: 16 }}
-      data={trainers}
+      // A trainer opened from their problem goes to the top, so it's in view.
+      data={route.params?.openId ? [...trainers].sort((a, b) => Number(b.id === route.params?.openId) - Number(a.id === route.params?.openId)) : trainers}
       keyExtractor={(t) => t.id}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={
-        <Pressable style={styles.billingButton} onPress={() => navigation.navigate("Billing")} accessibilityRole="button">
-          <Text style={styles.billingTitle}>💰 Billing</Text>
-          <Text style={styles.detail}>Plans, client fees, payments owed, monthly and 6-month totals</Text>
-        </Pressable>
+        <>
+          <Pressable style={styles.billingButton} onPress={() => navigation.navigate("Billing")} accessibilityRole="button">
+            <Text style={styles.billingTitle}>💰 Billing</Text>
+            <Text style={styles.detail}>Plans, client fees, payments owed, monthly and 6-month totals</Text>
+          </Pressable>
+          <Pressable style={styles.billingButton} onPress={() => navigation.navigate("TrainerProblems")} accessibilityRole="button">
+            <Text style={styles.billingTitle}>
+              🛠 Trainer problems{problems.length ? ` (${problems.length} open)` : ""}
+            </Text>
+            <Text style={styles.detail}>What your trainers reported. Reply, mark Busy fixing or Fixed.</Text>
+          </Pressable>
+          <Text style={styles.detail}>
+            {trainers.length} trainer{trainers.length === 1 ? "" : "s"} ·{" "}
+            {trainers.reduce((n, t) => n + (clientTotals.get(t.id)?.active ?? 0), 0)} active clients between them. Tap a trainer to
+            see their clients.
+          </Text>
+          <View style={{ height: 10 }} />
+        </>
       }
       ListEmptyComponent={
         <Text style={styles.empty}>No other trainers yet. When a trainer applies in the app, they'll show up here.</Text>
@@ -141,6 +188,12 @@ export default function TrainersScreen() {
           item.referral_credits_used,
         );
         const open = openId === item.id;
+        const totals = clientTotals.get(item.id);
+        const openProblems = openProblemsByTrainer(problems).get(item.id) ?? 0;
+        const clientLine = `${totals?.active ?? 0} active client${totals?.active === 1 ? "" : "s"}${
+          openProblems ? ` · 🛠 ${openProblems} problem${openProblems === 1 ? "" : "s"}` : ""
+        }`;
+        const rows = clientRows[item.id];
         const pay = !item.approved
           ? { text: "Waiting for your approval", color: "#F59E0B" }
           : item.free_use_from
@@ -158,6 +211,7 @@ export default function TrainersScreen() {
                 <Text style={styles.name} numberOfLines={1}>{name}</Text>
                 <Text style={styles.detail} numberOfLines={1}>{item.email}</Text>
                 <Text style={[styles.status, { color: pay.color, marginTop: 2 }]}>{pay.text}</Text>
+                <Text style={[styles.detail, openProblems ? { color: "#F59E0B" } : null]}>{clientLine}</Text>
               </View>
               <Text style={styles.chevron}>▸</Text>
             </Pressable>
@@ -186,6 +240,42 @@ export default function TrainersScreen() {
                 {item.approved ? `Approved · code ${item.join_code}` : "Waiting for your approval"}
               </Text>
               {referrer ? <Text style={styles.detail}>Referred by {trainerDisplayName(referrer)}</Text> : null}
+              <Pressable
+                style={styles.clientsToggle}
+                onPress={() => (clientsOpen === item.id ? setClientsOpen(null) : showClients(item.id))}
+                accessibilityRole="button"
+              >
+                <Text style={styles.extraLink}>
+                  {clientsOpen === item.id ? "▾" : "▸"} 👥 Clients ({totals?.total ?? 0})
+                </Text>
+              </Pressable>
+              {clientsOpen === item.id ? (
+                !rows ? (
+                  <ActivityIndicator color="#D4AF37" style={{ alignSelf: "flex-start", marginTop: 6 }} />
+                ) : rows.length === 0 ? (
+                  <Text style={styles.detail}>No clients yet.</Text>
+                ) : (
+                  <>
+                    <Text style={styles.detail}>
+                      {(() => {
+                        const c = clientCounts(rows);
+                        return `${c.active} active · ${c.waiting} not active${c.archived ? ` · ${c.archived} archived` : ""}`;
+                      })()}
+                    </Text>
+                    {rows.map((c) => (
+                      <View key={c.id} style={styles.clientRow}>
+                        <Text style={styles.clientName} numberOfLines={1}>{c.name}</Text>
+                        <Text style={styles.detail} numberOfLines={1}>{ownerClientLine(c)}</Text>
+                      </View>
+                    ))}
+                  </>
+                )
+              ) : null}
+              {openProblems ? (
+                <Pressable onPress={() => navigation.navigate("TrainerProblems")} hitSlop={6}>
+                  <Text style={[styles.extraLink, { color: "#F59E0B" }]}>🛠 {openProblems} open problem{openProblems === 1 ? "" : "s"} ›</Text>
+                </Pressable>
+              ) : null}
               {trial ? (
                 <View style={styles.extraRow}>
                   <Text style={[styles.detail, trialOver && { color: "#F59E0B" }]}>{trial}</Text>
@@ -259,4 +349,7 @@ const styles = StyleSheet.create({
   actionText: { color: "#fff", fontWeight: "700" },
   billingButton: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 14, borderLeftWidth: 3, borderLeftColor: "#D4AF37" },
   billingTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  clientsToggle: { marginTop: 8 },
+  clientRow: { borderTopWidth: 1, borderTopColor: "#334155", paddingVertical: 6, marginTop: 4 },
+  clientName: { color: "#fff", fontSize: 14, fontWeight: "600" },
 });

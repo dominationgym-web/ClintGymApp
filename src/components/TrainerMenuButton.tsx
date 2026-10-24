@@ -7,10 +7,13 @@ import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
 import { TRAINER_GUIDES } from "@/lib/trainerGuides";
 import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 import { STABILITY_MENU_ITEM } from "@/lib/stability";
+import { OWNER_PROBLEMS_MENU_ITEM, TRAINER_PROBLEMS_MENU_ITEM } from "@/lib/trainerProblems";
+import { useAuth } from "@/context/AuthContext";
 
 // The trainer app's menu (top right of every trainer tab).
 export default function TrainerMenuButton() {
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
+  const { trainer } = useAuth();
   return (
     <MenuButton
       items={[
@@ -30,6 +33,11 @@ export default function TrainerMenuButton() {
           summary: g.summary,
           onPress: () => navigation.navigate("TrainerGuide", { guideKey: g.key }),
         })),
+        // Problems go to the owner in the app, linked to the trainer (0151).
+        {
+          ...(trainer?.is_owner ? OWNER_PROBLEMS_MENU_ITEM : TRAINER_PROBLEMS_MENU_ITEM),
+          onPress: () => navigation.navigate("TrainerProblems"),
+        },
         { ...SUGGESTION_BOX_MENU_ITEM, onPress: () => navigation.navigate("SuggestionBox") },
       ]}
     />
