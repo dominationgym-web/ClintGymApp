@@ -63,15 +63,32 @@ export async function saveExerciseChanges({ upserts, removes }: ChangeWrites): P
   return results.find((r) => r?.error)?.error?.message ?? null;
 }
 
+/**
+ * Every row of these programs in week, day and exercise order, a page at a
+ * time: Supabase returns at most 1000 rows, and the 52-week Muscle Year
+ * programs (0150) have up to about 1700.
+ */
+async function loadProgramRows(programIds: string[]) {
+  const rows: ProgramExercise[] = [];
+  for (let page = 0; ; page++) {
+    const { data, error } = await supabase
+      .from("program_exercises")
+      .select("*")
+      .in("program_id", programIds)
+      .order("week_number", { ascending: true })
+      .order("day_number", { ascending: true })
+      .order("sort_order", { ascending: true })
+      .order("id", { ascending: true })
+      .range(page * 1000, page * 1000 + 999);
+    if (error) return { data: null, error };
+    rows.push(...((data ?? []) as ProgramExercise[]));
+    if (!data || data.length < 1000) return { data: rows, error: null };
+  }
+}
+
 /** A program's rows as clients do them today, with any stand-in the trainer put in for now (0139). */
 export async function loadProgramExercises(programId: string) {
-  const { data, error } = await supabase
-    .from("program_exercises")
-    .select("*")
-    .eq("program_id", programId)
-    .order("week_number", { ascending: true })
-    .order("day_number", { ascending: true })
-    .order("sort_order", { ascending: true });
+  const { data, error } = await loadProgramRows([programId]);
   return { data: data ? withTemporarySwaps(data, todayIso()) : data, error };
 }
 
@@ -152,13 +169,7 @@ export async function loadCalendarWorkoutFor(clientId: string, date: string): Pr
   const ids = [...new Set(picks.map((p) => p.program_id))];
   const [{ data: programs }, { data: rows }, changes, { data: client }] = await Promise.all([
     supabase.from("programs").select("*").in("id", ids),
-    supabase
-      .from("program_exercises")
-      .select("*")
-      .in("program_id", ids)
-      .order("week_number", { ascending: true })
-      .order("day_number", { ascending: true })
-      .order("sort_order", { ascending: true }),
+    loadProgramRows(ids),
     loadExerciseChanges(clientId),
     // The trainer's extra cardio for this client (0136), on the main workout.
     supabase.from("clients").select("extra_cardio").eq("id", clientId).maybeSingle(),

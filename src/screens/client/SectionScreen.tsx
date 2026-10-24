@@ -12,6 +12,7 @@ import CalorieCalculator from "@/components/CalorieCalculator";
 import MealBuilder from "@/components/MealBuilder";
 import ClientDietPlanView from "@/components/ClientDietPlanView";
 import MealPlanMaker from "@/components/MealPlanMaker";
+import MuscleBuildingGuide from "@/components/MuscleBuildingGuide";
 import SupplementCard, { LEVEL_COLOURS, SupplementLevelsKey } from "@/components/SupplementCard";
 import { SUPPLEMENTS, type SupplementLevel } from "@/lib/supplements";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
@@ -23,6 +24,9 @@ import { useAuth } from "@/context/AuthContext";
 import { cancelMenuReturn } from "@/lib/menuReturn";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
+
+const MEAL_PLAN_TITLE = "Work out your own meal plan and diet";
+const MUSCLE_GUIDE_TITLE = "Muscle building: your BMR and macros";
 
 // One of the menu sections. A section with content shows each part as a
 // heading the client taps to open (one at a time), so they can jump to what
@@ -37,7 +41,13 @@ export default function SectionScreen({ route }: Props) {
   const parts: { title: string; body: React.ReactNode; icon?: string; tag?: SupplementLevel }[] = [];
   if (section.key === "nutrition") {
     parts.push({ title: "Your meal plan from your coach", icon: "🥗", body: <ClientDietPlanView /> });
-    parts.push({ title: "Work out your own meal plan and diet", icon: "🤖", body: <MealPlanMaker /> });
+    // Muscle Year (GRIZZ, 2026-10-24): BMR, macros and the 2-weekly weight check.
+    parts.push({
+      title: MUSCLE_GUIDE_TITLE,
+      icon: "💪",
+      body: <MuscleBuildingGuide onMakeMealPlan={() => setOpen(MEAL_PLAN_TITLE)} />,
+    });
+    parts.push({ title: MEAL_PLAN_TITLE, icon: "🤖", body: <MealPlanMaker /> });
     parts.push({ title: "Meal builder", icon: "🍽️", body: <MealBuilder /> });
     parts.push({ title: "Calorie calculator", icon: "🔢", body: <CalorieCalculator /> });
     // Right under the calorie calculator (GRIZZ, 2026-10-12). One short card; the
