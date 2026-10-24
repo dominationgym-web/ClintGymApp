@@ -10,7 +10,7 @@ export type ProgramGoal = "muscle" | "strength" | "fatLoss" | "fitness" | "sport
 export type GoalChoice = ProgramGoal | "rehab";
 
 export const PROGRAM_GOALS: { key: GoalChoice; title: string; icon: string; summary: string }[] = [
-  { key: "muscle", title: "Build muscle", icon: "💪", summary: "Bodybuilding programs, full body weeks" },
+  { key: "muscle", title: "Build muscle", icon: "💪", summary: "Bodybuilding programs, 1-year muscle building (3, 4 or 5 days), full body weeks" },
   { key: "strength", title: "Get stronger", icon: "🏋️", summary: "Strength programs" },
   { key: "fatLoss", title: "Fat loss", icon: "🔥", summary: "Fat loss programs" },
   { key: "fitness", title: "Fitness", icon: "❤️", summary: "General fitness and conditioning" },
@@ -26,6 +26,7 @@ export function programGoal(program: Pick<Program, "name" | "trainer_id">): Prog
   if (program.trainer_id) return "own";
   const name = program.name.toLowerCase();
   if (name.startsWith("older adult ")) return "longevity";
+  if (name.startsWith("muscle year")) return "muscle";
   if (name.startsWith("mobility ") || name.startsWith("flexibility ")) return "mobility";
   if (/^(explosive power|speed |sports strength|fight conditioning|off-season|12-week (strength|endurance|speed) –)/.test(name)) return "sport";
   if (name.includes("bodybuilding")) return "muscle";

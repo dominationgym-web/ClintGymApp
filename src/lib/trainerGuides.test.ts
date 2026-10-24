@@ -8,6 +8,7 @@ describe("trainer guides", () => {
       "retention",
       "nutrition",
       "training",
+      "muscleYear",
       "recovery",
       "womensHealth",
       "longevity",

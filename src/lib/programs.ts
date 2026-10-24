@@ -357,7 +357,7 @@ export const PROGRAM_GROUPS = [
     homeTitle: "Home",
     icon: "🏋️",
     homeIcon: "🏠",
-    summary: "Foundations, 12-week goals, full body, splits and your own",
+    summary: "Foundations, 12-week goals, 1-year muscle building, full body, splits and your own",
   },
   {
     key: "performance",
@@ -400,6 +400,7 @@ export function programGroupHeading(group: (typeof PROGRAM_GROUPS)[number], plac
 export const PROGRAM_FAMILIES = [
   { key: "foundation", group: "gym", title: "Beginner & Intermediate", icon: "🌱" },
   { key: "goalBlock", group: "gym", title: "12-week goal programs", icon: "🎯" },
+  { key: "muscleYear", group: "gym", title: "1-year muscle building", icon: "📅" },
   { key: "fullBody", group: "gym", title: "Full body", icon: "🏃" },
   { key: "upperBody", group: "gym", title: "Upper body workouts", icon: "💪" },
   { key: "lowerBody", group: "gym", title: "Lower body workouts", icon: "🦵" },
@@ -445,6 +446,8 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   // Older adult programs (0130): "Older Adult 1 - Beginner Foundation". Before
   // the foundation check, since the first one's name says foundation.
   if (name.startsWith("older adult ")) return "olderAdult";
+  // 52-week muscle building programs (0150): "Muscle Year – 4 days a week".
+  if (name.startsWith("muscle year")) return "muscleYear";
   // Off-season sport programs (0144): "Off-Season – Rugby". Checked early,
   // since their sport names don't fit the checks below.
   if (name.startsWith("off-season")) return "offSeason";

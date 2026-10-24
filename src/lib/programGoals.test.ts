@@ -8,6 +8,7 @@ const p = (name: string, place = "gym", kind = "weekly", trainer_id: string | nu
 describe("programGoal", () => {
   it("sorts every built-in whole program into a goal", () => {
     expect(programGoal(p("Older Adult 1 - Beginner Foundation"))).toBe("longevity");
+    expect(programGoal(p("Muscle Year – 4 days a week"))).toBe("muscle");
     expect(programGoal(p("Sports Strength 1 – Base Strength"))).toBe("sport");
     expect(programGoal(p("Fight Conditioning – Boxing"))).toBe("sport");
     expect(programGoal(p("Flexibility 4 – Lower Back Release"))).toBe("mobility");

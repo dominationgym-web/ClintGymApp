@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   blockFirstSlot,
+  programBlockWeeks,
   slotsFrom,
   daysLabel,
   defaultWeeks,
@@ -155,5 +156,15 @@ describe("start at block (0135)", () => {
     expect(blockFirstSlot(2)).toBe(57);
     expect(slotsFrom(slots, blockFirstSlot(2))).toEqual([57, 59, 61, 113, 115, 117]);
     expect(slotsFrom(slots, null)).toEqual(slots);
+  });
+});
+
+describe("Muscle Year blocks (0150)", () => {
+  it("runs in 13-week blocks, so block 4 starts at week 40", () => {
+    expect(programBlockWeeks("Muscle Year – 4 days a week")).toBe(13);
+    expect(programBlockWeeks("Older Adult 2 - Strength & Stability")).toBe(8);
+    expect(programBlockWeeks("Bodybuilding 12-week program")).toBeNull();
+    expect(blockFirstSlot(2, 13)).toBe(13 * 7 + 1);
+    expect(blockFirstSlot(4, 13)).toBe(39 * 7 + 1);
   });
 });
