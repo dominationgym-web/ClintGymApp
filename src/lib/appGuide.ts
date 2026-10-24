@@ -250,6 +250,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "🧾 When a client sends proof of payment in the app, you get a notification and their row on the Clients tab shows Proof of payment sent. Tap View to see the slip, check it is in your account, then tap Paid, activate them (or Paid, renew their plan for a client who is still active). Not in my account yet lets them know to check it.",
         "Dots show who needs attention. Tap a client to open everything about them.",
         "Share your trainer code (Profile tab) so new clients join you when they sign up.",
+        "⚖️ Weigh-ins: when you activate a client with no weigh-in schedule, the app asks how often they weigh and measure. To set it for many clients at once, tap Set weigh-ins for several clients at the top of the Clients tab, tick them, and pick every week, 2 weeks or once a month. Each client gets a notification and a Weigh-in due card on Today until they add their weight.",
         "🗄 Old clients: open a client, tap 🗄 Archive at the bottom of their Overview, then Archive this client. They leave your lists and their access closes, but nothing is deleted. If they start again, open the Dormant tab on the Clients tab and tap Bring back. They fill in the intake form again, and a Then vs now card on their Overview compares their first time with you against now.",
       ],
     },

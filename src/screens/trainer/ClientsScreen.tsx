@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
 import PaymentProofModal from "@/components/PaymentProofModal";
 import WeighInPicker from "@/components/WeighInPicker";
+import BulkWeighInModal from "@/components/BulkWeighInModal";
 import type { WeighInEvery } from "@/lib/progress";
 import { waitingByPerson } from "@/lib/paymentProofs";
 import type { AccessStatus, Client, PaymentProof } from "@/types/database";
@@ -30,6 +31,7 @@ export default function ClientsScreen({ navigation }: Props) {
   // clients from 0097 land under Dormant).
   const [group, setGroup] = useState<ClientGroup>("active");
   const [askWeighIn, setAskWeighIn] = useState<Client | null>(null);
+  const [bulkWeighIn, setBulkWeighIn] = useState(false);
   const today = toIsoDate(new Date());
   const groupOf = (c: Client) => clientGroup(c, today);
   const clients = allClients.filter((c) => groupOf(c) === group);
@@ -132,6 +134,14 @@ export default function ClientsScreen({ navigation }: Props) {
     setClients((prev) => prev.map((c) => (c.id === who.id ? { ...c, weigh_in_every: key } : c)));
   };
 
+  const applyBulkWeighIn = async (ids: string[], key: WeighInEvery) => {
+    const { error } = await supabase.from("clients").update({ weigh_in_every: key, weigh_in_reminded_on: null }).in("id", ids);
+    if (error) return Alert.alert("Couldn't save it", error.message);
+    setClients((prev) => prev.map((c) => (ids.includes(c.id) ? { ...c, weigh_in_every: key } : c)));
+    setBulkWeighIn(false);
+    Alert.alert("Saved", `${ids.length} client${ids.length === 1 ? "" : "s"} set. They'll be reminded when it's due.`);
+  };
+
   // With a proof of payment waiting, Activate / Renew opens it so it can be checked first.
   const activateClient = async (client: Client) => {
     if (proofs[client.id]) {
@@ -201,6 +211,9 @@ export default function ClientsScreen({ navigation }: Props) {
         })}
       </View>
       <Text style={styles.helper}>{current.helper}</Text>
+      <Pressable style={styles.bulkButton} onPress={() => setBulkWeighIn(true)} accessibilityRole="button">
+        <Text style={styles.bulkText}>⚖️ Set weigh-ins for several clients</Text>
+      </Pressable>
       <FlatList
         data={clients}
         keyExtractor={(c) => c.id}
@@ -249,6 +262,12 @@ export default function ClientsScreen({ navigation }: Props) {
         }}
         ListEmptyComponent={<Text style={styles.helper}>{current.empty}</Text>}
       />
+      <BulkWeighInModal
+        clients={allClients.filter((c) => !c.archived_at && c.access_status !== "expired")}
+        visible={bulkWeighIn}
+        onApply={applyBulkWeighIn}
+        onClose={() => setBulkWeighIn(false)}
+      />
       <WeighInPicker name={askWeighIn?.name ?? "your client"} visible={!!askWeighIn} onPick={pickWeighIn} />
       <PaymentProofModal
         proof={viewing}
@@ -286,6 +305,8 @@ const styles = StyleSheet.create({
   tabText: { color: "#CBD5E1", fontWeight: "700", fontSize: 13, textAlign: "center" },
   tabTextOn: { color: "#0F172A" },
   helper: { color: "#64748B", fontSize: 12, marginBottom: 16 },
+  bulkButton: { borderWidth: 1, borderColor: "#D4AF37", borderRadius: 10, paddingVertical: 10, alignItems: "center", marginBottom: 12 },
+  bulkText: { color: "#D4AF37", fontWeight: "700", fontSize: 14 },
   row: {
     flexDirection: "row",
     alignItems: "center",
