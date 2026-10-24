@@ -37,6 +37,8 @@ import RecoveryCoachCard from "@/components/RecoveryCoachCard";
 import OtherActivityCard from "@/components/OtherActivityCard";
 import HistoryImportCard from "@/components/HistoryImportCard";
 import ProgressCard from "@/components/ProgressCard";
+import WeighInPicker from "@/components/WeighInPicker";
+import type { WeighInEvery } from "@/lib/progress";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { trainingLogStart } from "@/lib/trainingLog";
@@ -107,6 +109,7 @@ function formatIntakeLabel(key: string) {
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
+  const [askWeighIn, setAskWeighIn] = useState(false);
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
   const [stabilityKey, setStabilityKey] = useState(0);
@@ -377,10 +380,19 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             const { error } = await supabase.from("clients").update(next).eq("id", client.id);
             if (error) return Alert.alert("Couldn't update", error.message);
             setClient((c) => (c ? { ...c, ...next } : c));
+            // No weigh-in schedule yet: ask how often they weigh and measure.
+            if (!client.weigh_in_every && client.id !== trainer?.id) setAskWeighIn(true);
           },
         },
       ]
     );
+  };
+  const pickWeighIn = async (key: WeighInEvery | null) => {
+    setAskWeighIn(false);
+    if (!client || !key) return;
+    const { error } = await supabase.from("clients").update({ weigh_in_every: key, weigh_in_reminded_on: null }).eq("id", client.id);
+    if (error) return Alert.alert("Couldn't save it", error.message);
+    setClient((c) => (c ? { ...c, weigh_in_every: key } : c));
   };
   const markExpired = () => {
     if (!client) return;
@@ -489,6 +501,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <WeighInPicker name={client.name} visible={askWeighIn} onPick={pickWeighIn} />
       <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
         <View style={styles.headerRow}>
           <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
