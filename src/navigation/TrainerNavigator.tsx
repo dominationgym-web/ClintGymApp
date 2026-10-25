@@ -21,6 +21,7 @@ import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
+import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
@@ -89,6 +90,7 @@ export default function TrainerNavigator() {
         <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
         <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
         <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ title: "Monthly challenges", headerBackTitle: "Back" }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
         <Stack.Screen
           name="ProgramBuilder"

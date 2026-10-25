@@ -969,6 +969,39 @@ export type TrainerProblemMessage = {
   created_at: string;
 };
 
+// Monthly challenges (0152): the owner's shared challenges, the one a trainer
+// switched on for a month, and the days each client ticked off.
+export type ChallengeLibraryItem = {
+  id: string;
+  created_by: string;
+  emoji: string;
+  title: string;
+  daily_task: string;
+  summary: string;
+  target_days: number;
+  shared_at: string | null;
+  created_at: string;
+};
+export type TrainerChallenge = {
+  id: string;
+  trainer_id: string;
+  month: string;
+  source: string;
+  emoji: string;
+  title: string;
+  daily_task: string;
+  summary: string;
+  target_days: number;
+  announced_at: string | null;
+  created_at: string;
+};
+export type ChallengeDay = {
+  challenge_id: string;
+  client_id: string;
+  day: string;
+  created_at: string;
+};
+
 // One row of owner_trainer_clients() (0151): a trainer's client, for the owner.
 export type OwnerTrainerClientRow = {
   id: string;
@@ -1077,6 +1110,24 @@ export interface Database {
       trainer_problem_messages: {
         Row: TrainerProblemMessage;
         Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      challenge_library: {
+        Row: ChallengeLibraryItem;
+        Insert: Pick<ChallengeLibraryItem, "emoji" | "title" | "daily_task" | "summary" | "target_days">;
+        Update: Partial<Pick<ChallengeLibraryItem, "emoji" | "title" | "daily_task" | "summary" | "target_days">>;
+        Relationships: [];
+      };
+      trainer_challenges: {
+        Row: TrainerChallenge;
+        Insert: Pick<TrainerChallenge, "month" | "source" | "emoji" | "title" | "daily_task" | "summary" | "target_days">;
+        Update: never;
+        Relationships: [];
+      };
+      challenge_days: {
+        Row: ChallengeDay;
+        Insert: Pick<ChallengeDay, "challenge_id" | "day">;
         Update: never;
         Relationships: [];
       };
@@ -1269,6 +1320,7 @@ export interface Database {
       owner_trainer_clients: { Args: { p_trainer: string }; Returns: OwnerTrainerClientRow[] };
       send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };
       set_trainer_problem_status: { Args: { p_problem: string; p_status: TrainerProblemStatus }; Returns: undefined };
+      share_challenge: { Args: { p_id: string }; Returns: ChallengeLibraryItem };
       owner_client_income: {
         Args: Record<string, never>;
         Returns: { trainer_id: string; currency: BillingCurrency; income: number; priced: number; unpriced: number }[];

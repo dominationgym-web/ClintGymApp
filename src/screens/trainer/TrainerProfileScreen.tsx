@@ -35,17 +35,20 @@ import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
 import TrainerIncome from "@/components/TrainerIncome";
 import MyTraining from "@/components/MyTraining";
+import OwnerChallenges from "@/components/OwnerChallenges";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices, EftDetails } from "@/types/database";
 
-type TabKey = "code" | "train" | "income" | "refer" | "details" | "payments" | "account";
+type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "details" | "payments" | "account";
 
 const TABS: ScreenTab<TabKey>[] = [
   { key: "code", label: "Code & logo", icon: "qr-code" },
   { key: "train", label: "My training", icon: "barbell" },
   { key: "income", label: "Income", icon: "cash" },
   { key: "refer", label: "Plan & refer", icon: "gift" },
+  // App owner only (0152): add challenges and share them with all trainers.
+  { key: "challenges", label: "Challenges", icon: "trophy" },
   { key: "details", label: "Details", icon: "person" },
   { key: "payments", label: "Payments", icon: "card" },
   { key: "account", label: "Account", icon: "settings" },
@@ -83,7 +86,7 @@ export default function TrainerProfileScreen() {
   if (!trainer) return null;
   // The owner has no plan or referrals. Their tracker across all trainers
   // (0105) is under Trainers → Billing, with the rest of the money.
-  const tabs = TABS.filter((t) => !trainer.is_owner || t.key !== "refer");
+  const tabs = TABS.filter((t) => (trainer.is_owner ? t.key !== "refer" : t.key !== "challenges"));
   const today = todayIso();
   const trial = trialLabel(trainer.trial_ends_at, today);
   const trialLeft = trialDaysLeft(trainer.trial_ends_at, today);
@@ -321,6 +324,7 @@ export default function TrainerProfileScreen() {
           </>
         )}
         {tab === "train" && <MyTraining />}
+        {tab === "challenges" && trainer.is_owner && <OwnerChallenges />}
         {tab === "account" && (
           <>
             <Text style={styles.sectionHeading}>Signed in as</Text>

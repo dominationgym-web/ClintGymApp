@@ -6,7 +6,7 @@
 export type NotificationRoute =
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
-  | { stack: "trainer"; screen: "Billing" }
+  | { stack: "trainer"; screen: "Billing" | "Challenges" }
   | { stack: "trainer"; screen: "TrainerProblems"; problemId?: string }
   | { stack: "trainer"; screen: "ClientDetail"; clientId: string; tab?: "training"; open?: "videos" | "history" };
 
@@ -18,6 +18,7 @@ const CLIENT_SCREENS: Record<string, "CheckIn" | "Habits" | "Exercises" | "Profi
   deload_due: "Exercises",
   achievement: "Exercises",
   habit_win: "Habits",
+  challenge_started: "Habits",
   plan_expiring: "Profile",
   weigh_in: "Profile",
   plan_expired: "Profile",
@@ -57,6 +58,7 @@ export function notificationRoute(
     const problemId = typeof data?.problemId === "string" && data.problemId ? data.problemId : undefined;
     return { stack: "trainer", screen: "TrainerProblems", problemId };
   }
+  if (type === "challenge_done" || type === "challenge_shared") return { stack: "trainer", screen: "Challenges" };
   if (type === "trainer_signup" || type === "referral_signup") return { stack: "trainer", screen: "Trainers" };
   return null;
 }

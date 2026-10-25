@@ -22,6 +22,7 @@ import { scheduleHabitReminders } from "@/lib/notifications";
 import { findHabit, isRunning } from "@/lib/habitLibrary";
 import { BRAND_GOLD } from "@/lib/brand";
 import ChooseHabitsModal from "@/components/ChooseHabitsModal";
+import ChallengeCard from "@/components/ChallengeCard";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const todayWeekday = () => new Date().getDay(); // 0 = Sunday .. 6 = Saturday
@@ -233,6 +234,8 @@ export default function HabitsScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.title}>Habits</Text>
+      {/* This month's challenge from their coach (0152), when there is one. */}
+      {client?.trainer_id ? <ChallengeCard clientId={client.id} trainerId={client.trainer_id} /> : null}
       <Text style={styles.helper}>Choose what you want to work on, then pick the days that fit your schedule.</Text>
       <Pressable style={styles.chooseButton} onPress={() => setChoosing(true)}>
         <Text style={styles.chooseButtonText}>+ Choose habits</Text>

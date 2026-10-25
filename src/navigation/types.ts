@@ -55,6 +55,8 @@ export type TrainerStackParamList = {
   SuggestionBox: undefined;
   // Trainer problems (0151): problemId opens that one, e.g. from its notification.
   TrainerProblems: { problemId?: string } | undefined;
+  // Monthly challenges (0152): pick one for all clients and see who's winning.
+  Challenges: undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   ClientDetail: { clientId: string; tab?: "training"; open?: "videos" | "history" };

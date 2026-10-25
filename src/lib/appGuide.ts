@@ -58,6 +58,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Your coach can set habits for you. You can also add your own from the list (nutrition, movement, sleep, mindset) or write your own, up to 15 at a time.",
         "Tap ⚙ Days and reminder on a habit to pick its days, set a reminder or stop it. Tick Remind me and save a time, and your phone reminds you at that time on the habit's days (in the installed app, with notifications allowed).",
         "Start small. Two habits you never miss beat ten you forget.",
+        "🏆 When your coach switches on a monthly challenge, it sits at the top of the Habits tab. Tap I did it today each day you do it (forgot yesterday? there's a link to tick it). Reach the target days to win, and your coach is told. Tap the challenge name to read how it works.",
         "Keep a habit 5 days out of 7 and your coach is told, so expect a message from them.",
       ],
     },
@@ -334,6 +335,20 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "🩺 When to refer (top of the menu): your scope as a trainer, who to refer to (GP, physio, biokineticist, registered dietitian, psychologist, SADAG 0800 567 567), the red flags, and mental health.",
         "Client retention, nutrition for coaches, training each body part, 📅 Muscle Year (1-year muscle building), recovery, women's health (perimenopause and menopause, iron and RED-S) and 🌳 Longevity (coaching older adults), written for trainers.",
         "Clients have their own guides on nutrition, supplements, sleep and the Health Reset (including perimenopause and menopause, and iron), so you can point them there.",
+      ],
+    },
+    {
+      key: "challenges",
+      icon: "🏆",
+      title: "Monthly challenges",
+      where: "Menu ☰ > Monthly challenges",
+      points: [
+        "Pick one challenge a month for all your clients: 20 ready-made ones (steps, water, protein, sleep, push-ups, no sugary drinks and more), plus any the app owner shares. Tap one to read how it works, then Use for this month.",
+        "Your active clients get a notification and see it at the top of their Habits tab, where they tick off each day they do it. They win by reaching the target days.",
+        "The same page shows how each client is doing, most days first, with a 🏆 for winners. You get a notification when a client finishes, so you can congratulate them personally.",
+        "Plan ahead: the second tab is next month. Your clients are told about it on the 1st. In the first week of a month with no challenge on, your dashboard reminds you to pick one.",
+        "Change or Stop a challenge any time in its month. Changing it starts the new one fresh.",
+        "🏆 App owner only: Profile > Challenges is where you add your own challenges (name, daily task, how it works, days to win) and tap Share with all trainers. Every trainer gets a notification and can use it if they wish.",
       ],
     },
     {
