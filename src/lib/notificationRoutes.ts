@@ -5,6 +5,8 @@
 
 export type NotificationRoute =
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
+  | { stack: "client"; screen: "VideoCheckIn" }
+  | { stack: "trainer"; screen: "VideoCheckIns" }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
   | { stack: "trainer"; screen: "Billing" }
   | { stack: "trainer"; screen: "TrainerProblems"; problemId?: string }
@@ -40,6 +42,7 @@ export function notificationRoute(
 ): NotificationRoute | null {
   const type = typeof data?.type === "string" ? data.type : null;
   if (!type || !role) return null;
+  if (type === "video_checkin") return role === "client" ? { stack: "client", screen: "VideoCheckIn" } : { stack: "trainer", screen: "VideoCheckIns" };
   if (role === "client") {
     const screen = CLIENT_SCREENS[type];
     return screen ? { stack: "client", screen } : null;

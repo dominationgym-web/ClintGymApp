@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { notificationRoute } from "@/lib/notificationRoutes";
 
 describe("notificationRoute", () => {
+  it("opens the video check-in page for either side", () => {
+    expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "client")).toEqual({ stack: "client", screen: "VideoCheckIn" });
+    expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "trainer")).toEqual({ stack: "trainer", screen: "VideoCheckIns" });
+  });
+
   it("sends a client to the right tab", () => {
     expect(notificationRoute({ type: "coach_message", messageId: "m1" }, "client")).toEqual({ stack: "client", screen: "CheckIn" });
     expect(notificationRoute({ type: "catch_up" }, "client")).toEqual({ stack: "client", screen: "Exercises" });

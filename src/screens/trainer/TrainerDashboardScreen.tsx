@@ -13,7 +13,8 @@ import HabitWinsCard from "@/components/HabitWinsCard";
 import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
 import { clientGroup } from "@/lib/clientGroups";
-import type { Checkin, Client, ClientProblem } from "@/types/database";
+import { checkinClock, checkinDay, isUpcoming } from "@/lib/videoCheckins";
+import type { Checkin, Client, ClientProblem, VideoCheckin } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 
 type Props = TrainerTabScreenProps<"Dashboard">;
@@ -201,6 +202,35 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     return navigation.addListener("focus", loadSuggestionCount);
   }, [navigation, loadSuggestionCount]);
 
+  // Video check-ins (0152): ones to confirm, and today's confirmed ones.
+  const [videoCheckins, setVideoCheckins] = useState<(VideoCheckin & { name: string })[]>([]);
+  const loadVideoCheckins = useCallback(async () => {
+    if (!trainer) return;
+    const { data } = await supabase
+      .from("video_checkins")
+      .select("*")
+      .eq("trainer_id", trainer.id)
+      .in("status", ["requested", "confirmed"])
+      .gte("starts_at", new Date(Date.now() - 3 * 3600000).toISOString())
+      .order("starts_at");
+    const now = new Date();
+    const shown = (data ?? []).filter(
+      (v) => isUpcoming(v, now) && (v.status === "requested" || checkinDay(v.starts_at, now) === "Today")
+    );
+    if (shown.length === 0) {
+      setVideoCheckins([]);
+      return;
+    }
+    const { data: names } = await supabase.from("clients").select("id, name").in("id", [...new Set(shown.map((v) => v.client_id))]);
+    const byId = new Map((names ?? []).map((c) => [c.id, c.name]));
+    setVideoCheckins(shown.map((v) => ({ ...v, name: byId.get(v.client_id) ?? "Client" })));
+  }, [trainer]);
+
+  useEffect(() => {
+    loadVideoCheckins();
+    return navigation.addListener("focus", loadVideoCheckins);
+  }, [navigation, loadVideoCheckins]);
+
   const load = useCallback(async () => {
     if (!trainer) return;
     const { data: clients } = await supabase
@@ -337,6 +367,15 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       text: `🌱 Approve a foundation program for ${c.name.split(" ")[0]}`,
       link: "Open",
       onPress: () => navigation.navigate("ClientDetail", { clientId: c.id, tab: "training" }),
+    })),
+    ...videoCheckins.map((v) => ({
+      key: `video-${v.id}`,
+      text:
+        v.status === "requested"
+          ? `📹 Confirm ${v.name.split(" ")[0]}'s video check-in · ${checkinDay(v.starts_at)} ${checkinClock(v.starts_at)}`
+          : `📹 Video check-in with ${v.name.split(" ")[0]} today at ${checkinClock(v.starts_at)}`,
+      link: "Open",
+      onPress: () => navigation.navigate("VideoCheckIns"),
     })),
     newProblems > 0 && {
       key: "problems",
