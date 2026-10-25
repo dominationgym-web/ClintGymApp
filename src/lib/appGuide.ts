@@ -190,6 +190,19 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "videoCheckin",
+      icon: "📹",
+      title: "Video check-in with your coach",
+      where: "Menu ☰ → Video check-in",
+      points: [
+        "Book a short video call with your coach, once a week. Pick this week or next week, tap a time, add what you'd like to talk about if you want, and tap Book this time.",
+        "Your coach confirms it and you get a notification. Switch on Same time every week and the next one books itself after each call.",
+        "You get a reminder the day before, that morning, an hour before and 15 minutes before, and a pop-up shows at the top of the app all day on the day. ✕ hides it until you next open the app.",
+        "The call happens on WhatsApp: your coach video calls you. Tap 💬 WhatsApp your coach to open their chat.",
+        "Can't make it? Tap Cancel this check-in and your coach is told. Then pick another time.",
+      ],
+    },
+    {
       key: "profile",
       icon: "👤",
       title: "Profile and progress photos",
@@ -334,6 +347,21 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "🩺 When to refer (top of the menu): your scope as a trainer, who to refer to (GP, physio, biokineticist, registered dietitian, psychologist, SADAG 0800 567 567), the red flags, and mental health.",
         "Client retention, nutrition for coaches, training each body part, 📅 Muscle Year (1-year muscle building), recovery, women's health (perimenopause and menopause, iron and RED-S) and 🌳 Longevity (coaching older adults), written for trainers.",
         "Clients have their own guides on nutrition, supplements, sleep and the Health Reset (including perimenopause and menopause, and iron), so you can point them there.",
+      ],
+    },
+    {
+      key: "videoCheckins",
+      icon: "📹",
+      title: "Weekly video check-ins",
+      where: "Menu ☰ > Video check-ins",
+      points: [
+        "My times: tap a day, then tap the times you're free for a video check-in (tap again to switch one off). Same times Monday to Friday copies a weekday to the others.",
+        "Call setup: your WhatsApp number (calls happen on WhatsApp), how long a call is, and Taking bookings, which you switch off when you're away.",
+        "Clients book one of your times, up to two weeks ahead and once a week. You get a notification: tap Confirm or Can't make it on the Bookings tab or your dashboard.",
+        "You both get a reminder the day before, that morning, an hour before and 15 minutes before, and a pop-up shows at the top of the app all day on the day. At the time, tap 💬 WhatsApp to open the chat with your client, then tap the video button.",
+        "A client can keep the same time every week: the next one books itself after each call, as long as that time is still open.",
+        "On a client's page, tap their phone number to open WhatsApp with them.",
+        "💬 Check in on…: when you haven't been in touch with an active client for 4 days, your dashboard shows them and you get a 09:00 notification. Tap 💬 WhatsApp to message them in your own words, or Spoke in person if you saw them. A check-in note or a video check-in counts too. Nothing is ever sent to the client for you.",
       ],
     },
     {

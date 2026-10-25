@@ -9,6 +9,7 @@ import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 import { STABILITY_MENU_ITEM } from "@/lib/stability";
 import { OWNER_PROBLEMS_MENU_ITEM, TRAINER_PROBLEMS_MENU_ITEM } from "@/lib/trainerProblems";
 import { useAuth } from "@/context/AuthContext";
+import { TRAINER_VIDEO_CHECKINS_MENU_ITEM } from "@/lib/videoCheckins";
 
 // The trainer app's menu (top right of every trainer tab).
 export default function TrainerMenuButton() {
@@ -18,6 +19,8 @@ export default function TrainerMenuButton() {
     <MenuButton
       items={[
         { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
+        // Weekly video check-ins (0155): free times, bookings and call setup.
+        { ...TRAINER_VIDEO_CHECKINS_MENU_ITEM, onPress: () => navigation.navigate("VideoCheckIns") },
         // The stability programs to give clients (GRIZZ, 2026-10-14: trainer side only),
         // with every exercise's video for 1-on-1 coaching (named by GRIZZ, 2026-10-16).
         {

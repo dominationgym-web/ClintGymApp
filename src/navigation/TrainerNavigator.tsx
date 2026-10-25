@@ -21,11 +21,13 @@ import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
+import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
+import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
@@ -89,6 +91,7 @@ export default function TrainerNavigator() {
         <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
         <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
         <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
+        <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
         <Stack.Screen
           name="ProgramBuilder"
@@ -105,6 +108,7 @@ export default function TrainerNavigator() {
           {({ route }) => <StabilityScreen role="trainer" initialArea={route.params?.area} />}
         </Stack.Screen>
       </Stack.Navigator>
+      <VideoCheckInDayPopup who="trainer" />
     </>
   );
 }

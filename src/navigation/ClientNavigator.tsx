@@ -18,10 +18,12 @@ import ClientWelcomeScreen from "@/screens/client/ClientWelcomeScreen";
 import { ClientAppGuideScreen } from "@/screens/AppGuideScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import RecoveryScreen from "@/screens/client/RecoveryScreen";
+import VideoCheckInScreen from "@/screens/client/VideoCheckInScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
 import DailyStartPopup from "@/components/DailyStartPopup";
 import HealthSyncOnOpen from "@/components/HealthSyncOnOpen";
+import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -74,8 +76,10 @@ export default function ClientNavigator() {
         <Stack.Screen name="AppGuide" component={ClientAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
         <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
         <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
+        <Stack.Screen name="VideoCheckIn" component={VideoCheckInScreen} options={{ title: "Video check-in", headerBackTitle: "Back" }} />
         <Stack.Screen name="FormVideos" component={VideoUploadScreen} options={{ title: "Form videos", headerBackTitle: "Back" }} />
       </Stack.Navigator>
+      <VideoCheckInDayPopup who="client" />
     </>
   );
 }
