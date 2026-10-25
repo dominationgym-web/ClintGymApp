@@ -104,6 +104,7 @@ create or replace function public.video_checkin_when(p_at timestamptz, p_tz text
 returns text
 language sql
 stable
+set search_path = public
 as $$
   select to_char(p_at at time zone coalesce(p_tz, 'Africa/Johannesburg'), 'Dy DD Mon, HH24:MI')
 $$;
