@@ -425,6 +425,8 @@ export type Client = {
   first_stint_ended_at: string | null;
   returned_at: string | null;
   first_intake_responses: Record<string, string> | null;
+  // The trainer tapped "Spoke in person" on a check-in nudge (0152).
+  trainer_contact_at?: string | null;
   created_at: string;
 }
 
@@ -467,6 +469,43 @@ export type CoachMessage = {
   video_id?: string | null;
   created_at: string;
   read_at: string | null;
+}
+
+// Trainer-client chat (0152): text, a photo (optional caption) or a voice
+// note. Files are in the chat-media bucket under the client's id.
+export type ChatMessageKind = "text" | "photo" | "voice";
+export type ChatMessage = {
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  from_trainer: boolean;
+  kind: ChatMessageKind;
+  body: string | null;
+  media_path: string | null;
+  duration_ms: number | null;
+  created_at: string;
+  // Set by mark_chat_read() when the other side opens the chat.
+  read_at: string | null;
+}
+
+// One row of trainer_chat_list() (0152).
+export type TrainerChatRow = {
+  client_id: string;
+  name: string;
+  avatar_path: string | null;
+  last_at: string | null;
+  last_kind: ChatMessageKind | null;
+  last_body: string | null;
+  last_from_trainer: boolean | null;
+  unread: number;
+}
+
+// One row of quiet_clients() (0152): a client the trainer hasn't messaged in a few days.
+export type QuietClientRow = {
+  client_id: string;
+  name: string;
+  last_spoke_at: string | null;
+  days_quiet: number;
 }
 
 // How a client's workout went that day (0076): see src/lib/workoutSessions.ts.
@@ -1065,6 +1104,13 @@ export interface Database {
         Update: Partial<CoachMessage>;
         Relationships: [];
       };
+      chat_messages: {
+        Row: ChatMessage;
+        Insert: Pick<ChatMessage, "client_id" | "trainer_id" | "from_trainer" | "kind"> &
+          Partial<Pick<ChatMessage, "body" | "media_path" | "duration_ms">>;
+        Update: never;
+        Relationships: [];
+      };
       push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
       cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
       suggestions: { Row: Suggestion; Insert: Partial<Suggestion>; Update: Partial<Suggestion>; Relationships: [] };
@@ -1266,6 +1312,10 @@ export interface Database {
       trainer_billing_status: { Args: { p_trainer: string }; Returns: TrainerBillingStatus[] };
       billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
       owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
+      mark_chat_read: { Args: { p_client?: string | null }; Returns: undefined };
+      trainer_chat_list: { Args: Record<string, never>; Returns: TrainerChatRow[] };
+      quiet_clients: { Args: Record<string, never>; Returns: QuietClientRow[] };
+      mark_spoke_to_client: { Args: { p_client: string }; Returns: undefined };
       owner_trainer_clients: { Args: { p_trainer: string }; Returns: OwnerTrainerClientRow[] };
       send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };
       set_trainer_problem_status: { Args: { p_problem: string; p_status: TrainerProblemStatus }; Returns: undefined };

@@ -38,6 +38,8 @@ export type ClientStackParamList = {
   Recovery: undefined;
   // The client's form videos and their coach's feedback (was the Video log tab).
   FormVideos: undefined;
+  // Chat with their coach (0152).
+  Chat: undefined;
 };
 
 export type TrainerTabParamList = {
@@ -65,6 +67,10 @@ export type TrainerStackParamList = {
   GroupLive: { clientId?: string } | undefined;
   ProgramBuilder: undefined;
   Billing: undefined;
+  // Trainer-client chat (0152): the list of chats, and one client's chat.
+  Messages: undefined;
+  // name is left out when opened from a notification; the screen looks it up.
+  Chat: { clientId: string; name?: string };
   TrainerGuide: { guideKey: TrainerGuideKey };
   AppGuide: undefined;
   // area opens that body area straight away (from an injury a client reported).

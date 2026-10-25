@@ -3,6 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import { View, Text, Pressable, Modal, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
+import ChatButton from "@/components/chat/ChatButton";
 import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";
 
 export type MenuItem = { key: string; title: string; summary: string; icon?: string; onPress: () => void };
@@ -30,6 +31,7 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
 
   return (
     <View style={styles.row}>
+      <ChatButton />
       <SearchButton />
       <Pressable
         onPress={() => setOpen(true)}

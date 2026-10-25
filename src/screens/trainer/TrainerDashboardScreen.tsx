@@ -10,6 +10,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import HabitWinsCard from "@/components/HabitWinsCard";
+import CheckInNudgeCard from "@/components/chat/CheckInNudgeCard";
 import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
 import { clientGroup } from "@/lib/clientGroups";
@@ -373,6 +374,8 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                 ))}
               </View>
             )}
+            {/* "Check in on Nancy" (0152): clients you haven't messaged in a few days. */}
+            <CheckInNudgeCard />
             {trainer && <HabitWinsCard trainerId={trainer.id} />}
           </>
         }

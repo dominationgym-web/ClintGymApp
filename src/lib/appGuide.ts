@@ -49,6 +49,21 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "chat",
+      icon: "💬",
+      title: "Chat with your coach",
+      where: "💬 at the top right of every tab",
+      points: [
+        "Your private chat with your coach. Tap the 💬 bubble at the top of the screen. A gold number on it means a new message.",
+        "Type a message and tap the arrow to send it.",
+        "📷 Tap the camera to send a photo: take one or pick one from your photos. Anything you typed goes with it.",
+        "🎤 Tap the microphone to record a voice note. It records straight away (up to 3 minutes). Tap the arrow to send it, or the bin to throw it away. Tap ▶ on a voice note to play it.",
+        "✓✓ Seen under your message means your coach has opened it.",
+        "🔔 In the installed app you get a notification for each new message. Tap it to open the chat.",
+        "Voice notes need the newest version of the app. On an older version, text and photos work and the app tells you to update for voice notes.",
+      ],
+    },
+    {
       key: "habits",
       icon: "🔥",
       title: "Habits and streaks",
@@ -239,6 +254,21 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "🏅 You get a phone notification when a client earns a gold achievement: 10% more weight for at least the same reps.",
         "Habit wins list each habit a client kept 5 of 7 days. Tap Write to send them a message in your own words.",
         "The recovery check warns you when a client is training the same muscles two days running, and lets you make the session lighter or move it.",
+      ],
+    },
+    {
+      key: "chat",
+      icon: "💬",
+      title: "Chat and checking in",
+      where: "💬 at the top right, or 💬 Chat on a client",
+      points: [
+        "Tap the 💬 bubble at the top of any tab for Messages: every active client, newest chat first, with a gold count of unread messages. Tap a client to chat. You can also tap 💬 Chat at the top of a client's page.",
+        "Send text, 📷 photos (take one or pick one; what you typed goes with it as a caption) and 🎤 voice notes (tap the microphone, talk, tap the arrow to send or the bin to throw it away; up to 3 minutes).",
+        "✓✓ Seen shows when the client has opened your message. You get a notification for each message from a client; tap it to open their chat.",
+        "💬 Check in on: your Dashboard and Messages list clients you haven't messaged in 4 days or more, e.g. \"Check in on Nancy and 2 more\". Tap Show, then Message to write to them in your own words. Saw them at the gym? Tap Spoke in person and they drop off the list.",
+        "At 9am each day you get one notification naming who to check in on. The app never messages a client for you: the words always come from you, so they feel looked after.",
+        "Check-in notes and replies to alerts still show at the top of the client's Check-in, and count as speaking to them.",
+        "Voice notes need the newest version of the app. Clients on an older version can still text and send photos.",
       ],
     },
     {

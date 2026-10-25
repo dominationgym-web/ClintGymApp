@@ -26,6 +26,7 @@ import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
+import { TrainerChatScreen, TrainerMessagesScreen } from "@/screens/ChatScreen";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
@@ -90,6 +91,8 @@ export default function TrainerNavigator() {
         <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
         <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
         <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Messages" component={TrainerMessagesScreen} options={{ title: "Messages", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Chat" component={TrainerChatScreen} options={({ route }) => ({ title: route.params.name ?? "Chat", headerBackTitle: "Back" })} />
         <Stack.Screen
           name="ProgramBuilder"
           component={ProgramBuilderScreen}

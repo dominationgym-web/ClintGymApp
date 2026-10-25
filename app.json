@@ -56,7 +56,14 @@
         {
           "photosPermission": "Lets you pick a training video, progress photo or profile photo from your library to send to your coach.",
           "cameraPermission": "Lets you record training videos and take progress and profile photos for your coach.",
-          "microphonePermission": "Records sound with your training videos."
+          "microphonePermission": "Records voice notes for your chat, and sound with your training videos."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Records voice notes for your chat, and sound with your training videos.",
+          "enableBackgroundPlayback": false
         }
       ],
       [

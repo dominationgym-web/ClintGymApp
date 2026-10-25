@@ -512,6 +512,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <Pressable style={styles.groupButton} onPress={() => navigation.navigate("GroupLive", { clientId: client.id })}>
               <Text style={styles.groupButtonText}>👥 Group</Text>
             </Pressable>
+            {/* Chat with photos and voice notes (0152). */}
+            <Pressable style={styles.groupButton} onPress={() => navigation.navigate("Chat", { clientId: client.id, name: client.name })}>
+              <Text style={styles.groupButtonText}>💬 Chat</Text>
+            </Pressable>
           </View>
         )}
         {tab === "overview" && (

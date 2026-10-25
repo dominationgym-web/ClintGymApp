@@ -10,7 +10,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Every bucket that stores client files under a `<clientId>/` folder.
-const CLIENT_BUCKETS = ["client-avatars", "progress-photos", "training-videos", "equipment-photos"];
+const CLIENT_BUCKETS = ["client-avatars", "progress-photos", "training-videos", "equipment-photos", "chat-media"];
 // Trainers keep their logo under a `<trainerId>/` folder (0029).
 const TRAINER_BUCKETS = ["trainer-logos"];
 

@@ -5,6 +5,9 @@
 
 export type NotificationRoute =
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
+  | { stack: "client"; screen: "Chat" }
+  | { stack: "trainer"; screen: "Messages" }
+  | { stack: "trainer"; screen: "Chat"; clientId: string }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
   | { stack: "trainer"; screen: "Billing" }
   | { stack: "trainer"; screen: "TrainerProblems"; problemId?: string }
@@ -40,6 +43,13 @@ export function notificationRoute(
 ): NotificationRoute | null {
   const type = typeof data?.type === "string" ? data.type : null;
   if (!type || !role) return null;
+  // Chat (0152): straight into the conversation.
+  if (type === "chat_message") {
+    if (role === "client") return { stack: "client", screen: "Chat" };
+    const id = data?.clientId;
+    return typeof id === "string" && id ? { stack: "trainer", screen: "Chat", clientId: id } : { stack: "trainer", screen: "Messages" };
+  }
+  if (type === "checkin_nudge" && role === "trainer") return { stack: "trainer", screen: "Messages" };
   if (role === "client") {
     const screen = CLIENT_SCREENS[type];
     return screen ? { stack: "client", screen } : null;

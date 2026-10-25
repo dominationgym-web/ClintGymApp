@@ -22,6 +22,7 @@ import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
 import DailyStartPopup from "@/components/DailyStartPopup";
 import HealthSyncOnOpen from "@/components/HealthSyncOnOpen";
+import { ClientChatScreen } from "@/screens/ChatScreen";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -75,6 +76,7 @@ export default function ClientNavigator() {
         <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
         <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
         <Stack.Screen name="FormVideos" component={VideoUploadScreen} options={{ title: "Form videos", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Chat" component={ClientChatScreen} options={{ title: "Chat with your coach", headerBackTitle: "Back" }} />
       </Stack.Navigator>
     </>
   );
