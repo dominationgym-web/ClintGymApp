@@ -1002,6 +1002,9 @@ export type VideoCheckin = {
   reason: string | null;
   cancelled_by: "client" | "trainer" | null;
   reminded_day: boolean;
+  // 0157: the morning-of and hour-before reminders.
+  reminded_morning: boolean;
+  reminded_hour: boolean;
   reminded_soon: boolean;
   created_at: string;
   updated_at: string;

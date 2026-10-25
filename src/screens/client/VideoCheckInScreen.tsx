@@ -22,8 +22,8 @@ import type { OpenVideoSlot, VideoCheckin, VideoCheckinSettings } from "@/types/
 
 // Weekly video check-in (0155, GRIZZ 2026-10-25). The client books one of the
 // times their coach is free, at most one a week, and can keep the same time
-// every week. Their coach confirms it, and both get a reminder the day before
-// and 15 minutes before, plus a pop-up on the day (VideoCheckInDayPopup). The
+// every week. Their coach confirms it, and both get reminders the day before,
+// that morning, an hour before and 15 minutes before (0157), plus a pop-up on the day (VideoCheckInDayPopup). The
 // call itself happens on WhatsApp.
 export default function VideoCheckInScreen() {
   const { client } = useAuth();
@@ -91,7 +91,7 @@ export default function VideoCheckInScreen() {
     }
     setPicked(null);
     setTopic("");
-    Alert.alert("Booked 📹", "Your coach has been told. You'll get a notification when they confirm, and reminders the day before and 15 minutes before.");
+    Alert.alert("Booked 📹", "Your coach has been told. You'll get a notification when they confirm, and reminders the day before, that morning, an hour before and 15 minutes before.");
     load();
   };
 
@@ -152,7 +152,7 @@ export default function VideoCheckInScreen() {
           </Text>
           {v.topic ? <Text style={styles.helper}>To talk about: {v.topic}</Text> : null}
           {v.status === "confirmed" && (
-            <Text style={styles.helper}>Your coach will video call you on WhatsApp. We'll remind you the day before and 15 minutes before.</Text>
+            <Text style={styles.helper}>Your coach will video call you on WhatsApp. We'll remind you the day before, that morning, an hour before and 15 minutes before.</Text>
           )}
           {whatsapp && (
             <Pressable style={canJoin(v, now) ? styles.button : styles.outline} onPress={() => Linking.openURL(whatsapp)}>

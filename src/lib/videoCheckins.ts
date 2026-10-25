@@ -2,15 +2,16 @@ import type { VideoCheckin, VideoCheckinSettings, VideoCheckinSlot } from "@/typ
 
 // Weekly video check-ins (0155, GRIZZ 2026-10-25). The trainer sets the times
 // they're free each week; a client books one, the trainer confirms, and both
-// get reminders the day before and 15 minutes before, plus a pop-up on the
-// day. The call itself happens on WhatsApp (GRIZZ: "Can do that via WhatsApp
-// easier"), so the app only opens the chat.
+// get reminders the day before, that morning, an hour before and 15 minutes
+// before (0157), plus a pop-up on the day. The call itself happens on
+// WhatsApp (GRIZZ: "Can do that via WhatsApp easier"), so the app only opens
+// the chat.
 
 export const VIDEO_CHECKIN_MENU_ITEM = {
   key: "videoCheckin",
   title: "Video check-in",
   icon: "📹",
-  summary: "Book a weekly video call with your coach. You get a reminder the day before and 15 minutes before.",
+  summary: "Book a weekly video call with your coach. You get reminders the day before, that morning, an hour before and 15 minutes before.",
 };
 
 export const TRAINER_VIDEO_CHECKINS_MENU_ITEM = {
