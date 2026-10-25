@@ -37,6 +37,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       points: [
         "Do it every morning. It takes a minute over three short pages: How you feel, Sleep, then Food & drink. Tap Next to move on, or tap a page name at the top to jump to it.",
         "Be honest. A bad day logged truthfully helps your coach far more than a perfect day that didn't happen.",
+        "Not sure what counts as a high-GI meal? On the Food & drink page, tap What's a high-GI meal? under that question for examples (white bread, pap, white rice, chips, sweets, cakes, fizzy drinks and juice).",
         "The body and mind check asks about pain, tiredness, stress, dizziness or balance, and serious symptoms (chest pain, fainting, new numbness or weakness, trouble speaking or seeing, sudden severe breathlessness). If you report a problem, your coach is told straight away and the app checks in with you the next morning.",
         "🛑 If you report a serious symptom, stop and don't exercise. The app shows buttons to call an ambulance (10177, or 112 from a cell phone). Your workouts go on hold until a doctor has checked you and your coach clears you.",
         "After you check in, 📈 Your tips for this week reads your last 7 days and shows up to 3 things to work on, what to do and what it will do for you. It also gives you a message on alcohol: encouragement for every alcohol-free day, and water and electrolyte advice after a drinking session.",

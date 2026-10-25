@@ -7,6 +7,7 @@ import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 import TodayNotices from "@/components/TodayNotices";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import HighGiInfo from "@/components/HighGiInfo";
 import {
   View,
   Text,
@@ -403,6 +404,7 @@ export default function CheckInScreen() {
             />
 
             <Text style={styles.sectionHeading}>High-GI meals (count)</Text>
+            <HighGiInfo />
             <TextInput
               style={styles.input}
               keyboardType="number-pad"
