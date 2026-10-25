@@ -234,7 +234,7 @@ export default function HabitsScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.title}>Habits</Text>
-      {/* This month's challenge from their coach (0152), when there is one. */}
+      {/* This month's challenge from their coach (0153), when there is one. */}
       {client?.trainer_id ? <ChallengeCard clientId={client.id} trainerId={client.trainer_id} /> : null}
       <Text style={styles.helper}>Choose what you want to work on, then pick the days that fit your schedule.</Text>
       <Pressable style={styles.chooseButton} onPress={() => setChoosing(true)}>

@@ -34,7 +34,7 @@ export default function TrainerMenuButton() {
           summary: g.summary,
           onPress: () => navigation.navigate("TrainerGuide", { guideKey: g.key }),
         })),
-        // One challenge a month for all their clients (0152).
+        // One challenge a month for all their clients (0153).
         { ...CHALLENGES_MENU_ITEM, onPress: () => navigation.navigate("Challenges") },
         // Problems go to the owner in the app, linked to the trainer (0151).
         {

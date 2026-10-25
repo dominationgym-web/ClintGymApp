@@ -25,7 +25,7 @@ import type { ChallengeLibraryItem, TrainerChallenge } from "@/types/database";
 type MonthTab = "this" | "next";
 type KindFilter = ChallengeKind | "all" | "shared";
 
-// Monthly challenges (0152, GRIZZ 2026-10-25). The trainer picks one challenge
+// Monthly challenges (0153, GRIZZ 2026-10-25). The trainer picks one challenge
 // a month for all their clients, from the 20 built in plus any the app owner
 // shared, and sees who's ticked off the most days. Next month's can be picked
 // ahead; clients hear about it on the 1st.

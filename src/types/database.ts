@@ -969,7 +969,7 @@ export type TrainerProblemMessage = {
   created_at: string;
 };
 
-// Monthly challenges (0152): the owner's shared challenges, the one a trainer
+// Monthly challenges (0153): the owner's shared challenges, the one a trainer
 // switched on for a month, and the days each client ticked off.
 export type ChallengeLibraryItem = {
   id: string;

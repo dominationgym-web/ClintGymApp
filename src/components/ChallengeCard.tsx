@@ -15,7 +15,7 @@ import {
 } from "@/lib/challenges";
 import type { TrainerChallenge } from "@/types/database";
 
-// The client's side of this month's challenge (0152): what to do, a tick for
+// The client's side of this month's challenge (0153): what to do, a tick for
 // today (and yesterday, if they forgot), and how close they are to winning.
 // Shows nothing when their coach hasn't switched one on.
 export default function ChallengeCard({ clientId, trainerId }: { clientId: string; trainerId: string }) {

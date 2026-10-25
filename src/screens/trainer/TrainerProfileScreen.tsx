@@ -47,7 +47,7 @@ const TABS: ScreenTab<TabKey>[] = [
   { key: "train", label: "My training", icon: "barbell" },
   { key: "income", label: "Income", icon: "cash" },
   { key: "refer", label: "Plan & refer", icon: "gift" },
-  // App owner only (0152): add challenges and share them with all trainers.
+  // App owner only (0153): add challenges and share them with all trainers.
   { key: "challenges", label: "Challenges", icon: "trophy" },
   { key: "details", label: "Details", icon: "person" },
   { key: "payments", label: "Payments", icon: "card" },

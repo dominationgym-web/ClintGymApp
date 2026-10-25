@@ -1,6 +1,6 @@
 import type { TrainerChallenge } from "@/types/database";
 
-// Monthly challenges (0152, GRIZZ 2026-10-25): the trainer switches on one
+// Monthly challenges (0153, GRIZZ 2026-10-25): the trainer switches on one
 // challenge a month for all their clients to keep them going. Each client
 // ticks off the days they did it and wins by reaching the target. The app
 // owner can add more and share them with every trainer.

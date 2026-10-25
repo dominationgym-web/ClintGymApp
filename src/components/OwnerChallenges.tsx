@@ -20,7 +20,7 @@ import type { ChallengeLibraryItem } from "@/types/database";
 type Form = { emoji: string; title: string; daily_task: string; summary: string; target: string };
 const EMPTY: Form = { emoji: "🏆", title: "", daily_task: "", summary: "", target: "20" };
 
-// The app owner's challenges (Profile > Challenges, 0152, GRIZZ 2026-10-25):
+// The app owner's challenges (Profile > Challenges, 0153, GRIZZ 2026-10-25):
 // add a challenge, then share it with every trainer, who get a notification
 // and can use it for their clients any month they like.
 export default function OwnerChallenges() {

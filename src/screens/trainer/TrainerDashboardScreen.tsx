@@ -60,7 +60,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   const [newSuggestions, setNewSuggestions] = useState(0);
   // New problems from trainers (0151); the installed app also gets a push for each.
   const [newProblems, setNewProblems] = useState(0);
-  // No monthly challenge on in the first week of the month (0152).
+  // No monthly challenge on in the first week of the month (0153).
   const [noChallenge, setNoChallenge] = useState(false);
   const isOwner = !!trainer?.is_owner;
 
