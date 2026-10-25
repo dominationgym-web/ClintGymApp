@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
+import { markClientContact } from "@/lib/checkinNudges";
 import { canJoin, checkinClock, isUpcoming, todaysCheckin, whatsappLink } from "@/lib/videoCheckins";
 import type { VideoCheckin } from "@/types/database";
 
@@ -101,7 +102,11 @@ export default function VideoCheckInDayPopup({ who }: { who: "client" | "trainer
           </Text>
         </Pressable>
         {link && (
-          <Pressable style={styles.whatsapp} onPress={() => Linking.openURL(link)} accessibilityLabel={`WhatsApp ${name}`}>
+          <Pressable style={styles.whatsapp} onPress={() => {
+              if (who === "trainer") markClientContact(checkin.client_id);
+              Linking.openURL(link);
+            }}
+            accessibilityLabel={`WhatsApp ${name}`}>
             <Text style={styles.whatsappText}>💬</Text>
           </Pressable>
         )}

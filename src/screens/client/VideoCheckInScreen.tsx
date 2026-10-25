@@ -20,7 +20,7 @@ import {
 } from "@/lib/videoCheckins";
 import type { OpenVideoSlot, VideoCheckin, VideoCheckinSettings } from "@/types/database";
 
-// Weekly video check-in (0152, GRIZZ 2026-10-25). The client books one of the
+// Weekly video check-in (0155, GRIZZ 2026-10-25). The client books one of the
 // times their coach is free, at most one a week, and can keep the same time
 // every week. Their coach confirms it, and both get a reminder the day before
 // and 15 minutes before, plus a pop-up on the day (VideoCheckInDayPopup). The

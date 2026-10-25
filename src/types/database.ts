@@ -969,7 +969,7 @@ export type TrainerProblemMessage = {
   created_at: string;
 };
 
-// Weekly video check-ins (0152): the trainer's free times and how the call
+// Weekly video check-ins (0155): the trainer's free times and how the call
 // happens, and each booking a client makes.
 export type VideoCheckinSettings = {
   trainer_id: string;
@@ -1007,6 +1007,8 @@ export type VideoCheckin = {
   updated_at: string;
 };
 export type OpenVideoSlot = { slot_id: string; starts_at: string; minutes: number };
+// One row of quiet_clients() (0156): a client the trainer hasn't been in touch with lately.
+export type QuietClientRow = { client_id: string; name: string; phone: string | null; last_spoke_at: string | null; days_quiet: number };
 
 // One row of owner_trainer_clients() (0151): a trainer's client, for the owner.
 export type OwnerTrainerClientRow = {
@@ -1324,6 +1326,8 @@ export interface Database {
       billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
       owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
       owner_trainer_clients: { Args: { p_trainer: string }; Returns: OwnerTrainerClientRow[] };
+      quiet_clients: { Args: Record<string, never>; Returns: QuietClientRow[] };
+      mark_client_contact: { Args: { p_client: string }; Returns: undefined };
       open_video_slots: { Args: Record<string, never>; Returns: OpenVideoSlot[] };
       book_video_checkin: {
         Args: { p_slot: string; p_starts_at: string; p_repeat?: boolean; p_topic?: string | null };

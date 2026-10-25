@@ -55,7 +55,7 @@ export function notificationRoute(
   if (type === "client_signup" || type === "client_plan_expired" || type === "client_plan_expiring") return { stack: "trainer", screen: "Clients" };
   if (TRAINER_TRAINING_TYPES.has(type) && clientId) return { stack: "trainer", screen: "ClientDetail", clientId, tab: "training" };
   if (TRAINER_CLIENT_TYPES.has(type) && clientId) return { stack: "trainer", screen: "ClientDetail", clientId };
-  if (type === "planning_reminder") return { stack: "trainer", screen: "Dashboard" };
+  if (type === "planning_reminder" || type === "checkin_nudge") return { stack: "trainer", screen: "Dashboard" };
   if (type === "trainer_problem" || type === "trainer_problem_reply") {
     const problemId = typeof data?.problemId === "string" && data.problemId ? data.problemId : undefined;
     return { stack: "trainer", screen: "TrainerProblems", problemId };

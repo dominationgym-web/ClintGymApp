@@ -10,6 +10,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import HabitWinsCard from "@/components/HabitWinsCard";
+import CheckInNudgeCard from "@/components/CheckInNudgeCard";
 import { scheduleSuggestionBoxReminder } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
 import { clientGroup } from "@/lib/clientGroups";
@@ -202,7 +203,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     return navigation.addListener("focus", loadSuggestionCount);
   }, [navigation, loadSuggestionCount]);
 
-  // Video check-ins (0152): ones to confirm, and today's confirmed ones.
+  // Video check-ins (0155): ones to confirm, and today's confirmed ones.
   const [videoCheckins, setVideoCheckins] = useState<(VideoCheckin & { name: string })[]>([]);
   const loadVideoCheckins = useCallback(async () => {
     if (!trainer) return;
@@ -412,6 +413,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                 ))}
               </View>
             )}
+            <CheckInNudgeCard />
             {trainer && <HabitWinsCard trainerId={trainer.id} />}
           </>
         }

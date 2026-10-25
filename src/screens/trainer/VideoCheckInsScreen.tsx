@@ -5,6 +5,7 @@ import TextInput from "@/components/TextInput";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
+import { markClientContact } from "@/lib/checkinNudges";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
   CALL_LENGTHS,
@@ -28,7 +29,7 @@ import type { VideoCheckin, VideoCheckinSettings, VideoCheckinSlot } from "@/typ
 type Tab = "bookings" | "times" | "setup";
 type ClientInfo = { id: string; name: string; phone: string | null };
 
-// Weekly video check-ins (0152, GRIZZ 2026-10-25). Three tabs instead of one
+// Weekly video check-ins (0155, GRIZZ 2026-10-25). Three tabs instead of one
 // long page: the bookings to confirm and coming up, the times the trainer is
 // free each week (tap a day, tap times on or off), and the WhatsApp number
 // and call length. The call itself happens on WhatsApp.
@@ -230,7 +231,7 @@ function Bookings({
               <Pressable style={styles.outline} onPress={() => decline(v)} disabled={busyId === v.id}>
                 <Text style={styles.outlineText}>Can't make it</Text>
               </Pressable>
-              <WhatsAppButton phone={clients[v.client_id]?.phone} />
+              <WhatsAppButton clientId={v.client_id} phone={clients[v.client_id]?.phone} />
             </View>
           </View>
         ))
@@ -251,7 +252,7 @@ function Bookings({
               </Text>
               {v.topic ? <Text style={styles.rowBody}>To talk about: {v.topic}</Text> : null}
               <View style={styles.actions}>
-                <WhatsAppButton phone={clients[v.client_id]?.phone} strong={canJoin(v, now)} />
+                <WhatsAppButton clientId={v.client_id} phone={clients[v.client_id]?.phone} strong={canJoin(v, now)} />
                 {canCancel(v, now) && (
                   <Pressable style={styles.outline} onPress={() => cancel(v)}>
                     <Text style={styles.outlineText}>Cancel</Text>
@@ -274,12 +275,19 @@ function Bookings({
 }
 
 // Opens WhatsApp with the client (GRIZZ, 2026-10-25: tap their number and go
-// straight to WhatsApp). Nothing when they have no number saved.
-function WhatsAppButton({ phone, strong }: { phone: string | null | undefined; strong?: boolean }) {
+// straight to WhatsApp). Nothing when they have no number saved. Counts as
+// being in touch, for the "Check in on" reminder (0156).
+function WhatsAppButton({ clientId, phone, strong }: { clientId: string; phone: string | null | undefined; strong?: boolean }) {
   const link = whatsappLink(phone);
   if (!link) return null;
   return (
-    <Pressable style={strong ? styles.smallButton : styles.outline} onPress={() => Linking.openURL(link)}>
+    <Pressable
+      style={strong ? styles.smallButton : styles.outline}
+      onPress={() => {
+        markClientContact(clientId);
+        Linking.openURL(link);
+      }}
+    >
       <Text style={strong ? styles.smallButtonText : styles.outlineText}>💬 WhatsApp</Text>
     </Pressable>
   );

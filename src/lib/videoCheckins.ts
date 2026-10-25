@@ -1,6 +1,6 @@
 import type { VideoCheckin, VideoCheckinSettings, VideoCheckinSlot } from "@/types/database";
 
-// Weekly video check-ins (0152, GRIZZ 2026-10-25). The trainer sets the times
+// Weekly video check-ins (0155, GRIZZ 2026-10-25). The trainer sets the times
 // they're free each week; a client books one, the trainer confirms, and both
 // get reminders the day before and 15 minutes before, plus a pop-up on the
 // day. The call itself happens on WhatsApp (GRIZZ: "Can do that via WhatsApp

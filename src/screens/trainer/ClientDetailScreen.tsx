@@ -59,6 +59,7 @@ import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 import FoldSection from "@/components/FoldSection";
 import { whatsappLink } from "@/lib/videoCheckins";
+import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -498,7 +499,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             <Text style={styles.helper}>{client.email}</Text>
             {/* Tap their number to go straight to WhatsApp (GRIZZ, 2026-10-25). */}
             {whatsappLink(client.phone) ? (
-              <Pressable onPress={() => Linking.openURL(whatsappLink(client.phone)!)} hitSlop={6} accessibilityRole="link">
+              <Pressable
+                onPress={() => {
+                  // Counts as being in touch, for the "Check in on" reminder (0156).
+                  markClientContact(client.id);
+                  Linking.openURL(whatsappLink(client.phone)!);
+                }}
+                hitSlop={6}
+                accessibilityRole="link"
+              >
                 <Text style={styles.whatsapp}>💬 {client.phone} · WhatsApp</Text>
               </Pressable>
             ) : null}

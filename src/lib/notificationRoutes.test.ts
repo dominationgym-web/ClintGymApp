@@ -5,6 +5,7 @@ describe("notificationRoute", () => {
   it("opens the video check-in page for either side", () => {
     expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "client")).toEqual({ stack: "client", screen: "VideoCheckIn" });
     expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "trainer")).toEqual({ stack: "trainer", screen: "VideoCheckIns" });
+    expect(notificationRoute({ type: "checkin_nudge" }, "trainer")).toEqual({ stack: "trainer", screen: "Dashboard" });
   });
 
   it("sends a client to the right tab", () => {

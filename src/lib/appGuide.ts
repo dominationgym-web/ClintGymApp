@@ -361,6 +361,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "You both get a reminder the day before and 15 minutes before, and a pop-up shows at the top of the app all day on the day. At the time, tap 💬 WhatsApp to open the chat with your client, then tap the video button.",
         "A client can keep the same time every week: the next one books itself after each call, as long as that time is still open.",
         "On a client's page, tap their phone number to open WhatsApp with them.",
+        "💬 Check in on…: when you haven't been in touch with an active client for 4 days, your dashboard shows them and you get a 09:00 notification. Tap 💬 WhatsApp to message them in your own words, or Spoke in person if you saw them. A check-in note or a video check-in counts too. Nothing is ever sent to the client for you.",
       ],
     },
     {

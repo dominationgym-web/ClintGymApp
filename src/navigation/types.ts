@@ -38,7 +38,7 @@ export type ClientStackParamList = {
   Recovery: undefined;
   // The client's form videos and their coach's feedback (was the Video log tab).
   FormVideos: undefined;
-  // Weekly video check-in with the coach (0152).
+  // Weekly video check-in with the coach (0155).
   VideoCheckIn: undefined;
 };
 
@@ -57,7 +57,7 @@ export type TrainerStackParamList = {
   SuggestionBox: undefined;
   // Trainer problems (0151): problemId opens that one, e.g. from its notification.
   TrainerProblems: { problemId?: string } | undefined;
-  // Weekly video check-ins (0152): bookings, free times and call setup.
+  // Weekly video check-ins (0155): bookings, free times and call setup.
   VideoCheckIns: undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
