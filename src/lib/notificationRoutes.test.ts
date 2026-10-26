@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { notificationRoute } from "@/lib/notificationRoutes";
 
 describe("notificationRoute", () => {
+  it("opens monthly challenges", () => {
+    expect(notificationRoute({ type: "challenge_started" }, "client")).toEqual({ stack: "client", screen: "Habits" });
+    expect(notificationRoute({ type: "challenge_done", clientId: "c1" }, "trainer")).toEqual({ stack: "trainer", screen: "Challenges" });
+    expect(notificationRoute({ type: "challenge_shared" }, "trainer")).toEqual({ stack: "trainer", screen: "Challenges" });
+  });
+
   it("opens the video check-in page for either side", () => {
     expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "client")).toEqual({ stack: "client", screen: "VideoCheckIn" });
     expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "trainer")).toEqual({ stack: "trainer", screen: "VideoCheckIns" });

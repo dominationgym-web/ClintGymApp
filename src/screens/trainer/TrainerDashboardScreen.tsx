@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
+import { CHALLENGE_NUDGE_DAYS, monthName, monthStart } from "@/lib/challenges";
 import { clientsWhoTrainedYesterday, loadRecoveryCheck } from "@/lib/recoveryQueries";
 import { recoveryHandled } from "@/lib/recovery";
 import { clientPriority } from "@/lib/clientFlags";
@@ -61,6 +62,8 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   const [newSuggestions, setNewSuggestions] = useState(0);
   // New problems from trainers (0151); the installed app also gets a push for each.
   const [newProblems, setNewProblems] = useState(0);
+  // No monthly challenge on in the first week of the month (0153).
+  const [noChallenge, setNoChallenge] = useState(false);
   const isOwner = !!trainer?.is_owner;
 
   useEffect(() => {
@@ -196,6 +199,25 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       .neq("trainer_id", trainer?.id ?? "");
     setNewProblems(problems.count ?? 0);
   }, [isOwner, trainer?.id]);
+
+  const loadChallenge = useCallback(async () => {
+    const today = todayIso();
+    if (!trainer || Number(today.slice(8, 10)) > CHALLENGE_NUDGE_DAYS) {
+      setNoChallenge(false);
+      return;
+    }
+    const { count } = await supabase
+      .from("trainer_challenges")
+      .select("id", { count: "exact", head: true })
+      .eq("trainer_id", trainer.id)
+      .eq("month", monthStart(today));
+    setNoChallenge((count ?? 0) === 0);
+  }, [trainer]);
+
+  useEffect(() => {
+    loadChallenge();
+    return navigation.addListener("focus", loadChallenge);
+  }, [navigation, loadChallenge]);
 
   useEffect(() => {
     // Recount whenever the dashboard comes back into view, e.g. after reading them.
@@ -369,6 +391,12 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       link: "Open",
       onPress: () => navigation.navigate("ClientDetail", { clientId: c.id, tab: "training" }),
     })),
+    noChallenge && {
+      key: "challenge",
+      text: `🏆 Pick ${monthName(todayIso())}'s challenge for your clients`,
+      link: "Pick",
+      onPress: () => navigation.navigate("Challenges"),
+    },
     ...videoCheckins.map((v) => ({
       key: `video-${v.id}`,
       text:
