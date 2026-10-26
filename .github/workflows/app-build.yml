@@ -8,13 +8,15 @@ name: Build the app
 # keys and Apple login already saved there from the first laptop builds.
 # Android: a preview APK, its download link is in the run summary.
 # iPhone: a production build sent straight to TestFlight.
+# "ios-send-latest" sends the newest finished iPhone build to TestFlight
+# without building again (for a build whose upload didn't go through).
 on:
   workflow_dispatch:
     inputs:
       platform:
         description: Which app to build
         type: choice
-        options: [both, android, ios]
+        options: [both, android, ios, ios-send-latest]
         default: both
 
 concurrency:
@@ -24,7 +26,7 @@ concurrency:
 jobs:
   android:
     name: Android (download link)
-    if: inputs.platform != 'ios'
+    if: inputs.platform == 'both' || inputs.platform == 'android'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -54,7 +56,7 @@ jobs:
 
   ios:
     name: iPhone (TestFlight)
-    if: inputs.platform != 'android'
+    if: inputs.platform == 'both' || inputs.platform == 'ios'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -85,3 +87,24 @@ jobs:
           echo "Latest Android download link: $url (runtime $runtime)"
           echo "### Latest Android app" >> "$GITHUB_STEP_SUMMARY"
           echo "Download link: $url (runtime $runtime)" >> "$GITHUB_STEP_SUMMARY"
+
+  ios-send:
+    name: iPhone (send newest build to TestFlight)
+    if: inputs.platform == 'ios-send-latest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Send to TestFlight
+        run: eas submit --platform ios --profile production --latest --non-interactive --wait
