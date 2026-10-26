@@ -1112,6 +1112,13 @@ export interface Database {
       push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
       cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
       suggestions: { Row: Suggestion; Insert: Partial<Suggestion>; Update: Partial<Suggestion>; Relationships: [] };
+      // Timers page (0152): settings is a TimerSettings (src/lib/timerWorkouts.ts).
+      timer_workouts: {
+        Row: { id: string; owner_id: string; client_id: string | null; name: string; settings: Record<string, unknown>; created_at: string };
+        Insert: { name: string; settings: Record<string, unknown>; client_id?: string | null };
+        Update: never;
+        Relationships: [];
+      };
       trainer_problems: {
         Row: TrainerProblem;
         Insert: Pick<TrainerProblem, "area" | "body">;

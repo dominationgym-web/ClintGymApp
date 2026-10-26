@@ -54,7 +54,8 @@ function useLockedOut(role: string | null, profile: unknown) {
 const navigationRef = createNavigationContainerRef<any>();
 
 function openRoute(route: NotificationRoute) {
-  if (route.screen === "VideoCheckIn" || route.screen === "VideoCheckIns") navigationRef.navigate(route.screen);
+  if (route.stack === "client" && route.screen === "Timers") navigationRef.navigate("Timers", { tab: "saved" });
+  else if (route.screen === "VideoCheckIn" || route.screen === "VideoCheckIns") navigationRef.navigate(route.screen);
   else if (route.stack === "client") navigationRef.navigate("ClientTabs", { screen: route.screen });
   else if (route.screen === "ClientDetail")
     navigationRef.navigate("ClientDetail", { clientId: route.clientId, tab: route.tab, open: route.open });

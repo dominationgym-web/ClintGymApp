@@ -11,6 +11,7 @@ describe("notificationRoute", () => {
   it("sends a client to the right tab", () => {
     expect(notificationRoute({ type: "coach_message", messageId: "m1" }, "client")).toEqual({ stack: "client", screen: "CheckIn" });
     expect(notificationRoute({ type: "catch_up" }, "client")).toEqual({ stack: "client", screen: "Exercises" });
+    expect(notificationRoute({ type: "timer_workout", timerId: "t1" }, "client")).toEqual({ stack: "client", screen: "Timers" });
   });
 
   it("opens a trainer on the client the push is about", () => {

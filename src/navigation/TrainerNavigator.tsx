@@ -27,6 +27,7 @@ import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
+import TimersScreen from "@/screens/TimersScreen";
 import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
@@ -104,6 +105,9 @@ export default function TrainerNavigator() {
           options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
         />
         <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
+        <Stack.Screen name="Timers" options={{ title: "Timers", headerBackTitle: "Back" }}>
+          {() => <TimersScreen />}
+        </Stack.Screen>
         <Stack.Screen name="Stability" options={{ title: "Stability", headerBackTitle: "Back" }}>
           {({ route }) => <StabilityScreen role="trainer" initialArea={route.params?.area} />}
         </Stack.Screen>

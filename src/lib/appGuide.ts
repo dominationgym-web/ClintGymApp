@@ -219,6 +219,19 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "timers",
+      icon: "⏱",
+      title: "Timers: EMOM, Tabata and intervals",
+      where: "Menu ☰ → Timers",
+      points: [
+        "Three timers, one per tab: ⏰ EMOM (every minute on the minute: do the work, rest for what's left of the minute), 🔥 Tabata (20 seconds all-out, 10 seconds rest, 8 rounds) and ⏱ Intervals (your own work and rest times).",
+        "Set the times and rounds with − and +. Tabata also lets you do more than one Tabata with a rest between. The total time shows above Start.",
+        "Exercises are optional. Tap Exercises (optional) to add them, e.g. 10 burpees, and the timer shows which one to do on each effort. Leave it empty to just use the clock.",
+        "Tap ▶ Start. You get 10 seconds to get ready, then the screen goes red for WORK and green for REST, and the phone buzzes at every switch and for the last 3 seconds. Pause, Skip or Stop at the bottom. The screen stays on while it runs.",
+        "💾 Save keeps a timer under Saved so you can run it again. Timers your coach makes for you show there too, marked From your coach, and you get a notification when one arrives.",
+      ],
+    },
+    {
       key: "more",
       icon: "🔎",
       title: "Search and the suggestion box",
@@ -324,6 +337,18 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "The upper body, lower body, full body, Chest & Bi and Back & Tri workouts have 15 ab reps between sets (none after heavy squats, hinges, lunges or rows, and at most 10 rounds a workout). When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
         "Clients can change an exercise when the gym is busy, always for the same body part.",
+      ],
+    },
+    {
+      key: "timers",
+      icon: "⏱",
+      title: "Timers: EMOM, Tabata and intervals",
+      where: "Menu ☰ → Timers",
+      points: [
+        "Three timers, one per tab: ⏰ EMOM, 🔥 Tabata and ⏱ Intervals (your own work and rest times). Set the times and rounds with − and +, add exercises if you want them named on each effort, and tap ▶ Start.",
+        "Use it yourself, or on the gym floor with a client: red for WORK, green for REST, a buzz at every switch.",
+        "💾 Save → Who is it for?: pick Me or a client. The client gets a notification and finds it under Saved on their own Timers page, marked From your coach. Delete it with ✕ and they no longer have it.",
+        "Saved shows every timer you made, with the client's name on the ones you made for a client. Tap one to change it, or ▶ to start it.",
       ],
     },
     {
