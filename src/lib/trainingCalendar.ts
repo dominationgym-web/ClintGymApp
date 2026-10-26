@@ -70,6 +70,8 @@ export function monthWeeks({ year, month }: CalendarMonth): (string | null)[][] 
  * the name cut to fit. Clients see the calendar workouts without the number.
  */
 export function shortWorkoutName(name: string, withNumber = true): string {
+  const pp = name.match(/^upper body (push|pull)( \d+)?$/i);
+  if (pp) return `${pp[1][0].toUpperCase()}${pp[1].slice(1).toLowerCase()}${withNumber && pp[2] ? pp[2] : ""}`;
   const m = name.match(/^(upper|lower) body( superset)?( \d+)?$/i);
   if (m) return `${m[1][0].toUpperCase()}${m[1].slice(1).toLowerCase()}${m[2] ? " SS" : ""}${withNumber && m[3] ? m[3] : ""}`;
   return name.length <= 12 ? name : `${name.slice(0, 11)}…`;

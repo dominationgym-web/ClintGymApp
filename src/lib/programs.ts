@@ -403,6 +403,8 @@ export const PROGRAM_FAMILIES = [
   { key: "muscleYear", group: "gym", title: "1-year muscle building", icon: "📅" },
   { key: "fullBody", group: "gym", title: "Full body", icon: "🏃" },
   { key: "upperBody", group: "gym", title: "Upper body workouts", icon: "💪" },
+  { key: "upperPush", group: "gym", title: "Upper body push", icon: "🤜" },
+  { key: "upperPull", group: "gym", title: "Upper body pull", icon: "🧗" },
   { key: "lowerBody", group: "gym", title: "Lower body workouts", icon: "🦵" },
   { key: "upperLower", group: "gym", title: "Quick upper & lower", icon: "⏱️" },
   { key: "chestBi", group: "gym", title: "Chest & Bi", icon: "🏋️" },
@@ -466,6 +468,10 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   if (name.startsWith("drop set")) return "dropset";
   // 6-week foundation programs (0086): "Beginner Foundation - Strength".
   if (name.includes("foundation")) return "foundation";
+  // Push and pull workouts (0160, GRIZZ, 2026-10-26): "Upper Body Push 1".
+  // Before the "upper body" check below.
+  if (name.startsWith("upper body push")) return "upperPush";
+  if (name.startsWith("upper body pull")) return "upperPull";
   // The 15 + 15 calendar workouts (0069): "Upper Body 1", "Lower Body Superset 2".
   if (name.startsWith("upper body")) return "upperBody";
   if (name.startsWith("lower body")) return "lowerBody";

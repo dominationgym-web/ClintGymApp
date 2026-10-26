@@ -308,6 +308,8 @@ describe("programFamily", () => {
     expect(built("Off-Season – Cycling")).toBe("offSeason");
     expect(built("Upper Body 3")).toBe("upperBody");
     expect(built("Upper Body Superset 4")).toBe("upperBody");
+    expect(built("Upper Body Push 1")).toBe("upperPush");
+    expect(built("Upper Body Pull 6")).toBe("upperPull");
     expect(built("Lower Body Superset 2")).toBe("lowerBody");
     expect(built("Lower Body 15")).toBe("lowerBody");
     expect(built("Beginner Foundation - Strength")).toBe("foundation");
