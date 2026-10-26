@@ -13,6 +13,7 @@ import { RECOVERY_MENU_ITEM } from "@/lib/recoveryActivities";
 import { supabase } from "@/lib/supabase";
 import { TIMER_MENU_ITEM } from "@/lib/timerWorkouts";
 import { VIDEO_CHECKIN_MENU_ITEM } from "@/lib/videoCheckins";
+import { NOTIFICATIONS_MENU_ITEM } from "@/lib/notificationPrefs";
 
 // The client app's menu: Recovery (GRIZZ, 2026-10-17), Nutrition, Cycle tracker (the cycle guide
 // and tracker, women only) and Sleep (GRIZZ, 2026-10-12) first, then the
@@ -59,6 +60,8 @@ export default function SectionsMenuButton() {
         { ...TIMER_MENU_ITEM, onPress: () => navigation.navigate("Timers") },
         ...(hasStability ? [{ ...STABILITY_MENU_ITEM, title: "My stability program", summary: "The stability program your coach gave you: do it and log your holds and reps.", onPress: () => navigation.navigate("Stability") }] : []),
         { ...SUGGESTION_BOX_MENU_ITEM, onPress: () => navigation.navigate("SuggestionBox") },
+        // Which reminders they get (GRIZZ, 2026-10-26).
+        { ...NOTIFICATIONS_MENU_ITEM, onPress: () => navigation.navigate("NotificationSettings") },
         { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
         { ...WELCOME_MENU_ITEM, onPress: () => navigation.navigate("Welcome") },
         ...rest.map(item),

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { tabIcon } from "@/navigation/tabIcon";
@@ -25,6 +25,9 @@ import { findSection } from "@/lib/sections";
 import DailyStartPopup from "@/components/DailyStartPopup";
 import HealthSyncOnOpen from "@/components/HealthSyncOnOpen";
 import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
+import NotificationSettingsScreen from "@/screens/client/NotificationSettingsScreen";
+import { groupsOff, loadNotificationPrefs } from "@/lib/notificationPrefs";
+import { cancelRemindersForGroups } from "@/lib/notifications";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -59,7 +62,22 @@ function ClientTabs() {
 
 // The tabs sit inside a stack so the header menu can open a section page on
 // top of them, with a back button to return to the tab you were on.
+// Brings the client's notification settings onto this phone on open (a new
+// phone has none yet), and clears any reminder scheduled meanwhile for a
+// group they've switched off.
+function useNotificationPrefsSync() {
+  const { client } = useAuth();
+  const clientId = client?.id;
+  useEffect(() => {
+    if (!clientId) return;
+    loadNotificationPrefs(clientId)
+      .then((prefs) => cancelRemindersForGroups(groupsOff(prefs)))
+      .catch(() => undefined);
+  }, [clientId]);
+}
+
 export default function ClientNavigator() {
+  useNotificationPrefsSync();
   return (
     <>
       <DailyStartPopup />
@@ -78,6 +96,7 @@ export default function ClientNavigator() {
         <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
         <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
         <Stack.Screen name="VideoCheckIn" component={VideoCheckInScreen} options={{ title: "Video check-in", headerBackTitle: "Back" }} />
+        <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: "Notifications", headerBackTitle: "Back" }} />
         <Stack.Screen name="FormVideos" component={VideoUploadScreen} options={{ title: "Form videos", headerBackTitle: "Back" }} />
         <Stack.Screen name="Timers" options={{ title: "Timers", headerBackTitle: "Back" }}>
           {({ route }) => <TimersScreen initialTab={route.params?.tab} />}
