@@ -6,12 +6,15 @@ import { formatClock } from "@/lib/programs";
 // add some and each effort names the one to do, or leave them out and just
 // use the clock. Trainers can save one for a client (0152); anyone can save
 // their own. The phases run in IntervalTimerModal.
+// Boxing rounds (GRIZZ, 2026-10-26): 2-6 minute rounds, 30-90 seconds rest,
+// up to 12 rounds, with a bell like a fight timer.
 
-export type TimerKind = "emom" | "tabata" | "custom";
+export type TimerKind = "emom" | "tabata" | "custom" | "boxing";
 
 export type TimerSettings = {
   kind: TimerKind;
   // EMOM: the length of each interval (60 = every minute). Tabata and custom: work seconds.
+  // Boxing: the round length (whole minutes, 2 to 6).
   work: number;
   // Tabata and custom: rest after each effort. Not used by EMOM.
   rest: number;
@@ -32,19 +35,21 @@ export const TIMER_KINDS: { kind: TimerKind; title: string; icon: string; summar
   { kind: "emom", title: "EMOM", icon: "⏰", summary: "Every minute on the minute: do the work, rest what's left of the minute." },
   { kind: "tabata", title: "Tabata", icon: "🔥", summary: "20 seconds all-out, 10 seconds rest, 8 rounds. Repeat for more Tabatas." },
   { kind: "custom", title: "Intervals", icon: "⏱", summary: "Your own work and rest times, for as many rounds as you like." },
+  { kind: "boxing", title: "Boxing", icon: "🥊", summary: "Fight rounds with a bell: 2 to 6 minute rounds, 30 to 90 seconds rest, up to 12 rounds. A clapper warns 10 seconds before each round ends." },
 ];
 
 export const TIMER_MENU_ITEM = {
   key: "timers",
-  title: "Timers (EMOM, Tabata, intervals)",
+  title: "Timers (EMOM, Tabata, boxing)",
   icon: "⏱",
-  summary: "EMOM, Tabata and your own work and rest intervals, with or without exercises.",
+  summary: "EMOM, Tabata, boxing rounds and your own work and rest intervals, with or without exercises.",
 };
 
 export function defaultSettings(kind: TimerKind): TimerSettings {
   const base = { sets: 1, setRest: 0, switchEach: "round" as const, exercises: [] };
   if (kind === "emom") return { ...base, kind, work: 60, rest: 0, rounds: 10 };
   if (kind === "tabata") return { ...base, kind, work: 20, rest: 10, rounds: 8, setRest: 60 };
+  if (kind === "boxing") return { ...base, kind, work: 180, rest: 60, rounds: 6 };
   return { ...base, kind, work: 40, rest: 20, rounds: 5, setRest: 60 };
 }
 
@@ -56,7 +61,13 @@ export const LIMITS = {
   rounds: { min: 1, max: 60 },
   sets: { min: 1, max: 10 },
   setRest: { min: 0, max: 600 },
+  boxingRound: { min: 120, max: 360 },
+  boxingRest: { min: 30, max: 90 },
+  boxingRounds: { min: 1, max: 12 },
 };
+
+// Boxing seconds before the end of a round when the clapper sounds.
+export const BOXING_WARNING_SECONDS = 10;
 
 const clamp = (n: unknown, min: number, max: number, fallback: number) => {
   const v = typeof n === "number" && Number.isFinite(n) ? Math.round(n) : fallback;
@@ -68,8 +79,21 @@ export const MAX_EXERCISES = 12;
 /** Settings read back from a saved timer, with anything odd put right. */
 export function cleanSettings(raw: unknown): TimerSettings {
   const r = (raw && typeof raw === "object" ? raw : {}) as Partial<TimerSettings>;
-  const kind: TimerKind = r.kind === "emom" || r.kind === "tabata" || r.kind === "custom" ? r.kind : "custom";
+  const kind: TimerKind = r.kind === "emom" || r.kind === "tabata" || r.kind === "custom" || r.kind === "boxing" ? r.kind : "custom";
   const d = defaultSettings(kind);
+  const exercises = Array.isArray(r.exercises)
+    ? r.exercises.filter((e): e is string => typeof e === "string").map((e) => e.trim()).filter(Boolean).slice(0, MAX_EXERCISES)
+    : [];
+  if (kind === "boxing") {
+    return {
+      ...d,
+      // Whole minutes.
+      work: Math.round(clamp(r.work, LIMITS.boxingRound.min, LIMITS.boxingRound.max, d.work) / 60) * 60,
+      rest: clamp(r.rest, LIMITS.boxingRest.min, LIMITS.boxingRest.max, d.rest),
+      rounds: clamp(r.rounds, LIMITS.boxingRounds.min, LIMITS.boxingRounds.max, d.rounds),
+      exercises,
+    };
+  }
   return {
     kind,
     work: kind === "emom" ? clamp(r.work, LIMITS.emomInterval.min, LIMITS.emomInterval.max, d.work) : clamp(r.work, LIMITS.work.min, LIMITS.work.max, d.work),
@@ -78,9 +102,7 @@ export function cleanSettings(raw: unknown): TimerSettings {
     sets: clamp(r.sets, LIMITS.sets.min, LIMITS.sets.max, d.sets),
     setRest: clamp(r.setRest, LIMITS.setRest.min, LIMITS.setRest.max, d.setRest),
     switchEach: r.switchEach === "set" ? "set" : "round",
-    exercises: Array.isArray(r.exercises)
-      ? r.exercises.filter((e): e is string => typeof e === "string").map((e) => e.trim()).filter(Boolean).slice(0, MAX_EXERCISES)
-      : [],
+    exercises,
   };
 }
 
@@ -118,6 +140,14 @@ export function buildTimerPhases(s: TimerSettings): Phase[] {
     for (let r = 1; r <= s.rounds; r++) {
       const name = ex.length ? ex[(r - 1) % ex.length] : `Interval ${r}`;
       out.push(phase({ kind: "work", name, detail: `Do it, then rest for what's left of the ${s.work === 60 ? "minute" : formatSeconds(s.work)}`, seconds: s.work, round: r, rounds: s.rounds }));
+    }
+    return out;
+  }
+
+  if (s.kind === "boxing") {
+    for (let r = 1; r <= s.rounds; r++) {
+      out.push(phase({ kind: "work", name: ex.length ? ex[(r - 1) % ex.length] : `Round ${r}`, detail: `${formatSeconds(s.work)} round`, seconds: s.work, round: r, rounds: s.rounds, bell: true }));
+      if (r < s.rounds) out.push(phase({ kind: "easy", name: "Rest", detail: `Round ${r + 1} next`, seconds: s.rest, round: r, rounds: s.rounds, bell: true }));
     }
     return out;
   }
@@ -162,6 +192,7 @@ export function totalSeconds(s: TimerSettings): number {
 export function describeTimer(s: TimerSettings): string {
   const total = formatClock(totalSeconds(s));
   if (s.kind === "emom") return `EMOM · ${s.rounds} x ${formatSeconds(s.work)} · ${total}`;
+  if (s.kind === "boxing") return `Boxing · ${s.rounds} x ${formatSeconds(s.work)} · ${s.rest} sec rest · ${total}`;
   if (s.kind === "tabata") return `Tabata · ${s.work}/${s.rest} x ${s.rounds}${s.sets > 1 ? ` · ${s.sets} Tabatas` : ""} · ${total}`;
   const per = s.exercises.length > 1 ? ` · ${s.exercises.length} exercises` : "";
   return `Intervals · ${s.work}/${s.rest} x ${s.rounds} rounds${per} · ${total}`;

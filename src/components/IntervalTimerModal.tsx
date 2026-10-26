@@ -5,6 +5,8 @@ import { useKeepAwake } from "expo-keep-awake";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatClock } from "@/lib/programs";
 import { buildIntervals, EFFORT_GUIDE, totalMinutes, type IntervalPhase } from "@/lib/intervalTimer";
+import { BOXING_WARNING_SECONDS } from "@/lib/timerWorkouts";
+import { playTimerSound, prepareTimerSounds, setTimerSoundOn, switchSound } from "@/lib/timerSounds";
 import type { ProgramExercise } from "@/types/database";
 
 // Keeps the screen on while the timer runs.
@@ -21,8 +23,9 @@ type Stage = "intro" | "running" | "done";
 
 // The interval timer for timed workouts (sprints, threshold, fight
 // conditioning). A "how to do it" card first, then every round counted out:
-// WORK in red, EASY in green, a buzz at each switch and a short buzz for the
-// last 3 seconds. Open efforts (a 250 m row, a ladder) run until Done.
+// WORK in red, EASY in green, a beep and a buzz at each switch and a short
+// beep for the last 3 seconds (boxing rounds: a bell, and a clapper 10
+// seconds before the round ends). Open efforts (a 250 m row, a ladder) run until Done.
 // At the end the finished efforts are saved as sets on the workout.
 // The Timers page (EMOM, Tabata, intervals) passes its own `phases` instead:
 // it starts straight away with a get ready count, says REST instead of EASY,
@@ -57,6 +60,7 @@ export default function IntervalTimerModal({
   const [now, setNow] = useState(Date.now());
   const [finished, setFinished] = useState<IntervalPhase[]>([]);
   const [saving, setSaving] = useState(false);
+  const [sound, setSound] = useState(true);
   const lastBuzz = useRef<number | null>(null);
 
   const phase = phases[index] as IntervalPhase | undefined;
@@ -64,6 +68,7 @@ export default function IntervalTimerModal({
   const start = (i: number, done: IntervalPhase[]) => {
     if (i >= phases.length) {
       Vibration.vibrate([0, 500, 200, 500, 200, 500]);
+      playTimerSound(phases[i - 1]?.bell ? "bellEnd" : "finish");
       setFinished(done);
       setStage("done");
       return;
@@ -77,7 +82,10 @@ export default function IntervalTimerModal({
     setPausedLeft(null);
     setEndsAt(p.seconds ? t + p.seconds * 1000 : null);
     lastBuzz.current = null;
-    if (i > 0) Vibration.vibrate(p.kind === "work" ? [0, 600] : [0, 250, 150, 250]);
+    if (i > 0) {
+      Vibration.vibrate(p.kind === "work" ? [0, 600] : [0, 250, 150, 250]);
+      playTimerSound(switchSound(p.kind, !!p.bell));
+    }
   };
 
   const begin = () => {
@@ -87,6 +95,7 @@ export default function IntervalTimerModal({
 
   useEffect(() => {
     if (!visible) return;
+    prepareTimerSounds().then(setSound);
     setFinished([]);
     setPausedLeft(null);
     if (timerOnly) begin();
@@ -116,9 +125,18 @@ export default function IntervalTimerModal({
       next(true);
       return;
     }
-    if (left <= 3 && lastBuzz.current !== left) {
+    if (lastBuzz.current === left || !phase) return;
+    if (phase.bell && phase.kind === "work") {
+      // Boxing: the clapper 10 seconds out, then the bell ends the round.
+      if (left === BOXING_WARNING_SECONDS) {
+        lastBuzz.current = left;
+        Vibration.vibrate(80);
+        playTimerSound("clapper");
+      }
+    } else if (left <= 3) {
       lastBuzz.current = left;
       Vibration.vibrate(80);
+      playTimerSound("tick");
     }
   });
 
@@ -185,7 +203,7 @@ export default function IntervalTimerModal({
             <View style={styles.step}>
               <Text style={styles.stepNum}>{description ? 3 : 2}</Text>
               <Text style={styles.stepText}>
-                Tap Start. The screen goes red for WORK and green for EASY, and the phone buzzes at every switch. Distance efforts run until you tap Done.
+                Tap Start. The screen goes red for WORK and green for EASY, and the phone beeps and buzzes at every switch. Distance efforts run until you tap Done.
               </Text>
             </View>
             <Text style={styles.label}>HOW HARD IS HARD?</Text>
@@ -233,6 +251,16 @@ export default function IntervalTimerModal({
                   <Text style={styles.controlText}>{pausedLeft !== null ? "Resume" : "Pause"}</Text>
                 </Pressable>
               )}
+              <Pressable
+                style={styles.control}
+                onPress={() => {
+                  setSound(!sound);
+                  setTimerSoundOn(!sound);
+                }}
+                accessibilityLabel={sound ? "Turn sound off" : "Turn sound on"}
+              >
+                <Text style={styles.controlText}>{sound ? "🔊" : "🔇"}</Text>
+              </Pressable>
               <Pressable style={styles.control} onPress={() => next(phase.kind === "easy")}>
                 <Text style={styles.controlText}>Skip ›</Text>
               </Pressable>

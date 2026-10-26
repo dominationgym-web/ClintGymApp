@@ -88,6 +88,14 @@
             "minSdkVersion": 26
           }
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
       ]
     ],
     "owner": "grizzly75",
@@ -96,7 +104,7 @@
         "projectId": "6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8"
       }
     },
-    "runtimeVersion": "2026-10-18-health",
+    "runtimeVersion": "2026-10-26-sound",
     "updates": {
       "url": "https://u.expo.dev/6da3ee24-30c4-4bc4-962c-ccbdff4ad4c8",
       "checkAutomatically": "ON_LOAD",

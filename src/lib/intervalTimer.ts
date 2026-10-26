@@ -23,6 +23,8 @@ export type IntervalPhase = {
   set?: number;
   sets?: number;
   getReady?: boolean;
+  // Boxing rounds: a bell instead of beeps, and a clapper 10 seconds from the end.
+  bell?: boolean;
 };
 
 /** Seconds at the start of a reps text: "30 sec all-out" is 30, "3 min round" is 180, "10" is null. */
