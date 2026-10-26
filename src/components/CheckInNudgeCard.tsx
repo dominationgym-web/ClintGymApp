@@ -14,10 +14,14 @@ import type { QuietClientRow } from "@/types/database";
 // WhatsApp opens the chat with an empty box, so the words are their own.
 // Tapping it, or "Spoke in person", takes the client off the list. The same
 // list sends a 09:00 phone reminder.
+const SHOWN_AT_FIRST = 3;
+
 export default function CheckInNudgeCard() {
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const [rows, setRows] = useState<QuietClientRow[]>([]);
   const [open, setOpen] = useState(false);
+  // A few at a time, so the dashboard doesn't turn into a long scroll.
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(() => {
     supabase.rpc("quiet_clients").then(({ data }) => setRows(data ?? []));
@@ -50,31 +54,40 @@ export default function CheckInNudgeCard() {
             You haven't been in touch with {rows.length === 1 ? "this client" : "these clients"} for {QUIET_AFTER_DAYS}+ days. A quick
             personal message, in your own words, makes them feel special.
           </Text>
-          {rows.map((r) => {
+          {(showAll ? rows : rows.slice(0, SHOWN_AT_FIRST)).map((r) => {
             const link = whatsappLink(r.phone);
             return (
+              // Name on its own line and the buttons under it: side by side,
+              // the buttons squeezed the name to one letter a line on Android.
               <View key={r.client_id} style={styles.row}>
-                <Pressable style={styles.rowText} onPress={() => navigation.navigate("ClientDetail", { clientId: r.client_id })}>
+                <Pressable onPress={() => navigation.navigate("ClientDetail", { clientId: r.client_id })}>
                   <Text style={styles.name}>{r.name}</Text>
                   <Text style={styles.days}>{quietLine(r.days_quiet, r.last_spoke_at)}</Text>
                 </Pressable>
-                <Pressable onPress={() => contacted(r)} style={styles.secondary} accessibilityLabel={`Spoke to ${r.name} in person`}>
-                  <Text style={styles.secondaryText}>Spoke in person</Text>
-                </Pressable>
-                {link ? (
-                  <Pressable
-                    onPress={() => {
-                      contacted(r);
-                      Linking.openURL(link);
-                    }}
-                    style={styles.primary}
-                  >
-                    <Text style={styles.primaryText}>💬 WhatsApp</Text>
+                <View style={styles.actions}>
+                  <Pressable onPress={() => contacted(r)} style={styles.secondary} accessibilityLabel={`Spoke to ${r.name} in person`}>
+                    <Text style={styles.secondaryText}>Spoke in person</Text>
                   </Pressable>
-                ) : null}
+                  {link ? (
+                    <Pressable
+                      onPress={() => {
+                        contacted(r);
+                        Linking.openURL(link);
+                      }}
+                      style={styles.primary}
+                    >
+                      <Text style={styles.primaryText}>💬 WhatsApp</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
             );
           })}
+          {rows.length > SHOWN_AT_FIRST && (
+            <Pressable onPress={() => setShowAll((v) => !v)} style={styles.more} accessibilityRole="button">
+              <Text style={styles.toggle}>{showAll ? "Show fewer ▴" : `See all ${rows.length} ▾`}</Text>
+            </Pressable>
+          )}
         </>
       ) : null}
     </View>
@@ -87,8 +100,9 @@ const styles = StyleSheet.create({
   title: { color: "#fff", fontWeight: "700", flex: 1 },
   toggle: { color: BRAND_GOLD, fontWeight: "600" },
   help: { color: "#94A3B8", fontSize: 13, marginTop: 6, marginBottom: 4, lineHeight: 18 },
-  row: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#334155" },
-  rowText: { flex: 1 },
+  row: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#334155" },
+  actions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 6 },
+  more: { paddingTop: 8, borderTopWidth: 1, borderTopColor: "#334155", alignItems: "center" },
   name: { color: "#fff", fontWeight: "600" },
   days: { color: "#94A3B8", fontSize: 12 },
   secondary: { paddingVertical: 6, paddingHorizontal: 6 },
