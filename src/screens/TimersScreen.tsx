@@ -28,10 +28,13 @@ import {
 
 type TabKey = TimerKind | "saved";
 
+const BOXING_ROUND_MINUTES = [2, 3, 4, 5, 6];
+
 const TABS: ScreenTab<TabKey>[] = [
   { key: "emom", label: "EMOM", icon: "alarm" },
   { key: "tabata", label: "Tabata", icon: "flame" },
   { key: "custom", label: "Intervals", icon: "timer" },
+  { key: "boxing", label: "Boxing", icon: "fitness" },
   { key: "saved", label: "Saved", icon: "bookmark" },
 ];
 
@@ -54,6 +57,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
     emom: defaultSettings("emom"),
     tabata: defaultSettings("tabata"),
     custom: defaultSettings("custom"),
+    boxing: defaultSettings("boxing"),
   });
   const [exerciseText, setExerciseText] = useState("");
   const [exercisesOpen, setExercisesOpen] = useState(false);
@@ -191,6 +195,36 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
             </>
           )}
 
+          {kind === "boxing" && (
+            <>
+              <View style={[styles.stepper, styles.roundPicker]}>
+                <Text style={styles.stepperLabel}>Round length</Text>
+                <View style={styles.minuteChips}>
+                  {BOXING_ROUND_MINUTES.map((m) => (
+                    <Pressable
+                      key={m}
+                      style={[styles.minuteChip, s.work === m * 60 && styles.chipOn]}
+                      onPress={() => update({ work: m * 60 })}
+                      accessibilityLabel={`${m} minute rounds`}
+                    >
+                      <Text style={[styles.chipText, s.work === m * 60 && styles.chipTextOn]}>{m} min</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              <Stepper
+                label="Rest"
+                value={s.rest}
+                text={formatSeconds(s.rest)}
+                min={LIMITS.boxingRest.min}
+                max={LIMITS.boxingRest.max}
+                step={() => 15}
+                onChange={(rest) => update({ rest })}
+              />
+              <Stepper label="Rounds" value={s.rounds} min={LIMITS.boxingRounds.min} max={LIMITS.boxingRounds.max} onChange={(rounds) => update({ rounds })} />
+            </>
+          )}
+
           {(kind === "tabata" || kind === "custom") && (
             <>
               <Stepper label="Work" value={s.work} text={formatSeconds(s.work)} min={LIMITS.work.min} max={LIMITS.work.max} step={timeStep} onChange={(work) => update({ work })} />
@@ -240,6 +274,8 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
                 ? "Each minute is the next exercise on the list, then back to the first. Put the reps in, e.g. 10 burpees."
                 : kind === "tabata"
                   ? "The exercises take turns. Leave it empty to just use the timer."
+                  : kind === "boxing"
+                    ? "Each round is the next one on the list, e.g. Bag work, Pads, Shadow boxing. Leave it empty for plain rounds."
                   : "Every round goes through the whole list, with your rest between each one."}
             </Text>
             {s.exercises.map((e, i) => (
@@ -256,7 +292,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
                 style={styles.input}
                 value={exerciseText}
                 onChangeText={setExerciseText}
-                placeholder={kind === "emom" ? "e.g. 10 burpees" : "e.g. Kettlebell swings"}
+                placeholder={kind === "emom" ? "e.g. 10 burpees" : kind === "boxing" ? "e.g. Pad work" : "e.g. Kettlebell swings"}
                 maxLength={60}
                 returnKeyType="done"
                 onSubmitEditing={addExercise}
@@ -296,7 +332,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
             <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 30 }} />
           ) : saved.length === 0 ? (
             <Text style={styles.summary}>
-              No saved timers yet. Set one up on the EMOM, Tabata or Intervals tab and tap Save.
+              No saved timers yet. Set one up on the EMOM, Tabata, Intervals or Boxing tab and tap Save.
               {role === "client" ? " Timers your coach makes for you show here too." : ""}
             </Text>
           ) : (
@@ -423,6 +459,9 @@ const styles = StyleSheet.create({
   pad: { padding: 16, paddingBottom: 40 },
   summary: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 6 },
   help: { color: "#94A3B8", fontSize: 13, lineHeight: 18, marginTop: 6 },
+  roundPicker: { flexDirection: "column", alignItems: "stretch", gap: 8 },
+  minuteChips: { flexDirection: "row", gap: 6 },
+  minuteChip: { flex: 1, alignItems: "center", borderRadius: 14, borderWidth: 1, borderColor: "#334155", paddingVertical: 8 },
   stepper: { flexDirection: "row", alignItems: "center", backgroundColor: "#111C33", borderRadius: 12, padding: 10, marginTop: 8 },
   stepperLabel: { flex: 1, color: "#fff", fontWeight: "700", fontSize: 15 },
   stepButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#1E293B", alignItems: "center", justifyContent: "center" },

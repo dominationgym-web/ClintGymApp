@@ -84,3 +84,20 @@ describe("timer workouts", () => {
     expect(defaultTimerName(defaultSettings("tabata"))).toBe("Tabata 8 rounds");
   });
 });
+
+describe("boxing rounds", () => {
+  it("rounds with a bell and rest between, none after the last", () => {
+    const s = { ...defaultSettings("boxing"), work: 180, rest: 60, rounds: 3 };
+    const phases = buildTimerPhases(s).slice(1);
+    expect(phases.map((p) => `${p.kind}:${p.seconds}`)).toEqual(["work:180", "easy:60", "work:180", "easy:60", "work:180"]);
+    expect(phases.every((p) => p.bell)).toBe(true);
+    expect(phases[0].name).toBe("Round 1");
+    expect(totalSeconds(s)).toBe(3 * 180 + 2 * 60);
+    expect(describeTimer(s)).toBe("Boxing · 3 x 3 min · 60 sec rest · 11:00");
+  });
+
+  it("keeps a saved boxing timer to 2-6 minute rounds, 30-90 sec rest and 12 rounds", () => {
+    expect(cleanSettings({ kind: "boxing", work: 1000, rest: 5, rounds: 20 })).toMatchObject({ work: 360, rest: 30, rounds: 12 });
+    expect(cleanSettings({ kind: "boxing", work: 150, rest: 200 })).toMatchObject({ work: 180, rest: 90 });
+  });
+});
