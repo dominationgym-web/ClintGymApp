@@ -35,7 +35,7 @@ export const TIMER_KINDS: { kind: TimerKind; title: string; icon: string; summar
   { kind: "emom", title: "EMOM", icon: "⏰", summary: "Every minute on the minute: do the work, rest what's left of the minute." },
   { kind: "tabata", title: "Tabata", icon: "🔥", summary: "20 seconds all-out, 10 seconds rest, 8 rounds. Repeat for more Tabatas." },
   { kind: "custom", title: "Intervals", icon: "⏱", summary: "Your own work and rest times, for as many rounds as you like." },
-  { kind: "boxing", title: "Boxing", icon: "🥊", summary: "Fight rounds with a bell: 2 to 6 minute rounds, 30 to 90 seconds rest, up to 12 rounds. A clapper warns 10 seconds before each round ends." },
+  { kind: "boxing", title: "Boxing", icon: "🥊", summary: "Fight rounds with a bell: 2 to 6 minute rounds, 30 to 90 seconds rest, up to 12 rounds. Three knocks with 30 seconds left, a clapper at 10, then a tick every second to the bell." },
 ];
 
 export const TIMER_MENU_ITEM = {

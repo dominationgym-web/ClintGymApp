@@ -228,7 +228,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Menu ☰ → Timers",
       points: [
         "Four timers, one per tab: ⏰ EMOM (every minute on the minute: do the work, rest for what's left of the minute), 🔥 Tabata (20 seconds all-out, 10 seconds rest, 8 rounds), ⏱ Intervals (your own work and rest times) and 🥊 Boxing.",
-        "🥊 Boxing: pick 2, 3, 4, 5 or 6 minute rounds, 30 to 90 seconds rest, and up to 12 rounds. A bell rings to start and end each round, and a clapper sounds 10 seconds before the round ends.",
+        "🥊 Boxing: pick 2, 3, 4, 5 or 6 minute rounds, 30 to 90 seconds rest, and up to 12 rounds. A bell rings to start and end each round. Three knocks mean 30 seconds left, then a clapper at 10 seconds and a tick every second up to the bell.",
         "Set the times and rounds with − and +. Tabata also lets you do more than one Tabata with a rest between. The total time shows above Start.",
         "Exercises are optional. Tap Exercises (optional) to add them, e.g. 10 burpees, and the timer shows which one to do on each effort. Leave it empty to just use the clock.",
         "Tap ▶ Start. You get 10 seconds to get ready, then the screen goes red for WORK and green for REST. The phone beeps loudly and buzzes at every switch, even on silent. Three knocks mean 30 seconds left, then it ticks through the last 10 seconds and beeps for the last 3. Turn your media volume up to hear it in a busy gym. Tap 🔊 to turn the sound off (🔇). Pause, Skip or Stop at the bottom. The screen stays on while it runs.",
@@ -349,7 +349,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "Timers: EMOM, Tabata, intervals and boxing",
       where: "Menu ☰ → Timers",
       points: [
-        "Four timers, one per tab: ⏰ EMOM, 🔥 Tabata, ⏱ Intervals (your own work and rest times) and 🥊 Boxing (2-6 minute rounds, 30-90 seconds rest, up to 12 rounds, with a bell and a 10-second clapper). Set the times and rounds with − and +, add exercises if you want them named on each effort, and tap ▶ Start.",
+        "Four timers, one per tab: ⏰ EMOM, 🔥 Tabata, ⏱ Intervals (your own work and rest times) and 🥊 Boxing (2-6 minute rounds, 30-90 seconds rest, up to 12 rounds, with a bell, three knocks at 30 seconds left, a clapper at 10 and a tick to the bell). Set the times and rounds with − and +, add exercises if you want them named on each effort, and tap ▶ Start.",
         "Use it yourself, or on the gym floor with a client: red for WORK, green for REST, a loud beep (a bell for boxing) and a buzz at every switch, three knocks with 30 seconds left, a tick through the last 10 seconds and beeps for the last 3. 🔊 turns the sound off.",
         "💾 Save → Who is it for?: pick Me or a client. The client gets a notification and finds it under Saved on their own Timers page, marked From your coach. Delete it with ✕ and they no longer have it.",
         "Saved shows every timer you made, with the client's name on the ones you made for a client. Tap one to change it, or ▶ to start it.",
