@@ -46,6 +46,7 @@ import type { ClientAchievement } from "@/types/database";
 import { AB_MAX_ROUNDS, AB_REPS, abExerciseFor, absAfterExercise, absBetweenSets, abRoundsDone } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { EFFORT_LABEL, EFFORT_OPTIONS, EFFORT_QUESTION, suggestNext, type Suggestion } from "@/lib/progression";
+import { apreBase, apreNextSet, apreRestAfter, isApre, type ApreStart } from "@/lib/apre";
 import { gaugeWeight, inIntro, introWeeks, needsGauge, needsSafeties, SAFETIES_NOTE, type GaugeResult } from "@/lib/gauge";
 import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
@@ -121,6 +122,9 @@ export default function ExerciseLibraryScreen() {
   // then the app works out the working weight.
   const [gaugeDue, setGaugeDue] = useState(false);
   const [gaugeResult, setGaugeResult] = useState<GaugeResult | null>(null);
+  // APRE Program rows (GRIZZ, 2026-10-26): today's 7-rep weight and why,
+  // and each set's weight is worked out from it (src/lib/apre.ts).
+  const [apre, setApre] = useState<ApreStart | null>(null);
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [effort, setEffort] = useState<SetEffort | null>(null);
@@ -745,6 +749,7 @@ export default function ExerciseLibraryScreen() {
     setGaugeResult(null);
     setWarmUpDue(false);
     setStartWeight("");
+    setApre(null);
     if (!client) return;
     const query = supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso());
     const { data } = await (exercise.id ? query.eq("exercise_id", exercise.id) : query.eq("exercise_name", exercise.name))
@@ -756,6 +761,22 @@ export default function ExerciseLibraryScreen() {
       .order("log_date", { ascending: false })
       .limit(20);
     const lastDate = earlier?.[0]?.log_date;
+    if (programRow && isApre(programRow.reps)) {
+      // APRE: sets 1 and 2 are the warm-up, and no gauge set.
+      const sessions: WorkoutLog[][] = [];
+      for (const s of earlier ?? []) {
+        const day = sessions[sessions.length - 1];
+        if (day && day[0].log_date === s.log_date) day.push(s);
+        else sessions.push([s]);
+      }
+      for (const day of sessions) day.sort((a, b) => a.set_number - b.set_number);
+      const start = apreBase(sessions, exercise);
+      setApre(start);
+      const plan = apreNextSet(start.base, data ?? [], programRow.sets, exercise, start);
+      setSuggestion(plan);
+      setWeight(plan.weight ? String(plan.weight) : "");
+      return;
+    }
     const usual = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise, intro ? 2 : 1) : null;
     // Deload week (0115): about 70% of the usual weight, and no gauge set.
     const next = deloadToday && calendarToday ? deloadSuggestion(usual, exercise) : usual;
@@ -854,8 +875,13 @@ export default function ExerciseLibraryScreen() {
       return;
     }
     // Keep the weight for the next set; most sets use the same one (after a
-    // gauge set, the weight it worked out).
-    if (!gauge) setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
+    // gauge set, the weight it worked out). APRE works out the next set's.
+    const apreRow = target && apre ? target : null;
+    if (apreRow && apre) {
+      const plan = apreNextSet(apre.base, [...todaysSets, data], apreRow.sets, selected);
+      setSuggestion(plan);
+      setWeight(plan.weight ? String(plan.weight) : data.weight_kg !== null ? String(data.weight_kg) : "");
+    } else if (!gauge) setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
     const done = (row: ProgramExercise) =>
       target && row.id === target.id ? workingDone + 1 : setsDoneFor(row);
     // Supersets alternate: straight into the partner, or back to the first
@@ -865,7 +891,8 @@ export default function ExerciseLibraryScreen() {
       openProgramExercise(step.go, step.restSeconds, absAfter(target));
       return;
     }
-    const rest = target?.rest_seconds || DEFAULT_REST_SECONDS;
+    const rowRest = target?.rest_seconds || DEFAULT_REST_SECONDS;
+    const rest = apreRow ? apreRestAfter(workingDone + 1, apreRow.sets, rowRest) : rowRest;
     const next = target && workingDone + 1 >= target.sets ? nextUnfinished(target, todaysWorkout, done) : null;
     // Abs between sets, except after the very last set of the workout.
     if (target && absAfter(target) && (workingDone + 1 < target.sets || next)) {
@@ -1527,8 +1554,9 @@ export default function ExerciseLibraryScreen() {
             )}
             {suggestion && (
               <View style={styles.warmUpBox}>
-                <Text style={styles.warmUpTitle}>📈 {suggestion.last}</Text>
+                <Text style={styles.warmUpTitle}>{apre ? "📊" : "📈"} {suggestion.last}</Text>
                 <Text style={styles.warmUpText}>{suggestion.advice}</Text>
+                {apre && selected && needsSafeties(selected.name) && <Text style={styles.warmUpText}>{SAFETIES_NOTE}</Text>}
               </View>
             )}
             <Text style={[styles.sectionHeading, { marginTop: 0 }]}>{warmUpDue ? "Log your warm-up set" : "Log a set"}</Text>

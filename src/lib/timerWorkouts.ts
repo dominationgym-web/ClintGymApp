@@ -35,7 +35,7 @@ export const TIMER_KINDS: { kind: TimerKind; title: string; icon: string; summar
   { kind: "emom", title: "EMOM", icon: "⏰", summary: "Every minute on the minute: do the work, rest what's left of the minute." },
   { kind: "tabata", title: "Tabata", icon: "🔥", summary: "20 seconds all-out, 10 seconds rest, 8 rounds. Repeat for more Tabatas." },
   { kind: "custom", title: "Intervals", icon: "⏱", summary: "Your own work and rest times, for as many rounds as you like." },
-  { kind: "boxing", title: "Boxing", icon: "🥊", summary: "Fight rounds with a bell: 2 to 6 minute rounds, 30 to 90 seconds rest, up to 12 rounds. A clapper warns 10 seconds before each round ends." },
+  { kind: "boxing", title: "Boxing", icon: "🥊", summary: "Fight rounds with a bell: 2 to 6 minute rounds, 30 to 90 seconds rest, up to 12 rounds. Three knocks with 30 seconds left, a clapper at 10, then a tick every second to the bell." },
 ];
 
 export const TIMER_MENU_ITEM = {
@@ -68,6 +68,24 @@ export const LIMITS = {
 
 // Boxing seconds before the end of a round when the clapper sounds.
 export const BOXING_WARNING_SECONDS = 10;
+
+// Countdown sounds (GRIZZ, 2026-10-26): three round knocks with 30 seconds
+// left, a clock tick through the last 10 seconds and a sharper beep for the
+// last 3. Short phases (under 40 seconds) skip the knocks, and nothing plays
+// on the phase's first second so it doesn't clash with the switch sound.
+export const KNOCK_SECONDS = 30;
+export const TICKER_SECONDS = 10;
+export type CountdownCue = "knock" | "ticker" | "tick" | "clapper";
+
+/** The sound for this second of a countdown, or null for none. */
+export function countdownCue(left: number, phaseSeconds: number, boxingRound = false): CountdownCue | null {
+  if (left < 1 || left >= phaseSeconds) return null;
+  if (left === KNOCK_SECONDS && phaseSeconds >= 40) return "knock";
+  if (boxingRound && left === BOXING_WARNING_SECONDS) return "clapper";
+  if (left <= 3) return "tick";
+  if (left <= TICKER_SECONDS) return "ticker";
+  return null;
+}
 
 const clamp = (n: unknown, min: number, max: number, fallback: number) => {
   const v = typeof n === "number" && Number.isFinite(n) ? Math.round(n) : fallback;

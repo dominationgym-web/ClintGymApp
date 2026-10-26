@@ -401,6 +401,7 @@ export const PROGRAM_FAMILIES = [
   { key: "foundation", group: "gym", title: "Beginner & Intermediate", icon: "🌱" },
   { key: "goalBlock", group: "gym", title: "12-week goal programs", icon: "🎯" },
   { key: "muscleYear", group: "gym", title: "1-year muscle building", icon: "📅" },
+  { key: "apre", group: "gym", title: "APRE (the weight follows your reps)", icon: "📊" },
   { key: "fullBody", group: "gym", title: "Full body", icon: "🏃" },
   { key: "upperBody", group: "gym", title: "Upper body workouts", icon: "💪" },
   { key: "upperPush", group: "gym", title: "Upper body push", icon: "🤜" },
@@ -450,6 +451,8 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   if (name.startsWith("older adult ")) return "olderAdult";
   // 52-week muscle building programs (0150): "Muscle Year – 4 days a week".
   if (name.startsWith("muscle year")) return "muscleYear";
+  // APRE Program (0161, GRIZZ, 2026-10-26).
+  if (name.startsWith("apre")) return "apre";
   // Off-season sport programs (0144): "Off-Season – Rugby". Checked early,
   // since their sport names don't fit the checks below.
   if (name.startsWith("off-season")) return "offSeason";

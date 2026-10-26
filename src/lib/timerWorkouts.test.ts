@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTimerPhases, cleanSettings, defaultSettings, describeTimer, totalSeconds, defaultTimerName } from "./timerWorkouts";
+import { buildTimerPhases, cleanSettings, countdownCue, defaultSettings, describeTimer, totalSeconds, defaultTimerName } from "./timerWorkouts";
 
 describe("timer workouts", () => {
   it("EMOM: one phase a minute, exercises taking turns, after a get ready", () => {
@@ -99,5 +99,28 @@ describe("boxing rounds", () => {
   it("keeps a saved boxing timer to 2-6 minute rounds, 30-90 sec rest and 12 rounds", () => {
     expect(cleanSettings({ kind: "boxing", work: 1000, rest: 5, rounds: 20 })).toMatchObject({ work: 360, rest: 30, rounds: 12 });
     expect(cleanSettings({ kind: "boxing", work: 150, rest: 200 })).toMatchObject({ work: 180, rest: 90 });
+  });
+});
+
+describe("countdown sounds", () => {
+  it("knocks at 30 seconds, ticks the last 10 and beeps the last 3", () => {
+    expect(countdownCue(30, 60)).toBe("knock");
+    expect(countdownCue(31, 60)).toBeNull();
+    expect(countdownCue(11, 60)).toBeNull();
+    expect([10, 9, 4].map((s) => countdownCue(s, 60))).toEqual(["ticker", "ticker", "ticker"]);
+    expect([3, 2, 1].map((s) => countdownCue(s, 60))).toEqual(["tick", "tick", "tick"]);
+    expect(countdownCue(0, 60)).toBeNull();
+  });
+
+  it("no knocks on short phases, nothing on the first second", () => {
+    expect(countdownCue(30, 35)).toBeNull();
+    expect(countdownCue(10, 10)).toBeNull();
+    expect(countdownCue(9, 10)).toBe("ticker");
+  });
+
+  it("boxing rounds keep the clapper at 10 seconds", () => {
+    expect(countdownCue(10, 180, true)).toBe("clapper");
+    expect(countdownCue(30, 180, true)).toBe("knock");
+    expect(countdownCue(9, 180, true)).toBe("ticker");
   });
 });

@@ -56,6 +56,8 @@ export function programBlockWeeks(name: string): number | null {
   const lower = name.toLowerCase();
   if (lower.startsWith("older adult ")) return BLOCK_WEEKS;
   if (lower.startsWith("muscle year")) return MUSCLE_YEAR_BLOCK_WEEKS;
+  // APRE Program (0161): block 2 (weeks 9-16) changes the exercises and adds a set.
+  if (lower.startsWith("apre")) return BLOCK_WEEKS;
   return null;
 }
 

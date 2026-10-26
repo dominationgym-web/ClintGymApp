@@ -7,7 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // stays silent, so the timer itself never breaks. Sound on or off is kept on
 // the phone.
 
-export type TimerSound = "tick" | "go" | "rest" | "finish" | "bell" | "bellEnd" | "clapper";
+export type TimerSound = "tick" | "go" | "rest" | "finish" | "bell" | "bellEnd" | "clapper" | "knock" | "ticker";
 
 const SOURCES: Record<TimerSound, number> = {
   tick: require("../../assets/sounds/tick.wav"),
@@ -17,6 +17,8 @@ const SOURCES: Record<TimerSound, number> = {
   bell: require("../../assets/sounds/bell.wav"),
   bellEnd: require("../../assets/sounds/bell-end.wav"),
   clapper: require("../../assets/sounds/clapper.wav"),
+  knock: require("../../assets/sounds/knock.wav"),
+  ticker: require("../../assets/sounds/ticker.wav"),
 };
 
 type Player = { play: () => void; seekTo: (s: number) => Promise<void> | void; volume: number };
