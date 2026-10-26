@@ -6,6 +6,8 @@
 export type NotificationRoute =
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
   | { stack: "client"; screen: "Timers" }
+  | { stack: "client"; screen: "VideoCheckIn" }
+  | { stack: "trainer"; screen: "VideoCheckIns" }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
   | { stack: "trainer"; screen: "Billing" }
   | { stack: "trainer"; screen: "TrainerProblems"; problemId?: string }
@@ -41,6 +43,7 @@ export function notificationRoute(
 ): NotificationRoute | null {
   const type = typeof data?.type === "string" ? data.type : null;
   if (!type || !role) return null;
+  if (type === "video_checkin") return role === "client" ? { stack: "client", screen: "VideoCheckIn" } : { stack: "trainer", screen: "VideoCheckIns" };
   if (role === "client") {
     if (type === "timer_workout") return { stack: "client", screen: "Timers" };
     const screen = CLIENT_SCREENS[type];
@@ -54,7 +57,7 @@ export function notificationRoute(
   if (type === "client_signup" || type === "client_plan_expired" || type === "client_plan_expiring") return { stack: "trainer", screen: "Clients" };
   if (TRAINER_TRAINING_TYPES.has(type) && clientId) return { stack: "trainer", screen: "ClientDetail", clientId, tab: "training" };
   if (TRAINER_CLIENT_TYPES.has(type) && clientId) return { stack: "trainer", screen: "ClientDetail", clientId };
-  if (type === "planning_reminder") return { stack: "trainer", screen: "Dashboard" };
+  if (type === "planning_reminder" || type === "checkin_nudge") return { stack: "trainer", screen: "Dashboard" };
   if (type === "trainer_problem" || type === "trainer_problem_reply") {
     const problemId = typeof data?.problemId === "string" && data.problemId ? data.problemId : undefined;
     return { stack: "trainer", screen: "TrainerProblems", problemId };
