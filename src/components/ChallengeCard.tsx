@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
+import Celebration from "@/components/Celebration";
 import {
   challengeProgress,
   daysLeftInMonth,
@@ -23,6 +24,8 @@ export default function ChallengeCard({ clientId, trainerId }: { clientId: strin
   const [days, setDays] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Confetti pop-up when this tick wins the challenge.
+  const [won, setWon] = useState(false);
   const today = todayIso();
 
   const load = useCallback(async () => {
@@ -71,65 +74,80 @@ export default function ChallengeCard({ clientId, trainerId }: { clientId: strin
       return;
     }
     if (!ticked && days.length + 1 === challenge.target_days) {
-      Alert.alert("🏆 You did it!", `${challenge.target_days} days of ${challenge.title}. Your coach has been told. Keep it going to the end of the month!`);
+      setWon(true);
     }
   };
 
   return (
-    <View style={[styles.card, progress.won && styles.cardWon]}>
-      <Pressable style={styles.header} onPress={() => setOpen((o) => !o)}>
-        <Text style={styles.emoji}>{challenge.emoji}</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.kicker}>{monthName(challenge.month)} challenge</Text>
-          <Text style={styles.title}>{challenge.title}</Text>
-        </View>
-        <Text style={styles.chevron}>{open ? "▴" : "▾"}</Text>
-      </Pressable>
-      <Text style={styles.task}>{challenge.daily_task}</Text>
-      {open ? (
-        <>
-          {challenge.summary ? <Text style={styles.summary}>{challenge.summary}</Text> : null}
-          <Text style={styles.summary}>To win: do it on {challenge.target_days} days this month.</Text>
-        </>
-      ) : null}
-
-      <View style={styles.barTrack}>
-        <View
-          style={[
-            styles.barFill,
-            { width: `${Math.min(100, (progress.done / progress.target) * 100)}%` },
-            progress.won && { backgroundColor: "#22C55E" },
-          ]}
-        />
-      </View>
-      <Text style={[styles.progress, progress.won && { color: "#22C55E" }]}>
-        {progressLine(progress)}
-        {progress.won ? "" : ` · ${left} day${left === 1 ? "" : "s"} left`}
-      </Text>
-      {!progress.won && !progress.canStillWin ? (
-        <Text style={styles.summary}>Not enough days left to reach {progress.target}, but every day still counts. Keep going!</Text>
-      ) : null}
-
-      <Pressable
-        style={[styles.button, progress.doneToday && styles.buttonDone]}
-        onPress={() => toggle(today)}
-        disabled={busy}
-        accessibilityRole="button"
-      >
-        {busy ? (
-          <ActivityIndicator color={progress.doneToday ? BRAND_GOLD : "#0F172A"} />
-        ) : (
-          <Text style={[styles.buttonText, progress.doneToday && { color: BRAND_GOLD }]}>
-            {progress.doneToday ? "✓ Done today (tap to undo)" : "I did it today"}
-          </Text>
-        )}
-      </Pressable>
-      {yesterday && !days.includes(yesterday) ? (
-        <Pressable onPress={() => toggle(yesterday)} disabled={busy} hitSlop={6}>
-          <Text style={styles.link}>Forgot to tick yesterday? Tick it here</Text>
+    <>
+      <Celebration
+        info={
+          won
+            ? {
+                emoji: "🏆",
+                title: "Challenge won!",
+                lines: [challenge.title, `${challenge.target_days} days done this month`],
+                note: "Your coach has been told. Keep it going to the end of the month!",
+              }
+            : null
+        }
+        onClose={() => setWon(false)}
+      />
+      <View style={[styles.card, progress.won && styles.cardWon]}>
+        <Pressable style={styles.header} onPress={() => setOpen((o) => !o)}>
+          <Text style={styles.emoji}>{challenge.emoji}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.kicker}>{monthName(challenge.month)} challenge</Text>
+            <Text style={styles.title}>{challenge.title}</Text>
+          </View>
+          <Text style={styles.chevron}>{open ? "▴" : "▾"}</Text>
         </Pressable>
-      ) : null}
-    </View>
+        <Text style={styles.task}>{challenge.daily_task}</Text>
+        {open ? (
+          <>
+            {challenge.summary ? <Text style={styles.summary}>{challenge.summary}</Text> : null}
+            <Text style={styles.summary}>To win: do it on {challenge.target_days} days this month.</Text>
+          </>
+        ) : null}
+
+        <View style={styles.barTrack}>
+          <View
+            style={[
+              styles.barFill,
+              { width: `${Math.min(100, (progress.done / progress.target) * 100)}%` },
+              progress.won && { backgroundColor: "#22C55E" },
+            ]}
+          />
+        </View>
+        <Text style={[styles.progress, progress.won && { color: "#22C55E" }]}>
+          {progressLine(progress)}
+          {progress.won ? "" : ` · ${left} day${left === 1 ? "" : "s"} left`}
+        </Text>
+        {!progress.won && !progress.canStillWin ? (
+          <Text style={styles.summary}>Not enough days left to reach {progress.target}, but every day still counts. Keep going!</Text>
+        ) : null}
+
+        <Pressable
+          style={[styles.button, progress.doneToday && styles.buttonDone]}
+          onPress={() => toggle(today)}
+          disabled={busy}
+          accessibilityRole="button"
+        >
+          {busy ? (
+            <ActivityIndicator color={progress.doneToday ? BRAND_GOLD : "#0F172A"} />
+          ) : (
+            <Text style={[styles.buttonText, progress.doneToday && { color: BRAND_GOLD }]}>
+              {progress.doneToday ? "✓ Done today (tap to undo)" : "I did it today"}
+            </Text>
+          )}
+        </Pressable>
+        {yesterday && !days.includes(yesterday) ? (
+          <Pressable onPress={() => toggle(yesterday)} disabled={busy} hitSlop={6}>
+            <Text style={styles.link}>Forgot to tick yesterday? Tick it here</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </>
   );
 }
 

@@ -40,6 +40,7 @@ import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_G
 import RestTimer from "@/components/RestTimer";
 import SupersetLogger from "@/components/SupersetLogger";
 import AchievementBadge from "@/components/AchievementBadge";
+import Celebration, { type CelebrationInfo } from "@/components/Celebration";
 import { checkAchievement } from "@/lib/achievementQueries";
 import type { ClientAchievement } from "@/types/database";
 import { AB_MAX_ROUNDS, AB_REPS, abExerciseFor, absAfterExercise, absBetweenSets, abRoundsDone } from "@/lib/absBetweenSets";
@@ -155,6 +156,8 @@ export default function ExerciseLibraryScreen() {
   // and taps Complete, which starts the rest timer. `rest` is that timer's length.
   // Gold achievement badge (0085) earned by the set just logged.
   const [badge, setBadge] = useState<ClientAchievement | null>(null);
+  // Gold star confetti pop-up when a finished workout pushed something up.
+  const [starred, setStarred] = useState<CelebrationInfo | null>(null);
   // Superset logger (GRIZZ, 2026-10-23): 2-4 exercises logged a round at a time.
   const [supersetOpen, setSupersetOpen] = useState(false);
   // A badge earned in the superset logger shows once it closes (two pop-ups can't open at once).
@@ -565,12 +568,20 @@ export default function ExerciseLibraryScreen() {
       if (saved.status === "missed") await saveProgress(sessionMovedToTomorrow(session, today), false);
       else await saveProgress(sessionAfterComplete(session, days, today), true);
     }
-    const star = saved.improvements.length
-      ? `\n\n⭐ Gold star! You pushed up: ${saved.improvements.map((i) => `${i.exercise} ${i.before} → ${i.after}`).join(", ")}.`
-      : "";
-    if (saved.status === "complete") Alert.alert("Workout complete ✅", `Great work.${star}`);
-    else Alert.alert("Thanks for letting your coach know", saved.status === "partial" ? `Every set counts.${star}` : "Rest up and look after yourself.");
+    if (saved.improvements.length && saved.status !== "missed") {
+      setStarred(goldStar(saved, saved.status === "complete" ? "Workout complete ✅ Great work." : "Every set counts."));
+      return;
+    }
+    if (saved.status === "complete") Alert.alert("Workout complete ✅", "Great work.");
+    else Alert.alert("Thanks for letting your coach know", saved.status === "partial" ? "Every set counts." : "Rest up and look after yourself.");
   };
+
+  const goldStar = (saved: WorkoutSession, first: string): CelebrationInfo => ({
+    emoji: "⭐",
+    title: "Gold star!",
+    lines: [first, ...saved.improvements.map((i) => `${i.exercise}: ${i.before} → ${i.after}`)],
+    highlight: saved.improvements.length === 1 ? "New personal best" : `${saved.improvements.length} personal bests`,
+  });
 
   const completeWorkout = () => {
     if (!program) return;
@@ -605,8 +616,9 @@ export default function ExerciseLibraryScreen() {
           const saved = await recordSession("complete", null);
           if (!saved) return;
           if (session && sessionDue) await saveProgress(sessionAfterComplete(session, days, today), true);
-          const star = saved.improvements.length ? `\n\n⭐ Pushed up: ${saved.improvements.map((i) => `${i.exercise} ${i.before} → ${i.after}`).join(", ")}.` : "";
-          Alert.alert(self ? "Saved 💪" : "Saved 🤝", self ? `In your training log.${star}` : `On ${first}'s profile as an in-person session.${star}`);
+          const savedTo = `Saved to ${where}.`;
+          if (saved.improvements.length) setStarred(goldStar(saved, savedTo));
+          else Alert.alert(self ? "Saved 💪" : "Saved 🤝", savedTo);
         },
       },
     ]);
@@ -1391,6 +1403,7 @@ export default function ExerciseLibraryScreen() {
           onClose={() => setDropRow(null)}
         />
       )}
+      <Celebration info={starred} onClose={() => setStarred(null)} />
       <WorkoutReasonModal
         kind={reasonFor}
         done={todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0)}
