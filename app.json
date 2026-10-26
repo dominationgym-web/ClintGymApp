@@ -34,7 +34,8 @@
         "android.permission.health.READ_EXERCISE",
         "android.permission.health.READ_HEART_RATE",
         "android.permission.health.READ_DISTANCE",
-        "android.permission.health.READ_SLEEP"
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_STEPS"
       ]
     },
     "web": {
@@ -75,8 +76,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Reads the workouts from your watch (runs, rides, walks, swims and more), with their distance and heart rate, and your sleep, so your coach can see them and plan your training.",
-          "NSHealthUpdateUsageDescription": "Daily Evolution only reads your workouts and sleep. It never writes or changes anything in Apple Health.",
+          "NSHealthShareUsageDescription": "Reads the workouts from your watch (runs, rides, walks, swims and more), with their distance and heart rate, your sleep and your daily steps, so your coach can see them and plan your training.",
+          "NSHealthUpdateUsageDescription": "Daily Evolution only reads your workouts, sleep and steps. It never writes or changes anything in Apple Health.",
           "background": false
         }
       ],

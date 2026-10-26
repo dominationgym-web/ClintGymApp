@@ -5,6 +5,7 @@ import WellbeingQuestions, { StopAdvice } from "@/components/WellbeingQuestions"
 import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 // Coach messages, the plan-ending banner and one tap-to-open line of reminders (C3).
 import TodayNotices from "@/components/TodayNotices";
+import StepsCard from "@/components/StepsCard";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import HighGiInfo from "@/components/HighGiInfo";
@@ -238,6 +239,7 @@ export default function CheckInScreen() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <TodayNotices />
+        <StepsCard />
         <Text style={styles.title}>You're checked in for today ✅</Text>
         {saved.symptoms_status === "reported" && <StopAdvice />}
         <CheckinFeedbackCard
@@ -302,6 +304,7 @@ export default function CheckInScreen() {
         {step === 0 && (
           <>
             <TodayNotices extra={client && !saved ? <RecoverySuggestionCard clientId={client.id} /> : null} />
+            <StepsCard />
           </>
         )}
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>
