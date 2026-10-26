@@ -40,6 +40,8 @@ describe("shortWorkoutName", () => {
     expect(shortWorkoutName("Lower Body Superset 12")).toBe("Lower SS 12");
     expect(shortWorkoutName("HIIT 4")).toBe("HIIT 4");
     expect(shortWorkoutName("Upper Body Superset 3", false)).toBe("Upper SS");
+    expect(shortWorkoutName("Upper Body Push 2")).toBe("Push 2");
+    expect(shortWorkoutName("Upper Body Pull 5", false)).toBe("Pull");
     expect(shortWorkoutName("Bodybuilding 3-week block")).toBe("Bodybuildin…");
   });
 });
