@@ -15,6 +15,7 @@ export type NotificationRoute =
 
 const CLIENT_SCREENS: Record<string, "CheckIn" | "Habits" | "Exercises" | "Profile"> = {
   coach_message: "CheckIn",
+  steps: "CheckIn",
   client_activated: "CheckIn",
   catch_up: "Exercises",
   plan_next_week: "Exercises",

@@ -12,7 +12,7 @@ export async function loadWeekFacts(clientId: string, today: string): Promise<We
   const from = addDays(today, -6);
   // A flag set late on the day before `from` in UTC is still in range, so read a day early and filter by local date.
   const flagsFrom = `${addDays(from, -1)}T00:00:00Z`;
-  const [checkins, flags, planned, sessions, sets, activities, habits, problems, injuries, sleep] = await Promise.all([
+  const [checkins, flags, planned, sessions, sets, activities, habits, problems, injuries, sleep, steps] = await Promise.all([
     supabase
       .from("checkins")
       .select(
@@ -51,6 +51,7 @@ export async function loadWeekFacts(clientId: string, today: string): Promise<We
     supabase.from("client_problems").select("topic, status").eq("client_id", clientId).neq("status", "fixed"),
     supabase.from("client_injuries").select("area, healed_on").eq("client_id", clientId).is("healed_on", null),
     supabase.from("client_sleep").select("sleep_date, asleep_minutes").eq("client_id", clientId).gte("sleep_date", from).lte("sleep_date", today),
+    supabase.from("client_steps").select("step_date, steps, goal").eq("client_id", clientId).gte("step_date", from).lte("step_date", today),
   ]);
   const habitRows = habits.data ?? [];
   const { data: logs } = habitRows.length
@@ -75,6 +76,7 @@ export async function loadWeekFacts(clientId: string, today: string): Promise<We
     openProblems: [...new Set((problems.data ?? []).map((p) => TOPIC[p.topic] ?? p.topic))],
     injuries: [...new Set((injuries.data ?? []).map((i) => i.area as string))],
     sleep: sleep.data ?? [],
+    steps: steps.data ?? [],
   };
   return weekFacts(inputs, today);
 }

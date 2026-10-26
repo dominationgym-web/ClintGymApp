@@ -6,20 +6,24 @@
 //
 // Once linked, finished workouts are read each time the Exercises tab opens
 // and saved as Other exercise (src/lib/healthSync.ts), and the last nights'
-// sleep is read each time the app opens (0124, src/lib/sleepSync.ts). The link
-// and the last workout saved are kept on the phone.
+// sleep is read each time the app opens (0124, src/lib/sleepSync.ts), and so
+// are today's and yesterday's steps (0158, src/lib/steps.ts). The link and the
+// last workout saved are kept on the phone.
 import { Linking, Platform } from "react-native";
 import { isRunningInExpoGo } from "expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase";
 import { activityFromWorkout, syncFrom, type HealthSource, type HealthWorkout } from "@/lib/healthSync";
 import { applePieceKind, healthConnectStageKind, nightsFromPieces, type SleepPiece } from "@/lib/sleepSync";
+import { mergeWatchSteps, type StepDay } from "@/lib/steps";
+import { toIsoDate } from "@/lib/dates";
 
 type HealthKitModule = typeof import("@kingstinct/react-native-healthkit");
 type HealthConnectModule = typeof import("react-native-health-connect");
 
 const HEART_RATE = "HKQuantityTypeIdentifierHeartRate";
 const SLEEP = "HKCategoryTypeIdentifierSleepAnalysis";
+const STEPS = "HKQuantityTypeIdentifierStepCount";
 const HEALTH_CONNECT_APP = "com.google.android.apps.healthdata";
 
 let healthKit: HealthKitModule | null | undefined;
@@ -67,8 +71,9 @@ export function healthSourceHere(): HealthSource | null {
 
 // sleepAsked: the phone has asked for sleep, which was added after the first
 // links (0124). sleptSince: nights are read again from here, so a night that
-// grows while the watch syncs is updated.
-type LinkState = { source: HealthSource; lastEnd: string | null; sleepAsked?: boolean; sleptSince?: string | null };
+// grows while the watch syncs is updated. stepsAsked: the phone has asked for
+// steps, added after that (0158).
+type LinkState = { source: HealthSource; lastEnd: string | null; sleepAsked?: boolean; sleptSince?: string | null; stepsAsked?: boolean };
 const key = (clientId: string) => `health-link:${clientId}`;
 
 export async function getHealthLink(clientId: string): Promise<LinkState | null> {
@@ -91,7 +96,7 @@ export async function unlinkHealth(clientId: string) {
 
 export type LinkResult = "linked" | "unavailable" | "needs_app" | "denied";
 
-/** Asks the phone for permission to read workouts, heart rate, distance and sleep. */
+/** Asks the phone for permission to read workouts, heart rate, distance, sleep and steps. */
 export async function linkHealth(clientId: string): Promise<LinkResult> {
   const source = healthSourceHere();
   if (!source) return "unavailable";
@@ -99,7 +104,7 @@ export async function linkHealth(clientId: string): Promise<LinkResult> {
     if (source === "apple_health") {
       const hk = loadHealthKit()!;
       // Apple never says whether reading was allowed; an empty read just finds nothing.
-      await hk.requestAuthorization({ toRead: ["HKWorkoutTypeIdentifier", HEART_RATE, "HKQuantityTypeIdentifierDistanceWalkingRunning", SLEEP] });
+      await hk.requestAuthorization({ toRead: ["HKWorkoutTypeIdentifier", HEART_RATE, "HKQuantityTypeIdentifierDistanceWalkingRunning", SLEEP, STEPS] });
     } else {
       const hc = loadHealthConnect()!;
       const status = await hc.getSdkStatus();
@@ -110,6 +115,7 @@ export async function linkHealth(clientId: string): Promise<LinkResult> {
         { accessType: "read", recordType: "HeartRate" },
         { accessType: "read", recordType: "Distance" },
         { accessType: "read", recordType: "SleepSession" },
+        { accessType: "read", recordType: "Steps" },
       ]);
       if (!granted.some((p) => p.recordType === "ExerciseSession")) return "denied";
     }
@@ -118,7 +124,7 @@ export async function linkHealth(clientId: string): Promise<LinkResult> {
   }
   const existing = await getHealthLink(clientId);
   const same = existing?.source === source;
-  await saveLink(clientId, { source, lastEnd: same ? existing.lastEnd : null, sleepAsked: true, sleptSince: same ? existing.sleptSince : null });
+  await saveLink(clientId, { source, lastEnd: same ? existing.lastEnd : null, sleepAsked: true, sleptSince: same ? existing.sleptSince : null, stepsAsked: true });
   return "linked";
 }
 
@@ -139,6 +145,29 @@ async function askForSleepOnce(clientId: string, link: LinkState): Promise<LinkS
     // Not allowed or not available: sleep just won't come in.
   }
   const next = { ...link, sleepAsked: true };
+  await saveLink(clientId, next);
+  return next;
+}
+
+/**
+ * Phones linked before steps were added are asked once for steps too. On
+ * Android this needs a build made after 0158; an older one just says no and
+ * the client types their steps in.
+ */
+async function askForStepsOnce(clientId: string, link: LinkState): Promise<LinkState> {
+  if (link.stepsAsked) return link;
+  try {
+    if (link.source === "apple_health") {
+      await loadHealthKit()?.requestAuthorization({ toRead: [STEPS] });
+    } else {
+      const hc = loadHealthConnect();
+      if (hc && (await hc.initialize())) await hc.requestPermission([{ accessType: "read", recordType: "Steps" }]);
+    }
+  } catch {
+    // Not allowed or not available: steps are typed in instead.
+  }
+  // Read again: the sleep reading may have saved its own fields meanwhile.
+  const next = { ...((await getHealthLink(clientId)) ?? link), stepsAsked: true };
   await saveLink(clientId, next);
   return next;
 }
@@ -277,15 +306,83 @@ export async function syncHealthSleep(clientId: string): Promise<number | null> 
   }
 }
 
-// Opening the app reads sleep and workouts once; a second call while that is
+/** Steps between two times, or null when the health app can't say. */
+async function readSteps(source: HealthSource, start: Date, end: Date): Promise<number | null> {
+  if (source === "apple_health") {
+    const hk = loadHealthKit();
+    if (!hk) return null;
+    const stats = await hk.queryStatisticsForQuantity(STEPS, ["cumulativeSum"], { filter: { date: { startDate: start, endDate: end } }, unit: "count" });
+    return stats.sumQuantity?.quantity ?? 0;
+  }
+  const hc = loadHealthConnect();
+  if (!hc || !(await hc.initialize())) return null;
+  const total = await hc.aggregateRecord({
+    recordType: "Steps",
+    timeRangeFilter: { operator: "between", startTime: start.toISOString(), endTime: end.toISOString() },
+  });
+  return total?.COUNT_TOTAL ?? 0;
+}
+
+/**
+ * Saves today's and yesterday's steps from the health app (0158), so the
+ * evening after the last open still counts. Returns today's steps, or null
+ * when the phone isn't linked or steps can't be read.
+ */
+export async function syncHealthSteps(clientId: string): Promise<number | null> {
+  let link = await getHealthLink(clientId);
+  if (!link || healthSourceHere() !== link.source) return null;
+  try {
+    link = await askForStepsOnce(clientId, link);
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const [todaySteps, yesterdaySteps] = await Promise.all([
+      readSteps(link.source, midnight, now),
+      readSteps(link.source, yesterday, midnight),
+    ]);
+    const days = [
+      { date: toIsoDate(midnight), steps: todaySteps },
+      { date: toIsoDate(yesterday), steps: yesterdaySteps },
+    ].filter((d): d is { date: string; steps: number } => d.steps !== null);
+    if (days.length === 0) return null;
+    const [{ data: saved }, { data: goal }] = await Promise.all([
+      supabase.from("client_steps").select("step_date, steps, goal, source").eq("client_id", clientId).in("step_date", days.map((d) => d.date)),
+      supabase.from("client_step_goals").select("goal").eq("client_id", clientId).maybeSingle(),
+    ]);
+    const byDate = new Map(((saved ?? []) as Pick<StepDay, "step_date" | "steps" | "goal" | "source">[]).map((r) => [r.step_date, r]));
+    // Nothing saved yet and nothing walked (or not allowed to read): leave the day empty.
+    const rows = days
+      .filter((d) => d.steps > 0 || byDate.has(d.date))
+      .map((d) => {
+        const existing = byDate.get(d.date) ?? null;
+        return {
+          client_id: clientId,
+          step_date: d.date,
+          ...mergeWatchSteps(existing, d.steps, link!.source),
+          goal: existing?.goal ?? goal?.goal ?? null,
+          updated_at: now.toISOString(),
+        };
+      });
+    if (rows.length > 0) {
+      const { error } = await supabase.from("client_steps").upsert(rows, { onConflict: "client_id,step_date" });
+      if (error) return null;
+    }
+    return todaySteps;
+  } catch {
+    return null;
+  }
+}
+
+// Opening the app reads sleep, steps and workouts once; a second call while that is
 // running, or within 10 minutes, shares the same reading.
 let openSync: { clientId: string; at: number; done: Promise<void> } | null = null;
 
-/** Reads sleep and new workouts from the health app when the client opens the app. */
+/** Reads sleep, steps and new workouts from the health app when the client opens the app. */
 export function syncHealthOnOpen(clientId: string): Promise<void> {
   if (openSync && openSync.clientId === clientId && Date.now() - openSync.at < 10 * 60 * 1000) return openSync.done;
   const done = (async () => {
     await syncHealthSleep(clientId);
+    await syncHealthSteps(clientId);
     await syncHealthWorkouts(clientId);
   })().catch(() => undefined);
   openSync = { clientId, at: Date.now(), done };
