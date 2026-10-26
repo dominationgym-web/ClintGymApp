@@ -73,3 +73,15 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Build and send to TestFlight
         run: eas build --platform ios --profile production --non-interactive --auto-submit --wait
+
+      # The newest Android download link, also when Android was built on the
+      # laptop, so it can go on the website's download page.
+      - name: Latest Android download link
+        if: always()
+        run: |
+          eas build:list --platform android --profile preview --status finished --limit 1 --json --non-interactive > latest.json || exit 0
+          url=$(node -p "require('./latest.json')[0]?.artifacts?.buildUrl ?? ''")
+          runtime=$(node -p "require('./latest.json')[0]?.runtimeVersion ?? ''")
+          echo "Latest Android download link: $url (runtime $runtime)"
+          echo "### Latest Android app" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download link: $url (runtime $runtime)" >> "$GITHUB_STEP_SUMMARY"
