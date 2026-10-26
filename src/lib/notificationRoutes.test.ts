@@ -8,9 +8,16 @@ describe("notificationRoute", () => {
     expect(notificationRoute({ type: "challenge_shared" }, "trainer")).toEqual({ stack: "trainer", screen: "Challenges" });
   });
 
+  it("opens the video check-in page for either side", () => {
+    expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "client")).toEqual({ stack: "client", screen: "VideoCheckIn" });
+    expect(notificationRoute({ type: "video_checkin", checkinId: "v1" }, "trainer")).toEqual({ stack: "trainer", screen: "VideoCheckIns" });
+    expect(notificationRoute({ type: "checkin_nudge" }, "trainer")).toEqual({ stack: "trainer", screen: "Dashboard" });
+  });
+
   it("sends a client to the right tab", () => {
     expect(notificationRoute({ type: "coach_message", messageId: "m1" }, "client")).toEqual({ stack: "client", screen: "CheckIn" });
     expect(notificationRoute({ type: "catch_up" }, "client")).toEqual({ stack: "client", screen: "Exercises" });
+    expect(notificationRoute({ type: "timer_workout", timerId: "t1" }, "client")).toEqual({ stack: "client", screen: "Timers" });
   });
 
   it("opens a trainer on the client the push is about", () => {

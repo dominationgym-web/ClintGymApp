@@ -191,6 +191,19 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "videoCheckin",
+      icon: "📹",
+      title: "Video check-in with your coach",
+      where: "Menu ☰ → Video check-in",
+      points: [
+        "Book a short video call with your coach, once a week. Pick this week or next week, tap a time, add what you'd like to talk about if you want, and tap Book this time.",
+        "Your coach confirms it and you get a notification. Switch on Same time every week and the next one books itself after each call.",
+        "You get a reminder the day before, that morning, an hour before and 15 minutes before, and a pop-up shows at the top of the app all day on the day. ✕ hides it until you next open the app.",
+        "The call happens on WhatsApp: your coach video calls you. Tap 💬 WhatsApp your coach to open their chat.",
+        "Can't make it? Tap Cancel this check-in and your coach is told. Then pick another time.",
+      ],
+    },
+    {
       key: "profile",
       icon: "👤",
       title: "Profile and progress photos",
@@ -204,6 +217,19 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "🎯 Goals shows the goals you picked on your intake form. Your coach can change them with you.",
         "🧾 Paid your trainer? Open Paying your trainer, add the amount if you like, tap Send proof of payment and pick a screenshot from your banking app or take a photo of the slip. Your trainer is told straight away, and you see here once they confirm it. Paying before your plan ends is fine: the new plan starts when the current one ends, so you lose no days.",
         "🩹 My injuries (Profile → Goals and injuries): the intake form asks about injuries and pain when you join, and you can add more here any time: every injury, one at a time, with where it is and what it is. Tap Healed once it's better. Your coach uses this to adjust exercises around it. On the daily check-in you can also tap more than one place that hurts.",
+      ],
+    },
+    {
+      key: "timers",
+      icon: "⏱",
+      title: "Timers: EMOM, Tabata and intervals",
+      where: "Menu ☰ → Timers",
+      points: [
+        "Three timers, one per tab: ⏰ EMOM (every minute on the minute: do the work, rest for what's left of the minute), 🔥 Tabata (20 seconds all-out, 10 seconds rest, 8 rounds) and ⏱ Intervals (your own work and rest times).",
+        "Set the times and rounds with − and +. Tabata also lets you do more than one Tabata with a rest between. The total time shows above Start.",
+        "Exercises are optional. Tap Exercises (optional) to add them, e.g. 10 burpees, and the timer shows which one to do on each effort. Leave it empty to just use the clock.",
+        "Tap ▶ Start. You get 10 seconds to get ready, then the screen goes red for WORK and green for REST, and the phone buzzes at every switch and for the last 3 seconds. Pause, Skip or Stop at the bottom. The screen stays on while it runs.",
+        "💾 Save keeps a timer under Saved so you can run it again. Timers your coach makes for you show there too, marked From your coach, and you get a notification when one arrives.",
       ],
     },
     {
@@ -315,6 +341,18 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "timers",
+      icon: "⏱",
+      title: "Timers: EMOM, Tabata and intervals",
+      where: "Menu ☰ → Timers",
+      points: [
+        "Three timers, one per tab: ⏰ EMOM, 🔥 Tabata and ⏱ Intervals (your own work and rest times). Set the times and rounds with − and +, add exercises if you want them named on each effort, and tap ▶ Start.",
+        "Use it yourself, or on the gym floor with a client: red for WORK, green for REST, a buzz at every switch.",
+        "💾 Save → Who is it for?: pick Me or a client. The client gets a notification and finds it under Saved on their own Timers page, marked From your coach. Delete it with ✕ and they no longer have it.",
+        "Saved shows every timer you made, with the client's name on the ones you made for a client. Tap one to change it, or ▶ to start it.",
+      ],
+    },
+    {
       key: "results",
       icon: "⭐",
       title: "Reading their workouts",
@@ -349,6 +387,21 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "Plan ahead: the second tab is next month. Your clients are told about it on the 1st. In the first week of a month with no challenge on, your dashboard reminds you to pick one.",
         "Change or Stop a challenge any time in its month. Changing it starts the new one fresh.",
         "🏆 App owner only: Profile > Challenges is where you add your own challenges (name, daily task, how it works, days to win) and tap Share with all trainers. Every trainer gets a notification and can use it if they wish.",
+      ],
+    },
+    {
+      key: "videoCheckins",
+      icon: "📹",
+      title: "Weekly video check-ins",
+      where: "Menu ☰ > Video check-ins",
+      points: [
+        "My times: tap a day, then tap the times you're free for a video check-in (tap again to switch one off). Same times Monday to Friday copies a weekday to the others.",
+        "Call setup: your WhatsApp number (calls happen on WhatsApp), how long a call is, and Taking bookings, which you switch off when you're away.",
+        "Clients book one of your times, up to two weeks ahead and once a week. You get a notification: tap Confirm or Can't make it on the Bookings tab or your dashboard.",
+        "You both get a reminder the day before, that morning, an hour before and 15 minutes before, and a pop-up shows at the top of the app all day on the day. At the time, tap 💬 WhatsApp to open the chat with your client, then tap the video button.",
+        "A client can keep the same time every week: the next one books itself after each call, as long as that time is still open.",
+        "On a client's page, tap their phone number to open WhatsApp with them.",
+        "💬 Check in on…: when you haven't been in touch with an active client for 4 days, your dashboard shows them and you get a 09:00 notification. Tap 💬 WhatsApp to message them in your own words, or Spoke in person if you saw them. A check-in note or a video check-in counts too. Nothing is ever sent to the client for you.",
       ],
     },
     {

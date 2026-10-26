@@ -1001,6 +1001,49 @@ export type ChallengeDay = {
   day: string;
   created_at: string;
 };
+// Weekly video check-ins (0155): the trainer's free times and how the call
+// happens, and each booking a client makes.
+export type VideoCheckinSettings = {
+  trainer_id: string;
+  whatsapp: string | null;
+  minutes: number;
+  time_zone: string;
+  paused: boolean;
+  updated_at: string;
+};
+export type VideoCheckinSlot = {
+  id: string;
+  trainer_id: string;
+  weekday: number;
+  // "17:00:00", the trainer's own time.
+  start_time: string;
+  active: boolean;
+  created_at: string;
+};
+export type VideoCheckinStatus = "requested" | "confirmed" | "declined" | "cancelled";
+export type VideoCheckin = {
+  id: string;
+  trainer_id: string;
+  client_id: string;
+  slot_id: string | null;
+  starts_at: string;
+  minutes: number;
+  status: VideoCheckinStatus;
+  repeat_weekly: boolean;
+  topic: string | null;
+  reason: string | null;
+  cancelled_by: "client" | "trainer" | null;
+  reminded_day: boolean;
+  // 0157: the morning-of and hour-before reminders.
+  reminded_morning: boolean;
+  reminded_hour: boolean;
+  reminded_soon: boolean;
+  created_at: string;
+  updated_at: string;
+};
+export type OpenVideoSlot = { slot_id: string; starts_at: string; minutes: number };
+// One row of quiet_clients() (0156): a client the trainer hasn't been in touch with lately.
+export type QuietClientRow = { client_id: string; name: string; phone: string | null; last_spoke_at: string | null; days_quiet: number };
 
 // One row of owner_trainer_clients() (0151): a trainer's client, for the owner.
 export type OwnerTrainerClientRow = {
@@ -1101,9 +1144,34 @@ export interface Database {
       push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
       cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
       suggestions: { Row: Suggestion; Insert: Partial<Suggestion>; Update: Partial<Suggestion>; Relationships: [] };
+      // Timers page (0152): settings is a TimerSettings (src/lib/timerWorkouts.ts).
+      timer_workouts: {
+        Row: { id: string; owner_id: string; client_id: string | null; name: string; settings: Record<string, unknown>; created_at: string };
+        Insert: { name: string; settings: Record<string, unknown>; client_id?: string | null };
+        Update: never;
+        Relationships: [];
+      };
       trainer_problems: {
         Row: TrainerProblem;
         Insert: Pick<TrainerProblem, "area" | "body">;
+        Update: never;
+        Relationships: [];
+      };
+      video_checkin_settings: {
+        Row: VideoCheckinSettings;
+        Insert: Partial<VideoCheckinSettings>;
+        Update: Partial<VideoCheckinSettings>;
+        Relationships: [];
+      };
+      video_checkin_slots: {
+        Row: VideoCheckinSlot;
+        Insert: Pick<VideoCheckinSlot, "weekday" | "start_time"> & Partial<VideoCheckinSlot>;
+        Update: Partial<VideoCheckinSlot>;
+        Relationships: [];
+      };
+      video_checkins: {
+        Row: VideoCheckin;
+        Insert: never;
         Update: never;
         Relationships: [];
       };
@@ -1318,6 +1386,16 @@ export interface Database {
       billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
       owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
       owner_trainer_clients: { Args: { p_trainer: string }; Returns: OwnerTrainerClientRow[] };
+      quiet_clients: { Args: Record<string, never>; Returns: QuietClientRow[] };
+      mark_client_contact: { Args: { p_client: string }; Returns: undefined };
+      open_video_slots: { Args: Record<string, never>; Returns: OpenVideoSlot[] };
+      book_video_checkin: {
+        Args: { p_slot: string; p_starts_at: string; p_repeat?: boolean; p_topic?: string | null };
+        Returns: VideoCheckin;
+      };
+      respond_video_checkin: { Args: { p_id: string; p_confirm: boolean; p_reason?: string | null }; Returns: VideoCheckin };
+      cancel_video_checkin: { Args: { p_id: string; p_reason?: string | null }; Returns: VideoCheckin };
+      set_video_checkin_repeat: { Args: { p_id: string; p_repeat: boolean }; Returns: VideoCheckin };
       send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };
       set_trainer_problem_status: { Args: { p_problem: string; p_status: TrainerProblemStatus }; Returns: undefined };
       share_challenge: { Args: { p_id: string }; Returns: ChallengeLibraryItem };

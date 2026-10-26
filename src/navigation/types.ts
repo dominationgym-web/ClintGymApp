@@ -38,6 +38,10 @@ export type ClientStackParamList = {
   Recovery: undefined;
   // The client's form videos and their coach's feedback (was the Video log tab).
   FormVideos: undefined;
+  // EMOM, Tabata and interval timers (0152); tab "saved" from a coach's new timer.
+  Timers: { tab?: "saved" } | undefined;
+  // Weekly video check-in with the coach (0155).
+  VideoCheckIn: undefined;
 };
 
 export type TrainerTabParamList = {
@@ -57,6 +61,8 @@ export type TrainerStackParamList = {
   TrainerProblems: { problemId?: string } | undefined;
   // Monthly challenges (0153): pick one for all clients and see who's winning.
   Challenges: undefined;
+  // Weekly video check-ins (0155): bookings, free times and call setup.
+  VideoCheckIns: undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   ClientDetail: { clientId: string; tab?: "training"; open?: "videos" | "history" };
@@ -71,6 +77,7 @@ export type TrainerStackParamList = {
   AppGuide: undefined;
   // area opens that body area straight away (from an injury a client reported).
   Stability: { area?: StabilityArea } | undefined;
+  Timers: undefined;
 };
 
 export type TrainerTabScreenProps<T extends keyof TrainerTabParamList> = CompositeScreenProps<

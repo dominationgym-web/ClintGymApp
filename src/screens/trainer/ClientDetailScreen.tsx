@@ -2,7 +2,7 @@ import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert, Switch } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert, Switch, Linking } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -58,6 +58,8 @@ import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 import FoldSection from "@/components/FoldSection";
+import { whatsappLink } from "@/lib/videoCheckins";
+import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -495,6 +497,20 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{client.name}</Text>
             <Text style={styles.helper}>{client.email}</Text>
+            {/* Tap their number to go straight to WhatsApp (GRIZZ, 2026-10-25). */}
+            {whatsappLink(client.phone) ? (
+              <Pressable
+                onPress={() => {
+                  // Counts as being in touch, for the "Check in on" reminder (0156).
+                  markClientContact(client.id);
+                  Linking.openURL(whatsappLink(client.phone)!);
+                }}
+                hitSlop={6}
+                accessibilityRole="link"
+              >
+                <Text style={styles.whatsapp}>💬 {client.phone} · WhatsApp</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.memberSince}>
               {timeWithYou === "Joined today" ? timeWithYou : `With you ${timeWithYou}`} · since{" "}
               {new Date(client.created_at).toLocaleDateString()}
@@ -1115,6 +1131,7 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 }
 
 const styles = StyleSheet.create({
+  whatsapp: { color: BRAND_GOLD, fontSize: 14, fontWeight: "600", marginTop: 2 },
   checksFold: { borderColor: "#F59E0B" },
   liveRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 4 },
   liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
