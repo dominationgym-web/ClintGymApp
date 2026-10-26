@@ -302,6 +302,16 @@ export type ClientSleep = {
 };
 
 // Daily step goal and steps (0158). One goal per client; one steps row a day.
+// One switch per notification group (0159). No row means everything is on.
+export type ClientNotificationPrefs = {
+  client_id: string;
+  checkin_reminders: boolean;
+  training: boolean;
+  habits: boolean;
+  progress: boolean;
+  womens_health: boolean;
+  updated_at: string;
+};
 export type ClientStepGoal = { client_id: string; goal: number; reminders: boolean; updated_at: string };
 export type ClientSteps = {
   client_id: string;
@@ -1125,6 +1135,12 @@ export interface Database {
       client_body_stats: { Row: ClientBodyStat; Insert: Partial<ClientBodyStat>; Update: Partial<ClientBodyStat>; Relationships: [] };
       client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
       client_sleep: { Row: ClientSleep; Insert: Partial<ClientSleep>; Update: Partial<ClientSleep>; Relationships: [] };
+      client_notification_prefs: {
+        Row: ClientNotificationPrefs;
+        Insert: Partial<ClientNotificationPrefs>;
+        Update: Partial<ClientNotificationPrefs>;
+        Relationships: [];
+      };
       client_step_goals: { Row: ClientStepGoal; Insert: Partial<ClientStepGoal>; Update: Partial<ClientStepGoal>; Relationships: [] };
       client_steps: { Row: ClientSteps; Insert: Partial<ClientSteps>; Update: Partial<ClientSteps>; Relationships: [] };
       client_prestart_forms: { Row: ClientPrestartForm; Insert: Partial<ClientPrestartForm>; Update: Partial<ClientPrestartForm>; Relationships: [] };

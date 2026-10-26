@@ -42,6 +42,8 @@ export type ClientStackParamList = {
   Timers: { tab?: "saved" } | undefined;
   // Weekly video check-in with the coach (0155).
   VideoCheckIn: undefined;
+  // Which notification groups the client gets (0159).
+  NotificationSettings: undefined;
 };
 
 export type TrainerTabParamList = {

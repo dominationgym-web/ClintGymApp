@@ -18,6 +18,7 @@ import { SUPPLEMENT_PREP_BODY, SUPPLEMENT_PREP_TITLE, supplementPrepDates, upcom
 import { upcomingResetReminders } from "@/lib/resetProgram";
 import { parseIsoDate, todayIso } from "@/lib/dates";
 import { habitReminderSlots } from "@/lib/reminderTime";
+import { notificationGroupOn, type NotificationGroup } from "@/lib/notificationPrefs";
 
 type NotificationsModule = typeof import("expo-notifications");
 
@@ -78,7 +79,7 @@ export async function scheduleProgressPhotoReminder(lastTakenOn: string | null):
   try {
     await N.cancelScheduledNotificationAsync(PROGRESS_PHOTO_ID);
     const at = progressPhotoReminderAt(lastTakenOn, new Date());
-    if (!at || !(await canNotify(N))) return;
+    if (!at || !(await notificationGroupOn("progress")) || !(await canNotify(N))) return;
     await N.scheduleNotificationAsync({
       identifier: PROGRESS_PHOTO_ID,
       content: {
@@ -113,7 +114,7 @@ export async function scheduleSleepReminders(enabled: boolean): Promise<void> {
         .filter((n) => n.identifier.startsWith(SLEEP_ID_PREFIX))
         .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
     );
-    if (!enabled || !(await canNotify(N))) return;
+    if (!enabled || !(await notificationGroupOn("habits")) || !(await canNotify(N))) return;
     for (const night of upcomingSleepReminders(new Date(), SLEEP_NIGHTS_AHEAD)) {
       await N.scheduleNotificationAsync({
         identifier: night.id,
@@ -189,7 +190,7 @@ export async function scheduleCycleReminders(periodStarts: string[], enabled: bo
         .filter((n) => n.identifier.startsWith(CYCLE_ID_PREFIX))
         .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
     );
-    if (!enabled || periodStarts.length === 0 || !(await canNotify(N))) return;
+    if (!enabled || periodStarts.length === 0 || !(await notificationGroupOn("womens_health")) || !(await canNotify(N))) return;
     const now = new Date();
     for (const { date, phase } of upcomingPhases(periodStarts, todayIso(), CYCLE_DAYS_AHEAD)) {
       const at = parseIsoDate(date);
@@ -235,7 +236,7 @@ export async function scheduleResetReminders(startedOn: string | null, enabled: 
         .filter((n) => n.identifier.startsWith(RESET_ID_PREFIX))
         .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
     );
-    if (!enabled || !startedOn || !(await canNotify(N))) return;
+    if (!enabled || !startedOn || !(await notificationGroupOn("womens_health")) || !(await canNotify(N))) return;
     for (const r of upcomingResetReminders(startedOn, time, new Date(), RESET_DAYS_AHEAD)) {
       await N.scheduleNotificationAsync({
         identifier: r.id,
@@ -268,7 +269,7 @@ export async function scheduleHabitReminders(
         .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
     );
     const slots = habitReminderSlots(habits, todayIso());
-    if (slots.length === 0 || !(await canNotify(N))) return;
+    if (slots.length === 0 || !(await notificationGroupOn("habits")) || !(await canNotify(N))) return;
     for (const slot of slots) {
       await N.scheduleNotificationAsync({
         identifier: slot.id,
@@ -374,7 +375,7 @@ export async function scheduleCycleTrackerNudge(wanted: boolean): Promise<void> 
   if (!N) return;
   try {
     await N.cancelScheduledNotificationAsync(CYCLE_NUDGE_ID);
-    if (!wanted || !(await canNotify(N))) return;
+    if (!wanted || !(await notificationGroupOn("womens_health")) || !(await canNotify(N))) return;
     await N.scheduleNotificationAsync({
       identifier: CYCLE_NUDGE_ID,
       content: { title: CYCLE_NUDGE_TITLE, body: CYCLE_NUDGE_BODY },
@@ -417,5 +418,35 @@ export async function turnOnNotifications(): Promise<boolean> {
   } catch (e) {
     console.warn("Couldn't turn on notifications", e);
     return false;
+  }
+}
+
+// The reminders this phone schedules itself, by the group that switches them
+// off (src/lib/notificationPrefs.ts). Training and video check-in reminders
+// all come from the server.
+const PHONE_REMINDERS: Partial<Record<NotificationGroup, (identifier: string) => boolean>> = {
+  habits: (id) => id.startsWith(HABIT_ID_PREFIX) || id.startsWith(SLEEP_ID_PREFIX),
+  progress: (id) => id === PROGRESS_PHOTO_ID,
+  womens_health: (id) => id.startsWith(CYCLE_ID_PREFIX) || id.startsWith(RESET_ID_PREFIX) || id === CYCLE_NUDGE_ID,
+};
+
+/**
+ * Cancels the phone's scheduled reminders in the groups just switched off.
+ * Groups switched back on are scheduled again by their own screens the next
+ * time the app opens.
+ */
+export async function cancelRemindersForGroups(groups: NotificationGroup[]): Promise<void> {
+  const N = notifications();
+  if (!N || groups.length === 0) return;
+  try {
+    const matches = groups.map((g) => PHONE_REMINDERS[g]).filter((m): m is (id: string) => boolean => !!m);
+    const scheduled = await N.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => matches.some((m) => m(n.identifier)))
+        .map((n) => N.cancelScheduledNotificationAsync(n.identifier))
+    );
+  } catch (e) {
+    console.warn("Couldn't clear the switched-off reminders", e);
   }
 }

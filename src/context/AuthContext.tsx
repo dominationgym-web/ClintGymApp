@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { keepIfSame } from "@/lib/keepIfSame";
 import { cancelAllReminders, unregisterForCoachMessages } from "@/lib/notifications";
+import { clearNotificationPrefs } from "@/lib/notificationPrefs";
 import type { Client, Trainer } from "@/types/database";
 
 type Role = "trainer" | "client" | null;
@@ -165,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await cancelAllReminders();
+    await clearNotificationPrefs();
     await unregisterForCoachMessages();
     await supabase.auth.signOut();
   };
