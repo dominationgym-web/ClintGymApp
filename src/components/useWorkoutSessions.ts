@@ -19,7 +19,7 @@ export function useWorkoutSessions(clientId: string, from: string, to: string, r
       .then(({ data }) => setByDate(Object.fromEntries((data ?? []).map((s) => [s.session_date, s]))));
   }, [clientId, from, to, refreshKey]);
   const marks = Object.fromEntries(
-    Object.values(byDate).map((s) => [s.session_date, { color: SESSION_COLORS[s.status], star: s.star, live: !!s.in_person }]),
+    Object.values(byDate).map((s) => [s.session_date, { color: SESSION_COLORS[s.status], star: s.star, live: !!s.in_person, done: s.status !== "missed" }]),
   );
   return { byDate, marks };
 }

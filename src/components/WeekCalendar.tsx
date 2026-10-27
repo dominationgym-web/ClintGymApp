@@ -38,7 +38,7 @@ export default function WeekCalendar({
   selected?: string | null;
   onPressDay?: (date: string) => void;
   plans: Record<string, WeekDayPlan>;
-  marks?: Record<string, { color: string; star: boolean; live?: boolean }>;
+  marks?: Record<string, { color: string; star: boolean; live?: boolean; done?: boolean }>;
   moves?: Record<string, CalendarMove>;
   recovery?: Record<string, { label: string; done: boolean }[]>;
   stability?: Record<string, StabilityCalendarItem[]>;
@@ -68,7 +68,7 @@ export default function WeekCalendar({
         const mark = marks?.[date];
         const rec = recovery?.[date] ?? [];
         const stab = stability?.[date] ?? [];
-        const empty = !main && !mark?.live && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
+        const empty = !main && !mark?.live && !(client && mark?.done) && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
         return (
           <Pressable
             key={date}
@@ -109,6 +109,11 @@ export default function WeekCalendar({
               {mark?.live && (
                 <Text style={[styles.tag, { color: "#22C55E" }]} numberOfLines={1}>
                   {client ? "🤝 Live with your coach · tap to see" : "🤝 Live session with you"}
+                </Text>
+              )}
+              {client && mark?.done && !mark.live && !main && (
+                <Text style={[styles.tag, { color: "#22C55E" }]} numberOfLines={1}>
+                  ✅ Workout done · tap to see
                 </Text>
               )}
               {move ? (
