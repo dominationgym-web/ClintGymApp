@@ -27,11 +27,13 @@ import {
 } from "@/lib/trainingCalendar";
 import WeekCalendar, { type WeekDayPlan } from "@/components/WeekCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
+import { LoggedExercises } from "@/components/TrainerTrainingLog";
+import { groupTrainingLog } from "@/lib/trainingLog";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import { loadStabilityDays, STABILITY_PURPLE } from "@/lib/stabilityCalendar";
-import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise } from "@/types/database";
+import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise, WorkoutLog } from "@/types/database";
 
 // The client's own training calendar (0069), always open at the top of their
 // workout screen (GRIZZ, 2026-10-18: "already open. So they dont need to
@@ -82,6 +84,9 @@ export default function ClientCalendarView({
   const [dayRows, setDayRows] = useState<ProgramExercise[]>([]);
   const [daySwaps, setDaySwaps] = useState<ExerciseSwaps>({});
   const [swapping, setSwapping] = useState<ProgramExercise | null>(null);
+  // What was logged on the selected day, so a past day shows the sets done,
+  // live sessions with the coach included (GRIZZ, 2026-10-27).
+  const [dayLogs, setDayLogs] = useState<WorkoutLog[]>([]);
   // Reload each time the screen comes back into view, so a week the coach has
   // just planned shows without changing week or restarting the app.
   const [focusKey, setFocusKey] = useState(0);
@@ -95,8 +100,19 @@ export default function ClientCalendarView({
     setDayRows([]);
     setDayExtras([]);
     setDaySwaps({});
+    setDayLogs([]);
     if (!selected) return;
     let live = true;
+    if (selected <= today) {
+      supabase
+        .from("workout_logs")
+        .select("*")
+        .eq("client_id", clientId)
+        .eq("log_date", selected)
+        .then(({ data }) => {
+          if (live) setDayLogs(data ?? []);
+        });
+    }
     Promise.all([loadCalendarWorkoutFor(clientId, selected), getExerciseSwaps(selected)]).then(([workout, swaps]) => {
       if (!live) return;
       setDayRows(workout?.main ? [...workout.main.exercises].sort((a, b) => a.sort_order - b.sort_order) : []);
@@ -252,6 +268,7 @@ export default function ClientCalendarView({
               setSelected(date);
             }}
             marks={marks}
+            client
           />
           {!selected && (
             <Text style={styles.helper}>
@@ -273,6 +290,14 @@ export default function ClientCalendarView({
           </View>
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
           {selected && sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
+          {selected && dayLogs.length > 0 && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={styles.doneTitle}>{sessions[selected]?.in_person ? "🤝 What you did with your coach" : "✅ What you did"}</Text>
+              <View style={styles.doneBox}>
+                <LoggedExercises exercises={groupTrainingLog(dayLogs, selected, 1)[0].exercises} session={sessions[selected]} client />
+              </View>
+            </View>
+          )}
           <Text style={styles.helper}>
             {selected
               ? pickedProgram
@@ -281,7 +306,9 @@ export default function ClientCalendarView({
                   ? "Extra blocks from your coach on this day."
                   : dayStability.length > 0
                     ? "Stability work from your coach on this day."
-                    : "Nothing planned on this day."
+                    : dayLogs.length > 0
+                      ? ""
+                      : "Nothing planned on this day."
               : ""}
           </Text>
           {selected && catchUpDates.includes(selected) && onCatchUp && (
@@ -395,5 +422,7 @@ const styles = StyleSheet.create({
   stabilityOpen: { color: "#E9D5FF", fontSize: 13, fontWeight: "700", marginTop: 4 },
   catchUpButton: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 10 },
   catchUpText: { color: "#0F172A", fontWeight: "800" },
+  doneTitle: { color: "#22C55E", fontWeight: "800", fontSize: 15 },
+  doneBox: { backgroundColor: "#1E293B", borderRadius: 10, paddingTop: 10, marginTop: 6 },
   changeLink: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 6 },
 });

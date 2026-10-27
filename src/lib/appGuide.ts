@@ -103,6 +103,8 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Each day shows your workout and the body parts it trains in gold, 🤸 mobility and flexibility in teal, 🧘 stability in purple and 🌿 recovery in green. Some days have more than one. 🌙 Deload days show in blue.",
         "Tap a day and it opens in its own page with its exercises (tap ‹ Back to close it), so Today stays where it is. You can change an exercise ahead of time if you know the gym will be busy.",
         "Green, orange and red dots show how each workout went, and a gold star shows where you improved.",
+        "🤝 A live session with your coach shows on that day as Live with your coach. Tap the day to see every exercise and set you did (weight x reps), the same for workouts you did on your own.",
+        "📋 My past workouts, near the bottom of the Training tab, lists your last two weeks. Tap it, then tap a day to see what you lifted.",
         "⚡ Supersets: tap Do a superset on today's workout. Pick 2, 3 or 4 exercises in the order you'll do them (from today's workout, or search for another), then tap Start. Do one set of each back to back, fill in the weight, reps and reps left for each, and tap Log round. Your rest timer starts, and the next round keeps your weights.",
         "🔁 Missed a workout in the week? On Saturday or Sunday the app opens on it so you can catch it up, and you get a reminder at 6am. If you missed more than one, it starts with the one that works different muscles from yesterday. Tapping today on your calendar when nothing is on also takes you to it, or tap the missed day and choose Do it today. On other days, if you missed yesterday's workout, tap its 🔁 Catch up button on today's workout to do it instead, or just carry on with today's.",
       ],
