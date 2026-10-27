@@ -11,10 +11,12 @@ import { loadRecoveryActivities } from "@/lib/recoveryPlanQueries";
 import { findRecoveryActivity } from "@/lib/recoveryActivities";
 import RecoveryActivityModal, { RECOVERY_GREEN } from "@/components/RecoveryActivityModal";
 import type { RecoveryActivityRow } from "@/types/database";
+import { COACH_MEAL_PLAN_TITLE, useHasMealPlan } from "@/hooks/useHasMealPlan";
 
 // The rest of what's planned today, on the Today card under the workout
 // (app-flow review C4, 2026-10-18): 🧘 stability (opens the program) and
-// 🌿 recovery (Done / Skip), so a day with only these isn't shown as a rest day.
+// 🌿 recovery (Done / Skip), so a day with only these isn't shown as a rest day,
+// then 🥗 the coach's meal plan.
 export default function TodayPlanRows({
   clientId,
   refreshKey,
@@ -30,6 +32,7 @@ export default function TodayPlanRows({
   const [recovery, setRecovery] = useState<RecoveryActivityRow[]>([]);
   const [completing, setCompleting] = useState<RecoveryActivityRow | null>(null);
   const [focus, setFocus] = useState(0);
+  const hasMealPlan = useHasMealPlan(clientId);
   useFocusEffect(useCallback(() => setFocus((f) => f + 1), []));
 
   const load = useCallback(() => {
@@ -84,6 +87,20 @@ export default function TodayPlanRows({
           </View>
         );
       })}
+      {/* The coach's meal plan in one tap (GRIZZ, 2026-10-27). Not counted in onCount: it isn't training. */}
+      {hasMealPlan && (
+        <Pressable
+          style={[styles.row, { borderColor: "#166534" }]}
+          onPress={() => navigation.navigate("Section", { sectionKey: "nutrition", open: COACH_MEAL_PLAN_TITLE })}
+        >
+          <Text style={styles.icon}>🥗</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.title, { color: "#22C55E" }]}>My meal plan</Text>
+            <Text style={styles.hint}>What to eat today, from your coach</Text>
+          </View>
+          <Text style={styles.open}>Open ›</Text>
+        </Pressable>
+      )}
       <RecoveryActivityModal
         visible={!!completing}
         clientId={clientId}

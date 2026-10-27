@@ -11,6 +11,7 @@ import CycleTracker from "@/components/CycleTracker";
 import CalorieCalculator from "@/components/CalorieCalculator";
 import MealBuilder from "@/components/MealBuilder";
 import ClientDietPlanView from "@/components/ClientDietPlanView";
+import { COACH_MEAL_PLAN_TITLE } from "@/hooks/useHasMealPlan";
 import MealPlanMaker from "@/components/MealPlanMaker";
 import MuscleBuildingGuide from "@/components/MuscleBuildingGuide";
 import SupplementCard, { LEVEL_COLOURS, SupplementLevelsKey } from "@/components/SupplementCard";
@@ -40,7 +41,7 @@ export default function SectionScreen({ route }: Props) {
 
   const parts: { title: string; body: React.ReactNode; icon?: string; tag?: SupplementLevel }[] = [];
   if (section.key === "nutrition") {
-    parts.push({ title: "Your meal plan from your coach", icon: "🥗", body: <ClientDietPlanView /> });
+    parts.push({ title: COACH_MEAL_PLAN_TITLE, icon: "🥗", body: <ClientDietPlanView /> });
     // Muscle Year (GRIZZ, 2026-10-24): BMR, macros and the 2-weekly weight check.
     parts.push({
       title: MUSCLE_GUIDE_TITLE,

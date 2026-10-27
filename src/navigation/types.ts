@@ -44,6 +44,8 @@ export type ClientStackParamList = {
   VideoCheckIn: undefined;
   // Which notification groups the client gets (0159).
   NotificationSettings: undefined;
+  // How to use the app, notifications and the welcome, on one menu line (2026-10-27).
+  HelpSettings: undefined;
 };
 
 export type TrainerTabParamList = {
@@ -67,7 +69,8 @@ export type TrainerStackParamList = {
   VideoCheckIns: undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
-  ClientDetail: { clientId: string; tab?: "training"; open?: "videos" | "history" };
+  // With no `tab` it opens on the tab the trainer used last (2026-10-27).
+  ClientDetail: { clientId: string; tab?: "training" | "overview"; open?: "videos" | "history" };
   // Live 1-on-1: the client's own workout screen, run by their trainer (0134).
   // `self`: the trainer training themselves (0146).
   LiveWorkout: { clientId: string; name: string; self?: boolean };
@@ -76,6 +79,8 @@ export type TrainerStackParamList = {
   ProgramBuilder: undefined;
   Billing: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
+  // Every coaching guide, on one menu line (2026-10-27).
+  CoachingGuides: undefined;
   AppGuide: undefined;
   // area opens that body area straight away (from an injury a client reported).
   Stability: { area?: StabilityArea } | undefined;
