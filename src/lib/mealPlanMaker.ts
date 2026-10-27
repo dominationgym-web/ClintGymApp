@@ -46,6 +46,8 @@ export type MealPlanSettings = {
    * around them (GRIZZ, 2026-10-27: "some people have a set breakfast").
    */
   ownMeals?: Record<string, DietItem[]>;
+  /** Training days a week, for the shopping list (GRIZZ, 2026-10-27). */
+  trainingDays?: number;
 };
 
 const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey|wors|venison|bacon|\bham\b/i;
