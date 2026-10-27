@@ -100,12 +100,16 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import FoldSection from "@/components/FoldSection";
 import TodayPlanRows from "@/components/TodayPlanRows";
 import { useFormVideoUpload } from "@/components/useFormVideoUpload";
+import ExerciseClip from "@/components/ExerciseClip";
+import { useWideScreen } from "@/hooks/useWideScreen";
 
 export default function ExerciseLibraryScreen() {
   // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
   const { client, refreshProfile, live } = useWorkoutClient();
   // The trainer training themselves (0146): their own row, so "my" wording.
   const self = live && !!client && client.id === client.trainer_id;
+  // Trainer's laptop layout (useWideScreen is never true for clients).
+  const wide = useWideScreen();
   // Serious symptoms on a check-in (0133) hold every workout until the trainer clears it.
   const [hold, setHold] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -1384,6 +1388,12 @@ export default function ExerciseLibraryScreen() {
               </View>
               {item.category && <Text style={styles.category}>{item.category}</Text>}
             </View>
+            {/* Trainer's laptop: the clip plays small right in the list (GRIZZ, 2026-10-27). */}
+            {wide && item.external_url ? (
+              <View style={{ marginHorizontal: 14 }}>
+                <ExerciseClip url={item.external_url} width={110} height={64} />
+              </View>
+            ) : null}
             <Text style={styles.link}>{"Log a set >"}</Text>
           </Pressable>
         )}
@@ -1731,7 +1741,8 @@ const styles = StyleSheet.create({
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 10 },
   setRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6 },
-  categoryChip: { flex: 0, paddingHorizontal: 14, marginRight: 8 },
+  // Not flex: 0, which the website reads as "shrink to nothing" and stacks the letters.
+  categoryChip: { flexGrow: 0, flexShrink: 0, paddingHorizontal: 14, marginRight: 8 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15 },
   gaugeBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
   gaugeTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15, marginBottom: 4 },
