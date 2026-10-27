@@ -36,11 +36,12 @@ import TrainerPlanCard from "@/components/TrainerPlanCard";
 import TrainerIncome from "@/components/TrainerIncome";
 import MyTraining from "@/components/MyTraining";
 import OwnerChallenges from "@/components/OwnerChallenges";
+import FoldSection from "@/components/FoldSection";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices, EftDetails } from "@/types/database";
 
-type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "details" | "payments" | "account";
+type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "settings";
 
 const TABS: ScreenTab<TabKey>[] = [
   { key: "code", label: "Code & logo", icon: "qr-code" },
@@ -49,9 +50,8 @@ const TABS: ScreenTab<TabKey>[] = [
   { key: "refer", label: "Plan & refer", icon: "gift" },
   // App owner only (0153): add challenges and share them with all trainers.
   { key: "challenges", label: "Challenges", icon: "trophy" },
-  { key: "details", label: "Details", icon: "person" },
-  { key: "payments", label: "Payments", icon: "card" },
-  { key: "account", label: "Account", icon: "settings" },
+  // Details, Payments and Account in one tab of tap-to-open headings (GRIZZ, 2026-10-27).
+  { key: "settings", label: "Settings", icon: "settings" },
 ];
 
 // A trainer's own setup (0029): the code their clients sign up with, the logo
@@ -68,6 +68,8 @@ export default function TrainerProfileScreen() {
   // trainer's new logo saved but the screen kept showing the old one).
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("code");
+  const [openSetting, setOpenSetting] = useState<"details" | "payments" | "account" | null>(null);
+  const toggleSetting = (key: "details" | "payments" | "account") => setOpenSetting(openSetting === key ? null : key);
   // Trainers who signed up with this trainer's code (0060).
   const [referrals, setReferrals] = useState<{ name: string; approved: boolean }[]>([]);
   const [prices, setPrices] = useState<BillingPrices | null>(null);
@@ -269,71 +271,67 @@ export default function TrainerProfileScreen() {
             ))}
           </>
         )}
-        {tab === "details" && (
-          <>
-            <Text style={styles.sectionHeading}>Your details</Text>
-            <Text style={styles.label}>Name</Text>
-            <Text style={styles.readOnly}>{trainer.name}</Text>
-            <Text style={styles.label}>Business name</Text>
-            <TextInput style={styles.input} placeholder="Optional" placeholderTextColor="#64748B" value={businessName} onChangeText={setBusinessName} />
-            <Text style={styles.label}>Phone</Text>
-            <TextInput style={styles.input} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-
-            <Pressable style={styles.button} onPress={save} disabled={saving}>
-              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
-            </Pressable>
-
-            <Text style={styles.sectionHeading}>Notifications</Text>
-            <View style={styles.switchRow}>
-              <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={styles.switchTitle}>Planning reminders</Text>
-                <Text style={styles.hint}>
-                  A reminder 2 days and 1 day before a client's planned workouts on their training calendar run out, so you can plan their next week.
-                </Text>
-              </View>
-              <Switch
-                value={trainer.planning_reminders !== false}
-                onValueChange={togglePlanningReminders}
-                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
-                accessibilityLabel="Planning reminders"
-              />
-            </View>
-          </>
-        )}
-        {tab === "payments" && (
-          <>
-            <Text style={styles.sectionHeading}>How your clients pay you</Text>
-            <Text style={styles.hint}>Shown to a client right after they sign up with your code.</Text>
-            {EFT_FIELDS.map(({ key, label }) => (
-              <View key={key}>
-                <Text style={styles.label}>{label}</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType={key === "branch_code" || key === "account_number" ? "number-pad" : "default"}
-                  value={eft[key] ?? ""}
-                  onChangeText={(value) => setEft((prev) => ({ ...prev, [key]: value }))}
-                />
-              </View>
-            ))}
-            <Text style={styles.label}>WhatsApp number for proof of payment</Text>
-            <TextInput style={styles.input} keyboardType="phone-pad" value={popWhatsapp} onChangeText={setPopWhatsapp} />
-
-            <Pressable style={styles.button} onPress={save} disabled={saving}>
-              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
-            </Pressable>
-          </>
-        )}
         {tab === "train" && <MyTraining />}
         {tab === "challenges" && trainer.is_owner && <OwnerChallenges />}
-        {tab === "account" && (
+        {tab === "settings" && (
           <>
-            <Text style={styles.sectionHeading}>Signed in as</Text>
-            <Text style={styles.readOnly}>{trainer.email}</Text>
-            <Pressable style={styles.logout} onPress={signOut}>
-              <Text style={styles.logoutText}>Log out</Text>
-            </Pressable>
-            {trainer.is_owner ? null : <DeleteAccountButton />}
-            <AppUpdateLine />
+            <FoldSection icon="👤" title="Your details" hint="Business name, phone and reminders" open={openSetting === "details"} onToggle={() => toggleSetting("details")}>
+              <Text style={styles.label}>Name</Text>
+              <Text style={styles.readOnly}>{trainer.name}</Text>
+              <Text style={styles.label}>Business name</Text>
+              <TextInput style={styles.input} placeholder="Optional" placeholderTextColor="#64748B" value={businessName} onChangeText={setBusinessName} />
+              <Text style={styles.label}>Phone</Text>
+              <TextInput style={styles.input} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+
+              <Pressable style={styles.button} onPress={save} disabled={saving}>
+                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+              </Pressable>
+
+              <Text style={styles.sectionHeading}>Notifications</Text>
+              <View style={styles.switchRow}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={styles.switchTitle}>Planning reminders</Text>
+                  <Text style={styles.hint}>
+                    A reminder 2 days and 1 day before a client's planned workouts on their training calendar run out, so you can plan their next week.
+                  </Text>
+                </View>
+                <Switch
+                  value={trainer.planning_reminders !== false}
+                  onValueChange={togglePlanningReminders}
+                  trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                  accessibilityLabel="Planning reminders"
+                />
+              </View>
+            </FoldSection>
+            <FoldSection icon="💳" title="How your clients pay you" hint="Banking details and proof-of-payment WhatsApp" open={openSetting === "payments"} onToggle={() => toggleSetting("payments")}>
+              <Text style={styles.hint}>Shown to a client right after they sign up with your code.</Text>
+              {EFT_FIELDS.map(({ key, label }) => (
+                <View key={key}>
+                  <Text style={styles.label}>{label}</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType={key === "branch_code" || key === "account_number" ? "number-pad" : "default"}
+                    value={eft[key] ?? ""}
+                    onChangeText={(value) => setEft((prev) => ({ ...prev, [key]: value }))}
+                  />
+                </View>
+              ))}
+              <Text style={styles.label}>WhatsApp number for proof of payment</Text>
+              <TextInput style={styles.input} keyboardType="phone-pad" value={popWhatsapp} onChangeText={setPopWhatsapp} />
+
+              <Pressable style={styles.button} onPress={save} disabled={saving}>
+                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+              </Pressable>
+            </FoldSection>
+            <FoldSection icon="⚙️" title="Account" hint={trainer.email} open={openSetting === "account"} onToggle={() => toggleSetting("account")}>
+              <Text style={styles.label}>Signed in as</Text>
+              <Text style={styles.readOnly}>{trainer.email}</Text>
+              <Pressable style={styles.logout} onPress={signOut}>
+                <Text style={styles.logoutText}>Log out</Text>
+              </Pressable>
+              {trainer.is_owner ? null : <DeleteAccountButton />}
+              <AppUpdateLine />
+            </FoldSection>
           </>
         )}
       </ScrollView>

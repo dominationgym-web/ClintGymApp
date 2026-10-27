@@ -1,6 +1,7 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
+import { lastClientTab, rememberClientTab } from "@/lib/lastClientTab";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert, Switch, Linking } from "react-native";
 import TextInput from "@/components/TextInput";
@@ -141,7 +142,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
-  const [tab, setTab] = useState<TabKey>(route.params.tab ?? "overview");
+  const [tab, setTab] = useState<TabKey>(
+    route.params.tab ?? lastClientTab(TABS.map((t) => t.key)) ?? "overview",
+  );
   // Unsaved diet plan changes: ask before leaving the Diet tab or the client.
   // A ref, so "Leave" takes effect at once rather than on the next render.
   const dietDirty = useRef(false);
@@ -1056,7 +1059,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
 
       <ScreenTabBar
         current={tab}
-        onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => setTab(next)))}
+        onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => {
+                setTab(next);
+                rememberClientTab(next);
+              }))}
         tabs={TABS.map((t) => ({
           ...t,
           dot:

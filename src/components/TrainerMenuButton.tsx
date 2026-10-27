@@ -3,8 +3,8 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";
 import MenuButton from "@/components/MenuButton";
+import { startMyWorkout } from "@/components/MyTraining";
 import { SUGGESTION_BOX_MENU_ITEM } from "@/lib/suggestions";
-import { TRAINER_GUIDES } from "@/lib/trainerGuides";
 import { APP_GUIDE_MENU_ITEM } from "@/lib/appGuide";
 import { STABILITY_MENU_ITEM } from "@/lib/stability";
 import { OWNER_PROBLEMS_MENU_ITEM, TRAINER_PROBLEMS_MENU_ITEM } from "@/lib/trainerProblems";
@@ -12,17 +12,28 @@ import { CHALLENGES_MENU_ITEM } from "@/lib/challenges";
 import { useAuth } from "@/context/AuthContext";
 import { TIMER_MENU_ITEM } from "@/lib/timerWorkouts";
 import { TRAINER_VIDEO_CHECKINS_MENU_ITEM } from "@/lib/videoCheckins";
+import { COACHING_GUIDES_MENU_ITEM } from "@/screens/trainer/CoachingGuidesScreen";
 
-// The trainer app's menu (top right of every trainer tab).
+// The trainer app's menu (top right of every trainer tab). The things used
+// every week first; the guides share one line (GRIZZ, 2026-10-27).
 export default function TrainerMenuButton() {
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const { trainer } = useAuth();
   return (
     <MenuButton
       items={[
-        { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
         // Weekly video check-ins (0155): free times, bookings and call setup.
         { ...TRAINER_VIDEO_CHECKINS_MENU_ITEM, onPress: () => navigation.navigate("VideoCheckIns") },
+        // The trainer's own workout, straight from the menu (was Profile → My training).
+        {
+          key: "myWorkout",
+          title: "My workout",
+          icon: "🏋️",
+          summary: "Log your own sets, weights and supersets as you train.",
+          onPress: () => {
+            if (trainer) startMyWorkout(trainer, navigation);
+          },
+        },
         // The stability programs to give clients (GRIZZ, 2026-10-14: trainer side only),
         // with every exercise's video for 1-on-1 coaching (named by GRIZZ, 2026-10-16).
         {
@@ -33,15 +44,10 @@ export default function TrainerMenuButton() {
         },
         // EMOM, Tabata and interval timers, to use or save for a client (GRIZZ, 2026-10-25).
         { ...TIMER_MENU_ITEM, onPress: () => navigation.navigate("Timers") },
-        ...TRAINER_GUIDES.map((g) => ({
-          key: g.key,
-          title: g.title,
-          icon: g.icon,
-          summary: g.summary,
-          onPress: () => navigation.navigate("TrainerGuide", { guideKey: g.key }),
-        })),
         // One challenge a month for all their clients (0153).
         { ...CHALLENGES_MENU_ITEM, onPress: () => navigation.navigate("Challenges") },
+        { ...COACHING_GUIDES_MENU_ITEM, onPress: () => navigation.navigate("CoachingGuides") },
+        { ...APP_GUIDE_MENU_ITEM, onPress: () => navigation.navigate("AppGuide") },
         // Problems go to the owner in the app, linked to the trainer (0151).
         {
           ...(trainer?.is_owner ? OWNER_PROBLEMS_MENU_ITEM : TRAINER_PROBLEMS_MENU_ITEM),

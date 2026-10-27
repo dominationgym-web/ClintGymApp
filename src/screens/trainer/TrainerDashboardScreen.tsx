@@ -452,7 +452,8 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
           return (
             <Pressable
               style={[styles.row, borderColor && { borderWidth: 1.5, borderColor }]}
-              onPress={() => navigation.navigate("ClientDetail", { clientId: item.client.id })}
+              // A client with a problem opens on Overview, where the problem is.
+              onPress={() => navigation.navigate("ClientDetail", { clientId: item.client.id, tab: borderColor ? "overview" : undefined })}
             >
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>

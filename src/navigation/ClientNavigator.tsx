@@ -25,6 +25,7 @@ import { findSection } from "@/lib/sections";
 import DailyStartPopup from "@/components/DailyStartPopup";
 import HealthSyncOnOpen from "@/components/HealthSyncOnOpen";
 import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
+import HelpSettingsScreen from "@/screens/client/HelpSettingsScreen";
 import NotificationSettingsScreen from "@/screens/client/NotificationSettingsScreen";
 import { groupsOff, loadNotificationPrefs } from "@/lib/notificationPrefs";
 import { cancelRemindersForGroups } from "@/lib/notifications";
@@ -97,6 +98,7 @@ export default function ClientNavigator() {
         <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
         <Stack.Screen name="VideoCheckIn" component={VideoCheckInScreen} options={{ title: "Video check-in", headerBackTitle: "Back" }} />
         <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: "Notifications", headerBackTitle: "Back" }} />
+        <Stack.Screen name="HelpSettings" component={HelpSettingsScreen} options={{ title: "Help & settings", headerBackTitle: "Back" }} />
         <Stack.Screen name="FormVideos" component={VideoUploadScreen} options={{ title: "Form videos", headerBackTitle: "Back" }} />
         <Stack.Screen name="Timers" options={{ title: "Timers", headerBackTitle: "Back" }}>
           {({ route }) => <TimersScreen initialTab={route.params?.tab} />}

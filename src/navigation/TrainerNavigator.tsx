@@ -16,6 +16,7 @@ import ProgramsScreen from "@/screens/trainer/ProgramsScreen";
 import ProgramBuilderScreen from "@/screens/trainer/ProgramBuilderScreen";
 import TrainerSearchScreen from "@/screens/trainer/TrainerSearchScreen";
 import { TrainerAppGuideScreen } from "@/screens/AppGuideScreen";
+import CoachingGuidesScreen from "@/screens/trainer/CoachingGuidesScreen";
 import TrainerGuideScreen from "@/screens/trainer/TrainerGuideScreen";
 import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
@@ -106,6 +107,7 @@ export default function TrainerNavigator() {
           component={TrainerGuideScreen}
           options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
         />
+        <Stack.Screen name="CoachingGuides" component={CoachingGuidesScreen} options={{ title: "Coaching guides", headerBackTitle: "Back" }} />
         <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
         <Stack.Screen name="Timers" options={{ title: "Timers", headerBackTitle: "Back" }}>
           {() => <TimersScreen />}
