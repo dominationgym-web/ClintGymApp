@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { foodUnits, searchFoods, type FoodUnit } from "@/lib/foods";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
+import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ShoppingListSheet from "@/components/ShoppingListSheet";
 import { trainingDaysGuess } from "@/lib/shoppingList";
@@ -114,6 +115,7 @@ export function MealDayView({
                 <Text style={styles.item}>
                   • {item.food}: <Text style={styles.amount}>{amountLabel(item)}</Text>
                 </Text>
+                <CookingIdeasLink food={item.food} />
                 {onSwap && !meal.own && (
                   <Pressable onPress={() => onSwap(m, i)} hitSlop={8}>
                     <Text style={styles.swap}>⇄ Swap</Text>
