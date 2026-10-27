@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { shoppingList, shoppingListText } from "@/lib/shoppingList";
+import { emailShareLink, shoppingList, shoppingListText, whatsappShareLink } from "@/lib/shoppingList";
 import type { DietDay } from "@/types/database";
 
 // The week's shopping list from the client's meal plan (GRIZZ, 2026-10-27).
@@ -56,11 +56,21 @@ export default function ShoppingListSheet({
     else next.add(name);
     setTicked(next);
   };
+  // WhatsApp and email work on phones and the laptop; More opens the phone's
+  // share menu (SMS, Notes and so on), which some laptop browsers don't have.
+  const canShare = Platform.OS !== "web" || (typeof navigator !== "undefined" && typeof navigator.share === "function");
+  const openLink = async (url: string, app: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert(`Couldn't open ${app}`, "Try another way to send it, or take a screenshot of your list.");
+    }
+  };
   const send = async () => {
     try {
       await Share.share({ message: shoppingListText(list) });
     } catch {
-      Alert.alert("Couldn't send it", "Try again, or take a screenshot of your list.");
+      Alert.alert("Couldn't send it", "Try WhatsApp or Email instead, or take a screenshot of your list.");
     }
   };
   const dayWord = (n: number) => (n === 1 ? "day" : "days");
@@ -144,14 +154,23 @@ export default function ShoppingListSheet({
                   weights, and meat and fish are raw.
                 </Text>
               </ScrollView>
+              <Text style={styles.sendLabel}>Send my list</Text>
               <View style={styles.row}>
-                <Pressable style={[styles.button, styles.secondary, styles.flex]} onPress={send}>
-                  <Text style={styles.secondaryText}>📤 Send my list</Text>
+                <Pressable style={[styles.sendButton, styles.whatsapp]} onPress={() => openLink(whatsappShareLink(shoppingListText(list)), "WhatsApp")}>
+                  <Text style={styles.sendText}>💬 WhatsApp</Text>
                 </Pressable>
-                <Pressable style={[styles.button, styles.primary, styles.flex]} onPress={onClose}>
-                  <Text style={styles.primaryText}>Done</Text>
+                <Pressable style={[styles.sendButton, styles.secondary]} onPress={() => openLink(emailShareLink(shoppingListText(list)), "your email")}>
+                  <Text style={styles.sendText}>✉️ Email</Text>
                 </Pressable>
+                {canShare && (
+                  <Pressable style={[styles.sendButton, styles.secondary]} onPress={send}>
+                    <Text style={styles.sendText}>📤 More</Text>
+                  </Pressable>
+                )}
               </View>
+              <Pressable style={[styles.button, styles.primary]} onPress={onClose}>
+                <Text style={styles.primaryText}>Done</Text>
+              </Pressable>
               {trains && (
                 <Pressable onPress={() => setPage("days")} hitSlop={8} style={{ marginTop: 12, alignSelf: "center" }}>
                   <Text style={styles.link}>Change my training days</Text>
@@ -178,6 +197,10 @@ const styles = StyleSheet.create({
   chipText: { color: "#CBD5E1", fontWeight: "800", fontSize: 15 },
   chipTextOn: { color: "#0F172A" },
   row: { flexDirection: "row", gap: 8 },
+  sendLabel: { color: "#94A3B8", fontSize: 12, fontWeight: "700", marginTop: 10, marginBottom: 6 },
+  sendButton: { flex: 1, borderRadius: 8, paddingVertical: 11, alignItems: "center" },
+  whatsapp: { backgroundColor: "#1F8F4E" },
+  sendText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   flex: { flex: 1 },
   // flexBasis auto, as flex 0 squashes the button's text on the laptop app.
   button: { borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 12, flexBasis: "auto" },

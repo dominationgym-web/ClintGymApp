@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FOODS } from "./foods";
 import { macroTargets, makeDay, type MealPlanSettings } from "./mealPlanMaker";
-import { packsFor, shoppingList, shoppingListText, weekGrams, weightLabel } from "./shoppingList";
+import { emailShareLink, packsFor, shoppingList, shoppingListText, weekGrams, weightLabel, whatsappShareLink } from "./shoppingList";
 
 const settings: MealPlanSettings = { meals: ["07:00", "12:00", "16:00", "19:00"], training: "17:30", goal: "maintain", diet: "everything" };
 const targets = macroTargets(2400, 80);
@@ -97,5 +97,16 @@ describe("packsFor two packs", () => {
     expect(packsFor(600, [250, 500, 1000])).toEqual([[500, 1], [250, 1]]);
     expect(packsFor(1400, [250, 500, 1000])).toEqual([[1000, 1], [500, 1]]);
     expect(packsFor(480, [250, 500, 1000])).toEqual([[500, 1]]);
+  });
+});
+
+describe("share links", () => {
+  it("puts the whole list in a WhatsApp message and an email", () => {
+    const text = "🛒 My list\n• Eggs: 1 × box of 12 & more";
+    expect(whatsappShareLink(text)).toBe(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    expect(decodeURIComponent(whatsappShareLink(text).split("text=")[1])).toBe(text);
+    const mail = emailShareLink(text);
+    expect(mail.startsWith("mailto:?subject=My%20shopping%20list%20for%20the%20week&body=")).toBe(true);
+    expect(decodeURIComponent(mail.split("body=")[1])).toBe(text);
   });
 });
