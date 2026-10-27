@@ -12,3 +12,12 @@ export function useWideScreen() {
   const { role } = useAuth();
   return Platform.OS === "web" && role === "trainer" && width >= WIDE_SCREEN_MIN;
 }
+
+// The client's laptop view (GRIZZ, 2026-10-27): a sidebar, and fuller pages
+// for their week, weights lifted, body and food. Same rule as the trainer's:
+// the website, in a window at least WIDE_SCREEN_MIN wide.
+export function useClientWideScreen() {
+  const { width } = useWindowDimensions();
+  const { role } = useAuth();
+  return Platform.OS === "web" && role === "client" && width >= WIDE_SCREEN_MIN;
+}
