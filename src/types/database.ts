@@ -717,7 +717,8 @@ export type ProgramExercise = {
 // The trainer's diet plan for a client (0071): 7 days of meals, foods by
 // name from src/lib/foods.ts, and the details for their calorie target.
 export type DietItem = { food: string; grams: number };
-export type DietMeal = { name: string; items: DietItem[] };
+// own: a meal the client set themselves in the meal plan maker, the same every day.
+export type DietMeal = { name: string; items: DietItem[]; own?: boolean };
 export type DietDay = { meals: DietMeal[] };
 export type ClientDietPlan = {
   client_id: string;
@@ -734,7 +735,7 @@ export type ClientDietPlan = {
 // The client's own meal plan, made by the app (0077, src/lib/mealPlanMaker.ts).
 export type ClientMealPlan = {
   client_id: string;
-  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain"; diet?: "everything" | "vegetarian" | "pescatarian"; dairyFree?: boolean; avoid?: string[] };
+  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain"; diet?: "everything" | "vegetarian" | "pescatarian"; dairyFree?: boolean; avoid?: string[]; ownMeals?: Record<string, DietItem[]> };
   targets: { kcal: number; protein: number; carbs: number; fat: number };
   training_day: DietDay;
   rest_day: DietDay;
