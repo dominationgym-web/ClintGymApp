@@ -3,6 +3,9 @@ import { Pressable, View, Text, StyleSheet } from "react-native";
 import { cardioLabel, formatRest, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
+import ExerciseClip from "@/components/ExerciseClip";
+import { useWideScreen } from "@/hooks/useWideScreen";
+import { useExerciseClips } from "@/hooks/useExerciseClips";
 
 // A program's exercises, grouped by weekday for weekly programs. Multi-week
 // programs (0065) list each week's training days under a week heading. On a
@@ -34,6 +37,9 @@ export default function ProgramSummary({
 }) {
   const [info, setInfo] = useState<ProgramExercise | null>(null);
   const [shown, setShown] = useState(!collapsible);
+  // On a laptop each exercise shows its clip playing small in place of the ▶ (GRIZZ, 2026-10-27).
+  const wide = useWideScreen();
+  const clips = useExerciseClips(wide);
   const weeks = program.weeks ?? 1;
   const allDays =
     onlySlot != null
@@ -137,9 +143,13 @@ export default function ProgramSummary({
                       {line}
                     </Pressable>
                     <Pressable onPress={() => setInfo(r)} hitSlop={8} accessibilityLabel={`Watch ${r.exercise_name}`}>
-                      <View style={styles.play}>
-                        <Text style={styles.playText}>▶</Text>
-                      </View>
+                      {wide && r.exercise_id && clips[r.exercise_id] ? (
+                        <ExerciseClip url={clips[r.exercise_id]} width={120} height={72} />
+                      ) : (
+                        <View style={styles.play}>
+                          <Text style={styles.playText}>▶</Text>
+                        </View>
+                      )}
                     </Pressable>
                   </View>
                 );

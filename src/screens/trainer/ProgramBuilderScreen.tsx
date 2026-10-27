@@ -42,6 +42,8 @@ import type { Exercise } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { AB_EXERCISES, AB_REP_OPTIONS, AB_REPS } from "@/lib/absBetweenSets";
+import { useWideScreen } from "@/hooks/useWideScreen";
+import ExerciseLibraryPanel from "@/components/ExerciseLibraryPanel";
 
 // Abs between sets (0083), chosen when the program is saved.
 type AbsChoice = { on: boolean; reps: number; exercise: string | null };
@@ -78,6 +80,8 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const [draftReady, setDraftReady] = useState(false);
   const [restored, setRestored] = useState(false);
   const saved = useRef(false);
+  // On a laptop the exercise videos sit beside the program instead of in a pop-up.
+  const wide = useWideScreen();
 
   useEffect(() => {
     if (!trainer) return;
@@ -184,6 +188,27 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
 
   const filtered = filterExercises(forPlace(library, place), search);
 
+  // Laptop: where the library's Add goes. The slot the trainer clicked, else
+  // the first empty exercise of the day.
+  const firstEmpty = session ? session.exercises.findIndex((s) => s.kind !== "cardio" && !s.exerciseId && !s.exerciseName) : -1;
+  const target = picking !== null && session?.exercises[picking] ? picking : firstEmpty;
+  const targetLabel = !session
+    ? "the program"
+    : target >= 0
+      ? `Exercise ${exerciseNumber(target)} · ${SHORT_DAYS[session.day - 1]}`
+      : `a new exercise · ${SHORT_DAYS[session.day - 1]}`;
+  const addFromLibrary = (exercise: Exercise) => {
+    if (!session) {
+      Alert.alert("Pick a training day first", "Tick at least one day under Training days.");
+      return;
+    }
+    const chosen = { exerciseId: exercise.id, exerciseName: exercise.name };
+    if (target >= 0) update(target, chosen);
+    else updateSession({ exercises: [...session.exercises, { ...blankSlot(), ...chosen }] });
+    // Straight on to the next empty one.
+    setPicking(null);
+  };
+
   const askToSave = () => {
     const problem = weeklyDraftProblem(name, sessions);
     if (problem) {
@@ -251,7 +276,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     navigation.goBack();
   };
 
-  return (
+  const form = (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
       <View style={styles.draftBar}>
         <Text style={styles.draftText}>
@@ -342,11 +367,11 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                 onRemove={() => removeSlot(i)}
               />
             ) : (
-            <View style={styles.slot}>
+            <View style={[styles.slot, wide && i === target && styles.slotTarget]}>
               <Text style={styles.slotNumber}>Exercise {exerciseNumber(i)}</Text>
               <Pressable style={styles.picker} onPress={() => setPicking(i)}>
                 <Text style={slot.exerciseName ? styles.pickerText : styles.pickerPlaceholder}>
-                  {slot.exerciseName || "Tap to pick from the exercise videos"}
+                  {slot.exerciseName || (wide ? "Click, then add one from the videos on the right" : "Tap to pick from the exercise videos")}
                 </Text>
               </Pressable>
 
@@ -403,7 +428,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
         {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>Complete and save program</Text>}
       </Pressable>
 
-      <Modal visible={picking !== null} animationType="slide" onRequestClose={closePicker}>
+      <Modal visible={picking !== null && !wide} animationType="slide" onRequestClose={closePicker}>
         <KeyboardSafe>
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
@@ -508,6 +533,16 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
       </Modal>
     </ScrollView>
   );
+
+  if (!wide) return form;
+  return (
+    <View style={styles.wideRow}>
+      <View style={styles.wideForm}>{form}</View>
+      <View style={styles.wideLibrary}>
+        <ExerciseLibraryPanel library={library} place={place} onPlaceChange={setPlace} onAdd={addFromLibrary} target={targetLabel} />
+      </View>
+    </View>
+  );
 }
 
 // A cardio block: pick the machine and 10 to 60 seconds. The block at the end
@@ -587,6 +622,10 @@ const styles = StyleSheet.create({
   chipText: { color: "#94A3B8", fontWeight: "600", fontSize: 13 },
   chipTextOn: { color: "#0F172A" },
   slot: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 14 },
+  slotTarget: { borderWidth: 2, borderColor: BRAND_GOLD },
+  wideRow: { flex: 1, flexDirection: "row", backgroundColor: "#0F172A" },
+  wideForm: { flex: 1, minWidth: 360 },
+  wideLibrary: { flex: 1.3, borderLeftWidth: 1, borderLeftColor: "#1E293B" },
   slotNumber: { color: BRAND_GOLD, fontWeight: "800", fontSize: 13, marginBottom: 8 },
   picker: { backgroundColor: "#0F172A", borderRadius: 8, padding: 12 },
   pickerText: { color: "#fff", fontWeight: "600", fontSize: 14 },

@@ -19,6 +19,7 @@ import ReplyToClientModal from "@/components/ReplyToClientModal";
 import FoundationOfferCard from "@/components/FoundationOfferCard";
 import ClientFormVideos from "@/components/ClientFormVideos";
 import type { TrainerStackParamList } from "@/navigation/types";
+import { useWideScreen } from "@/hooks/useWideScreen";
 import ClientAvatar from "@/components/ClientAvatar";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import HabitOptionsPicker from "@/components/HabitOptionsPicker";
@@ -110,6 +111,7 @@ function formatIntakeLabel(key: string) {
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
+  const wide = useWideScreen();
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
   const [stabilityKey, setStabilityKey] = useState(0);
@@ -491,9 +493,30 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   }
 
   const timeWithYou = describeTimeSince(new Date(client.created_at));
+  const tabBar = (
+    <ScreenTabBar
+      position={wide ? "top" : "bottom"}
+      current={tab}
+      onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => {
+              setTab(next);
+              rememberClientTab(next);
+            }))}
+      tabs={TABS.map((t) => ({
+        ...t,
+        dot:
+          t.key === "overview"
+            ? (problemColor(problemLevel(problems)) ?? null)
+            : t.key === "checkins"
+              ? (problemColor(problemLevel(problems.filter((p) => p.topic !== "flag"))) ?? null)
+              : null,
+      }))}
+    />
+  );
 
   return (
     <View style={styles.container}>
+      {/* On a laptop the tabs run along the top (GRIZZ, 2026-10-27). */}
+      {wide ? tabBar : null}
       <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
         <View style={styles.headerRow}>
           <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
@@ -1057,22 +1080,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
       </ScrollView>
 
-      <ScreenTabBar
-        current={tab}
-        onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => {
-                setTab(next);
-                rememberClientTab(next);
-              }))}
-        tabs={TABS.map((t) => ({
-          ...t,
-          dot:
-            t.key === "overview"
-              ? (problemColor(problemLevel(problems)) ?? null)
-              : t.key === "checkins"
-                ? (problemColor(problemLevel(problems.filter((p) => p.topic !== "flag"))) ?? null)
-                : null,
-        }))}
-      />
+      {wide ? null : tabBar}
     </View>
   );
 }
