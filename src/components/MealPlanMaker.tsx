@@ -6,6 +6,8 @@ import { foodUnits, searchFoods, type FoodUnit } from "@/lib/foods";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import ShoppingListSheet from "@/components/ShoppingListSheet";
+import { trainingDaysGuess } from "@/lib/shoppingList";
 import {
   amountLabel,
   bmr,
@@ -189,6 +191,7 @@ export default function MealPlanMaker() {
   const [ownMeal, setOwnMeal] = useState<{ place: number; name: string } | null>(null);
   const [ownDraft, setOwnDraft] = useState<OwnRow[]>([]);
   const [ownSearch, setOwnSearch] = useState("");
+  const [shopping, setShopping] = useState(false);
 
   useEffect(() => {
     if (!client) return;
@@ -361,7 +364,7 @@ export default function MealPlanMaker() {
     // Foods they left out stay out of every new plan.
     // Their own meals stay too, for the meals the day still has.
     const ownMeals = keepOwnMeals(plan?.settings.ownMeals, cleaned.length);
-    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree, avoid: plan?.settings.avoid ?? [], ownMeals };
+    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree, avoid: plan?.settings.avoid ?? [], ownMeals, trainingDays: plan?.settings.trainingDays };
     const targets = macroTargets(kcalFor(safeGoal), body.weight_kg, safeGoal, body.height_cm);
     save({
       client_id: client.id,
@@ -693,6 +696,25 @@ export default function MealPlanMaker() {
         </Pressable>
       </View>
 
+      <View style={styles.shopBox}>
+        <Text style={styles.shopTitle}>🛒 Happy with your plan?</Text>
+        <Text style={styles.insulinText}>Would you like a shopping list for the week? The app adds up everything you need to buy, in the packs shops sell.</Text>
+        <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => setShopping(true)}>
+          <Text style={styles.primaryText}>Yes, make my shopping list</Text>
+        </Pressable>
+      </View>
+      <ShoppingListSheet
+        visible={shopping}
+        trainingDay={plan.training_day}
+        restDay={plan.rest_day}
+        trains={!!plan.settings.training}
+        days={plan.settings.trainingDays ?? trainingDaysGuess(details.activity)}
+        onDays={(trainingDays) => {
+          if (trainingDays !== plan.settings.trainingDays) save({ ...plan, settings: { ...plan.settings, trainingDays } });
+        }}
+        onClose={() => setShopping(false)}
+      />
+
       <Modal visible={!!swapTarget} animationType="slide" transparent onRequestClose={() => setSwapping(null)}>
         <KeyboardSafe>
           <View style={styles.backdrop}>
@@ -831,6 +853,8 @@ export default function MealPlanMaker() {
 
 const styles = StyleSheet.create({
   // flexBasis auto, as flex 0 squashes the button's text on the laptop app.
+  shopBox: { backgroundColor: "#0F172A", borderRadius: 10, borderWidth: 1, borderColor: BRAND_GOLD, padding: 12, marginTop: 14 },
+  shopTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15, marginBottom: 4 },
   stacked: { flexGrow: 0, flexShrink: 0, flexBasis: "auto", marginTop: 10 },
   ownTag: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 2 },
   ownLink: { color: "#38BDF8", fontWeight: "700", fontSize: 13 },
