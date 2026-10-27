@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
-import { carbShares, cleanTime, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, leaveOutEverywhere, leaveOutFood, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions, whyFoodMatters } from "./mealPlanMaker";
+import { carbShares, cleanTime, keepOwnMeals, mealPlace, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, leaveOutEverywhere, leaveOutFood, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions, whyFoodMatters } from "./mealPlanMaker";
 import { TARGET_MARGIN } from "./dietPlan";
 
 const targets = macroTargets(2400, 80);
@@ -266,5 +266,53 @@ describe("foods the client doesn't eat", () => {
       for (const f of avoid) expect(all).not.toContain(f);
       expect(all.length).toBeGreaterThan(5);
     }
+  });
+});
+
+describe("their own meal (GRIZZ, 2026-10-27)", () => {
+  const breakfast = [
+    { food: "Eggs", grams: 150 },
+    { food: "Banana", grams: 120 },
+  ];
+  const lunch = [{ food: "Tuna in water (drained)", grams: 120 }];
+  const base = { meals: mealTimesFor(4, "17:30"), training: "17:30" };
+  const owns: Record<string, { food: string; grams: number }[]>[] = [{ "0": breakfast }, { "1": lunch }, { "0": breakfast, "1": lunch }];
+  for (const own of owns) {
+    for (const td of [true, false]) {
+      it(`keeps meals ${Object.keys(own).join(" and ")} as set and still hits the day (${td ? "training" : "rest"} day)`, () => {
+        const settings = { ...base, ownMeals: own };
+        for (const variety of [0, 1, 2]) {
+          const day = makeDay(settings, targets, td, variety);
+          const meals = day.meals.filter((m) => !m.name.includes("Protein snack"));
+          for (const [k, items] of Object.entries(own)) {
+            expect(meals[Number(k)].own).toBe(true);
+            expect(meals[Number(k)].items).toEqual(items);
+          }
+          const totals = dayTotals(day);
+          expect(Math.abs(totals.kcal - targets.kcal)).toBeLessThanOrEqual(TARGET_MARGIN);
+          // Fewer meals to fill means their carbs bring a bit more protein: never short, at most 30 g over.
+          expect(totals.protein).toBeGreaterThanOrEqual(targets.protein - 10);
+          expect(totals.protein).toBeLessThanOrEqual(targets.protein + 30);
+          expect(totals.fibre).toBeGreaterThanOrEqual(FIBRE_TARGET - 2);
+        }
+      });
+    }
+  }
+  it("leaves their own meal alone when a food is left out everywhere", () => {
+    const day = makeDay({ ...base, ownMeals: { "0": breakfast } }, targets, true);
+    const { day: after } = leaveOutEverywhere(day, "Eggs");
+    expect(after.meals[0].items).toEqual(breakfast);
+  });
+  it("never puts oats in the app's own meals around a set breakfast", () => {
+    for (const variety of [0, 1, 2, 3, 4, 5]) {
+      const day = makeDay({ ...base, ownMeals: { "0": breakfast } }, targets, true, variety);
+      for (const m of day.meals) if (!m.own) for (const i of m.items) expect(i.food).not.toMatch(/oat/i);
+    }
+  });
+  it("finds the meal's place in the day without the snack", () => {
+    const day = makeDay(base, targets, true);
+    const snack = day.meals.findIndex((m) => m.name.includes("Protein snack"));
+    expect(mealPlace(day, snack + 1)).toBe(snack);
+    expect(keepOwnMeals({ "0": breakfast, "5": lunch }, 4)).toEqual({ "0": breakfast });
   });
 });
