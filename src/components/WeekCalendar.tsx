@@ -125,7 +125,7 @@ export default function WeekCalendar({
                   {move === "missed" ? "Moved to the weekend" : "Caught up today"}
                 </Text>
               ) : null}
-              {swaps?.[date] ? <Text style={[styles.moved, { color: BRAND_GOLD }]}>{swaps[date]}</Text> : null}
+              {swaps?.[date] ? <Text style={[styles.moved, { color: themeText(BRAND_GOLD) }]}>{swaps[date]}</Text> : null}
               {plan.extras.map((x, j) => (
                 <Text key={`x${j}`} style={[styles.tag, { color: themeText(x.functional ? FUNCTIONAL_TEAL : BRAND_GOLD) }]} numberOfLines={1}>
                   {x.functional ? "🤸" : "➕"} {x.title}

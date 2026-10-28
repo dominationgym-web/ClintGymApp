@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { addDays, sessionTitle, weekdayOf } from "@/lib/programSchedule";
 import { displayProgramName, isFunctionalProgram } from "@/lib/programs";
 import { supabase } from "@/lib/supabase";
 import { SWAP_DAYS_AHEAD, nextSwapDate, swapBlocked, swapDayName } from "@/lib/workoutSwaps";
 import type { ClientWorkoutSwap, Program } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Swap with tomorrow (0167, GRIZZ, 2026-10-28: "If a client doesn't feel like
 // doing legs that day, can they swap to the next day's workout?"). On today's
@@ -122,7 +123,7 @@ export default function WorkoutSwapRow({
         </Text>
         {!startedToday &&
           (busy ? (
-            <ActivityIndicator color={BRAND_GOLD} />
+            <ActivityIndicator color={themeText(BRAND_GOLD)} />
           ) : (
             <Pressable onPress={undo} hitSlop={8} accessibilityRole="button">
               <Text style={styles.undo}>Undo</Text>
@@ -142,7 +143,7 @@ export default function WorkoutSwapRow({
   return (
     <Pressable style={styles.chip} onPress={swap} disabled={busy} accessibilityRole="button">
       {busy ? (
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color={themeText("#fff")} />
       ) : (
         <Text style={styles.chipText}>
           🔄 Not feeling it? Swap with {swapDayName(today, next.date)} {next.name}
@@ -152,7 +153,7 @@ export default function WorkoutSwapRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   chip: {
     backgroundColor: "#334155",
     borderRadius: 999,
