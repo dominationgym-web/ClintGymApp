@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { MUSCLE_NOT_WEIGHT, SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";
 import { BRAND_GOLD } from "@/lib/brand";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -104,7 +104,7 @@ export default function ExerciseGuideButton({
         </Pressable>
       )}
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
-        <SafeAreaView style={styles.modal}>
+        <ModalSafeArea style={styles.modal}>
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>{name}</Text>
@@ -133,7 +133,7 @@ export default function ExerciseGuideButton({
               </Pressable>
             )}
           </ScrollView>
-        </SafeAreaView>
+        </ModalSafeArea>
       </Modal>
     </>
   );

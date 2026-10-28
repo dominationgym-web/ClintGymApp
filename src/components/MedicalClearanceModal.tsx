@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { supabase } from "@/lib/supabase";
@@ -54,7 +54,7 @@ export default function MedicalClearanceModal({
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <KeyboardSafe>
-        <SafeAreaView style={styles.container}>
+        <ModalSafeArea style={styles.container}>
           <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>Clear {clientName}'s workout hold</Text>
             <Text style={styles.text}>They reported: {problem.detail || "serious symptoms"} ({problem.reported_on}).</Text>
@@ -88,7 +88,7 @@ export default function MedicalClearanceModal({
               <Text style={styles.cancelText}>Not yet</Text>
             </Pressable>
           </ScrollView>
-        </SafeAreaView>
+        </ModalSafeArea>
       </KeyboardSafe>
     </Modal>
   );

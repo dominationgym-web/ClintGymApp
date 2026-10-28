@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { useWorkoutClient } from "@/context/LiveClientContext";
 import { todayIso } from "@/lib/dates";
@@ -135,7 +135,7 @@ export default function LogSetModal({
   return (
     <Modal visible={!!exercise} animationType="slide" onRequestClose={() => onClose(todaysSets.length)}>
       <KeyboardSafe>
-      <SafeAreaView style={styles.container}>
+      <ModalSafeArea style={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.name}>{exercise?.name}</Text>
@@ -240,7 +240,7 @@ export default function LogSetModal({
           <View style={{ height: 16 }} />
           <EveryRepTips />
         </ScrollView>
-      </SafeAreaView>
+      </ModalSafeArea>
       </KeyboardSafe>
       <AchievementBadge badge={badge} onClose={() => setBadge(null)} />
     </Modal>

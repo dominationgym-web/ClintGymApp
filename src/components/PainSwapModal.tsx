@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 import { likelyPainArea, painAreaLabel, painSuggestions, PAIN_AREAS } from "@/lib/painSwap";
 import type { StabilityArea } from "@/lib/stability";
@@ -43,7 +43,7 @@ export default function PainSwapModal({
 
   return (
     <Modal visible={!!exercise} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container}>
+      <ModalSafeArea style={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>😣 {exercise?.exercise_name} hurts</Text>
@@ -102,7 +102,7 @@ export default function PainSwapModal({
             </>
           )}
         </ScrollView>
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }

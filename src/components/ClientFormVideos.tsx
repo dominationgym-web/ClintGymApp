@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -163,7 +163,7 @@ function WatchAndCorrect({
   return (
     <Modal visible animationType="slide" onRequestClose={tryClose}>
       <KeyboardSafe>
-        <SafeAreaView style={styles.modal}>
+        <ModalSafeArea style={styles.modal}>
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.modalTitle}>{video.exercise_name || "Form video"}</Text>
@@ -210,7 +210,7 @@ function WatchAndCorrect({
               {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.replyText}>💬 Send to {firstName}</Text>}
             </Pressable>
           </View>
-        </SafeAreaView>
+        </ModalSafeArea>
       </KeyboardSafe>
     </Modal>
   );

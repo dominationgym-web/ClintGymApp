@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 
 // GRIZZ's self-training option (2026-10-11), on hold until he switches it on.
@@ -25,7 +25,7 @@ export default function SelfTrainingComingSoon() {
         </Text>
       </Pressable>
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
-        <SafeAreaView style={styles.modal}>
+        <ModalSafeArea style={styles.modal}>
           <ScrollView contentContainerStyle={{ padding: 24 }}>
             <Text style={styles.badge}>COMING SOON</Text>
             <Text style={styles.title}>Self-training</Text>
@@ -42,7 +42,7 @@ export default function SelfTrainingComingSoon() {
               <Text style={styles.buttonText}>Got it</Text>
             </Pressable>
           </ScrollView>
-        </SafeAreaView>
+        </ModalSafeArea>
       </Modal>
     </>
   );

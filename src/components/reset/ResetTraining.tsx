@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "../ModalSafeArea";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { getResetSwaps, saveResetSwaps, type ResetSwap } from "@/lib/exerciseSwaps";
 import { bodyPartLabel, filterExercises } from "@/lib/exerciseFilter";
@@ -276,7 +276,7 @@ export default function ResetTraining({
       <Text style={styles.energy}>{training.energyNote}</Text>
       <Modal visible={!!swapping} animationType="slide" onRequestClose={() => setSwapping(null)}>
         <KeyboardSafe>
-          <SafeAreaView style={styles.modal}>
+          <ModalSafeArea style={styles.modal}>
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>Change exercise</Text>
@@ -327,7 +327,7 @@ export default function ResetTraining({
                 )}
               />
             )}
-          </SafeAreaView>
+          </ModalSafeArea>
         </KeyboardSafe>
       </Modal>
       <LogSetModal

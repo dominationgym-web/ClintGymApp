@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "../components/ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import FoldSection from "@/components/FoldSection";
@@ -380,7 +380,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
 
       <Modal visible={saveOpen} transparent animationType="fade" onRequestClose={() => setSaveOpen(false)}>
         <KeyboardSafe>
-          <SafeAreaView style={styles.backdrop}>
+          <ModalSafeArea style={styles.backdrop}>
             <View style={styles.sheet}>
               <Text style={styles.sheetTitle}>Save this timer</Text>
               {s ? <Text style={styles.savedDesc}>{describeTimer(s)}</Text> : null}
@@ -411,7 +411,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
             </View>
-          </SafeAreaView>
+          </ModalSafeArea>
         </KeyboardSafe>
       </Modal>
     </View>

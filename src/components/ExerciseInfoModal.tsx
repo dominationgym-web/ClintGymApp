@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { techniqueFor } from "@/lib/exerciseTechnique";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -42,7 +42,7 @@ export default function ExerciseInfoModal({
 
   return (
     <Modal visible={!!exercise} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.modal}>
+      <ModalSafeArea style={styles.modal}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{exercise?.exercise_name}</Text>
@@ -66,7 +66,7 @@ export default function ExerciseInfoModal({
             </>
           )}
         </ScrollView>
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }

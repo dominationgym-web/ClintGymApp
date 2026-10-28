@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 import { bodyPartLabel, filterExercises } from "@/lib/exerciseFilter";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -45,7 +45,7 @@ export default function ExerciseSwapModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <KeyboardSafe>
-        <SafeAreaView style={styles.modalContainer}>
+        <ModalSafeArea style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>Change exercise</Text>
@@ -93,7 +93,7 @@ export default function ExerciseSwapModal({
               </View>
             )}
           />
-        </SafeAreaView>
+        </ModalSafeArea>
       </KeyboardSafe>
     </Modal>
   );

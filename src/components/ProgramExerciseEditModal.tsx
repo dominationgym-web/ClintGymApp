@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
@@ -167,7 +167,7 @@ export default function ProgramExerciseEditModal({
   return (
     <Modal visible animationType="slide" onRequestClose={choosing ? () => setChoosing(false) : onClose}>
       <KeyboardSafe>
-        <SafeAreaView style={styles.modal}>
+        <ModalSafeArea style={styles.modal}>
           <View style={styles.header}>
             <Text style={styles.title}>{choosing ? "Pick an exercise" : "Change in your workout"}</Text>
             <Pressable onPress={choosing ? () => setChoosing(false) : onClose} hitSlop={8}>
@@ -300,7 +300,7 @@ export default function ProgramExerciseEditModal({
               </Pressable>
             </ScrollView>
           )}
-        </SafeAreaView>
+        </ModalSafeArea>
       </KeyboardSafe>
     </Modal>
   );
