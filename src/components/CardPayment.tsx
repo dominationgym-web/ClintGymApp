@@ -44,10 +44,15 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
   if (Platform.OS !== "web" || !info?.enabled) return null;
   const { quote, card } = info;
 
-  const go = async (start: () => Promise<{ data: { url: string } | null; error: string | null }>) => {
+  const go = async (start: () => Promise<{ data: { url?: string; covered?: boolean } | null; error: string | null }>) => {
     setBusy(true);
     const { data, error } = await start();
-    if (error || !data) {
+    if (data?.covered) {
+      setBusy(false);
+      Alert.alert("Paid with referral credit", "Your banked referrals covered this payment. Nothing was charged to your card.");
+      return load();
+    }
+    if (error || !data?.url) {
       setBusy(false);
       return Alert.alert("Couldn't open the card page", error ?? "Please try again.");
     }
@@ -80,7 +85,21 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
   return (
     <View style={styles.box}>
       <Text style={styles.title}>💳 Pay by card</Text>
-      {quote && quote.total > 0 ? (
+      {quote && quote.total <= 0 && quote.referral_credits > 0 ? (
+        <>
+          {quote.plan_amount > 0 && (
+            <Text style={styles.line}>
+              {quote.plan_label ?? "Your plan"}: {money(quote.plan_amount, quote.currency)}
+            </Text>
+          )}
+          <Text style={styles.line}>
+            Referral credit ({quote.referral_credits} × 25%): -{money(quote.credit_amount, quote.currency)}
+          </Text>
+          <Pressable style={styles.pay} onPress={() => go(() => startCardCheckout(autopay))} disabled={busy}>
+            {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.payText}>Use my referral credit</Text>}
+          </Pressable>
+        </>
+      ) : quote && quote.total > 0 ? (
         <>
           {quote.plan_amount > 0 && (
             <Text style={styles.line}>
@@ -88,6 +107,11 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
             </Text>
           )}
           {quote.fees_amount > 0 && <Text style={styles.line}>Client fees: {money(quote.fees_amount, quote.currency)}</Text>}
+          {quote.referral_credits > 0 && (
+            <Text style={styles.line}>
+              Referral credit ({quote.referral_credits} × 25%): -{money(quote.credit_amount, quote.currency)}
+            </Text>
+          )}
           <Pressable style={styles.check} onPress={() => setAutopay((v) => !v)}>
             <View style={[styles.box18, autopay && styles.box18On]} />
             <Text style={styles.checkText}>Save my card and pay automatically each time a payment is due</Text>

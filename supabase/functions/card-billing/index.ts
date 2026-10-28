@@ -15,6 +15,9 @@
 //   cancel    stop automatic payments and remove the saved card
 //   verify    record a payment when the trainer comes back from Paystack
 //   daily     (pg_cron, x-cron-secret) charge saved cards for anything owed
+// Banked referral credit (each counted referral = 25% of a month's plan,
+// 0166) comes off automatically: off the plan payment, or off client fees for
+// free-use trainers, the same way the owner's Record payment uses it.
 // Paystack's webhook (x-paystack-signature) records charges too.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
@@ -26,6 +29,8 @@ const PLAN_MONTHS: Record<string, number> = { monthly: 1, six_months: 6, yearly:
 const CARD_CHECK_CENTS = 500;
 // A saved card that failed isn't tried again for this many days.
 const RETRY_DAYS = 3;
+// Each counted referral is this much of a month's plan (src/lib/trainers.ts).
+const REFERRAL_DISCOUNT_PERCENT = 25;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -42,6 +47,9 @@ type Quote = {
   plan_months: number | null;
   plan_label: string | null;
   fees_amount: number;
+  // Banked referral credits used and what they take off.
+  referral_credits: number;
+  credit_amount: number;
   total: number;
   charged_currency: string;
   charged_cents: number;
@@ -82,18 +90,19 @@ const PLAN_LABEL: Record<string, string> = { monthly: "Monthly plan", six_months
 
 /**
  * What a trainer owes now: their plan when it's due within `planWindow` days
- * (or overdue), plus client fees owed. Charged in rand unless Paystack takes
- * the trainer's currency.
+ * (or overdue), plus client fees owed, less banked referral credit. Charged in
+ * rand unless Paystack takes the trainer's currency.
  */
 async function quote(admin: Admin, trainerId: string, planWindow: number): Promise<Quote | null> {
-  const [{ data: settings }, { data: trainer }, { data: status }] = await Promise.all([
+  const [{ data: settings }, { data: trainer }, { data: status }, { count: counted }] = await Promise.all([
     admin.from("billing_settings").select("*").eq("id", 1).single(),
     admin
       .from("trainers")
-      .select("billing_plan, billing_currency, billing_started_on, paid_until, free_use_from, is_owner, signup_country")
+      .select("billing_plan, billing_currency, billing_started_on, paid_until, free_use_from, is_owner, signup_country, referral_credits_used")
       .eq("id", trainerId)
       .maybeSingle(),
     admin.rpc("billing_status_for", { p_trainer: trainerId }),
+    admin.from("trainers").select("id", { count: "exact", head: true }).eq("referred_by", trainerId).not("referral_counted_at", "is", null),
   ]);
   if (!settings || !trainer || trainer.is_owner) return null;
   const currency: "USD" | "ZAR" = trainer.billing_currency ?? (trainer.signup_country === "ZA" ? "ZAR" : "USD");
@@ -108,7 +117,23 @@ async function quote(admin: Admin, trainerId: string, planWindow: number): Promi
     paidThrough < addDays(today, planWindow);
   const plan_amount = planDue ? Number(settings.prices?.[currency]?.[trainer.billing_plan] ?? 0) : 0;
   const fees_amount = Math.max(0, Number(status?.[0]?.client_fees_owed ?? 0));
-  const total = Math.round((plan_amount + fees_amount) * 100) / 100;
+  // Referral credit: enough whole credits to cover the plan (as creditsUsable
+  // in src/lib/billing.ts), or for free use whole credits within the fees.
+  const unused = Math.max(0, (counted ?? 0) - Number(trainer.referral_credits_used ?? 0));
+  const perCredit = (REFERRAL_DISCOUNT_PERCENT * Number(settings.prices?.[currency]?.monthly ?? 0)) / 100;
+  let referral_credits = 0;
+  let credit_amount = 0;
+  if (unused > 0 && perCredit > 0) {
+    if (plan_amount > 0) {
+      referral_credits = Math.min(unused, Math.ceil(plan_amount / perCredit));
+      credit_amount = Math.min(plan_amount, referral_credits * perCredit);
+    } else if (trainer.free_use_from && fees_amount > 0) {
+      referral_credits = Math.min(unused, Math.floor(fees_amount / perCredit));
+      credit_amount = referral_credits * perCredit;
+    }
+  }
+  credit_amount = Math.round(credit_amount * 100) / 100;
+  const total = Math.max(0, Math.round((plan_amount + fees_amount - credit_amount) * 100) / 100);
   const direct = (settings.card_currencies ?? ["ZAR"]).includes(currency);
   return {
     currency,
@@ -116,6 +141,8 @@ async function quote(admin: Admin, trainerId: string, planWindow: number): Promi
     plan_months: planDue ? PLAN_MONTHS[trainer.billing_plan] ?? null : null,
     plan_label: planDue ? PLAN_LABEL[trainer.billing_plan] ?? null : null,
     fees_amount,
+    referral_credits,
+    credit_amount,
     total,
     charged_currency: direct ? currency : "ZAR",
     charged_cents: Math.round(total * (direct ? 1 : Number(settings.usd_zar_rate)) * 100),
@@ -193,22 +220,63 @@ async function settle(admin: Admin, reference: string): Promise<"paid" | "failed
   }
 
   const card = auth?.last4 ? `card ending ${auth.last4}` : "card";
-  const note = `Paid by ${card} (Paystack ${reference})`;
-  const rows = [];
-  if (Number(charge.plan_amount) > 0) {
-    rows.push({ trainer_id: charge.trainer_id, kind: "subscription", amount: charge.plan_amount, currency: charge.currency, months: charge.plan_months, note });
-  }
-  if (Number(charge.fees_amount) > 0) {
-    rows.push({ trainer_id: charge.trainer_id, kind: "client_fees", amount: charge.fees_amount, currency: charge.currency, note });
-  }
-  if (rows.length) {
-    const { error } = await admin.from("trainer_payments").insert(rows);
-    if (error) {
-      // Paid but not recorded: leave it for the owner to see on the charge.
-      await admin.from("card_charges").update({ message: `Paid, but not recorded: ${error.message}` }).eq("reference", reference);
-    }
+  const error = await recordPayment(admin, charge, `Paid by ${card} (Paystack ${reference})`);
+  if (error) {
+    // Paid but not recorded: leave it for the owner to see on the charge.
+    await admin.from("card_charges").update({ message: `Paid, but not recorded: ${error}` }).eq("reference", reference);
   }
   return "paid";
+}
+
+type Payable = {
+  trainer_id: string;
+  currency: string;
+  plan_amount: number | string;
+  plan_months: number | null;
+  fees_amount: number | string;
+  referral_credits?: number | null;
+  credit_amount?: number | string | null;
+};
+
+/**
+ * Adds the trainer_payments rows for a paid charge and marks any referral
+ * credit used. Credit on a plan lowers the plan row; credit on client fees is
+ * its own client-fee row, as Record payment does. Returns an error message.
+ */
+async function recordPayment(admin: Admin, charge: Payable, note: string): Promise<string | null> {
+  const credits = Number(charge.referral_credits ?? 0);
+  const credit = Number(charge.credit_amount ?? 0);
+  const creditNote = `Referral credit: ${credits} × ${REFERRAL_DISCOUNT_PERCENT}%`;
+  const rows = [];
+  if (Number(charge.plan_amount) > 0) {
+    rows.push({
+      trainer_id: charge.trainer_id,
+      kind: "subscription",
+      amount: Math.max(0, Number(charge.plan_amount) - credit),
+      currency: charge.currency,
+      months: charge.plan_months,
+      note: credits > 0 ? `${note}, ${creditNote}` : note,
+    });
+  } else if (credits > 0) {
+    rows.push({ trainer_id: charge.trainer_id, kind: "client_fees", amount: credit, currency: charge.currency, note: creditNote });
+  }
+  const feesPaid = Number(charge.fees_amount) - (Number(charge.plan_amount) > 0 ? 0 : credit);
+  if (feesPaid > 0) {
+    rows.push({ trainer_id: charge.trainer_id, kind: "client_fees", amount: feesPaid, currency: charge.currency, note });
+  }
+  if (!rows.length) return null;
+  const { error } = await admin.from("trainer_payments").insert(rows);
+  if (error) return error.message;
+  if (credits > 0) {
+    const used = await admin.rpc("add_referral_credits_used", { p_trainer: charge.trainer_id, p_credits: credits });
+    if (used.error) return `referral credit not marked used: ${used.error.message}`;
+  }
+  return null;
+}
+
+/** When referral credit covers everything owed: nothing to charge, just record it. */
+async function recordCovered(admin: Admin, trainerId: string, q: Quote): Promise<string | null> {
+  return recordPayment(admin, { trainer_id: trainerId, ...q }, "Covered by referral credit");
 }
 
 async function hmacSha512Hex(key: string, text: string): Promise<string> {
@@ -238,7 +306,11 @@ async function daily(admin: Admin) {
       continue;
     }
     const q = await quote(admin, card.trainer_id, 1);
-    if (!q || q.total <= 0) continue;
+    if (!q) continue;
+    if (q.total <= 0) {
+      if (q.referral_credits > 0) results[card.trainer_id] = (await recordCovered(admin, card.trainer_id, q)) ?? "covered by referral credit";
+      continue;
+    }
     const reference = newReference("auto");
     const { error } = await admin.from("card_charges").insert({
       reference,
@@ -248,6 +320,8 @@ async function daily(admin: Admin) {
       plan_amount: q.plan_amount,
       plan_months: q.plan_months,
       fees_amount: q.fees_amount,
+      referral_credits: q.referral_credits,
+      credit_amount: q.credit_amount,
       charged_currency: q.charged_currency,
       charged_cents: q.charged_cents,
     });
@@ -362,6 +436,10 @@ Deno.serve(async (req) => {
     let row;
     if (body.action === "checkout") {
       const q = await quote(admin, userId, 7);
+      if (q && q.total <= 0 && q.referral_credits > 0) {
+        const error = await recordCovered(admin, userId, q);
+        return error ? json(500, { error }) : json(200, { covered: true });
+      }
       if (!q || q.total <= 0) return json(400, { error: "Nothing to pay right now." });
       row = {
         kind: "checkout",
@@ -369,6 +447,8 @@ Deno.serve(async (req) => {
         plan_amount: q.plan_amount,
         plan_months: q.plan_months,
         fees_amount: q.fees_amount,
+        referral_credits: q.referral_credits,
+        credit_amount: q.credit_amount,
         charged_currency: q.charged_currency,
         charged_cents: q.charged_cents,
       };

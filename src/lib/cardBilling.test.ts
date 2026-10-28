@@ -16,7 +16,7 @@ describe("card billing helpers", () => {
   });
 
   it("shows the rand amount only when a dollar bill is charged in rand", () => {
-    const q = { currency: "USD" as const, plan_amount: 50, plan_months: 1, plan_label: "Monthly plan", fees_amount: 20, total: 70, charged_currency: "ZAR", charged_cents: 126000 };
+    const q = { currency: "USD" as const, plan_amount: 50, plan_months: 1, plan_label: "Monthly plan", fees_amount: 20, referral_credits: 0, credit_amount: 0, total: 70, charged_currency: "ZAR", charged_cents: 126000 };
     expect(chargedLabel(q)).toBe("R1 260");
     expect(chargedLabel({ ...q, currency: "ZAR", charged_cents: 50000 })).toBeNull();
   });

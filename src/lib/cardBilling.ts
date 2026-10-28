@@ -11,6 +11,9 @@ export type CardQuote = {
   plan_months: number | null;
   plan_label: string | null;
   fees_amount: number;
+  // Banked referral credit taken off (0166).
+  referral_credits: number;
+  credit_amount: number;
   total: number;
   charged_currency: string;
   charged_cents: number;
@@ -53,7 +56,8 @@ async function call<T>(body: Record<string, unknown>): Promise<{ data: T | null;
 }
 
 export const loadCardBilling = () => call<CardBillingInfo>({ action: "quote" });
-export const startCardCheckout = (autopay: boolean) => call<{ url: string }>({ action: "checkout", autopay });
+// covered: referral credit paid it all, so there's no card page to open.
+export const startCardCheckout = (autopay: boolean) => call<{ url?: string; covered?: boolean }>({ action: "checkout", autopay });
 export const startSaveCard = (autopay = true) => call<{ url: string }>({ action: "save_card", autopay });
 export const cancelCard = () => call<{ cancelled: boolean }>({ action: "cancel" });
 export const verifyCardPayment = (reference: string) => call<{ status: string }>({ action: "verify", reference });

@@ -49,6 +49,9 @@ export type Trainer = {
   referred_by_code: string | null;
   referred_by: string | null;
   referral_credits_used: number;
+  // 0166: when this trainer's referral started counting for their referrer
+  // (3 months after their trial, still approved and paid up).
+  referral_counted_at?: string | null;
   // Billing (0064). Only the owner sets these. Client fees start 2 months
   // after billing_started_on; paid_until moves on when he records a payment.
   approved_at: string | null;
@@ -1457,6 +1460,10 @@ export interface Database {
       my_referrals: {
         Args: Record<string, never>;
         Returns: { name: string; approved: boolean; created_at: string }[];
+      };
+      my_referral_progress: {
+        Args: Record<string, never>;
+        Returns: { name: string; approved: boolean; counts_from: string | null; counted: boolean; created_at: string }[];
       };
       start_my_training: {
         Args: Record<string, never>;

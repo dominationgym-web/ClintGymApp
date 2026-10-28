@@ -18,7 +18,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { addDays } from "@/lib/programSchedule";
-import { referralRewards, trainerDisplayName } from "@/lib/trainers";
+import { countedReferrals, referralRewards, trainerDisplayName } from "@/lib/trainers";
 import {
   amountsLabel,
   clientTierLines,
@@ -130,7 +130,7 @@ export default function BillingScreen() {
   const trainers = everyone.filter((t) => !t.is_owner && t.approved);
   const byId = useMemo(() => Object.fromEntries(everyone.map((t) => [t.id, t])), [everyone]);
   const unusedCredits = (t: Trainer) =>
-    referralRewards(everyone.filter((x) => x.referred_by === t.id && x.approved).length, t.referral_credits_used).unused;
+    referralRewards(countedReferrals(everyone, t.id), t.referral_credits_used).unused;
 
   const outstanding = trainers.filter((t) => {
     const s = statuses[t.id];
@@ -143,7 +143,7 @@ export default function BillingScreen() {
         months,
         payments,
         activations,
-        referralApprovals: everyone.filter((t) => t.referred_by && t.approved && t.approved_at).map((t) => t.approved_at!.slice(0, 10)),
+        referralApprovals: everyone.filter((t) => t.referred_by && t.referral_counted_at).map((t) => t.referral_counted_at!.slice(0, 10)),
       }),
     [months, payments, activations, everyone],
   );
