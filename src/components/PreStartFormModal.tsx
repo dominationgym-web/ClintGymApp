@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -276,7 +276,7 @@ export default function PreStartFormModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <KeyboardSafe>
-        <SafeAreaView style={styles.container}>
+        <ModalSafeArea style={styles.container}>
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.kicker}>
@@ -305,7 +305,7 @@ export default function PreStartFormModal({
               </Pressable>
             )}
           </View>
-        </SafeAreaView>
+        </ModalSafeArea>
       </KeyboardSafe>
     </Modal>
   );

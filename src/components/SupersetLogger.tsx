@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import RestTimer from "@/components/RestTimer";
@@ -144,7 +144,7 @@ export default function SupersetLogger({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.screen}>
+      <ModalSafeArea style={styles.screen}>
         <KeyboardSafe>
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
@@ -293,7 +293,7 @@ export default function SupersetLogger({
             )}
           </ScrollView>
         </KeyboardSafe>
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }

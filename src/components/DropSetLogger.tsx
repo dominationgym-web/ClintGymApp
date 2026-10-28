@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { parseWeight } from "@/lib/weightInput";
@@ -167,7 +167,7 @@ export default function DropSetLogger({
   const running = clock.since != null;
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.screen}>
+      <ModalSafeArea style={styles.screen}>
         <KeyboardSafe>
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
@@ -238,7 +238,7 @@ export default function DropSetLogger({
             )}
           </ScrollView>
         </KeyboardSafe>
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }

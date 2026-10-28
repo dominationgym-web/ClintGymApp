@@ -10,7 +10,7 @@ import {
   Modal,
 } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "../../components/ModalSafeArea";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
@@ -305,7 +305,7 @@ export default function SignupScreen({ navigation }: Props) {
       </Pressable>
 
       <Modal visible={policyVisible} animationType="slide" onRequestClose={() => setPolicyVisible(false)}>
-        <SafeAreaView style={styles.modalContainer}>
+        <ModalSafeArea style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Privacy Policy</Text>
             <Pressable onPress={() => setPolicyVisible(false)}>
@@ -317,7 +317,7 @@ export default function SignupScreen({ navigation }: Props) {
               trainer={trainer ? { name: trainer.display_name } : null}
             />
           </ScrollView>
-        </SafeAreaView>
+        </ModalSafeArea>
       </Modal>
 
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>

@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "../../components/ModalSafeArea";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
 import { filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
@@ -430,7 +430,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
 
       <Modal visible={picking !== null && !wide} animationType="slide" onRequestClose={closePicker}>
         <KeyboardSafe>
-        <SafeAreaView style={styles.modal}>
+        <ModalSafeArea style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Pick an exercise</Text>
             <Pressable onPress={closePicker}>
@@ -476,7 +476,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
               </View>
             )}
           />
-        </SafeAreaView>
+        </ModalSafeArea>
         </KeyboardSafe>
       </Modal>
 

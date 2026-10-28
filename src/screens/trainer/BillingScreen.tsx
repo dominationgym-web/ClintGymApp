@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import TextInput from "@/components/TextInput";
 import CardTest from "@/components/CardTest";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "../../components/ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -557,7 +557,7 @@ function SetPlanModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.modal}>
+      <ModalSafeArea style={styles.modal}>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
           <Text style={styles.modalTitle}>{trainerDisplayName(trainer)}'s plan</Text>
           <Text style={styles.fieldLabel}>Plan</Text>
@@ -585,7 +585,7 @@ function SetPlanModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose
             <Text style={styles.secondaryText}>Cancel</Text>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }
@@ -628,7 +628,7 @@ function FreeUseModal({
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.modal}>
+      <ModalSafeArea style={styles.modal}>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
           <Text style={styles.modalTitle}>Free use for {trainerDisplayName(trainer)}</Text>
           <Text style={styles.lineDetail}>
@@ -648,7 +648,7 @@ function FreeUseModal({
             <Text style={styles.secondaryText}>Cancel</Text>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }
@@ -757,7 +757,7 @@ function RecordPaymentModal({
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <KeyboardSafe>
-      <SafeAreaView style={styles.modal}>
+      <ModalSafeArea style={styles.modal}>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
           <Text style={styles.modalTitle}>Payment from {trainerDisplayName(trainer)}</Text>
           <Text style={styles.fieldLabel}>What for</Text>
@@ -832,7 +832,7 @@ function RecordPaymentModal({
             <Text style={styles.secondaryText}>Cancel</Text>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </ModalSafeArea>
       </KeyboardSafe>
     </Modal>
   );

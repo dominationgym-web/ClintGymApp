@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Vibration, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { useKeepAwake } from "expo-keep-awake";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatClock } from "@/lib/programs";
@@ -169,7 +169,7 @@ export default function IntervalTimerModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={[styles.screen, stage === "running" && { backgroundColor: color }]}>
+      <ModalSafeArea style={[styles.screen, stage === "running" && { backgroundColor: color }]}>
         {stage === "intro" && (
           <ScrollView contentContainerStyle={styles.pad}>
             <View style={styles.header}>
@@ -302,7 +302,7 @@ export default function IntervalTimerModal({
             </Pressable>
           </View>
         )}
-      </SafeAreaView>
+      </ModalSafeArea>
     </Modal>
   );
 }

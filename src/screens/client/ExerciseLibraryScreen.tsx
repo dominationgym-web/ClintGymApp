@@ -14,7 +14,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "../../components/ModalSafeArea";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
 import {
@@ -1474,7 +1474,7 @@ export default function ExerciseLibraryScreen() {
 
       <Modal visible={!!selected} animationType="slide" onRequestClose={() => setSelected(null)}>
         <KeyboardSafe>
-        <SafeAreaView style={styles.modalContainer}>
+        <ModalSafeArea style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{selected?.name}</Text>
@@ -1679,7 +1679,7 @@ export default function ExerciseLibraryScreen() {
             )}
 
           </ScrollView>
-        </SafeAreaView>
+        </ModalSafeArea>
         </KeyboardSafe>
         <AchievementBadge badge={badge} onClose={() => setBadge(null)} />
       </Modal>

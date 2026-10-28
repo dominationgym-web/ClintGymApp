@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 import { FOODS, searchFoods, type Food, type FoodGroup } from "@/lib/foods";
 import {
@@ -90,7 +90,7 @@ export default function DietFoodPicker({
   return (
     <Modal visible animationType="slide" onRequestClose={food && !editing ? () => setFood(null) : close}>
       <KeyboardSafe>
-      <SafeAreaView style={styles.modal}>
+      <ModalSafeArea style={styles.modal}>
         <View style={styles.header}>
           <Text style={styles.title}>{food ? food.name : `Add to ${mealName}`}</Text>
           <Pressable onPress={food && !editing ? () => setFood(null) : close} hitSlop={8}>
@@ -198,7 +198,7 @@ export default function DietFoodPicker({
             )}
           </ScrollView>
         )}
-      </SafeAreaView>
+      </ModalSafeArea>
       </KeyboardSafe>
     </Modal>
   );

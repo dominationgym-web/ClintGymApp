@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
-import { SafeAreaView } from "react-native-safe-area-context";
+import ModalSafeArea from "./ModalSafeArea";
 import TrainerAgreementContent from "@/screens/auth/TrainerAgreementContent";
 
 type Props = {
@@ -39,7 +39,7 @@ export default function AgreementSignFields({ signedName, onChangeSignedName, ag
       </Pressable>
 
       <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
-        <SafeAreaView style={styles.modal}>
+        <ModalSafeArea style={styles.modal}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Trainer agreement</Text>
             <Pressable onPress={() => setVisible(false)}>
@@ -49,7 +49,7 @@ export default function AgreementSignFields({ signedName, onChangeSignedName, ag
           <ScrollView contentContainerStyle={{ padding: 20 }}>
             <TrainerAgreementContent />
           </ScrollView>
-        </SafeAreaView>
+        </ModalSafeArea>
       </Modal>
     </View>
   );
