@@ -9,6 +9,7 @@ import { todayIso } from "@/lib/dates";
 import { planEndingSoon, planEndingWhen } from "@/lib/planEnding";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import WatchLinkPrompt from "@/components/WatchLinkPrompt";
+import WeighInReminder from "@/components/WeighInReminder";
 import SleepReminder from "@/components/SleepReminder";
 import ResetReminderBanner from "@/components/reset/ResetReminderBanner";
 import ProgressPhotoReminder from "@/components/ProgressPhotoReminder";
@@ -31,6 +32,7 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
   const [heights, setHeights] = useState<Record<number, number>>({});
   const items = [
     <NotificationsPrompt key="n" who="client" />,
+    <WeighInReminder key="b" />,
     <WatchLinkPrompt key="w" />,
     <SleepReminder key="s" />,
     <CycleTodayBanner key="c" />,
