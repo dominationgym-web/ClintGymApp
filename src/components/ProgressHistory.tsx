@@ -112,4 +112,4 @@ const styles = themedStyles({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", alignItems: "center", padding: 16 },
   full: { width: "100%", height: "85%" },
   fullCaption: { color: "#E2E8F0", marginTop: 12 },
-});
+}, ["fullCaption"]);

@@ -4,7 +4,7 @@ import { View, Text, Pressable, Modal, ScrollView, useWindowDimensions } from "r
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
 import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";
-import { themedStyles } from "@/lib/theme";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // route: the page it opens, so the trainer's laptop sidebar can show where they are.
 export type MenuItem = { key: string; title: string; summary: string; icon?: string; route?: string; onPress: () => void };
@@ -40,9 +40,9 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
         accessibilityRole="button"
         accessibilityLabel="Open menu"
       >
-        <View style={styles.bar} />
-        <View style={styles.bar} />
-        <View style={styles.bar} />
+        <View style={[styles.bar, { backgroundColor: themeText("#fff") }]} />
+        <View style={[styles.bar, { backgroundColor: themeText("#fff") }]} />
+        <View style={[styles.bar, { backgroundColor: themeText("#fff") }]} />
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)} accessibilityLabel="Close menu">
@@ -91,7 +91,8 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
 const styles = themedStyles({
   row: { flexDirection: "row", alignItems: "center" },
   button: { marginRight: 16, paddingVertical: 4, gap: 4 },
-  bar: { width: 22, height: 2.5, borderRadius: 2, backgroundColor: "#fff" },
+  // Coloured like text (inline), since it is drawn, not a panel.
+  bar: { width: 22, height: 2.5, borderRadius: 2 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "flex-end" },
   menu: {
     marginRight: 12,
