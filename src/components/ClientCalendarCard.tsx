@@ -33,6 +33,7 @@ import { addDays } from "@/lib/programSchedule";
 import WeekCalendar, { type WeekDayPlan } from "@/components/WeekCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
+import { useWorkoutSwaps } from "@/components/useWorkoutSwaps";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import StabilityDayPlanner from "@/components/stability/StabilityDayPlanner";
@@ -204,6 +205,8 @@ export default function ClientCalendarCard({
 
   // Dots and gold stars for how each day's workout went (0076).
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
+  // Days the client swapped workouts (0167).
+  const swapped = useWorkoutSwaps(clientId, range.from, range.to, monthEntries);
   const recovery = useRecoveryCalendar(clientId, range.from, range.to);
   const [stabilityReload, setStabilityReload] = useState(0);
   const stability = useStabilityCalendar(clientId, range.from, range.to, `${String(stabilityKey)}-${stabilityReload}`);
@@ -482,6 +485,7 @@ export default function ClientCalendarCard({
           }}
           plans={plans}
           moves={moved.moves}
+          swaps={swapped.labels}
           recovery={recovery}
           stability={stability.map}
           today={today}

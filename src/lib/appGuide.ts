@@ -83,6 +83,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "On workouts with abs between sets, the app shows 15 reps of an ab exercise after each set, up to 10 rounds a workout, but never after heavy squats, deadlifts and other hinges, lunges or heavy rows, which need your trunk fresh. Do the reps, then tap Complete and your rest timer starts.",
         "📈 Try this weight next tells you when you're ready to go heavier. It never jumps more than about 10%: when the next weight up is a bigger jump (light dumbbells, kettlebells), it asks you to add reps first. When your program changes the reps from one week to the next, it works out a new weight for them. Beat last time and you earn a gold star ⭐.",
         "Gym busy? Tap ⇄ Change exercise to swap for another exercise of the same body part, just for that day.",
+        "🔄 Not feeling today's workout (legs, say)? Open it and tap Swap with tomorrow's workout (or the next day you train, up to a week ahead) before you log a set. You do that workout today and today's moves to that day. Your coach is told, both days show Swapped on your calendar, and Undo puts it back until you start. You can swap once a day, and a workout swapped onto a day stays there.",
         "Does an exercise hurt? Tap 😣 This hurts, say where, and try the kinder version it offers (for a shoulder, an overhead or incline press becomes a flat press). If that hurts too, tap it again for the next one. Your coach is told, and next time the app reminds you what you tried.",
         "Sprint, HIIT and conditioning workouts have a ⏱ Start interval timer button. It explains the session and how hard each effort should feel, then counts every round: red for work, green for easy, with a buzz at each switch. Save it at the end and your efforts go on your workout.",
         "Drop set programs (intermediate and advanced): put in your start weight and reps (about 8-12), then do 4-6 drops of about 10-15% lighter each. Stop each drop 1 rep short; only the last may go to failure (on leg press and Smith squats, every drop stops 1-2 reps short). The round clock starts after your start weight, pauses while you type the next weight and runs again when you tap Log. Tap Finish round to save it and start the 6-minute recovery. Your total reps at the same start weight is what shows your progress; the time is just for interest.",
@@ -372,6 +373,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Client → Training",
       points: [
         "Green: they finished. Orange: partly done, with their reason. Red: they couldn't train, with their reason.",
+        "🔄 Swapped: the client swapped that day's workout with their next one (say legs today for upper body tomorrow). You get a notification, and both days say Swapped with the other day. Each workout can only be swapped once, so legs can't keep being pushed away.",
         "A gold star means they beat their last session. Tap the day to see exactly where.",
         "Warm-up sets are labelled, so you only judge the working sets.",
       ],

@@ -99,6 +99,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import FoldSection from "@/components/FoldSection";
 import TodayPlanRows from "@/components/TodayPlanRows";
+import WorkoutSwapRow from "@/components/WorkoutSwapRow";
 import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 import ExerciseClip from "@/components/ExerciseClip";
 import { useWideScreen } from "@/hooks/useWideScreen";
@@ -1062,6 +1063,16 @@ export default function ExerciseLibraryScreen() {
                 ) : (
                   <>
                     {calendarToday && <Text style={styles.fromCalendar}>📅 Today's workout from your training calendar</Text>}
+                    {calendarToday && client && !live && (
+                      <WorkoutSwapRow
+                        clientId={client.id}
+                        today={today}
+                        todayName={todayTitle}
+                        startedToday={!!todaySession || allTodaysSets.length > 0}
+                        refreshKey={refresh}
+                        onSwapped={() => setRefresh((r) => r + 1)}
+                      />
+                    )}
                     {catchUpChoices(today, missed).length > 0 && !todaySession && (
                       <View style={styles.catchUpChips}>
                         {catchUpChoices(today, missed).map((m) => (

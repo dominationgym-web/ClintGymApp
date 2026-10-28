@@ -814,6 +814,19 @@ export type ClientCalendarWorkout = {
   deload?: boolean;
 }
 
+// A client swapped today's calendar workout with a later one (0167, GRIZZ,
+// 2026-10-28): the two days' workouts trade places. Undo sets undone_at.
+export type ClientWorkoutSwap = {
+  id: string;
+  client_id: string;
+  swapped_on: string;
+  later_date: string;
+  today_program_id: string;
+  later_program_id: string;
+  created_at: string;
+  undone_at: string | null;
+}
+
 // An extra block on a client's calendar day (0098, GRIZZ, 2026-10-16), e.g.
 // mobility after the main workout. Taken off by setting removed_at.
 export type ClientCalendarBlock = {
@@ -1286,6 +1299,12 @@ export interface Database {
         Update: Partial<ClientCalendarWorkout>;
         Relationships: [];
       };
+      client_workout_swaps: {
+        Row: ClientWorkoutSwap;
+        Insert: Partial<ClientWorkoutSwap>;
+        Update: Partial<ClientWorkoutSwap>;
+        Relationships: [];
+      };
       client_calendar_blocks: {
         Row: ClientCalendarBlock;
         Insert: Partial<ClientCalendarBlock>;
@@ -1386,6 +1405,8 @@ export interface Database {
         Returns: { workout_date: string; program_id: string; program_name: string; program_trainer_id: string | null }[];
       };
       mark_workout_makeup: { Args: { p_date: string }; Returns: WorkoutSession };
+      swap_my_workout: { Args: { p_with: string }; Returns: ClientWorkoutSwap };
+      undo_my_workout_swap: { Args: Record<string, never>; Returns: undefined };
       has_medical_hold: { Args: { p_client: string }; Returns: boolean };
       clear_medical_hold: {
         Args: { p_problem: string; p_clearance: MedicalClearance; p_cleared_by: string; p_cleared_on: string; p_note?: string | null };
