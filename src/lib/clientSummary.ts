@@ -11,6 +11,7 @@
 // facts to Claude for a better written version (src/components/ClientDailySummaryCard.tsx).
 import { addDays } from "@/lib/programSchedule";
 import { sleepHours } from "@/lib/checkinFeedback";
+import { formatSteps } from "@/lib/steps";
 import { activityTitle, isBigActivity } from "@/lib/otherActivities";
 import type { Checkin, ClientActivity, ClientStatusFlag, SetEffort, WorkoutSessionStatus } from "@/types/database";
 
@@ -53,6 +54,8 @@ export type SummaryInputs = {
   injuries: string[];
   /** Nights from the client's watch (0124), dated the morning they woke. */
   sleep?: { sleep_date: string; asleep_minutes: number }[];
+  /** Daily steps (0158), from the watch or typed in, with that day's goal. */
+  steps?: { step_date: string; steps: number; goal: number | null }[];
 };
 
 export type WeekFacts = {
@@ -67,6 +70,8 @@ export type WeekFacts = {
   sleepQuality: number | null;
   /** Hours asleep each night the watch recorded, oldest first. */
   watchSleep: { date: string; hours: number }[];
+  /** Average steps on the days logged, and how many of the days with a goal hit it. */
+  steps: { average: number; days: number; goalDays: number; hitDays: number } | null;
   alcoholUnits: number;
   waterLitres: number | null;
   painDays: number;
@@ -149,6 +154,11 @@ export function weekFacts(input: SummaryInputs, today: string): WeekFacts {
   const sets = input.sets.filter((s) => inWeek(s.log_date));
   const activities = input.activities.filter((a) => inWeek(a.activity_date));
   const watchNights = (input.sleep ?? []).filter((n) => inWeek(n.sleep_date) && n.asleep_minutes > 0);
+  // Today is still going, so it only counts once the goal is hit.
+  const stepDays = (input.steps ?? []).filter(
+    (d) => inWeek(d.step_date) && d.steps > 0 && (d.step_date < today || (d.goal !== null && d.steps >= d.goal)),
+  );
+  const stepGoalDays = stepDays.filter((d) => d.goal !== null);
 
   const doneDays = new Set(sessions.filter((s) => s.status !== "missed").map((s) => s.session_date));
   const madeUp = new Set(sessions.map((s) => s.makeup_for).filter((d): d is string => !!d));
@@ -187,6 +197,14 @@ export function weekFacts(input: SummaryInputs, today: string): WeekFacts {
       .slice()
       .sort((a, b) => a.sleep_date.localeCompare(b.sleep_date))
       .map((n) => ({ date: n.sleep_date, hours: Math.round((n.asleep_minutes / 60) * 10) / 10 })),
+    steps: stepDays.length
+      ? {
+          average: Math.round(stepDays.reduce((t, d) => t + d.steps, 0) / stepDays.length / 100) * 100,
+          days: stepDays.length,
+          goalDays: stepGoalDays.length,
+          hitDays: stepGoalDays.filter((d) => d.steps >= (d.goal ?? 0)).length,
+        }
+      : null,
     alcoholUnits: checkins.reduce((t, c) => t + (Number(c.alcohol_units) || 0), 0),
     waterLitres: (() => {
       const w = avg(checkins.map((c) => Number(c.water_litres) || 0));
@@ -274,6 +292,11 @@ export function ruleSummary(f: WeekFacts): DailySummary {
         ".",
     );
   }
+  if (f.steps) {
+    lines.push(
+      `Steps: about ${formatSteps(f.steps.average)} a day` + (f.steps.goalDays ? `, goal hit ${f.steps.hitDays} of ${plural(f.steps.goalDays, "day")}` : "") + ".",
+    );
+  }
   if (f.otherActivities.length) {
     lines.push(`Also did ${plural(f.otherActivities.length, "other session")} (${uniq(f.otherActivities.map((a) => a.what)).join(", ")}), ${f.otherMinutes} min in total.`);
   }
@@ -314,5 +337,9 @@ export function ruleSummary(f: WeekFacts): DailySummary {
   if (f.checkinDays <= 3) tips.push("Few check-ins this week: remind them the daily check-in helps you plan their training.");
   if (f.alcoholUnits >= 14) tips.push(`About ${f.alcoholUnits} units of alcohol this week will slow recovery.`);
 
-  return { energy, summary: lines.slice(0, 6).join(" "), suggestions: tips.slice(0, 4) };
+  if (f.steps && f.steps.goalDays >= 3 && f.steps.hitDays / f.steps.goalDays < 0.5) {
+    tips.push("They're missing their step goal most days: ask them personally what gets in the way, or agree a smaller goal.");
+  }
+
+  return { energy, summary: lines.slice(0, 7).join(" "), suggestions: tips.slice(0, 4) };
 }

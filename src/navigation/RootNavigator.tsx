@@ -3,7 +3,8 @@ import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications
 import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
 import React, { useEffect, useRef, useState } from "react";
 import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet, Platform } from "react-native";
-import { createNavigationContainerRef, NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
+import { navigationRef } from "@/navigation/navigationRef";
 import { useAuth } from "@/context/AuthContext";
 import AuthNavigator from "@/navigation/AuthNavigator";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -50,14 +51,15 @@ function useLockedOut(role: string | null, profile: unknown) {
 }
 
 // Tapping a notification opens the screen it is about (notificationRoutes.ts).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const navigationRef = createNavigationContainerRef<any>();
 
 function openRoute(route: NotificationRoute) {
-  if (route.stack === "client") navigationRef.navigate("ClientTabs", { screen: route.screen });
+  if (route.stack === "client" && route.screen === "Timers") navigationRef.navigate("Timers", { tab: "saved" });
+  else if (route.screen === "VideoCheckIn" || route.screen === "VideoCheckIns") navigationRef.navigate(route.screen);
+  else if (route.stack === "client") navigationRef.navigate("ClientTabs", { screen: route.screen });
   else if (route.screen === "ClientDetail")
     navigationRef.navigate("ClientDetail", { clientId: route.clientId, tab: route.tab, open: route.open });
-  else if (route.screen === "Billing") navigationRef.navigate("Billing");
+  else if (route.screen === "Billing" || route.screen === "Challenges") navigationRef.navigate(route.screen);
+  else if (route.screen === "TrainerProblems") navigationRef.navigate("TrainerProblems", { problemId: route.problemId });
   else navigationRef.navigate("TrainerTabs", { screen: route.screen });
 }
 

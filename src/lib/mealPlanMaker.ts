@@ -40,6 +40,14 @@ export type MealPlanSettings = {
   dairyFree?: boolean;
   /** Foods the client left out, by name: never put in again (GRIZZ, 2026-10-22). */
   avoid?: string[];
+  /**
+   * Meals the client eats the same every day, by their place in the day
+   * ("0" is the first meal): kept as they are, and the other meals balance
+   * around them (GRIZZ, 2026-10-27: "some people have a set breakfast").
+   */
+  ownMeals?: Record<string, DietItem[]>;
+  /** Training days a week, for the shopping list (GRIZZ, 2026-10-27). */
+  trainingDays?: number;
 };
 
 const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey|wors|venison|bacon|\bham\b/i;
@@ -446,9 +454,20 @@ function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: n
 export function makeDay(settings: MealPlanSettings, targets: MacroTargets, trainingDay: boolean, variety = 0): DietDay {
   const times = [...settings.meals].sort((a, b) => minutes(a) - minutes(b));
   const roles = mealRoles(times, trainingDay ? settings.training : null);
-  const carbs = carbShares(roles, times, trainingDay);
-  const fats = fatShares(roles, trainingDay);
   const prefs: Prefs = { diet: settings.diet ?? "everything", dairyFree: !!settings.dairyFree, avoid: settings.avoid ?? [] };
+  // The client's own meals are kept as they are; the app's meals share out
+  // what's left of the day, with the same split between them as before.
+  const own = times.map((_, i) => ownMealItems(settings, i));
+  const ownAll = own.flatMap((o) => o ?? []);
+  const share = (list: number[]) => {
+    const free = list.map((v, i) => (own[i] ? 0 : v));
+    const total = free.reduce((a, b) => a + b, 0);
+    const count = own.filter((o) => !o).length;
+    return free.map((v, i) => (own[i] ? 0 : total > 0 ? v / total : 1 / Math.max(1, count)));
+  };
+  const carbs = share(carbShares(roles, times, trainingDay));
+  const fats = share(fatShares(roles, trainingDay));
+  const firstFree = own.findIndex((o) => !o);
   // The snack (protein plus a fruit) and the meat eater's daily dairy are set
   // first; their protein, carbs and fat come off what the meals need.
   const fruit = FRUIT.filter((f) => ok(f, prefs));
@@ -458,31 +477,69 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
     snackItems.push(item(name, findFood(name)?.usual ?? 120));
   }
   const dairyFoods = DAIRY_FOODS.filter((d) => ok(d.food, prefs));
-  const dairy = prefs.diet === "everything" && !prefs.dairyFree && dairyFoods.length ? [dairyFoods[((variety % dairyFoods.length) + dairyFoods.length) % dairyFoods.length]] : [];
-  const fixed = sumTotals([...snackItems, ...dairy]);
-  const proteinEach = Math.max(0, targets.protein - fixed.protein) / times.length;
+  // No extra dairy when their own meal already has some, or no meal is left for it.
+  const ownDairy = ownAll.some((it) => DAIRY.test(it.food) && !PLANT_MILK.test(it.food));
+  const dairy = prefs.diet === "everything" && !prefs.dairyFree && dairyFoods.length && !ownDairy && firstFree !== -1 ? [dairyFoods[((variety % dairyFoods.length) + dairyFoods.length) % dairyFoods.length]] : [];
+  const fixed = sumTotals([...snackItems, ...dairy, ...ownAll]);
+  const proteinEach = Math.max(0, targets.protein - fixed.protein) / Math.max(1, own.filter((o) => !o).length);
   const carbsLeft = Math.max(0, targets.carbs - fixed.carbs);
   const fatLeft = Math.max(0, targets.fat - fixed.fat);
-  const meals: DietMeal[] = times.map((time, i) => ({
-    name: mealLabel(time, roles[i]),
-    items: buildMeal(slotFor(roles[i], time, i), proteinEach, carbsLeft * carbs[i], fatLeft * fats[i], variety + i * 3, prefs, i === 0 ? dairy : []),
-  }));
+  const meals: DietMeal[] = times.map((time, i) => {
+    const mine = own[i];
+    if (mine) return { name: mealLabel(time, roles[i]), items: mine, own: true };
+    return {
+      name: mealLabel(time, roles[i]),
+      items: buildMeal(slotFor(roles[i], time, i), proteinEach, carbsLeft * carbs[i], fatLeft * fats[i], variety + i * 3, prefs, i === firstFree ? dairy : []),
+    };
+  });
   const at = snackTime(times);
   const snackMeal: DietMeal = { name: `${at} · Protein snack`, items: snackItems };
   const index = times.findIndex((t) => minutes(t) > minutes(at));
   meals.splice(index === -1 ? meals.length : index, 0, snackMeal);
-  let day = fitKcal({ meals }, targets.kcal);
-  // Fitting the calories can trim some fibre, so check it twice.
-  for (let round = 0; round < 2 && dayFibre(day) < FIBRE_TARGET; round++) day = fitKcal(addFibre(day, !prefs.avoid.includes("Chia seeds")), targets.kcal);
-  return day;
+  // Only the app's foods are fitted to the calories and fibre: their own meals stay as they are.
+  const ownTotals = sumTotals(ownAll);
+  const kcal = targets.kcal - ownTotals.kcal;
+  return onAppMeals({ meals }, (free) => {
+    let day = fitKcal(free, kcal);
+    // Fitting the calories can trim some fibre, so check it twice.
+    for (let round = 0; round < 2 && dayFibre(day) + ownTotals.fibre < FIBRE_TARGET; round++)
+      day = fitKcal(addFibre(day, !prefs.avoid.includes("Chia seeds"), ownTotals.fibre), kcal);
+    return day;
+  });
+}
+
+/** The client's own foods for the meal at this place in the day, or null when the app picks. */
+export function ownMealItems(settings: MealPlanSettings, index: number): DietItem[] | null {
+  const items = (settings.ownMeals?.[String(index)] ?? []).filter((it) => findFood(it.food) && it.grams > 0);
+  return items.length ? items : null;
+}
+
+/** Their own meals, only for the meals the day still has. */
+export function keepOwnMeals(ownMeals: Record<string, DietItem[]> | undefined, count: number): Record<string, DietItem[]> {
+  return Object.fromEntries(Object.entries(ownMeals ?? {}).filter(([k, items]) => Number(k) < count && items.length > 0));
+}
+
+/** Which meal of the day (0 = the first, not counting the protein snack) a meal on the plan is. */
+export function mealPlace(day: DietDay, meal: number): number {
+  return day.meals.slice(0, meal).filter((m) => !isSnack(m)).length;
+}
+
+export const isSnack = (meal: DietMeal) => meal.name.includes("Protein snack");
+
+// Changes only the meals the app made, and puts the client's own meals back
+// where they were.
+function onAppMeals(day: DietDay, change: (free: DietDay) => DietDay): DietDay {
+  const changed = change({ meals: day.meals.filter((m) => !m.own) }).meals;
+  let k = 0;
+  return { meals: day.meals.map((m) => (m.own ? m : changed[k++])) };
 }
 
 // Short of fibre: more veg at the meals that have it, then a spoon of chia
 // seeds with the snack.
-function addFibre(day: DietDay, chia = true): DietDay {
+function addFibre(day: DietDay, chia = true, already = 0): DietDay {
   let meals = day.meals;
   // A little over the target, as fitting the calories afterwards can trim some.
-  const aim = FIBRE_TARGET + 2;
+  const aim = FIBRE_TARGET + 2 - already;
   const fibre = () => sumTotals(meals.flatMap((m) => m.items)).fibre;
   const veg = new Set([...VEG, ...POOLS.breakfast.veg]);
   for (let round = 0; round < 3 && fibre() < aim; round++) {
@@ -646,10 +703,17 @@ export function leaveOutFood(day: DietDay, meal: number, index: number, rebalanc
  * between the other options").
  */
 export function leaveOutEverywhere(day: DietDay, foodName: string): { day: DietDay; rebalanced: boolean } {
-  const removed = day.meals.flatMap((m) => m.items.filter((it) => it.food === foodName));
+  // Their own meals stay as they set them.
+  const removed = day.meals.flatMap((m) => (m.own ? [] : m.items.filter((it) => it.food === foodName)));
   if (removed.length === 0) return { day, rebalanced: false };
-  const without: DietDay = { meals: day.meals.map((m) => ({ ...m, items: m.items.filter((it) => it.food !== foodName) })) };
-  return makeUp(without, foodName, removed);
+  let rebalanced = false;
+  const next = onAppMeals(day, (free) => {
+    const without: DietDay = { meals: free.meals.map((m) => ({ ...m, items: m.items.filter((it) => it.food !== foodName) })) };
+    const made = makeUp(without, foodName, removed);
+    rebalanced = made.rebalanced;
+    return made.day;
+  });
+  return { day: next, rebalanced };
 }
 
 // The other foods of the same kind (protein foods for a protein, vegetables,

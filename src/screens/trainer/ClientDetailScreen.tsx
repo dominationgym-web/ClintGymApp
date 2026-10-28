@@ -1,8 +1,9 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
+import { lastClientTab, rememberClientTab } from "@/lib/lastClientTab";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert, Switch } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert, Switch, Linking } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +19,7 @@ import ReplyToClientModal from "@/components/ReplyToClientModal";
 import FoundationOfferCard from "@/components/FoundationOfferCard";
 import ClientFormVideos from "@/components/ClientFormVideos";
 import type { TrainerStackParamList } from "@/navigation/types";
+import { useWideScreen } from "@/hooks/useWideScreen";
 import ClientAvatar from "@/components/ClientAvatar";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import HabitOptionsPicker from "@/components/HabitOptionsPicker";
@@ -60,6 +62,8 @@ import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 import FoldSection from "@/components/FoldSection";
+import { whatsappLink } from "@/lib/videoCheckins";
+import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
@@ -110,6 +114,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
   const [askWeighIn, setAskWeighIn] = useState(false);
+  const wide = useWideScreen();
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
   const [stabilityKey, setStabilityKey] = useState(0);
@@ -142,7 +147,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
-  const [tab, setTab] = useState<TabKey>(route.params.tab ?? "overview");
+  const [tab, setTab] = useState<TabKey>(
+    route.params.tab ?? lastClientTab(TABS.map((t) => t.key)) ?? "overview",
+  );
   // Unsaved diet plan changes: ask before leaving the Diet tab or the client.
   // A ref, so "Leave" takes effect at once rather than on the next render.
   const dietDirty = useRef(false);
@@ -498,16 +505,51 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   }
 
   const timeWithYou = describeTimeSince(new Date(client.created_at));
+  const tabBar = (
+    <ScreenTabBar
+      position={wide ? "top" : "bottom"}
+      current={tab}
+      onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => {
+              setTab(next);
+              rememberClientTab(next);
+            }))}
+      tabs={TABS.map((t) => ({
+        ...t,
+        dot:
+          t.key === "overview"
+            ? (problemColor(problemLevel(problems)) ?? null)
+            : t.key === "checkins"
+              ? (problemColor(problemLevel(problems.filter((p) => p.topic !== "flag"))) ?? null)
+              : null,
+      }))}
+    />
+  );
 
   return (
     <View style={styles.container}>
       <WeighInPicker name={client.name} visible={askWeighIn} onPick={pickWeighIn} />
+      {/* On a laptop the tabs run along the top (GRIZZ, 2026-10-27). */}
+      {wide ? tabBar : null}
       <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
         <View style={styles.headerRow}>
           <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{client.name}</Text>
             <Text style={styles.helper}>{client.email}</Text>
+            {/* Tap their number to go straight to WhatsApp (GRIZZ, 2026-10-25). */}
+            {whatsappLink(client.phone) ? (
+              <Pressable
+                onPress={() => {
+                  // Counts as being in touch, for the "Check in on" reminder (0156).
+                  markClientContact(client.id);
+                  Linking.openURL(whatsappLink(client.phone)!);
+                }}
+                hitSlop={6}
+                accessibilityRole="link"
+              >
+                <Text style={styles.whatsapp}>💬 {client.phone} · WhatsApp</Text>
+              </Pressable>
+            ) : null}
             <Text style={styles.memberSince}>
               {timeWithYou === "Joined today" ? timeWithYou : `With you ${timeWithYou}`} · since{" "}
               {new Date(client.created_at).toLocaleDateString()}
@@ -1051,19 +1093,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
       </ScrollView>
 
-      <ScreenTabBar
-        current={tab}
-        onChange={(next) => (next === tab ? undefined : confirmLeaveDiet(() => setTab(next)))}
-        tabs={TABS.map((t) => ({
-          ...t,
-          dot:
-            t.key === "overview"
-              ? (problemColor(problemLevel(problems)) ?? null)
-              : t.key === "checkins"
-                ? (problemColor(problemLevel(problems.filter((p) => p.topic !== "flag"))) ?? null)
-                : null,
-        }))}
-      />
+      {wide ? null : tabBar}
     </View>
   );
 }
@@ -1128,6 +1158,7 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
 }
 
 const styles = StyleSheet.create({
+  whatsapp: { color: BRAND_GOLD, fontSize: 14, fontWeight: "600", marginTop: 2 },
   checksFold: { borderColor: "#F59E0B" },
   liveRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 4 },
   liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center" },

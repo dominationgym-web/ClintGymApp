@@ -323,11 +323,11 @@ ${slides}
     <div class="amount">R200<span>/month</span></div>
     <ul>
       <li>First 5 active clients included</li>
-      <li>Clients 6-10: R50 each</li>
-      <li>Clients 11-20: R40 each</li>
-      <li>Clients 21-30: R30 each</li>
-      <li>Clients 31-60: R10 each</li>
-      <li>Clients 61+: free <span class="save">Max R1 450/month</span></li>
+      <li>Clients 6-15: R50 each</li>
+      <li>Clients 16-25: R40 each</li>
+      <li>Clients 26-35: R30 each</li>
+      <li>Clients 36-65: R10 each</li>
+      <li>Clients 66+: free <span class="save">Max R1 700/month</span></li>
       <li>6 months: R1 000 upfront <span class="save">1 month free</span></li>
       <li>12 months: R1 800 upfront <span class="save">3 months free</span></li>
     </ul>
@@ -337,11 +337,11 @@ ${slides}
     <div class="amount">$20<span>/month</span></div>
     <ul>
       <li>First 5 active clients included</li>
-      <li>Clients 6-10: $5 each</li>
-      <li>Clients 11-20: $4 each</li>
-      <li>Clients 21-30: $3 each</li>
-      <li>Clients 31-60: $1 each</li>
-      <li>Clients 61+: free <span class="save">Max $145/month</span></li>
+      <li>Clients 6-15: $5 each</li>
+      <li>Clients 16-25: $4 each</li>
+      <li>Clients 26-35: $3 each</li>
+      <li>Clients 36-65: $1 each</li>
+      <li>Clients 66+: free <span class="save">Max $170/month</span></li>
       <li>6 months: $100 upfront <span class="save">1 month free</span></li>
       <li>12 months: $180 upfront <span class="save">3 months free</span></li>
     </ul>
@@ -350,7 +350,7 @@ ${slides}
 </div>
 <div class="examples">
   <div class="ex-head">Active clients</div><div class="ex-head">🇿🇦 a month</div><div class="ex-head">🌍 a month</div>
-${[[10, "R450", "$45"], [15, "R650", "$65"], [20, "R850", "$85"], [25, "R1 000", "$100"], [30, "R1 150", "$115"], [40, "R1 250", "$125"], [50, "R1 350", "$135"], ["60+", "R1 450", "$145"]]
+${[[10, "R450", "$45"], [15, "R700", "$70"], [20, "R900", "$90"], [25, "R1 100", "$110"], [35, "R1 400", "$140"], [50, "R1 550", "$155"], ["65+", "R1 700", "$170"]]
   .map(([n, zar, usd]) => `  <div>${n}</div><div>${zar}</div><div>${usd}</div>`)
   .join("\n")}
 </div>

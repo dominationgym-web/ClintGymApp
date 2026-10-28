@@ -12,6 +12,21 @@ import ProgressCard from "@/components/ProgressCard";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { WorkoutLog, WorkoutSession } from "@/types/database";
 
+// Makes sure the trainer's own training row exists (0146), then opens their
+// live workout. Also used by "My workout" on the trainer menu (GRIZZ, 2026-10-27).
+export async function startMyWorkout(
+  trainer: { id: string; name: string },
+  navigation: NativeStackNavigationProp<TrainerStackParamList>,
+): Promise<boolean> {
+  const { error } = await supabase.rpc("start_my_training");
+  if (error) {
+    Alert.alert("Couldn't start", error.message);
+    return false;
+  }
+  navigation.navigate("LiveWorkout", { clientId: trainer.id, name: trainer.name, self: true });
+  return true;
+}
+
 // The trainer's own training (0146, GRIZZ 2026-10-23). Start my workout opens
 // the live workout screen for themselves; their last two weeks and progress
 // graphs sit underneath, the same as on a client's profile.
@@ -53,11 +68,9 @@ export default function MyTraining() {
 
   const start = async () => {
     setOpening(true);
-    const { error } = await supabase.rpc("start_my_training");
+    const ok = await startMyWorkout(trainer, navigation);
     setOpening(false);
-    if (error) return Alert.alert("Couldn't start", error.message);
-    setStarted(true);
-    navigation.navigate("LiveWorkout", { clientId: trainer.id, name: trainer.name, self: true });
+    if (ok) setStarted(true);
   };
 
   return (

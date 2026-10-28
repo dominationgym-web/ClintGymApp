@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
 import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";
 
-export type MenuItem = { key: string; title: string; summary: string; icon?: string; onPress: () => void };
+// route: the page it opens, so the trainer's laptop sidebar can show where they are.
+export type MenuItem = { key: string; title: string; summary: string; icon?: string; route?: string; onPress: () => void };
 
 // The search button and the "three lines" menu button in the top right of
 // every tab. The menu drops down a list of extra pages that don't warrant

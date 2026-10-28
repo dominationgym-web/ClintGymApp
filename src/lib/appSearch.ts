@@ -28,7 +28,7 @@ export type AppPage<K extends string> = { tab: K; title: string; keywords: strin
 
 export const CLIENT_PAGES: AppPage<keyof ClientTabParamList>[] = [
   { tab: "CheckIn", title: "Check-in", keywords: "daily check in weight mood energy sleep water steps flag today" },
-  { tab: "Habits", title: "Habits", keywords: "habits streaks daily goals" },
+  { tab: "Habits", title: "Habits", keywords: "habits streaks daily goals monthly challenge" },
   { tab: "Reset", title: "Lifestyle Reset", keywords: "reset daily 6 weekly check-in" },
   { tab: "Exercises", title: "Training", keywords: "training exercises workout program today's session rest timer log a set exercise library gym home film this set" },
   { tab: "Profile", title: "Profile", keywords: "profile progress photos coach messages quote payment banking plan account delete form videos video log training proof" },

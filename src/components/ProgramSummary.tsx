@@ -3,12 +3,17 @@ import { Pressable, View, Text, StyleSheet } from "react-native";
 import { cardioLabel, formatRest, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
+import ExerciseClip from "@/components/ExerciseClip";
+import { useWideScreen } from "@/hooks/useWideScreen";
+import { useExerciseClips } from "@/hooks/useExerciseClips";
 
 // A program's exercises, grouped by weekday for weekly programs. Multi-week
 // programs (0065) list each week's training days under a week heading. On a
 // client's screen the trainer can tap an exercise to change it for them (0070).
 // ▶ beside each exercise opens its demo video and How to do it (2026-10-14);
 // where there's nothing to change, tapping the exercise opens it too.
+// Multi-week programs show one week at a time with ◀ ▶ (GRIZZ hates
+// scrolling, and the Muscle Year programs are 52 weeks long).
 export default function ProgramSummary({
   program,
   exercises,
@@ -32,8 +37,11 @@ export default function ProgramSummary({
 }) {
   const [info, setInfo] = useState<ProgramExercise | null>(null);
   const [shown, setShown] = useState(!collapsible);
+  // On a laptop each exercise shows its clip playing small in place of the ▶ (GRIZZ, 2026-10-27).
+  const wide = useWideScreen();
+  const clips = useExerciseClips(wide);
   const weeks = program.weeks ?? 1;
-  const days =
+  const allDays =
     onlySlot != null
       ? [onlySlot]
       : program.kind !== "weekly"
@@ -41,6 +49,11 @@ export default function ProgramSummary({
       : weeks > 1
         ? [...new Set(exercises.map(slotOf))].sort((a, b) => a - b)
         : [1, 2, 3, 4, 5, 6, 7];
+  const weekOf = (slot: number) => Math.floor((slot - 1) / 7) + 1;
+  const weekList = onlySlot == null && weeks > 1 ? [...new Set(allDays.map(weekOf))] : [];
+  const [weekAt, setWeekAt] = useState(0);
+  const at = Math.min(weekAt, Math.max(0, weekList.length - 1));
+  const days = weekList.length > 1 ? allDays.filter((d) => weekOf(d) === weekList[at]) : allDays;
   return (
     <View>
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
@@ -58,11 +71,28 @@ export default function ProgramSummary({
         <Text style={styles.tapHint}>▶ Tap an exercise to watch its video and how to do it.</Text>
       )}
       {collapsible && shown ? <Text style={styles.tapHint}>Tap an exercise or the green ▶ to watch its video and how to do it.</Text> : null}
+      {shown && weekList.length > 1 ? (
+        <View style={styles.weekStep}>
+          <Pressable onPress={() => setWeekAt(Math.max(0, at - 1))} disabled={at === 0} hitSlop={10} accessibilityLabel="Week before">
+            <Text style={[styles.weekArrow, at === 0 && styles.weekArrowOff]}>◀</Text>
+          </Pressable>
+          <Text style={styles.weekStepText}>
+            Week {weekList[at]} of {weekList[weekList.length - 1]}
+          </Text>
+          <Pressable
+            onPress={() => setWeekAt(Math.min(weekList.length - 1, at + 1))}
+            disabled={at === weekList.length - 1}
+            hitSlop={10}
+            accessibilityLabel="Next week"
+          >
+            <Text style={[styles.weekArrow, at === weekList.length - 1 && styles.weekArrowOff]}>▶</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {shown && days.map((day) => {
         const rows = exercises.filter((e) => slotOf(e) === day).sort((a, b) => a.sort_order - b.sort_order);
-        const weekOf = (slot: number) => Math.floor((slot - 1) / 7) + 1;
         const i = days.indexOf(day);
-        const newWeek = weeks > 1 && (i === 0 || weekOf(days[i - 1]) !== weekOf(day));
+        const newWeek = weeks > 1 && weekList.length <= 1 && (i === 0 || weekOf(days[i - 1]) !== weekOf(day));
         return (
           <View key={day} style={{ marginTop: 8 }}>
             {newWeek ? <Text style={styles.week}>Week {weekOf(day)}</Text> : null}
@@ -113,9 +143,13 @@ export default function ProgramSummary({
                       {line}
                     </Pressable>
                     <Pressable onPress={() => setInfo(r)} hitSlop={8} accessibilityLabel={`Watch ${r.exercise_name}`}>
-                      <View style={styles.play}>
-                        <Text style={styles.playText}>▶</Text>
-                      </View>
+                      {wide && r.exercise_id && clips[r.exercise_id] ? (
+                        <ExerciseClip url={clips[r.exercise_id]} width={120} height={72} />
+                      ) : (
+                        <View style={styles.play}>
+                          <Text style={styles.playText}>▶</Text>
+                        </View>
+                      )}
                     </Pressable>
                   </View>
                 );
@@ -132,6 +166,10 @@ export default function ProgramSummary({
 const styles = StyleSheet.create({
   day: { color: "#fff", fontWeight: "700", fontSize: 13, marginBottom: 2 },
   week: { color: "#D4AF37", fontWeight: "800", fontSize: 14, marginTop: 6, marginBottom: 2 },
+  weekStep: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10, backgroundColor: "#0F172A", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  weekStepText: { color: "#D4AF37", fontWeight: "800", fontSize: 14 },
+  weekArrow: { color: "#D4AF37", fontSize: 18, fontWeight: "800" },
+  weekArrowOff: { color: "#334155" },
   line: { color: "#94A3B8", fontSize: 13, marginBottom: 2 },
   tappable: { color: "#CBD5E1", paddingVertical: 3 },
   cardioRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },

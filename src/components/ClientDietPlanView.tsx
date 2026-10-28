@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { DIET_WEEKDAYS, INTAKE_ACTIVITY_LEVELS, intakeDetails, amountLabel, dailyTarget, dayTotals, normaliseWeek, sumTotals, weekdayIndex, type DietDay } from "@/lib/dietPlan";
 import type { ClientDietPlan } from "@/types/database";
+import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 
 // The client's meal plan from their trainer (0071), read-only, in the
 // Nutrition section. Opens on today, one day at a time.
@@ -79,9 +80,12 @@ function MealPlan() {
               <Text style={styles.mealKcal}>{sumTotals(meal.items).kcal} kcal</Text>
             </View>
             {meal.items.map((item, i) => (
-              <Text key={i} style={styles.item}>
-                • {item.food}: <Text style={styles.amount}>{amountLabel(item)}</Text>
-              </Text>
+              <View key={i} style={styles.itemRow}>
+                <Text style={[styles.item, { flex: 1 }]}>
+                  • {item.food}: <Text style={styles.amount}>{amountLabel(item)}</Text>
+                </Text>
+                <CookingIdeasLink food={item.food} />
+              </View>
             ))}
           </View>
         ))}
@@ -173,6 +177,7 @@ const styles = StyleSheet.create({
   mealName: { color: "#fff", fontWeight: "800" },
   mealKcal: { color: BRAND_GOLD, fontWeight: "700" },
   item: { color: "#E2E8F0", fontSize: 14, marginTop: 2 },
+  itemRow: { flexDirection: "row", alignItems: "center" },
   amount: { color: BRAND_GOLD, fontWeight: "700" },
   note: { color: "#64748B", fontSize: 12, marginTop: 4 },
 });

@@ -40,16 +40,19 @@ import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_G
 import RestTimer from "@/components/RestTimer";
 import SupersetLogger from "@/components/SupersetLogger";
 import AchievementBadge from "@/components/AchievementBadge";
+import Celebration, { type CelebrationInfo } from "@/components/Celebration";
 import { checkAchievement } from "@/lib/achievementQueries";
 import type { ClientAchievement } from "@/types/database";
 import { AB_MAX_ROUNDS, AB_REPS, abExerciseFor, absAfterExercise, absBetweenSets, abRoundsDone } from "@/lib/absBetweenSets";
 import EveryRepTips from "@/components/EveryRepTips";
 import { EFFORT_LABEL, EFFORT_OPTIONS, EFFORT_QUESTION, suggestNext, type Suggestion } from "@/lib/progression";
+import { apreBase, apreNextSet, apreRestAfter, isApre, type ApreStart } from "@/lib/apre";
 import { gaugeWeight, inIntro, introWeeks, needsGauge, needsSafeties, SAFETIES_NOTE, type GaugeResult } from "@/lib/gauge";
 import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
+import MyPastWorkouts from "@/components/MyPastWorkouts";
 import OtherActivityCard from "@/components/OtherActivityCard";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import IntervalTimerModal from "@/components/IntervalTimerModal";
@@ -98,12 +101,16 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import FoldSection from "@/components/FoldSection";
 import TodayPlanRows from "@/components/TodayPlanRows";
 import { useFormVideoUpload } from "@/components/useFormVideoUpload";
+import ExerciseClip from "@/components/ExerciseClip";
+import { useWideScreen } from "@/hooks/useWideScreen";
 
 export default function ExerciseLibraryScreen() {
   // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
   const { client, refreshProfile, live } = useWorkoutClient();
   // The trainer training themselves (0146): their own row, so "my" wording.
   const self = live && !!client && client.id === client.trainer_id;
+  // Trainer's laptop layout (useWideScreen is never true for clients).
+  const wide = useWideScreen();
   // Serious symptoms on a check-in (0133) hold every workout until the trainer clears it.
   const [hold, setHold] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -120,6 +127,9 @@ export default function ExerciseLibraryScreen() {
   // then the app works out the working weight.
   const [gaugeDue, setGaugeDue] = useState(false);
   const [gaugeResult, setGaugeResult] = useState<GaugeResult | null>(null);
+  // APRE Program rows (GRIZZ, 2026-10-26): today's 7-rep weight and why,
+  // and each set's weight is worked out from it (src/lib/apre.ts).
+  const [apre, setApre] = useState<ApreStart | null>(null);
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [effort, setEffort] = useState<SetEffort | null>(null);
@@ -155,6 +165,8 @@ export default function ExerciseLibraryScreen() {
   // and taps Complete, which starts the rest timer. `rest` is that timer's length.
   // Gold achievement badge (0085) earned by the set just logged.
   const [badge, setBadge] = useState<ClientAchievement | null>(null);
+  // Gold star confetti pop-up when a finished workout pushed something up.
+  const [starred, setStarred] = useState<CelebrationInfo | null>(null);
   // Superset logger (GRIZZ, 2026-10-23): 2-4 exercises logged a round at a time.
   const [supersetOpen, setSupersetOpen] = useState(false);
   // A badge earned in the superset logger shows once it closes (two pop-ups can't open at once).
@@ -565,12 +577,20 @@ export default function ExerciseLibraryScreen() {
       if (saved.status === "missed") await saveProgress(sessionMovedToTomorrow(session, today), false);
       else await saveProgress(sessionAfterComplete(session, days, today), true);
     }
-    const star = saved.improvements.length
-      ? `\n\n⭐ Gold star! You pushed up: ${saved.improvements.map((i) => `${i.exercise} ${i.before} → ${i.after}`).join(", ")}.`
-      : "";
-    if (saved.status === "complete") Alert.alert("Workout complete ✅", `Great work.${star}`);
-    else Alert.alert("Thanks for letting your coach know", saved.status === "partial" ? `Every set counts.${star}` : "Rest up and look after yourself.");
+    if (saved.improvements.length && saved.status !== "missed") {
+      setStarred(goldStar(saved, saved.status === "complete" ? "Workout complete ✅ Great work." : "Every set counts."));
+      return;
+    }
+    if (saved.status === "complete") Alert.alert("Workout complete ✅", "Great work.");
+    else Alert.alert("Thanks for letting your coach know", saved.status === "partial" ? "Every set counts." : "Rest up and look after yourself.");
   };
+
+  const goldStar = (saved: WorkoutSession, first: string): CelebrationInfo => ({
+    emoji: "⭐",
+    title: "Gold star!",
+    lines: [first, ...saved.improvements.map((i) => `${i.exercise}: ${i.before} → ${i.after}`)],
+    highlight: saved.improvements.length === 1 ? "New personal best" : `${saved.improvements.length} personal bests`,
+  });
 
   const completeWorkout = () => {
     if (!program) return;
@@ -605,8 +625,9 @@ export default function ExerciseLibraryScreen() {
           const saved = await recordSession("complete", null);
           if (!saved) return;
           if (session && sessionDue) await saveProgress(sessionAfterComplete(session, days, today), true);
-          const star = saved.improvements.length ? `\n\n⭐ Pushed up: ${saved.improvements.map((i) => `${i.exercise} ${i.before} → ${i.after}`).join(", ")}.` : "";
-          Alert.alert(self ? "Saved 💪" : "Saved 🤝", self ? `In your training log.${star}` : `On ${first}'s profile as an in-person session.${star}`);
+          const savedTo = `Saved to ${where}.`;
+          if (saved.improvements.length) setStarred(goldStar(saved, savedTo));
+          else Alert.alert(self ? "Saved 💪" : "Saved 🤝", savedTo);
         },
       },
     ]);
@@ -733,6 +754,7 @@ export default function ExerciseLibraryScreen() {
     setGaugeResult(null);
     setWarmUpDue(false);
     setStartWeight("");
+    setApre(null);
     if (!client) return;
     const query = supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso());
     const { data } = await (exercise.id ? query.eq("exercise_id", exercise.id) : query.eq("exercise_name", exercise.name))
@@ -744,6 +766,22 @@ export default function ExerciseLibraryScreen() {
       .order("log_date", { ascending: false })
       .limit(20);
     const lastDate = earlier?.[0]?.log_date;
+    if (programRow && isApre(programRow.reps)) {
+      // APRE: sets 1 and 2 are the warm-up, and no gauge set.
+      const sessions: WorkoutLog[][] = [];
+      for (const s of earlier ?? []) {
+        const day = sessions[sessions.length - 1];
+        if (day && day[0].log_date === s.log_date) day.push(s);
+        else sessions.push([s]);
+      }
+      for (const day of sessions) day.sort((a, b) => a.set_number - b.set_number);
+      const start = apreBase(sessions, exercise);
+      setApre(start);
+      const plan = apreNextSet(start.base, data ?? [], programRow.sets, exercise, start);
+      setSuggestion(plan);
+      setWeight(plan.weight ? String(plan.weight) : "");
+      return;
+    }
     const usual = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise, intro ? 2 : 1) : null;
     // Deload week (0115): about 70% of the usual weight, and no gauge set.
     const next = deloadToday && calendarToday ? deloadSuggestion(usual, exercise) : usual;
@@ -842,8 +880,13 @@ export default function ExerciseLibraryScreen() {
       return;
     }
     // Keep the weight for the next set; most sets use the same one (after a
-    // gauge set, the weight it worked out).
-    if (!gauge) setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
+    // gauge set, the weight it worked out). APRE works out the next set's.
+    const apreRow = target && apre ? target : null;
+    if (apreRow && apre) {
+      const plan = apreNextSet(apre.base, [...todaysSets, data], apreRow.sets, selected);
+      setSuggestion(plan);
+      setWeight(plan.weight ? String(plan.weight) : data.weight_kg !== null ? String(data.weight_kg) : "");
+    } else if (!gauge) setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
     const done = (row: ProgramExercise) =>
       target && row.id === target.id ? workingDone + 1 : setsDoneFor(row);
     // Supersets alternate: straight into the partner, or back to the first
@@ -853,7 +896,8 @@ export default function ExerciseLibraryScreen() {
       openProgramExercise(step.go, step.restSeconds, absAfter(target));
       return;
     }
-    const rest = target?.rest_seconds || DEFAULT_REST_SECONDS;
+    const rowRest = target?.rest_seconds || DEFAULT_REST_SECONDS;
+    const rest = apreRow ? apreRestAfter(workingDone + 1, apreRow.sets, rowRest) : rowRest;
     const next = target && workingDone + 1 >= target.sets ? nextUnfinished(target, todaysWorkout, done) : null;
     // Abs between sets, except after the very last set of the workout.
     if (target && absAfter(target) && (workingDone + 1 < target.sets || next)) {
@@ -1296,6 +1340,11 @@ export default function ExerciseLibraryScreen() {
                 <OtherActivityCard clientId={client.id} role="client" />
               </FoldSection>
             )}
+            {client && !live && (
+              <FoldSection icon="📋" title="My past workouts" hint="Last two weeks, 🤝 live sessions with your coach" open={part === "past"} onToggle={() => togglePart("past")}>
+                <MyPastWorkouts clientId={client.id} />
+              </FoldSection>
+            )}
             {showReference && <Text style={styles.title}>{live ? "Add an exercise" : "Exercise reference"}</Text>}
             {live && <Text style={styles.helper}>Pick whatever's free in the gym. Tap it to log sets.</Text>}
             {!showReference ? null : !live && client?.library_access === false ? (
@@ -1345,6 +1394,12 @@ export default function ExerciseLibraryScreen() {
               </View>
               {item.category && <Text style={styles.category}>{item.category}</Text>}
             </View>
+            {/* Trainer's laptop: the clip plays small right in the list (GRIZZ, 2026-10-27). */}
+            {wide && item.external_url ? (
+              <View style={{ marginHorizontal: 14 }}>
+                <ExerciseClip url={item.external_url} width={110} height={64} />
+              </View>
+            ) : null}
             <Text style={styles.link}>{"Log a set >"}</Text>
           </Pressable>
         )}
@@ -1391,6 +1446,7 @@ export default function ExerciseLibraryScreen() {
           onClose={() => setDropRow(null)}
         />
       )}
+      <Celebration info={starred} onClose={() => setStarred(null)} />
       <WorkoutReasonModal
         kind={reasonFor}
         done={todaysWorkout.reduce((t, r) => t + Math.min(setsDoneFor(r), r.sets), 0)}
@@ -1514,8 +1570,9 @@ export default function ExerciseLibraryScreen() {
             )}
             {suggestion && (
               <View style={styles.warmUpBox}>
-                <Text style={styles.warmUpTitle}>📈 {suggestion.last}</Text>
+                <Text style={styles.warmUpTitle}>{apre ? "📊" : "📈"} {suggestion.last}</Text>
                 <Text style={styles.warmUpText}>{suggestion.advice}</Text>
+                {apre && selected && needsSafeties(selected.name) && <Text style={styles.warmUpText}>{SAFETIES_NOTE}</Text>}
               </View>
             )}
             <Text style={[styles.sectionHeading, { marginTop: 0 }]}>{warmUpDue ? "Log your warm-up set" : "Log a set"}</Text>
@@ -1690,7 +1747,8 @@ const styles = StyleSheet.create({
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 10 },
   setRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6 },
-  categoryChip: { flex: 0, paddingHorizontal: 14, marginRight: 8 },
+  // Not flex: 0, which the website reads as "shrink to nothing" and stacks the letters.
+  categoryChip: { flexGrow: 0, flexShrink: 0, paddingHorizontal: 14, marginRight: 8 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15 },
   gaugeBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1.5, borderColor: BRAND_GOLD },
   gaugeTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15, marginBottom: 4 },

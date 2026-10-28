@@ -181,4 +181,23 @@ describe("habitDays", () => {
     expect(habitDays(habits, logs, "2026-10-12", "2026-10-18")).toEqual({ due: 3, done: 2 });
     expect(habitDays(habits, [], "2026-10-12", "2026-10-12")).toEqual({ due: 0, done: 0 });
   });
+  it("adds steps: today only counts once the goal is hit", () => {
+    const f = weekFacts(
+      base({
+        checkins: [checkin(TODAY)],
+        steps: [
+          { step_date: "2026-10-15", steps: 11000, goal: 10000 },
+          { step_date: "2026-10-16", steps: 6000, goal: 10000 },
+          { step_date: "2026-10-17", steps: 4000, goal: 10000 },
+          { step_date: TODAY, steps: 2000, goal: 10000 },
+        ],
+      }),
+      TODAY,
+    );
+    expect(f.steps).toEqual({ average: 7000, days: 3, goalDays: 3, hitDays: 1 });
+    const r = ruleSummary(f);
+    expect(r.summary).toContain("Steps: about 7 000 a day, goal hit 1 of 3 days.");
+    expect(r.suggestions.join(" ")).toMatch(/step goal/);
+    expect(weekFacts(base(), TODAY).steps).toBeNull();
+  });
 });

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import TextInput from "@/components/TextInput";
+import CardTest from "@/components/CardTest";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -481,6 +482,7 @@ export default function BillingScreen() {
                 accessibilityLabel="Card payments"
               />
             </View>
+            <CardTest trainerNames={Object.fromEntries(everyone.map((t) => [t.id, t.is_owner ? "You" : trainerDisplayName(t)]))} />
             <Text style={styles.muted}>To change a price or the exchange rate, ask in the project chat.</Text>
           </>
         ) : null,

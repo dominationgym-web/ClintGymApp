@@ -2,9 +2,13 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
+import { foodUnits, searchFoods, type FoodUnit } from "@/lib/foods";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
+import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import ShoppingListSheet from "@/components/ShoppingListSheet";
+import { trainingDaysGuess } from "@/lib/shoppingList";
 import {
   amountLabel,
   bmr,
@@ -17,6 +21,7 @@ import {
   referralReasons,
   sumTotals,
   targetStatus,
+  findFood,
   type DietDay,
   type DietItem,
   type DietSex,
@@ -34,7 +39,10 @@ import {
   makeDay,
   MAX_MEALS,
   MIN_MEALS,
+  isSnack,
+  keepOwnMeals,
   leaveOutEverywhere,
+  mealPlace,
   swapItem,
   swapOptions,
   whyFoodMatters,
@@ -52,17 +60,22 @@ const TIMED_CARBS =
   "Your carbs are timed around your training. Before training they give you energy, and after training your muscles use them to refuel and recover. Your other meals have a bit less carbs and more protein and veg. It's about energy for your sessions; your total calories are what decide fat loss or gain.";
 const SNACK_SALT = "Biltong is high in salt, so go easier on it if you have high blood pressure.";
 
-/** A day of meals, with Swap and Leave out on each food when `onSwap` / `onLeaveOut` are given. */
+/**
+ * A day of meals, with Swap and Leave out on each food when `onSwap` /
+ * `onLeaveOut` are given, and "Put in my own" on each meal with `onOwnMeal`.
+ */
 export function MealDayView({
   day,
   targetKcal,
   onSwap,
   onLeaveOut,
+  onOwnMeal,
 }: {
   day: DietDay;
   targetKcal: number | null;
   onSwap?: (meal: number, index: number) => void;
   onLeaveOut?: (meal: number, index: number) => void;
+  onOwnMeal?: (meal: number) => void;
 }) {
   const totals = dayTotals(day);
   const status = targetKcal ? targetStatus(totals.kcal, targetKcal) : null;
@@ -88,23 +101,38 @@ export function MealDayView({
             <Text style={styles.mealMacros}>
               P {t.protein} g · C {t.carbs} g · F {t.fat} g
             </Text>
+            {meal.own && <Text style={styles.ownTag}>⭐ Your own meal, the same every day</Text>}
+            {meal.items.length === 0 && !meal.own && onOwnMeal && (
+              <View style={styles.emptyMeal}>
+                <Text style={styles.helper}>Nothing left in this meal. Do you eat the same thing every day? Put in what you eat and the app balances the rest of your day around it.</Text>
+                <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => onOwnMeal(m)}>
+                  <Text style={styles.primaryText}>+ Put in what I eat</Text>
+                </Pressable>
+              </View>
+            )}
             {meal.items.map((item, i) => (
               <View key={i} style={styles.itemRow}>
                 <Text style={styles.item}>
                   • {item.food}: <Text style={styles.amount}>{amountLabel(item)}</Text>
                 </Text>
-                {onSwap && (
+                <CookingIdeasLink food={item.food} />
+                {onSwap && !meal.own && (
                   <Pressable onPress={() => onSwap(m, i)} hitSlop={8}>
                     <Text style={styles.swap}>⇄ Swap</Text>
                   </Pressable>
                 )}
-                {onLeaveOut && (
+                {onLeaveOut && !meal.own && (
                   <Pressable onPress={() => onLeaveOut(m, i)} hitSlop={8} accessibilityLabel={`Leave out ${item.food}`}>
                     <Text style={styles.leaveOut}>✕</Text>
                   </Pressable>
                 )}
               </View>
             ))}
+            {onOwnMeal && !isSnack(meal) && (meal.own || meal.items.length > 0) && (
+              <Pressable onPress={() => onOwnMeal(m)} hitSlop={8} style={{ marginTop: 8 }}>
+                <Text style={styles.ownLink}>{meal.own ? "✎ Change my meal" : "✎ Put in my own meal instead"}</Text>
+              </Pressable>
+            )}
           </View>
         );
       })}
@@ -121,6 +149,20 @@ export function MealDayView({
 // with the same protein, carbs or fat. Clients the intake says should see a
 // doctor or dietitian first (see referralReasons) only get "Stay the same".
 type Details = { height: string; weight: string; age: string; sex: DietSex | null; activity: string };
+
+// A food in the client's own meal while they type it: an amount in the food's
+// handiest measure (eggs, slices, grams).
+type OwnRow = { food: string; amount: string; unit: FoodUnit };
+
+const ownRow = (item: DietItem): OwnRow => {
+  const food = findFood(item.food);
+  const units = food ? foodUnits(food) : [{ label: "g", grams: 1 }];
+  // Whole or half eggs, slices and so on read easier than grams.
+  const unit = units.find((u) => u.grams > 1 && Number.isInteger((item.grams / u.grams) * 2)) ?? units[units.length - 1];
+  return { food: item.food, amount: String(Math.round((item.grams / unit.grams) * 10) / 10), unit };
+};
+
+const ownGrams = (row: OwnRow) => Math.round(num(row.amount) * row.unit.grams);
 
 const STEPS = ["details", "goal", "offer", "meals", "diet"] as const;
 
@@ -147,6 +189,11 @@ export default function MealPlanMaker() {
   // The food the client wants to leave out, while they're asked if they're sure.
   const [leaving, setLeaving] = useState<{ meal: number; index: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  // The meal the client is putting their own foods in, by its place in the day.
+  const [ownMeal, setOwnMeal] = useState<{ place: number; name: string } | null>(null);
+  const [ownDraft, setOwnDraft] = useState<OwnRow[]>([]);
+  const [ownSearch, setOwnSearch] = useState("");
+  const [shopping, setShopping] = useState(false);
 
   useEffect(() => {
     if (!client) return;
@@ -257,7 +304,8 @@ export default function MealPlanMaker() {
             <Text style={styles.explain}>
               Tap ⇄ Swap next to it and pick something you like. The app changes the weight so you still get the same amount of
               protein, carbs or fat. Or tap ✕ to leave it out: the app tells you why it's there, and can top up the other foods
-              like it so you still get the same. Tap New ideas for a fresh set of foods, or Change my meals to change your details or goal.
+              like it so you still get the same. Eat the same breakfast (or any meal) every day? Tap Put in my own meal and add what you eat: the app keeps it and balances the
+              rest of your day around it. Tap New ideas for a fresh set of foods, or Change my meals to change your details or goal.
             </Text>
             <Text style={styles.explain}>Your coach can see your plan. If your coach makes you a diet plan, follow theirs first.</Text>
           </ScrollView>
@@ -316,7 +364,9 @@ export default function MealPlanMaker() {
     const cleaned = times.slice(0, count).map(cleanTime);
     if (cleaned.some((t) => !t)) return Alert.alert("Meal times", "Type each time like 07:00 or 13:30.");
     // Foods they left out stay out of every new plan.
-    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree, avoid: plan?.settings.avoid ?? [] };
+    // Their own meals stay too, for the meals the day still has.
+    const ownMeals = keepOwnMeals(plan?.settings.ownMeals, cleaned.length);
+    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree, avoid: plan?.settings.avoid ?? [], ownMeals, trainingDays: plan?.settings.trainingDays };
     const targets = macroTargets(kcalFor(safeGoal), body.weight_kg, safeGoal, body.height_cm);
     save({
       client_id: client.id,
@@ -551,6 +601,42 @@ export default function MealPlanMaker() {
       Alert.alert("Left out", `Nothing else on this day gives what ${food} did, so it's a little lower now. Tap New ideas for a fresh plan without it.`);
     }
   };
+  // Their own meal (GRIZZ, 2026-10-27): the foods they eat at this meal every
+  // day. Both days are made again so the other meals balance around it.
+  const openOwnMeal = (meal: number) => {
+    const place = mealPlace(day, meal);
+    const mine = plan.settings.ownMeals?.[String(place)] ?? [];
+    setOwnDraft(mine.map(ownRow));
+    setOwnSearch("");
+    setOwnMeal({ place, name: day.meals[meal]?.name ?? "this meal" });
+  };
+  const saveOwnMeal = (items: DietItem[] | null) => {
+    if (!ownMeal) return;
+    const ownMeals = { ...(plan.settings.ownMeals ?? {}) };
+    if (items?.length) ownMeals[String(ownMeal.place)] = items;
+    else delete ownMeals[String(ownMeal.place)];
+    // Foods they put in their own meal are ones they eat, so they come off the "don't eat" list.
+    const avoid = (plan.settings.avoid ?? []).filter((f) => !items?.some((it) => it.food === f));
+    const settings: MealPlanSettings = { ...plan.settings, avoid, ownMeals };
+    save({
+      ...plan,
+      settings,
+      training_day: makeDay(settings, plan.targets, true, plan.variety),
+      rest_day: makeDay(settings, plan.targets, false, plan.variety),
+      updated_at: new Date().toISOString(),
+    });
+    setOwnMeal(null);
+  };
+  const ownItems: DietItem[] = ownDraft.map((r) => ({ food: r.food, grams: ownGrams(r) })).filter((it) => it.grams > 0);
+  const ownTotals = sumTotals(ownItems);
+  const ownResults = searchFoods(ownSearch).slice(0, 8);
+  const addOwnFood = (name: string) => {
+    const food = findFood(name);
+    if (!food) return;
+    const unit = foodUnits(food)[0];
+    setOwnDraft([...ownDraft, { food: name, amount: String(food.usual), unit }]);
+    setOwnSearch("");
+  };
   const putBack = (food: string) => {
     const avoid = (plan.settings.avoid ?? []).filter((f) => f !== food);
     save({ ...plan, settings: { ...plan.settings, avoid } });
@@ -575,6 +661,7 @@ export default function MealPlanMaker() {
         targetKcal={plan.targets.kcal}
         onSwap={(meal, index) => setSwapping({ meal, index })}
         onLeaveOut={(meal, index) => setLeaving({ meal, index })}
+        onOwnMeal={openOwnMeal}
       />
       {(plan.settings.avoid ?? []).length > 0 && (
         <View style={styles.avoidBox}>
@@ -610,6 +697,25 @@ export default function MealPlanMaker() {
           {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>New ideas</Text>}
         </Pressable>
       </View>
+
+      <View style={styles.shopBox}>
+        <Text style={styles.shopTitle}>🛒 Happy with your plan?</Text>
+        <Text style={styles.insulinText}>Would you like a shopping list for the week? The app adds up everything you need to buy, in the packs shops sell.</Text>
+        <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => setShopping(true)}>
+          <Text style={styles.primaryText}>Yes, make my shopping list</Text>
+        </Pressable>
+      </View>
+      <ShoppingListSheet
+        visible={shopping}
+        trainingDay={plan.training_day}
+        restDay={plan.rest_day}
+        trains={!!plan.settings.training}
+        days={plan.settings.trainingDays ?? trainingDaysGuess(details.activity)}
+        onDays={(trainingDays) => {
+          if (trainingDays !== plan.settings.trainingDays) save({ ...plan, settings: { ...plan.settings, trainingDays } });
+        }}
+        onClose={() => setShopping(false)}
+      />
 
       <Modal visible={!!swapTarget} animationType="slide" transparent onRequestClose={() => setSwapping(null)}>
         <KeyboardSafe>
@@ -657,18 +763,109 @@ export default function MealPlanMaker() {
             >
               <Text style={styles.secondaryText}>⇄ Swap it for something else</Text>
             </Pressable>
+            <Pressable
+              style={[styles.button, styles.secondary, styles.stacked]}
+              onPress={() => {
+                const meal = leaving?.meal;
+                setLeaving(null);
+                if (meal != null) setTimeout(() => openOwnMeal(meal), 400);
+              }}
+            >
+              <Text style={styles.secondaryText}>✎ Put in my own meal instead</Text>
+            </Pressable>
             <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => setLeaving(null)}>
               <Text style={styles.secondaryText}>Keep it</Text>
             </Pressable>
           </View>
         </View>
       </Modal>
+
+      <Modal visible={!!ownMeal} animationType="slide" transparent onRequestClose={() => setOwnMeal(null)}>
+        <KeyboardSafe>
+          <View style={styles.backdrop}>
+            <View style={[styles.sheet, { maxHeight: "90%" }]}>
+              <ScrollView keyboardShouldPersistTaps="handled">
+                <Text style={styles.sheetTitle}>Your own meal: {ownMeal?.name}</Text>
+                <Text style={styles.helper}>
+                  Eat the same thing every day? Add each food and how much you have. The app keeps this meal the same on training and rest
+                  days, and works the rest of your day around it so you still hit your target.
+                </Text>
+                {ownDraft.map((row, i) => (
+                  <View key={row.food + i} style={styles.ownRow}>
+                    <Text style={styles.ownName}>{row.food}</Text>
+                    <TextInput
+                      style={styles.ownAmount}
+                      value={row.amount}
+                      onChangeText={(v) => setOwnDraft(ownDraft.map((r, j) => (j === i ? { ...r, amount: v } : r)))}
+                      keyboardType="decimal-pad"
+                      maxLength={6}
+                      accessibilityLabel={`How much ${row.food}`}
+                    />
+                    <Text style={styles.ownUnit}>{row.unit.label}</Text>
+                    <Pressable onPress={() => setOwnDraft(ownDraft.filter((_, j) => j !== i))} hitSlop={8} accessibilityLabel={`Remove ${row.food}`}>
+                      <Text style={styles.leaveOut}>✕</Text>
+                    </Pressable>
+                  </View>
+                ))}
+                {ownItems.length > 0 && (
+                  <Text style={[styles.mealMacros, { marginTop: 8 }]}>
+                    {ownTotals.kcal} kcal · P {ownTotals.protein} g · C {ownTotals.carbs} g · F {ownTotals.fat} g
+                  </Text>
+                )}
+                <Text style={styles.label}>{ownDraft.length ? "Add another food" : "Add a food"}</Text>
+                <TextInput
+                  style={styles.ownSearch}
+                  value={ownSearch}
+                  onChangeText={setOwnSearch}
+                  placeholder="Type a food, e.g. eggs, toast, banana"
+                  placeholderTextColor="#64748B"
+                />
+                {ownResults.map((f) => (
+                  <Pressable key={f.name} style={styles.option} onPress={() => addOwnFood(f.name)}>
+                    <Text style={styles.optionName}>{f.name}</Text>
+                    <Text style={styles.amount}>+ Add</Text>
+                  </Pressable>
+                ))}
+                {ownSearch.trim() !== "" && ownResults.length === 0 && (
+                  <Text style={styles.note}>No food by that name. Try another word, or pick the closest one.</Text>
+                )}
+                <Pressable
+                  style={[styles.button, styles.primary, styles.stacked, !ownItems.length && { opacity: 0.5 }]}
+                  onPress={() => saveOwnMeal(ownItems)}
+                  disabled={!ownItems.length || saving}
+                >
+                  <Text style={styles.primaryText}>Save my meal</Text>
+                </Pressable>
+                {ownMeal && plan.settings.ownMeals?.[String(ownMeal.place)] && (
+                  <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => saveOwnMeal(null)}>
+                    <Text style={styles.secondaryText}>Let the app pick this meal again</Text>
+                  </Pressable>
+                )}
+                <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => setOwnMeal(null)}>
+                  <Text style={styles.secondaryText}>Cancel</Text>
+                </Pressable>
+              </ScrollView>
+            </View>
+          </View>
+        </KeyboardSafe>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  stacked: { flex: 0, marginTop: 10 },
+  // flexBasis auto, as flex 0 squashes the button's text on the laptop app.
+  shopBox: { backgroundColor: "#0F172A", borderRadius: 10, borderWidth: 1, borderColor: BRAND_GOLD, padding: 12, marginTop: 14 },
+  shopTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15, marginBottom: 4 },
+  stacked: { flexGrow: 0, flexShrink: 0, flexBasis: "auto", marginTop: 10 },
+  ownTag: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 2 },
+  ownLink: { color: "#38BDF8", fontWeight: "700", fontSize: 13 },
+  emptyMeal: { marginTop: 6 },
+  ownRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#334155" },
+  ownName: { color: "#fff", fontSize: 14, flex: 1 },
+  ownAmount: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, paddingVertical: 6, paddingHorizontal: 8, width: 64, textAlign: "center" },
+  ownUnit: { color: "#94A3B8", fontSize: 13, minWidth: 34 },
+  ownSearch: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, fontSize: 15 },
   avoidBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 8 },
   avoidTitle: { color: "#fff", fontWeight: "700", marginBottom: 6 },
   avoidChip: { backgroundColor: "#334155", borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },

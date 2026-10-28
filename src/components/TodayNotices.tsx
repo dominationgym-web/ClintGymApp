@@ -13,6 +13,8 @@ import WeighInReminder from "@/components/WeighInReminder";
 import SleepReminder from "@/components/SleepReminder";
 import ResetReminderBanner from "@/components/reset/ResetReminderBanner";
 import ProgressPhotoReminder from "@/components/ProgressPhotoReminder";
+import WeighInDueBanner from "@/components/WeighInDueBanner";
+import AppUpdateBanner from "@/components/AppUpdateBanner";
 import { CycleTodayBanner } from "@/components/CycleTracker";
 import { CoachMessageCard } from "@/components/CoachMessages";
 
@@ -36,6 +38,7 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
     <CycleTodayBanner key="c" />,
     <ResetReminderBanner key="r" />,
     <ProgressPhotoReminder key="p" />,
+    <WeighInDueBanner key="wi" />,
     ...(extra ? [<React.Fragment key="x">{extra}</React.Fragment>] : []),
   ];
   const count = Object.values(heights).filter((h) => h > 0).length;
@@ -44,6 +47,7 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
     <>
       <CoachMessageCard />
       <PlanEndingBanner />
+      <AppUpdateBanner />
       {count > 1 && (
         <Pressable style={styles.line} onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }}>
           <Text style={styles.lineText}>📌 {count} things for today</Text>

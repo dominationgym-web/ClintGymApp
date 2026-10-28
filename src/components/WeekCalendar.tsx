@@ -30,6 +30,7 @@ export default function WeekCalendar({
   moves,
   recovery,
   stability,
+  client = false,
 }: {
   monday: string;
   onChangeWeek: (direction: -1 | 1) => void;
@@ -37,10 +38,12 @@ export default function WeekCalendar({
   selected?: string | null;
   onPressDay?: (date: string) => void;
   plans: Record<string, WeekDayPlan>;
-  marks?: Record<string, { color: string; star: boolean }>;
+  marks?: Record<string, { color: string; star: boolean; live?: boolean; done?: boolean }>;
   moves?: Record<string, CalendarMove>;
   recovery?: Record<string, { label: string; done: boolean }[]>;
   stability?: Record<string, StabilityCalendarItem[]>;
+  /** The client's own calendar, so the words speak to them. */
+  client?: boolean;
 }) {
   const days = weekDates(monday);
   const thisWeek = days.includes(today);
@@ -65,7 +68,7 @@ export default function WeekCalendar({
         const mark = marks?.[date];
         const rec = recovery?.[date] ?? [];
         const stab = stability?.[date] ?? [];
-        const empty = !main && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
+        const empty = !main && !mark?.live && !(client && mark?.done) && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
         return (
           <Pressable
             key={date}
@@ -101,6 +104,17 @@ export default function WeekCalendar({
                   {/* The client's abs and extra cardio, on the trainer's calendar (GRIZZ, 2026-10-22). */}
                   {main.addOns ? <Text style={styles.addOns}>{main.addOns}</Text> : null}
                 </View>
+              )}
+              {/* A live session with the coach, in the day's slot (GRIZZ, 2026-10-27). */}
+              {mark?.live && (
+                <Text style={[styles.tag, { color: "#22C55E" }]} numberOfLines={1}>
+                  {client ? "🤝 Live with your coach · tap to see" : "🤝 Live session with you"}
+                </Text>
+              )}
+              {client && mark?.done && !mark.live && !main && (
+                <Text style={[styles.tag, { color: "#22C55E" }]} numberOfLines={1}>
+                  ✅ Workout done · tap to see
+                </Text>
               )}
               {move ? (
                 <Text style={[styles.moved, { color: move === "missed" ? "#EF4444" : "#22C55E" }]}>

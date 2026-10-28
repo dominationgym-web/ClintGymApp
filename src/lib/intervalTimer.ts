@@ -19,6 +19,12 @@ export type IntervalPhase = {
   // The program row it belongs to, and whether finishing it counts as a set.
   rowId: string;
   countsAsSet: boolean;
+  // Timer section only (timerWorkouts.ts): which Tabata, and the get ready count.
+  set?: number;
+  sets?: number;
+  getReady?: boolean;
+  // Boxing rounds: a bell instead of beeps, and a clapper 10 seconds from the end.
+  bell?: boolean;
 };
 
 /** Seconds at the start of a reps text: "30 sec all-out" is 30, "3 min round" is 180, "10" is null. */

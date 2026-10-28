@@ -297,6 +297,8 @@ describe("programFamily", () => {
     expect(built("Bodybuilding 3-week block")).toBe("goalBlock");
     expect(built("Strength 3-week block")).toBe("goalBlock");
     expect(built("Strength 12-week program")).toBe("goalBlock");
+    expect(built("Muscle Year – 3 days a week")).toBe("muscleYear");
+    expect(built("Muscle Year – 5 days a week")).toBe("muscleYear");
     expect(built("HIIT 7")).toBe("hiit");
     expect(built("Sprint Intervals 10")).toBe("sprint");
     expect(built("Drop Set Chest 1")).toBe("dropset");
@@ -306,6 +308,8 @@ describe("programFamily", () => {
     expect(built("Off-Season – Cycling")).toBe("offSeason");
     expect(built("Upper Body 3")).toBe("upperBody");
     expect(built("Upper Body Superset 4")).toBe("upperBody");
+    expect(built("Upper Body Push 1")).toBe("upperPush");
+    expect(built("Upper Body Pull 6")).toBe("upperPull");
     expect(built("Lower Body Superset 2")).toBe("lowerBody");
     expect(built("Lower Body 15")).toBe("lowerBody");
     expect(built("Beginner Foundation - Strength")).toBe("foundation");

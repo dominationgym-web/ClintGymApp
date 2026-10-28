@@ -51,6 +51,12 @@ function secretKey(): string | null {
   return Deno.env.get("PAYSTACK_SECRET_KEY") ?? null;
 }
 
+/** Whether the key is Paystack's test key (pretend cards) or the live one. */
+function keyMode(): "test" | "live" | null {
+  const key = secretKey();
+  return key ? (key.startsWith("sk_test_") ? "test" : "live") : null;
+}
+
 async function paystack(path: string, init: { method?: string; body?: unknown } = {}) {
   const res = await fetch(`${PAYSTACK}${path}`, {
     method: init.method ?? "GET",
@@ -178,7 +184,11 @@ async function settle(admin: Admin, reference: string): Promise<"paid" | "failed
   }
 
   if (charge.kind === "card_check") {
-    await paystack("/refund", { method: "POST", body: { transaction: reference } });
+    const refund = await paystack("/refund", { method: "POST", body: { transaction: reference } });
+    await admin
+      .from("card_charges")
+      .update({ message: refund.ok ? "Refunded" : `Refund failed: ${refund.body?.message ?? "unknown"}` })
+      .eq("reference", reference);
     return "paid";
   }
 
@@ -323,7 +333,7 @@ Deno.serve(async (req) => {
       quote(admin, userId, 7),
       admin.from("trainer_cards").select("card_type, last4, exp_month, exp_year, bank, autopay").eq("trainer_id", userId).maybeSingle(),
     ]);
-    return json(200, { enabled: allowed && configured, quote: q, card });
+    return json(200, { enabled: allowed && configured, mode: trainer.is_owner ? keyMode() : null, quote: q, card });
   }
 
   if (!allowed) return json(403, { error: "Card payments aren't switched on yet." });

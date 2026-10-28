@@ -27,15 +27,18 @@ export default function PaymentProofModal({
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [ratio, setRatio] = useState(0.6);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setUrl(null);
+    setFailed(false);
     if (!proof) return;
     supabase.storage
       .from(PAYMENT_PROOF_BUCKET)
       .createSignedUrl(proof.storage_path, 3600)
       .then(({ data }) => {
         setUrl(data?.signedUrl ?? null);
+        if (!data?.signedUrl) setFailed(true);
         if (data?.signedUrl) Image.getSize(data.signedUrl, (w, h) => h && setRatio(w / h), () => undefined);
       });
   }, [proof?.id]);
@@ -59,6 +62,8 @@ export default function PaymentProofModal({
               {proof.amount ? <Text style={styles.amount}>Amount: {proof.amount}</Text> : null}
               {url ? (
                 <Image source={{ uri: url }} style={[styles.image, { aspectRatio: ratio }]} resizeMode="contain" />
+              ) : failed ? (
+                <Text style={styles.helper}>The photo couldn't be opened. Close this and try again, or ask them to send it again.</Text>
               ) : (
                 <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 40 }} />
               )}

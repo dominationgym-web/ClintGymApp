@@ -47,12 +47,27 @@ export function suggestedSplit(perWeek: number): SplitKey {
 // to choose when a client progresses or repeats a block"): the trainer can
 // start a client at block 1, 2 or 3, and the plan uses the sessions from that
 // block on (client_program_plans.first_slot, 0135).
+// The Muscle Year programs (0150) run in four 13-week blocks the same way.
 export const BLOCK_WEEKS = 8;
+export const MUSCLE_YEAR_BLOCK_WEEKS = 13;
+
+/** How long a program's blocks are, for the ones a trainer can start part-way, or null. */
+export function programBlockWeeks(name: string): number | null {
+  const lower = name.toLowerCase();
+  if (lower.startsWith("older adult ")) return BLOCK_WEEKS;
+  if (lower.startsWith("muscle year")) return MUSCLE_YEAR_BLOCK_WEEKS;
+  // APRE Program (0161): block 2 (weeks 9-16) changes the exercises and adds a set.
+  if (lower.startsWith("apre")) return BLOCK_WEEKS;
+  return null;
+}
 
 /** The first session slot of a block: block 2 starts at week 9's Monday. */
-export function blockFirstSlot(block: number): number {
-  return (block - 1) * BLOCK_WEEKS * 7 + 1;
+export function blockFirstSlot(block: number, blockWeeks: number = BLOCK_WEEKS): number {
+  return (block - 1) * blockWeeks * 7 + 1;
 }
+
+// A plan is at most 52 weeks (client_program_plans.weeks, 0113).
+export const MAX_PLAN_WEEKS = 52;
 
 /** The program's sessions from a slot on, or all of them. */
 export function slotsFrom(slots: number[], firstSlot: number | null | undefined): number[] {

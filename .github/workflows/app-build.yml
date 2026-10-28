@@ -1,0 +1,110 @@
+name: Build the app
+
+# A new installable app, started from GitHub instead of a laptop (GRIZZ,
+# 2026-10-26: he rarely has his laptop). Needed when a change adds a native
+# package and runtimeVersion moves; everything else goes out as an instant
+# update (app-update.yml). Run it from Actions > Build the app > Run workflow,
+# or ask Claude to. The build itself runs on Expo's servers with the signing
+# keys and Apple login already saved there from the first laptop builds.
+# Android: a preview APK, its download link is in the run summary.
+# iPhone: a production build sent straight to TestFlight.
+# "ios-send-latest" sends the newest finished iPhone build to TestFlight
+# without building again (for a build whose upload didn't go through).
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which app to build
+        type: choice
+        options: [both, android, ios, ios-send-latest]
+        default: both
+
+concurrency:
+  group: app-build
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Android (download link)
+    if: inputs.platform == 'both' || inputs.platform == 'android'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck && npm test
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build
+        run: eas build --platform android --profile preview --non-interactive --wait --json > build.json
+      - name: Download link
+        run: |
+          url=$(node -p "require('./build.json')[0].artifacts.buildUrl")
+          runtime=$(node -p "require('./build.json')[0].runtimeVersion")
+          echo "Android download link: $url (runtime $runtime)"
+          echo "### Android app ready" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download link: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Runtime: $runtime" >> "$GITHUB_STEP_SUMMARY"
+
+  ios:
+    name: iPhone (TestFlight)
+    if: inputs.platform == 'both' || inputs.platform == 'ios'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck && npm test
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build and send to TestFlight
+        run: eas build --platform ios --profile production --non-interactive --auto-submit --wait
+
+      # The newest Android download link, also when Android was built on the
+      # laptop, so it can go on the website's download page.
+      - name: Latest Android download link
+        if: always()
+        run: |
+          eas build:list --platform android --profile preview --status finished --limit 1 --json --non-interactive > latest.json || exit 0
+          url=$(node -p "require('./latest.json')[0]?.artifacts?.buildUrl ?? ''")
+          runtime=$(node -p "require('./latest.json')[0]?.runtimeVersion ?? ''")
+          echo "Latest Android download link: $url (runtime $runtime)"
+          echo "### Latest Android app" >> "$GITHUB_STEP_SUMMARY"
+          echo "Download link: $url (runtime $runtime)" >> "$GITHUB_STEP_SUMMARY"
+
+  ios-send:
+    name: iPhone (send newest build to TestFlight)
+    if: inputs.platform == 'ios-send-latest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Send to TestFlight
+        run: eas submit --platform ios --profile production --latest --non-interactive --wait

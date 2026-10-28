@@ -5,6 +5,8 @@ import { useKeepAwake } from "expo-keep-awake";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatClock } from "@/lib/programs";
 import { buildIntervals, EFFORT_GUIDE, totalMinutes, type IntervalPhase } from "@/lib/intervalTimer";
+import { countdownCue } from "@/lib/timerWorkouts";
+import { playTimerSound, prepareTimerSounds, setTimerSoundOn, switchSound } from "@/lib/timerSounds";
 import type { ProgramExercise } from "@/types/database";
 
 // Keeps the screen on while the timer runs.
@@ -15,20 +17,26 @@ function KeepAwake() {
 
 const WORK = "#DC2626";
 const EASY = "#16A34A";
+const READY = "#1E3A8A";
 
 type Stage = "intro" | "running" | "done";
 
 // The interval timer for timed workouts (sprints, threshold, fight
 // conditioning). A "how to do it" card first, then every round counted out:
-// WORK in red, EASY in green, a buzz at each switch and a short buzz for the
-// last 3 seconds. Open efforts (a 250 m row, a ladder) run until Done.
+// WORK in red, EASY in green, a beep and a buzz at each switch, three knocks
+// with 30 seconds left, a tick through the last 10 and a short beep for the
+// last 3 (boxing rounds: a bell, and a clapper 10 seconds before the round ends). Open efforts (a 250 m row, a ladder) run until Done.
 // At the end the finished efforts are saved as sets on the workout.
+// The Timers page (EMOM, Tabata, intervals) passes its own `phases` instead:
+// it starts straight away with a get ready count, says REST instead of EASY,
+// and has nothing to save.
 export default function IntervalTimerModal({
   visible,
   title,
   description,
   warmUp,
   rows,
+  phases: ownPhases,
   onSave,
   onClose,
 }: {
@@ -37,11 +45,13 @@ export default function IntervalTimerModal({
   description: string | null;
   warmUp: string | null;
   rows: ProgramExercise[];
+  phases?: IntervalPhase[];
   // Finished efforts per row (seconds each, null for open ones), and cardio blocks done.
-  onSave: (efforts: { row: ProgramExercise; seconds: number | null }[], cardioIds: string[]) => Promise<boolean>;
+  onSave?: (efforts: { row: ProgramExercise; seconds: number | null }[], cardioIds: string[]) => Promise<boolean>;
   onClose: () => void;
 }) {
-  const phases = useMemo(() => buildIntervals(rows), [rows]);
+  const timerOnly = !!ownPhases;
+  const phases = useMemo(() => ownPhases ?? buildIntervals(rows), [ownPhases, rows]);
   const [stage, setStage] = useState<Stage>("intro");
   const [index, setIndex] = useState(0);
   const [endsAt, setEndsAt] = useState<number | null>(null);
@@ -50,21 +60,15 @@ export default function IntervalTimerModal({
   const [now, setNow] = useState(Date.now());
   const [finished, setFinished] = useState<IntervalPhase[]>([]);
   const [saving, setSaving] = useState(false);
+  const [sound, setSound] = useState(true);
   const lastBuzz = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!visible) return;
-    setStage("intro");
-    setIndex(0);
-    setFinished([]);
-    setPausedLeft(null);
-  }, [visible]);
 
   const phase = phases[index] as IntervalPhase | undefined;
 
   const start = (i: number, done: IntervalPhase[]) => {
     if (i >= phases.length) {
       Vibration.vibrate([0, 500, 200, 500, 200, 500]);
+      playTimerSound(phases[i - 1]?.bell ? "bellEnd" : "finish");
       setFinished(done);
       setStage("done");
       return;
@@ -78,8 +82,29 @@ export default function IntervalTimerModal({
     setPausedLeft(null);
     setEndsAt(p.seconds ? t + p.seconds * 1000 : null);
     lastBuzz.current = null;
-    if (i > 0) Vibration.vibrate(p.kind === "work" ? [0, 600] : [0, 250, 150, 250]);
+    if (i > 0) {
+      Vibration.vibrate(p.kind === "work" ? [0, 600] : [0, 250, 150, 250]);
+      playTimerSound(switchSound(p.kind, !!p.bell));
+    }
   };
+
+  const begin = () => {
+    setStage("running");
+    start(0, []);
+  };
+
+  useEffect(() => {
+    if (!visible) return;
+    prepareTimerSounds().then(setSound);
+    setFinished([]);
+    setPausedLeft(null);
+    if (timerOnly) begin();
+    else {
+      setStage("intro");
+      setIndex(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   const next = (completed: boolean) => {
     if (!phase) return;
@@ -100,10 +125,12 @@ export default function IntervalTimerModal({
       next(true);
       return;
     }
-    if (left <= 3 && lastBuzz.current !== left) {
-      lastBuzz.current = left;
-      Vibration.vibrate(80);
-    }
+    if (lastBuzz.current === left || !phase) return;
+    const cue = countdownCue(left, phase.seconds ?? 0, !!phase.bell && phase.kind === "work");
+    if (!cue) return;
+    lastBuzz.current = left;
+    if (cue !== "ticker") Vibration.vibrate(80);
+    playTimerSound(cue);
   });
 
   const pause = () => {
@@ -117,6 +144,7 @@ export default function IntervalTimerModal({
   };
 
   const save = async () => {
+    if (!onSave) return;
     setSaving(true);
     const efforts = finished
       .filter((p) => p.countsAsSet)
@@ -129,9 +157,14 @@ export default function IntervalTimerModal({
     if (saved) onClose();
   };
 
-  const color = phase?.kind === "work" ? WORK : EASY;
+  const color = phase?.getReady ? READY : phase?.kind === "work" ? WORK : EASY;
   const upNext = phases[index + 1];
-  const efforts = finished.filter((p) => p.countsAsSet).length;
+  const efforts = finished.filter((p) => (timerOnly ? p.kind === "work" : p.countsAsSet)).length;
+  const easyWord = timerOnly ? "REST" : "EASY";
+  const kicker = (p: IntervalPhase) => (p.getReady ? "GET READY" : `${p.kind === "work" ? "WORK" : easyWord} · ROUND ${p.round} OF ${p.rounds}`);
+  // "rest, Rest" says it twice.
+  const nextName = (p: IntervalPhase) => (p.kind === "easy" && p.name === "Rest" ? "" : `, ${p.name}`);
+  const timeDone = finished.reduce((t, p) => t + (p.getReady ? 0 : p.seconds ?? 0), 0);
   const openElapsed = Math.floor((now - startedAt) / 1000);
 
   return (
@@ -163,7 +196,7 @@ export default function IntervalTimerModal({
             <View style={styles.step}>
               <Text style={styles.stepNum}>{description ? 3 : 2}</Text>
               <Text style={styles.stepText}>
-                Tap Start. The screen goes red for WORK and green for EASY, and the phone buzzes at every switch. Distance efforts run until you tap Done.
+                Tap Start. The screen goes red for WORK and green for EASY, and the phone beeps and buzzes at every switch. Distance efforts run until you tap Done.
               </Text>
             </View>
             <Text style={styles.label}>HOW HARD IS HARD?</Text>
@@ -174,7 +207,7 @@ export default function IntervalTimerModal({
               </View>
             ))}
             <Text style={styles.note}>The screen stays on while the timer runs.</Text>
-            <Pressable style={styles.startButton} onPress={() => { setStage("running"); start(0, []); }}>
+            <Pressable style={styles.startButton} onPress={begin}>
               <Text style={styles.startText}>Start</Text>
             </Pressable>
           </ScrollView>
@@ -183,11 +216,14 @@ export default function IntervalTimerModal({
         {stage === "running" && phase && (
           <View style={styles.runPad}>
             <KeepAwake />
-            <Text style={styles.runKicker}>
-              {phase.kind === "work" ? "WORK" : "EASY"} · ROUND {phase.round} OF {phase.rounds}
-            </Text>
+            <Text style={styles.runKicker}>{kicker(phase)}</Text>
+            {!phase.getReady && phase.sets && phase.sets > 1 ? (
+              <Text style={styles.runKicker}>
+                TABATA {phase.set} OF {phase.sets}
+              </Text>
+            ) : null}
             <Text style={styles.runName}>{phase.name}</Text>
-            <Text style={styles.runDetail}>{phase.detail}</Text>
+            {phase.detail ? <Text style={styles.runDetail}>{phase.detail}</Text> : null}
             {left !== null ? (
               <Text style={styles.clock}>{formatClock(left)}</Text>
             ) : (
@@ -200,7 +236,7 @@ export default function IntervalTimerModal({
             )}
             {pausedLeft !== null && <Text style={styles.paused}>Paused</Text>}
             <Text style={styles.upNext}>
-              {upNext ? `Next: ${upNext.kind === "work" ? "WORK" : "easy"}, ${upNext.name}${upNext.seconds ? ` (${formatClock(upNext.seconds)})` : ""}` : "Last one!"}
+              {upNext ? `Next: ${upNext.kind === "work" ? "WORK" : easyWord.toLowerCase()}${nextName(upNext)}${upNext.seconds ? ` (${formatClock(upNext.seconds)})` : ""}` : "Last one!"}
             </Text>
             <View style={styles.controls}>
               {left !== null && (
@@ -208,6 +244,16 @@ export default function IntervalTimerModal({
                   <Text style={styles.controlText}>{pausedLeft !== null ? "Resume" : "Pause"}</Text>
                 </Pressable>
               )}
+              <Pressable
+                style={styles.control}
+                onPress={() => {
+                  setSound(!sound);
+                  setTimerSoundOn(!sound);
+                }}
+                accessibilityLabel={sound ? "Turn sound off" : "Turn sound on"}
+              >
+                <Text style={styles.controlText}>{sound ? "🔊" : "🔇"}</Text>
+              </Pressable>
               <Pressable style={styles.control} onPress={() => next(phase.kind === "easy")}>
                 <Text style={styles.controlText}>Skip ›</Text>
               </Pressable>
@@ -218,7 +264,26 @@ export default function IntervalTimerModal({
           </View>
         )}
 
-        {stage === "done" && (
+        {stage === "done" && timerOnly && (
+          <View style={styles.pad}>
+            <Text style={styles.kicker}>⏱ TIMER</Text>
+            <Text style={styles.title}>{efforts > 0 ? "Great work! 💪" : "Timer stopped"}</Text>
+            <Text style={styles.sub}>{title}</Text>
+            {efforts > 0 ? (
+              <Text style={[styles.stepText, { marginTop: 12 }]}>
+                You finished {efforts} effort{efforts === 1 ? "" : "s"} in {formatClock(timeDone)}.
+              </Text>
+            ) : null}
+            <Pressable style={styles.startButton} onPress={begin}>
+              <Text style={styles.startText}>Go again</Text>
+            </Pressable>
+            <Pressable style={styles.secondary} onPress={onClose}>
+              <Text style={styles.close}>Close</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {stage === "done" && !timerOnly && (
           <View style={styles.pad}>
             <Text style={styles.kicker}>⏱ INTERVAL TIMER</Text>
             <Text style={styles.title}>{efforts > 0 ? "Great work! 💪" : "Timer stopped"}</Text>
@@ -261,7 +326,7 @@ const styles = StyleSheet.create({
   startText: { color: "#0F172A", fontWeight: "800", fontSize: 18 },
   secondary: { alignItems: "center", padding: 14 },
   runPad: { flex: 1, padding: 24, justifyContent: "center", alignItems: "center" },
-  runKicker: { color: "#fff", fontWeight: "800", letterSpacing: 2, fontSize: 16, opacity: 0.9 },
+  runKicker: { color: "#fff", fontWeight: "800", letterSpacing: 2, fontSize: 16, opacity: 0.9, textAlign: "center" },
   runName: { color: "#fff", fontSize: 30, fontWeight: "800", textAlign: "center", marginTop: 10 },
   runDetail: { color: "#fff", fontSize: 17, textAlign: "center", marginTop: 6, opacity: 0.9 },
   clock: { color: "#fff", fontSize: 96, fontWeight: "800", marginVertical: 20, fontVariant: ["tabular-nums"] },

@@ -1,5 +1,7 @@
 import { registerForCoachMessages } from "@/lib/notifications";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { StackActions } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { tabIcon } from "@/navigation/tabIcon";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -16,27 +18,40 @@ import ProgramsScreen from "@/screens/trainer/ProgramsScreen";
 import ProgramBuilderScreen from "@/screens/trainer/ProgramBuilderScreen";
 import TrainerSearchScreen from "@/screens/trainer/TrainerSearchScreen";
 import { TrainerAppGuideScreen } from "@/screens/AppGuideScreen";
+import CoachingGuidesScreen from "@/screens/trainer/CoachingGuidesScreen";
 import TrainerGuideScreen from "@/screens/trainer/TrainerGuideScreen";
 import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
+import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
+import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
+import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
+import TimersScreen from "@/screens/TimersScreen";
+import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
+import TrainerSidebar, { useCurrentRoute } from "@/components/TrainerSidebar";
+import ClientListPanel from "@/components/ClientListPanel";
+import { useWideScreen } from "@/hooks/useWideScreen";
+import { navigationRef } from "@/navigation/navigationRef";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
 
 function TrainerTabs() {
   const { trainer } = useAuth();
+  // On a laptop the sidebar has every tab and menu page (TrainerSidebar).
+  const wide = useWideScreen();
   return (
     <Tab.Navigator
+      tabBar={wide ? () => null : undefined}
       screenOptions={{
         headerStyle: { backgroundColor: "#0F172A" },
         headerTintColor: "#fff",
-        headerRight: () => <TrainerMenuButton />,
+        headerRight: wide ? undefined : () => <TrainerMenuButton />,
         tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
         // So the typing box sits right on the keyboard, not above the tab bar.
         tabBarHideOnKeyboard: true,
@@ -65,44 +80,86 @@ export default function TrainerNavigator() {
   useEffect(() => {
     registerForCoachMessages();
   }, []);
+  // Laptop layout (GRIZZ, 2026-10-27): the sidebar, and the client list beside
+  // the Clients tab and each client's page. The stack stays in the same place
+  // either way, so resizing the window never loses the page that's open.
+  const wide = useWideScreen();
+  const current = useCurrentRoute();
+  const onClients = current?.name === "Clients" || current?.name === "ClientDetail";
+  const openClientId = current?.name === "ClientDetail" ? (current.params?.clientId as string | undefined) : undefined;
+  // The list loads again on coming back to the Clients tab, e.g. after archiving a client.
+  const [clientsReload, setClientsReload] = useState(0);
+  useEffect(() => {
+    if (current?.name === "Clients") setClientsReload((k) => k + 1);
+  }, [current?.name]);
+  const openClient = (clientId: string) => {
+    if (clientId === openClientId) return;
+    // One client page at a time, so Back still goes to where the trainer came from.
+    if (openClientId) navigationRef.dispatch(StackActions.replace("ClientDetail", { clientId }));
+    else navigationRef.navigate("ClientDetail", { clientId });
+  };
   return (
     <>
       <ReferralPopup />
-      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
-        <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
-        <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
-        <Stack.Screen
-          name="LiveWorkout"
-          options={({ route }) => ({
-            title: route.params.self ? "My workout" : `Live session · ${route.params.name.split(" ")[0]}`,
-            headerBackTitle: "Back",
-          })}
-        >
-          {({ route }) => (
-            <LiveClientProvider clientId={route.params.clientId}>
-              <ExerciseLibraryScreen />
-            </LiveClientProvider>
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="GroupLive" component={GroupLiveScreen} options={{ title: "Group live session", headerBackTitle: "Back" }} />
-        <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
-        <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
-        <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
-        <Stack.Screen
-          name="ProgramBuilder"
-          component={ProgramBuilderScreen}
-          options={{ title: "Build a program", headerBackTitle: "Back" }}
-        />
-        <Stack.Screen
-          name="TrainerGuide"
-          component={TrainerGuideScreen}
-          options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
-        />
-        <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
-        <Stack.Screen name="Stability" options={{ title: "Stability", headerBackTitle: "Back" }}>
-          {({ route }) => <StabilityScreen role="trainer" initialArea={route.params?.area} />}
-        </Stack.Screen>
-      </Stack.Navigator>
+      <View style={styles.row}>
+        {wide ? <TrainerSidebar /> : null}
+        {wide && onClients ? (
+          <View style={styles.clientList}>
+            <ClientListPanel selectedId={openClientId} reloadKey={clientsReload} onOpen={openClient} />
+          </View>
+        ) : null}
+        <View style={styles.page}>
+          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
+            <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
+            <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
+            <Stack.Screen
+              name="LiveWorkout"
+              options={({ route }) => ({
+                title: route.params.self ? "My workout" : `Live session · ${route.params.name.split(" ")[0]}`,
+                headerBackTitle: "Back",
+              })}
+            >
+              {({ route }) => (
+                <LiveClientProvider clientId={route.params.clientId}>
+                  <ExerciseLibraryScreen />
+                </LiveClientProvider>
+              )}
+            </Stack.Screen>
+            <Stack.Screen name="GroupLive" component={GroupLiveScreen} options={{ title: "Group live session", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
+            <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
+            <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ title: "Monthly challenges", headerBackTitle: "Back" }} />
+            <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
+            <Stack.Screen
+              name="ProgramBuilder"
+              component={ProgramBuilderScreen}
+              options={{ title: "Build a program", headerBackTitle: "Back" }}
+            />
+            <Stack.Screen
+              name="TrainerGuide"
+              component={TrainerGuideScreen}
+              options={({ route }) => ({ title: trainerGuide(route.params.guideKey)?.title ?? "Guide", headerBackTitle: "Back" })}
+            />
+            <Stack.Screen name="CoachingGuides" component={CoachingGuidesScreen} options={{ title: "Coaching guides", headerBackTitle: "Back" }} />
+            <Stack.Screen name="AppGuide" component={TrainerAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Timers" options={{ title: "Timers", headerBackTitle: "Back" }}>
+              {() => <TimersScreen />}
+            </Stack.Screen>
+            <Stack.Screen name="Stability" options={{ title: "Stability", headerBackTitle: "Back" }}>
+              {({ route }) => <StabilityScreen role="trainer" initialArea={route.params?.area} />}
+            </Stack.Screen>
+          </Stack.Navigator>
+        </View>
+      </View>
+      <VideoCheckInDayPopup who="trainer" />
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  row: { flex: 1, flexDirection: "row" },
+  clientList: { width: 360, borderRightWidth: 1, borderRightColor: "#1E293B" },
+  page: { flex: 1 },
+});

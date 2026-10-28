@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { EFFORT_LABEL as PROGRESSION_EFFORT_LABEL } from "@/lib/progression";
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { groupTrainingLog } from "@/lib/trainingLog";
+import { groupTrainingLog, type TrainingLogExercise } from "@/lib/trainingLog";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { SESSION_COLORS, SESSION_LABELS, STAR_GOLD } from "@/lib/workoutSessions";
@@ -15,9 +15,12 @@ const EFFORT_LABEL: Record<string, string> = PROGRESSION_EFFORT_LABEL;
 export default function TrainerTrainingLog({
   logs,
   sessions = {},
+  client = false,
 }: {
   logs: WorkoutLog[];
   sessions?: Record<string, WorkoutSession>;
+  /** The client looking at their own log, so the words speak to them. */
+  client?: boolean;
 }) {
   const days = groupTrainingLog(logs, todayIso());
   const [open, setOpen] = useState<string | null>(null);
@@ -28,7 +31,6 @@ export default function TrainerTrainingLog({
         const result = sessions[day.date];
         const trained = day.setCount > 0 || !!result;
         const isOpen = open === day.date;
-        const improved = new Map((result?.improvements ?? []).map((i) => [i.exercise, i]));
         return (
           <View key={day.date} style={[styles.day, !trained && styles.dayEmpty]}>
             <Pressable
@@ -61,34 +63,58 @@ export default function TrainerTrainingLog({
                   {SESSION_LABELS[result.status]}
                   {result.status !== "missed" ? ` · ${result.sets_done}/${result.sets_planned} sets` : ""}
                 </Text>
-                {result.in_person ? <Text style={styles.set}>🤝 In person, live session with you</Text> : null}
+                {result.in_person ? <Text style={styles.set}>🤝 In person, live session with {client ? "your coach" : "you"}</Text> : null}
                 {result.reason ? <Text style={styles.set}>Why: {result.reason}</Text> : null}
               </View>
             )}
-            {isOpen &&
-              day.exercises.map((exercise) => (
-                <View key={exercise.name} style={[styles.exercise, improved.has(exercise.name) && styles.improved]}>
-                  <Text style={styles.exerciseName}>
-                    {improved.has(exercise.name) ? "⭐ " : ""}
-                    {exercise.name}
-                  </Text>
-                  {improved.has(exercise.name) && (
-                    <Text style={styles.improvedText}>
-                      Up from {improved.get(exercise.name)!.before} to {improved.get(exercise.name)!.after}
-                    </Text>
-                  )}
-                  {exercise.sets.map((s) => (
-                    <Text key={s.id} style={styles.set}>
-                      {s.warm_up ? "Warm-up" : s.gauge ? "🎯 Gauge set" : `Set ${s.set_number}`}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
-                      {s.reps} reps · {s.warm_up ? "not a working set" : s.gauge ? "stopped 1-2 reps short, to find their weight" : EFFORT_LABEL[s.effort] ?? s.effort}
-                    </Text>
-                  ))}
-                </View>
-              ))}
+            {isOpen && <LoggedExercises exercises={day.exercises} session={result} client={client} />}
           </View>
         );
       })}
     </View>
+  );
+}
+
+// One day's sets, exercise by exercise, with the ones pushed up in gold. Also
+// on the client's calendar day page (GRIZZ, 2026-10-27: see the live workouts
+// they did with their coach).
+export function LoggedExercises({
+  exercises,
+  session,
+  client = false,
+}: {
+  exercises: TrainingLogExercise[];
+  session?: WorkoutSession;
+  client?: boolean;
+}) {
+  const improved = new Map((session?.improvements ?? []).map((i) => [i.exercise, i]));
+  return (
+    <>
+      {exercises.map((exercise) => (
+        <View key={exercise.name} style={[styles.exercise, improved.has(exercise.name) && styles.improved]}>
+          <Text style={styles.exerciseName}>
+            {improved.has(exercise.name) ? "⭐ " : ""}
+            {exercise.name}
+          </Text>
+          {improved.has(exercise.name) && (
+            <Text style={styles.improvedText}>
+              Up from {improved.get(exercise.name)!.before} to {improved.get(exercise.name)!.after}
+            </Text>
+          )}
+          {exercise.sets.map((s) => (
+            <Text key={s.id} style={styles.set}>
+              {s.warm_up ? "Warm-up" : s.gauge ? "🎯 Gauge set" : `Set ${s.set_number}`}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
+              {s.reps} reps ·{" "}
+              {s.warm_up
+                ? "not a working set"
+                : s.gauge
+                  ? `stopped 1-2 reps short, to find ${client ? "your" : "their"} weight`
+                  : EFFORT_LABEL[s.effort] ?? s.effort}
+            </Text>
+          ))}
+        </View>
+      ))}
+    </>
   );
 }
 

@@ -10,8 +10,9 @@ import { WEEKDAY_NAMES } from "@/lib/programs";
 import { levelOf, PROGRAM_GOALS, programGoal, programsForGoal, type GoalChoice } from "@/lib/programGoals";
 import { monthLabel, monthOf, programSlots } from "@/lib/trainingCalendar";
 import {
-  BLOCK_WEEKS,
+  MAX_PLAN_WEEKS,
   blockFirstSlot,
+  programBlockWeeks,
   slotsFrom,
   defaultWeeks,
   findSplit,
@@ -29,7 +30,6 @@ import RehabRedFlagCheck from "@/components/stability/RehabRedFlagCheck";
 import type { StabilityArea, StabilityLevel } from "@/lib/stability";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
-import { isOlderAdultProgram } from "@/lib/preStart";
 
 
 function dayHeading(date: string): string {
@@ -74,12 +74,13 @@ export default function PlanProgramModal({
   const [type, setType] = useState<GoalChoice | null>(null);
   const [program, setProgram] = useState<Program | null>(null);
   const [allSlots, setSlots] = useState<number[] | null>(null);
-  // Longevity programs: the block to start at (GRIZZ, 2026-10-20). 1 for every other program.
+  // Longevity and Muscle Year programs: the block to start at (GRIZZ, 2026-10-20). 1 for every other program.
   const [block, setBlock] = useState(1);
-  const blocks = program && isOlderAdultProgram(program.name) ? Math.floor((program.weeks ?? 0) / BLOCK_WEEKS) : 0;
-  const firstSlot = block > 1 ? blockFirstSlot(block) : null;
+  const blockWeeks = program ? programBlockWeeks(program.name) : null;
+  const blocks = program && blockWeeks ? Math.floor((program.weeks ?? 0) / blockWeeks) : 0;
+  const firstSlot = block > 1 && blockWeeks ? blockFirstSlot(block, blockWeeks) : null;
   const slots = allSlots && slotsFrom(allSlots, firstSlot);
-  const weeksLeft = (p: Program, b: number) => (p.weeks ?? 1) - (b - 1) * BLOCK_WEEKS;
+  const weeksLeft = (p: Program, b: number) => (p.weeks ?? 1) - (b - 1) * (blockWeeks ?? 0);
   // The trainer's own days (GRIZZ, 2026-10-19), the same every week or
   // picked again each week when the client trains on different days.
   const [ownDays, setOwnDays] = useState<number[]>([]);
@@ -126,8 +127,11 @@ export default function PlanProgramModal({
   // becomes what it takes to finish the whole program on those days.
   const fullLength = (days: number[], list = slots) =>
     list && program && (program.weeks ?? 1) > 1 && days.length > 0 && days.length !== sessionsPerWeek(list)
-      ? weeksToFinish(list.length, days.length)
+      ? Math.min(MAX_PLAN_WEEKS, weeksToFinish(list.length, days.length))
       : null;
+  // Fewer days than a long program has: it would take more than 52 weeks, so
+  // the plan stops at 52 (the client can carry on with a new plan after).
+  const cutShort = !!(slots && ownDays.length > 0 && weeksToFinish(slots.length, ownDays.length) > MAX_PLAN_WEEKS && ownDays.length !== sessionsPerWeek(slots));
   const chosenDays = ownDays;
   const chosenLabel = daysLabel(ownDays);
   // Always the whole program (or the rest of it from the block picked), spread
@@ -137,7 +141,7 @@ export default function PlanProgramModal({
   const plan = date && slots ? planProgramDates(date, chosenDays, slots, weeks) : [];
   const note =
     slots && program && (program.weeks ?? 1) > 1
-      ? splitNote(plan, sessionsPerWeek(slots), chosenDays.length, slots.length, easyWeeks.map((w) => w - (block - 1) * BLOCK_WEEKS).filter((w) => w > 0))
+      ? splitNote(plan, sessionsPerWeek(slots), chosenDays.length, slots.length, easyWeeks.map((w) => w - (block - 1) * (blockWeeks ?? 0)).filter((w) => w > 0))
       : null;
 
   const activate = async () => {
@@ -407,7 +411,7 @@ export default function PlanProgramModal({
                           {Array.from({ length: blocks }, (_, i) => i + 1).map((b) => (
                             <Pressable key={`block-${b}`} style={[styles.chip, b === block && styles.chipOn]} onPress={() => setBlock(b)}>
                               <Text style={[styles.chipText, b === block && styles.chipTextOn]}>
-                                Block {b} (weeks {(b - 1) * BLOCK_WEEKS + 1}-{b * BLOCK_WEEKS})
+                                Block {b} (weeks {(b - 1) * (blockWeeks ?? 0) + 1}-{b * (blockWeeks ?? 0)})
                               </Text>
                             </Pressable>
                           ))}
@@ -443,6 +447,12 @@ export default function PlanProgramModal({
                       <Text style={styles.ownHint}>Each week you'll pick the next week's days, and the program carries on in order.</Text>
                     )}
                     {note && <Text style={styles.splitNote}>⚠️ {note}</Text>}
+                    {cutShort && (
+                      <Text style={styles.splitNote}>
+                        ⚠️ A plan can run for up to {MAX_PLAN_WEEKS} weeks, so this one stops there. To get through the whole program in a year, pick a program
+                        made for {ownDays.length} days a week{program && programBlockWeeks(program.name) === 13 ? ` (Muscle Year – ${ownDays.length} days a week)` : ""}.
+                      </Text>
+                    )}
                     {plan.length > 0 && (
                       <Text style={styles.summary}>
                         {plan.length} workouts over {weeks} week{weeks === 1 ? "" : "s"}, first one {dayHeading(plan[0].date)}.
