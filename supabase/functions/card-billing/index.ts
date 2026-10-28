@@ -23,7 +23,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 const PAYSTACK = "https://api.paystack.co";
-const SITE = Deno.env.get("SITE_URL") ?? "https://consistent-change.expo.app";
+const SITE = Deno.env.get("SITE_URL") ?? "https://dailyevolution.co.za";
 const PLAN_MONTHS: Record<string, number> = { monthly: 1, six_months: 6, yearly: 12 };
 // Saving a new card charges this much and refunds it.
 const CARD_CHECK_CENTS = 500;
