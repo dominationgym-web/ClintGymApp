@@ -249,7 +249,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Search 🔍 and Menu ☰",
       points: [
         "Menu ☰ shows every topic as one short line, so you see them all at once. Tap a topic to open it.",
-        "❓ Help & settings (bottom of Menu ☰) holds How to use the app, Notifications (which reminders you get) and your coach's Welcome.",
+        "❓ Help & settings (bottom of Menu ☰) holds How to use the app, Light or dark (Dark, Light or Match phone), Notifications (which reminders you get) and your coach's Welcome.",
         "Search finds any exercise, guide or tip in the app.",
         "The suggestion box sends ideas straight to the team. We read every one.",
       ],
@@ -437,7 +437,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Profile tab",
       points: [
         "Add your logo. Your clients see it in their app.",
-        "Your trainer code, your EFT details and your plan all live here. Settings holds three tap-to-open headings: 👤 Your details (business name, phone, planning reminders), 💳 How your clients pay you (EFT details and proof-of-payment WhatsApp) and ⚙️ Account (log out). Your trainer code is also your referral code: clients type it to join you, and a trainer who signs up with it counts as your referral.",
+        "Your trainer code, your EFT details and your plan all live here. Settings holds four tap-to-open headings: 👤 Your details (business name, phone, planning reminders), 💳 How your clients pay you (EFT details and proof-of-payment WhatsApp), 🌗 Light or dark (Dark, Light or Match phone) and ⚙️ Account (log out). Your trainer code is also your referral code: clients type it to join you, and a trainer who signs up with it counts as your referral.",
         "Your plan's prices depend on the country you applied from: rand in South Africa, dollars elsewhere. That's why location must be on when you apply.",
         "🎁 On free use? You pay no monthly subscription. Six months in, a per-client fee starts for each active client. Your plan card shows the date, and the app reminds you 30 days and 7 days before.",
         "🤝 Referrals: share your referral code with other trainers. Each one who's still with Daily Evolution 3 months after their free trial gives you 25% off a month, and 4 make a free month. Your list of referrals shows the date each one starts counting. A pop-up shows how many you've earned and banked once a week, and Profile > Plan & refer shows them any time. Banked referrals come off your plan payment, or off your client fees if you're on free use.",

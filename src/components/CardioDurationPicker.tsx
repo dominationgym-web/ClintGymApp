@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -10,6 +10,7 @@ import {
   cardioMinutes,
   minutesOf,
 } from "@/lib/programs";
+import { themedStyles } from "@/lib/theme";
 
 // How long a cardio block runs: short bursts in seconds, longer blocks in
 // minutes, or the trainer types their own number of minutes.
@@ -59,7 +60,7 @@ export default function CardioDurationPicker({ value, onChange }: { value: strin
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   label: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6, marginTop: 8 },
   chips: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
   chip: { backgroundColor: "#0F172A", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },

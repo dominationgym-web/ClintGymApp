@@ -1,6 +1,6 @@
 import { registerForCoachMessages } from "@/lib/notifications";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { StackActions } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { tabIcon } from "@/navigation/tabIcon";
@@ -37,6 +37,7 @@ import TrainerSidebar, { useCurrentRoute } from "@/components/TrainerSidebar";
 import ClientListPanel from "@/components/ClientListPanel";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import { navigationRef } from "@/navigation/navigationRef";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
@@ -49,14 +50,14 @@ function TrainerTabs() {
     <Tab.Navigator
       tabBar={wide ? () => null : undefined}
       screenOptions={{
-        headerStyle: { backgroundColor: "#0F172A" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: themeBg("#0F172A") },
+        headerTintColor: themeText("#fff"),
         headerRight: wide ? undefined : () => <TrainerMenuButton />,
-        tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
+        tabBarStyle: { backgroundColor: themeBg("#0F172A"), borderTopColor: themeBorder("#1E293B") },
         // So the typing box sits right on the keyboard, not above the tab bar.
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: BRAND_GOLD,
-        tabBarInactiveTintColor: "#64748B",
+        tabBarActiveTintColor: themeText(BRAND_GOLD),
+        tabBarInactiveTintColor: themeText("#64748B"),
       }}
     >
       <Tab.Screen name="Dashboard" component={TrainerDashboardScreen} options={{ tabBarIcon: tabIcon("speedometer") }} />
@@ -109,7 +110,7 @@ export default function TrainerNavigator() {
           </View>
         ) : null}
         <View style={styles.page}>
-          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }}>
+          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: themeBg("#0F172A") }, headerTintColor: themeText("#fff") }}>
             <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
             <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
             <Stack.Screen
@@ -158,7 +159,7 @@ export default function TrainerNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   row: { flex: 1, flexDirection: "row" },
   clientList: { width: 360, borderRightWidth: 1, borderRightColor: "#1E293B" },
   page: { flex: 1 },

@@ -5,6 +5,7 @@ import { todayIso } from "@/lib/dates";
 import { trainingLogStart } from "@/lib/trainingLog";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import type { WorkoutLog, WorkoutSession } from "@/types/database";
+import { themeText } from "@/lib/theme";
 
 // The client's last two weeks, the same list the coach sees on their profile:
 // tap a day to see every exercise and set, 🤝 for live sessions with the
@@ -31,6 +32,6 @@ export default function MyPastWorkouts({ clientId }: { clientId: string }) {
     });
   }, [clientId]);
 
-  if (!logs) return <Text style={{ color: "#94A3B8", fontSize: 13 }}>Loading…</Text>;
+  if (!logs) return <Text style={{ color: themeText("#94A3B8"), fontSize: 13 }}>Loading…</Text>;
   return <TrainerTrainingLog logs={logs} sessions={sessions} client />;
 }

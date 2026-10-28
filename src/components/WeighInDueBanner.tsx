@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { weighInDueIn, type WeighInEvery } from "@/lib/progress";
+import { themedStyles } from "@/lib/theme";
 
 // "Weigh-in day" in the app as well as on the phone (GRIZZ, 2026-10-26), so a
 // client who switched Progress tracking notifications off still sees it when
@@ -53,7 +54,7 @@ export default function WeighInDueBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: "#38BDF8", borderRadius: 8, padding: 12, marginBottom: 14 },
   title: { color: "#fff", fontWeight: "700", marginBottom: 4 },
   body: { color: "#E2E8F0" },

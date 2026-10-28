@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ExerciseClip from "@/components/ExerciseClip";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { Exercise } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 const PER_PAGE = 12;
 
@@ -132,7 +133,7 @@ export default function ExerciseLibraryPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   panel: { flex: 1, backgroundColor: "#0B1222" },
   inner: { padding: 20 },
   title: { color: "#fff", fontSize: 18, fontWeight: "700" },

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { View, Text, Pressable, Modal, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, Modal, ScrollView, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
 import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";
+import { themedStyles } from "@/lib/theme";
 
 // route: the page it opens, so the trainer's laptop sidebar can show where they are.
 export type MenuItem = { key: string; title: string; summary: string; icon?: string; route?: string; onPress: () => void };
@@ -87,7 +88,7 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   row: { flexDirection: "row", alignItems: "center" },
   button: { marginRight: 16, paddingVertical: 4, gap: 4 },
   bar: { width: 22, height: 2.5, borderRadius: 2, backgroundColor: "#fff" },

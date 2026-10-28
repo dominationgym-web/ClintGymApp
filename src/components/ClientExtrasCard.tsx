@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { CARDIO_ALL, CARDIO_OPTIONS, cardioDuration, cardioLabel } from "@/lib/programs";
 import CardioDurationPicker from "@/components/CardioDurationPicker";
 import type { Client, ExtraCardio } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // Abs and cardio for every workout a client does (0136, GRIZZ, 2026-10-21).
 // Which workouts take them is in src/lib/clientExtras.ts: never Longevity,
@@ -124,7 +125,7 @@ export default function ClientExtrasCard({ client, onChanged }: { client: Client
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   label: { color: "#E2E8F0", fontWeight: "700", marginTop: 12, marginBottom: 6 },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 4 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },

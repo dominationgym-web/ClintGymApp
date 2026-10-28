@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -17,6 +17,7 @@ import {
   type CardBillingInfo,
 } from "@/lib/cardBilling";
 import type { TrainerPayment } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Paying Daily Evolution by card, on the website only (0136, GRIZZ
 // 2026-10-19: website-first billing, so the phone apps sell nothing). What's
@@ -96,7 +97,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
             Referral credit ({quote.referral_credits} × 25%): -{money(quote.credit_amount, quote.currency)}
           </Text>
           <Pressable style={styles.pay} onPress={() => go(() => startCardCheckout(autopay))} disabled={busy}>
-            {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.payText}>Use my referral credit</Text>}
+            {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.payText}>Use my referral credit</Text>}
           </Pressable>
         </>
       ) : quote && quote.total > 0 ? (
@@ -118,7 +119,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
           </Pressable>
           <Pressable style={styles.pay} onPress={() => go(() => startCardCheckout(autopay))} disabled={busy}>
             {busy ? (
-              <ActivityIndicator color="#0F172A" />
+              <ActivityIndicator color={themeText("#0F172A")} />
             ) : (
               <Text style={styles.payText}>Pay {money(quote.total, quote.currency)} by card</Text>
             )}
@@ -193,7 +194,7 @@ export function CardPaymentReturn() {
   return null;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: 12, borderWidth: 1, borderColor: BRAND_GOLD },
   title: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15 },
   heading: { color: "#fff", fontWeight: "700", fontSize: 14 },

@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Vibration } from "react-native";
+import { View, Text, Pressable, Vibration } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatClock } from "@/lib/programs";
 import { playTimerSound, prepareTimerSounds, setTimerSoundOn } from "@/lib/timerSounds";
 import { countdownCue } from "@/lib/timerWorkouts";
+import { themeText, themedStyles } from "@/lib/theme";
 
 interface Props {
   // Length of the rest the timer starts with, in seconds.
@@ -64,7 +65,7 @@ export default function RestTimer({ seconds, onClose }: Props) {
   return (
     <View style={[styles.box, done && styles.boxDone]}>
       <Text style={styles.label}>{done ? "Rest done - hit your next set!" : "Rest"}</Text>
-      <Text style={[styles.clock, done && { color: "#22C55E" }]}>{formatClock(left)}</Text>
+      <Text style={[styles.clock, done && { color: themeText("#22C55E") }]}>{formatClock(left)}</Text>
       <View style={styles.row}>
         {QUICK_PICKS.map((s) => (
           <Pressable key={s} style={styles.chip} onPress={() => restart(s)}>
@@ -89,7 +90,7 @@ export default function RestTimer({ seconds, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: {
     backgroundColor: "#1E293B",
     borderRadius: 12,

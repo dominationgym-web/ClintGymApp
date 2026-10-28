@@ -1,6 +1,7 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
+import { themeBg, themedStyles } from "@/lib/theme";
 
 const TABS: { key: ExercisePlace; label: string }[] = [
   { key: "gym", label: "Gym exercises" },
@@ -27,7 +28,7 @@ export default function GymHomeTabs({
       {TABS.map((t) => {
         const on = t.key === current;
         return (
-          <Pressable key={t.key} style={[styles.tab, on && { backgroundColor: accent }]} onPress={() => onChange(t.key)}>
+          <Pressable key={t.key} style={[styles.tab, on && { backgroundColor: themeBg(accent) }]} onPress={() => onChange(t.key)}>
             <Text style={[styles.text, on && styles.textOn]}>{labels?.[t.key] ?? t.label}</Text>
           </Pressable>
         );
@@ -36,7 +37,7 @@ export default function GymHomeTabs({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   bar: { flexDirection: "row", backgroundColor: "#1E293B", borderRadius: 10, padding: 3, marginBottom: 10 },
   tab: { flex: 1, borderRadius: 8, paddingVertical: 9, alignItems: "center" },
   text: { color: "#94A3B8", fontWeight: "700", fontSize: 14 },

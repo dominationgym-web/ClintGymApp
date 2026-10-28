@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/equipment";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Exercise } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 export const EQUIPMENT_BUCKET = "equipment-photos";
 
@@ -116,7 +117,7 @@ export default function EquipmentEditor({
                     <Text style={styles.link}>Edit</Text>
                   </Pressable>
                   <Pressable onPress={() => remove(item)} hitSlop={6}>
-                    <Text style={[styles.link, { color: "#F87171" }]}>Remove</Text>
+                    <Text style={[styles.link, { color: themeText("#F87171") }]}>Remove</Text>
                   </Pressable>
                 </View>
               </View>
@@ -306,7 +307,7 @@ function EquipmentForm({
                   <View style={styles.chips}>
                     {kind.options.map((o) => (
                       <Pressable key={o} style={[styles.chip, draft.option === o && styles.chipOn]} onPress={() => set({ option: o })}>
-                        <Text style={[styles.chipText, draft.option === o && { color: "#0F172A" }]}>{o}</Text>
+                        <Text style={[styles.chipText, draft.option === o && { color: themeText("#0F172A") }]}>{o}</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -344,7 +345,7 @@ function EquipmentForm({
                     <Text style={styles.label}>{kind.photo}</Text>
                     <Pressable style={styles.photoButton} onPress={addPhoto} disabled={uploading}>
                       {uploading ? (
-                        <ActivityIndicator color={BRAND_GOLD} />
+                        <ActivityIndicator color={themeText(BRAND_GOLD)} />
                       ) : preview ? (
                         <Image source={{ uri: preview }} style={styles.preview} />
                       ) : (
@@ -361,7 +362,7 @@ function EquipmentForm({
                       <View key={name} style={styles.stationRow}>
                         <Text style={[styles.itemText, { flex: 1 }]}>{name}</Text>
                         <Pressable onPress={() => set({ exercises: stationList.filter((n) => n !== name) })} hitSlop={6}>
-                          <Text style={[styles.link, { color: "#F87171" }]}>Remove</Text>
+                          <Text style={[styles.link, { color: themeText("#F87171") }]}>Remove</Text>
                         </Pressable>
                       </View>
                     ))}
@@ -389,7 +390,7 @@ function EquipmentForm({
                 ) : null}
 
                 <Pressable style={[styles.saveButton, (saving || uploading) && { opacity: 0.5 }]} onPress={submit} disabled={saving || uploading}>
-                  {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>Save</Text>}
+                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>Save</Text>}
                 </Pressable>
               </ScrollView>
             )}
@@ -400,7 +401,7 @@ function EquipmentForm({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   empty: { color: "#94A3B8", fontSize: 14, marginBottom: 8 },
   item: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginBottom: 8 },
   itemIcon: { fontSize: 22 },

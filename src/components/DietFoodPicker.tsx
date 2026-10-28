@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { FlatList, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -14,6 +14,7 @@ import {
   type SetBy,
 } from "@/lib/dietPlan";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import { themedStyles } from "@/lib/theme";
 
 const SET_BY_LABEL: Record<SetBy, string> = {
   protein: "Protein",
@@ -204,7 +205,7 @@ export default function DietFoodPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   modal: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingBottom: 12 },
   title: { color: "#fff", fontSize: 18, fontWeight: "800", flex: 1, marginRight: 12 },

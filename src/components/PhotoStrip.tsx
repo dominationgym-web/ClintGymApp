@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { parseIsoDate } from "@/lib/dates";
+import { themedStyles } from "@/lib/theme";
 
 export type StripPhoto = { id: string; url: string | undefined; takenOn: string };
 
@@ -39,7 +40,7 @@ function formatDate(iso: string) {
   return parseIsoDate(iso).toLocaleDateString();
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   thumb: { width: 96, height: 128, borderRadius: 8, backgroundColor: "#1E293B" },
   caption: { color: "#94A3B8", fontSize: 11, marginTop: 4, textAlign: "center" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", alignItems: "center", padding: 16 },

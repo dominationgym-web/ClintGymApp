@@ -3,11 +3,12 @@ import { Text, View } from "react-native";
 import { breakdownStyles as styles } from "@/components/breakdownStyles";
 import type { GuidelineGroup, GuidelinePoint } from "@/lib/sleep";
 import { UNDERSTANDING_CARBS as C } from "@/lib/nutrition";
+import { themeBg, themeText } from "@/lib/theme";
 
 function Step({ point, tint }: { point: GuidelinePoint; tint?: string }) {
   return (
     <View style={[styles.step, { marginBottom: 8 }]}>
-      <View style={[styles.stepIcon, tint ? { backgroundColor: tint + "33" } : null]}>
+      <View style={[styles.stepIcon, tint ? { backgroundColor: themeBg(tint + "33") } : null]}>
         <Text style={styles.stepEmoji}>{point.emoji}</Text>
       </View>
       <View style={{ flex: 1 }}>
@@ -81,11 +82,11 @@ export function CarbsGuide() {
       <Text style={styles.sectionLabel}>WHAT YOUR BODY WAS BUILT FOR</Text>
       <Text style={styles.body}>{C.builtFor.intro}</Text>
       <View style={[styles.orderBox, styles.right]}>
-        <Text style={[styles.orderLabel, { color: "#4ADE80" }]}>✓ {C.builtFor.right.label}</Text>
+        <Text style={[styles.orderLabel, { color: themeText("#4ADE80") }]}>✓ {C.builtFor.right.label}</Text>
         <Text style={styles.small}>{C.builtFor.right.text}</Text>
       </View>
       <View style={[styles.orderBox, styles.wrong]}>
-        <Text style={[styles.orderLabel, { color: "#F87171" }]}>✗ {C.builtFor.wrong.label}</Text>
+        <Text style={[styles.orderLabel, { color: themeText("#F87171") }]}>✗ {C.builtFor.wrong.label}</Text>
         <Text style={styles.small}>{C.builtFor.wrong.text}</Text>
       </View>
 

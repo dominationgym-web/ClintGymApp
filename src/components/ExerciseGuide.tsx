@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
+import { View, Text, Pressable, Modal, ScrollView } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import { MUSCLE_NOT_WEIGHT, SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";
 import { BRAND_GOLD } from "@/lib/brand";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import WatchOnlineLink from "@/components/WatchOnlineLink";
+import { themedStyles } from "@/lib/theme";
 
 // The "how to do it properly" guide for one exercise: where to feel it, the
 // steps, how to get the most from it and how to make it fit your body.
@@ -155,7 +156,7 @@ export function DoSetButton({ onPress, name }: { onPress: () => void; name: stri
   );
 }
 
-const doSetStyles = StyleSheet.create({
+const doSetStyles = themedStyles({
   button: {
     backgroundColor: "#16A34A",
     borderRadius: 8,
@@ -169,7 +170,7 @@ const doSetStyles = StyleSheet.create({
   bigText: { fontSize: 17 },
 });
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   button: {
     width: 26,
     height: 26,

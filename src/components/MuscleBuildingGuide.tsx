@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -16,6 +16,7 @@ import {
   weightCheck,
   type WeightCheck,
 } from "@/lib/muscleYear";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // Nutrition > Muscle building: your BMR and macros (GRIZZ, 2026-10-24: "They
 // need to est their BMR so we can guide them through their macros"). One
@@ -188,8 +189,8 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
       {name === "Macros" && kcal && macros && (
         <View>
           {referral.length ? (
-            <View style={[styles.box, { borderLeftColor: "#F87171" }]}>
-              <Text style={[styles.boxTitle, { color: "#F87171" }]}>🩺 Check with a doctor or dietitian first</Text>
+            <View style={[styles.box, { borderLeftColor: themeBorder("#F87171") }]}>
+              <Text style={[styles.boxTitle, { color: themeText("#F87171") }]}>🩺 Check with a doctor or dietitian first</Text>
               <Text style={styles.boxText}>
                 Because of {referral.join(" and ")}, {REFERRAL_NOTE.charAt(0).toLowerCase() + REFERRAL_NOTE.slice(1)} Until then these are
                 your numbers to stay the same.
@@ -233,12 +234,12 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
             you need a bit more food. Your weight goes up and down a little from day to day, so look at the trend.
           </Text>
           {!check ? (
-            <ActivityIndicator color={BRAND_GOLD} />
+            <ActivityIndicator color={themeText(BRAND_GOLD)} />
           ) : (
             <View
               style={[
                 styles.box,
-                { borderLeftColor: check.kind === "onTrack" ? "#4ADE80" : check.kind === "slow" || check.kind === "fast" ? "#FBBF24" : BRAND_GOLD },
+                { borderLeftColor: themeBorder(check.kind === "onTrack" ? "#4ADE80" : check.kind === "slow" || check.kind === "fast" ? "#FBBF24" : BRAND_GOLD) },
               ]}
             >
               <Text style={styles.boxTitle}>
@@ -302,7 +303,7 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   tabs: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
   tab: { borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10, backgroundColor: "#0F172A" },

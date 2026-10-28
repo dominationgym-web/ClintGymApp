@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themeText, themedStyles } from "@/lib/theme";
 
 export const WORKOUT_LOADED_MESSAGE = "Your workout is loaded and ready. Open the app to see it. 💪";
 
@@ -56,7 +57,7 @@ export default function WorkoutsSavedButton({
       </Text>
       <Pressable style={[styles.button, sentAt && styles.sent]} onPress={save} disabled={sending}>
         {sending ? (
-          <ActivityIndicator color="#0F172A" />
+          <ActivityIndicator color={themeText("#0F172A")} />
         ) : (
           <Text style={[styles.buttonText, sentAt && styles.sentText]}>
             {sentAt ? `Saved ✓ ${clientName} was told at ${time}` : `Save and tell ${clientName}`}
@@ -68,7 +69,7 @@ export default function WorkoutsSavedButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   helper: { color: "#94A3B8", fontSize: 13, lineHeight: 18 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 12 },

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -12,6 +12,7 @@ import { findRecoveryActivity } from "@/lib/recoveryActivities";
 import RecoveryActivityModal, { RECOVERY_GREEN } from "@/components/RecoveryActivityModal";
 import type { RecoveryActivityRow } from "@/types/database";
 import { COACH_MEAL_PLAN_TITLE, useHasMealPlan } from "@/hooks/useHasMealPlan";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // The rest of what's planned today, on the Today card under the workout
 // (app-flow review C4, 2026-10-18): 🧘 stability (opens the program) and
@@ -56,10 +57,10 @@ export default function TodayPlanRows({
   return (
     <>
       {stability.map((item) => (
-        <Pressable key={item.programId} style={[styles.row, { borderColor: "#6B21A8" }]} onPress={() => navigation.navigate("Stability")}>
+        <Pressable key={item.programId} style={[styles.row, { borderColor: themeBorder("#6B21A8") }]} onPress={() => navigation.navigate("Stability")}>
           <Text style={styles.icon}>🧘</Text>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: STABILITY_PURPLE }]}>{item.label} stability</Text>
+            <Text style={[styles.title, { color: themeText(STABILITY_PURPLE) }]}>{item.label} stability</Text>
             <Text style={styles.hint}>{item.done ? "Logged ✓" : "From your coach"}</Text>
           </View>
           <Text style={styles.open}>Open ›</Text>
@@ -68,10 +69,10 @@ export default function TodayPlanRows({
       {recovery.map((row) => {
         const info = findRecoveryActivity(row.activity);
         return (
-          <View key={row.id} style={[styles.row, { borderColor: "#166534" }]}>
+          <View key={row.id} style={[styles.row, { borderColor: themeBorder("#166534") }]}>
             <Text style={styles.icon}>🌿</Text>
             <Pressable style={{ flex: 1 }} onPress={() => navigation.navigate("Recovery")}>
-              <Text style={[styles.title, { color: RECOVERY_GREEN }]}>{info?.title ?? row.activity}</Text>
+              <Text style={[styles.title, { color: themeText(RECOVERY_GREEN) }]}>{info?.title ?? row.activity}</Text>
               <Text style={styles.hint}>{row.done_on ? "Done ✓" : "Recovery for today"}</Text>
             </Pressable>
             {!row.done_on && (
@@ -90,12 +91,12 @@ export default function TodayPlanRows({
       {/* The coach's meal plan in one tap (GRIZZ, 2026-10-27). Not counted in onCount: it isn't training. */}
       {hasMealPlan && (
         <Pressable
-          style={[styles.row, { borderColor: "#166534" }]}
+          style={[styles.row, { borderColor: themeBorder("#166534") }]}
           onPress={() => navigation.navigate("Section", { sectionKey: "nutrition", open: COACH_MEAL_PLAN_TITLE })}
         >
           <Text style={styles.icon}>🥗</Text>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: "#22C55E" }]}>My meal plan</Text>
+            <Text style={[styles.title, { color: themeText("#22C55E") }]}>My meal plan</Text>
             <Text style={styles.hint}>What to eat today, from your coach</Text>
           </View>
           <Text style={styles.open}>Open ›</Text>
@@ -116,7 +117,7 @@ export default function TodayPlanRows({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   row: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#0F172A", borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1 },
   icon: { fontSize: 26 },
   title: { fontSize: 16, fontWeight: "700" },

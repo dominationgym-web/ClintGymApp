@@ -1,9 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import WatchOnlineLink from "@/components/WatchOnlineLink";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { StabilityExercise } from "@/lib/stability";
+import { themedStyles } from "@/lib/theme";
 
 // How to do a stability exercise: its video (or a link to examples online when
 // there's no clip), the steps, when to stop, the load and how to make it easier
@@ -31,7 +32,7 @@ export default function StabilityHowTo({ exercise, videoUrl }: { exercise: Stabi
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   label: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 10, marginBottom: 2 },
   text: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, marginBottom: 2 },
 });

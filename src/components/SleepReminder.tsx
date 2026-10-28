@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -7,6 +7,7 @@ import { currentNightTip, isWindDownTime } from "@/lib/sleep";
 import { getSleepReminderEnabled } from "@/lib/sleepReminderSetting";
 import { scheduleSleepReminders } from "@/lib/notifications";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themedStyles } from "@/lib/theme";
 
 // The nightly sleep tip. From 6pm this card shows tonight's tip in the app,
 // and each time it loads it also tops up the 6pm phone notifications for the
@@ -42,7 +43,7 @@ export default function SleepReminder() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   banner: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: BRAND_GOLD, borderRadius: 8, padding: 12, marginBottom: 16 },
   title: { color: "#fff", fontWeight: "700", marginBottom: 4 },
   text: { color: "#E2E8F0" },

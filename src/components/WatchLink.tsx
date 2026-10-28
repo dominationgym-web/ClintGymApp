@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Platform, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { getHealthLink, healthSourceHere, linkHealth, openHealthConnectInStore, syncHealthWorkouts, unlinkHealth } from "@/lib/healthLink";
 import { healthAppName, type HealthSource } from "@/lib/healthSync";
+import { themedStyles } from "@/lib/theme";
 
 // Linking the client's watch (0116): under Other exercise on the Exercises tab,
 // and under My devices on their Profile (GRIZZ, 2026-10-18). Once linked, new
@@ -88,7 +89,7 @@ export default function WatchLink({ clientId, onSynced }: { clientId: string; on
   return Platform.OS !== "web" ? <Text style={styles.watchHint}>⌚ Linking your watch comes with the next app update from the store.</Text> : null;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   watchButton: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, alignItems: "center", marginTop: 10 },
   watchButtonText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 15 },
   watchHint: { color: "#94A3B8", fontSize: 12, marginTop: 6, textAlign: "center" },

@@ -6,7 +6,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -44,6 +43,7 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import { AB_EXERCISES, AB_REP_OPTIONS, AB_REPS } from "@/lib/absBetweenSets";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import ExerciseLibraryPanel from "@/components/ExerciseLibraryPanel";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Abs between sets (0083), chosen when the program is saved.
 type AbsChoice = { on: boolean; reps: number; exercise: string | null };
@@ -425,7 +425,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
       )}
 
       <Pressable style={styles.saveButton} onPress={askToSave} disabled={saving}>
-        {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>Complete and save program</Text>}
+        {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>Complete and save program</Text>}
       </Pressable>
 
       <Modal visible={picking !== null && !wide} animationType="slide" onRequestClose={closePicker}>
@@ -604,7 +604,7 @@ function CardioSlot({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   draftBar: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#1E293B", borderRadius: 10, padding: 10, marginBottom: 4 },
   draftText: { color: "#CBD5E1", fontSize: 13, flex: 1 },
   startOver: { color: "#F87171", fontWeight: "700", fontSize: 13 },

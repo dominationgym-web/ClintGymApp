@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
@@ -11,6 +11,7 @@ import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Exercise, ProgramExercise } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 const AMBER = "#F59E0B";
 const SETS = [1, 2, 3, 4, 5, 6];
@@ -194,7 +195,7 @@ export default function ProgramExerciseEditModal({
                 </View>
               ) : null}
               {library.length === 0 ? (
-                <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 20 }} />
+                <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 20 }} />
               ) : (
                 <FlatList
                   data={options}
@@ -296,7 +297,7 @@ export default function ProgramExerciseEditModal({
               )}
 
               <Pressable style={[styles.saveButton, !canSave && styles.saveOff]} onPress={save} disabled={saving || !canSave}>
-                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>{forGood ? "Save for good" : "Save for now"}</Text>}
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>{forGood ? "Save for good" : "Save for now"}</Text>}
               </Pressable>
             </ScrollView>
           )}
@@ -314,7 +315,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   modal: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingBottom: 12 },
   title: { color: "#fff", fontSize: 18, fontWeight: "800", flex: 1 },

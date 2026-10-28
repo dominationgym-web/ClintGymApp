@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -34,6 +34,7 @@ import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import { loadStabilityDays, STABILITY_PURPLE } from "@/lib/stabilityCalendar";
 import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise, WorkoutLog } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The client's own training calendar (0069), always open at the top of their
 // workout screen (GRIZZ, 2026-10-18: "already open. So they dont need to
@@ -360,7 +361,7 @@ export default function ClientCalendarView({
           ))}
           {dayExtras.map((block, i) => (
             <View key={`${block.program.id}-${i}`} style={{ marginTop: 12 }}>
-              <Text style={[styles.blockTitle, isFunctionalProgram(block.program) && { color: FUNCTIONAL_TEAL }]}>
+              <Text style={[styles.blockTitle, isFunctionalProgram(block.program) && { color: themeText(FUNCTIONAL_TEAL) }]}>
                 {isFunctionalProgram(block.program) ? "🤸" : "➕"} {displayProgramName(block.program)}
               </Text>
               {block.daySlot != null && <Text style={styles.rowSets}>{slotLabel(block.program, block.daySlot)}</Text>}
@@ -403,7 +404,7 @@ export default function ClientCalendarView({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12 },
   sheet: { flex: 1, backgroundColor: "#0F172A" },
   sheetHeader: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#1E293B" },

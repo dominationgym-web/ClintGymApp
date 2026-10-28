@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { countryName } from "@/lib/phoneCountry";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,7 @@ import type { OwnerTrainerClientRow, Trainer, TrainerProblem } from "@/types/dat
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList, TrainerTabParamList } from "@/navigation/types";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The app owner's list of every trainer (0029): approve new ones, or block one.
 // Also each trainer's free trial and referral rewards (0060): the owner can add
@@ -141,7 +142,7 @@ export default function TrainersScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -192,14 +193,14 @@ export default function TrainersScreen() {
         }`;
         const rows = clientRows[item.id];
         const pay = !item.approved
-          ? { text: "Waiting for your approval", color: "#F59E0B" }
+          ? { text: "Waiting for your approval", color: themeText("#F59E0B") }
           : item.free_use_from
-            ? { text: "Free use", color: "#22C55E" }
+            ? { text: "Free use", color: themeText("#22C55E") }
             : trial && !trialOver
-              ? { text: trial, color: "#94A3B8" }
+              ? { text: trial, color: themeText("#94A3B8") }
               : item.billing_plan
-                ? { text: "Paid", color: "#22C55E" }
-                : { text: trial ?? "No plan yet", color: "#F59E0B" };
+                ? { text: "Paid", color: themeText("#22C55E") }
+                : { text: trial ?? "No plan yet", color: themeText("#F59E0B") };
         if (!open) {
           return (
             <Pressable style={styles.compactRow} onPress={() => setOpenId(item.id)} accessibilityRole="button">
@@ -207,8 +208,8 @@ export default function TrainersScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.name} numberOfLines={1}>{name}</Text>
                 <Text style={styles.detail} numberOfLines={1}>{item.email}</Text>
-                <Text style={[styles.status, { color: pay.color, marginTop: 2 }]}>{pay.text}</Text>
-                <Text style={[styles.detail, openProblems ? { color: "#F59E0B" } : null]}>{clientLine}</Text>
+                <Text style={[styles.status, { color: themeText(pay.color), marginTop: 2 }]}>{pay.text}</Text>
+                <Text style={[styles.detail, openProblems ? { color: themeText("#F59E0B") } : null]}>{clientLine}</Text>
               </View>
               <Text style={styles.chevron}>▸</Text>
             </Pressable>
@@ -233,7 +234,7 @@ export default function TrainersScreen() {
                   ? `Signed the agreement as "${item.agreement_signed_name}" on ${new Date(item.agreement_accepted_at).toLocaleDateString()}`
                   : "Hasn't signed the trainer agreement yet"}
               </Text>
-              <Text style={[styles.status, { color: item.approved ? "#22C55E" : "#F59E0B" }]}>
+              <Text style={[styles.status, { color: themeText(item.approved ? "#22C55E" : "#F59E0B") }]}>
                 {item.approved ? `Approved · code ${item.join_code}` : "Waiting for your approval"}
               </Text>
               {referrer ? <Text style={styles.detail}>Referred by {trainerDisplayName(referrer)}</Text> : null}
@@ -248,7 +249,7 @@ export default function TrainersScreen() {
               </Pressable>
               {clientsOpen === item.id ? (
                 !rows ? (
-                  <ActivityIndicator color="#D4AF37" style={{ alignSelf: "flex-start", marginTop: 6 }} />
+                  <ActivityIndicator color={themeText("#D4AF37")} style={{ alignSelf: "flex-start", marginTop: 6 }} />
                 ) : rows.length === 0 ? (
                   <Text style={styles.detail}>No clients yet.</Text>
                 ) : (
@@ -270,12 +271,12 @@ export default function TrainersScreen() {
               ) : null}
               {openProblems ? (
                 <Pressable onPress={() => navigation.navigate("TrainerProblems")} hitSlop={6}>
-                  <Text style={[styles.extraLink, { color: "#F59E0B" }]}>🛠 {openProblems} open problem{openProblems === 1 ? "" : "s"} ›</Text>
+                  <Text style={[styles.extraLink, { color: themeText("#F59E0B") }]}>🛠 {openProblems} open problem{openProblems === 1 ? "" : "s"} ›</Text>
                 </Pressable>
               ) : null}
               {trial ? (
                 <View style={styles.extraRow}>
-                  <Text style={[styles.detail, trialOver && { color: "#F59E0B" }]}>{trial}</Text>
+                  <Text style={[styles.detail, trialOver && { color: themeText("#F59E0B") }]}>{trial}</Text>
                   <Pressable onPress={() => extendTrial(item)} hitSlop={8} disabled={busyId === item.id}>
                     <Text style={styles.extraLink}>+7 days</Text>
                   </Pressable>
@@ -297,7 +298,7 @@ export default function TrainersScreen() {
               disabled={busyId === item.id}
             >
               {busyId === item.id ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={themeText("#fff")} />
               ) : (
                 <Text style={styles.actionText}>{item.approved ? "Block" : "Approve"}</Text>
               )}
@@ -310,7 +311,7 @@ export default function TrainersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   empty: { color: "#94A3B8", textAlign: "center", marginTop: 40, lineHeight: 20 },

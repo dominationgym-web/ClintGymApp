@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import ClientListPanel from "@/components/ClientListPanel";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import type { TrainerTabScreenProps } from "@/navigation/types";
+import { themedStyles } from "@/lib/theme";
 
 type Props = TrainerTabScreenProps<"Clients">;
 
@@ -28,7 +29,7 @@ export default function ClientsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   pick: { flex: 1, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center", padding: 24 },
   pickIcon: { fontSize: 40, marginBottom: 12 },
   pickTitle: { color: "#fff", fontSize: 20, fontWeight: "700" },

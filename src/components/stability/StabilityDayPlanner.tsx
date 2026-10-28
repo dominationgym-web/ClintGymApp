@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { parseIsoDate } from "@/lib/dates";
 import { WEEKDAY_NAMES } from "@/lib/programs";
 import { levelInfo } from "@/lib/stability";
@@ -13,6 +13,7 @@ import {
   type StabilityCalendarItem,
 } from "@/lib/stabilityCalendar";
 import type { ClientStabilityDay, ClientStabilityProgram } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 function shortDate(iso: string): string {
   const d = parseIsoDate(iso);
@@ -104,7 +105,7 @@ export default function StabilityDayPlanner({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   none: { color: "#94A3B8", fontSize: 12, marginTop: 12 },
   box: { borderWidth: 1, borderColor: "#6B21A8", backgroundColor: "#1A1029", borderRadius: 10, padding: 10, marginTop: 12 },
   name: { color: STABILITY_PURPLE, fontWeight: "800", fontSize: 15 },

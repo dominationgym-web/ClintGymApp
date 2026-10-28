@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
 import type { LifestyleResetDailyLog } from "@/types/database";
 import { FEELINGS, HELPED_OPTIONS, RESET_HABITS } from "@/lib/resetProgram";
+import { themedStyles } from "@/lib/theme";
 
 // For the trainer: her last two weeks on the Reset, with how she felt, whether
 // it's helping, her note and how many habits she ticked each day.
@@ -47,7 +48,7 @@ export default function TrainerResetNotes({ clientId }: { clientId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   empty: { color: "#64748B", fontSize: 12.5, marginTop: 8 },
   row: { borderTopWidth: 1, borderTopColor: "#0F172A", paddingVertical: 6 },
   date: { color: "#CBD5E1", fontSize: 12.5 },

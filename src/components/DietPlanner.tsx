@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -24,6 +24,7 @@ import {
 } from "@/lib/dietPlan";
 import DietFoodPicker from "@/components/DietFoodPicker";
 import type { Client } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Direction = "same" | "over" | "under";
 
@@ -113,7 +114,7 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
       });
   }, [client.id, reload]);
 
-  if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 20 }} />;
+  if (loading) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 20 }} />;
   if (loadFailed) {
     return (
       <View style={styles.card}>
@@ -282,7 +283,7 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
           {target != null ? ` of ${target.toLocaleString()}` : ""} kcal
         </Text>
         {status ? (
-          <Text style={[styles.statusText, { color: status.state === "on" ? "#22C55E" : "#F87171" }]}>
+          <Text style={[styles.statusText, { color: themeText(status.state === "on" ? "#22C55E" : "#F87171") }]}>
             {status.state === "on" ? "✓ On target" : `⚠ ${status.state === "over" ? "Over" : "Under"} by ${status.by.toLocaleString()} kcal`}
           </Text>
         ) : (
@@ -329,9 +330,9 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
       </Pressable>
       <Pressable style={[styles.saveButton, !dirty && styles.saved]} onPress={save} disabled={saving || !dirty}>
         {saving ? (
-          <ActivityIndicator color="#0F172A" />
+          <ActivityIndicator color={themeText("#0F172A")} />
         ) : (
-          <Text style={[styles.saveText, !dirty && { color: "#22C55E" }]}>{dirty ? "Save plan" : "Saved ✓"}</Text>
+          <Text style={[styles.saveText, !dirty && { color: themeText("#22C55E") }]}>{dirty ? "Save plan" : "Saved ✓"}</Text>
         )}
       </Pressable>
       <Text style={styles.helper}>{client.name} sees the saved plan under Nutrition.</Text>
@@ -371,7 +372,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   warnBox: { backgroundColor: "#0F172A", borderRadius: 10, borderLeftWidth: 3, borderLeftColor: "#F87171", padding: 12, marginTop: 10 },
   warnTitle: { color: "#F87171", fontWeight: "800", marginBottom: 4 },
   warnText: { color: "#E2E8F0", fontSize: 13, lineHeight: 19 },

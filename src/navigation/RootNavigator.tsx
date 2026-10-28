@@ -2,8 +2,8 @@ import NotificationsPrompt from "@/components/NotificationsPrompt";
 import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications";
 import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
 import React, { useEffect, useRef, useState } from "react";
-import { View, ActivityIndicator, Text, Pressable, ScrollView, StyleSheet, Platform } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { View, ActivityIndicator, Text, Pressable, ScrollView, Platform } from "react-native";
+import { NavigationContainer, type NavigationState } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigationRef";
 import { useAuth } from "@/context/AuthContext";
 import AuthNavigator from "@/navigation/AuthNavigator";
@@ -22,6 +22,7 @@ import { needsAgreement, trainerDisplayName } from "@/lib/trainers";
 import TrainerAgreementScreen from "@/screens/trainer/TrainerAgreementScreen";
 import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
 import type { Trainer } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // A client's access is open unless their plan has actually expired.
 // `expiring_soon` is a client who is still paid up, inside the renewal window
@@ -63,6 +64,9 @@ function openRoute(route: NotificationRoute) {
   else navigationRef.navigate("TrainerTabs", { screen: route.screen });
 }
 
+// The open pages, so switching light/dark (which remounts this) lands you back where you were.
+let savedNavState: NavigationState | undefined;
+
 export default function RootNavigator() {
   const { role, loading, client, trainer } = useAuth();
   const locked = useLockedOut(role, role === "trainer" ? trainer : client);
@@ -81,7 +85,7 @@ export default function RootNavigator() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -91,6 +95,10 @@ export default function RootNavigator() {
     {role === "trainer" ? <CardPaymentReturn /> : null}
     <NavigationContainer
       ref={navigationRef}
+      initialState={savedNavState}
+      onStateChange={(state) => {
+        savedNavState = state;
+      }}
       onReady={() => {
         if (pendingRoute.current) openRoute(pendingRoute.current);
         pendingRoute.current = null;
@@ -152,7 +160,7 @@ function PendingAccessScreen() {
   const neverActivated = client?.plan_started_at == null;
 
   return (
-    <ScrollView style={{ backgroundColor: "#0F172A" }} contentContainerStyle={styles.pendingContainer}>
+    <ScrollView style={{ backgroundColor: themeBg("#0F172A") }} contentContainerStyle={styles.pendingContainer}>
       <NotificationsPrompt who="client" />
       <Text style={styles.title}>{neverActivated ? "One last step" : "Your plan has ended"}</Text>
       <Text style={styles.body}>
@@ -235,7 +243,7 @@ function PendingTrainerScreen() {
 function TrainerLockedScreen() {
   const { signOut, trainer } = useAuth();
   return (
-    <ScrollView style={{ backgroundColor: "#0F172A" }} contentContainerStyle={styles.pendingContainer}>
+    <ScrollView style={{ backgroundColor: themeBg("#0F172A") }} contentContainerStyle={styles.pendingContainer}>
       <Text style={styles.title}>Your account is paused</Text>
       <Text style={[styles.body, { marginBottom: 16 }]}>
         {Platform.OS === "web"
@@ -267,7 +275,7 @@ function CoachPausedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   centered: {
     flex: 1,
     justifyContent: "center",

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { emailShareLink, shoppingList, shoppingListText, whatsappShareLink } from "@/lib/shoppingList";
 import type { DietDay } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // The week's shopping list from the client's meal plan (GRIZZ, 2026-10-27).
 // When they train, it first asks how many days this week, as training days
@@ -184,7 +185,7 @@ export default function ShoppingListSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
   sheet: { backgroundColor: "#1E293B", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, paddingBottom: 32, maxHeight: "90%" },
   title: { color: "#fff", fontSize: 18, fontWeight: "800", marginBottom: 6 },

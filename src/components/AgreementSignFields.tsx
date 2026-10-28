@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import TrainerAgreementContent from "@/screens/auth/TrainerAgreementContent";
+import { themedStyles } from "@/lib/theme";
 
 type Props = {
   signedName: string;
@@ -55,7 +56,7 @@ export default function AgreementSignFields({ signedName, onChangeSignedName, ag
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   link: { color: "#22C55E", fontSize: 14, fontWeight: "600", marginVertical: 12, textDecorationLine: "underline" },
   label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 14, marginBottom: 12 },

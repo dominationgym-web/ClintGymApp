@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Switch, Text, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/lib/notificationPrefs";
 import { cancelRemindersForGroups } from "@/lib/notifications";
 import NotificationsPrompt from "@/components/NotificationsPrompt";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // Menu > Notifications (GRIZZ, 2026-10-26): one switch per group, so a client
 // who finds the reminders too much can keep only the ones they want.
@@ -53,7 +54,7 @@ export default function NotificationSettingsScreen() {
       </Text>
 
       {!prefs ? (
-        <ActivityIndicator color={BRAND_GOLD} style={styles.loading} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={styles.loading} />
       ) : (
         groups.map((g) => (
           <View key={g.key} style={styles.card}>
@@ -65,7 +66,7 @@ export default function NotificationSettingsScreen() {
                 value={prefs[g.key]}
                 onValueChange={(on) => toggle(g.key, on)}
                 disabled={saving !== null}
-                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                 accessibilityLabel={g.title}
               />
             </View>
@@ -82,7 +83,7 @@ export default function NotificationSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   content: { padding: 16, paddingBottom: 40 },
   intro: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 14 },

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -20,6 +20,7 @@ import {
   validGoal,
   type StepDay,
 } from "@/lib/steps";
+import { themeBg, themedStyles } from "@/lib/theme";
 
 type Goal = { goal: number; reminders: boolean };
 
@@ -241,7 +242,7 @@ function StepsModal({
 
               <View style={[styles.row, styles.switchRow]}>
                 <Text style={styles.switchText}>Remind me at 4pm and tell me where I am at 7pm</Text>
-                <Switch value={reminders} onValueChange={setReminders} trackColor={{ true: BRAND_GOLD, false: "#334155" }} />
+                <Switch value={reminders} onValueChange={setReminders} trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }} />
               </View>
 
               {error && <Text style={styles.error}>{error}</Text>}
@@ -256,7 +257,7 @@ function StepsModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1.5, borderColor: "#334155" },
   cardGold: { borderColor: BRAND_GOLD },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
@@ -11,6 +11,7 @@ import type { StabilityArea } from "@/lib/stability";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ProgramExercise } from "@/types/database";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const AMBER = "#F59E0B";
 const GREEN = "#22C55E";
@@ -164,12 +165,12 @@ export default function InjuryCheckCard({
   const signModal = (
     <Modal visible={!!sign} transparent animationType="fade" onRequestClose={() => setSign(null)}>
       <View style={styles.backdrop}>
-        <View style={[styles.sign, { borderColor: clear ? GREEN : AMBER }]}>
+        <View style={[styles.sign, { borderColor: themeBorder(clear ? GREEN : AMBER) }]}>
           <Text style={styles.signIcon}>{clear ? "✅" : "🩹"}</Text>
           <Text style={styles.signHeading}>Injury check</Text>
           {clear ? (
             <>
-              <Text style={[styles.signBig, { color: GREEN }]}>No clashes found</Text>
+              <Text style={[styles.signBig, { color: themeText(GREEN) }]}>No clashes found</Text>
               <Text style={styles.signText}>
                 {areas.length === 0
                   ? `${clientName} has no injuries listed.`
@@ -180,13 +181,13 @@ export default function InjuryCheckCard({
                   ✓ {n} checked
                 </Text>
               ))}
-              <Pressable style={[styles.fix, { backgroundColor: GREEN }]} onPress={() => setSign(null)}>
+              <Pressable style={[styles.fix, { backgroundColor: themeBg(GREEN) }]} onPress={() => setSign(null)}>
                 <Text style={styles.fixText}>Done</Text>
               </Pressable>
             </>
           ) : (
             <>
-              <Text style={[styles.signBig, { color: AMBER }]}>
+              <Text style={[styles.signBig, { color: themeText(AMBER) }]}>
                 {flagged.length} exercise{flagged.length === 1 ? "" : "s"} to check
               </Text>
               <Text style={styles.signText}>
@@ -211,11 +212,11 @@ export default function InjuryCheckCard({
     </Modal>
   );
 
-  if (loading) return <ActivityIndicator color={AMBER} style={{ marginTop: 10 }} />;
+  if (loading) return <ActivityIndicator color={themeText(AMBER)} style={{ marginTop: 10 }} />;
   if (areas.length === 0) return signModal;
 
   return (
-    <View style={[styles.card, { borderColor: clear ? GREEN : AMBER }]}>
+    <View style={[styles.card, { borderColor: themeBorder(clear ? GREEN : AMBER) }]}>
       {signModal}
       {fixed.map((n, i) => (
         <Text key={`${n}-${i}`} style={styles.fixedLine}>
@@ -223,10 +224,10 @@ export default function InjuryCheckCard({
         </Text>
       ))}
       {clear ? (
-        <Text style={[styles.title, { color: GREEN }]}>✓ Injury check: no clashes found with {clientName}'s listed injuries ({names})</Text>
+        <Text style={[styles.title, { color: themeText(GREEN) }]}>✓ Injury check: no clashes found with {clientName}'s listed injuries ({names})</Text>
       ) : (
         <>
-          <Text style={[styles.title, { color: AMBER }]}>
+          <Text style={[styles.title, { color: themeText(AMBER) }]}>
             🩹 Injury check: {flagged.length} exercise{flagged.length === 1 ? "" : "s"} to check for {clientName}'s {names}
           </Text>
           {shown.map((f) => (
@@ -270,7 +271,7 @@ export default function InjuryCheckCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12, borderWidth: 1.5 },
   title: { fontSize: 15, fontWeight: "800" },
   row: { marginTop: 8 },

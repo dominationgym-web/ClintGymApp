@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
@@ -17,6 +17,7 @@ import {
 import type { Client, Program } from "@/types/database";
 import PlanProgramModal from "@/components/PlanProgramModal";
 import { useAuth } from "@/context/AuthContext";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // On the client's Training tab (0087): their training experience, and for
 // Never trained, Beginner and Intermediate an offer to put them on a 6-week
@@ -114,7 +115,7 @@ export default function FoundationOfferCard({
               <Text style={styles.secondaryText}>Not now</Text>
             </Pressable>
             <Pressable style={styles.primary} onPress={approve} disabled={busy}>
-              {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Approve: pick the days</Text>}
+              {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>Approve: pick the days</Text>}
             </Pressable>
           </View>
         </>
@@ -135,7 +136,7 @@ export default function FoundationOfferCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
   cardOpen: { borderWidth: 1.5, borderColor: BRAND_GOLD },
   title: { color: "#fff", fontSize: 16, fontWeight: "800" },

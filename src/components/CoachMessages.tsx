@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { registerForCoachMessages } from "@/lib/notifications";
 import { useAuth } from "@/context/AuthContext";
 import { QUICK_REPLIES } from "@/lib/clientProblems";
 import type { CoachMessage } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Messages from the trainer (0034), usually answering a red or orange flag.
 
@@ -131,7 +132,7 @@ function ProblemReplyBox({ problemId }: { problemId: string }) {
         onChangeText={setText}
       />
       <Pressable style={[styles.button, !text.trim() && styles.disabled]} onPress={send} disabled={!text.trim() || sending}>
-        {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Reply</Text>}
+        {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Reply</Text>}
       </Pressable>
     </View>
   );
@@ -172,7 +173,7 @@ export function CoachMessageHistory({ bare = false }: { bare?: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: BRAND_GOLD, borderRadius: 8, padding: 12, marginBottom: 16 },
   title: { color: "#fff", fontWeight: "700", marginBottom: 6 },
   message: { marginBottom: 8 },

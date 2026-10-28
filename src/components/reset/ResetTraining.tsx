@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "../ModalSafeArea";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -23,6 +23,7 @@ import {
   resetWeek,
   type ResetLocation,
 } from "@/lib/resetProgram";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The Reset Training tab: the sessions for a week of the programme, with a
 // demo video under each exercise, a Log button to log weight and reps (with
@@ -186,7 +187,7 @@ export default function ResetTraining({
         </Pressable>
         <View style={{ alignItems: "center" }}>
           <Text style={styles.weekTitle}>Week {week}</Text>
-          <Text style={[styles.phase, { color: phase.color }]}>
+          <Text style={[styles.phase, { color: themeText(phase.color) }]}>
             {phase.name}
             {isThisWeek ? " · THIS WEEK" : ""}
           </Text>
@@ -303,7 +304,7 @@ export default function ResetTraining({
               autoCorrect={false}
             />
             {options === null ? (
-              <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 20 }} />
+              <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 20 }} />
             ) : (
               <FlatList
                 data={filterExercises(options, swapSearch)}
@@ -343,7 +344,7 @@ export default function ResetTraining({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   switchRow: { flexDirection: "row", backgroundColor: "#1E293B", borderRadius: 10, padding: 4, marginBottom: 14 },
   switchButton: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: "center" },
   switchOn: { backgroundColor: BRAND_GOLD },

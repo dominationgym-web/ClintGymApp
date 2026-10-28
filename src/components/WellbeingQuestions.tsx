@@ -1,8 +1,9 @@
 import React from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import { EMERGENCY_NUMBERS } from "@/components/MedicalHoldNotice";
 import TextInput from "@/components/TextInput";
 import { splitKinds, STOP_EXERCISE_ADVICE, toggleKind, WELLBEING_TOPICS, type WellbeingAnswer, type WellbeingForm, type WellbeingKey } from "@/lib/wellbeing";
+import { themedStyles } from "@/lib/theme";
 
 // Pain, fatigue and mental exhaustion on the check-in (0055). Each needs a tap:
 // "I'm okay", or "Something's up" with what it is and a short note. Dizziness
@@ -97,7 +98,7 @@ export function StopAdvice() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   stop: { backgroundColor: "#450A0A", borderColor: "#EF4444", borderWidth: 1.5, borderRadius: 10, padding: 10, marginTop: 10 },
   stopTitle: { color: "#FCA5A5", fontWeight: "800", fontSize: 15, marginBottom: 4 },
   stopText: { color: "#FEE2E2", fontSize: 13, lineHeight: 19 },

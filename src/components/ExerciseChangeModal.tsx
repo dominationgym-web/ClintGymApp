@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +13,7 @@ import type { ClientExerciseChange, Exercise, ProgramExercise } from "@/types/da
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { checkRisks, exerciseKey, exerciseRisks, KEEP_REASONS, riskLine, safeSuggestions } from "@/lib/injuryRisk";
 import type { StabilityArea } from "@/lib/stability";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const AMBER = "#F59E0B";
 const GREEN = "#22C55E";
@@ -224,7 +225,7 @@ export default function ExerciseChangeModal({
               </View>
             ) : null}
             {library.length === 0 ? (
-              <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 20 }} />
+              <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 20 }} />
             ) : (
               <FlatList
                 data={options}
@@ -240,7 +241,7 @@ export default function ExerciseChangeModal({
                           const risks = injuries.length ? risksOf(item) : [];
                           return (
                             <>
-                              <Text style={[styles.exerciseName, injuries.length > 0 && { color: risks.length ? AMBER : GREEN }]}>
+                              <Text style={[styles.exerciseName, injuries.length > 0 && { color: themeText(risks.length ? AMBER : GREEN) }]}>
                                 {injuries.length > 0 ? (risks.length ? "⚠ " : "✓ ") : ""}
                                 {item.name}
                               </Text>
@@ -276,8 +277,8 @@ export default function ExerciseChangeModal({
               In the workout: {original.exercise_name}, {original.sets} x {original.reps}
             </Text>
             {injuries.length > 0 && library.length > 0 && (
-              <View style={[styles.riskBox, { borderColor: chosenRisks.length ? AMBER : GREEN }]}>
-                <Text style={[styles.riskTitle, { color: chosenRisks.length ? AMBER : GREEN }]}>
+              <View style={[styles.riskBox, { borderColor: themeBorder(chosenRisks.length ? AMBER : GREEN) }]}>
+                <Text style={[styles.riskTitle, { color: themeText(chosenRisks.length ? AMBER : GREEN) }]}>
                   {chosenRisks.length
                     ? `⚠ ${chosen.name} may aggravate their injury: worth a check`
                     : `✓ No clashes found with their listed injuries`}
@@ -308,17 +309,17 @@ export default function ExerciseChangeModal({
                   return (
                     <Pressable
                       key={e.id}
-                      style={[styles.suggestion, on && { borderColor: GREEN }]}
+                      style={[styles.suggestion, on && { borderColor: themeBorder(GREEN) }]}
                       onPress={() => {
                         setExercise({ id: e.id, name: e.name });
                         setEverywhere(true);
                       }}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.exerciseName, { color: GREEN }]}>✓ {e.name}</Text>
+                        <Text style={[styles.exerciseName, { color: themeText(GREEN) }]}>✓ {e.name}</Text>
                         {e.category ? <Text style={styles.helper}>{e.category}</Text> : null}
                       </View>
-                      <Text style={[styles.useText, styles.suggestionUse, on && { backgroundColor: GREEN }]}>{on ? "Picked" : "Use"}</Text>
+                      <Text style={[styles.useText, styles.suggestionUse, on && { backgroundColor: themeBg(GREEN) }]}>{on ? "Picked" : "Use"}</Text>
                     </Pressable>
                   );
                 })}
@@ -368,7 +369,7 @@ export default function ExerciseChangeModal({
 
             <Pressable style={[styles.saveButton, chosenRisks.length > 0 && styles.saveWarn]} onPress={save} disabled={saving}>
               {saving ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
                 <Text style={styles.saveText}>{chosenRisks.length > 0 ? "Keep it anyway" : `Save for ${clientName}`}</Text>
               )}
@@ -394,7 +395,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   modal: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingBottom: 12 },
   title: { color: "#fff", fontSize: 18, fontWeight: "800", flex: 1 },

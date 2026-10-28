@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
@@ -22,6 +22,7 @@ import {
   type RoundClock,
 } from "@/lib/dropSets";
 import type { Client, DropSetRound, ProgramExercise, WorkoutLog } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Entry = { weight: number | null; reps: number };
 
@@ -190,7 +191,7 @@ export default function DropSetLogger({
               <>
                 <View style={styles.roundRow}>
                   <Text style={styles.round}>Round {roundNumber} of {rounds}</Text>
-                  <Text style={[styles.clock, running && { color: BRAND_GOLD }]}>
+                  <Text style={[styles.clock, running && { color: themeText(BRAND_GOLD) }]}>
                     ⏱ {formatRoundTime(clockSeconds(clock, now))}
                     {entries.length > 0 && !running ? " paused" : ""}
                   </Text>
@@ -232,7 +233,7 @@ export default function DropSetLogger({
                   disabled={entries.length === 0 || saving}
                   accessibilityRole="button"
                 >
-                  {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.finishText}>Finish round</Text>}
+                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Finish round</Text>}
                 </Pressable>
               </>
             )}
@@ -243,7 +244,7 @@ export default function DropSetLogger({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: "#0F172A" },
   body: { padding: 16, gap: 8 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

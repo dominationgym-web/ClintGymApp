@@ -4,7 +4,7 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList, ClientTabParamList } from "@/navigation/types";
 import InjuryList from "@/components/InjuryList";
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import TextInput from "@/components/TextInput";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -28,6 +28,7 @@ import { trainerDisplayName } from "@/lib/trainers";
 import { STATUS_FLAGS } from "@/lib/statusFlags";
 import { clientGoals } from "@/lib/clientGoals";
 import type { ClientStatusFlag, Trainer } from "@/types/database";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Active",
@@ -187,7 +188,7 @@ export default function ClientProfileScreen() {
         <Pressable style={styles.photoBlock} onPress={changePhoto} disabled={uploadingPhoto}>
           <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
           {uploadingPhoto ? (
-            <ActivityIndicator style={{ marginTop: 6 }} color="#22C55E" />
+            <ActivityIndicator style={{ marginTop: 6 }} color={themeText("#22C55E")} />
           ) : (
             <Text style={styles.photoLink}>{client.avatar_path ? "Change photo" : "Add a photo"}</Text>
           )}
@@ -231,13 +232,13 @@ export default function ClientProfileScreen() {
           f.key === "red" ? (
             <Pressable key={f.key} style={styles.flagRow} onPress={() => setSelectedFlag(f.key)}>
               <Text style={styles.flagIcon}>🚩</Text>
-              <View style={[styles.radio, activeFlag === f.key && { borderColor: f.color, backgroundColor: f.color }]} />
+              <View style={[styles.radio, activeFlag === f.key && { borderColor: themeBorder(f.color), backgroundColor: themeBg(f.color) }]} />
               <Text style={styles.flagLabel}>{f.label}</Text>
             </Pressable>
           ) : (
             <Pressable key={f.key} style={styles.flagRow} onPress={() => setSelectedFlag(f.key)}>
-              <View style={[styles.flagDot, { backgroundColor: f.color }]} />
-              <View style={[styles.radio, activeFlag === f.key && { borderColor: f.color, backgroundColor: f.color }]} />
+              <View style={[styles.flagDot, { backgroundColor: themeBg(f.color) }]} />
+              <View style={[styles.radio, activeFlag === f.key && { borderColor: themeBorder(f.color), backgroundColor: themeBg(f.color) }]} />
               <Text style={styles.flagLabel}>{f.label}</Text>
             </Pressable>
           )
@@ -256,7 +257,7 @@ export default function ClientProfileScreen() {
 
         {hasChange && (
           <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Update status</Text>}
+            {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Update status</Text>}
           </Pressable>
         )}
 
@@ -346,7 +347,7 @@ function statusStyle(status: string) {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 8 },
   photoBlock: { alignItems: "center" },

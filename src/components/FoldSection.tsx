@@ -1,6 +1,7 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themedStyles } from "@/lib/theme";
 
 // A tap-to-open heading for a long page, so the client sees a short list of
 // headings instead of scrolling (GRIZZ dislikes scrolling). `hint` is a short
@@ -35,7 +36,7 @@ export default function FoldSection({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   fold: { backgroundColor: "#111C33", borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: "#1E293B" },
   foldOpen: { borderColor: BRAND_GOLD },
   header: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },

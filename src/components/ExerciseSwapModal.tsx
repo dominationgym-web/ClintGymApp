@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Modal, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -7,6 +7,7 @@ import { bodyPartLabel, filterExercises } from "@/lib/exerciseFilter";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Exercise } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // Change exercise (0047): pick another exercise for the same body part when
 // the gym is busy. Used on the workout screen and on the client's calendar.
@@ -99,7 +100,7 @@ export default function ExerciseSwapModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   name: { color: "#fff", fontWeight: "600", flexShrink: 1 },
   category: { color: "#64748B", fontSize: 12, marginTop: 2 },
   helper: { color: "#94A3B8", fontSize: 13, marginBottom: 12 },

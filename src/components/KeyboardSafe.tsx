@@ -1,5 +1,6 @@
 import React from "react";
-import { KeyboardAvoidingView, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
+import { KeyboardAvoidingView, type StyleProp, type ViewStyle } from "react-native";
+import { themedStyles } from "@/lib/theme";
 
 // Keeps whatever is being typed above the keyboard (GRIZZ, 2026-10-12).
 // Android draws the app edge to edge, so the screen no longer shrinks for
@@ -15,4 +16,4 @@ export default function KeyboardSafe({ children, style }: { children: React.Reac
   );
 }
 
-const styles = StyleSheet.create({ fill: { flex: 1 } });
+const styles = themedStyles({ fill: { flex: 1 } });

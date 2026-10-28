@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -18,6 +18,7 @@ import {
   type PreStartAnswers,
 } from "@/lib/preStart";
 import PreStartRiskList from "@/components/PreStartRiskList";
+import { themedStyles } from "@/lib/theme";
 
 // The pre-start health and safety form (src/lib/preStart.ts), one page at a
 // time (GRIZZ doesn't like long scrolling), ending on the app's risk check.
@@ -311,7 +312,7 @@ export default function PreStartFormModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", alignItems: "flex-start", padding: 20, gap: 12 },
   kicker: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Alert, Platform } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Alert, Platform } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import PasswordInput from "@/components/PasswordInput";
 import SelfTrainingComingSoon from "@/components/SelfTrainingComingSoon";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
@@ -72,7 +73,7 @@ export default function LoginScreen({ navigation, route }: Props) {
       <Text style={styles.label}>Password</Text>
       <PasswordInput placeholder="Your password" value={password} onChangeText={setPassword} />
       <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
+        {loading ? <ActivityIndicator color={themeText("#fff")} /> : <Text style={styles.buttonText}>Log in</Text>}
       </Pressable>
       {coach ? (
         <>
@@ -98,7 +99,7 @@ export default function LoginScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   label: { color: "#CBD5E1", fontWeight: "600", marginBottom: 6 },
   container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
   brand: { fontSize: 32, fontWeight: "800", color: "#fff", textAlign: "center" },

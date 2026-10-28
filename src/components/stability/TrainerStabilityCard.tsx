@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -20,6 +20,7 @@ import {
   type StabilityExercise,
   type StabilityLevel,
 } from "@/lib/stability";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // For the trainer, on the client's Training tab. Stability programs are the
 // trainer's to give (GRIZZ, 2026-10-14): pick an area and a level to start one
@@ -210,7 +211,7 @@ export default function TrainerStabilityCard({
                   </Pressable>
                 )}
                 <Pressable style={[styles.smallBtn, styles.stopBtn]} onPress={() => stop(p)} disabled={busy}>
-                  <Text style={[styles.smallBtnText, { color: "#F87171" }]}>Stop</Text>
+                  <Text style={[styles.smallBtnText, { color: themeText("#F87171") }]}>Stop</Text>
                 </Pressable>
               </View>
             </View>
@@ -220,7 +221,7 @@ export default function TrainerStabilityCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   howTo: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 6 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, marginTop: 12, overflow: "hidden" },
   header: { flexDirection: "row", alignItems: "center", padding: 12 },

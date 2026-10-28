@@ -1,7 +1,8 @@
 import React from "react";
-import { Alert, Clipboard, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Clipboard, Pressable, Text, View } from "react-native";
 import { eftRows } from "@/lib/trainers";
 import type { EftDetails } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Props = {
   eftDetails: EftDetails | null | undefined;
@@ -37,7 +38,7 @@ export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofIn
             key={label}
             style={styles.bankRow}
             onPress={() => copy(value, label)}
-            android_ripple={{ color: "rgba(34, 197, 94, 0.1)" }}
+            android_ripple={{ color: themeText("rgba(34, 197, 94, 0.1)") }}
           >
             <View style={{ flex: 1 }}>
               <Text style={styles.bankLabel}>{label}</Text>
@@ -63,7 +64,7 @@ export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofIn
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20, flexShrink: 1, marginBottom: 4 },
   bankBox: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 12 },

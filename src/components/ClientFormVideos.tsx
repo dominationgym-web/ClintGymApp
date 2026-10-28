@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -8,6 +8,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { cleanMessage, MAX_MESSAGE_LENGTH } from "@/lib/coachMessages";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Client, CoachMessage, Video } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The client's form videos on their Training tab (0081): newest first, new
 // ones marked, tap to watch. The feedback box sits under the playing video,
@@ -175,7 +176,7 @@ function WatchAndCorrect({
           </View>
           {url === null ? (
             <View style={styles.video}>
-              <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 40 }} />
+              <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 40 }} />
             </View>
           ) : url ? (
             <Player url={url} />
@@ -207,7 +208,7 @@ function WatchAndCorrect({
               onPress={() => send()}
               disabled={!message || sending}
             >
-              {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.replyText}>💬 Send to {firstName}</Text>}
+              {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.replyText}>💬 Send to {firstName}</Text>}
             </Pressable>
           </View>
         </ModalSafeArea>
@@ -235,7 +236,7 @@ function Player({ url }: { url: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12 },
   title: { color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 6 },
   helper: { color: "#94A3B8", fontSize: 13 },

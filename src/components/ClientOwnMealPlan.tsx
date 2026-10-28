@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { MealDayView } from "@/components/MealPlanMaker";
 import type { ClientMealPlan } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // On the trainer's Diet tab: the plan the client made for themselves with the
 // meal plan maker (0077), read-only, under a tap-to-open heading.
@@ -56,7 +57,7 @@ export default function ClientOwnMealPlan({ clientId, clientName }: { clientId: 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 16 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { color: "#fff", fontSize: 16, fontWeight: "800", flex: 1 },

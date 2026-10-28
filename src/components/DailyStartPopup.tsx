@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator, Alert, AppState, ScrollView } from "react-native";
+import { View, Text, Pressable, Modal, ActivityIndicator, Alert, AppState, ScrollView } from "react-native";
 import TextInput from "@/components/TextInput";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
@@ -10,6 +10,7 @@ import { todayIso } from "@/lib/dates";
 import { STATUS_FLAGS, answeredStatusToday } from "@/lib/statusFlags";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { ClientStatusFlag } from "@/types/database";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const QUOTE_SEEN_KEY = "dailyQuoteSeenOn";
 const STATUS_ANSWERED_KEY = "dailyStatusAnsweredOn";
@@ -133,8 +134,8 @@ export default function DailyStartPopup() {
               <Text style={styles.body}>Let your trainer know if you need anything - they check this before anything else.</Text>
               {STATUS_FLAGS.map((f) => (
                 <Pressable key={f.key} style={styles.flagRow} onPress={() => pick(f.key)}>
-                  {f.key === "red" ? <Text style={styles.flagIcon}>🚩</Text> : <View style={[styles.flagDot, { backgroundColor: f.color }]} />}
-                  <View style={[styles.radio, flag === f.key && { borderColor: f.color, backgroundColor: f.color }]} />
+                  {f.key === "red" ? <Text style={styles.flagIcon}>🚩</Text> : <View style={[styles.flagDot, { backgroundColor: themeBg(f.color) }]} />}
+                  <View style={[styles.radio, flag === f.key && { borderColor: themeBorder(f.color), backgroundColor: themeBg(f.color) }]} />
                   <Text style={styles.flagLabel}>{f.label}</Text>
                 </Pressable>
               ))}
@@ -149,7 +150,7 @@ export default function DailyStartPopup() {
                 />
               ) : null}
               <Pressable style={[styles.button, !flag && styles.buttonDisabled]} onPress={send} disabled={!flag || saving}>
-                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Send</Text>}
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Send</Text>}
               </Pressable>
               {failed ? (
                 <Pressable style={styles.skip} onPress={skip}>
@@ -172,7 +173,7 @@ export default function DailyStartPopup() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flexGrow: 1, backgroundColor: "rgba(0,0,0,0.75)", justifyContent: "center", padding: 24 },
   popup: { backgroundColor: "#0F172A", borderRadius: 16, padding: 24, borderWidth: 1.5, borderColor: BRAND_GOLD },
   kicker: { color: BRAND_GOLD, fontSize: 11, fontWeight: "800", letterSpacing: 1.5, marginBottom: 6 },

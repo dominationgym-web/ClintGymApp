@@ -1,7 +1,8 @@
 import React from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { WEIGH_IN_OPTIONS, type WeighInEvery } from "@/lib/progress";
+import { themedStyles } from "@/lib/theme";
 
 // Asked when a trainer activates a client who has no weigh-in schedule yet:
 // how often should they weigh and measure? The client gets a reminder on their
@@ -36,7 +37,7 @@ export default function WeighInPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 24 },
   card: { backgroundColor: "#111C33", borderRadius: 14, padding: 18, borderWidth: 1.5, borderColor: BRAND_GOLD },
   title: { color: "#fff", fontWeight: "800", fontSize: 18 },

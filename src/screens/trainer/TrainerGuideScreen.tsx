@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from "react";
 import { useStepBack } from "@/hooks/useStepBack";
-import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";
 import { trainerGuide } from "@/lib/trainerGuides";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "TrainerGuide">;
 
@@ -18,39 +19,39 @@ export default function TrainerGuideScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-      <View style={[styles.hero, { borderColor: guide.accent }]}>
-        <View style={[styles.heroIcon, { backgroundColor: guide.accent + "26" }]}>
+      <View style={[styles.hero, { borderColor: themeBorder(guide.accent) }]}>
+        <View style={[styles.heroIcon, { backgroundColor: themeBg(guide.accent + "26") }]}>
           <Text style={styles.heroIconText}>{guide.icon}</Text>
         </View>
         <Text style={styles.heroTitle}>{guide.title}</Text>
         <Text style={styles.summary}>{guide.summary}</Text>
-        <Text style={[styles.heroHint, { color: guide.accent }]}>Tap a topic to open it</Text>
+        <Text style={[styles.heroHint, { color: themeText(guide.accent) }]}>Tap a topic to open it</Text>
       </View>
       {guide.topics.map((topic) => {
         const isOpen = open === topic.title;
         return (
           <View key={topic.title}>
             <Pressable
-              style={[styles.partHeader, { borderLeftColor: guide.accent }, isOpen && styles.partHeaderOpen]}
+              style={[styles.partHeader, { borderLeftColor: themeBorder(guide.accent) }, isOpen && styles.partHeaderOpen]}
               onPress={() => setOpen(isOpen ? null : topic.title)}
               accessibilityRole="button"
               accessibilityState={{ expanded: isOpen }}
             >
-              <View style={[styles.partIcon, { backgroundColor: guide.accent + "1F" }]}>
+              <View style={[styles.partIcon, { backgroundColor: themeBg(guide.accent + "1F") }]}>
                 <Text style={styles.partIconText}>{topic.icon}</Text>
               </View>
               <Text style={styles.partTitle}>{topic.title}</Text>
-              <Text style={[styles.partArrow, { color: guide.accent }]}>{isOpen ? "▲" : "▼"}</Text>
+              <Text style={[styles.partArrow, { color: themeText(guide.accent) }]}>{isOpen ? "▲" : "▼"}</Text>
             </Pressable>
             {isOpen ? (
               <View style={{ marginBottom: 8 }}>
                 {topic.intro ? <Text style={styles.intro}>{topic.intro}</Text> : null}
                 {topic.groups.map((group) => (
                   <View key={group.heading} style={styles.card}>
-                    <Text style={[styles.heading, { color: guide.accent }]}>{group.heading}</Text>
+                    <Text style={[styles.heading, { color: themeText(guide.accent) }]}>{group.heading}</Text>
                     {group.points.map((point) => (
                       <View key={point} style={styles.pointRow}>
-                        <Text style={[styles.bullet, { color: guide.accent }]}>•</Text>
+                        <Text style={[styles.bullet, { color: themeText(guide.accent) }]}>•</Text>
                         <Text style={styles.point}>{point}</Text>
                       </View>
                     ))}
@@ -65,7 +66,7 @@ export default function TrainerGuideScreen({ route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   hero: {
     backgroundColor: "#1E293B",

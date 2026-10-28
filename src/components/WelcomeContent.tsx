@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
@@ -12,6 +12,7 @@ import {
   WELCOME_OPENING_QUESTION,
   WELCOME_SIGN_OFF,
 } from "@/lib/welcome";
+import { themedStyles } from "@/lib/theme";
 
 const NAVY = "#0F172A";
 const CARD = "#1E293B";
@@ -135,7 +136,7 @@ export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionB
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: NAVY },
   content: { flexGrow: 1, padding: 24, paddingBottom: 32 },
   centred: { flexGrow: 1, justifyContent: "center" },

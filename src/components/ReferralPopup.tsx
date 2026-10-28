@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { AppState, Modal, Pressable, ScrollView, Share, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { todayIso } from "@/lib/dates";
 import { REFERRAL_DISCOUNT_PERCENT, REFERRALS_PER_FREE_MONTH, REFERRAL_WAIT_MONTHS, referralRewards } from "@/lib/trainers";
 import { money, referralCreditUseLine, referralCreditValue, referralPopupDue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 const shownKey = (trainerId: string) => `referralPopupShownOn:${trainerId}`;
 
@@ -130,7 +131,7 @@ export default function ReferralPopup() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flexGrow: 1, backgroundColor: "rgba(0,0,0,0.75)", justifyContent: "center", padding: 24 },
   popup: { backgroundColor: "#0F172A", borderRadius: 16, padding: 22, borderWidth: 1.5, borderColor: BRAND_GOLD },
   kicker: { color: BRAND_GOLD, fontSize: 11, fontWeight: "800", letterSpacing: 1.5, marginBottom: 6 },

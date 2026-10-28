@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { tabIcon } from "@/navigation/tabIcon";
@@ -36,6 +36,7 @@ import MyWeekScreen from "@/screens/client/laptop/MyWeekScreen";
 import LiftsScreen from "@/screens/client/laptop/LiftsScreen";
 import BodyScreen from "@/screens/client/laptop/BodyScreen";
 import FoodScreen from "@/screens/client/laptop/FoodScreen";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -62,14 +63,14 @@ function ClientTabs() {
       tabBar={wide ? () => null : undefined}
       screenLayout={wide ? phoneColumn : undefined}
       screenOptions={{
-        headerStyle: { backgroundColor: "#0F172A" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: themeBg("#0F172A") },
+        headerTintColor: themeText("#fff"),
         headerRight: wide ? undefined : () => <SectionsMenuButton />,
-        tabBarStyle: { backgroundColor: "#0F172A", borderTopColor: "#1E293B" },
+        tabBarStyle: { backgroundColor: themeBg("#0F172A"), borderTopColor: themeBorder("#1E293B") },
         // So the typing box sits right on the keyboard, not above the tab bar.
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: BRAND_GOLD,
-        tabBarInactiveTintColor: "#64748B",
+        tabBarActiveTintColor: themeText(BRAND_GOLD),
+        tabBarInactiveTintColor: themeText("#64748B"),
       }}
     >
       {/* 4 tabs, or 5 with the Reset (app-flow review C1, 2026-10-18): Training sits next
@@ -119,7 +120,7 @@ export default function ClientNavigator() {
       <View style={styles.row}>
         {wide ? <ClientSidebar /> : null}
         <View style={styles.page}>
-          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#fff" }} screenLayout={wide ? phoneColumn : undefined}>
+          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: themeBg("#0F172A") }, headerTintColor: themeText("#fff") }} screenLayout={wide ? phoneColumn : undefined}>
             <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} layout={fullWidth} />
             <Stack.Screen
               name="Section"
@@ -147,7 +148,7 @@ export default function ClientNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   row: { flex: 1, flexDirection: "row", backgroundColor: "#020617" },
   page: { flex: 1 },
   columnPage: { flex: 1, backgroundColor: "#020617", alignItems: "center" },

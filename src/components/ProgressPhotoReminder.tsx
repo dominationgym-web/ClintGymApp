@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,7 @@ import { progressPhotoStatus, type ProgressPhotoStatus } from "@/lib/progressPho
 import { latestProgressPhotoDate } from "@/components/progressPhotoData";
 import { scheduleProgressPhotoReminder } from "@/lib/notifications";
 import type { ClientTabParamList } from "@/navigation/types";
+import { themedStyles } from "@/lib/theme";
 
 // The 6-week reminder. This banner shows in the app whenever a photo is due,
 // and each time it loads it also (re)schedules a phone notification for 9am on
@@ -48,7 +49,7 @@ export default function ProgressPhotoReminder() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   banner: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: "#22C55E", borderRadius: 8, padding: 12, marginBottom: 16 },
   text: { color: "#E2E8F0", fontWeight: "600" },
 });

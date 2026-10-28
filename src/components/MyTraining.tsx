@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -11,6 +11,7 @@ import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import ProgressCard from "@/components/ProgressCard";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { WorkoutLog, WorkoutSession } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Makes sure the trainer's own training row exists (0146), then opens their
 // live workout. Also used by "My workout" on the trainer menu (GRIZZ, 2026-10-27).
@@ -77,7 +78,7 @@ export default function MyTraining() {
     <>
       <Pressable style={styles.start} onPress={start} disabled={opening}>
         {opening ? (
-          <ActivityIndicator color="#0F172A" />
+          <ActivityIndicator color={themeText("#0F172A")} />
         ) : (
           <>
             <Text style={styles.startText}>▶ Start my workout</Text>
@@ -86,7 +87,7 @@ export default function MyTraining() {
         )}
       </Pressable>
       {started === null ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 20 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 20 }} />
       ) : started ? (
         <>
           <Text style={styles.heading}>📅 My last two weeks</Text>
@@ -103,7 +104,7 @@ export default function MyTraining() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   start: { backgroundColor: BRAND_GOLD, borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 18 },
   startText: { color: "#0F172A", fontWeight: "800", fontSize: 18 },
   startSub: { color: "#0F172A", fontSize: 13, marginTop: 4 },

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 import { likelyPainArea, painAreaLabel, painSuggestions, PAIN_AREAS } from "@/lib/painSwap";
 import type { StabilityArea } from "@/lib/stability";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import type { Exercise } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // "This hurts" (GRIZZ, 2026-10-20): the client says where an exercise hurts
 // and gets the same movement at a kinder angle or grip to try, just for today
@@ -107,7 +108,7 @@ export default function PainSwapModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", alignItems: "flex-start", padding: 20, gap: 12 },
   title: { color: "#fff", fontSize: 18, fontWeight: "800" },

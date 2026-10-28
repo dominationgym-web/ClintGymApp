@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { DELOAD_BLUE, deloadStartChoices } from "@/lib/deload";
 import type { DeloadCheck } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Deload weeks (0115, GRIZZ, 2026-10-18), above the client's calendar. When
 // deload_check() says one is due (weeks of training in a row, or signs of
@@ -110,7 +111,7 @@ export default function DeloadCard({
       )}
       {(check.due || open) &&
         (adding ? (
-          <ActivityIndicator color={DELOAD_BLUE} style={{ marginTop: 8 }} />
+          <ActivityIndicator color={themeText(DELOAD_BLUE)} style={{ marginTop: 8 }} />
         ) : (
           <View style={styles.chips}>
             {choices.map((c) => (
@@ -124,7 +125,7 @@ export default function DeloadCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { borderRadius: 10, padding: 10, marginTop: 10, borderWidth: 1, borderColor: "#1E293B" },
   due: { borderColor: DELOAD_BLUE, backgroundColor: "rgba(96,165,250,0.08)" },
   planned: { borderColor: DELOAD_BLUE },

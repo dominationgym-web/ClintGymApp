@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, Switch, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -21,6 +21,7 @@ import {
 } from "@/lib/progressPhotos";
 import ProgressHistory from "@/components/ProgressHistory";
 import { loadProgressPhotos, type LoadedProgressPhoto } from "@/components/progressPhotoData";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // Shown on screen and again before each photo, so every set is taken the same
 // way and the comparison is honest.
@@ -209,7 +210,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
       </View>
 
       {loading ? (
-        <ActivityIndicator color="#22C55E" style={{ marginVertical: 12 }} />
+        <ActivityIndicator color={themeText("#22C55E")} style={{ marginVertical: 12 }} />
       ) : (
         <>
           {status.kind === "due" && (
@@ -238,7 +239,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
                     >
                       {uploadingAngle === angle ? (
                         <View style={[styles.slotBox, styles.slotEmpty]}>
-                          <ActivityIndicator color="#22C55E" />
+                          <ActivityIndicator color={themeText("#22C55E")} />
                         </View>
                       ) : photo?.url ? (
                         <Image source={{ uri: photo.url }} style={styles.slotBox} />
@@ -295,14 +296,14 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
           value={client.progress_photos_shared}
           onValueChange={onToggleSharing}
           disabled={savingShare}
-          trackColor={{ true: "#22C55E", false: "#334155" }}
+          trackColor={{ true: themeBg("#22C55E"), false: themeBg("#334155") }}
         />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   heading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 6 },
   subheading: { color: "#E2E8F0", fontWeight: "600", marginBottom: 8 },
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },

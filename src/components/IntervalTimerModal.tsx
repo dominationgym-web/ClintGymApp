@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Vibration, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, Vibration, View } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import { useKeepAwake } from "expo-keep-awake";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -8,6 +8,7 @@ import { buildIntervals, EFFORT_GUIDE, totalMinutes, type IntervalPhase } from "
 import { countdownCue } from "@/lib/timerWorkouts";
 import { playTimerSound, prepareTimerSounds, setTimerSoundOn, switchSound } from "@/lib/timerSounds";
 import type { ProgramExercise } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // Keeps the screen on while the timer runs.
 function KeepAwake() {
@@ -169,7 +170,7 @@ export default function IntervalTimerModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <ModalSafeArea style={[styles.screen, stage === "running" && { backgroundColor: color }]}>
+      <ModalSafeArea style={[styles.screen, stage === "running" && { backgroundColor: themeBg(color) }]}>
         {stage === "intro" && (
           <ScrollView contentContainerStyle={styles.pad}>
             <View style={styles.header}>
@@ -230,7 +231,7 @@ export default function IntervalTimerModal({
               <>
                 <Text style={styles.clock}>{formatClock(openElapsed)}</Text>
                 <Pressable style={styles.doneButton} onPress={() => next(true)}>
-                  <Text style={[styles.doneText, { color }]}>Done ✓</Text>
+                  <Text style={[styles.doneText, { color: themeText(color) }]}>Done ✓</Text>
                 </Pressable>
               </>
             )}
@@ -294,7 +295,7 @@ export default function IntervalTimerModal({
             </Text>
             {efforts > 0 || finished.length > 0 ? (
               <Pressable style={styles.startButton} onPress={save} disabled={saving}>
-                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.startText}>Save to my workout</Text>}
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.startText}>Save to my workout</Text>}
               </Pressable>
             ) : null}
             <Pressable style={styles.secondary} onPress={onClose}>
@@ -307,7 +308,7 @@ export default function IntervalTimerModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: "#0F172A" },
   pad: { padding: 20 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

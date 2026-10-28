@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import {
   cookingIdeasFor,
@@ -9,6 +9,7 @@ import {
   type LightSauce,
   type ProteinCooking,
 } from "@/lib/proteinCooking";
+import { themedStyles } from "@/lib/theme";
 
 // Protein cooking ideas and low-calorie sauces (GRIZZ, 2026-10-27). Everything
 // is a tap-to-open line, one open at a time, so the client sees a short list
@@ -165,7 +166,7 @@ export function CookingIdeasLink({ food }: { food: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12 },
   intro: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 4 },
   fold: { backgroundColor: "#0F172A", borderRadius: 10, marginTop: 8, borderWidth: 1, borderColor: "#0F172A" },

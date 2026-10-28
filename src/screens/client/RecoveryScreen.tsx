@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
@@ -21,6 +21,7 @@ import { loadRecoveryActivities } from "@/lib/recoveryPlanQueries";
 import RecoveryActivityModal, { RECOVERY_GREEN } from "@/components/RecoveryActivityModal";
 import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 import type { RecoveryActivityRow } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The client's Recovery section (GRIZZ, 2026-10-17, 0107/0108): the app's
 // suggestion for today, their ready-made recovery program, eight activities
@@ -89,10 +90,10 @@ export default function RecoveryScreen() {
     const info = findRecoveryActivity(r.activity);
     return (
       <View key={r.id} style={styles.planRow}>
-        <Ionicons name={info?.icon ?? "leaf"} size={18} color={late ? "#F59E0B" : RECOVERY_GREEN} />
+        <Ionicons name={info?.icon ?? "leaf"} size={18} color={themeText(late ? "#F59E0B" : RECOVERY_GREEN)} />
         <View style={{ flex: 1 }}>
           <Text style={styles.planTitle}>{info?.title ?? r.activity}</Text>
-          <Text style={[styles.planDay, late && { color: "#F59E0B" }]}>{late ? `Planned ${dayLabel(r.planned_on, today)}` : dayLabel(r.planned_on, today)}</Text>
+          <Text style={[styles.planDay, late && { color: themeText("#F59E0B") }]}>{late ? `Planned ${dayLabel(r.planned_on, today)}` : dayLabel(r.planned_on, today)}</Text>
         </View>
         <Pressable style={styles.tick} onPress={() => setCompleting(r)} hitSlop={6} accessibilityLabel="Mark done">
           <Text style={styles.tickText}>✓ Done</Text>
@@ -112,7 +113,7 @@ export default function RecoveryScreen() {
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>Recovery</Text>
         <View style={styles.taglineRow}>
-          <Ionicons name="leaf-outline" size={18} color={RECOVERY_GREEN} />
+          <Ionicons name="leaf-outline" size={18} color={themeText(RECOVERY_GREEN)} />
           <Text style={styles.tagline}>Recover better. Perform better.</Text>
         </View>
         <Text style={styles.intro}>Choose an activity to support your recovery, improve wellbeing and maintain consistency.</Text>
@@ -165,7 +166,7 @@ export default function RecoveryScreen() {
       <View style={styles.grid}>
         {RECOVERY_ACTIVITIES.map((a) => (
           <Pressable key={a.key} style={styles.tile} onPress={() => setOpen(a.key)} accessibilityRole="button">
-            <Ionicons name={a.icon} size={20} color="#15803D" />
+            <Ionicons name={a.icon} size={20} color={themeText("#15803D")} />
             <Text style={styles.tileTitle}>{a.title}</Text>
             <Text style={styles.tileTag}>{a.tagline}</Text>
           </Pressable>
@@ -176,7 +177,7 @@ export default function RecoveryScreen() {
         <Text style={styles.addText}>+ Add recovery activity</Text>
       </Pressable>
       <View style={styles.noteRow}>
-        <Ionicons name="calendar-outline" size={16} color={RECOVERY_GREEN} />
+        <Ionicons name="calendar-outline" size={16} color={themeText(RECOVERY_GREEN)} />
         <Text style={styles.note}>Planned activities appear in your calendar in bright green.</Text>
       </View>
 
@@ -188,7 +189,7 @@ export default function RecoveryScreen() {
       ) : (
         thisWeek.map((r) => (
           <View key={r.id} style={styles.logRow}>
-            <Text style={[styles.logMark, r.skipped && { color: "#94A3B8" }]}>{r.skipped ? "–" : "✓"}</Text>
+            <Text style={[styles.logMark, r.skipped && { color: themeText("#94A3B8") }]}>{r.skipped ? "–" : "✓"}</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.logTitle}>
                 {findRecoveryActivity(r.activity)?.title ?? r.activity} · {dayLabel(r.done_on ?? r.planned_on, today)}
@@ -225,7 +226,7 @@ export default function RecoveryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   hero: { backgroundColor: "#0F2A1C", borderRadius: 16, padding: 16, marginBottom: 14 },
   heroTitle: { color: "#fff", fontSize: 26, fontWeight: "800" },

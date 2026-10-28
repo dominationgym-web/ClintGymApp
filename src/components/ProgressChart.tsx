@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { Point } from "@/lib/progress";
+import { themeBg, themeBorder, themedStyles } from "@/lib/theme";
 
 // A line graph drawn with plain Views (no chart library, so no new app build
 // needed). Tap a dot to see that day's value. `height` makes it taller, for
@@ -69,7 +70,7 @@ export default function ProgressChart({
                   key={`l${i}`}
                   style={[
                     styles.line,
-                    { backgroundColor: color, width: len, left: (a.x + b.x) / 2 - len / 2, top: (a.y + b.y) / 2 - 1, transform: [{ rotate: `${angle}rad` }] },
+                    { backgroundColor: themeBg(color), width: len, left: (a.x + b.x) / 2 - len / 2, top: (a.y + b.y) / 2 - 1, transform: [{ rotate: `${angle}rad` }] },
                   ]}
                 />
               );
@@ -82,7 +83,7 @@ export default function ProgressChart({
                 onPress={() => setPicked(i)}
                 style={[
                   styles.dot,
-                  { left: p.x - DOT / 2, top: p.y - DOT / 2, borderColor: color, backgroundColor: picked === i ? "#fff" : color },
+                  { left: p.x - DOT / 2, top: p.y - DOT / 2, borderColor: themeBorder(color), backgroundColor: themeBg(picked === i ? "#fff" : color) },
                 ]}
               />
             ))}
@@ -100,7 +101,7 @@ export function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   empty: { color: "#94A3B8", fontSize: 13, marginVertical: 12 },
   readout: { color: "#fff", fontSize: 20, fontWeight: "800" },
   readoutDate: { color: "#94A3B8", fontSize: 12, fontWeight: "400" },

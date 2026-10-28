@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,7 @@ import { checkAchievement } from "@/lib/achievementQueries";
 import type { ClientAchievement } from "@/types/database";
 import type { SetEffort, WorkoutLog } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import { themeText, themedStyles } from "@/lib/theme";
 
 export type LogExercise = { id: string | null; name: string; category: string | null; external_url: string | null };
 export type LogTarget = { setsLabel: string; sets: number; reps: string; restSeconds: number };
@@ -217,7 +218,7 @@ export default function LogSetModal({
             ))}
           </View>
           <Pressable style={styles.button} onPress={logSet} disabled={logging}>
-            {logging ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Log set</Text>}
+            {logging ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Log set</Text>}
           </Pressable>
 
           {restRun > 0 && <RestTimer key={restRun} seconds={target?.restSeconds ?? 90} onClose={() => setRestRun(0)} />}
@@ -247,7 +248,7 @@ export default function LogSetModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", alignItems: "flex-start", padding: 20, gap: 10 },
   name: { color: "#fff", fontWeight: "700", fontSize: 17, flexShrink: 1 },

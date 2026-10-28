@@ -1,6 +1,7 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // Building blocks for the client's laptop pages (GRIZZ, 2026-10-27): a page
 // with its title and tabs along the top, cards, big numbers and bars.
@@ -92,12 +93,12 @@ export function Stat({ label, value, unit, note, noteColor, bar, barColor, value
   return (
     <Card style={[styles.stat, style]}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={[styles.value, valueColor ? { color: valueColor } : null]}>
+      <Text style={[styles.value, valueColor ? { color: themeText(valueColor) } : null]}>
         {value}
         {unit ? <Text style={styles.unit}> {unit}</Text> : null}
       </Text>
       {bar != null ? <Bar fraction={bar} color={barColor} /> : null}
-      {note ? <Text style={[styles.note, noteColor ? { color: noteColor } : null]}>{note}</Text> : null}
+      {note ? <Text style={[styles.note, noteColor ? { color: themeText(noteColor) } : null]}>{note}</Text> : null}
     </Card>
   );
 }
@@ -106,7 +107,7 @@ export function Bar({ fraction, color = BRAND_GOLD }: { fraction: number; color?
   const pct = Math.max(0, Math.min(1, fraction)) * 100;
   return (
     <View style={styles.bar}>
-      <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: color }]} />
+      <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: themeBg(color) }]} />
     </View>
   );
 }
@@ -165,7 +166,7 @@ export const dash = {
   muted: "#94A3B8",
 };
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   page: { flex: 1, backgroundColor: "#0B1424" },
   pageInner: { padding: 24, gap: 16 },
   top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" },

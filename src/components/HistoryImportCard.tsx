@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -14,6 +14,7 @@ import {
   type ClientImport,
   type ImportFile,
 } from "@/lib/historyImport";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Bring a client's history in from another app (0142, GRIZZ 2026-10-22). The
 // client (Profile) or their trainer (Training tab) sends screenshots, or on the
@@ -133,7 +134,7 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
         )}
       </View>
       {Platform.OS !== "web" && <Text style={styles.small}>Got a CSV or PDF file? Send it from the laptop app.</Text>}
-      {sending && <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 10 }} />}
+      {sending && <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 10 }} />}
 
       {rows?.map((row) => (
         <View key={row.id} style={styles.row}>
@@ -171,7 +172,7 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   helper: { color: "#94A3B8", fontSize: 13, lineHeight: 18 },
   buttons: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   button: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14 },

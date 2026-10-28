@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themedStyles } from "@/lib/theme";
 
 // GRIZZ's self-training option (2026-10-11), on hold until he switches it on.
 // Shown on the login screen so people know it's coming.
@@ -48,7 +49,7 @@ export default function SelfTrainingComingSoon() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   link: { color: "#94A3B8", textAlign: "center", marginTop: 20 },
   soon: { color: BRAND_GOLD, fontWeight: "700" },
   modal: { flex: 1, backgroundColor: "#0F172A" },

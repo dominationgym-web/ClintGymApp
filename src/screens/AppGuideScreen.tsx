@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from "react";
 import { useStepBack } from "@/hooks/useStepBack";
-import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { CLIENT_APP_GUIDE, TRAINER_APP_GUIDE } from "@/lib/appGuide";
+import { themedStyles } from "@/lib/theme";
 
 export const ClientAppGuideScreen = () => <AppGuideScreen who="client" />;
 export const TrainerAppGuideScreen = () => <AppGuideScreen who="trainer" />;
@@ -59,7 +60,7 @@ export default function AppGuideScreen({ who }: { who: "client" | "trainer" }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   hero: {
     backgroundColor: "#1E293B",

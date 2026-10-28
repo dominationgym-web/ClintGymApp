@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useStepBack } from "@/hooks/useStepBack";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -26,6 +26,7 @@ import {
   type StabilityLevel,
   type StabilityMode,
 } from "@/lib/stability";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type Step =
   | { kind: "home" }
@@ -149,7 +150,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
   if (!enrollments) {
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       </View>
     );
   }
@@ -195,7 +196,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
           const program = findProgram(e.area, e.level);
           const week = stabilityWeek(e.started_on, todayIso());
           return (
-            <Pressable key={e.id} style={[styles.myProgram, { borderLeftColor: area.accent }]} onPress={() => (setMode("primer"), go({ kind: "session", enrollmentId: e.id }))}>
+            <Pressable key={e.id} style={[styles.myProgram, { borderLeftColor: themeBorder(area.accent) }]} onPress={() => (setMode("primer"), go({ kind: "session", enrollmentId: e.id }))}>
               <Text style={styles.myIcon}>{area.icon}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.myTitle}>
@@ -215,7 +216,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
             <Text style={styles.section}>The 7 areas</Text>
             <View style={styles.grid}>
               {STABILITY_AREAS.map((a) => (
-                <Pressable key={a.area} style={[styles.tile, { borderTopColor: a.accent }]} onPress={() => go({ kind: "area", area: a.area })}>
+                <Pressable key={a.area} style={[styles.tile, { borderTopColor: themeBorder(a.accent) }]} onPress={() => go({ kind: "area", area: a.area })}>
                   <Text style={styles.tileIcon}>{a.icon}</Text>
                   <Text style={styles.tileTitle}>{a.title}</Text>
                 </Pressable>
@@ -241,7 +242,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
     const area = findArea(step.area);
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={[styles.hero, { borderTopColor: area.accent }]}>
+        <View style={[styles.hero, { borderTopColor: themeBorder(area.accent) }]}>
           <Text style={styles.heroIcon}>{area.icon}</Text>
           <Text style={styles.heroTitle}>{area.title} stability</Text>
           <Text style={styles.heroText}>{area.summary}</Text>
@@ -254,7 +255,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
         <Fold title="Which level is right for me?" icon="🧭" open={fold === "choose"} onPress={() => toggle("choose")}>
           {LEVELS.map((l) => (
             <Text key={l.level} style={styles.text}>
-              <Text style={{ color: l.colour, fontWeight: "700" }}>{l.label}: </Text>
+              <Text style={{ color: themeText(l.colour), fontWeight: "700" }}>{l.label}: </Text>
               {area.chooseLevel[l.level]}
             </Text>
           ))}
@@ -275,7 +276,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
         {LEVELS.map((l) => {
           const program = findProgram(step.area, l.level);
           return (
-            <Pressable key={l.level} style={[styles.levelCard, { borderLeftColor: l.colour }]} onPress={() => go({ kind: "level", area: step.area, level: l.level })}>
+            <Pressable key={l.level} style={[styles.levelCard, { borderLeftColor: themeBorder(l.colour) }]} onPress={() => go({ kind: "level", area: step.area, level: l.level })}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.levelTitle}>
                   {l.icon} {l.label} · {program.weeks} weeks
@@ -297,12 +298,12 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
     const info = levelInfo(step.level);
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={[styles.hero, { borderTopColor: info.colour }]}>
+        <View style={[styles.hero, { borderTopColor: themeBorder(info.colour) }]}>
           <Text style={styles.heroIcon}>{area.icon}</Text>
           <Text style={styles.heroTitle}>
             {area.title} · {info.label}
           </Text>
-          <Text style={[styles.heroText, { color: info.colour, fontWeight: "700" }]}>{program.weeks} weeks</Text>
+          <Text style={[styles.heroText, { color: themeText(info.colour), fontWeight: "700" }]}>{program.weeks} weeks</Text>
           <Text style={styles.heroText}>{program.goal}</Text>
         </View>
         <Fold title="Who it's for" icon="🙋" open={fold === "who"} onPress={() => toggle("who")}>
@@ -354,7 +355,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
   if (!enrollment) {
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       </View>
     );
   }
@@ -369,7 +370,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <View style={[styles.sessionHead, { borderLeftColor: area.accent }]}>
+      <View style={[styles.sessionHead, { borderLeftColor: themeBorder(area.accent) }]}>
         <Text style={styles.myTitle}>
           {area.icon} {area.title} · {levelInfo(enrollment.level).label}
         </Text>
@@ -436,7 +437,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   content: { padding: 16, paddingBottom: 40 },
   hero: { backgroundColor: "#1E293B", borderRadius: 16, borderTopWidth: 4, borderTopColor: BRAND_GOLD, padding: 18, alignItems: "center", marginBottom: 14 },

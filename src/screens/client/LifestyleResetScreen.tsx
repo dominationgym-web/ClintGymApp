@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   ActivityIndicator,
   Pressable,
@@ -45,6 +44,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import WeekBrowser from "@/components/reset/WeekBrowser";
 import ResetTraining from "@/components/reset/ResetTraining";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 type HabitKey = ResetHabitKey;
 type TabKey = "plan" | "training" | "guide";
@@ -218,7 +218,7 @@ export default function LifestyleResetScreen() {
   if (loading || !client) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       </View>
     );
   }
@@ -271,7 +271,7 @@ export default function LifestyleResetScreen() {
             {inProgram && plan && (
               <>
                 <View style={styles.weekHeader}>
-                  <Text style={[styles.weekBadge, { color: RESET_PHASES[plan.phase].color }]}>
+                  <Text style={[styles.weekBadge, { color: themeText(RESET_PHASES[plan.phase].color) }]}>
                     Week {currentWeek} of {RESET_WEEKS_TOTAL} · {RESET_PHASES[plan.phase].name}
                   </Text>
                   <Text style={styles.weekTitle}>{plan.title}</Text>
@@ -472,7 +472,7 @@ function ReminderCard({
         <Switch
           value={setting.enabled}
           onValueChange={(enabled) => onChange({ ...setting, enabled })}
-          trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+          trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
           accessibilityLabel="Daily reminder"
         />
       </View>
@@ -552,7 +552,7 @@ function HabitGuideSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   heroTitle: { color: "#fff", fontSize: 20, fontWeight: "800" },

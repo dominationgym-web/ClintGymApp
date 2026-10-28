@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { WEIGH_IN_OPTIONS, weighInDueIn, type WeighInEvery } from "@/lib/progress";
+import { themedStyles } from "@/lib/theme";
 
 // Stays on the Today screen from the day the trainer's weigh-in is due until
 // the client logs their weight (a weight in My progress > Body). The phone
@@ -56,7 +57,7 @@ export default function WeighInReminder() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   banner: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: BRAND_GOLD, borderRadius: 8, padding: 12, marginBottom: 14 },
   title: { color: "#fff", fontWeight: "700", marginBottom: 4 },
   text: { color: "#E2E8F0" },

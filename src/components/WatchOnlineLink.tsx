@@ -1,8 +1,9 @@
 import React from "react";
-import { Linking, Pressable, StyleSheet, Text } from "react-native";
+import { Linking, Pressable, Text } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { watchOnlineUrl } from "@/lib/sportsGuides";
 import { youtubeSearchUrl } from "@/lib/watchOnline";
+import { themedStyles } from "@/lib/theme";
 
 // For a move with no demo video yet (GRIZZ, 2026-10-14: every exercise or
 // movement without a video): opens examples online. search is a short search
@@ -21,7 +22,7 @@ export default function WatchOnlineLink({ name, search }: { name: string; search
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   watch: {
     borderWidth: 1,
     borderColor: "#334155",

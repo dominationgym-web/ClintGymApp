@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Keyboard, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { findHabit, HABIT_GROUPS, isRunning } from "@/lib/habitLibrary";
 import type { Habit } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import { themeBorder, themedStyles } from "@/lib/theme";
 
 // The client picks habits to work on: suggested ones under tap-to-open
 // headings, or one they type themselves.
@@ -75,7 +76,7 @@ export default function ChooseHabitsModal({
                       return (
                         <Pressable
                           key={h.name}
-                          style={[styles.choice, isAdded && { borderColor: BRAND_GOLD }]}
+                          style={[styles.choice, isAdded && { borderColor: themeBorder(BRAND_GOLD) }]}
                           onPress={() => !isAdded && add(h.name, h.reps)}
                           disabled={isAdded || busy !== null}
                         >
@@ -143,7 +144,7 @@ export default function ChooseHabitsModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, backgroundColor: "rgba(2,6,23,0.8)", justifyContent: "center", padding: 16 },
   sheet: { backgroundColor: "#0F172A", borderRadius: 16, padding: 16, maxHeight: "90%", borderWidth: 1, borderColor: "#1E293B" },
   header: { flexDirection: "row", alignItems: "center", marginBottom: 4, gap: 8 },

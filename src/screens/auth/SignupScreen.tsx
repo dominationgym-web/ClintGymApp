@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Pressable,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   ScrollView,
@@ -21,6 +20,7 @@ import TrainerLogo from "@/components/TrainerLogo";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
 import PrivacyPolicyContent, { PRIVACY_POLICY_VERSION } from "@/screens/auth/PrivacyPolicyContent";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Signup">;
 
@@ -236,7 +236,7 @@ export default function SignupScreen({ navigation }: Props) {
         }}
       />
       {checkingCode ? (
-        <ActivityIndicator color="#22C55E" style={{ marginBottom: 12 }} />
+        <ActivityIndicator color={themeText("#22C55E")} style={{ marginBottom: 12 }} />
       ) : trainer ? (
         <View style={styles.trainerRow}>
           <TrainerLogo name={trainer.display_name} path={trainer.logo_path} size={44} />
@@ -321,7 +321,7 @@ export default function SignupScreen({ navigation }: Props) {
       </Modal>
 
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
-        {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Continue to payment</Text>}
+        {loading ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Continue to payment</Text>}
       </Pressable>
       <Pressable onPress={() => navigation.navigate("Login")}>
         <Text style={styles.link}>Already have an account? Log in</Text>
@@ -330,7 +330,7 @@ export default function SignupScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flexGrow: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 16 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 16, marginBottom: 8 },

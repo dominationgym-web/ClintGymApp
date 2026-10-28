@@ -1,8 +1,9 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -44,11 +45,11 @@ export default function ScreenTabBar<K extends string>({
               <Ionicons
                 name={focused ? t.icon : (`${t.icon}-outline` as IconName)}
                 size={22}
-                color={focused ? BRAND_GOLD : "#64748B"}
+                color={themeText(focused ? BRAND_GOLD : "#64748B")}
               />
-              {t.dot && <View style={[styles.tabDot, { backgroundColor: t.dot }]} />}
+              {t.dot && <View style={[styles.tabDot, { backgroundColor: themeBg(t.dot) }]} />}
             </View>
-            <Text style={[styles.tabLabel, focused && { color: BRAND_GOLD }]}>{t.label}</Text>
+            <Text style={[styles.tabLabel, focused && { color: themeText(BRAND_GOLD) }]}>{t.label}</Text>
           </Pressable>
         );
       })}
@@ -56,7 +57,7 @@ export default function ScreenTabBar<K extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   tabBar: {
     flexDirection: "row",
     backgroundColor: "#0F172A",

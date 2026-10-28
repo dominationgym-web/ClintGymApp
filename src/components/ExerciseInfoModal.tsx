@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { techniqueFor } from "@/lib/exerciseTechnique";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import { ExerciseGuideContent, WatchOnlineLink } from "@/components/ExerciseGuide";
 import type { Exercise } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // An exercise's demo video and How to do it, for the trainer checking a
 // program (GRIZZ, 2026-10-14). Looks the exercise up when it opens.
@@ -54,7 +55,7 @@ export default function ExerciseInfoModal({
         </View>
         <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 4 }}>
           {loading ? (
-            <ActivityIndicator color="#D4AF37" style={{ marginVertical: 20 }} />
+            <ActivityIndicator color={themeText("#D4AF37")} style={{ marginVertical: 20 }} />
           ) : (
             <>
               {info?.external_url || !exercise ? (
@@ -71,7 +72,7 @@ export default function ExerciseInfoModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   modal: { flex: 1, backgroundColor: "#0F172A" },
   header: { flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 8 },
   title: { color: "#fff", fontSize: 22, fontWeight: "800" },

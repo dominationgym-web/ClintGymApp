@@ -6,7 +6,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -15,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { alertSummary, cleanMessage, MAX_MESSAGE_LENGTH } from "@/lib/coachMessages";
 import type { Client } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The trainer's reply to a client, opened from the Reply button on an alert.
 // The client sees it in the app straight away, and as a phone notification in
@@ -113,7 +113,7 @@ export default function ReplyToClientModal({
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable style={[styles.button, styles.send, !message && styles.disabled]} onPress={send} disabled={!message || sending}>
-              {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.sendText}>Send</Text>}
+              {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Send</Text>}
             </Pressable>
           </View>
         </View>
@@ -122,7 +122,7 @@ export default function ReplyToClientModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
   sheet: { backgroundColor: "#1E293B", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, paddingBottom: 32 },
   title: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 6 },

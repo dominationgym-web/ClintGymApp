@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, SectionList, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import { themeText, themedStyles } from "@/lib/theme";
 
 export type SearchItem = {
   key: string;
@@ -49,7 +50,7 @@ export default function SearchResults({
         returnKeyType="search"
       />
       {loading ? (
-        <ActivityIndicator color={accent} style={{ marginTop: 24 }} />
+        <ActivityIndicator color={themeText(accent)} style={{ marginTop: 24 }} />
       ) : (
         <SectionList
           sections={shown}
@@ -79,7 +80,7 @@ export default function SearchResults({
                       </Text>
                     ) : null}
                   </View>
-                  <Text style={[styles.action, { color: accent }]}>{isVideo ? (open ? "Hide" : "▶ Watch") : "Open ›"}</Text>
+                  <Text style={[styles.action, { color: themeText(accent) }]}>{isVideo ? (open ? "Hide" : "▶ Watch") : "Open ›"}</Text>
                 </View>
                 {isVideo && open && <ExerciseVideoPreview url={item.videoUrl ?? null} name={item.title} />}
               </Pressable>
@@ -91,7 +92,7 @@ export default function SearchResults({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A", paddingHorizontal: 16, paddingTop: 12 },
   input: {
     backgroundColor: "#1E293B",

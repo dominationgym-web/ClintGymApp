@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { money, monthLabel } from "@/lib/billing";
 import { clientIncomeTotals, trackerTotals, trainerPlanLine, type ClientIncomeRow } from "@/lib/tracker";
 import type { BillingCurrency, OwnerTrackerRow } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 const SIDES: { currency: BillingCurrency; label: string }[] = [
   { currency: "ZAR", label: "🇿🇦 South Africa" },
@@ -32,7 +33,7 @@ export default function OwnerTracker() {
   }, [load]);
 
   if (error) return <Text style={styles.hint}>Couldn't load the tracker: {error}</Text>;
-  if (!rows) return <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 24 }} />;
+  if (!rows) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 24 }} />;
 
   const today = todayIso();
   const t = trackerTotals(rows, today);
@@ -142,7 +143,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   heading: { color: "#fff", fontSize: 17, fontWeight: "700", marginTop: 16, marginBottom: 8 },
   row: { flexDirection: "row", gap: 10 },
   stat: { flex: 1, backgroundColor: "#1E293B", borderRadius: 12, paddingVertical: 12, alignItems: "center" },

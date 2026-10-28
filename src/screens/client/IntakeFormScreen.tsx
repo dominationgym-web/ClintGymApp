@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import TextInput from "@/components/TextInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
 import { TRAINING_LEVELS } from "@/lib/foundation";
 import InjuryList from "@/components/InjuryList";
 import { firstIntakeProblem, INTAKE_PAGES, intakePageProblem, type IntakeRequired } from "@/lib/intakePages";
+import { themeText, themedStyles } from "@/lib/theme";
 
 function YesNo({
   label,
@@ -511,7 +512,7 @@ export default function IntakeFormScreen() {
         </Pressable>
       ) : (
         <Pressable style={styles.button} onPress={handleSubmit} disabled={saving}>
-          {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Submit</Text>}
+          {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Submit</Text>}
         </Pressable>
       )}
       {page > 0 && (
@@ -524,7 +525,7 @@ export default function IntakeFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 8 },
   intro: { color: "#94A3B8", fontSize: 13, lineHeight: 19, marginBottom: 8 },

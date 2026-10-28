@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { painAreaLabel, shortDate, type ExercisePain } from "@/lib/painSwap";
+import { themedStyles } from "@/lib/theme";
 
 // "This hurts" (0129), on the client's Training tab under the injury check:
 // which exercises hurt them in the last 8 weeks, where, and what they tried
@@ -52,7 +53,7 @@ export default function ExercisePainList({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12, borderWidth: 1.5, borderColor: "#F87171" },
   title: { color: "#FCA5A5", fontSize: 15, fontWeight: "800", marginBottom: 4 },
   line: { color: "#CBD5E1", fontSize: 13, marginTop: 6 },

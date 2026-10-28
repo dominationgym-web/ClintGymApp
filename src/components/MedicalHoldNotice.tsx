@@ -1,5 +1,6 @@
 import React from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
+import { themedStyles } from "@/lib/theme";
 
 // Serious symptoms on a check-in (0133): every workout is on hold until the
 // trainer confirms a medical assessment or that it was tapped by mistake.
@@ -31,7 +32,7 @@ export default function MedicalHoldNotice({ live = false }: { live?: boolean }) 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#450A0A", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 2, borderColor: "#EF4444" },
   title: { color: "#FCA5A5", fontSize: 18, fontWeight: "900" },
   text: { color: "#FEE2E2", fontSize: 15, lineHeight: 21, marginTop: 8 },

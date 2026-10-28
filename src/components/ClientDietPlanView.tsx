@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,7 @@ import type { ClientDietPlan } from "@/types/database";
 import { useMealTicks } from "@/hooks/useMealTicks";
 import { MealTickButton } from "@/components/MealPlanMaker";
 import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The client's meal plan from their trainer (0071), read-only, in the
 // Nutrition section. Opens on today, one day at a time.
@@ -40,7 +41,7 @@ function MealPlan() {
       });
   }, [userId, reload]);
 
-  if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />;
+  if (loading) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 12 }} />;
   if (failed) {
     return (
       <Pressable onPress={() => setReload((r) => r + 1)}>
@@ -154,7 +155,7 @@ export default function ClientDietPlanView() {
           </View>
           {activity ? <Text style={styles.note}>{INTAKE_ACTIVITY_LEVELS.find((a) => a.label === activity)?.detail}</Text> : null}
           <Pressable style={styles.askSave} onPress={save} disabled={saving}>
-            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.askSaveText}>Send to my coach</Text>}
+            {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.askSaveText}>Send to my coach</Text>}
           </Pressable>
         </View>
       )}
@@ -163,7 +164,7 @@ export default function ClientDietPlanView() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   ask: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   askTitle: { color: "#fff", fontWeight: "800", marginBottom: 4 },
   askRow: { flexDirection: "row", gap: 8, marginTop: 10 },

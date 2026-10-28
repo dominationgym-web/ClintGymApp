@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ProgressChart, { fmt } from "@/components/ProgressChart";
@@ -28,6 +28,7 @@ import {
   type Point,
   type WeighInEvery,
 } from "@/lib/progress";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The Progress section (0143, GRIZZ 2026-10-22). Three pages you tap between,
 // each one graph: main lifts from the training log, timed cardio tests, and
@@ -93,7 +94,7 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
     else setEvery(key);
   };
 
-  if (!logs) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />;
+  if (!logs) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 12 }} />;
 
   let points: Point[] = [];
   let unit = "";
@@ -170,7 +171,7 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
             </View>
           ) : null}
           {dueIn !== null && (
-            <Text style={[styles.due, dueIn <= 0 && { color: BRAND_GOLD }]}>
+            <Text style={[styles.due, dueIn <= 0 && { color: themeText(BRAND_GOLD) }]}>
               {role === "client" ? `Your coach asks for a weigh-in ${WEIGH_IN_OPTIONS.find((o) => o.key === every)!.label.toLowerCase()}. ` : ""}
               {dueIn <= 0 ? "Weigh-in due now." : `Next weigh-in in ${dueIn} day${dueIn === 1 ? "" : "s"}.`}
             </Text>
@@ -414,7 +415,7 @@ function BodyStatModal({ clientId, onClose, onSaved }: { clientId: string; onClo
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   tabs: { flexDirection: "row", gap: 6 },
   tab: { flex: 1, borderWidth: 1, borderColor: "#334155", borderRadius: 10, paddingVertical: 9, alignItems: "center" },
   tabOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },

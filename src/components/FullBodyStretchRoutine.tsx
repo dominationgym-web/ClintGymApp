@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import WatchOnlineLink from "@/components/WatchOnlineLink";
 import { FULL_BODY_STRETCH, FULL_BODY_STRETCH_MINUTES } from "@/lib/fullBodyStretch";
+import { themedStyles } from "@/lib/theme";
 
 const GREEN = "#4ADE80";
 
@@ -59,7 +60,7 @@ export default function FullBodyStretchRoutine({ onFinished, onClose }: { onFini
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   title: { color: "#fff", fontSize: 18, fontWeight: "700", marginTop: 4 },
   body: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginTop: 8 },
   count: { color: GREEN, fontSize: 12, fontWeight: "700" },

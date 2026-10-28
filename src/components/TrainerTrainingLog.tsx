@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { EFFORT_LABEL as PROGRESSION_EFFORT_LABEL } from "@/lib/progression";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { groupTrainingLog, type TrainingLogExercise } from "@/lib/trainingLog";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { SESSION_COLORS, SESSION_LABELS, STAR_GOLD } from "@/lib/workoutSessions";
 import type { WorkoutLog, WorkoutSession } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 const EFFORT_LABEL: Record<string, string> = PROGRESSION_EFFORT_LABEL;
 
@@ -41,7 +42,7 @@ export default function TrainerTrainingLog({
               accessibilityState={{ expanded: isOpen, disabled: !trained }}
             >
               {result ? (
-                <View style={[styles.dot, { backgroundColor: SESSION_COLORS[result.status] }]} />
+                <View style={[styles.dot, { backgroundColor: themeBg(SESSION_COLORS[result.status]) }]} />
               ) : (
                 <View style={styles.dot} />
               )}
@@ -59,7 +60,7 @@ export default function TrainerTrainingLog({
             </Pressable>
             {isOpen && result && (
               <View style={styles.exercise}>
-                <Text style={[styles.resultText, { color: SESSION_COLORS[result.status] }]}>
+                <Text style={[styles.resultText, { color: themeText(SESSION_COLORS[result.status]) }]}>
                   {SESSION_LABELS[result.status]}
                   {result.status !== "missed" ? ` · ${result.sets_done}/${result.sets_planned} sets` : ""}
                 </Text>
@@ -118,7 +119,7 @@ export function LoggedExercises({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   day: { backgroundColor: "#1E293B", borderRadius: 10, marginBottom: 6, overflow: "hidden" },
   dayEmpty: { backgroundColor: "#162032" },
   header: { flexDirection: "row", alignItems: "center", padding: 12 },

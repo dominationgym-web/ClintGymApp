@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +21,7 @@ import {
 } from "@/lib/challenges";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { ChallengeLibraryItem, TrainerChallenge } from "@/types/database";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type MonthTab = "this" | "next";
 type KindFilter = ChallengeKind | "all" | "shared";
@@ -183,7 +184,7 @@ export default function ChallengesScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       </View>
     );
   }
@@ -204,7 +205,7 @@ export default function ChallengesScreen() {
       <ScreenTabBar tabs={tabs} current={tab} onChange={switchTab} position="top" />
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_GOLD} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeText(BRAND_GOLD)} />}
       >
         {preview ? (
           <>
@@ -214,7 +215,7 @@ export default function ChallengesScreen() {
             <ChallengeDetails idea={preview} />
             <Pressable style={styles.button} onPress={() => confirmUse(preview)} disabled={busy}>
               {busy ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
                 <Text style={styles.buttonText}>Use for {monthName(month)}</Text>
               )}
@@ -254,12 +255,12 @@ export default function ChallengesScreen() {
                             style={[
                               styles.barFill,
                               { width: `${Math.min(100, (r.done / challenge.target_days) * 100)}%` },
-                              r.won && { backgroundColor: "#22C55E" },
+                              r.won && { backgroundColor: themeBg("#22C55E") },
                             ]}
                           />
                         </View>
                       </View>
-                      <Text style={[styles.clientDays, r.won && { color: "#22C55E" }]}>
+                      <Text style={[styles.clientDays, r.won && { color: themeText("#22C55E") }]}>
                         {r.done}/{challenge.target_days}
                       </Text>
                     </Pressable>
@@ -273,8 +274,8 @@ export default function ChallengesScreen() {
               <Pressable style={styles.outline} onPress={() => setPicking(true)}>
                 <Text style={styles.outlineText}>Change challenge</Text>
               </Pressable>
-              <Pressable style={[styles.outline, { borderColor: "#334155" }]} onPress={remove}>
-                <Text style={[styles.outlineText, { color: "#94A3B8" }]}>Stop it</Text>
+              <Pressable style={[styles.outline, { borderColor: themeBorder("#334155") }]} onPress={remove}>
+                <Text style={[styles.outlineText, { color: themeText("#94A3B8") }]}>Stop it</Text>
               </Pressable>
             </View>
           </>
@@ -339,7 +340,7 @@ function ChallengeDetails({ idea }: { idea: ChallengeIdea }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { alignItems: "center", justifyContent: "center" },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },

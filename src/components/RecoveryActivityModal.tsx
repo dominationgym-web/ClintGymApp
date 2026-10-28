@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { IconName } from "@/components/ScreenTabBar";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/recoveryActivities";
 import { planRecovery } from "@/lib/recoveryPlanQueries";
 import type { RecoveryActivityRow } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 export const RECOVERY_GREEN = "#4ADE80";
 
@@ -102,7 +103,7 @@ export default function RecoveryActivityModal({
                 <View style={styles.grid}>
                   {RECOVERY_ACTIVITIES.map((a) => (
                     <Pressable key={a.key} style={styles.pick} onPress={() => setPicked(a.key)}>
-                      <Ionicons name={`${a.icon}-outline` as IconName} size={20} color={RECOVERY_GREEN} />
+                      <Ionicons name={`${a.icon}-outline` as IconName} size={20} color={themeText(RECOVERY_GREEN)} />
                       <Text style={styles.pickTitle}>{a.title}</Text>
                     </Pressable>
                   ))}
@@ -113,7 +114,7 @@ export default function RecoveryActivityModal({
             ) : (
               <>
                 <View style={styles.headRow}>
-                  <Ionicons name={info.icon} size={26} color={RECOVERY_GREEN} />
+                  <Ionicons name={info.icon} size={26} color={themeText(RECOVERY_GREEN)} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.title}>{info.title}</Text>
                     <Text style={styles.duration}>⏱ {info.durationLabel}</Text>
@@ -158,7 +159,7 @@ export default function RecoveryActivityModal({
                   multiline
                 />
                 <Pressable style={styles.doneButton} onPress={() => logDone()} disabled={saving}>
-                  {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.doneText}>✓ Log as done today</Text>}
+                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.doneText}>✓ Log as done today</Text>}
                 </Pressable>
 
                 {!completing && (
@@ -188,7 +189,7 @@ export default function RecoveryActivityModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   routineButton: { borderWidth: 1, borderColor: RECOVERY_GREEN, borderRadius: 10, padding: 12, marginTop: 14 },
   routineTitle: { color: RECOVERY_GREEN, fontWeight: "700", fontSize: 15 },
   routineText: { color: "#CBD5E1", fontSize: 13, marginTop: 4 },

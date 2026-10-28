@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themedStyles } from "@/lib/theme";
 
 // "What's a high-GI meal?" under the check-in's high-GI question (GRIZZ,
 // 2026-10-25: some clients won't know). Tap to open, so the step stays short.
@@ -41,7 +42,7 @@ export default function HighGiInfo() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   wrap: { marginBottom: 8 },
   toggle: { color: BRAND_GOLD, fontWeight: "600", fontSize: 13 },
   box: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8 },

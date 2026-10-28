@@ -2,6 +2,7 @@ import React from "react";
 import { Text, View } from "react-native";
 import { breakdownStyles as styles } from "@/components/breakdownStyles";
 import { UNDERSTANDING_INSULIN as G } from "@/lib/nutrition";
+import { themeText } from "@/lib/theme";
 
 // "Understanding Insulin" on the Nutrition page: GRIZZ's talk on carbs,
 // insulin and fat burning, laid out as a chain of steps, side-by-side
@@ -55,11 +56,11 @@ export default function InsulinGuide() {
 
       <Text style={styles.sectionLabel}>{G.order.title.toUpperCase()}</Text>
       <View style={[styles.orderBox, styles.wrong]}>
-        <Text style={[styles.orderLabel, { color: "#F87171" }]}>✗ {G.order.wrong.label}</Text>
+        <Text style={[styles.orderLabel, { color: themeText("#F87171") }]}>✗ {G.order.wrong.label}</Text>
         <Text style={styles.small}>{G.order.wrong.text}</Text>
       </View>
       <View style={[styles.orderBox, styles.right]}>
-        <Text style={[styles.orderLabel, { color: "#4ADE80" }]}>✓ {G.order.right.label}</Text>
+        <Text style={[styles.orderLabel, { color: themeText("#4ADE80") }]}>✓ {G.order.right.label}</Text>
         <Text style={styles.small}>{G.order.right.text}</Text>
       </View>
       <Text style={styles.note}>{G.order.note}</Text>

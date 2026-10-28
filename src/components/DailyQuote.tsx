@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { quoteForDate } from "@/lib/dailyQuotes";
+import { themedStyles } from "@/lib/theme";
 
 // Today's line, as a card (on the client's Profile). The once-a-day pop-up
 // is in DailyStartPopup.
@@ -14,7 +15,7 @@ export function DailyQuoteCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: {
     backgroundColor: "#1E293B",
     borderRadius: 12,

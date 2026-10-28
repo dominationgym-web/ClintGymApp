@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { supabase } from "@/lib/supabase";
@@ -20,6 +20,7 @@ import {
 } from "@/lib/otherActivities";
 import WatchLink from "@/components/WatchLink";
 import type { ClientActivity } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Exercise outside the programs (0114, GRIZZ, 2026-10-18): walks, runs, rides,
 // hikes, anything, with the time, distance and average heart rate. The client
@@ -69,7 +70,7 @@ export default function OtherActivityCard({ clientId, role }: { clientId: string
           : "What they did outside their program in the last 7 days."}
       </Text>
       {!rows ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 8 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 8 }} />
       ) : rows.length === 0 ? (
         <Text style={styles.empty}>Nothing logged in the last 7 days.</Text>
       ) : (
@@ -247,7 +248,7 @@ function LogActivityModal({ visible, clientId, onClose, onSaved }: { visible: bo
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#111C33", borderRadius: 12, padding: 14, marginTop: 12, borderWidth: 1, borderColor: "#1E293B" },
   title: { color: BRAND_GOLD, fontWeight: "700", fontSize: 16 },
   helper: { color: "#94A3B8", fontSize: 12, marginTop: 4 },

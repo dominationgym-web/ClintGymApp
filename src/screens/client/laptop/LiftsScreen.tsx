@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";
@@ -8,6 +8,7 @@ import { bestSet, grouped, lastSession, liftedKg, monthStarts, oneRepMax, pctCha
 import { useWorkoutLogs } from "@/hooks/useClientDashboardData";
 import ProgressChart, { fmt } from "@/components/ProgressChart";
 import { Card, CardTitle, DashChips, DashPage, DashTabs, Muted, Pill, Row, Stat, Table, dash, natural } from "@/components/DashboardParts";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Tab = "graph" | "records";
 const RANGES: { key: number; label: string; months: number | null }[] = [
@@ -35,7 +36,7 @@ export default function LiftsScreen() {
   const choices = useMemo(() => liftChoices(logs ?? [], 10), [logs]);
   const all = useMemo(() => records(logs ?? []), [logs]);
 
-  if (!logs) return <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 40 }} />;
+  if (!logs) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 40 }} />;
 
   const key = lift && choices.some((c) => c.key === lift) ? lift : choices[0]?.key ?? null;
   const label = choices.find((c) => c.key === key)?.label ?? "";
@@ -174,7 +175,7 @@ export default function LiftsScreen() {
                 <Text style={styles.value}>
                   {c ? `${fmt(c.latest.value)} ${s.unit}` : "–"}
                   {c && s.points.length > 1 ? (
-                    <Text style={[styles.small, { color: c.change > 0 ? dash.green : c.change < 0 ? dash.orange : dash.muted }]}>
+                    <Text style={[styles.small, { color: themeText(c.change > 0 ? dash.green : c.change < 0 ? dash.orange : dash.muted) }]}>
                       {"  "}{c.change > 0 ? "▲" : c.change < 0 ? "▼" : "="} {fmt(Math.abs(c.change))}
                     </Text>
                   ) : null}
@@ -189,7 +190,7 @@ export default function LiftsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   chipRow: { flexDirection: "row", gap: 16, alignItems: "flex-start" },
   side: { flex: 1, gap: 16 },
   link: { color: BRAND_GOLD, fontSize: 14, fontWeight: "600" },

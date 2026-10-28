@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/context/AuthContext";
@@ -17,6 +17,7 @@ import { planDay, useBodyStats, useFoodPlan, useWorkoutLogs } from "@/hooks/useC
 import ProgressChart, { fmt } from "@/components/ProgressChart";
 import { Card, CardTitle, DashPage, Muted, Pill, Row, Stat, Table, dash, Bar } from "@/components/DashboardParts";
 import type { ClientTabParamList } from "@/navigation/types";
+import { themeText, themedStyles } from "@/lib/theme";
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -69,7 +70,7 @@ export default function MyWeekScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logs, monday]);
 
-  if (!client || !week || !stats || !food) return <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 40 }} />;
+  if (!client || !week || !stats || !food) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 40 }} />;
 
   const weights = bodySeries(stats, "weight_kg");
   const latest = weights[weights.length - 1];
@@ -136,7 +137,7 @@ export default function MyWeekScreen() {
                   {done.length ? exercisesLabel(done) : future ? "" : isToday ? "Not trained yet" : "Rest day"}
                 </Text>,
                 <View key="c">
-                  <Text style={[styles.small, checkins.includes(d) && { color: dash.green }]}>{checkins.includes(d) ? "✓ Check-in" : future ? "" : "No check-in"}</Text>
+                  <Text style={[styles.small, checkins.includes(d) && { color: themeText(dash.green) }]}>{checkins.includes(d) ? "✓ Check-in" : future ? "" : "No check-in"}</Text>
                   {steps[d] != null ? <Text style={styles.small}>👟 {grouped(steps[d])} steps</Text> : null}
                 </View>,
               ];
@@ -185,7 +186,7 @@ export default function MyWeekScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   start: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 11, paddingHorizontal: 18 },
   startText: { color: "#06210F", fontWeight: "800", fontSize: 14 },
   td: { color: dash.text, fontSize: 14 },

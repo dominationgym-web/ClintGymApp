@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useStepBack } from "@/hooks/useStepBack";
-import { View, Text, ScrollView, StyleSheet, Switch, Pressable } from "react-native";
+import { View, Text, ScrollView, Switch, Pressable } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
 import { findSection } from "@/lib/sections";
@@ -24,6 +24,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/context/AuthContext";
 import { cancelMenuReturn } from "@/lib/menuReturn";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -81,13 +82,13 @@ export default function SectionScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <View style={[styles.hero, { borderColor: section.accent }]}>
-        <View style={[styles.heroIcon, { backgroundColor: section.accent + "26" }]}>
+      <View style={[styles.hero, { borderColor: themeBorder(section.accent) }]}>
+        <View style={[styles.heroIcon, { backgroundColor: themeBg(section.accent + "26") }]}>
           <Text style={styles.heroIconText}>{section.icon}</Text>
         </View>
         <Text style={styles.heroTitle}>{section.title}</Text>
         <Text style={styles.summary}>{section.summary}</Text>
-        {parts.length > 0 ? <Text style={[styles.heroHint, { color: section.accent }]}>Tap a topic to open it</Text> : null}
+        {parts.length > 0 ? <Text style={[styles.heroHint, { color: themeText(section.accent) }]}>Tap a topic to open it</Text> : null}
       </View>
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
       {section.key === "womensHealthReset" && <ResetProgramLink />}
@@ -97,23 +98,23 @@ export default function SectionScreen({ route }: Props) {
           return (
             <View key={part.title}>
               <Pressable
-                style={[styles.partHeader, { borderLeftColor: section.accent }, isOpen && styles.partHeaderOpen]}
+                style={[styles.partHeader, { borderLeftColor: themeBorder(section.accent) }, isOpen && styles.partHeaderOpen]}
                 onPress={() => setOpen(isOpen ? null : part.title)}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: isOpen }}
               >
                 {part.icon ? (
-                  <View style={[styles.partIcon, { backgroundColor: section.accent + "1F" }]}>
+                  <View style={[styles.partIcon, { backgroundColor: themeBg(section.accent + "1F") }]}>
                     <Text style={styles.partIconText}>{part.icon}</Text>
                   </View>
                 ) : null}
                 <Text style={styles.partTitle}>{part.title}</Text>
                 {part.tag ? (
-                  <Text style={[styles.partTag, { color: LEVEL_COLOURS[part.tag], borderColor: LEVEL_COLOURS[part.tag] }]}>
+                  <Text style={[styles.partTag, { color: themeText(LEVEL_COLOURS[part.tag]), borderColor: themeBorder(LEVEL_COLOURS[part.tag]) }]}>
                     {part.tag}
                   </Text>
                 ) : null}
-                <Text style={[styles.partArrow, { color: section.accent }]}>{isOpen ? "▲" : "▼"}</Text>
+                <Text style={[styles.partArrow, { color: themeText(section.accent) }]}>{isOpen ? "▲" : "▼"}</Text>
               </Pressable>
               {isOpen ? part.body : null}
             </View>
@@ -173,14 +174,14 @@ function SleepReminderToggle() {
         value={enabled ?? true}
         disabled={enabled === null}
         onValueChange={onChange}
-        trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+        trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
         accessibilityLabel="Nightly wind-down tip"
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   partHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { getHealthLink, healthSourceHere } from "@/lib/healthLink";
 import WatchLink from "@/components/WatchLink";
+import { themedStyles } from "@/lib/theme";
 
 const dismissedKey = (clientId: string) => `watch-prompt-dismissed:${clientId}`;
 
@@ -53,7 +54,7 @@ export default function WatchLinkPrompt() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1.5, borderColor: BRAND_GOLD },
   title: { color: "#fff", fontWeight: "800", fontSize: 16 },
   body: { color: "#CBD5E1", fontSize: 13, marginTop: 4 },

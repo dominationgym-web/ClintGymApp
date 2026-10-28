@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { foodUnits, searchFoods, type FoodUnit } from "@/lib/foods";
@@ -52,6 +52,7 @@ import {
   type MealPlanSettings,
 } from "@/lib/mealPlanMaker";
 import type { ClientMealPlan } from "@/types/database";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // Carbs and insulin, in line with the trainer guide (nutrition review,
 // 2026-10-18): fat loss comes from the calorie deficit, not from cutting carbs.
@@ -263,7 +264,7 @@ export default function MealPlanMaker() {
     });
   }, [client?.id]);
 
-  if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />;
+  if (loading) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 12 }} />;
 
   const factor = INTAKE_ACTIVITY_LEVELS.find((a) => a.label === details.activity)?.factor ?? null;
   const body = {
@@ -284,8 +285,8 @@ export default function MealPlanMaker() {
   const safeGoal: MealGoal = referral.length && goal !== "coach" ? "maintain" : goal;
   const kcalFor = (g: MealGoal) => (need ? goalKcal(need, g, coachKcal, { sex: body.sex, bmr: base }) : 0);
   const referralBox = referral.length ? (
-    <View style={[styles.insulinBox, { borderLeftColor: "#F87171" }]}>
-      <Text style={[styles.insulinTitle, { color: "#F87171" }]}>🩺 Check with a doctor or dietitian first</Text>
+    <View style={[styles.insulinBox, { borderLeftColor: themeBorder("#F87171") }]}>
+      <Text style={[styles.insulinTitle, { color: themeText("#F87171") }]}>🩺 Check with a doctor or dietitian first</Text>
       <Text style={styles.insulinText}>
         Because of {referral.join(" and ")}, {REFERRAL_NOTE.charAt(0).toLowerCase() + REFERRAL_NOTE.slice(1)}
       </Text>
@@ -594,7 +595,7 @@ export default function MealPlanMaker() {
             )}
             <Pressable style={[styles.button, styles.primary]} onPress={next} disabled={saving}>
               {saving ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
                 <Text style={styles.primaryText}>{page === "diet" ? "Make my plan" : "Next"}</Text>
               )}
@@ -726,7 +727,7 @@ export default function MealPlanMaker() {
           <Text style={styles.secondaryText}>Change my meals</Text>
         </Pressable>
         <Pressable style={[styles.button, styles.primary]} onPress={() => build(plan.variety + 1)} disabled={saving}>
-          {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>New ideas</Text>}
+          {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>New ideas</Text>}
         </Pressable>
       </View>
 
@@ -885,7 +886,7 @@ export default function MealPlanMaker() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   // flexBasis auto, as flex 0 squashes the button's text on the laptop app.
   shopBox: { backgroundColor: "#0F172A", borderRadius: 10, borderWidth: 1, borderColor: BRAND_GOLD, padding: 12, marginTop: 14 },
   shopTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15, marginBottom: 4 },

@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("react-native", () => ({ StyleSheet: { create: (s: unknown) => s }, Text: "Text" }));
+vi.mock("react-native", () => ({
+  StyleSheet: { create: (s: unknown) => s },
+  Text: "Text",
+  Platform: { OS: "ios" },
+  Appearance: { getColorScheme: () => "dark" },
+}));
+vi.mock("@react-native-async-storage/async-storage", () => ({ default: {} }));
 vi.mock("expo-updates", () => ({ createdAt: null, isEmbeddedLaunch: true }));
 const { appUpdateLabel } = await import("@/components/AppUpdateLine");
 

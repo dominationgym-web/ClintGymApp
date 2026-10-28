@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { PAYMENT_PROOF_BUCKET, proofWhen } from "@/lib/paymentProofs";
 import type { PaymentProof } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The receiver's side of proof of payment (0117): the slip or screenshot, who
 // sent it and when, and one tap to act on it (Activate for a trainer, Record
@@ -65,7 +66,7 @@ export default function PaymentProofModal({
               ) : failed ? (
                 <Text style={styles.helper}>The photo couldn't be opened. Close this and try again, or ask them to send it again.</Text>
               ) : (
-                <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 40 }} />
+                <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 40 }} />
               )}
               <Text style={styles.helper}>Check it has reached your bank account before you confirm.</Text>
               <Pressable
@@ -97,7 +98,7 @@ export default function PaymentProofModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
   sheet: { flexGrow: 0, maxHeight: "94%", backgroundColor: "#1E293B", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20 },
   title: { color: "#fff", fontWeight: "800", fontSize: 18 },

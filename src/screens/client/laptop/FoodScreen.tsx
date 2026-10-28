@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";
@@ -12,6 +12,7 @@ import { planDay, useFoodPlan } from "@/hooks/useClientDashboardData";
 import MealPlanMaker, { MealTickButton } from "@/components/MealPlanMaker";
 import ClientDietPlanView from "@/components/ClientDietPlanView";
 import { Card, CardTitle, DashChips, DashPage, DashTabs, Muted, Pill, Row, Stat, Tip, dash, natural } from "@/components/DashboardParts";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 type Tab = "today" | "plan";
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -30,7 +31,7 @@ export default function FoodScreen() {
   const [tab, setTab] = useState<Tab>("today");
   const [picked, setPicked] = useState<"training" | "rest" | null>(null);
 
-  if (!client || !food || !mealTicks.loaded) return <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 40 }} />;
+  if (!client || !food || !mealTicks.loaded) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 40 }} />;
 
   const tabs = (
     <DashTabs<Tab>
@@ -134,7 +135,7 @@ export default function FoodScreen() {
                   <View key={w.date} style={styles.barCol}>
                     <View style={styles.barArea}>
                       {w.target > 0 && <View style={[styles.targetMark, { bottom: (w.target / top) * CHART }]} />}
-                      {w.kcal > 0 && <View style={[styles.bar, { height: (w.kcal / top) * CHART, backgroundColor: color }]} />}
+                      {w.kcal > 0 && <View style={[styles.bar, { height: (w.kcal / top) * CHART, backgroundColor: themeBg(color) }]} />}
                     </View>
                     <Text style={[styles.small, w.date === today && styles.today]}>{DAY_NAMES[i]}</Text>
                     <Text style={styles.tiny}>{w.kcal ? grouped(w.kcal) : w.date <= today ? "–" : ""}</Text>
@@ -151,7 +152,7 @@ export default function FoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   plan: { maxWidth: 760, width: "100%", alignSelf: "center" },
   side: { flex: 1, gap: 16 },
   meal: { borderBottomWidth: 1, borderBottomColor: "#1F2D4B", paddingVertical: 8 },

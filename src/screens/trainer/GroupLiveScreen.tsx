@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -20,6 +20,7 @@ import { SUPERSET_MAX, SUPERSET_MIN, roundProblem, type RoundEntry } from "@/lib
 import { BRAND_GOLD } from "@/lib/brand";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { Client, Exercise, SetEffort, WorkoutLog } from "@/types/database";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // Group live session (GRIZZ, 2026-10-21): "a trainer might be training up to
 // 4 people ... the same session ... when the session is done it logs it all
@@ -318,8 +319,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
             const at = picked.indexOf(c.id);
             const slot = at >= 0 ? slotFor(at) : null;
             return (
-              <Pressable key={c.id} style={[styles.pickRow, slot && { borderColor: slot.color }]} onPress={() => toggle(c.id)}>
-                <View style={[styles.badge, { backgroundColor: slot?.color ?? "#334155" }]}>
+              <Pressable key={c.id} style={[styles.pickRow, slot && { borderColor: themeBorder(slot.color) }]} onPress={() => toggle(c.id)}>
+                <View style={[styles.badge, { backgroundColor: themeBg(slot?.color ?? "#334155") }]}>
                   <Text style={styles.badgeText}>{slot?.letter ?? ""}</Text>
                 </View>
                 <Text style={styles.pickName}>{c.name}</Text>
@@ -340,7 +341,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   if (stage === "loading") {
     return (
       <View style={[styles.container, { justifyContent: "center" }]}>
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       </View>
     );
   }
@@ -354,13 +355,13 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         {withPlan.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
             {withPlan.map((id) => (
-              <Pressable key={id} style={[styles.chip, planFrom === id && { backgroundColor: slotOf(id).color }]} onPress={() => usePlan(id)}>
+              <Pressable key={id} style={[styles.chip, planFrom === id && { backgroundColor: themeBg(slotOf(id).color) }]} onPress={() => usePlan(id)}>
                 <Text style={[styles.chipText, planFrom === id && styles.chipTextOn]}>
                   {slotOf(id).letter} · {first({ name: nameOf(id) })}'s workout
                 </Text>
               </Pressable>
             ))}
-            <Pressable style={[styles.chip, !planFrom && { backgroundColor: BRAND_GOLD }]} onPress={() => usePlan(null)}>
+            <Pressable style={[styles.chip, !planFrom && { backgroundColor: themeBg(BRAND_GOLD) }]} onPress={() => usePlan(null)}>
               <Text style={[styles.chipText, !planFrom && styles.chipTextOn]}>Build as you go</Text>
             </Pressable>
           </ScrollView>
@@ -384,9 +385,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               {group.map((c) => {
                 const slot = slotOf(c.id);
                 return (
-                  <Pressable key={c.id} style={[styles.card, { borderColor: slot.color }]} onPress={() => openRound(c.id)}>
+                  <Pressable key={c.id} style={[styles.card, { borderColor: themeBorder(slot.color) }]} onPress={() => openRound(c.id)}>
                     <View style={styles.cardTop}>
-                      <View style={[styles.badge, { backgroundColor: slot.color }]}>
+                      <View style={[styles.badge, { backgroundColor: themeBg(slot.color) }]}>
                         <Text style={styles.badgeText}>{slot.letter}</Text>
                       </View>
                       <Text style={styles.cardName} numberOfLines={1}>
@@ -406,7 +407,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                             </Text>
                           );
                         })}
-                        <Text style={[styles.tapHint, { color: slot.color }]}>+ Log {first(c)}'s round</Text>
+                        <Text style={[styles.tapHint, { color: themeText(slot.color) }]}>+ Log {first(c)}'s round</Text>
                       </>
                     )}
                   </Pressable>
@@ -440,9 +441,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 const sets = clientSets(logs, c.id, step.name);
                 const last = sets.at(-1);
                 return (
-                  <Pressable key={c.id} style={[styles.card, { borderColor: slot.color }]} onPress={() => openEntry(c.id)}>
+                  <Pressable key={c.id} style={[styles.card, { borderColor: themeBorder(slot.color) }]} onPress={() => openEntry(c.id)}>
                     <View style={styles.cardTop}>
-                      <View style={[styles.badge, { backgroundColor: slot.color }]}>
+                      <View style={[styles.badge, { backgroundColor: themeBg(slot.color) }]}>
                         <Text style={styles.badgeText}>{slot.letter}</Text>
                       </View>
                       <Text style={styles.cardName} numberOfLines={1}>
@@ -467,7 +468,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                             <Text style={styles.wrong}>Wrong person?</Text>
                           </Pressable>
                         )}
-                        <Text style={[styles.tapHint, { color: slot.color }]}>+ Log {first(c)}'s set</Text>
+                        <Text style={[styles.tapHint, { color: themeText(slot.color) }]}>+ Log {first(c)}'s set</Text>
                       </>
                     )}
                   </Pressable>
@@ -498,7 +499,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
       <View style={styles.footer}>
         <Text style={styles.footerCounts}>{group.map((c) => `${slotOf(c.id).letter} ${counts[c.id]}`).join("  ·  ")} sets</Text>
         <Pressable style={styles.finishButton} onPress={finish} disabled={saving}>
-          {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.finishText}>Finish group session</Text>}
+          {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Finish group session</Text>}
         </Pressable>
       </View>
 
@@ -507,8 +508,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         <KeyboardSafe>
           <View style={styles.sheetWrap}>
             {entryFor && step && (
-              <View style={[styles.sheet, { borderColor: slotOf(entryFor).color }]}>
-                <View style={[styles.banner, { backgroundColor: slotOf(entryFor).color }]}>
+              <View style={[styles.sheet, { borderColor: themeBorder(slotOf(entryFor).color) }]}>
+                <View style={[styles.banner, { backgroundColor: themeBg(slotOf(entryFor).color) }]}>
                   <Text style={styles.bannerLetter}>{slotOf(entryFor).letter}</Text>
                   <Text style={styles.bannerText} numberOfLines={1}>
                     Logging for {nameOf(entryFor).toUpperCase()}
@@ -530,13 +531,13 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 <Text style={styles.label}>Good reps left</Text>
                 <View style={styles.chips}>
                   {EFFORT_OPTIONS.map((o) => (
-                    <Pressable key={o.key} style={[styles.chip, effort === o.key && { backgroundColor: slotOf(entryFor).color }]} onPress={() => setEffort(o.key)}>
+                    <Pressable key={o.key} style={[styles.chip, effort === o.key && { backgroundColor: themeBg(slotOf(entryFor).color) }]} onPress={() => setEffort(o.key)}>
                       <Text style={[styles.chipText, effort === o.key && styles.chipTextOn]}>{o.label}</Text>
                     </Pressable>
                   ))}
                 </View>
-                <Pressable style={[styles.saveButton, { backgroundColor: slotOf(entryFor).color }]} onPress={saveSet} disabled={saving}>
-                  {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.finishText}>Save {first({ name: nameOf(entryFor) })}'s set</Text>}
+                <Pressable style={[styles.saveButton, { backgroundColor: themeBg(slotOf(entryFor).color) }]} onPress={saveSet} disabled={saving}>
+                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Save {first({ name: nameOf(entryFor) })}'s set</Text>}
                 </Pressable>
                 <Pressable style={styles.cancel} onPress={() => setEntryFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
@@ -556,8 +557,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 {steps.map((s, i) => {
                   const at = choosing.indexOf(i);
                   return (
-                    <Pressable key={`${s.name}-${i}`} style={[styles.pickRow, at >= 0 && { borderColor: BRAND_GOLD }]} onPress={() => toggleChoice(i)}>
-                      <View style={[styles.badge, { backgroundColor: at >= 0 ? BRAND_GOLD : "#334155" }]}>
+                    <Pressable key={`${s.name}-${i}`} style={[styles.pickRow, at >= 0 && { borderColor: themeBorder(BRAND_GOLD) }]} onPress={() => toggleChoice(i)}>
+                      <View style={[styles.badge, { backgroundColor: themeBg(at >= 0 ? BRAND_GOLD : "#334155") }]}>
                         <Text style={styles.badgeText}>{at >= 0 ? at + 1 : ""}</Text>
                       </View>
                       <Text style={styles.pickName}>{s.name}</Text>
@@ -567,7 +568,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               </ScrollView>
               {steps.length < SUPERSET_MIN && <Text style={styles.helper}>Add at least 2 exercises to the session first.</Text>}
               <Pressable
-                style={[styles.saveButton, { backgroundColor: choosing.length >= SUPERSET_MIN ? BRAND_GOLD : "#334155" }]}
+                style={[styles.saveButton, { backgroundColor: themeBg(choosing.length >= SUPERSET_MIN ? BRAND_GOLD : "#334155") }]}
                 disabled={choosing.length < SUPERSET_MIN}
                 onPress={() => {
                   setSuperset(choosing);
@@ -589,8 +590,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         <KeyboardSafe>
           <View style={styles.sheetWrap}>
             {roundFor && (
-              <View style={[styles.sheet, { borderColor: slotOf(roundFor).color, maxHeight: "92%" }]}>
-                <View style={[styles.banner, { backgroundColor: slotOf(roundFor).color }]}>
+              <View style={[styles.sheet, { borderColor: themeBorder(slotOf(roundFor).color), maxHeight: "92%" }]}>
+                <View style={[styles.banner, { backgroundColor: themeBg(slotOf(roundFor).color) }]}>
                   <Text style={styles.bannerLetter}>{slotOf(roundFor).letter}</Text>
                   <Text style={styles.bannerText} numberOfLines={1}>
                     Round for {nameOf(roundFor).toUpperCase()}
@@ -616,7 +617,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                         {EFFORT_OPTIONS.map((o) => (
                           <Pressable
                             key={o.key}
-                            style={[styles.chip, round[i]?.effort === o.key && { backgroundColor: slotOf(roundFor).color }]}
+                            style={[styles.chip, round[i]?.effort === o.key && { backgroundColor: themeBg(slotOf(roundFor).color) }]}
                             onPress={() => setRoundEntry(i, { effort: o.key })}
                           >
                             <Text style={[styles.chipText, round[i]?.effort === o.key && styles.chipTextOn]}>{o.label}</Text>
@@ -626,8 +627,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                     </View>
                   ))}
                 </ScrollView>
-                <Pressable style={[styles.saveButton, { backgroundColor: slotOf(roundFor).color }]} onPress={saveRound} disabled={saving}>
-                  {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.finishText}>Save {first({ name: nameOf(roundFor) })}'s round</Text>}
+                <Pressable style={[styles.saveButton, { backgroundColor: themeBg(slotOf(roundFor).color) }]} onPress={saveRound} disabled={saving}>
+                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Save {first({ name: nameOf(roundFor) })}'s round</Text>}
                 </Pressable>
                 <Pressable style={styles.cancel} onPress={() => setRoundFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
@@ -649,8 +650,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               {group
                 .filter((c) => c.id !== moving.client_id && !holds[c.id])
                 .map((c) => (
-                  <Pressable key={c.id} style={[styles.pickRow, { borderColor: slotOf(c.id).color }]} onPress={() => moveSet(moving, c.id)}>
-                    <View style={[styles.badge, { backgroundColor: slotOf(c.id).color }]}>
+                  <Pressable key={c.id} style={[styles.pickRow, { borderColor: themeBorder(slotOf(c.id).color) }]} onPress={() => moveSet(moving, c.id)}>
+                    <View style={[styles.badge, { backgroundColor: themeBg(slotOf(c.id).color) }]}>
                       <Text style={styles.badgeText}>{slotOf(c.id).letter}</Text>
                     </View>
                     <Text style={styles.pickName}>{c.name}</Text>
@@ -685,7 +686,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
             />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: 10 }}>
               {[null, ...exerciseCategories(shown)].map((c) => (
-                <Pressable key={c ?? "all"} style={[styles.chip, category === c && { backgroundColor: BRAND_GOLD }]} onPress={() => setCategory(c)}>
+                <Pressable key={c ?? "all"} style={[styles.chip, category === c && { backgroundColor: themeBg(BRAND_GOLD) }]} onPress={() => setCategory(c)}>
                   <Text style={[styles.chipText, category === c && styles.chipTextOn]}>{c ?? "All"}</Text>
                 </Pressable>
               ))}
@@ -705,7 +706,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   title: { fontSize: 22, fontWeight: "800", color: "#fff", marginBottom: 6 },
   helper: { color: "#94A3B8", fontSize: 13, marginBottom: 8 },

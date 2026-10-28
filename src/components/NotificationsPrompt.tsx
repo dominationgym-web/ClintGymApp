@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { AppState, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Linking, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { notificationPermission, turnOnNotifications, type NotificationPermission } from "@/lib/notifications";
+import { themedStyles } from "@/lib/theme";
 
 const WHY = {
   client: "So you hear straight away from your trainer, and before your plan runs out.",
@@ -46,7 +47,7 @@ export default function NotificationsPrompt({ who }: { who: "client" | "trainer"
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1.5, borderColor: BRAND_GOLD },
   title: { color: "#fff", fontWeight: "800", fontSize: 16 },
   body: { color: "#CBD5E1", fontSize: 13, marginTop: 4 },

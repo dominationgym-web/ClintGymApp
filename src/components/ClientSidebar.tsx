@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, type PressableStateCallbackType, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, type PressableStateCallbackType, ScrollView, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigationRef";
@@ -8,6 +8,7 @@ import { useClientMenuItems } from "@/components/SectionsMenuButton";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientTabParamList } from "@/navigation/types";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -72,7 +73,7 @@ export default function ClientSidebar() {
           const on = name === m.tab;
           return (
             <Pressable key={m.tab} onPress={() => goToTab(m.tab)} style={itemStyle(on)} accessibilityRole="button" accessibilityLabel={m.label}>
-              <Ionicons name={on ? m.icon : (`${m.icon}-outline` as IconName)} size={19} color={on ? BRAND_GOLD : "#94A3B8"} />
+              <Ionicons name={on ? m.icon : (`${m.icon}-outline` as IconName)} size={19} color={themeText(on ? BRAND_GOLD : "#94A3B8")} />
               <Text style={[styles.itemText, on && styles.itemTextOn]}>{m.label}</Text>
             </Pressable>
           );
@@ -83,7 +84,7 @@ export default function ClientSidebar() {
           accessibilityRole="button"
           accessibilityLabel="Search"
         >
-          <Ionicons name="search" size={19} color={name === "Search" ? BRAND_GOLD : "#94A3B8"} />
+          <Ionicons name="search" size={19} color={themeText(name === "Search" ? BRAND_GOLD : "#94A3B8")} />
           <Text style={[styles.itemText, name === "Search" && styles.itemTextOn]}>Search</Text>
         </Pressable>
 
@@ -112,7 +113,7 @@ export default function ClientSidebar() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   sidebar: { width: 260, backgroundColor: "#0B1222", borderRightWidth: 1, borderRightColor: "#1E293B" },
   inner: { paddingVertical: 18, paddingHorizontal: 12, gap: 2 },
   brand: { color: BRAND_GOLD, fontSize: 20, fontWeight: "800", paddingHorizontal: 10 },
