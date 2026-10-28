@@ -28,6 +28,7 @@ export default function WeekCalendar({
   plans,
   marks,
   moves,
+  swaps,
   recovery,
   stability,
   client = false,
@@ -40,6 +41,8 @@ export default function WeekCalendar({
   plans: Record<string, WeekDayPlan>;
   marks?: Record<string, { color: string; star: boolean; live?: boolean; done?: boolean }>;
   moves?: Record<string, CalendarMove>;
+  /** Days whose workout the client swapped with another day (0167), with the line to show. */
+  swaps?: Record<string, string>;
   recovery?: Record<string, { label: string; done: boolean }[]>;
   stability?: Record<string, StabilityCalendarItem[]>;
   /** The client's own calendar, so the words speak to them. */
@@ -121,6 +124,7 @@ export default function WeekCalendar({
                   {move === "missed" ? "Moved to the weekend" : "Caught up today"}
                 </Text>
               ) : null}
+              {swaps?.[date] ? <Text style={[styles.moved, { color: BRAND_GOLD }]}>{swaps[date]}</Text> : null}
               {plan.extras.map((x, j) => (
                 <Text key={`x${j}`} style={[styles.tag, { color: x.functional ? FUNCTIONAL_TEAL : BRAND_GOLD }]} numberOfLines={1}>
                   {x.functional ? "🤸" : "➕"} {x.title}
