@@ -66,7 +66,7 @@ const SNACK_SALT = "Biltong is high in salt, so go easier on it if you have high
 /**
  * A day of meals, with Swap and Leave out on each food when `onSwap` /
  * `onLeaveOut` are given, "Put in my own" on each meal with `onOwnMeal`, and
- * a tick box on each meal with `tick` (meal ticking, 0163).
+ * a tick box on each meal with `tick` (meal ticking, 0165).
  */
 export function MealDayView({
   day,
@@ -149,7 +149,7 @@ export function MealDayView({
 
 export type MealTickProps = { isTicked: (meal: number) => boolean; onTick: (meal: number) => void };
 
-// "I ate this": ticks the meal off today's plan (0163).
+// "I ate this": ticks the meal off today's plan (0165).
 export function MealTickButton({ on, onPress }: { on: boolean; onPress: () => void }) {
   return (
     <Pressable
@@ -210,7 +210,7 @@ export default function MealPlanMaker() {
   const [times, setTimes] = useState<string[]>(() => mealTimesFor(4, "17:30"));
   const [training, setTraining] = useState<string | null>("17:30");
   const [dayKind, setDayKind] = useState<"training" | "rest">("training");
-  // Today's ticked meals (0163). The plan opens on the day they've been ticking.
+  // Today's ticked meals (0165). The plan opens on the day they've been ticking.
   const mealTicks = useMealTicks(client?.id);
   const tickedKind = tickedSource(mealTicks.ticks, todayIso());
   useEffect(() => {

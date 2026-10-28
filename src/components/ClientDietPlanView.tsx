@@ -20,7 +20,7 @@ function MealPlan() {
   const [failed, setFailed] = useState(false);
   const [reload, setReload] = useState(0);
   const [day, setDay] = useState(weekdayIndex(new Date()));
-  // Meal ticking (0163): today's meals can be ticked off as they're eaten.
+  // Meal ticking (0165): today's meals can be ticked off as they're eaten.
   const mealTicks = useMealTicks(userId);
   const isToday = day === weekdayIndex(new Date());
 

@@ -1,7 +1,7 @@
 import { sumTotals, type DietMeal } from "@/lib/dietPlan";
 import type { ClientMealTick } from "@/types/database";
 
-// Meal ticking (0163, GRIZZ 2026-10-27): the client ticks each meal off their
+// Meal ticking (0165, GRIZZ 2026-10-27): the client ticks each meal off their
 // plan as they eat it. A day's ticks all come from one plan day (the coach's
 // plan, or their own training or rest day), so switching between them never
 // counts a meal twice.

@@ -6,7 +6,7 @@ import { todayIso } from "@/lib/dates";
 import { mealKey, otherSourceTicks, tickFor, type MealTick, type TickSource } from "@/lib/mealTicks";
 import type { DietMeal } from "@/lib/dietPlan";
 
-// The client's ticked meals from `from` to today (0163), and ticking one on or
+// The client's ticked meals from `from` to today (0165), and ticking one on or
 // off for today. Ticking a meal from another plan day (coach's plan, training
 // or rest day) takes today's other ticks off, so nothing counts twice.
 export function useMealTicks(clientId: string | undefined, from: string = todayIso()) {

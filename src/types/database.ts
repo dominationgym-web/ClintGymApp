@@ -732,7 +732,7 @@ export type ClientDietPlan = {
   updated_at: string;
 };
 
-// A meal the client ticked off as eaten (0163). The meal's numbers are kept,
+// A meal the client ticked off as eaten (0165). The meal's numbers are kept,
 // so the day still adds up after the plan changes.
 export type ClientMealTick = {
   client_id: string;
