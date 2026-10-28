@@ -4,12 +4,23 @@ import { BRAND_GOLD } from "@/lib/brand";
 import type { Point } from "@/lib/progress";
 
 // A line graph drawn with plain Views (no chart library, so no new app build
-// needed). Tap a dot to see that day's value.
+// needed). Tap a dot to see that day's value. `height` makes it taller, for
+// the client's laptop view.
 const HEIGHT = 150;
 const DOT = 8;
 const PAD = 10;
 
-export default function ProgressChart({ points, unit, color = BRAND_GOLD }: { points: Point[]; unit: string; color?: string }) {
+export default function ProgressChart({
+  points,
+  unit,
+  color = BRAND_GOLD,
+  height = HEIGHT,
+}: {
+  points: Point[];
+  unit: string;
+  color?: string;
+  height?: number;
+}) {
   const [width, setWidth] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
 
@@ -26,7 +37,7 @@ export default function ProgressChart({ points, unit, color = BRAND_GOLD }: { po
   const t1 = Date.parse(points[points.length - 1].date);
   const span = t1 - t0 || 1;
   const innerW = Math.max(0, width - PAD * 2);
-  const innerH = HEIGHT - PAD * 2;
+  const innerH = height - PAD * 2;
   const xy = points.map((p) => ({
     x: PAD + (points.length === 1 ? innerW / 2 : ((Date.parse(p.date) - t0) / span) * innerW),
     y: PAD + innerH - ((p.value - min) / (max - min)) * innerH,
@@ -40,11 +51,11 @@ export default function ProgressChart({ points, unit, color = BRAND_GOLD }: { po
         <Text style={styles.readoutDate}>  {shown.date}{shown.note ? ` · ${shown.note}` : ""}</Text>
       </Text>
       <View style={styles.chartRow}>
-        <View style={styles.axis}>
+        <View style={[styles.axis, { height }]}>
           <Text style={styles.axisText}>{fmt(max)}</Text>
           <Text style={styles.axisText}>{fmt(min)}</Text>
         </View>
-        <View style={styles.plot} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        <View style={[styles.plot, { height }]} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
           <View style={[styles.grid, { top: PAD }]} />
           <View style={[styles.grid, { top: PAD + innerH / 2 }]} />
           <View style={[styles.grid, { top: PAD + innerH }]} />

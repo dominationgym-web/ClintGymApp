@@ -732,6 +732,21 @@ export type ClientDietPlan = {
   updated_at: string;
 };
 
+// A meal the client ticked off as eaten (0165). The meal's numbers are kept,
+// so the day still adds up after the plan changes.
+export type ClientMealTick = {
+  client_id: string;
+  ate_on: string;
+  meal_key: string;
+  source: "coach" | "training" | "rest";
+  meal_name: string;
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  created_at: string;
+};
+
 // The client's own meal plan, made by the app (0077, src/lib/mealPlanMaker.ts).
 export type ClientMealPlan = {
   client_id: string;
@@ -1108,6 +1123,7 @@ export interface Database {
         Update: Partial<ClientTrainerNotes>;
         Relationships: [];
       };
+      client_meal_ticks: { Row: ClientMealTick; Insert: Partial<ClientMealTick>; Update: Partial<ClientMealTick>; Relationships: [] };
       client_meal_plans: {
         Row: ClientMealPlan;
         Insert: Partial<ClientMealPlan>;

@@ -9,6 +9,9 @@ import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ShoppingListSheet from "@/components/ShoppingListSheet";
 import { trainingDaysGuess } from "@/lib/shoppingList";
+import { useMealTicks } from "@/hooks/useMealTicks";
+import { tickedSource } from "@/lib/mealTicks";
+import { todayIso } from "@/lib/dates";
 import {
   amountLabel,
   bmr,
@@ -62,7 +65,8 @@ const SNACK_SALT = "Biltong is high in salt, so go easier on it if you have high
 
 /**
  * A day of meals, with Swap and Leave out on each food when `onSwap` /
- * `onLeaveOut` are given, and "Put in my own" on each meal with `onOwnMeal`.
+ * `onLeaveOut` are given, "Put in my own" on each meal with `onOwnMeal`, and
+ * a tick box on each meal with `tick` (meal ticking, 0165).
  */
 export function MealDayView({
   day,
@@ -70,12 +74,14 @@ export function MealDayView({
   onSwap,
   onLeaveOut,
   onOwnMeal,
+  tick,
 }: {
   day: DietDay;
   targetKcal: number | null;
   onSwap?: (meal: number, index: number) => void;
   onLeaveOut?: (meal: number, index: number) => void;
   onOwnMeal?: (meal: number) => void;
+  tick?: MealTickProps;
 }) {
   const totals = dayTotals(day);
   const status = targetKcal ? targetStatus(totals.kcal, targetKcal) : null;
@@ -98,6 +104,7 @@ export function MealDayView({
               <Text style={styles.mealName}>{meal.name}</Text>
               <Text style={styles.mealKcal}>{t.kcal} kcal</Text>
             </View>
+            {tick && meal.items.length > 0 && <MealTickButton on={tick.isTicked(m)} onPress={() => tick.onTick(m)} />}
             <Text style={styles.mealMacros}>
               P {t.protein} g · C {t.carbs} g · F {t.fat} g
             </Text>
@@ -137,6 +144,24 @@ export function MealDayView({
         );
       })}
     </View>
+  );
+}
+
+export type MealTickProps = { isTicked: (meal: number) => boolean; onTick: (meal: number) => void };
+
+// "I ate this": ticks the meal off today's plan (0165).
+export function MealTickButton({ on, onPress }: { on: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={[styles.tick, on && styles.tickOn]}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: on }}
+      accessibilityLabel="I ate this meal"
+    >
+      <Text style={[styles.tickText, on && styles.tickTextOn]}>{on ? "✓ Ate it today" : "☐ Tick when you've eaten it"}</Text>
+    </Pressable>
   );
 }
 
@@ -185,6 +210,12 @@ export default function MealPlanMaker() {
   const [times, setTimes] = useState<string[]>(() => mealTimesFor(4, "17:30"));
   const [training, setTraining] = useState<string | null>("17:30");
   const [dayKind, setDayKind] = useState<"training" | "rest">("training");
+  // Today's ticked meals (0165). The plan opens on the day they've been ticking.
+  const mealTicks = useMealTicks(client?.id);
+  const tickedKind = tickedSource(mealTicks.ticks, todayIso());
+  useEffect(() => {
+    if (tickedKind === "training" || tickedKind === "rest") setDayKind(tickedKind);
+  }, [tickedKind]);
   const [swapping, setSwapping] = useState<{ meal: number; index: number } | null>(null);
   // The food the client wants to leave out, while they're asked if they're sure.
   const [leaving, setLeaving] = useState<{ meal: number; index: number } | null>(null);
@@ -662,6 +693,7 @@ export default function MealPlanMaker() {
         onSwap={(meal, index) => setSwapping({ meal, index })}
         onLeaveOut={(meal, index) => setLeaving({ meal, index })}
         onOwnMeal={openOwnMeal}
+        tick={{ isTicked: (m) => mealTicks.isTicked(dayKind, m, day.meals[m]), onTick: (m) => mealTicks.toggle(dayKind, m, day.meals[m]) }}
       />
       {(plan.settings.avoid ?? []).length > 0 && (
         <View style={styles.avoidBox}>
@@ -858,6 +890,10 @@ const styles = StyleSheet.create({
   shopBox: { backgroundColor: "#0F172A", borderRadius: 10, borderWidth: 1, borderColor: BRAND_GOLD, padding: 12, marginTop: 14 },
   shopTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15, marginBottom: 4 },
   stacked: { flexGrow: 0, flexShrink: 0, flexBasis: "auto", marginTop: 10 },
+  tick: { alignSelf: "flex-start", borderWidth: 1, borderColor: "#334155", borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10, marginVertical: 6 },
+  tickOn: { backgroundColor: "#14532D", borderColor: "#22C55E" },
+  tickText: { color: "#CBD5E1", fontSize: 13, fontWeight: "600" },
+  tickTextOn: { color: "#4ADE80" },
   ownTag: { color: BRAND_GOLD, fontSize: 12, fontWeight: "700", marginBottom: 2 },
   ownLink: { color: "#38BDF8", fontWeight: "700", fontSize: 13 },
   emptyMeal: { marginTop: 6 },

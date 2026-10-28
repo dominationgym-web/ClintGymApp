@@ -18,6 +18,11 @@ export type AuthStackParamList = {
 // key stays so notification taps and old links still land on it. The old
 // Video log tab is now the FormVideos page, opened from Profile or the set log.
 export type ClientTabParamList = {
+  // The client's laptop view (GRIZZ, 2026-10-27): only on a wide website window.
+  MyWeek: undefined;
+  Lifts: undefined;
+  Body: undefined;
+  Food: undefined;
   CheckIn: undefined;
   Habits: undefined;
   Reset: undefined;

@@ -6,6 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { DIET_WEEKDAYS, INTAKE_ACTIVITY_LEVELS, intakeDetails, amountLabel, dailyTarget, dayTotals, normaliseWeek, sumTotals, weekdayIndex, type DietDay } from "@/lib/dietPlan";
 import type { ClientDietPlan } from "@/types/database";
+import { useMealTicks } from "@/hooks/useMealTicks";
+import { MealTickButton } from "@/components/MealPlanMaker";
 import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 
 // The client's meal plan from their trainer (0071), read-only, in the
@@ -18,6 +20,9 @@ function MealPlan() {
   const [failed, setFailed] = useState(false);
   const [reload, setReload] = useState(0);
   const [day, setDay] = useState(weekdayIndex(new Date()));
+  // Meal ticking (0165): today's meals can be ticked off as they're eaten.
+  const mealTicks = useMealTicks(userId);
+  const isToday = day === weekdayIndex(new Date());
 
   useEffect(() => {
     if (!userId) return;
@@ -72,13 +77,17 @@ function MealPlan() {
         </Text>
       </View>
       {today.meals
-        .filter((m) => m.items.length > 0)
-        .map((meal) => (
+        .map((meal, index) => ({ meal, index }))
+        .filter(({ meal }) => meal.items.length > 0)
+        .map(({ meal, index }) => (
           <View key={meal.name} style={styles.meal}>
             <View style={styles.mealHeader}>
               <Text style={styles.mealName}>{meal.name}</Text>
               <Text style={styles.mealKcal}>{sumTotals(meal.items).kcal} kcal</Text>
             </View>
+            {isToday && (
+              <MealTickButton on={mealTicks.isTicked("coach", index, meal)} onPress={() => mealTicks.toggle("coach", index, meal)} />
+            )}
             {meal.items.map((item, i) => (
               <View key={i} style={styles.itemRow}>
                 <Text style={[styles.item, { flex: 1 }]}>
