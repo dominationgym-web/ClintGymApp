@@ -30,6 +30,7 @@ import WorkoutSessionResult from "@/components/WorkoutSessionResult";
 import { LoggedExercises } from "@/components/TrainerTrainingLog";
 import { groupTrainingLog } from "@/lib/trainingLog";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
+import { useWorkoutSwaps } from "@/components/useWorkoutSwaps";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
 import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import { loadStabilityDays, STABILITY_PURPLE } from "@/lib/stabilityCalendar";
@@ -174,6 +175,8 @@ export default function ClientCalendarView({
   }, [clientId, monday, refreshKey, focusKey]);
 
   const { byDate: sessions, marks } = useWorkoutSessions(clientId, range.from, range.to);
+  // Days the client swapped workouts (0167).
+  const swapped = useWorkoutSwaps(clientId, range.from, range.to, entries);
   const recovery = useRecoveryCalendar(clientId, range.from, range.to);
   const stability = useStabilityCalendar(clientId, range.from, range.to);
   const dayStability = selected ? stability.map[selected] ?? [] : [];
@@ -250,6 +253,7 @@ export default function ClientCalendarView({
             }}
             plans={plans}
             moves={moved.moves}
+          swaps={swapped.labels}
             recovery={recovery}
             stability={stability.map}
             today={today}

@@ -37,7 +37,7 @@ const TRAINER_CLIENT_TYPES = new Set([
   "achievement",
   "habit_win",
 ]);
-const TRAINER_TRAINING_TYPES = new Set(["training_level", "deload_due", "plan_next_week"]);
+const TRAINER_TRAINING_TYPES = new Set(["training_level", "deload_due", "plan_next_week", "workout_swap"]);
 
 export function notificationRoute(
   data: Record<string, unknown> | null | undefined,
