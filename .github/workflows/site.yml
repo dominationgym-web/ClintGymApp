@@ -2,8 +2,9 @@ name: Publish website
 
 # The small public website the App Store and Google Play need: privacy policy,
 # account deletion and support pages, built from src/lib/privacyPolicy.ts and
-# hosted with EAS Hosting at https://consistent-change.expo.app. The web
-# version of the app, for trainers on a laptop, is served from /app.
+# hosted with EAS Hosting at https://dailyevolution.co.za (the old address
+# https://consistent-change.expo.app still works). The web version of the
+# app, for trainers on a laptop, is served from /app.
 on:
   push:
     branches: ["claude/coaching-app-brief-tllivw"]
