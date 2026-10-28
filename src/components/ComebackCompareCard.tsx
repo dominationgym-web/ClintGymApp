@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { toIsoDate, todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -13,6 +13,7 @@ import {
   type StintData,
 } from "@/lib/comeback";
 import type { Client } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // A returning client's first time with the trainer against the time since
 // they came back (0097). Shown on the trainer's client Overview once a client
@@ -80,7 +81,7 @@ export default function ComebackCompareCard({ client }: { client: Client }) {
         Their first time with you ({thenFrom} to {thenTo}) against since they came back ({nowFrom}).
       </Text>
       {!rows ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 12 }} />
       ) : (
         <>
           <Table heading="Training and habits" rows={rows.habits} empty="Nothing logged yet." />
@@ -118,7 +119,7 @@ function Table({ heading, rows, empty }: { heading: string; rows: CompareRow[]; 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#111C33", borderRadius: 12, padding: 14, marginTop: 12, borderWidth: 1, borderColor: BRAND_GOLD },
   title: { color: BRAND_GOLD, fontWeight: "700", fontSize: 16 },
   helper: { color: "#94A3B8", fontSize: 12, marginTop: 4 },

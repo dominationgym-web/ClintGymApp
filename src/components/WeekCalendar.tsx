@@ -1,9 +1,10 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { DELOAD_BLUE } from "@/lib/deload";
 import { STABILITY_PURPLE, type StabilityCalendarItem } from "@/lib/stabilityCalendar";
 import { CALENDAR_WEEKDAYS, FUNCTIONAL_TEAL, weekDates, weekLabel, type CalendarMove } from "@/lib/trainingCalendar";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 const RECOVERY_GREEN = "#4ADE80";
 
@@ -91,7 +92,7 @@ export default function WeekCalendar({
               <Text style={[styles.dayNumber, date === today && styles.todayText]}>{Number(date.slice(8))}</Text>
               {mark && (
                 <View style={styles.markRow}>
-                  <View style={[styles.markDot, { backgroundColor: mark.color }]} />
+                  <View style={[styles.markDot, { backgroundColor: themeBg(mark.color) }]} />
                   {mark.star && <Text style={styles.star}>⭐</Text>}
                 </View>
               )}
@@ -99,7 +100,7 @@ export default function WeekCalendar({
             <View style={{ flex: 1, gap: 3 }}>
               {main && (
                 <View>
-                  <Text style={[styles.mainTitle, main.deload && { color: DELOAD_BLUE }]} numberOfLines={1}>
+                  <Text style={[styles.mainTitle, main.deload && { color: themeText(DELOAD_BLUE) }]} numberOfLines={1}>
                     {main.deload ? "🌙 Deload · " : "🏋️ "}
                     {main.title}
                   </Text>
@@ -110,33 +111,33 @@ export default function WeekCalendar({
               )}
               {/* A live session with the coach, in the day's slot (GRIZZ, 2026-10-27). */}
               {mark?.live && (
-                <Text style={[styles.tag, { color: "#22C55E" }]} numberOfLines={1}>
+                <Text style={[styles.tag, { color: themeText("#22C55E") }]} numberOfLines={1}>
                   {client ? "🤝 Live with your coach · tap to see" : "🤝 Live session with you"}
                 </Text>
               )}
               {client && mark?.done && !mark.live && !main && (
-                <Text style={[styles.tag, { color: "#22C55E" }]} numberOfLines={1}>
+                <Text style={[styles.tag, { color: themeText("#22C55E") }]} numberOfLines={1}>
                   ✅ Workout done · tap to see
                 </Text>
               )}
               {move ? (
-                <Text style={[styles.moved, { color: move === "missed" ? "#EF4444" : "#22C55E" }]}>
+                <Text style={[styles.moved, { color: themeText(move === "missed" ? "#EF4444" : "#22C55E") }]}>
                   {move === "missed" ? "Moved to the weekend" : "Caught up today"}
                 </Text>
               ) : null}
-              {swaps?.[date] ? <Text style={[styles.moved, { color: BRAND_GOLD }]}>{swaps[date]}</Text> : null}
+              {swaps?.[date] ? <Text style={[styles.moved, { color: themeText(BRAND_GOLD) }]}>{swaps[date]}</Text> : null}
               {plan.extras.map((x, j) => (
-                <Text key={`x${j}`} style={[styles.tag, { color: x.functional ? FUNCTIONAL_TEAL : BRAND_GOLD }]} numberOfLines={1}>
+                <Text key={`x${j}`} style={[styles.tag, { color: themeText(x.functional ? FUNCTIONAL_TEAL : BRAND_GOLD) }]} numberOfLines={1}>
                   {x.functional ? "🤸" : "➕"} {x.title}
                 </Text>
               ))}
               {stab.map((s) => (
-                <Text key={`s${s.programId}`} style={[styles.tag, { color: STABILITY_PURPLE }]} numberOfLines={1}>
+                <Text key={`s${s.programId}`} style={[styles.tag, { color: themeText(STABILITY_PURPLE) }]} numberOfLines={1}>
                   {s.done ? "✓" : "🧘"} {s.label} stability
                 </Text>
               ))}
               {rec.map((r, j) => (
-                <Text key={`r${j}`} style={[styles.tag, { color: RECOVERY_GREEN }]} numberOfLines={1}>
+                <Text key={`r${j}`} style={[styles.tag, { color: themeText(RECOVERY_GREEN) }]} numberOfLines={1}>
                   {r.done ? "✓" : "🌿"} {r.label}
                 </Text>
               ))}
@@ -146,16 +147,16 @@ export default function WeekCalendar({
         );
       })}
       <View style={styles.legend}>
-        <Text style={[styles.legendItem, { color: BRAND_GOLD }]}>■ Training</Text>
-        <Text style={[styles.legendItem, { color: FUNCTIONAL_TEAL }]}>■ Mobility</Text>
-        <Text style={[styles.legendItem, { color: STABILITY_PURPLE }]}>■ Stability</Text>
-        <Text style={[styles.legendItem, { color: RECOVERY_GREEN }]}>■ Recovery</Text>
+        <Text style={[styles.legendItem, { color: themeText(BRAND_GOLD) }]}>■ Training</Text>
+        <Text style={[styles.legendItem, { color: themeText(FUNCTIONAL_TEAL) }]}>■ Mobility</Text>
+        <Text style={[styles.legendItem, { color: themeText(STABILITY_PURPLE) }]}>■ Stability</Text>
+        <Text style={[styles.legendItem, { color: themeText(RECOVERY_GREEN) }]}>■ Recovery</Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   arrow: { color: BRAND_GOLD, fontSize: 30, fontWeight: "700", paddingHorizontal: 10 },
   week: { color: "#fff", fontSize: 17, fontWeight: "800" },

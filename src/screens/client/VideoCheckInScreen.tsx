@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, Switch, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,7 @@ import {
   whatsappLink,
 } from "@/lib/videoCheckins";
 import type { OpenVideoSlot, VideoCheckin, VideoCheckinSettings } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // Weekly video check-in (0155, GRIZZ 2026-10-25). The client books one of the
 // times their coach is free, at most one a week, and can keep the same time
@@ -122,7 +123,7 @@ export default function VideoCheckInScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       </View>
     );
   }
@@ -139,7 +140,7 @@ export default function VideoCheckInScreen() {
       style={styles.container}
       contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_GOLD} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeText(BRAND_GOLD)} />}
     >
       {bookings.map((v) => (
         <View key={v.id} style={[styles.card, v.status === "confirmed" && styles.cardConfirmed]}>
@@ -147,7 +148,7 @@ export default function VideoCheckInScreen() {
           <Text style={styles.when}>
             {checkinDay(v.starts_at, now)}, {checkinClock(v.starts_at)}
           </Text>
-          <Text style={[styles.status, v.status === "confirmed" ? { color: "#22C55E" } : { color: "#F59E0B" }]}>
+          <Text style={[styles.status, v.status === "confirmed" ? { color: themeText("#22C55E") } : { color: themeText("#F59E0B") }]}>
             {STATUS_LABEL[v.status]} · {v.minutes} min
           </Text>
           {v.topic ? <Text style={styles.helper}>To talk about: {v.topic}</Text> : null}
@@ -164,7 +165,7 @@ export default function VideoCheckInScreen() {
             <Switch
               value={v.repeat_weekly}
               onValueChange={(value) => setRepeatFor(v, value)}
-              trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+              trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
               thumbColor="#fff"
             />
           </View>
@@ -252,10 +253,10 @@ export default function VideoCheckInScreen() {
               />
               <View style={styles.switchRow}>
                 <Text style={styles.switchText}>Same time every week</Text>
-                <Switch value={repeat} onValueChange={setRepeat} trackColor={{ true: BRAND_GOLD, false: "#334155" }} thumbColor="#fff" />
+                <Switch value={repeat} onValueChange={setRepeat} trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }} thumbColor="#fff" />
               </View>
               <Pressable style={styles.button} onPress={book} disabled={busy}>
-                {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Book this time</Text>}
+                {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Book this time</Text>}
               </Pressable>
             </>
           )}
@@ -265,7 +266,7 @@ export default function VideoCheckInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { alignItems: "center", justifyContent: "center" },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },

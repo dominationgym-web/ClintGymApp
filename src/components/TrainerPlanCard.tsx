@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -8,6 +8,7 @@ import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import CardPayment from "@/components/CardPayment";
 import type { BillingSettings, EftDetails, Trainer, TrainerBillingStatus } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // A trainer's own plan (0064): what they pay, when it's due, client fees owed,
 // and where to pay (the app owner's EFT details). Nothing shows until the
@@ -42,7 +43,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
     };
   }, [trainer.id, trainer.paid_until, trainer.free_use_from]);
 
-  if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />;
+  if (loading) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 12 }} />;
   const freeUse = trainer.free_use_from;
   if (!status || !settings || (!freeUse && (!status.billing_plan || !status.billing_currency))) return null;
 
@@ -97,7 +98,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "#334155" },
   boxDue: { borderColor: "#F59E0B" },
   title: { color: "#fff", fontWeight: "700", fontSize: 15 },

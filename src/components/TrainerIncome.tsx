@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { money } from "@/lib/billing";
 import { EXTRA_DAYS, incomeSummary, parsePrice } from "@/lib/clientPricing";
 import type { AccessStatus, BillingCurrency, ClientPrices, PricePackage } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Row = { id: string; price_package: PricePackage | null; archived_at: string | null; access_status: AccessStatus };
 type Draft = { currency: BillingCurrency; mode: "table" | "flat"; online: string; extra: Record<string, string>; flat: string };
@@ -143,14 +144,14 @@ export default function TrainerIncome() {
             </>
           )}
           <Pressable style={styles.button} onPress={save} disabled={saving}>
-            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save prices</Text>}
+            {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save prices</Text>}
           </Pressable>
         </View>
       </View>
 
       <Text style={styles.heading}>Your monthly income</Text>
       {!summary ? (
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       ) : (
         <>
           <View style={styles.row}>
@@ -185,7 +186,7 @@ export default function TrainerIncome() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   heading: { color: "#fff", fontSize: 17, fontWeight: "700", marginBottom: 8 },
   row: { flexDirection: "row", gap: 10 },
   stat: { flex: 1, backgroundColor: "#1E293B", borderRadius: 12, paddingVertical: 12, alignItems: "center" },

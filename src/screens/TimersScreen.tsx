@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalSafeArea from "../components/ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -25,6 +25,7 @@ import {
   type TimerKind,
   type TimerSettings,
 } from "@/lib/timerWorkouts";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type TabKey = TimerKind | "saved";
 
@@ -329,7 +330,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
       ) : (
         <ScrollView contentContainerStyle={styles.pad}>
           {loadingSaved ? (
-            <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 30 }} />
+            <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 30 }} />
           ) : saved.length === 0 ? (
             <Text style={styles.summary}>
               No saved timers yet. Set one up on the EMOM, Tabata, Intervals or Boxing tab and tap Save.
@@ -405,7 +406,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
                 </>
               )}
               <Pressable style={styles.start} onPress={save} disabled={saving}>
-                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.startText}>Save</Text>}
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.startText}>Save</Text>}
               </Pressable>
               <Pressable style={styles.secondary} onPress={() => setSaveOpen(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -454,7 +455,7 @@ function Stepper({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: "#0F172A" },
   pad: { padding: 16, paddingBottom: 40 },
   summary: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 6 },

@@ -3,7 +3,7 @@ import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
 import { lastClientTab, rememberClientTab } from "@/lib/lastClientTab";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert, Switch, Linking } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, Pressable, Alert, Switch, Linking } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -65,6 +65,7 @@ import FoldSection from "@/components/FoldSection";
 import { whatsappLink } from "@/lib/videoCheckins";
 import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -499,7 +500,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   if (loading || !client) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -727,7 +728,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   {client.injuries_healed_on ? ` (healed ${client.injuries_healed_on})` : ""}{" "}
                   {/* Marking it healed stops the injury check flagging it (0119). */}
                   <Text
-                    style={{ color: BRAND_GOLD, fontWeight: "700" }}
+                    style={{ color: themeText(BRAND_GOLD), fontWeight: "700" }}
                     onPress={async () => {
                       const healed = client.injuries_healed_on ? null : todayIso();
                       const { error } = await supabase.from("clients").update({ injuries_healed_on: healed }).eq("id", client.id);
@@ -853,8 +854,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   <View style={{ flex: 1 }}>
                     <View style={styles.habitNameRow}>
                       <Text style={styles.habitName}>{h.name}</Text>
-                      <View style={[styles.streakDot, { backgroundColor: tierResult.color }]} />
-                      <Text style={[styles.streakText, { color: tierResult.color }]}>
+                      <View style={[styles.streakDot, { backgroundColor: themeBg(tierResult.color) }]} />
+                      <Text style={[styles.streakText, { color: themeText(tierResult.color) }]}>
                         {tierResult.label}
                         {!isMaxTier ? ` ${tierResult.progress}/${DAYS_PER_TIER}` : ""}
                       </Text>
@@ -923,7 +924,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               </View>
 
               <Pressable style={styles.button} onPress={addHabit} disabled={addingHabit}>
-                {addingHabit ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Add habit</Text>}
+                {addingHabit ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Add habit</Text>}
               </Pressable>
             </View>
           </>
@@ -1047,7 +1048,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 <Switch
                   value={client.library_access}
                   onValueChange={toggleLibraryAccess}
-                  trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                  trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                   accessibilityLabel="Full workout video library"
                 />
               </View>
@@ -1084,7 +1085,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             />
             <Pressable style={styles.button} onPress={saveNotes} disabled={saving}>
               {saving ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
                 <Text style={styles.buttonText}>{notesSaved ? "✓ Notes saved" : "Save notes"}</Text>
               )}
@@ -1146,18 +1147,18 @@ function TrainingLevelBanner({ level }: { level: Client["training_level"] }) {
   const look = (level && LEVEL_LOOK[level]) || { emoji: "❔", color: "#64748B" };
   const detail = TRAINING_LEVELS.find((l) => l.key === level)?.detail;
   return (
-    <View style={[styles.levelBanner, { borderColor: look.color }]}>
+    <View style={[styles.levelBanner, { borderColor: themeBorder(look.color) }]}>
       <Text style={styles.levelEmoji}>{look.emoji}</Text>
       <View style={{ flex: 1 }}>
         <Text style={styles.levelKicker}>TRAINING LEVEL</Text>
-        <Text style={[styles.levelName, { color: look.color }]}>{levelLabel(level)}</Text>
+        <Text style={[styles.levelName, { color: themeText(look.color) }]}>{levelLabel(level)}</Text>
         {detail ? <Text style={styles.levelDetail}>{detail}</Text> : null}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   whatsapp: { color: BRAND_GOLD, fontSize: 14, fontWeight: "600", marginTop: 2 },
   checksFold: { borderColor: "#F59E0B" },
   liveRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 4 },

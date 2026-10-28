@@ -1,8 +1,9 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { PROGRAM_GROUPS, programGroupHeading, type ProgramGroup } from "@/lib/programs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
+import { themedStyles } from "@/lib/theme";
 
 type GroupedFamily = { key: string; group: ProgramGroup; programs: unknown[] };
 
@@ -59,7 +60,7 @@ export default function ProgramGroups<F extends GroupedFamily>({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   group: { backgroundColor: "#111C33", borderRadius: 14, marginTop: 10, borderWidth: 1, borderColor: "#1E293B" },
   groupOpen: { borderColor: BRAND_GOLD },
   header: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },

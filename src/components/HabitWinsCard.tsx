@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Modal,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -15,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { isPersonalMessage, winsShownFrom, winWeekLabel, type HabitWin } from "@/lib/habitWins";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Row = HabitWin & { clientName: string };
 
@@ -134,7 +134,7 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
                 onPress={send}
                 disabled={!isPersonalMessage(body) || sending}
               >
-                {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.sendText}>Send</Text>}
+                {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Send</Text>}
               </Pressable>
             </View>
           </View>
@@ -144,7 +144,7 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12, borderTopWidth: 3, borderTopColor: BRAND_GOLD },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { color: "#fff", fontSize: 16, fontWeight: "800", flex: 1 },

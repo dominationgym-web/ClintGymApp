@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { WEIGH_IN_OPTIONS, type WeighInEvery } from "@/lib/progress";
+import { themedStyles } from "@/lib/theme";
 
 type Row = { id: string; name: string; weigh_in_every?: WeighInEvery | null };
 
@@ -87,7 +88,7 @@ export default function BulkWeighInModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 20 },
   card: { backgroundColor: "#111C33", borderRadius: 14, padding: 18, borderWidth: 1.5, borderColor: BRAND_GOLD, maxHeight: "90%" },
   title: { color: "#fff", fontWeight: "800", fontSize: 18 },

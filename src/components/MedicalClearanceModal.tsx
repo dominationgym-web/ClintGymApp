@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { CLEARANCE_OPTIONS, clearanceProblem, type ClearanceForm } from "@/lib/medicalHold";
 import type { ClientProblem } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // The trainer clears a serious-symptoms hold (0133) only by confirming how it
 // was resolved, who assessed it and when. The database checks it again.
@@ -94,7 +95,7 @@ export default function MedicalClearanceModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   title: { color: "#FCA5A5", fontSize: 22, fontWeight: "900" },
   text: { color: "#E2E8F0", fontSize: 15, marginTop: 8 },

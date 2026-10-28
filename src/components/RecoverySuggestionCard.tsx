@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -9,6 +9,7 @@ import { findRecoveryActivity } from "@/lib/recoveryActivities";
 import { loadRecoverySuggestions } from "@/lib/recoveryPlanQueries";
 import type { RecoverySuggestion } from "@/lib/recoverySuggest";
 import RecoveryActivityModal, { RECOVERY_GREEN } from "@/components/RecoveryActivityModal";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The app's recovery suggestion for today (0107), worked out from the
 // client's training and check-ins. On the Check-in screen it shows the top
@@ -49,7 +50,7 @@ export default function RecoverySuggestionCard({
         if (!info) return null;
         return (
           <Pressable key={s.activity} style={styles.card} onPress={() => setOpen(s)}>
-            <Ionicons name={info.icon} size={22} color={RECOVERY_GREEN} />
+            <Ionicons name={info.icon} size={22} color={themeText(RECOVERY_GREEN)} />
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>
                 {info.title} · <Text style={styles.duration}>{info.durationLabel}</Text>
@@ -80,7 +81,7 @@ export default function RecoverySuggestionCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   wrap: { backgroundColor: "#0F2A1C", borderRadius: 12, borderWidth: 1, borderColor: "#166534", padding: 12, marginBottom: 14 },
   heading: { color: RECOVERY_GREEN, fontWeight: "800", fontSize: 15, marginBottom: 6 },
   card: { flexDirection: "row", gap: 10, alignItems: "flex-start", paddingVertical: 8 },

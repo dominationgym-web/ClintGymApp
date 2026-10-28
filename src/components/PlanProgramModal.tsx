@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate } from "@/lib/dates";
@@ -30,6 +30,7 @@ import RehabRedFlagCheck from "@/components/stability/RehabRedFlagCheck";
 import type { StabilityArea, StabilityLevel } from "@/lib/stability";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 
 function dayHeading(date: string): string {
@@ -399,7 +400,7 @@ export default function PlanProgramModal({
             {program && (
               <>
                 {!slots ? (
-                  <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
+                  <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 16 }} />
                 ) : slots.length === 0 ? (
                   <Text style={styles.description}>This program has no exercises yet.</Text>
                 ) : (
@@ -459,7 +460,7 @@ export default function PlanProgramModal({
                       </Text>
                     )}
                     <Pressable style={styles.activate} onPress={activate} disabled={busy || plan.length === 0}>
-                      {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.activateText}>Activate program</Text>}
+                      {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.activateText}>Activate program</Text>}
                     </Pressable>
                   </>
                 )}
@@ -515,7 +516,7 @@ export default function PlanProgramModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   bestFit: { borderWidth: 1.5, borderColor: BRAND_GOLD },
   backdrop: { flex: 1, backgroundColor: "rgba(2,6,23,0.8)", justifyContent: "center", padding: 16 },
   sheet: { backgroundColor: "#0F172A", borderRadius: 16, padding: 16, maxHeight: "90%", borderWidth: 1, borderColor: "#1E293B" },

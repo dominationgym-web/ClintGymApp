@@ -13,7 +13,6 @@ import {
   View,
   Text,
   Pressable,
-  StyleSheet,
   ScrollView,
   ActivityIndicator,
   Alert,
@@ -37,6 +36,7 @@ import {
 import type { Checkin, ClientSleep } from "@/types/database";
 import { syncHealthOnOpen } from "@/lib/healthLink";
 import { clockTime, sleepLength } from "@/lib/sleepSync";
+import { themeText, themedStyles } from "@/lib/theme";
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -217,7 +217,7 @@ export default function CheckInScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -438,7 +438,7 @@ export default function CheckInScreen() {
           <>
             <Pressable style={[styles.button, saving && styles.buttonDisabled]} onPress={handleSubmit} disabled={saving}>
               {saving ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
                 <Text style={styles.buttonText}>{saved ? "Save changes" : "Submit check-in"}</Text>
               )}
@@ -460,7 +460,7 @@ export default function CheckInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A", padding: 24 },
   centerText: { textAlign: "center" },

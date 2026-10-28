@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { PROBLEM_LABELS, PROBLEM_ORANGE, PROBLEM_RED } from "@/lib/clientProblems";
 import type { ClientProblem } from "@/types/database";
 import MedicalClearanceModal from "@/components/MedicalClearanceModal";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // The client's open problems at the top of their Overview tab (0075). Busy
 // fixing turns the red dot orange, and the app checks in with the client the
@@ -53,13 +54,13 @@ export default function ClientProblems({
         const medical = p.topic === "medical";
         const fixing = p.status === "fixing" && !medical;
         return (
-          <View key={p.id} style={[styles.card, { borderColor: fixing ? PROBLEM_ORANGE : PROBLEM_RED }]}>
+          <View key={p.id} style={[styles.card, { borderColor: themeBorder(fixing ? PROBLEM_ORANGE : PROBLEM_RED) }]}>
             <View style={styles.headRow}>
-              <View style={[styles.dot, { backgroundColor: fixing ? PROBLEM_ORANGE : PROBLEM_RED }]} />
+              <View style={[styles.dot, { backgroundColor: themeBg(fixing ? PROBLEM_ORANGE : PROBLEM_RED) }]} />
               <Text style={styles.title}>
                 {icon} {title}
               </Text>
-              <Text style={[styles.state, { color: fixing ? PROBLEM_ORANGE : PROBLEM_RED }]}>{fixing ? "Busy fixing" : "New"}</Text>
+              <Text style={[styles.state, { color: themeText(fixing ? PROBLEM_ORANGE : PROBLEM_RED) }]}>{fixing ? "Busy fixing" : "New"}</Text>
             </View>
             {p.detail ? <Text style={styles.detail}>{p.detail}</Text> : null}
             <Text style={styles.meta}>
@@ -67,7 +68,7 @@ export default function ClientProblems({
               {p.last_reported_on !== p.reported_on ? ` · again ${p.last_reported_on}` : ""}
             </Text>
             {medical && (
-              <Text style={[styles.meta, { color: "#FCA5A5" }]}>
+              <Text style={[styles.meta, { color: themeText("#FCA5A5") }]}>
                 Their workouts are on hold. They were told to stop exercising and get medical help. Clear it once a doctor or other health
                 professional has assessed them.
               </Text>
@@ -93,7 +94,7 @@ export default function ClientProblems({
               )}
               {!fixing && !medical && (
                 <Pressable style={[styles.button, styles.fixing]} onPress={() => setStatus(p, "fixing")} disabled={!!busy}>
-                  {busy === p.id + "fixing" ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>🟠 Busy fixing</Text>}
+                  {busy === p.id + "fixing" ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>🟠 Busy fixing</Text>}
                 </Pressable>
               )}
               {medical ? (
@@ -102,7 +103,7 @@ export default function ClientProblems({
                 </Pressable>
               ) : (
                 <Pressable style={[styles.button, styles.fixed]} onPress={() => setStatus(p, "fixed")} disabled={!!busy}>
-                  {busy === p.id + "fixed" ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>✅ Fixed</Text>}
+                  {busy === p.id + "fixed" ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>✅ Fixed</Text>}
                 </Pressable>
               )}
             </View>
@@ -113,7 +114,7 @@ export default function ClientProblems({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   wrap: { marginBottom: 12 },
   heading: { color: "#fff", fontSize: 17, fontWeight: "700", marginBottom: 8 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1.5 },

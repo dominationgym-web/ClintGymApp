@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { FOOD_GROUPS, FOODS, foodUnits, itemTotals, mealTotals, searchFoods, type Food, type FoodGroup, type MealItem } from "@/lib/foods";
 import { parseGrams } from "@/lib/nutrition";
+import { themedStyles } from "@/lib/theme";
 
 type Row = { id: number; food: Food; amountText: string; unitIndex: number };
 
@@ -151,7 +152,7 @@ function Macro({ label, grams }: { label: string; grams: number }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   counter: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 12, paddingTop: 4, marginBottom: 14 },
   heading: { color: BRAND_GOLD, fontSize: 18, fontWeight: "800", marginBottom: 8 },

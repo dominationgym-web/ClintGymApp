@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { INJURY_AREAS } from "@/lib/injuryRisk";
 import type { ClientInjury } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Each injury a client has, as many as they need (GRIZZ, 2026-10-17): where
 // it is and a short note. Ticked off once healed. The client keeps it up to
@@ -66,7 +67,7 @@ export default function InjuryList({
       { text: "Yes, healed", onPress: () => setHealed(row, true) },
     ]);
 
-  if (loading) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 8 }} />;
+  if (loading) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 8 }} />;
 
   const open = rows.filter((r) => !r.healed_on);
   const healed = rows.filter((r) => r.healed_on);
@@ -97,7 +98,7 @@ export default function InjuryList({
         healed.map((r) => (
           <View key={r.id} style={[styles.row, styles.rowHealed]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.area, { color: "#94A3B8" }]}>✓ {r.area}</Text>
+              <Text style={[styles.area, { color: themeText("#94A3B8") }]}>✓ {r.area}</Text>
               {r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
               <Text style={styles.since}>Healed {r.healed_on}</Text>
             </View>
@@ -131,7 +132,7 @@ export default function InjuryList({
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable style={styles.save} onPress={save} disabled={busy}>
-              {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>Save injury</Text>}
+              {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>Save injury</Text>}
             </Pressable>
           </View>
         </View>
@@ -144,7 +145,7 @@ export default function InjuryList({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   empty: { color: "#94A3B8", fontSize: 14, marginTop: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#0F172A", borderRadius: 10, padding: 10, marginTop: 8, borderWidth: 1, borderColor: "#7F1D1D" },
   rowHealed: { borderColor: "#1E293B" },

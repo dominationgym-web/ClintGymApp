@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 import * as Updates from "expo-updates";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themedStyles } from "@/lib/theme";
 
 // Replaces the weekly "Get the latest Daily Evolution" push for clients
 // (GRIZZ, 2026-10-26: a banner when they open the app instead). Checks for a
@@ -42,7 +43,7 @@ export default function AppUpdateBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: BRAND_GOLD, borderRadius: 8, padding: 12, marginBottom: 14 },
   title: { color: "#fff", fontWeight: "700", marginBottom: 4 },
   body: { color: "#E2E8F0" },

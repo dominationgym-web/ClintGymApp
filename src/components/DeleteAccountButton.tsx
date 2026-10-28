@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Apple and Google both require apps with sign-up to let people delete their
 // account from inside the app. The work happens in the delete-account Edge
@@ -50,12 +51,12 @@ export default function DeleteAccountButton() {
 
   return (
     <Pressable style={styles.button} onPress={confirm} disabled={deleting}>
-      {deleting ? <ActivityIndicator color="#EF4444" /> : <Text style={styles.text}>Delete my account</Text>}
+      {deleting ? <ActivityIndicator color={themeText("#EF4444")} /> : <Text style={styles.text}>Delete my account</Text>}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   button: { paddingVertical: 12, alignItems: "center", marginTop: 12 },
   text: { color: "#EF4444", fontWeight: "600", fontSize: 14 },
 });

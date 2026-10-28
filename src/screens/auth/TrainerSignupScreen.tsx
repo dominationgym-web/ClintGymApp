@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
@@ -11,6 +11,7 @@ import AgreementSignFields from "@/components/AgreementSignFields";
 import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
 import { isValidSignature } from "@/lib/trainers";
 import { countryCheckMessage, phoneCountry } from "@/lib/phoneCountry";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "TrainerSignup">;
 
@@ -172,7 +173,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         onToggleAgreed={() => setAgreed((a) => !a)}
       />
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
-        {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Apply as a trainer</Text>}
+        {loading ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Apply as a trainer</Text>}
       </Pressable>
       <Pressable onPress={() => navigation.navigate("Login", { coach: true })}>
         <Text style={styles.link}>Already a coach? Log in</Text>
@@ -181,7 +182,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   label: { color: "#CBD5E1", fontWeight: "600", marginBottom: 6 },
   container: { flexGrow: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 12 },

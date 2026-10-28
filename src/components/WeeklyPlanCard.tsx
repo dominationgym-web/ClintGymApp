@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
@@ -8,6 +8,7 @@ import { programSlots } from "@/lib/trainingCalendar";
 import { daysLabel, planWeekDates, slotsFrom, splitAlongside, toggleDay } from "@/lib/trainingSplits";
 import { nextPlanWeek, planSessionsBetween, planWeekOf } from "@/lib/weeklyPlans";
 import type { ClientProgramPlan, Program } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // Above the client's calendar (GRIZZ, 2026-10-18, 0113): each program planned
 // week by week. When the client has 2 or fewer workouts left in the week on
@@ -262,7 +263,7 @@ function DayPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   picker: { marginTop: 10 },
   pickerTitle: { color: "#fff", fontWeight: "700", fontSize: 13 },
   dayButton: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: "#475569", alignItems: "center" },

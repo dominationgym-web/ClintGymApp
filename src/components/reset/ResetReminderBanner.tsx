@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, Text } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -10,6 +10,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { RESET_WEEKS_TOTAL, resetWeek, resetWeekNumber } from "@/lib/resetProgram";
 import { getResetReminder } from "@/lib/resetReminderSetting";
 import { scheduleResetReminders } from "@/lib/notifications";
+import { themedStyles } from "@/lib/theme";
 
 // The Reset's daily reminder inside the app. From the time she picked, until
 // today's habits are all ticked, this card sits on the Check-in screen. It is
@@ -64,7 +65,7 @@ export default function ResetReminderBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   banner: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: BRAND_GOLD, borderRadius: 8, padding: 12, marginBottom: 16 },
   title: { color: "#fff", fontWeight: "700", marginBottom: 4 },
   text: { color: "#E2E8F0" },

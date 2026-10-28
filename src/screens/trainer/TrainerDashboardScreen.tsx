@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { CHALLENGE_NUDGE_DAYS, monthName, monthStart } from "@/lib/challenges";
@@ -18,6 +18,7 @@ import { clientGroup } from "@/lib/clientGroups";
 import { checkinClock, checkinDay, isUpcoming } from "@/lib/videoCheckins";
 import type { Checkin, Client, ClientProblem, VideoCheckin } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type Props = TrainerTabScreenProps<"Dashboard">;
 
@@ -341,7 +342,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -451,19 +452,19 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
           const borderColor = problemColor(item.level);
           return (
             <Pressable
-              style={[styles.row, borderColor && { borderWidth: 1.5, borderColor }]}
+              style={[styles.row, borderColor && { borderWidth: 1.5, borderColor: themeBorder(borderColor) }]}
               // A client with a problem opens on Overview, where the problem is.
               onPress={() => navigation.navigate("ClientDetail", { clientId: item.client.id, tab: borderColor ? "overview" : undefined })}
             >
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
-                  {borderColor && <View style={[styles.flagDot, { backgroundColor: borderColor }]} />}
+                  {borderColor && <View style={[styles.flagDot, { backgroundColor: themeBg(borderColor) }]} />}
                   <Text style={styles.name}>{item.client.name}</Text>
                 </View>
                 {item.problems.map((p) => (
                   <Text
                     key={p.id}
-                    style={[styles.flagText, { color: p.status === "fixing" ? "#FBBF24" : "#F87171" }]}
+                    style={[styles.flagText, { color: themeText(p.status === "fixing" ? "#FBBF24" : "#F87171") }]}
                     numberOfLines={2}
                   >
                     {problemLine(p)}
@@ -526,7 +527,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   suggestionBanner: {
     flexDirection: "row",
     alignItems: "center",

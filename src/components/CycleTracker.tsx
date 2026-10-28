@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Switch, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -11,6 +11,7 @@ import { getCycleIrregular, getCycleReminderEnabled, setCycleIrregular, setCycle
 import { useAuth } from "@/context/AuthContext";
 import type { ClientStackParamList } from "@/navigation/types";
 import type { CycleLog } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // Women's Health Reset cycle tracking (0038). She logs the first day of each
 // period; the app works out her phase and guides her through it, with an 8am
@@ -132,7 +133,7 @@ export default function CycleTracker() {
     getCycleReminderEnabled().then(setRemindersOn);
   }, []);
 
-  if (!logs) return <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />;
+  if (!logs) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 16 }} />;
 
   const starts = logs.map((l) => l.period_start);
   const today = cycleToday(starts, todayIso());
@@ -268,7 +269,7 @@ export default function CycleTracker() {
         <Switch
           value={irregular}
           onValueChange={toggleIrregular}
-          trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+          trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
           accessibilityLabel="My periods are irregular or have stopped"
         />
       </View>
@@ -283,7 +284,7 @@ export default function CycleTracker() {
             value={remindersOn ?? true}
             disabled={remindersOn === null}
             onValueChange={toggleReminders}
-            trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+            trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
             accessibilityLabel="Daily phase reminder"
           />
         </View>
@@ -319,7 +320,7 @@ export function CycleTodayBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   todayCard: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: BRAND_GOLD, borderRadius: 12, padding: 14, marginBottom: 12 },
   kicker: { color: BRAND_GOLD, fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
   phaseName: { color: "#fff", fontSize: 18, fontWeight: "700", marginTop: 2, marginBottom: 4 },

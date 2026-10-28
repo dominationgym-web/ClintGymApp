@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, Text, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { firstName, markClientContact, QUIET_AFTER_DAYS, quietLine } from "@/lib
 import { whatsappLink } from "@/lib/videoCheckins";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { QuietClientRow } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // "Check in on Nancy" (0156, GRIZZ 2026-10-25): active clients the trainer
 // hasn't been in touch with for a few days. A reminder to the trainer only:
@@ -94,7 +95,7 @@ export default function CheckInNudgeCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderLeftWidth: 4, borderLeftColor: BRAND_GOLD, borderRadius: 8, padding: 12, marginBottom: 12 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   title: { color: "#fff", fontWeight: "700", flex: 1 },

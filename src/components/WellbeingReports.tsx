@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -7,6 +7,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { cleanMessage, MAX_MESSAGE_LENGTH } from "@/lib/coachMessages";
 import RehabSuggestion from "@/components/stability/RehabSuggestion";
 import { reportsByTopic, WELLBEING_TOPICS, type WellbeingKey, type WellbeingReport } from "@/lib/wellbeing";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // On the trainer's Check-ins tab (review 2026-10-18, moved from Notes): what the client reported on their check-ins
 // (0055), in three sections (Injury or pain, Fatigue, Mental exhaustion), so
@@ -59,7 +60,7 @@ export default function WellbeingReports({ clientId, clientName }: { clientId: s
       .then(({ data }) => setReports(reportsByTopic(data ?? [])));
   }, [clientId]);
 
-  if (!reports) return <ActivityIndicator color="#22C55E" style={{ marginVertical: 12 }} />;
+  if (!reports) return <ActivityIndicator color={themeText("#22C55E")} style={{ marginVertical: 12 }} />;
 
   return (
     <View>
@@ -107,7 +108,7 @@ export default function WellbeingReports({ clientId, clientName }: { clientId: s
                           onPress={() => sendNote(t.key)}
                           disabled={!cleanMessage(draft) || sending}
                         >
-                          {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.sendText}>Send to {firstName}</Text>}
+                          {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Send to {firstName}</Text>}
                         </Pressable>
                       </View>
                     </View>
@@ -144,7 +145,7 @@ export default function WellbeingReports({ clientId, clientName }: { clientId: s
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   heading: { color: "#fff", fontSize: 17, fontWeight: "700", marginTop: 16, marginBottom: 2 },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 8 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 6, marginBottom: 8, borderWidth: 1.5, borderColor: "transparent" },

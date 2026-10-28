@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Modal, Pressable, Text, View } from "react-native";
 import AngleCompare from "@/components/AngleCompare";
 import type { LoadedProgressPhoto } from "@/components/progressPhotoData";
 import { parseIsoDate } from "@/lib/dates";
 import { ANGLE_LABEL, PROGRESS_ANGLES, groupIntoSets, setLabel, weeksBetween } from "@/lib/progressPhotos";
+import { themedStyles } from "@/lib/theme";
 
 type Props = {
   photos: LoadedProgressPhoto[];
@@ -95,7 +96,7 @@ function formatDate(iso: string) {
   return parseIsoDate(iso).toLocaleDateString();
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   summary: { color: "#94A3B8", fontSize: 13, marginBottom: 10 },
   subheading: { color: "#E2E8F0", fontWeight: "600", marginBottom: 8 },
   setCard: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 10 },
@@ -111,4 +112,4 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", alignItems: "center", padding: 16 },
   full: { width: "100%", height: "85%" },
   fullCaption: { color: "#E2E8F0", marginTop: 12 },
-});
+}, ["fullCaption"]);

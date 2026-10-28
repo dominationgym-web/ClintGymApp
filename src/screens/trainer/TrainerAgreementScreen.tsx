@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { isValidSignature } from "@/lib/trainers";
 import AgreementSignFields from "@/components/AgreementSignFields";
 import TrainerAgreementContent, { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Shown instead of the app to a trainer who hasn't signed the current trainer
 // agreement (0031): one who signed an older version, or who signed up before
@@ -52,7 +53,7 @@ export default function TrainerAgreementScreen() {
         onToggleAgreed={() => setAgreed((a) => !a)}
       />
       <Pressable style={styles.button} onPress={sign} disabled={saving}>
-        {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Sign agreement</Text>}
+        {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Sign agreement</Text>}
       </Pressable>
       <Pressable style={styles.logout} onPress={signOut}>
         <Text style={styles.logoutText}>Log out</Text>
@@ -61,7 +62,7 @@ export default function TrainerAgreementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   title: { color: "#fff", fontSize: 24, fontWeight: "700", marginBottom: 8 },
   intro: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 20 },

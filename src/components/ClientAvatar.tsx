@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Image, Text, View, StyleSheet } from "react-native";
+import { Image, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { AVATAR_BUCKET, initialsFor } from "@/lib/avatars";
+import { themedStyles } from "@/lib/theme";
 
 // Signed URLs for the private client-avatars bucket. An hour is plenty for a
 // screen to stay open; screens re-sign whenever they load.
@@ -59,7 +60,7 @@ export default function ClientAvatar({ name, url, path, size = 44 }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   image: { backgroundColor: "#1E293B" },
   placeholder: { backgroundColor: "#334155", alignItems: "center", justifyContent: "center" },
   initials: { color: "#E2E8F0", fontWeight: "700" },

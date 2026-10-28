@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { estimateCalories, parseGrams, type MacroKey } from "@/lib/nutrition";
+import { themedStyles } from "@/lib/theme";
 
 const FIELDS: { key: MacroKey; label: string }[] = [
   { key: "protein", label: "Protein" },
@@ -62,7 +63,7 @@ export default function CalorieCalculator() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   heading: { color: BRAND_GOLD, fontSize: 15, fontWeight: "700", marginBottom: 8 },
   text: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 12 },

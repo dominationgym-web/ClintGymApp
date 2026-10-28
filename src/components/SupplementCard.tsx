@@ -1,7 +1,8 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { SUPPLEMENT_LEVELS, type Supplement, type SupplementLevel } from "@/lib/supplements";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 export const LEVEL_COLOURS: Record<SupplementLevel, string> = {
   "Worth it": "#22C55E",
@@ -16,8 +17,8 @@ export default function SupplementCard({ supplement: s }: { supplement: Suppleme
   const meaning = SUPPLEMENT_LEVELS.find((l) => l.level === s.level)?.meaning;
   return (
     <View style={styles.wrap}>
-      <View style={[styles.levelBar, { borderColor: colour, backgroundColor: colour + "1A" }]}>
-        <Text style={[styles.levelName, { color: colour }]}>{s.level.toUpperCase()}</Text>
+      <View style={[styles.levelBar, { borderColor: themeBorder(colour), backgroundColor: themeBg(colour + "1A") }]}>
+        <Text style={[styles.levelName, { color: themeText(colour) }]}>{s.level.toUpperCase()}</Text>
         <Text style={styles.levelMeaning}>{meaning}</Text>
       </View>
       <Block icon="🎯" label="What it does" text={s.what} />
@@ -38,7 +39,7 @@ export function SupplementLevelsKey() {
     <View style={styles.card}>
       {SUPPLEMENT_LEVELS.map((l) => (
         <View key={l.level} style={styles.keyRow}>
-          <Text style={[styles.pill, { color: LEVEL_COLOURS[l.level], borderColor: LEVEL_COLOURS[l.level] }]}>{l.level}</Text>
+          <Text style={[styles.pill, { color: themeText(LEVEL_COLOURS[l.level]), borderColor: themeBorder(LEVEL_COLOURS[l.level]) }]}>{l.level}</Text>
           <Text style={styles.keyText}>{l.meaning}</Text>
         </View>
       ))}
@@ -48,17 +49,17 @@ export function SupplementLevelsKey() {
 
 function Block({ icon, label, text, highlight }: { icon: string; label: string; text: string; highlight?: string }) {
   return (
-    <View style={[styles.block, highlight ? { borderColor: highlight, borderWidth: 1 } : null]}>
+    <View style={[styles.block, highlight ? { borderColor: themeBorder(highlight), borderWidth: 1 } : null]}>
       <View style={styles.blockHeader}>
         <Text style={styles.blockIcon}>{icon}</Text>
-        <Text style={[styles.label, highlight ? { color: highlight } : null]}>{label.toUpperCase()}</Text>
+        <Text style={[styles.label, highlight ? { color: themeText(highlight) } : null]}>{label.toUpperCase()}</Text>
       </View>
       <Text style={styles.text}>{text}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   wrap: { marginBottom: 12 },
   levelBar: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 8 },

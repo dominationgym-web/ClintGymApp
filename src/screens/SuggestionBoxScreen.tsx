@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,7 @@ import {
   suggestionsWithStatus,
 } from "@/lib/suggestions";
 import type { Suggestion, SuggestionStatus } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 const INBOX_TABS: SuggestionStatus[] = ["new", "good_idea", "not_now"];
 
@@ -79,7 +80,7 @@ export default function SuggestionBoxScreen() {
           textAlignVertical="top"
         />
         <Pressable style={[styles.button, !text.trim() && { opacity: 0.5 }]} onPress={send} disabled={sending || !text.trim()}>
-          {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Send suggestion</Text>}
+          {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Send suggestion</Text>}
         </Pressable>
       </View>
 
@@ -97,7 +98,7 @@ export default function SuggestionBoxScreen() {
       )}
 
       {loading ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 16 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 16 }} />
       ) : shown.length === 0 ? (
         <Text style={styles.helper}>{isOwner ? "Nothing here." : "You haven't sent any suggestions yet."}</Text>
       ) : (
@@ -126,7 +127,7 @@ export default function SuggestionBoxScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16 },
   heading: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 4 },

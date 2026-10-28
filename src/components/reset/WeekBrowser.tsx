@@ -1,8 +1,9 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { RESET_HABITS, RESET_PHASES, RESET_WEEKS, RESET_WEEKS_TOTAL, newHabits, resetTraining, resetWeek, type ResetLocation } from "@/lib/resetProgram";
 import { useAuth } from "@/context/AuthContext";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const PHASE_ORDER = ["calm", "rhythm", "build", "optimise"] as const;
 
@@ -33,7 +34,7 @@ export default function WeekBrowser({
           const p = RESET_PHASES[key];
           return (
             <View key={key} style={styles.mapRow}>
-              <Text style={[styles.mapLabel, { color: p.color }]}>{p.name}</Text>
+              <Text style={[styles.mapLabel, { color: themeText(p.color) }]}>{p.name}</Text>
               <View style={styles.tiles}>
                 {RESET_WEEKS.filter((w) => w.phase === key).map((w) => {
                   const selected = w.week === week;
@@ -45,8 +46,8 @@ export default function WeekBrowser({
                       onPress={() => onChange(w.week)}
                       style={[
                         styles.tile,
-                        { borderColor: p.color },
-                        isCurrent && { backgroundColor: p.color },
+                        { borderColor: themeBorder(p.color) },
+                        isCurrent && { backgroundColor: themeBg(p.color) },
                         selected && styles.tileSelected,
                       ]}
                       accessibilityRole="button"
@@ -78,8 +79,8 @@ export default function WeekBrowser({
           <Text style={[styles.navText, styles.navNextText]}>Next week ›</Text>
         </Pressable>
       </View>
-      <View style={[styles.card, { borderTopColor: phase.color }]}>
-        <Text style={[styles.phase, { color: phase.color }]}>
+      <View style={[styles.card, { borderTopColor: themeBorder(phase.color) }]}>
+        <Text style={[styles.phase, { color: themeText(phase.color) }]}>
           WEEK {plan.week} OF {RESET_WEEKS_TOTAL} · {phase.name}
           {plan.week === currentWeek ? " · THIS WEEK" : ""}
         </Text>
@@ -111,7 +112,7 @@ export default function WeekBrowser({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   map: { backgroundColor: "#1E293B", borderRadius: 12, padding: 10, gap: 6, marginBottom: 10 },
   mapRow: { flexDirection: "row", alignItems: "center" },
   mapLabel: { width: 82, fontSize: 11.5, fontWeight: "800", letterSpacing: 0.5 },

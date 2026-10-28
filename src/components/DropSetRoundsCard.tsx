@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { formatRoundTime } from "@/lib/dropSets";
 import type { DropSetRound } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // Trainer view (GRIZZ, 2026-10-16): the client's recent drop set rounds, one
 // line per session: exercise, date, then each round's time, drops and reps.
@@ -40,7 +41,7 @@ export default function DropSetRoundsCard({ clientId }: { clientId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 10 },
   title: { color: "#F8FAFC", fontWeight: "700", marginBottom: 4 },
   line: { color: "#CBD5E1", fontSize: 13, marginTop: 3 },

@@ -1,10 +1,10 @@
-import { StyleSheet } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themedStyles } from "@/lib/theme";
 
 // The look of Understanding Insulin (gold hook box, emoji steps, side-by-side
 // tiles, right/wrong boxes, a closing line), shared by every menu breakdown
 // so they all read at a glance (GRIZZ, 2026-10-14).
-export const breakdownStyles = StyleSheet.create({
+export const breakdownStyles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   title: { color: BRAND_GOLD, fontSize: 26, fontWeight: "800" },
   subtitle: { color: "#94A3B8", fontSize: 14, marginTop: 2, marginBottom: 14 },

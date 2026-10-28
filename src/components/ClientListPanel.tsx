@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { problemColor, problemLevel, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
@@ -14,6 +14,7 @@ import BulkWeighInModal from "@/components/BulkWeighInModal";
 import type { WeighInEvery } from "@/lib/progress";
 import { waitingByPerson } from "@/lib/paymentProofs";
 import type { AccessStatus, Client, PaymentProof } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 const STATUS_LABEL: Record<AccessStatus, string> = {
   active: "Active",
@@ -192,7 +193,7 @@ export default function ClientListPanel({
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -237,7 +238,7 @@ export default function ClientListPanel({
               <View style={{ flex: 1 }}>
                 <View style={styles.nameRow}>
                   {problemLevels[item.id] && (
-                    <View style={[styles.flagDot, { backgroundColor: problemColor(problemLevels[item.id]) }]} />
+                    <View style={[styles.flagDot, { backgroundColor: themeBg(problemColor(problemLevels[item.id])) }]} />
                   )}
                   {isLeader && <Text style={styles.flagIcon}>🏆</Text>}
                   <Text style={styles.name}>{item.name}</Text>
@@ -303,7 +304,7 @@ function statusStyle(status: AccessStatus) {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },

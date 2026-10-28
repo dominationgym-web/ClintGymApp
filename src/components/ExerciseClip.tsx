@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { themedStyles } from "@/lib/theme";
 
 // A small looping, silent exercise demo clip for the trainer's laptop layout
 // (GRIZZ, 2026-10-27: see the videos without opening each exercise).
@@ -54,7 +55,7 @@ export default function ExerciseClip({
   });
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   none: { backgroundColor: "#0F172A", borderRadius: 8, alignItems: "center", justifyContent: "center" },
   noneText: { color: "#475569", fontSize: 11 },
 });

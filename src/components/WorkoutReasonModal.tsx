@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { MISSED_REASONS, PARTIAL_REASONS } from "@/lib/workoutSessions";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Asked when a client finishes only part of a workout, or can't train (0076):
 // their coach is told why.
@@ -65,7 +66,7 @@ export default function WorkoutReasonModal({
                 <Text style={styles.cancelText}>Back</Text>
               </Pressable>
               <Pressable style={[styles.button, styles.send, !reason && styles.disabled]} onPress={() => onSend(reason)} disabled={!reason || saving}>
-                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.sendText}>Tell my coach</Text>}
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Tell my coach</Text>}
               </Pressable>
             </View>
           </ScrollView>
@@ -75,7 +76,7 @@ export default function WorkoutReasonModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
   sheet: { flexGrow: 0, backgroundColor: "#1E293B", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20 },
   title: { color: "#fff", fontSize: 18, fontWeight: "700" },

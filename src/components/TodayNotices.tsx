@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -17,6 +17,7 @@ import WeighInDueBanner from "@/components/WeighInDueBanner";
 import AppUpdateBanner from "@/components/AppUpdateBanner";
 import { CycleTodayBanner } from "@/components/CycleTracker";
 import { CoachMessageCard } from "@/components/CoachMessages";
+import { themedStyles } from "@/lib/theme";
 
 // What sits above the check-in (app-flow review C3, 2026-10-18). Up to seven
 // cards used to stack there and push the first question off the screen. Now:
@@ -94,7 +95,7 @@ function PlanEndingBanner() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   hidden: { height: 0, overflow: "hidden" },
   line: {
     flexDirection: "row",

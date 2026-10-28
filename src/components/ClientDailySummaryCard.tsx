@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { ENERGY_COLOR, ruleSummary, type WeekFacts } from "@/lib/clientSummary";
 import { loadDailySummary, loadWeekFacts, type SummaryResult } from "@/lib/clientSummaryQueries";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // The trainer's daily summary of a client's energy and needs (0114, GRIZZ,
 // 2026-10-18), from their last 7 days of check-ins, "How are you doing?"
@@ -46,8 +47,8 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
       <View style={styles.header}>
         <Text style={styles.title}>🧠 {endOfWeek ? "End of week summary" : "Daily summary"}</Text>
         {result && (
-          <View style={[styles.energy, { borderColor: ENERGY_COLOR[result.summary.energy] ?? "#94A3B8" }]}>
-            <Text style={[styles.energyText, { color: ENERGY_COLOR[result.summary.energy] ?? "#94A3B8" }]}>
+          <View style={[styles.energy, { borderColor: themeBorder(ENERGY_COLOR[result.summary.energy] ?? "#94A3B8") }]}>
+            <Text style={[styles.energyText, { color: themeText(ENERGY_COLOR[result.summary.energy] ?? "#94A3B8") }]}>
               Energy: {result.summary.energy}
             </Text>
           </View>
@@ -55,7 +56,7 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
       </View>
       <Text style={styles.helper}>{firstName}'s last 7 days, to help you plan their training.</Text>
       {!result || !facts ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 12 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 12 }} />
       ) : (
         <>
           <Text style={styles.stats}>
@@ -110,7 +111,7 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#111C33", borderRadius: 12, padding: 14, marginTop: 12, borderWidth: 1, borderColor: BRAND_GOLD },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 },
   title: { color: BRAND_GOLD, fontWeight: "700", fontSize: 16 },

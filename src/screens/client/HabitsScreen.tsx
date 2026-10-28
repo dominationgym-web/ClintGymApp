@@ -3,7 +3,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   ActivityIndicator,
   Pressable,
@@ -23,6 +22,7 @@ import { findHabit, isRunning } from "@/lib/habitLibrary";
 import { BRAND_GOLD } from "@/lib/brand";
 import ChooseHabitsModal from "@/components/ChooseHabitsModal";
 import ChallengeCard from "@/components/ChallengeCard";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const todayWeekday = () => new Date().getDay(); // 0 = Sunday .. 6 = Saturday
@@ -219,7 +219,7 @@ export default function HabitsScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -256,8 +256,8 @@ export default function HabitsScreen() {
             <View style={styles.habitHeaderRow}>
               <Text style={styles.habitName}>{h.name}</Text>
               <View style={styles.streakBadge}>
-                <View style={[styles.streakDot, { backgroundColor: tierResult.color }]} />
-                <Text style={[styles.streakText, { color: tierResult.color }]}>
+                <View style={[styles.streakDot, { backgroundColor: themeBg(tierResult.color) }]} />
+                <Text style={[styles.streakText, { color: themeText(tierResult.color) }]}>
                   {tierResult.label}
                   {!isMaxTier ? ` · ${tierResult.progress}/${DAYS_PER_TIER}` : ""}
                 </Text>
@@ -344,7 +344,7 @@ export default function HabitsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 6 },

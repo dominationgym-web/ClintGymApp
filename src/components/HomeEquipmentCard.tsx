@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { equipmentList, type EquipmentItem } from "@/lib/equipment";
 import EquipmentEditor from "@/components/EquipmentEditor";
 import type { Client } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // "Home equipment" under a tap-to-open heading (0092). It starts open while
 // the list is empty, so a new home client sees it straight away.
@@ -56,7 +57,7 @@ export default function HomeEquipmentCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginTop: 12, borderWidth: 1, borderColor: "transparent" },
   cardOpen: { borderColor: BRAND_GOLD },
   header: { flexDirection: "row", alignItems: "center", gap: 10 },

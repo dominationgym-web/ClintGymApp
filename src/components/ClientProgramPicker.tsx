@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";
@@ -12,6 +12,7 @@ import CardioDurationPicker from "@/components/CardioDurationPicker";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { StabilityArea } from "@/lib/stability";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // For a weekly program: which session the client is on, and when they last finished one.
 function progressLine(active: ActiveProgram): string | null {
@@ -101,7 +102,7 @@ export default function ClientProgramPicker({
       },
     ]);
 
-  if (loading) return <ActivityIndicator color="#22C55E" style={{ marginVertical: 12 }} />;
+  if (loading) return <ActivityIndicator color={themeText("#22C55E")} style={{ marginVertical: 12 }} />;
 
   return (
     <View>
@@ -210,7 +211,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   heading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
   card: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   name: { color: "#fff", fontWeight: "700", fontSize: 15 },

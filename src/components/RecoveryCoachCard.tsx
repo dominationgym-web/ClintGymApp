@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { addDays } from "@/lib/programSchedule";
@@ -7,6 +7,7 @@ import { RECOVERY_PROGRAMS, dayLabel, durationText, findRecoveryActivity, type R
 import { loadRecoveryActivities, loadRecoverySuggestions } from "@/lib/recoveryPlanQueries";
 import type { RecoverySuggestion } from "@/lib/recoverySuggest";
 import type { RecoveryActivityRow } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 const GREEN = "#4ADE80";
 
@@ -92,7 +93,7 @@ export default function RecoveryCoachCard({
               const missed = !r.done_on && (r.skipped || r.planned_on < today);
               return (
                 <View key={r.id} style={styles.row}>
-                  <Text style={[styles.rowMark, { color: r.done_on ? GREEN : missed ? "#F59E0B" : "#94A3B8" }]}>
+                  <Text style={[styles.rowMark, { color: themeText(r.done_on ? GREEN : missed ? "#F59E0B" : "#94A3B8") }]}>
                     {r.done_on ? "✓" : missed ? "!" : "📅"}
                   </Text>
                   <View style={{ flex: 1 }}>
@@ -114,7 +115,7 @@ export default function RecoveryCoachCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 12 },
   header: { flexDirection: "row", alignItems: "center" },
   title: { color: "#fff", fontWeight: "700", fontSize: 16 },

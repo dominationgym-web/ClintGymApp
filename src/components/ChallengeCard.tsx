@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -15,6 +15,7 @@ import {
   yesterdayInMonth,
 } from "@/lib/challenges";
 import type { TrainerChallenge } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // The client's side of this month's challenge (0153): what to do, a tick for
 // today (and yesterday, if they forgot), and how close they are to winning.
@@ -115,11 +116,11 @@ export default function ChallengeCard({ clientId, trainerId }: { clientId: strin
             style={[
               styles.barFill,
               { width: `${Math.min(100, (progress.done / progress.target) * 100)}%` },
-              progress.won && { backgroundColor: "#22C55E" },
+              progress.won && { backgroundColor: themeBg("#22C55E") },
             ]}
           />
         </View>
-        <Text style={[styles.progress, progress.won && { color: "#22C55E" }]}>
+        <Text style={[styles.progress, progress.won && { color: themeText("#22C55E") }]}>
           {progressLine(progress)}
           {progress.won ? "" : ` · ${left} day${left === 1 ? "" : "s"} left`}
         </Text>
@@ -134,9 +135,9 @@ export default function ChallengeCard({ clientId, trainerId }: { clientId: strin
           accessibilityRole="button"
         >
           {busy ? (
-            <ActivityIndicator color={progress.doneToday ? BRAND_GOLD : "#0F172A"} />
+            <ActivityIndicator color={themeText(progress.doneToday ? BRAND_GOLD : "#0F172A")} />
           ) : (
-            <Text style={[styles.buttonText, progress.doneToday && { color: BRAND_GOLD }]}>
+            <Text style={[styles.buttonText, progress.doneToday && { color: themeText(BRAND_GOLD) }]}>
               {progress.doneToday ? "✓ Done today (tap to undo)" : "I did it today"}
             </Text>
           )}
@@ -151,7 +152,7 @@ export default function ChallengeCard({ clientId, trainerId }: { clientId: strin
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: BRAND_GOLD },
   cardWon: { borderColor: "#22C55E" },
   header: { flexDirection: "row", alignItems: "center", gap: 12 },

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { loadRecoveryCheck, type RecoveryCheck } from "@/lib/recoveryQueries";
@@ -8,6 +8,7 @@ import { currentSession, sessionMovedToTomorrow, sessionTitle, slotParts, traini
 import { displayProgramName } from "@/lib/programs";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientProgram } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 const AMBER = "#F59E0B";
 
@@ -146,7 +147,7 @@ export default function RecoveryCheckCard({
           })}
           <View style={styles.buttons}>
             <Pressable style={[styles.button, styles.primary]} onPress={useLighter} disabled={saving}>
-              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Use this session</Text>}
+              {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>Use this session</Text>}
             </Pressable>
             <Pressable style={styles.button} onPress={() => setEditing(null)} disabled={saving}>
               <Text style={styles.buttonText}>Cancel</Text>
@@ -172,7 +173,7 @@ export default function RecoveryCheckCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: {
     backgroundColor: "#1E293B",
     borderRadius: 12,

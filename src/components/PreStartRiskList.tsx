@@ -1,6 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import type { PreStartOutcome, PreStartRisk } from "@/lib/preStart";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const COLOURS = { green: "#22C55E", amber: "#F59E0B", red: "#EF4444" };
 
@@ -10,15 +11,15 @@ export default function PreStartRiskList({ outcome, risks, limit }: { outcome: P
   const shown = limit ? risks.slice(0, limit) : risks;
   return (
     <View>
-      <View style={[styles.sign, { borderColor: COLOURS[outcome.level] }]}>
-        <Text style={[styles.headline, { color: COLOURS[outcome.level] }]}>
+      <View style={[styles.sign, { borderColor: themeBorder(COLOURS[outcome.level]) }]}>
+        <Text style={[styles.headline, { color: themeText(COLOURS[outcome.level]) }]}>
           {outcome.level === "green" ? "✅" : outcome.level === "amber" ? "⚠️" : "⛔"} {outcome.headline}
         </Text>
         <Text style={styles.program}>Suggested start: {outcome.program}</Text>
       </View>
       {shown.map((r, i) => (
-        <View key={i} style={[styles.risk, { borderLeftColor: COLOURS[r.level] }]}>
-          <Text style={[styles.title, { color: COLOURS[r.level] }]}>{r.title}</Text>
+        <View key={i} style={[styles.risk, { borderLeftColor: themeBorder(COLOURS[r.level]) }]}>
+          <Text style={[styles.title, { color: themeText(COLOURS[r.level]) }]}>{r.title}</Text>
           <Text style={styles.detail}>{r.detail}</Text>
         </View>
       ))}
@@ -28,7 +29,7 @@ export default function PreStartRiskList({ outcome, risks, limit }: { outcome: P
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   sign: { borderWidth: 2, borderRadius: 12, padding: 12, marginTop: 8 },
   headline: { fontWeight: "800", fontSize: 15 },
   program: { color: "#CBD5E1", fontSize: 13, marginTop: 6 },

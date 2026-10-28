@@ -1,7 +1,8 @@
 import React from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { findArea, rehabRedFlags, type StabilityArea } from "@/lib/stability";
+import { themedStyles } from "@/lib/theme";
 
 // Before a Rehab program starts (review 2026-10-18): the trainer reads the
 // area's red flags and confirms none apply. Any of them, and the client is
@@ -44,7 +45,7 @@ export default function RehabRedFlagCheck({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginTop: 8, borderLeftWidth: 3, borderLeftColor: "#EF4444" },
   title: { color: "#fff", fontWeight: "800", fontSize: 15 },
   text: { color: "#CBD5E1", fontSize: 13, marginTop: 4, marginBottom: 4 },

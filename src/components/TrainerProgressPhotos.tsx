@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import ProgressHistory from "@/components/ProgressHistory";
 import { loadProgressPhotos, type LoadedProgressPhoto } from "@/components/progressPhotoData";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Props = { clientId: string; clientName: string; shared: boolean };
 
@@ -24,7 +25,7 @@ export default function TrainerProgressPhotos({ clientId, clientName, shared }: 
   if (!shared) {
     return <Text style={styles.helper}>🔒 Private. {clientName} hasn't shared their progress photos with you.</Text>;
   }
-  if (photos === null) return <ActivityIndicator color="#22C55E" />;
+  if (photos === null) return <ActivityIndicator color={themeText("#22C55E")} />;
   if (photos.length === 0) return <Text style={styles.helper}>Shared, but no photos yet.</Text>;
   return (
     <View>
@@ -33,6 +34,6 @@ export default function TrainerProgressPhotos({ clientId, clientName, shared }: 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   helper: { color: "#64748B", fontSize: 13 },
 });

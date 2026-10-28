@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -15,6 +15,7 @@ import {
 import PreStartFormModal from "@/components/PreStartFormModal";
 import PreStartRiskList from "@/components/PreStartRiskList";
 import type { ClientPrestartForm } from "@/types/database";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const COLOURS = { green: "#22C55E", amber: "#F59E0B", red: "#EF4444" };
 
@@ -123,7 +124,7 @@ export default function PreStartCard({
 
   if (!latest)
     return (
-      <View style={[styles.card, { borderColor: BRAND_GOLD }]}>
+      <View style={[styles.card, { borderColor: themeBorder(BRAND_GOLD) }]}>
         {modal}
         {signModal}
         <Text style={styles.title}>🌳 Pre-start health & safety form</Text>
@@ -151,7 +152,7 @@ export default function PreStartCard({
   ].filter(([, v]) => v);
 
   return (
-    <View style={[styles.card, { borderColor: COLOURS[outcome.level] }]}>
+    <View style={[styles.card, { borderColor: themeBorder(COLOURS[outcome.level]) }]}>
       {modal}
       {signModal}
       <Text style={styles.title}>🌳 Pre-start form · {shortDay(latest.filled_on)}</Text>
@@ -165,12 +166,12 @@ export default function PreStartCard({
         <View style={{ marginTop: 10 }}>
           {tests.map(([label, value]) => (
             <Text key={label} style={styles.test}>
-              {label}: <Text style={{ color: "#fff", fontWeight: "700" }}>{value}</Text>
+              {label}: <Text style={{ color: themeText("#fff"), fontWeight: "700" }}>{value}</Text>
             </Text>
           ))}
         </View>
       )}
-      <Text style={[styles.due, overdue && { color: COLOURS.amber }]}>
+      <Text style={[styles.due, overdue && { color: themeText(COLOURS.amber) }]}>
         {overdue ? `Re-test was due ${shortDay(due)}` : `Re-test due ${shortDay(due)}`} (every 8 weeks)
       </Text>
       <Pressable style={styles.button} onPress={() => setFilling(true)}>
@@ -180,7 +181,7 @@ export default function PreStartCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 12, borderWidth: 1.5 },
   title: { color: "#fff", fontSize: 15, fontWeight: "800" },
   text: { color: "#CBD5E1", fontSize: 13, marginTop: 6 },

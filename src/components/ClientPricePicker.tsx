@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { money } from "@/lib/billing";
 import { PRICE_PACKAGES, clientPrice } from "@/lib/clientPricing";
 import type { PricePackage } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 // On a client's profile: which of the trainer's prices they pay (0106).
 // Feeds the trainer's Profile > Income.
@@ -80,7 +81,7 @@ export default function ClientPricePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginBottom: 12 },
   title: { color: "#fff", fontWeight: "700", fontSize: 15, marginBottom: 6 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { View, Pressable, Text, StyleSheet, type TextInputProps } from "react-native";
+import { View, Pressable, Text, type TextInputProps } from "react-native";
 import TextInput from "@/components/TextInput";
+import { themedStyles } from "@/lib/theme";
 
 type Props = Omit<TextInputProps, "secureTextEntry" | "style"> & {
   style?: TextInputProps["style"];
@@ -19,7 +20,7 @@ export default function PasswordInput({ style, ...inputProps }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   wrapper: { position: "relative", justifyContent: "center" },
   input: {
     backgroundColor: "#1E293B",

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import PhotoStrip from "@/components/PhotoStrip";
 import type { LoadedProgressPhoto } from "@/components/progressPhotoData";
 import { ANGLE_LABEL, PROGRESS_ANGLES, type ProgressPhotoAngle } from "@/lib/progressPhotos";
+import { themedStyles } from "@/lib/theme";
 
 type Props = {
   photos: LoadedProgressPhoto[];
@@ -33,7 +34,7 @@ export default function AngleCompare({ photos, onLongPress }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   tabs: { flexDirection: "row", backgroundColor: "#1E293B", borderRadius: 8, padding: 3, marginBottom: 10 },
   tab: { flex: 1, paddingVertical: 7, alignItems: "center", borderRadius: 6 },
   tabActive: { backgroundColor: "#334155" },

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +13,7 @@ import ProgressChart, { fmt } from "@/components/ProgressChart";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import { Card, CardTitle, DashChips, DashPage, DashTabs, Muted, Pill, Row, Stat, Table, dash } from "@/components/DashboardParts";
 import type { ClientTabParamList } from "@/navigation/types";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Tab = "weight" | "measurements" | "photos";
 const dateLabel = (iso: string) => parseIsoDate(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
@@ -28,7 +29,7 @@ export default function BodyScreen() {
   const [measure, setMeasure] = useState<BodyMeasureKey>("waist_cm");
   const today = todayIso();
 
-  if (!client || !stats) return <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 40 }} />;
+  if (!client || !stats) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 40 }} />;
 
   const weights = bodySeries(stats, "weight_kg");
   const w = compare(weights, null);
@@ -127,7 +128,7 @@ export default function BodyScreen() {
                     <Text style={styles.link}>{m.label}</Text>
                   </Pressable>,
                   m.points.length > 1 ? `${fmt(c.start.value)} → ${fmt(c.latest.value)} ${m.unit}` : `${fmt(c.latest.value)} ${m.unit}`,
-                  <Text key="c" style={[styles.change, c.change !== 0 && { color: BRAND_GOLD }]}>{m.points.length > 1 ? signed(c.change) : ""}</Text>,
+                  <Text key="c" style={[styles.change, c.change !== 0 && { color: themeText(BRAND_GOLD) }]}>{m.points.length > 1 ? signed(c.change) : ""}</Text>,
                 ];
               })}
             />
@@ -140,7 +141,7 @@ export default function BodyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   topRight: { flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" },
   add: { backgroundColor: "#22C55E", borderRadius: 9, paddingVertical: 9, paddingHorizontal: 14 },
   addText: { color: "#06210F", fontWeight: "800", fontSize: 14 },

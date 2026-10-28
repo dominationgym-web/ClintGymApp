@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -13,6 +13,7 @@ import { PROGRAM_FAMILIES, programFamily, type ProgramFamily, type ProgramGroup 
 import ProgramGroups from "@/components/ProgramGroups";
 import ProgramExerciseEditModal from "@/components/ProgramExerciseEditModal";
 import { useAuth } from "@/context/AuthContext";
+import { themeText, themedStyles } from "@/lib/theme";
 
 type Props = TrainerTabScreenProps<"Programs">;
 
@@ -97,7 +98,7 @@ export default function ProgramsScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -200,7 +201,7 @@ export default function ProgramsScreen({ navigation }: Props) {
                               <Text style={styles.delete}>Couldn't load the exercises. Tap to try again.</Text>
                             </Pressable>
                           ) : (
-                            <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 10 }} />
+                            <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 10 }} />
                           )}
                           <Text style={styles.description}>
                             ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
@@ -235,7 +236,7 @@ export default function ProgramsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   buildButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 14, alignItems: "center", marginBottom: 8 },

@@ -4,7 +4,6 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   ActivityIndicator,
   Pressable,
   Modal,
@@ -104,6 +103,7 @@ import WorkoutSwapRow from "@/components/WorkoutSwapRow";
 import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 import ExerciseClip from "@/components/ExerciseClip";
 import { useWideScreen } from "@/hooks/useWideScreen";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 export default function ExerciseLibraryScreen() {
   // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
@@ -932,7 +932,7 @@ export default function ExerciseLibraryScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -992,7 +992,7 @@ export default function ExerciseLibraryScreen() {
                       </Text>
                     </View>
                     {todaySession ? (
-                      <View style={[styles.resultDot, { backgroundColor: SESSION_COLORS[todaySession.status] }]} />
+                      <View style={[styles.resultDot, { backgroundColor: themeBg(SESSION_COLORS[todaySession.status]) }]} />
                     ) : (
                       <Text style={styles.todayOpen}>{part === "main" ? "Close ▴" : "Start ›"}</Text>
                     )}
@@ -1178,7 +1178,7 @@ export default function ExerciseLibraryScreen() {
                             <Text style={styles.name}>🔥 Cardio</Text>
                             <Text style={styles.category}>{cardioLabel(row)}</Text>
                           </View>
-                          <Text style={[styles.setsDone, ticked && { color: "#22C55E" }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
+                          <Text style={[styles.setsDone, ticked && { color: themeText("#22C55E") }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
                         </Pressable>
                       );
                     }
@@ -1241,16 +1241,16 @@ export default function ExerciseLibraryScreen() {
                             </Pressable>
                           </View>
                         </View>
-                        <Text style={[styles.setsDone, done >= row.sets && { color: "#22C55E" }]}>
+                        <Text style={[styles.setsDone, done >= row.sets && { color: themeText("#22C55E") }]}>
                           {done >= row.sets ? "Done ✓" : `${done}/${row.sets}`}
                         </Text>
                       </Pressable>
                     );
                   })}
                 {todaySession && (
-                  <View style={[styles.sessionResult, { borderColor: SESSION_COLORS[todaySession.status] }]}>
+                  <View style={[styles.sessionResult, { borderColor: themeBorder(SESSION_COLORS[todaySession.status]) }]}>
                     <View style={styles.nameRow}>
-                      <View style={[styles.resultDot, { backgroundColor: SESSION_COLORS[todaySession.status] }]} />
+                      <View style={[styles.resultDot, { backgroundColor: themeBg(SESSION_COLORS[todaySession.status]) }]} />
                       <Text style={styles.resultTitle}>
                         {SESSION_LABELS[todaySession.status]} today
                         {todaySession.status !== "missed" ? ` · ${todaySession.sets_done}/${todaySession.sets_planned} sets` : ""}
@@ -1301,7 +1301,7 @@ export default function ExerciseLibraryScreen() {
                             <Text style={styles.name}>🔥 Cardio</Text>
                             <Text style={styles.category}>{cardioLabel(row)}</Text>
                           </View>
-                          <Text style={[styles.setsDone, ticked && { color: "#22C55E" }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
+                          <Text style={[styles.setsDone, ticked && { color: themeText("#22C55E") }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
                         </Pressable>
                       );
                     }
@@ -1636,14 +1636,14 @@ export default function ExerciseLibraryScreen() {
 
             <Pressable style={styles.button} onPress={logSet} disabled={logging}>
               {logging ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
                 <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : gaugeDue ? "Log gauge set" : "Log set"}</Text>
               )}
             </Pressable>
             {selected && !live && (
               <Pressable style={styles.filmButton} onPress={() => film.filmOrPick(selected.name)} disabled={film.uploading}>
-                {film.uploading ? <ActivityIndicator color={BRAND_GOLD} /> : <Text style={styles.filmText}>🎥 Film this set for my coach</Text>}
+                {film.uploading ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.filmText}>🎥 Film this set for my coach</Text>}
               </Pressable>
             )}
 
@@ -1698,7 +1698,7 @@ export default function ExerciseLibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   todayCard: { backgroundColor: "#111C33", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#1E293B" },
   todayHeading: { color: BRAND_GOLD, fontSize: 22, fontWeight: "800" },
   todayDate: { color: "#94A3B8", fontSize: 13, marginTop: 2, marginBottom: 6 },

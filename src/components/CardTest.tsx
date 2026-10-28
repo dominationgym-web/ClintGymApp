@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { shortDate } from "@/lib/billing";
 import { cancelCard, cardLabel, loadCardBilling, startSaveCard, type CardBillingInfo, type CardCharge } from "@/lib/cardBilling";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The owner's card payment check on the Billing page (website only). While
 // card payments are off only the owner can use them, so this R5 card check
@@ -70,7 +71,7 @@ export default function CardTest({ trainerNames }: { trainerNames: Record<string
             </Text>
           ) : null}
           <Pressable style={styles.button} onPress={tryCard} disabled={busy}>
-            {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Try a card (R5, refunded)</Text>}
+            {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Try a card (R5, refunded)</Text>}
           </Pressable>
           {info.card ? (
             <View style={styles.row}>
@@ -98,7 +99,7 @@ export default function CardTest({ trainerNames }: { trainerNames: Record<string
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: 10, borderWidth: 1, borderColor: "#334155" },
   title: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14 },
   heading: { color: "#fff", fontWeight: "700", fontSize: 13, marginTop: 12 },

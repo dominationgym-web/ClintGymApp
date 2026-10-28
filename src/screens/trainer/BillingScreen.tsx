@@ -6,7 +6,6 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   View,
@@ -58,6 +57,7 @@ import PaymentProofModal from "@/components/PaymentProofModal";
 import { proofWhen } from "@/lib/paymentProofs";
 import { countryName } from "@/lib/phoneCountry";
 import OwnerTracker from "@/components/OwnerTracker";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // The owner's billing view (0064): who owes what, this month's client count
 // and fees per trainer, the monthly log, 6-month totals, each trainer's plan
@@ -230,7 +230,7 @@ export default function BillingScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={BRAND_GOLD} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} />
       </View>
     );
   }
@@ -463,7 +463,7 @@ export default function BillingScreen() {
               <Switch
                 value={settings.lockout_enabled}
                 onValueChange={toggleLockout}
-                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                 accessibilityLabel="Lock out unpaid trainers"
               />
             </View>
@@ -478,7 +478,7 @@ export default function BillingScreen() {
               <Switch
                 value={settings.card_billing_enabled}
                 onValueChange={toggleCards}
-                trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                 accessibilityLabel="Card payments"
               />
             </View>
@@ -579,7 +579,7 @@ function SetPlanModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose
             </>
           )}
           <Pressable style={styles.primary} onPress={save} disabled={saving}>
-            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Save</Text>}
+            {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>Save</Text>}
           </Pressable>
           <Pressable style={styles.secondary} onPress={onClose}>
             <Text style={styles.secondaryText}>Cancel</Text>
@@ -642,7 +642,7 @@ function FreeUseModal({
           <Text style={styles.fieldLabel}>Currency</Text>
           <Choice options={CURRENCIES} value={currency} onChange={setCurrency} label={(c) => (c === "USD" ? "US dollars" : "Rand")} />
           <Pressable style={styles.primary} onPress={save} disabled={saving}>
-            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Give free use</Text>}
+            {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>Give free use</Text>}
           </Pressable>
           <Pressable style={styles.secondary} onPress={onClose}>
             <Text style={styles.secondaryText}>Cancel</Text>
@@ -793,7 +793,7 @@ function RecordPaymentModal({
                       setUseCredit(v);
                       setAmount(null);
                     }}
-                    trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                    trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                   />
                 </View>
               ) : null}
@@ -817,7 +817,7 @@ function RecordPaymentModal({
                       setUseFeeCredit(v);
                       setAmount(null);
                     }}
-                    trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                    trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                   />
                 </View>
               ) : null}
@@ -826,7 +826,7 @@ function RecordPaymentModal({
           <Text style={styles.fieldLabel}>Amount received ({currency === "ZAR" ? "rand" : "US dollars"})</Text>
           <TextInput style={styles.input} keyboardType="decimal-pad" value={shown} onChangeText={setAmount} />
           <Pressable style={styles.primary} onPress={save} disabled={saving}>
-            {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.primaryText}>Save payment</Text>}
+            {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>Save payment</Text>}
           </Pressable>
           <Pressable style={styles.secondary} onPress={onClose}>
             <Text style={styles.secondaryText}>Cancel</Text>
@@ -838,7 +838,7 @@ function RecordPaymentModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   intro: { color: "#94A3B8", fontSize: 13, lineHeight: 19, marginBottom: 12 },

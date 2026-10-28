@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Linking, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { markClientContact } from "@/lib/checkinNudges";
 import { canJoin, checkinClock, isUpcoming, todaysCheckin, whatsappLink } from "@/lib/videoCheckins";
 import type { VideoCheckin } from "@/types/database";
+import { themedStyles } from "@/lib/theme";
 
 type Shown = { checkin: VideoCheckin; name: string; phone: string | null; more: number };
 
@@ -118,7 +119,7 @@ export default function VideoCheckInDayPopup({ who }: { who: "client" | "trainer
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   wrap: { position: "absolute", left: 12, right: 12, zIndex: 50, elevation: 50 },
   card: {
     flexDirection: "row",

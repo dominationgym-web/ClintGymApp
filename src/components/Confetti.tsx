@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
+import { themeBg } from "@/lib/theme";
 
 // A golden confetti gun for big moments (10% badge, gold stars, a won challenge).
 // Two cannons in the bottom corners fire two volleys up and in, then the pieces
@@ -119,7 +120,7 @@ export default function Confetti({ fire }: { fire: number | boolean }) {
               width: p.w,
               height: p.h,
               borderRadius: p.round ? p.w / 2 : 1.5,
-              backgroundColor: p.color,
+              backgroundColor: themeBg(p.color),
               opacity,
               transform: [{ translateX: range(p.xs) }, { translateY: range(p.ys) }, { rotate }, { scaleY: range(p.flips) }],
             }}

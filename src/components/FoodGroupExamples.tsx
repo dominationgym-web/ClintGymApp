@@ -1,7 +1,8 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { FOOD_GROUP_EXAMPLES } from "@/lib/nutrition";
+import { themedStyles } from "@/lib/theme";
 
 // A quick visual of each food group on the Nutrition page: what it looks like,
 // how much (in hand portions) and some examples.
@@ -24,7 +25,7 @@ export default function FoodGroupExamples() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   heading: { color: BRAND_GOLD, fontSize: 15, fontWeight: "700", marginBottom: 8 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },

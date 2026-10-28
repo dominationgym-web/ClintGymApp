@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
-import { StyleSheet, Text } from "react-native";
+import { Text } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import WatchOnlineLink from "@/components/WatchOnlineLink";
+import { themedStyles } from "@/lib/theme";
 
 // A small looping demo video, for the trainer to check an exercise before
 // putting it in a program. Mounted only while it's open, so one plays at a time.
@@ -21,7 +22,7 @@ export default function ExerciseVideoPreview({ url, name }: { url: string | null
   return <VideoView style={styles.video} player={player} contentFit="contain" nativeControls />;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   video: { width: "100%", height: 200, backgroundColor: "#000", borderRadius: 8, marginTop: 10 },
   none: { color: "#64748B", fontSize: 13, marginTop: 8 },
 });

@@ -1,17 +1,18 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { SESSION_COLORS, SESSION_LABELS, STAR_GOLD } from "@/lib/workoutSessions";
 import { weekdayOf } from "@/lib/programSchedule";
 import type { WorkoutSession } from "@/types/database";
+import { themeBg, themeBorder, themedStyles } from "@/lib/theme";
 
 // How one day's workout went (0076): the coloured result, the client's reason
 // when they didn't finish, and each exercise they pushed up, highlighted gold.
 export default function WorkoutSessionResult({ session }: { session: WorkoutSession }) {
   const color = SESSION_COLORS[session.status];
   return (
-    <View style={[styles.box, { borderColor: color }]}>
+    <View style={[styles.box, { borderColor: themeBorder(color) }]}>
       <View style={styles.row}>
-        <View style={[styles.dot, { backgroundColor: color }]} />
+        <View style={[styles.dot, { backgroundColor: themeBg(color) }]} />
         <Text style={styles.title}>
           {SESSION_LABELS[session.status]}
           {session.status !== "missed" ? ` · ${session.sets_done}/${session.sets_planned} sets` : ""}
@@ -33,7 +34,7 @@ export default function WorkoutSessionResult({ session }: { session: WorkoutSess
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: { borderWidth: 1.5, borderRadius: 10, padding: 10, marginTop: 8, gap: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { width: 12, height: 12, borderRadius: 6 },

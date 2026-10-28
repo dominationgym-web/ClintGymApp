@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { EVERY_REP_TIPS } from "@/lib/exerciseTechnique";
+import { themedStyles } from "@/lib/theme";
 
 // "Get the most from every rep": range of motion and muscle tension, tap to open.
 export default function EveryRepTips() {
@@ -21,7 +22,7 @@ export default function EveryRepTips() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 12 },
   title: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   tip: { color: "#CBD5E1", fontSize: 13, lineHeight: 19, marginTop: 6 },

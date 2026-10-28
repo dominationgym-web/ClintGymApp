@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { findHabit, HABIT_GROUPS, isRunning } from "@/lib/habitLibrary";
 import type { Habit } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The trainer's habit options when adding a habit for a client (GRIZZ,
 // 2026-10-14): the same list clients choose from, under tap-to-open headings.
@@ -83,7 +84,7 @@ export default function HabitOptionsPicker({
                     {picked && onAdd && (
                       <Pressable style={styles.addButton} onPress={onAdd} disabled={adding}>
                         {adding ? (
-                          <ActivityIndicator color="#0F172A" />
+                          <ActivityIndicator color={themeText("#0F172A")} />
                         ) : (
                           <Text style={styles.addButtonText}>Add "{h.name}" for this client</Text>
                         )}
@@ -100,7 +101,7 @@ export default function HabitOptionsPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   label: { color: "#94A3B8", fontSize: 13, fontWeight: "700", marginBottom: 6 },
   group: { backgroundColor: "#0F172A", borderRadius: 10, marginBottom: 6, padding: 2, borderWidth: 1, borderColor: "transparent" },
   groupOpen: { borderColor: BRAND_GOLD },

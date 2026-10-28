@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";
@@ -51,6 +51,7 @@ import { applyExerciseChanges } from "@/lib/exerciseChanges";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ClientCalendarBlock, ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // What the picker is choosing: the day's main workout, or an extra block (0098).
 type PickMode = "main" | "block";
@@ -474,7 +475,7 @@ export default function ClientCalendarCard({
         }}
       />
       {loading ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 16 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 16 }} />
       ) : (
         <WeekCalendar
           monday={monday}
@@ -498,7 +499,7 @@ export default function ClientCalendarCard({
           <Text style={styles.dayTitle}>{dayHeading(selected)}</Text>
           {selectedEntry && selectedProgram ? (
             <>
-              <Text style={[styles.dayWorkout, isFunctionalProgram(selectedProgram) && { color: FUNCTIONAL_TEAL }]}>{selectedProgram.name}</Text>
+              <Text style={[styles.dayWorkout, isFunctionalProgram(selectedProgram) && { color: themeText(FUNCTIONAL_TEAL) }]}>{selectedProgram.name}</Text>
               {selectedEntry.day_slot != null && (
                 <Text style={styles.daySlot}>{slotLabel(selectedProgram, selectedEntry.day_slot)}</Text>
               )}
@@ -545,11 +546,11 @@ export default function ClientCalendarCard({
             if (!p) return null;
             return (
               <View key={b.id} style={styles.block}>
-                <Text style={[styles.blockName, isFunctionalProgram(p) && { color: FUNCTIONAL_TEAL }]}>{p.name}</Text>
+                <Text style={[styles.blockName, isFunctionalProgram(p) && { color: themeText(FUNCTIONAL_TEAL) }]}>{p.name}</Text>
                 {b.day_slot != null && <Text style={styles.daySlot}>{slotLabel(p, b.day_slot)}</Text>}
                 {/* The client's tick on an extra block (0123). */}
                 {b.result && (
-                  <Text style={[styles.daySlot, { color: b.result === "done" ? "#22C55E" : "#F59E0B" }]}>
+                  <Text style={[styles.daySlot, { color: themeText(b.result === "done" ? "#22C55E" : "#F59E0B") }]}>
                     {b.result === "done" ? "✅ Done" : "⚠️ Couldn't do it"}
                   </Text>
                 )}
@@ -794,7 +795,7 @@ function WorkoutPicker({
                       <View style={{ flex: 1 }}>
                         <Text style={styles.familyTitle}>{f.title}</Text>
                         {quickCount > 0 && (
-                          <Text style={[styles.usedCount, usedCount > 0 && { color: RED }]}>
+                          <Text style={[styles.usedCount, usedCount > 0 && { color: themeText(RED) }]}>
                             {usedCount} of {quickCount} used
                           </Text>
                         )}
@@ -812,7 +813,7 @@ function WorkoutPicker({
                           const shut = openProgram !== p.id;
                           const list = slots[p.id];
                           return (
-                            <View key={p.id} style={[styles.choice, !shut && { borderColor: BRAND_GOLD }]}>
+                            <View key={p.id} style={[styles.choice, !shut && { borderColor: themeBorder(BRAND_GOLD) }]}>
                               <Pressable onPress={() => toggleProgram(p)} disabled={busy}>
                                 <View style={styles.choiceTop}>
                                   <Text style={styles.name}>{p.name}</Text>
@@ -821,14 +822,14 @@ function WorkoutPicker({
                                 </View>
                                 <Text style={styles.description}>Tap to choose one of its days</Text>
                               </Pressable>
-                              {!shut && !list && <ActivityIndicator color={BRAND_GOLD} style={{ marginVertical: 8 }} />}
+                              {!shut && !list && <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 8 }} />}
                               {!shut &&
                                 list?.map((slot) => {
                                   const current = p.id === currentId && slot === currentSlot;
                                   return (
                                     <Pressable
                                       key={slot}
-                                      style={[styles.session, current && { borderColor: BRAND_GOLD }]}
+                                      style={[styles.session, current && { borderColor: themeBorder(BRAND_GOLD) }]}
                                       onPress={() => onChoose(p, slot)}
                                       disabled={busy || current}
                                     >
@@ -846,12 +847,12 @@ function WorkoutPicker({
                         return (
                           <Pressable
                             key={p.id}
-                            style={[styles.choice, current && { borderColor: BRAND_GOLD }, isUsed && styles.choiceUsed]}
+                            style={[styles.choice, current && { borderColor: themeBorder(BRAND_GOLD) }, isUsed && styles.choiceUsed]}
                             onPress={() => onChoose(p, null)}
                             disabled={busy || current || isUsed}
                           >
                             <View style={styles.choiceTop}>
-                              <Text style={[styles.name, isUsed && { color: "#94A3B8" }]}>{p.name}</Text>
+                              <Text style={[styles.name, isUsed && { color: themeText("#94A3B8") }]}>{p.name}</Text>
                               {isUsed && <Text style={styles.usedTag}>Used</Text>}
                               {current && <Text style={styles.currentTag}>On this day</Text>}
                             </View>
@@ -875,7 +876,7 @@ function WorkoutPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   cardioOffLine: { color: "#94A3B8", fontSize: 13, marginTop: 6 },
   addOns: { color: "#FCD34D", fontSize: 13, fontWeight: "600", marginTop: 4 },
   stabilityNote: { color: "#CBD5E1", fontSize: 13, marginHorizontal: 12, marginBottom: 12, marginTop: 4 },

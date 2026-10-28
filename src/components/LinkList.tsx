@@ -1,13 +1,15 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { themedStyles } from "@/lib/theme";
 
 export type LinkItem = { key: string; title: string; icon: string; summary: string; onPress: () => void };
 
 // A short page of one-tap links, each opening its own page. Used where several
 // rarely-used menu lines share one line on the ☰ menu (GRIZZ, 2026-10-27).
-export default function LinkList({ items }: { items: LinkItem[] }) {
+export default function LinkList({ items, header }: { items: LinkItem[]; header?: React.ReactNode }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      {header}
       {items.map((item) => (
         <Pressable
           key={item.key}
@@ -32,7 +34,7 @@ export default function LinkList({ items }: { items: LinkItem[] }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   row: { flexDirection: "row", alignItems: "center", backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginBottom: 8 },
   rowPressed: { backgroundColor: "#334155" },

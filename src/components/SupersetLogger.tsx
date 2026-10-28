@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import ModalSafeArea from "./ModalSafeArea";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
@@ -22,6 +22,7 @@ import {
   type SupersetPick,
 } from "@/lib/superset";
 import type { Client, Exercise, ProgramExercise, WorkoutLog } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 const blank = (): RoundEntry => ({ weight: "", reps: "", effort: null });
 
@@ -280,7 +281,7 @@ export default function SupersetLogger({
                     ))}
                     <Text style={styles.hint}>Reps left (the buttons): how many more good reps you could have done. Leave reps empty for one you skipped.</Text>
                     <Pressable style={styles.log} onPress={logRound} disabled={saving} accessibilityRole="button">
-                      {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.logText}>✓ Log round {round}</Text>}
+                      {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.logText}>✓ Log round {round}</Text>}
                     </Pressable>
                   </>
                 )}
@@ -298,7 +299,7 @@ export default function SupersetLogger({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: "#0F172A" },
   body: { padding: 16, gap: 8 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },

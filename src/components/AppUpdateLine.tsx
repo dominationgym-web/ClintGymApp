@@ -1,6 +1,7 @@
 import React from "react";
-import { StyleSheet, Text } from "react-native";
+import { Text } from "react-native";
 import * as Updates from "expo-updates";
+import { themedStyles } from "@/lib/theme";
 
 // Which update the phone is running (GRIZZ, 2026-10-19: a tester's app
 // looked out of date). Shown under Log out so anyone can read it out.
@@ -15,6 +16,6 @@ export default function AppUpdateLine() {
   return <Text style={styles.line}>{appUpdateLabel(Updates.createdAt ?? null, Updates.isEmbeddedLaunch)}</Text>;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   line: { color: "#64748B", fontSize: 12, textAlign: "center", marginTop: 16 },
 });

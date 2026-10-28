@@ -1,6 +1,7 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { PRIVACY_CONTACT_EMAIL } from "@/lib/privacyPolicy";
+import { themedStyles } from "@/lib/theme";
 
 // Who runs the app and is the other party to this agreement.
 const APP_OPERATOR = { name: "Clint Walters, trading as Daily Evolution", email: PRIVACY_CONTACT_EMAIL };
@@ -82,7 +83,7 @@ export default function TrainerAgreementContent() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   updated: { color: "#64748B", fontSize: 12, marginBottom: 20 },
   section: { marginBottom: 20 },
   heading: { color: "#22C55E", fontWeight: "700", fontSize: 15, marginBottom: 6 },

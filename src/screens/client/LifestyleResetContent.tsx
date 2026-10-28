@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import { resetName, type ResetSex } from "@/lib/resetProgram";
+import { themedStyles } from "@/lib/theme";
 
 type DailySix = {
   icon: string;
@@ -353,7 +354,7 @@ export default function LifestyleResetContent({ sex }: { sex?: ResetSex }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   title: { color: "#fff", fontSize: 22, fontWeight: "700" },
   subtitle: { color: "#94A3B8", fontSize: 14, marginTop: 2, marginBottom: 14 },
   intro: { color: "#E2E8F0", fontSize: 14, lineHeight: 21, marginBottom: 10 },

@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   Share,
-  StyleSheet,
   Switch,
   Text,
   View,
@@ -40,9 +39,11 @@ import TrainerIncome from "@/components/TrainerIncome";
 import MyTraining from "@/components/MyTraining";
 import OwnerChallenges from "@/components/OwnerChallenges";
 import FoldSection from "@/components/FoldSection";
+import ThemePicker from "@/components/ThemePicker";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices, EftDetails } from "@/types/database";
+import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "settings";
 
@@ -59,6 +60,9 @@ const TABS: ScreenTab<TabKey>[] = [
 
 // A trainer's own setup (0029): the code their clients sign up with, the logo
 // their clients see, and the payment details shown after a client signs up.
+type SettingKey = "details" | "payments" | "theme" | "account";
+let lastOpenSetting: SettingKey | null = null;
+
 export default function TrainerProfileScreen() {
   const { trainer, refreshProfile, signOut } = useAuth();
   const [businessName, setBusinessName] = useState(trainer?.business_name ?? "");
@@ -71,8 +75,12 @@ export default function TrainerProfileScreen() {
   // trainer's new logo saved but the screen kept showing the old one).
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("code");
-  const [openSetting, setOpenSetting] = useState<"details" | "payments" | "account" | null>(null);
-  const toggleSetting = (key: "details" | "payments" | "account") => setOpenSetting(openSetting === key ? null : key);
+  // Starts on the last open fold, so switching light/dark (which redraws the page) keeps it open.
+  const [openSetting, setOpenSetting] = useState<SettingKey | null>(lastOpenSetting);
+  const toggleSetting = (key: SettingKey) => {
+    lastOpenSetting = openSetting === key ? null : key;
+    setOpenSetting(lastOpenSetting);
+  };
   // Trainers who signed up with this trainer's code (0060).
   const [referrals, setReferrals] = useState<ReferralProgress[]>([]);
   const [prices, setPrices] = useState<BillingPrices | null>(null);
@@ -199,7 +207,7 @@ export default function TrainerProfileScreen() {
                 <TrainerLogo name={displayName} path={trainer.logo_path} size={96} />
               )}
               {uploadingLogo ? (
-                <ActivityIndicator color="#22C55E" style={{ marginTop: 8 }} />
+                <ActivityIndicator color={themeText("#22C55E")} style={{ marginTop: 8 }} />
               ) : (
                 <Text style={styles.link}>{trainer.logo_path || logoPreview ? "Change logo" : "Add your logo"}</Text>
               )}
@@ -224,7 +232,7 @@ export default function TrainerProfileScreen() {
           <>
             <TrainerPlanCard trainer={trainer} />
             {trial ? (
-              <View style={[styles.trialBox, trialLeft !== null && trialLeft < 0 && { borderColor: "#F59E0B" }]}>
+              <View style={[styles.trialBox, trialLeft !== null && trialLeft < 0 && { borderColor: themeBorder("#F59E0B") }]}>
                 <Text style={styles.trialTitle}>{trial}</Text>
                 <Text style={styles.hint}>
                   {trialLeft !== null && trialLeft < 0
@@ -268,7 +276,7 @@ export default function TrainerProfileScreen() {
             {referrals.map((r, i) => (
               <View key={`${r.name}-${i}`} style={styles.referralRow}>
                 <Text style={styles.readOnly}>{r.name}</Text>
-                <Text style={[styles.hint, { color: r.counted ? "#22C55E" : "#F59E0B" }]}>{referralStatusLabel(r)}</Text>
+                <Text style={[styles.hint, { color: themeText(r.counted ? "#22C55E" : "#F59E0B") }]}>{referralStatusLabel(r)}</Text>
               </View>
             ))}
           </>
@@ -286,7 +294,7 @@ export default function TrainerProfileScreen() {
               <TextInput style={styles.input} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
 
               <Pressable style={styles.button} onPress={save} disabled={saving}>
-                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save</Text>}
               </Pressable>
 
               <Text style={styles.sectionHeading}>Notifications</Text>
@@ -300,7 +308,7 @@ export default function TrainerProfileScreen() {
                 <Switch
                   value={trainer.planning_reminders !== false}
                   onValueChange={togglePlanningReminders}
-                  trackColor={{ true: BRAND_GOLD, false: "#334155" }}
+                  trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                   accessibilityLabel="Planning reminders"
                 />
               </View>
@@ -322,8 +330,11 @@ export default function TrainerProfileScreen() {
               <TextInput style={styles.input} keyboardType="phone-pad" value={popWhatsapp} onChangeText={setPopWhatsapp} />
 
               <Pressable style={styles.button} onPress={save} disabled={saving}>
-                {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save</Text>}
               </Pressable>
+            </FoldSection>
+            <FoldSection icon="🌗" title="Light or dark" hint="Dark, Light or Match phone" open={openSetting === "theme"} onToggle={() => toggleSetting("theme")}>
+              <ThemePicker showTitle={false} />
             </FoldSection>
             <FoldSection icon="⚙️" title="Account" hint={trainer.email} open={openSetting === "account"} onToggle={() => toggleSetting("account")}>
               <Text style={styles.label}>Signed in as</Text>
@@ -341,7 +352,7 @@ export default function TrainerProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   logoBlock: { alignItems: "center", marginBottom: 20 },
   link: { color: "#22C55E", fontWeight: "600", marginTop: 8 },

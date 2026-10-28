@@ -1,10 +1,11 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";
 import { BRAND_GOLD } from "@/lib/brand";
 import { findArea, PAIN_RULE, stabilityAreasFor } from "@/lib/stability";
+import { themedStyles } from "@/lib/theme";
 
 // When a client reports an injury or pain (check-in or intake), point the
 // trainer to the matching rehab programs (GRIZZ, 2026-10-16). Trainers can't
@@ -34,7 +35,7 @@ export default function RehabSuggestion({ clientName, texts }: { clientName: str
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, margin: 6, marginTop: 2, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   title: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14 },
   text: { color: "#E2E8F0", fontSize: 13, marginTop: 4, lineHeight: 18 },

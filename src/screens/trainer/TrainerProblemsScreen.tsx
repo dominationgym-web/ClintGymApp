@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
@@ -19,6 +19,7 @@ import {
 import { trainerDisplayName } from "@/lib/trainers";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { Trainer, TrainerProblem, TrainerProblemArea, TrainerProblemMessage, TrainerProblemStatus } from "@/types/database";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 const INBOX_TABS: TrainerProblemStatus[] = ["new", "fixing", "fixed"];
 
@@ -106,7 +107,7 @@ export default function TrainerProblemsScreen() {
       style={styles.container}
       contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
       keyboardShouldPersistTaps="handled"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_GOLD} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeText(BRAND_GOLD)} />}
     >
       {!isOwner && (
         <View style={styles.card}>
@@ -133,7 +134,7 @@ export default function TrainerProblemsScreen() {
             textAlignVertical="top"
           />
           <Pressable style={[styles.button, !text.trim() && { opacity: 0.5 }]} onPress={send} disabled={sending || !text.trim()}>
-            {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Send to the app owner</Text>}
+            {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Send to the app owner</Text>}
           </Pressable>
         </View>
       )}
@@ -152,7 +153,7 @@ export default function TrainerProblemsScreen() {
       )}
 
       {loading ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 16 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 16 }} />
       ) : shown.length === 0 ? (
         <Text style={styles.helper}>
           {isOwner ? (tab === "new" ? "No new problems. 👍" : "Nothing here.") : "You haven't reported any problems."}
@@ -167,7 +168,7 @@ export default function TrainerProblemsScreen() {
               <Text style={styles.rowBody} numberOfLines={1}>
                 {p.body}
               </Text>
-              <Text style={[styles.meta, { color: PROBLEM_STATUS_COLOR[p.status] }]}>
+              <Text style={[styles.meta, { color: themeText(PROBLEM_STATUS_COLOR[p.status]) }]}>
                 {isOwner ? `${problemAreaLabel(p.area)} · ${problemWhen(p.created_at)}` : PROBLEM_STATUS_FOR_TRAINER[p.status]}
               </Text>
             </View>
@@ -262,7 +263,7 @@ function ProblemPage({
 
       <View style={styles.card}>
         <Text style={styles.heading}>{ownerView ? problem.trainer_name || "A trainer" : problemAreaLabel(problem.area)}</Text>
-        <Text style={[styles.meta, { color: PROBLEM_STATUS_COLOR[problem.status] }]}>
+        <Text style={[styles.meta, { color: themeText(PROBLEM_STATUS_COLOR[problem.status]) }]}>
           {ownerView ? `${problemAreaLabel(problem.area)} · ` : ""}
           {problemWhen(problem.created_at)} · {ownerView ? PROBLEM_STATUS_LABEL[problem.status] : PROBLEM_STATUS_FOR_TRAINER[problem.status]}
         </Text>
@@ -296,7 +297,7 @@ function ProblemPage({
               </Pressable>
             </>
           ) : (
-            <ActivityIndicator color={BRAND_GOLD} />
+            <ActivityIndicator color={themeText(BRAND_GOLD)} />
           )}
         </View>
       )}
@@ -309,20 +310,20 @@ function ProblemPage({
             </Pressable>
           )}
           {problem.status !== "fixed" && (
-            <Pressable style={[styles.outline, { borderColor: "#22C55E" }]} onPress={() => setStatus("fixed")} disabled={busy}>
-              <Text style={[styles.outlineText, { color: "#22C55E" }]}>✅ Fixed</Text>
+            <Pressable style={[styles.outline, { borderColor: themeBorder("#22C55E") }]} onPress={() => setStatus("fixed")} disabled={busy}>
+              <Text style={[styles.outlineText, { color: themeText("#22C55E") }]}>✅ Fixed</Text>
             </Pressable>
           )}
           {problem.status !== "new" && (
-            <Pressable style={[styles.outline, { borderColor: "#334155" }]} onPress={() => setStatus("new")} disabled={busy}>
-              <Text style={[styles.outlineText, { color: "#94A3B8" }]}>Back to New</Text>
+            <Pressable style={[styles.outline, { borderColor: themeBorder("#334155") }]} onPress={() => setStatus("new")} disabled={busy}>
+              <Text style={[styles.outlineText, { color: themeText("#94A3B8") }]}>Back to New</Text>
             </Pressable>
           )}
         </View>
       )}
 
       {messages === null ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 16 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 16 }} />
       ) : (
         messages.map((m) => {
           const mine = m.author_id === me?.id;
@@ -348,7 +349,7 @@ function ProblemPage({
         textAlignVertical="top"
       />
       <Pressable style={[styles.button, !reply.trim() && { opacity: 0.5 }]} onPress={sendReply} disabled={busy || !reply.trim()}>
-        {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Send</Text>}
+        {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Send</Text>}
       </Pressable>
       {!ownerView && problem.status === "fixed" ? (
         <Text style={[styles.helper, { marginTop: 8 }]}>Still not right? Send a message and it opens again.</Text>
@@ -357,7 +358,7 @@ function ProblemPage({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 16, marginBottom: 12 },
   heading: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 4 },

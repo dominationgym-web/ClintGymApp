@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Pressable, View, Text, StyleSheet } from "react-native";
+import { Pressable, View, Text } from "react-native";
 import { cardioLabel, formatRest, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
 import ExerciseClip from "@/components/ExerciseClip";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import { useExerciseClips } from "@/hooks/useExerciseClips";
+import { themedStyles } from "@/lib/theme";
 
 // A program's exercises, grouped by weekday for weekly programs. Multi-week
 // programs (0065) list each week's training days under a week heading. On a
@@ -163,7 +164,7 @@ export default function ProgramSummary({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   day: { color: "#fff", fontWeight: "700", fontSize: 13, marginBottom: 2 },
   week: { color: "#D4AF37", fontWeight: "800", fontSize: 14, marginTop: 6, marginBottom: 2 },
   weekStep: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10, backgroundColor: "#0F172A", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },

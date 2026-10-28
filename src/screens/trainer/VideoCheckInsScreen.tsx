@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, Switch, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import TextInput from "@/components/TextInput";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
@@ -25,6 +25,7 @@ import {
   whatsappLink,
 } from "@/lib/videoCheckins";
 import type { VideoCheckin, VideoCheckinSettings, VideoCheckinSlot } from "@/types/database";
+import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 type Tab = "bookings" | "times" | "setup";
 type ClientInfo = { id: string; name: string; phone: string | null };
@@ -113,12 +114,12 @@ export default function VideoCheckInsScreen() {
     <View style={styles.container}>
       <ScreenTabBar tabs={tabs} current={tab} onChange={setTab} position="top" />
       {loading ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 24 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 24 }} />
       ) : (
         <ScrollView
           contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BRAND_GOLD} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeText(BRAND_GOLD)} />}
         >
           {tab === "bookings" && (
             <Bookings
@@ -226,7 +227,7 @@ function Bookings({
             {v.repeat_weekly ? <Text style={styles.meta}>Wants the same time every week</Text> : null}
             <View style={styles.actions}>
               <Pressable style={styles.smallButton} onPress={() => respond(v, true)} disabled={busyId === v.id}>
-                {busyId === v.id ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.smallButtonText}>Confirm</Text>}
+                {busyId === v.id ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.smallButtonText}>Confirm</Text>}
               </Pressable>
               <Pressable style={styles.outline} onPress={() => decline(v)} disabled={busyId === v.id}>
                 <Text style={styles.outlineText}>Can't make it</Text>
@@ -448,17 +449,17 @@ function Setup({ settings, onSaved }: { settings: VideoCheckinSettings | null; o
           <Text style={styles.switchText}>Taking bookings</Text>
           <Text style={styles.meta}>Switch off when you're away. Check-ins already booked stay.</Text>
         </View>
-        <Switch value={!paused} onValueChange={(v) => setPaused(!v)} trackColor={{ true: BRAND_GOLD, false: "#334155" }} thumbColor="#fff" />
+        <Switch value={!paused} onValueChange={(v) => setPaused(!v)} trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }} thumbColor="#fff" />
       </View>
 
       <Pressable style={styles.button} onPress={save} disabled={saving}>
-        {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+        {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save</Text>}
       </Pressable>
     </>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   helper: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginTop: 4 },
   label: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 16, marginBottom: 4 },

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import StabilityHowTo from "@/components/stability/StabilityHowTo";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -14,6 +14,7 @@ import {
   type StabilityMode,
   type StabilitySide,
 } from "@/lib/stability";
+import { themeText, themedStyles } from "@/lib/theme";
 
 export type StabilityEntry = { set_number: number; side: StabilitySide | null; value: number };
 
@@ -102,7 +103,7 @@ export default function StabilityExerciseCard({ exercise, dose, mode, videoUrl, 
             {exercise.measure === "hold" ? "Hold " : ""}
             {targetText(dose, exercise, mode)}
           </Text>
-          {badge && <Text style={[styles.badge, { color: badge.colour }]}>{badge.text}</Text>}
+          {badge && <Text style={[styles.badge, { color: themeText(badge.colour) }]}>{badge.text}</Text>}
         </View>
         {loggedToday && <Text style={styles.done}>✓</Text>}
         <Text style={styles.arrow}>{open ? "▲" : "▼"}</Text>
@@ -154,7 +155,7 @@ export default function StabilityExerciseCard({ exercise, dose, mode, videoUrl, 
               </View>
             ))}
             <Pressable style={styles.save} onPress={save} disabled={saving}>
-              {saving ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.saveText}>Save</Text>}
+              {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>Save</Text>}
             </Pressable>
           </View>
         </View>
@@ -163,7 +164,7 @@ export default function StabilityExerciseCard({ exercise, dose, mode, videoUrl, 
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, marginBottom: 10, overflow: "hidden" },
   header: { flexDirection: "row", alignItems: "center", padding: 12 },
   name: { color: "#fff", fontSize: 16, fontWeight: "700" },

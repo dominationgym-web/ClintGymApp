@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
@@ -16,6 +16,7 @@ import {
 import { problemWhen } from "@/lib/trainerProblems";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { ChallengeLibraryItem } from "@/types/database";
+import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type Form = { emoji: string; title: string; daily_task: string; summary: string; target: string };
 const EMPTY: Form = { emoji: "🏆", title: "", daily_task: "", summary: "", target: "20" };
@@ -158,7 +159,7 @@ export default function OwnerChallenges() {
           maxLength={2}
         />
         <Pressable style={styles.button} onPress={save} disabled={busy}>
-          {busy ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>Save</Text>}
+          {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save</Text>}
         </Pressable>
         <Text style={[styles.hint, { marginTop: 8 }]}>Saving doesn't share it. You share it from your list when it's ready.</Text>
       </>
@@ -182,7 +183,7 @@ export default function OwnerChallenges() {
       </View>
 
       {list === null ? (
-        <ActivityIndicator color={BRAND_GOLD} style={{ marginTop: 16 }} />
+        <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 16 }} />
       ) : list.length === 0 ? (
         <Text style={[styles.hint, { marginTop: 16 }]}>You haven't added any challenges yet.</Text>
       ) : (
@@ -194,7 +195,7 @@ export default function OwnerChallenges() {
             <Text style={styles.rowTask}>
               {c.daily_task} · {c.target_days} days
             </Text>
-            <Text style={[styles.status, { color: c.shared_at ? "#22C55E" : "#F59E0B" }]}>
+            <Text style={[styles.status, { color: themeText(c.shared_at ? "#22C55E" : "#F59E0B") }]}>
               {c.shared_at ? `📣 Shared with all trainers, ${problemWhen(c.shared_at)}` : "Not shared yet"}
             </Text>
             <View style={styles.actions}>
@@ -203,11 +204,11 @@ export default function OwnerChallenges() {
                   <Text style={styles.outlineText}>📣 Share with all trainers</Text>
                 </Pressable>
               )}
-              <Pressable style={[styles.outline, { borderColor: "#334155" }]} onPress={() => startEdit(c)}>
-                <Text style={[styles.outlineText, { color: "#CBD5E1" }]}>Change</Text>
+              <Pressable style={[styles.outline, { borderColor: themeBorder("#334155") }]} onPress={() => startEdit(c)}>
+                <Text style={[styles.outlineText, { color: themeText("#CBD5E1") }]}>Change</Text>
               </Pressable>
-              <Pressable style={[styles.outline, { borderColor: "#334155" }]} onPress={() => remove(c)}>
-                <Text style={[styles.outlineText, { color: "#94A3B8" }]}>Remove</Text>
+              <Pressable style={[styles.outline, { borderColor: themeBorder("#334155") }]} onPress={() => remove(c)}>
+                <Text style={[styles.outlineText, { color: themeText("#94A3B8") }]}>Remove</Text>
               </Pressable>
             </View>
           </View>
@@ -217,7 +218,7 @@ export default function OwnerChallenges() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   heading: { color: "#fff", fontSize: 17, fontWeight: "700", marginBottom: 6 },
   hint: { color: "#94A3B8", fontSize: 13, lineHeight: 19 },
   back: { color: BRAND_GOLD, fontWeight: "700", fontSize: 15, marginBottom: 12 },

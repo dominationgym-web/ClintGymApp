@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
@@ -8,6 +8,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { shrinkPhoto } from "@/lib/shrinkPhoto";
 import { latestProof, PAYMENT_PROOF_BUCKET, paymentProofPath, proofStatusText } from "@/lib/paymentProofs";
 import type { PaymentProof } from "@/types/database";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // The sender's side of proof of payment (0117): a client to their trainer, or
 // a trainer to the app owner (to: "owner"). Take a photo of the slip or pick a
@@ -101,13 +102,13 @@ export default function SendProofOfPayment({
         maxLength={40}
       />
       <Pressable style={styles.button} onPress={choose} disabled={sending} accessibilityRole="button">
-        {sending ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.buttonText}>🧾 Send proof of payment</Text>}
+        {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>🧾 Send proof of payment</Text>}
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: { marginTop: 12 },
   status: { color: "#CBD5E1", fontSize: 13, marginBottom: 8, lineHeight: 19 },
   ok: { color: "#22C55E", fontWeight: "700" },

@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { View, Text, Pressable, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, FlatList, ActivityIndicator } from "react-native";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import type { CoachMessage, Video } from "@/types/database";
 import { useFormVideoUpload } from "@/components/useFormVideoUpload";
+import { themeText, themedStyles } from "@/lib/theme";
 
 // Form videos (was the Video log tab, app-flow review C2, 2026-10-18): the
 // client's videos and their coach's feedback, opened from Profile. Most videos
@@ -56,7 +57,7 @@ export default function VideoUploadScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#22C55E" />
+        <ActivityIndicator color={themeText("#22C55E")} />
       </View>
     );
   }
@@ -83,7 +84,7 @@ export default function VideoUploadScreen() {
           <Text style={styles.buttonText}>Choose from library</Text>
         </Pressable>
       </View>
-      {uploading && <ActivityIndicator style={{ marginTop: 12 }} color="#22C55E" />}
+      {uploading && <ActivityIndicator style={{ marginTop: 12 }} color={themeText("#22C55E")} />}
       <FlatList
         style={{ marginTop: 20 }}
         data={videos}
@@ -114,7 +115,7 @@ export default function VideoUploadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 8 },

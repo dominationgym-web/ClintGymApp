@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { CheckinFeedback } from "@/lib/checkinFeedback";
+import { themedStyles } from "@/lib/theme";
 
 // The app's feedback on the last week of check-ins: a win, then up to three
 // things to work on. Each tip opens to show what to do and what it will do,
@@ -64,7 +65,7 @@ export default function CheckinFeedbackCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginBottom: 14, borderTopWidth: 3, borderTopColor: BRAND_GOLD },
   title: { color: "#fff", fontSize: 16, fontWeight: "800" },
   sub: { color: "#94A3B8", fontSize: 12, marginTop: 2, marginBottom: 8 },

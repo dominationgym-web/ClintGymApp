@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Modal, Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import Confetti from "@/components/Confetti";
+import { themedStyles } from "@/lib/theme";
 
 export type CelebrationInfo = {
   emoji: string;
@@ -68,7 +69,7 @@ export default function Celebration({ info, onClose }: { info: CelebrationInfo |
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.75)", justifyContent: "center", padding: 24 },
   card: { backgroundColor: "#0F172A", borderRadius: 18, borderWidth: 2, borderColor: BRAND_GOLD, padding: 24, alignItems: "center" },
   medalWrap: { width: 130, height: 130, alignItems: "center", justifyContent: "center", marginBottom: 6 },
