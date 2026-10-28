@@ -8,6 +8,7 @@ import { DIET_WEEKDAYS, INTAKE_ACTIVITY_LEVELS, intakeDetails, amountLabel, dail
 import type { ClientDietPlan } from "@/types/database";
 import { useMealTicks } from "@/hooks/useMealTicks";
 import { MealTickButton } from "@/components/MealPlanMaker";
+import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 
 // The client's meal plan from their trainer (0071), read-only, in the
 // Nutrition section. Opens on today, one day at a time.
@@ -88,9 +89,12 @@ function MealPlan() {
               <MealTickButton on={mealTicks.isTicked("coach", index, meal)} onPress={() => mealTicks.toggle("coach", index, meal)} />
             )}
             {meal.items.map((item, i) => (
-              <Text key={i} style={styles.item}>
-                • {item.food}: <Text style={styles.amount}>{amountLabel(item)}</Text>
-              </Text>
+              <View key={i} style={styles.itemRow}>
+                <Text style={[styles.item, { flex: 1 }]}>
+                  • {item.food}: <Text style={styles.amount}>{amountLabel(item)}</Text>
+                </Text>
+                <CookingIdeasLink food={item.food} />
+              </View>
             ))}
           </View>
         ))}
@@ -182,6 +186,7 @@ const styles = StyleSheet.create({
   mealName: { color: "#fff", fontWeight: "800" },
   mealKcal: { color: BRAND_GOLD, fontWeight: "700" },
   item: { color: "#E2E8F0", fontSize: 14, marginTop: 2 },
+  itemRow: { flexDirection: "row", alignItems: "center" },
   amount: { color: BRAND_GOLD, fontWeight: "700" },
   note: { color: "#64748B", fontSize: 12, marginTop: 4 },
 });

@@ -356,3 +356,13 @@ export function shoppingListText(list: ShoppingList): string {
   }
   return lines.join("\n");
 }
+
+/** Opens WhatsApp with the list typed in, for them to pick who to send it to (phone and laptop). */
+export function whatsappShareLink(text: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
+/** Opens their email app with the list in a new email. */
+export function emailShareLink(text: string): string {
+  return `mailto:?subject=${encodeURIComponent("My shopping list for the week")}&body=${encodeURIComponent(text)}`;
+}

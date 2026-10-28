@@ -52,6 +52,7 @@ import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
 import { PACE_OPTIONS, withPace, type WorkoutPace } from "@/lib/trainingCalendar";
 import ClientCalendarView from "@/components/ClientCalendarView";
+import MyPastWorkouts from "@/components/MyPastWorkouts";
 import OtherActivityCard from "@/components/OtherActivityCard";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import IntervalTimerModal from "@/components/IntervalTimerModal";
@@ -1337,6 +1338,11 @@ export default function ExerciseLibraryScreen() {
             {client && !live && (
               <FoldSection icon="🏃" title="Other exercise" hint="Log a walk, run, ride or hike" open={part === "other"} onToggle={() => togglePart("other")}>
                 <OtherActivityCard clientId={client.id} role="client" />
+              </FoldSection>
+            )}
+            {client && !live && (
+              <FoldSection icon="📋" title="My past workouts" hint="Last two weeks, 🤝 live sessions with your coach" open={part === "past"} onToggle={() => togglePart("past")}>
+                <MyPastWorkouts clientId={client.id} />
               </FoldSection>
             )}
             {showReference && <Text style={styles.title}>{live ? "Add an exercise" : "Exercise reference"}</Text>}

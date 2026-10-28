@@ -17,6 +17,7 @@ import MuscleBuildingGuide from "@/components/MuscleBuildingGuide";
 import SupplementCard, { LEVEL_COLOURS, SupplementLevelsKey } from "@/components/SupplementCard";
 import { SUPPLEMENTS, type SupplementLevel } from "@/lib/supplements";
 import FoodGroupExamples from "@/components/FoodGroupExamples";
+import ProteinCookingIdeas, { LightSauces } from "@/components/ProteinCookingIdeas";
 import CarbsInShort, { CARBS_IN_SHORT } from "@/components/CarbsInShort";
 import { GuideGroupCard } from "@/components/GuideBreakdown";
 import { useNavigation } from "@react-navigation/native";
@@ -28,6 +29,8 @@ type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
 const MEAL_PLAN_TITLE = "Work out your own meal plan and diet";
 const MUSCLE_GUIDE_TITLE = "Muscle building: your BMR and macros";
+export const PROTEIN_COOKING_TITLE = "Cooking ideas for your protein";
+export const LIGHT_SAUCES_TITLE = "Low-calorie sauces";
 
 // One of the menu sections. A section with content shows each part as a
 // heading the client taps to open (one at a time), so they can jump to what
@@ -49,6 +52,9 @@ export default function SectionScreen({ route }: Props) {
       body: <MuscleBuildingGuide onMakeMealPlan={() => setOpen(MEAL_PLAN_TITLE)} />,
     });
     parts.push({ title: MEAL_PLAN_TITLE, icon: "🤖", body: <MealPlanMaker /> });
+    // Five simple ways to cook each protein, and light sauces (GRIZZ, 2026-10-27).
+    parts.push({ title: PROTEIN_COOKING_TITLE, icon: "🍳", body: <ProteinCookingIdeas /> });
+    parts.push({ title: LIGHT_SAUCES_TITLE, icon: "🥣", body: <LightSauces /> });
     parts.push({ title: "Meal builder", icon: "🍽️", body: <MealBuilder /> });
     parts.push({ title: "Calorie calculator", icon: "🔢", body: <CalorieCalculator /> });
     // Right under the calorie calculator (GRIZZ, 2026-10-12). One short card; the

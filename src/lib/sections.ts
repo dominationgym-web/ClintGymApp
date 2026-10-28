@@ -5,6 +5,7 @@
 import { SLEEP_GUIDELINES, type GuidelineGroup } from "@/lib/sleep";
 import { WOMENS_HEALTH_GUIDE } from "@/lib/cycle";
 import { SUPPLEMENT_GUIDE, SUPPLEMENTS } from "@/lib/supplements";
+import { LIGHT_SAUCES, PROTEIN_COOKING } from "@/lib/proteinCooking";
 import { NUTRITION_GUIDE, UNDERSTANDING_CARBS, UNDERSTANDING_INSULIN } from "@/lib/nutrition";
 
 export type SectionKey = "nutrition" | "supplementation" | "sleepRecovery" | "womensHealthReset";
@@ -32,6 +33,8 @@ export const SECTIONS: Section[] = [
       `${UNDERSTANDING_CARBS.title}: ${UNDERSTANDING_CARBS.hook}`,
       `${UNDERSTANDING_INSULIN.title}: ${UNDERSTANDING_INSULIN.hook} Fat burning, insulin resistance, sugar.`,
       "Meal builder and calorie calculator: add up calories, protein, carbs and fat for a meal.",
+      `Cooking ideas for your protein, recipes: ${PROTEIN_COOKING.map((p) => p.title).join(", ")}.`,
+      `Low-calorie sauces: ${LIGHT_SAUCES.map((s) => s.name).join(", ")}.`,
     ],
     content: NUTRITION_GUIDE,
   },
