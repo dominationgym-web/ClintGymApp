@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleShe
 import { supabase } from "@/lib/supabase";
 import { countryName } from "@/lib/phoneCountry";
 import { useAuth } from "@/context/AuthContext";
-import { REFERRAL_DISCOUNT_PERCENT, referralRewards, trainerDisplayName, trialDaysLeft, trialLabel } from "@/lib/trainers";
+import { REFERRAL_DISCOUNT_PERCENT, countedReferrals, referralRewards, trainerDisplayName, trialDaysLeft, trialLabel } from "@/lib/trainers";
 import { addDays } from "@/lib/programSchedule";
 import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
@@ -183,10 +183,7 @@ export default function TrainersScreen() {
         const trial = trialLabel(item.trial_ends_at, today);
         const trialOver = (trialDaysLeft(item.trial_ends_at, today) ?? 1) < 0;
         const referrer = item.referred_by ? everyone.find((t) => t.id === item.referred_by) : null;
-        const rewards = referralRewards(
-          everyone.filter((t) => t.referred_by === item.id && t.approved).length,
-          item.referral_credits_used,
-        );
+        const rewards = referralRewards(countedReferrals(everyone, item.id), item.referral_credits_used);
         const open = openId === item.id;
         const totals = clientTotals.get(item.id);
         const openProblems = openProblemsByTrainer(problems).get(item.id) ?? 0;

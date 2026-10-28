@@ -6,6 +6,8 @@ import {
   needsAgreement,
   normalizeJoinCode,
   referralRewards,
+  countedReferrals,
+  referralStatusLabel,
   trainerDisplayName,
   trialDaysLeft,
   trialLabel,
@@ -61,6 +63,24 @@ describe("trainer trial", () => {
     expect(trialLabel("2026-10-11", "2026-10-11")).toBe("Free trial ends today");
     expect(trialLabel("2026-10-01", "2026-10-11")).toBe("Free trial ended");
     expect(trialLabel(null, "2026-10-11")).toBeNull();
+  });
+});
+
+describe("referral counting", () => {
+  it("counts only referrals stamped as counted", () => {
+    const everyone = [
+      { referred_by: "a", referral_counted_at: "2027-05-01T06:15:00Z" },
+      { referred_by: "a", referral_counted_at: null },
+      { referred_by: "b", referral_counted_at: "2027-05-01T06:15:00Z" },
+    ];
+    expect(countedReferrals(everyone, "a")).toBe(1);
+    expect(countedReferrals(everyone, "c")).toBe(0);
+  });
+
+  it("labels each referral row", () => {
+    expect(referralStatusLabel({ approved: false, counts_from: null, counted: false })).toBe("Waiting for approval");
+    expect(referralStatusLabel({ approved: true, counts_from: "2027-04-30", counted: false })).toBe("Counts from 30 Apr 2027");
+    expect(referralStatusLabel({ approved: true, counts_from: "2027-04-30", counted: true })).toBe("+25%");
   });
 });
 

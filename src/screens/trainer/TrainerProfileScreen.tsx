@@ -21,9 +21,12 @@ import { avatarContentType } from "@/lib/avatars";
 import {
   EFT_FIELDS,
   REFERRAL_DISCOUNT_PERCENT,
+  REFERRAL_WAIT_MONTHS,
   TRAINER_LOGO_BUCKET,
+  type ReferralProgress,
   logoStoragePath,
   referralRewards,
+  referralStatusLabel,
   trainerDisplayName,
   trialDaysLeft,
   trialLabel,
@@ -71,12 +74,12 @@ export default function TrainerProfileScreen() {
   const [openSetting, setOpenSetting] = useState<"details" | "payments" | "account" | null>(null);
   const toggleSetting = (key: "details" | "payments" | "account") => setOpenSetting(openSetting === key ? null : key);
   // Trainers who signed up with this trainer's code (0060).
-  const [referrals, setReferrals] = useState<{ name: string; approved: boolean }[]>([]);
+  const [referrals, setReferrals] = useState<ReferralProgress[]>([]);
   const [prices, setPrices] = useState<BillingPrices | null>(null);
 
   useEffect(() => {
     if (!trainer || trainer.is_owner) return;
-    supabase.rpc("my_referrals").then(({ data }) => setReferrals(data ?? []));
+    supabase.rpc("my_referral_progress").then(({ data }) => setReferrals(data ?? []));
     supabase
       .from("billing_settings")
       .select("prices")
@@ -92,7 +95,7 @@ export default function TrainerProfileScreen() {
   const today = todayIso();
   const trial = trialLabel(trainer.trial_ends_at, today);
   const trialLeft = trialDaysLeft(trainer.trial_ends_at, today);
-  const rewards = referralRewards(referrals.filter((r) => r.approved).length, trainer.referral_credits_used);
+  const rewards = referralRewards(referrals.filter((r) => r.counted).length, trainer.referral_credits_used);
 
   const shareReferral = () =>
     Share.share({
@@ -235,8 +238,9 @@ export default function TrainerProfileScreen() {
               <Text style={styles.label}>Your referral code (the same as your trainer code)</Text>
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
-                Another trainer enters this when they sign up. For each one who's approved, you get {REFERRAL_DISCOUNT_PERCENT}% off
-                a month. 4 referrals = a free month. {referralCreditUseLine(!!trainer.free_use_from)} If you cancel, unused
+                Another trainer enters this when they sign up. For each one who's still with Daily Evolution{" "}
+                {REFERRAL_WAIT_MONTHS} months after their free trial, you get {REFERRAL_DISCOUNT_PERCENT}% off a month. 4 referrals = a
+                free month. {referralCreditUseLine(!!trainer.free_use_from)} If you cancel, unused
                 referrals are paid out to you.
               </Text>
               <Pressable style={styles.secondaryButton} onPress={shareReferral}>
@@ -264,9 +268,7 @@ export default function TrainerProfileScreen() {
             {referrals.map((r, i) => (
               <View key={`${r.name}-${i}`} style={styles.referralRow}>
                 <Text style={styles.readOnly}>{r.name}</Text>
-                <Text style={[styles.hint, { color: r.approved ? "#22C55E" : "#F59E0B" }]}>
-                  {r.approved ? `+${REFERRAL_DISCOUNT_PERCENT}%` : "Waiting for approval"}
-                </Text>
+                <Text style={[styles.hint, { color: r.counted ? "#22C55E" : "#F59E0B" }]}>{referralStatusLabel(r)}</Text>
               </View>
             ))}
           </>

@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
-import { REFERRAL_DISCOUNT_PERCENT, REFERRALS_PER_FREE_MONTH, referralRewards } from "@/lib/trainers";
+import { REFERRAL_DISCOUNT_PERCENT, REFERRALS_PER_FREE_MONTH, REFERRAL_WAIT_MONTHS, referralRewards } from "@/lib/trainers";
 import { money, referralCreditUseLine, referralCreditValue, referralPopupDue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices } from "@/types/database";
 
@@ -22,7 +22,7 @@ export default function ReferralPopup() {
   const visibleRef = useRef(false);
   visibleRef.current = visible;
   const [firstTime, setFirstTime] = useState(false);
-  const [approved, setApproved] = useState(0);
+  const [counted, setCounted] = useState(0);
   const [prices, setPrices] = useState<BillingPrices | null>(null);
 
   const check = useCallback(async () => {
@@ -32,10 +32,10 @@ export default function ReferralPopup() {
       const last = await AsyncStorage.getItem(shownKey(t.id));
       if (!referralPopupDue(last, todayIso())) return;
       const [refs, settings] = await Promise.all([
-        supabase.rpc("my_referrals"),
+        supabase.rpc("my_referral_progress"),
         supabase.from("billing_settings").select("prices").eq("id", 1).maybeSingle(),
       ]);
-      setApproved((refs.data ?? []).filter((r: { approved: boolean }) => r.approved).length);
+      setCounted((refs.data ?? []).filter((r: { counted: boolean }) => r.counted).length);
       setPrices((settings.data?.prices as BillingPrices | undefined) ?? null);
       setFirstTime(!last);
       setVisible(true);
@@ -55,7 +55,7 @@ export default function ReferralPopup() {
 
   if (!trainer || !visible) return null;
 
-  const rewards = referralRewards(approved, trainer.referral_credits_used);
+  const rewards = referralRewards(counted, trainer.referral_credits_used);
   const currency = trainerCurrency(trainer);
   const freeUse = !!trainer.free_use_from;
   const bankedValue = prices ? referralCreditValue(prices, currency, rewards.unused) : null;
@@ -84,8 +84,8 @@ export default function ReferralPopup() {
               <Text style={styles.step}>1. Share your referral code with another trainer.</Text>
               <Text style={styles.step}>2. They enter it when they sign up and get a free 30-day trial.</Text>
               <Text style={styles.step}>
-                3. Once they're approved, you get {REFERRAL_DISCOUNT_PERCENT}% off a month. {REFERRALS_PER_FREE_MONTH} referrals = a
-                free month.
+                3. Once they've been with Daily Evolution for {REFERRAL_WAIT_MONTHS} months after their free trial, you get{" "}
+                {REFERRAL_DISCOUNT_PERCENT}% off a month. {REFERRALS_PER_FREE_MONTH} referrals = a free month.
               </Text>
               <Text style={styles.step}>4. {referralCreditUseLine(freeUse)}</Text>
               <Text style={styles.step}>5. If you cancel, any unused referrals are paid out to you.</Text>
