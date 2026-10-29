@@ -19,6 +19,7 @@ import { checkAchievement } from "@/lib/achievementQueries";
 import type { ClientAchievement } from "@/types/database";
 import type { SetEffort, WorkoutLog } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
+import EditSetModal from "@/components/EditSetModal";
 import { themeText, themedStyles } from "@/lib/theme";
 
 export type LogExercise = { id: string | null; name: string; category: string | null; external_url: string | null };
@@ -51,6 +52,7 @@ export default function LogSetModal({
   // Gold achievement badge (0085) earned by the set just logged.
   const [badge, setBadge] = useState<ClientAchievement | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [editingSet, setEditingSet] = useState<WorkoutLog | null>(null);
 
   useEffect(() => {
     setTodaysSets([]);
@@ -226,14 +228,15 @@ export default function LogSetModal({
           {todaysSets.length > 0 && (
             <>
               <Text style={styles.heading}>Today's sets</Text>
+              <Text style={styles.hint}>Made a mistake? Tap a set to change it.</Text>
               {todaysSets.map((s) => (
-                <View key={s.id} style={styles.loggedRow}>
+                <Pressable key={s.id} style={styles.loggedRow} onPress={() => setEditingSet(s)}>
                   <Text style={styles.loggedText}>
                     Set {s.set_number}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
                     {s.reps} reps
                   </Text>
-                  <Text style={styles.loggedEffort}>{EFFORT_LABEL[s.effort]}</Text>
-                </View>
+                  <Text style={styles.loggedEffort}>{EFFORT_LABEL[s.effort]} ✏️</Text>
+                </Pressable>
               ))}
             </>
           )}
@@ -244,6 +247,16 @@ export default function LogSetModal({
       </ModalSafeArea>
       </KeyboardSafe>
       <AchievementBadge badge={badge} onClose={() => setBadge(null)} />
+      <EditSetModal
+        set={editingSet}
+        onSaved={(updated) => {
+          const sets = todaysSets.map((s) => (s.id === updated.id ? updated : s));
+          setTodaysSets(sets);
+          // Fixed the latest set: the next one starts from its weight.
+          if (sets[sets.length - 1]?.id === updated.id) setWeight(updated.weight_kg !== null ? String(updated.weight_kg) : "");
+        }}
+        onClose={() => setEditingSet(null)}
+      />
     </Modal>
   );
 }
@@ -272,4 +285,5 @@ const styles = themedStyles({
   loggedRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#1E293B" },
   loggedText: { color: "#fff", fontSize: 14 },
   loggedEffort: { color: "#94A3B8", fontSize: 13 },
+  hint: { color: "#64748B", fontSize: 12, marginTop: -6, marginBottom: 6 },
 });

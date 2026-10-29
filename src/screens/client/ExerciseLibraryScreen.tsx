@@ -38,6 +38,7 @@ import WorkoutReasonModal from "@/components/WorkoutReasonModal";
 import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
 import RestTimer from "@/components/RestTimer";
 import SupersetLogger from "@/components/SupersetLogger";
+import EditSetModal from "@/components/EditSetModal";
 import AchievementBadge from "@/components/AchievementBadge";
 import Celebration, { type CelebrationInfo } from "@/components/Celebration";
 import { checkAchievement } from "@/lib/achievementQueries";
@@ -166,6 +167,8 @@ export default function ExerciseLibraryScreen() {
   // and taps Complete, which starts the rest timer. `rest` is that timer's length.
   // Gold achievement badge (0085) earned by the set just logged.
   const [badge, setBadge] = useState<ClientAchievement | null>(null);
+  // A logged set being fixed (wrong weight or reps).
+  const [editingSet, setEditingSet] = useState<WorkoutLog | null>(null);
   // Gold star confetti pop-up when a finished workout pushed something up.
   const [starred, setStarred] = useState<CelebrationInfo | null>(null);
   // Superset logger (GRIZZ, 2026-10-23): 2-4 exercises logged a round at a time.
@@ -929,6 +932,22 @@ export default function ExerciseLibraryScreen() {
     }
   };
 
+  // A fixed set replaces the old one; when it's the latest working set, the
+  // next set starts from its weight (APRE works the next set out again).
+  const setFixed = (updated: WorkoutLog) => {
+    const swap = (list: WorkoutLog[]) => list.map((s) => (s.id === updated.id ? updated : s));
+    const sets = swap(todaysSets);
+    setTodaysSets(sets);
+    setAllTodaysSets(swap);
+    const working = sets.filter((s) => !s.warm_up);
+    if (updated.warm_up || working[working.length - 1]?.id !== updated.id || warmUpDue) return;
+    if (target && apre && selected) {
+      const plan = apreNextSet(apre.base, sets, target.sets, selected);
+      setSuggestion(plan);
+      setWeight(plan.weight ? String(plan.weight) : updated.weight_kg !== null ? String(updated.weight_kg) : "");
+    } else setWeight(updated.weight_kg !== null ? String(updated.weight_kg) : "");
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -1677,14 +1696,15 @@ export default function ExerciseLibraryScreen() {
             {todaysSets.length > 0 && (
               <>
                 <Text style={styles.sectionHeading}>Today's sets</Text>
+                <Text style={styles.loggedSetHint}>Made a mistake? Tap a set to change it.</Text>
                 {todaysSets.map((s) => (
-                  <View key={s.id} style={styles.loggedSetRow}>
+                  <Pressable key={s.id} style={styles.loggedSetRow} onPress={() => setEditingSet(s)}>
                     <Text style={styles.loggedSetText}>
                       {s.warm_up ? "Warm-up" : `Set ${s.set_number}`}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
                       {s.reps} reps
                     </Text>
-                    <Text style={styles.loggedSetEffort}>{s.warm_up ? "Not a working set" : EFFORT_LABEL[s.effort]}</Text>
-                  </View>
+                    <Text style={styles.loggedSetEffort}>{s.warm_up ? "Not a working set" : EFFORT_LABEL[s.effort]} ✏️</Text>
+                  </Pressable>
                 ))}
               </>
             )}
@@ -1693,6 +1713,7 @@ export default function ExerciseLibraryScreen() {
         </ModalSafeArea>
         </KeyboardSafe>
         <AchievementBadge badge={badge} onClose={() => setBadge(null)} />
+        <EditSetModal set={editingSet} onSaved={setFixed} onClose={() => setEditingSet(null)} />
       </Modal>
     </View>
   );
@@ -1783,6 +1804,7 @@ const styles = themedStyles({
   },
   loggedSetText: { color: "#fff", fontSize: 14 },
   loggedSetEffort: { color: "#64748B", fontSize: 12 },
+  loggedSetHint: { color: "#64748B", fontSize: 12, marginTop: -6, marginBottom: 6 },
   sessionWarmUp: {
     backgroundColor: "#1E293B",
     borderLeftWidth: 3,
