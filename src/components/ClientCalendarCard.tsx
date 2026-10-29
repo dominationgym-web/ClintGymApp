@@ -32,6 +32,8 @@ import {
 import { addDays } from "@/lib/programSchedule";
 import WeekCalendar, { type WeekDayPlan } from "@/components/WeekCalendar";
 import WorkoutSessionResult from "@/components/WorkoutSessionResult";
+import { LoggedExercises } from "@/components/TrainerTrainingLog";
+import { groupTrainingLog } from "@/lib/trainingLog";
 import { useWorkoutSessions } from "@/components/useWorkoutSessions";
 import { useWorkoutSwaps } from "@/components/useWorkoutSwaps";
 import { useRecoveryCalendar } from "@/components/useRecoveryCalendar";
@@ -50,7 +52,7 @@ import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
-import type { ClientCalendarBlock, ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise } from "@/types/database";
+import type { ClientCalendarBlock, ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise, WorkoutLog } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 // What the picker is choosing: the day's main workout, or an extra block (0098).
@@ -137,6 +139,10 @@ export default function ClientCalendarCard({
   const [skipKey, setSkipKey] = useState(0);
   // Bumped when a program is planned, so the week-by-week card reloads.
   const [planKey, setPlanKey] = useState(0);
+  // The sets the client logged this week, so a done day opens what they did
+  // right on the calendar (GRIZZ, 2026-10-29: no hunting in the training log).
+  const [weekLogs, setWeekLogs] = useState<WorkoutLog[]>([]);
+  const [showLogged, setShowLogged] = useState(false);
 
   const range = { from: monday, to: addDays(monday, 6) };
   const loadMonth = useCallback(async () => {
@@ -162,6 +168,23 @@ export default function ClientCalendarCard({
   useEffect(() => {
     loadMonth();
   }, [loadMonth]);
+
+  useEffect(() => {
+    let live = true;
+    setWeekLogs([]);
+    supabase
+      .from("workout_logs")
+      .select("*")
+      .eq("client_id", clientId)
+      .gte("log_date", monday)
+      .lte("log_date", addDays(monday, 6))
+      .then(({ data }) => {
+        if (live) setWeekLogs(data ?? []);
+      });
+    return () => {
+      live = false;
+    };
+  }, [clientId, monday]);
 
   // Quick workouts go on a day whole; weekly and multi-week programs give one
   // of their sessions (0098).
@@ -241,10 +264,14 @@ export default function ClientCalendarCard({
     }
   }
 
+  const loggedOn = (date: string) => weekLogs.filter((l) => l.log_date === date);
+  const selectedLogged = selected ? groupTrainingLog(loggedOn(selected), selected, 1)[0] : null;
+
   const pressDay = (date: string) => {
     setSelected(date);
+    setShowLogged(false);
     // A day the client already trained shows how it went instead of the picker.
-    if (entryOn(date) || sessions[date] || blocksOn(date).length > 0 || stability.map[date]) return;
+    if (entryOn(date) || sessions[date] || blocksOn(date).length > 0 || stability.map[date] || loggedOn(date).length > 0) return;
     // A past day gets one workout. From today on the day box offers one
     // workout or a whole program (GRIZZ, 2026-10-19). It used to ask in a pop-up
     // that opened the planner straight from its button, which on Android could
@@ -492,6 +519,33 @@ export default function ClientCalendarCard({
           selected={selected}
           onPressDay={pressDay}
           marks={marks}
+          logged={Object.fromEntries(weekLogs.map((l) => [l.log_date, true]))}
+          belowDay={(date) =>
+            selectedLogged && selectedLogged.setCount > 0 ? (
+              <View style={styles.loggedWrap}>
+                <Pressable
+                  style={[styles.seeWorkout, showLogged && styles.seeWorkoutOpen]}
+                  onPress={() => setShowLogged((v) => !v)}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showLogged }}
+                >
+                  <Text style={styles.seeWorkoutText}>
+                    {sessions[date]?.in_person ? "🤝 " : "👁 "}
+                    {showLogged ? "Hide the workout" : "See the workout"}
+                  </Text>
+                  <Text style={styles.seeWorkoutCount}>
+                    {selectedLogged.exercises.length} exercise{selectedLogged.exercises.length === 1 ? "" : "s"} · {selectedLogged.setCount} set
+                    {selectedLogged.setCount === 1 ? "" : "s"} {showLogged ? "▲" : "▼"}
+                  </Text>
+                </Pressable>
+                {showLogged && (
+                  <View style={styles.loggedBox}>
+                    <LoggedExercises exercises={selectedLogged.exercises} session={sessions[date]} />
+                  </View>
+                )}
+              </View>
+            ) : null
+          }
         />
       )}
       {selected && (
@@ -890,6 +944,12 @@ const styles = themedStyles({
   dayWorkout: { color: BRAND_GOLD, fontSize: 16, fontWeight: "800", marginTop: 2 },
   daySlot: { color: "#CBD5E1", fontSize: 13, fontWeight: "700", marginTop: 2 },
   addWorkout: { flex: 0, marginTop: 10 },
+  loggedWrap: { marginTop: -2, marginBottom: 8 },
+  seeWorkout: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#1E293B", borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12 },
+  seeWorkoutOpen: { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  seeWorkoutText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15 },
+  seeWorkoutCount: { color: "#94A3B8", fontSize: 12 },
+  loggedBox: { backgroundColor: "#1E293B", borderWidth: 1, borderTopWidth: 0, borderColor: BRAND_GOLD, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, paddingTop: 8, marginBottom: 4 },
   block: { borderTopWidth: 1, borderTopColor: "#1E293B", marginTop: 12, paddingTop: 10 },
   blockName: { color: "#38BDF8", fontSize: 15, fontWeight: "800" },
   blockOff: { flex: 0, marginTop: 8, paddingVertical: 8 },
