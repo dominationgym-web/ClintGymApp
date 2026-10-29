@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import GymHomeTabs from "@/components/GymHomeTabs";
+import EditSetModal from "@/components/EditSetModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { toIsoDate, todayIso } from "@/lib/dates";
@@ -64,6 +65,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [moving, setMoving] = useState<WorkoutLog | null>(null);
+  const [fixing, setFixing] = useState<WorkoutLog | null>(null);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -457,11 +459,14 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                         <Text style={styles.cardSets}>
                           {sets.length} of {step.sets} sets
                         </Text>
+                        {/* Tap a set to fix its weight or reps. */}
                         {sets.map((s) => (
-                          <Text key={s.id} style={styles.cardSet}>
-                            {s.set_number}. {s.weight_kg != null ? `${s.weight_kg}kg × ` : ""}
-                            {s.reps}
-                          </Text>
+                          <Pressable key={s.id} onPress={() => setFixing(s)} hitSlop={4}>
+                            <Text style={styles.cardSet}>
+                              {s.set_number}. {s.weight_kg != null ? `${s.weight_kg}kg × ` : ""}
+                              {s.reps} ✏️
+                            </Text>
+                          </Pressable>
                         ))}
                         {last && (
                           <Pressable onPress={() => setMoving(last)} hitSlop={6}>
@@ -638,6 +643,12 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
           </View>
         </KeyboardSafe>
       </Modal>
+
+      <EditSetModal
+        set={fixing}
+        onSaved={(updated) => setLogs((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))}
+        onClose={() => setFixing(null)}
+      />
 
       <Modal visible={!!moving} animationType="fade" transparent onRequestClose={() => setMoving(null)}>
         <View style={styles.sheetWrap}>
