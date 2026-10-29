@@ -56,7 +56,7 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
         </Pressable>
       )}
       <View
-        style={folded ? styles.hidden : null}
+        style={folded ? styles.hidden : styles.shown}
         pointerEvents={folded ? "none" : "auto"}
         accessibilityElementsHidden={folded}
         importantForAccessibility={folded ? "no-hide-descendants" : "auto"}
@@ -96,7 +96,13 @@ function PlanEndingBanner() {
 }
 
 const styles = themedStyles({
-  hidden: { height: 0, overflow: "hidden" },
+  // Folded reminders stay laid out at full size, just invisible and out of the
+  // flow. A height-0 box made Android lay them out at 0 too (Yoga hands
+  // children an "at most 0" height when the parent clips), so the count fell
+  // to 0, the list unfolded, the count went back to 2, it folded again: the
+  // Check-in screen flickered between both layouts (2026-10-29).
+  hidden: { position: "absolute", top: 0, left: 0, right: 0, opacity: 0 },
+  shown: {},
   line: {
     flexDirection: "row",
     alignItems: "center",
