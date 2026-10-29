@@ -33,6 +33,8 @@ export default function WeekCalendar({
   recovery,
   stability,
   client = false,
+  logged,
+  belowDay,
 }: {
   monday: string;
   onChangeWeek: (direction: -1 | 1) => void;
@@ -48,6 +50,10 @@ export default function WeekCalendar({
   stability?: Record<string, StabilityCalendarItem[]>;
   /** The client's own calendar, so the words speak to them. */
   client?: boolean;
+  /** Days the client logged sets on, tagged on the trainer's calendar. */
+  logged?: Record<string, boolean>;
+  /** Shown right under the selected day, so it opens where the trainer tapped. */
+  belowDay?: (date: string) => React.ReactNode;
 }) {
   const days = weekDates(monday);
   const thisWeek = days.includes(today);
@@ -72,10 +78,10 @@ export default function WeekCalendar({
         const mark = marks?.[date];
         const rec = recovery?.[date] ?? [];
         const stab = stability?.[date] ?? [];
-        const empty = !main && !mark?.live && !(client && mark?.done) && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
+        const empty = !main && !mark?.live && !(client && mark?.done) && !(!client && logged?.[date]) && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
         return (
+          <React.Fragment key={date}>
           <Pressable
-            key={date}
             style={[
               styles.day,
               main && (main.deload ? styles.deloadDay : styles.trainingDay),
@@ -141,9 +147,17 @@ export default function WeekCalendar({
                   {r.done ? "✓" : "🌿"} {r.label}
                 </Text>
               ))}
+              {/* What the client logged, one tap away (GRIZZ, 2026-10-29). */}
+              {!client && logged?.[date] && !mark?.live && (
+                <Text style={[styles.tag, { color: themeText("#22C55E") }]} numberOfLines={1}>
+                  📋 Workout logged · tap to see
+                </Text>
+              )}
               {empty && <Text style={styles.rest}>{date < today ? "—" : "Rest"}</Text>}
             </View>
           </Pressable>
+          {date === selected && belowDay?.(date)}
+          </React.Fragment>
         );
       })}
       <View style={styles.legend}>
