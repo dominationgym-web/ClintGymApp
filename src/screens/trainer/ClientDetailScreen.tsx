@@ -1,6 +1,7 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
+import { intakeTrainingDays } from "@/lib/intakePages";
 import { lastClientTab, rememberClientTab } from "@/lib/lastClientTab";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ActivityIndicator, Pressable, Alert, Switch, Linking } from "react-native";
@@ -939,6 +940,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               clientName={client.name}
               trainingPlace={client.training_place}
               trainingLevel={client.training_level}
+              clientDays={intakeTrainingDays(client.intake_responses)}
               resetNotice={resetNotice(client, todayIso())}
               trainerId={trainer?.id}
               onStabilityStarted={() => setStabilityKey((k) => k + 1)}

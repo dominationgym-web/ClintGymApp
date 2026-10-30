@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstIntakeProblem, INTAKE_PAGES, intakePageProblem, type IntakeRequired } from "@/lib/intakePages";
+import { firstIntakeProblem, INTAKE_PAGES, intakePageProblem, intakeTrainingDays, type IntakeRequired } from "@/lib/intakePages";
 
 const done: IntakeRequired = {
   sex: "Female",
@@ -12,6 +12,7 @@ const done: IntakeRequired = {
   occupationType: "Desk / office",
   eatsBreakfast: false,
   currentlyTraining: true,
+  trainingDays: ["Monday", "Thursday"],
   hasInjury: false,
 };
 
@@ -30,5 +31,14 @@ describe("intake pages", () => {
   });
   it("points Submit at the first page with a gap", () => {
     expect(firstIntakeProblem({ ...done, currentlyTraining: null, hasInjury: null })?.page).toBe(5);
+  });
+
+  it("asks which days they train", () => {
+    expect(intakePageProblem(5, { ...done, trainingDays: [] })?.title).toBe("Your training days");
+  });
+  it("reads their days back as weekday numbers", () => {
+    expect(intakeTrainingDays({ training_days: "Monday, Wednesday, Sunday" })).toEqual([1, 3, 7]);
+    expect(intakeTrainingDays({})).toEqual([]);
+    expect(intakeTrainingDays(null)).toEqual([]);
   });
 });
