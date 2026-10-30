@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useStepBack } from "@/hooks/useStepBack";
-import { View, Text, ScrollView, Switch, Pressable } from "react-native";
+import { View, Text, Switch, Pressable } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
 import { findSection } from "@/lib/sections";

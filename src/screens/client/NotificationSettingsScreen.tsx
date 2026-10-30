@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Switch, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import {

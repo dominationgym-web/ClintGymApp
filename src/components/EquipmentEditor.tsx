@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";

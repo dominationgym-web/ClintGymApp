@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";

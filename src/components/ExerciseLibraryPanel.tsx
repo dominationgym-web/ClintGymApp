@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import ExerciseClip from "@/components/ExerciseClip";
 import GymHomeTabs from "@/components/GymHomeTabs";

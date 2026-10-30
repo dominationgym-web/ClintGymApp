@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";

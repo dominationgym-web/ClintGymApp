@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, type PressableStateCallbackType, ScrollView, Text, View } from "react-native";
+import { Pressable, type PressableStateCallbackType, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigationRef";

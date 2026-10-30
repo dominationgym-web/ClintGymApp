@@ -3,13 +3,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
-  ScrollView,
   ActivityIndicator,
   Pressable,
   Alert,
   RefreshControl,
   Keyboard,
 } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { toIsoDate, todayIso } from "@/lib/dates";

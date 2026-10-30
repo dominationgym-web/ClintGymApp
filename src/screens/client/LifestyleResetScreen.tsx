@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
   ActivityIndicator,
   Pressable,
   RefreshControl,
@@ -11,6 +10,7 @@ import {
   Switch,
   Keyboard,
 } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";

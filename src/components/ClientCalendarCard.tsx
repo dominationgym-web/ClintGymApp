@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";

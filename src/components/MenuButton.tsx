@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { View, Text, Pressable, Modal, ScrollView, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, Modal, useWindowDimensions } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";
 import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";

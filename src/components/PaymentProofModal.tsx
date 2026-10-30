@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { PAYMENT_PROOF_BUCKET, proofWhen } from "@/lib/paymentProofs";

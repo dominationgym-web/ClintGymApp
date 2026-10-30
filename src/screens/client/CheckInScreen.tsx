@@ -13,12 +13,12 @@ import {
   View,
   Text,
   Pressable,
-  ScrollView,
   ActivityIndicator,
   Alert,
   AppState,
   Platform,
 } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Modal, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { AppState, Modal, Pressable, Share, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { techniqueFor } from "@/lib/exerciseTechnique";

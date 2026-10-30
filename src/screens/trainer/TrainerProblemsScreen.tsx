@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
