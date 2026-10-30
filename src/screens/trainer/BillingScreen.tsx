@@ -5,11 +5,11 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  ScrollView,
   Switch,
   Text,
   View,
 } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import CardTest from "@/components/CardTest";
 import ModalSafeArea from "../../components/ModalSafeArea";

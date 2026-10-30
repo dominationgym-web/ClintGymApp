@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { themedStyles } from "@/lib/theme";
 
 export type LinkItem = { key: string; title: string; icon: string; summary: string; onPress: () => void };

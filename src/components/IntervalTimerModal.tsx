@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, Vibration, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, Text, Vibration, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import ModalSafeArea from "./ModalSafeArea";
 import { useKeepAwake } from "expo-keep-awake";
 import { BRAND_GOLD } from "@/lib/brand";

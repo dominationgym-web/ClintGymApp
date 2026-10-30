@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { useStepBack } from "@/hooks/useStepBack";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";

@@ -7,11 +7,11 @@ import {
   ActivityIndicator,
   Pressable,
   Modal,
-  ScrollView,
   Alert,
   AppState,
   useWindowDimensions,
 } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "../../components/ModalSafeArea";
 import { useVideoPlayer, VideoView } from "expo-video";

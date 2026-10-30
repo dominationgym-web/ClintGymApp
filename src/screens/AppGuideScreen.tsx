@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useStepBack } from "@/hooks/useStepBack";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { BRAND_GOLD } from "@/lib/brand";
 import { CLIENT_APP_GUIDE, TRAINER_APP_GUIDE } from "@/lib/appGuide";
 import { themedStyles } from "@/lib/theme";

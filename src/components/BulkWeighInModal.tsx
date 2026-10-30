@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { BRAND_GOLD } from "@/lib/brand";
 import { WEIGH_IN_OPTIONS, type WeighInEvery } from "@/lib/progress";
 import { themedStyles } from "@/lib/theme";

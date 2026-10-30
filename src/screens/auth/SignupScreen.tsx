@@ -5,9 +5,9 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
-  ScrollView,
   Modal,
 } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "../../components/ModalSafeArea";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";

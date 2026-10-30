@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Modal, Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { Alert, Linking, Modal, Platform, Pressable, Share, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import { BRAND_GOLD } from "@/lib/brand";
 import { emailShareLink, shoppingList, shoppingListText, whatsappShareLink } from "@/lib/shoppingList";
 import type { DietDay } from "@/types/database";

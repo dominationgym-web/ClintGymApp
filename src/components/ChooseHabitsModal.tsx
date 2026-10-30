@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Keyboard, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Keyboard, Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
