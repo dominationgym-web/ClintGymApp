@@ -16,6 +16,7 @@ import {
 } from "@/lib/foundation";
 import type { Client, Program } from "@/types/database";
 import PlanProgramModal from "@/components/PlanProgramModal";
+import { intakeTrainingDays } from "@/lib/intakePages";
 import { useAuth } from "@/context/AuthContext";
 import { themeText, themedStyles } from "@/lib/theme";
 
@@ -126,6 +127,7 @@ export default function FoundationOfferCard({
         clientName={firstName}
         trainerId={trainer?.id}
         trainingPlace={client.training_place}
+        clientDays={intakeTrainingDays(client.intake_responses)}
         programs={programs}
         resetNotice={resetNotice(client, todayIso())}
         startWith={planning}

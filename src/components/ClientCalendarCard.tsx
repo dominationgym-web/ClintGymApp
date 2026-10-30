@@ -88,6 +88,7 @@ export default function ClientCalendarCard({
   clientName,
   trainingPlace,
   trainingLevel = null,
+  clientDays = [],
   resetNotice = null,
   trainerId,
   onStabilityStarted,
@@ -101,6 +102,8 @@ export default function ClientCalendarCard({
   trainingPlace: ExercisePlace;
   // From the intake form: the planner shows the best-fit program first.
   trainingLevel?: string | null;
+  // The days they said on the intake form they train, shown when picking a program's days.
+  clientDays?: number[];
   trainerId?: string;
   // A rehab (stability) program started from the planner, so its card reloads.
   onStabilityStarted?: () => void;
@@ -660,6 +663,7 @@ export default function ClientCalendarCard({
         trainerId={trainerId}
         trainingPlace={trainingPlace}
         trainingLevel={trainingLevel}
+        clientDays={clientDays}
         programs={programs}
         resetNotice={resetNotice}
         onSingleWorkout={(date) => {

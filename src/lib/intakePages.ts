@@ -15,8 +15,19 @@ export type IntakeRequired = {
   occupationType: string;
   eatsBreakfast: boolean | null;
   currentlyTraining: boolean | null;
+  trainingDays: string[];
   hasInjury: boolean | null;
 };
+
+// The days the client trains or would like to (GRIZZ, 2026-10-30), saved in
+// intake_responses.training_days as "Monday, Wednesday, Friday".
+export const INTAKE_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
+
+/** Their days as 1 = Monday ... 7 = Sunday, in week order; [] when not answered. */
+export function intakeTrainingDays(responses: Record<string, string> | null | undefined): number[] {
+  const text = responses?.training_days ?? "";
+  return INTAKE_DAYS.map((d, i) => (text.includes(d) ? i + 1 : 0)).filter((n) => n > 0);
+}
 
 export type IntakeProblem = { title: string; message: string };
 
@@ -44,7 +55,9 @@ export function intakePageProblem(page: number, a: IntakeRequired): IntakeProble
     case "Meals":
       return a.eatsBreakfast === null ? { title: "Breakfast", message: "Tap Yes or No: do you eat breakfast?" } : null;
     case "Training":
-      return a.currentlyTraining === null ? { title: "Training", message: "Tap Yes or No: are you training at the moment?" } : null;
+      if (a.currentlyTraining === null) return { title: "Training", message: "Tap Yes or No: are you training at the moment?" };
+      if (a.trainingDays.length === 0) return { title: "Your training days", message: "Tap the days you train, or would like to train." };
+      return null;
     case "Injuries":
       return a.hasInjury === null ? { title: "Any injuries or pain?", message: "Tap Yes or No." } : null;
     default:

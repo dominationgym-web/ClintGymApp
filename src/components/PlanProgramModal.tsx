@@ -52,6 +52,7 @@ export default function PlanProgramModal({
   trainerId,
   trainingPlace,
   trainingLevel = null,
+  clientDays = [],
   programs,
   resetNotice,
   startWith = null,
@@ -66,6 +67,8 @@ export default function PlanProgramModal({
   trainingPlace: ExercisePlace;
   // From the intake form: picks the best-fit program for their goal.
   trainingLevel?: string | null;
+  // The days they said on the intake form they train (1 = Monday ... 7 = Sunday).
+  clientDays?: number[];
   programs: Program[];
   resetNotice: string | null;
   startWith?: Program | null;
@@ -93,6 +96,9 @@ export default function PlanProgramModal({
   // Rehab level tapped: the red-flag tick-list shows before it starts.
   const [checkingFlags, setCheckingFlags] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Sunday is always rest, so only Monday to Saturday can be ticked.
+  const formDays = clientDays.filter((d) => d <= 6);
+  const sameAsForm = formDays.length === ownDays.length && formDays.every((d) => ownDays.includes(d));
 
   useEffect(() => {
     if (!date) return;
@@ -114,7 +120,8 @@ export default function PlanProgramModal({
     setSlots(list);
     // The program's own number of days, ticked to start with (GRIZZ, 2026-10-20:
     // "the trainer should just select the days of the week his client plans to use").
-    setOwnDays(findSplit(suggestedSplit(sessionsPerWeek(list))).days);
+    // Their own days from the intake form instead, when they fit the program (GRIZZ, 2026-10-30).
+    setOwnDays(formDays.length === sessionsPerWeek(list) ? formDays : findSplit(suggestedSplit(sessionsPerWeek(list))).days);
     setDaysVary(false);
   };
 
@@ -425,6 +432,15 @@ export default function PlanProgramModal({
                     <Text style={styles.description}>
                       Tap their days. {sessionsPerWeek(slots)} sessions a week as written. Sunday is always a rest day.
                     </Text>
+                    {clientDays.length > 0 && (
+                      <Pressable onPress={() => formDays.length > 0 && setOwnDays(formDays)} disabled={sameAsForm || formDays.length === 0}>
+                        <Text style={styles.formDays}>
+                          📋 On their form: {daysLabel(clientDays)}
+                          {clientDays.includes(7) ? " (Sunday stays a rest day)" : ""}
+                          {!sameAsForm && formDays.length > 0 ? "  ·  Tap to use their days" : ""}
+                        </Text>
+                      </Pressable>
+                    )}
                     <View style={styles.dayButtons}>
                       {["M", "T", "W", "T", "F", "S"].map((d, i) => {
                         const on = ownDays.includes(i + 1);
@@ -537,6 +553,7 @@ const styles = themedStyles({
   program: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, margin: 6, marginTop: 6, borderWidth: 1, borderColor: "#1E293B" },
   programName: { color: "#fff", fontWeight: "700", fontSize: 14 },
   description: { color: "#94A3B8", fontSize: 13, marginTop: 4 },
+  formDays: { color: BRAND_GOLD, fontSize: 12.5, fontWeight: "600", lineHeight: 18, marginTop: 6, marginBottom: 6 },
   ownHint: { color: "#94A3B8", fontSize: 12, lineHeight: 17, marginTop: 2 },
   dayButtons: { flexDirection: "row", gap: 6 },
   dayButton: { flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: "#475569", alignItems: "center" },

@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { INTAKE_ACTIVITY_LEVELS } from "@/lib/dietPlan";
 import { TRAINING_LEVELS } from "@/lib/foundation";
 import InjuryList from "@/components/InjuryList";
-import { firstIntakeProblem, INTAKE_PAGES, intakePageProblem, type IntakeRequired } from "@/lib/intakePages";
+import { firstIntakeProblem, INTAKE_DAYS, INTAKE_PAGES, intakePageProblem, type IntakeRequired } from "@/lib/intakePages";
 import { themeText, themedStyles } from "@/lib/theme";
 
 function YesNo({
@@ -168,6 +168,11 @@ export default function IntakeFormScreen() {
   const [trainingTime, setTrainingTime] = useState("");
   const [trainingDuration, setTrainingDuration] = useState("");
   const [trainsAfterWork, setTrainsAfterWork] = useState<boolean | null>(null);
+  // Days they train or would like to (GRIZZ, 2026-10-30): the trainer sees them
+  // in the intake answers and when picking a program's days.
+  const [trainingDays, setTrainingDays] = useState<string[]>([]);
+  const toggleDay = (day: string) =>
+    setTrainingDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
 
   const [hasHealthCondition, setHasHealthCondition] = useState<boolean | null>(null);
   const [healthDetail, setHealthDetail] = useState("");
@@ -194,6 +199,7 @@ export default function IntakeFormScreen() {
     occupationType,
     eatsBreakfast,
     currentlyTraining,
+    trainingDays,
     hasInjury,
   };
 
@@ -252,6 +258,7 @@ export default function IntakeFormScreen() {
       bedtime: bedtime.trim() || "Not answered",
       has_caregiving_responsibilities: yn(hasCaregiving),
       currently_training: yn(currentlyTraining),
+      training_days: INTAKE_DAYS.filter((d) => trainingDays.includes(d)).join(", "),
       smoker_or_vaper: yn(smoker),
       caffeine_amount: caffeineAmount || "Not answered",
       last_caffeine_time: lastCaffeineTime.trim() || "Not answered",
@@ -452,6 +459,14 @@ export default function IntakeFormScreen() {
           <ChoiceField label="Session length" options={TRAINING_DURATIONS} value={trainingDuration} onChange={setTrainingDuration} />
           <YesNo label="Is that after work?" value={trainsAfterWork} onChange={setTrainsAfterWork} />
         </>
+      )}
+      {currentlyTraining !== null && (
+        <MultiChoiceField
+          label={currentlyTraining ? "Which days do you train? (pick all that apply)" : "Which days would you like to train? (pick all that apply)"}
+          options={[...INTAKE_DAYS]}
+          values={trainingDays}
+          onToggle={toggleDay}
+        />
       )}
 
       </>
