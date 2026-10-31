@@ -4,7 +4,7 @@ import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import ExerciseClip from "@/components/ExerciseClip";
 import GymHomeTabs from "@/components/GymHomeTabs";
-import { filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import { exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { Exercise } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
@@ -33,10 +33,7 @@ export default function ExerciseLibraryPanel({
   const [page, setPage] = useState(0);
   const [big, setBig] = useState<Exercise | null>(null);
 
-  const categories = useMemo(
-    () => [...new Set(library.map((e) => e.category).filter((c): c is string => !!c))].sort(),
-    [library],
-  );
+  const categories = useMemo(() => exerciseCategories(library), [library]);
   // The ones with a clip first, so a page is all videos.
   const shown = filterExercises(forPlace(library, place), search, category).sort(
     (a, b) => Number(!a.external_url) - Number(!b.external_url),

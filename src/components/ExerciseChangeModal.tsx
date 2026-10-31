@@ -6,7 +6,7 @@ import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { changesFor, planChangeWrites } from "@/lib/exerciseChanges";
-import { forPlace, matchesExercise, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
+import { categoryLabel, forPlace, matchesExercise, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
 import { loadExerciseChanges, saveExerciseChanges } from "@/lib/programQueries";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -248,7 +248,7 @@ export default function ExerciseChangeModal({
                                 {injuries.length > 0 ? (risks.length ? "⚠ " : "✓ ") : ""}
                                 {item.name}
                               </Text>
-                              {item.category ? <Text style={styles.helper}>{item.category}</Text> : null}
+                              {item.category ? <Text style={styles.helper}>{categoryLabel(item.category)}</Text> : null}
                               {risks.length > 0 && <Text style={styles.riskSmall}>Check: {riskLine(risks)}</Text>}
                             </>
                           );

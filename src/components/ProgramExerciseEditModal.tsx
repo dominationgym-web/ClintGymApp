@@ -6,7 +6,7 @@ import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
-import { forPlace, matchesExercise, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
+import { categoryLabel, forPlace, matchesExercise, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
 import { SWAP_LENGTHS, swapActive, swapUntil, swapUntilLabel, type SwapLength } from "@/lib/programSwaps";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -211,7 +211,7 @@ export default function ProgramExerciseEditModal({
                         <ExerciseThumb url={item.external_url} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.exerciseName}>{item.name}</Text>
-                          {item.category ? <Text style={styles.helper}>{item.category}</Text> : null}
+                          {item.category ? <Text style={styles.helper}>{categoryLabel(item.category)}</Text> : null}
                         </View>
                         <Pressable hitSlop={6} onPress={() => setPreviewId((id) => (id === item.id ? null : item.id))}>
                           <Text style={styles.watch}>{previewId === item.id ? "Hide" : "▶ Watch"}</Text>

@@ -3,14 +3,50 @@ import type { Exercise } from "@/types/database";
 // The exercise library has ~400 clips (0040), so lists are searched and
 // filtered by body part rather than scrolled.
 
-/** Body parts in library order (the order of the first exercise in each). */
-export function exerciseCategories(exercises: Pick<Exercise, "category">[]): string[] {
-  const seen: string[] = [];
-  for (const e of exercises) if (e.category && !seen.includes(e.category)) seen.push(e.category);
-  return seen;
+// Main muscles first (GRIZZ, 2026-10-31: "primary muscles 1st. Chest, back,
+// legs, biceps, triceps, shoulders, calves. So if we click on chest every
+// chest exercise comes up"). The library's own body parts stay as they are,
+// because swaps, injury checks and recovery use them; these are the groups
+// the lists show, each covering one or more of them.
+export const MUSCLE_GROUPS: { name: string; categories: string[] }[] = [
+  { name: "Chest", categories: ["Push"] },
+  { name: "Back", categories: ["Pull", "Traps"] },
+  { name: "Legs", categories: ["Legs", "Quads", "Hamstrings", "Glutes", "Posterior Chain", "Adductors"] },
+  { name: "Biceps", categories: ["Biceps"] },
+  { name: "Triceps", categories: ["Triceps"] },
+  { name: "Shoulders", categories: ["Shoulders", "Overhead Press"] },
+  { name: "Calves", categories: ["Calves"] },
+  { name: "Abs", categories: ["Core"] },
+  { name: "Forearms & Grip", categories: ["Forearms & Grip"] },
+  { name: "Neck", categories: ["Neck"] },
+  { name: "Full Body", categories: ["Full Body"] },
+  { name: "Cardio", categories: ["Cardio"] },
+  { name: "Plyometrics", categories: ["Plyometrics"] },
+  { name: "Speed & Agility", categories: ["Speed & Agility"] },
+  { name: "Mobility", categories: ["Mobility"] },
+  { name: "Flexibility", categories: ["Flexibility"] },
+];
+
+/** The muscle group a body part belongs to ("Push" is Chest); a body part not in a group is its own. */
+export function muscleGroup(category: string | null): string | null {
+  if (!category) return null;
+  return MUSCLE_GROUPS.find((g) => g.categories.includes(category))?.name ?? category;
 }
 
-/** Exercises matching every search word (in the name, other names or body part) and the chosen body part, if any. */
+/** How a body part reads under an exercise's name: Push is Chest, Pull is Back, Core is Abs; the rest as they are. */
+export function categoryLabel(category: string | null): string | null {
+  const labels: Record<string, string> = { Push: "Chest", Pull: "Back", Core: "Abs" };
+  return category ? labels[category] ?? category : null;
+}
+
+/** The muscle groups these exercises cover, main muscles first. */
+export function exerciseCategories(exercises: Pick<Exercise, "category">[]): string[] {
+  const present = new Set(exercises.map((e) => muscleGroup(e.category)).filter((g): g is string => !!g));
+  const ordered = MUSCLE_GROUPS.map((g) => g.name).filter((g) => present.has(g));
+  return [...ordered, ...[...present].filter((g) => !ordered.includes(g))];
+}
+
+/** Exercises matching every search word (in the name, other names or body part) and the chosen muscle group, if any. */
 export function filterExercises<T extends Pick<Exercise, "name" | "category"> & { aka?: string[] | null }>(
   exercises: T[],
   search: string,
@@ -18,7 +54,7 @@ export function filterExercises<T extends Pick<Exercise, "name" | "category"> & 
 ): T[] {
   const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return exercises.filter((e) => {
-    if (category && e.category !== category) return false;
+    if (category && muscleGroup(e.category) !== category) return false;
     return matchesExercise(e, words);
   });
 }
@@ -27,7 +63,7 @@ export function filterExercises<T extends Pick<Exercise, "name" | "category"> & 
 // in different gyms (pec deck, butterfly), so search looks at those too.
 /** Whether every search word is in the exercise's name, other names or body part. */
 export function matchesExercise(e: Pick<Exercise, "name" | "category"> & { aka?: string[] | null }, words: string[]): boolean {
-  const text = `${e.name} ${(e.aka ?? []).join(" ")} ${e.category ?? ""}`.toLowerCase();
+  const text = `${e.name} ${(e.aka ?? []).join(" ")} ${e.category ?? ""} ${muscleGroup(e.category) ?? ""}`.toLowerCase();
   return words.every((w) => text.includes(w));
 }
 

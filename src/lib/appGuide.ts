@@ -266,6 +266,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
         "Menu ☰ shows every topic as one short line, so you see them all at once. Tap a topic to open it.",
         "❓ Help & settings (bottom of Menu ☰) holds How to use the app, Light or dark (Dark, Light or Match phone), Notifications (which reminders you get) and your coach's Welcome.",
         "Search finds any exercise, guide or tip in the app. Exercises go by different names in different gyms, so search knows the other names too: pec deck, butterfly or chest fly machine all find Machine Pec Fly.",
+        "Exercise lists are grouped by muscle: Chest, Back, Legs, Biceps, Triceps, Shoulders and Calves come first, then Abs and the rest. Tap one to see every exercise for that muscle.",
         "Some exercises show a picture of the move beside their name. Tap ▶ Watch how to do it on YouTube to see a good-form demo in the YouTube app.",
         "The suggestion box sends ideas straight to the team. We read every one.",
       ],
