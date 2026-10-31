@@ -610,6 +610,8 @@ function ClientsTab({
           plan={plan}
           settings={settings}
           signed={plan && agreementCurrent(signed[picked], plan) ? signed[picked] : null}
+          payers={withPlan.filter((x) => x.id !== picked && planOf[x.id].group_size > 1 && !planOf[x.id].paid_by).map((x) => ({ id: x.id, name: x.name }))}
+          paysFor={withPlan.filter((x) => planOf[x.id].paid_by === picked).map((x) => x.name.split(" ")[0])}
           onSaved={onChanged}
         />
       </>
@@ -633,6 +635,7 @@ function ClientsTab({
               {money(Number(p.fee), currency)} · {p.per_week} a week · {policyLabel(p.policy)} · {BILLINGS.find((b) => b.key === p.billing)?.label}
             </Text>
             <Text style={styles.meta}>{regularLabel(p.regular)}</Text>
+            {p.paid_by ? <Text style={styles.meta}>💳 Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
             <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "✍️ Signed" : "✍️ Not signed yet"}</Text>
           </Pressable>
         );

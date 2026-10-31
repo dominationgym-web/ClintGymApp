@@ -329,9 +329,29 @@ export type InvoiceTextOptions = {
  * every session with its colour, a count of each kind, the total and where
  * to pay.
  */
+/**
+ * An invoice's lines by person: one group for a single client, or one per
+ * person when the client pays for others (0170), each in date order with
+ * their own subtotal.
+ */
+export function invoicePeople(lines: InvoiceLine[]): { who: string | null; lines: InvoiceLine[]; total: number }[] {
+  const byWho = new Map<string, InvoiceLine[]>();
+  for (const l of [...lines].sort((a, b) => a.at.localeCompare(b.at))) {
+    const key = l.who ?? "";
+    byWho.set(key, [...(byWho.get(key) ?? []), l]);
+  }
+  const people = [...byWho.entries()].sort(([a], [b]) => a.localeCompare(b));
+  return people.map(([who, ls]) => ({
+    who: people.length > 1 ? who || null : null,
+    lines: ls,
+    total: Math.round(ls.reduce((t, l) => t + (l.role === "diary" ? 0 : Number(l.amount)), 0) * 100) / 100,
+  }));
+}
+
 export function invoiceText(inv: SessionInvoice, clientName: string, coachName: string, opts: InvoiceTextOptions = { style: "whatsapp" }): string {
   const b = (t: string) => (opts.style === "whatsapp" ? `*${t}*` : t.toUpperCase());
   const lines = [...inv.lines].sort((a, x) => a.at.localeCompare(x.at));
+  const people = invoicePeople(inv.lines);
   const row = (l: InvoiceLine) => {
     const what = kindDetail(l.kind, l.notice_hours, { catchUp: l.catch_up, catchUpBooked: l.catch_up_booked });
     const amount = l.role === "diary" ? "no charge" : sessionMoney(l.amount, inv.currency);
@@ -358,7 +378,9 @@ export function invoiceText(inv: SessionInvoice, clientName: string, coachName: 
     `Billing: ${billingLabel(inv.billing).toLowerCase()}${inv.status === "paid" ? " · PAID ✅" : ""}`,
     "",
     b("Sessions"),
-    ...lines.map(row),
+    ...(people.length > 1
+      ? people.flatMap((p, i) => [...(i ? [""] : []), b(`${p.who} · ${sessionMoney(p.total, inv.currency)}`), ...p.lines.map(row)])
+      : lines.map(row)),
     "",
     ...(counts ? [counts, ""] : []),
     `Sessions: ${sessionMoney(inv.charged, inv.currency)}`,

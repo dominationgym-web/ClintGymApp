@@ -128,7 +128,7 @@ export default function MySessionsScreen() {
           ) : null}
           {tab === "sessions" && <SessionsTab sessions={sessions} plan={plan} coach={coach} onChanged={load} />}
           {tab === "month" && <MonthTab month={month} onMonth={setMonth} sessions={sessions} />}
-          {tab === "invoices" && <InvoicesTab invoices={invoices} />}
+          {tab === "invoices" && <InvoicesTab invoices={invoices} paidForYou={!!plan.paid_by} />}
           {tab === "agreement" && (
             <AgreementTab plan={plan} settings={settings} signed={signed} coach={coach} coachPhone={coachPhone} clientName={client?.name ?? ""} needsSign={needsSign} onSigned={load} />
           )}
@@ -293,7 +293,7 @@ function MonthTab({ month, onMonth, sessions }: { month: string; onMonth: (m: st
   );
 }
 
-function InvoicesTab({ invoices }: { invoices: SessionInvoice[] }) {
+function InvoicesTab({ invoices, paidForYou }: { invoices: SessionInvoice[]; paidForYou: boolean }) {
   const [open, setOpen] = useState<SessionInvoice | null>(null);
   if (open) {
     return (
@@ -314,7 +314,12 @@ function InvoicesTab({ invoices }: { invoices: SessionInvoice[] }) {
   }
   return (
     <>
-      {invoices.length === 0 ? <Text style={styles.helper}>No invoices yet. Your coach sends one each month.</Text> : null}
+      {paidForYou ? (
+        // Someone in the group pays for them (0170): their sessions are on that person's invoice.
+        <Text style={styles.helper}>Someone in your group pays for your sessions, so they're on that person's invoice, listed under your name.</Text>
+      ) : invoices.length === 0 ? (
+        <Text style={styles.helper}>No invoices yet. Your coach sends one each month.</Text>
+      ) : null}
       {invoices.map((inv) => (
         <Pressable key={inv.id} style={[styles.row, { borderLeftColor: themeBg(inv.status === "paid" ? "#22C55E" : "#F59E0B") }]} onPress={() => setOpen(inv)}>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>

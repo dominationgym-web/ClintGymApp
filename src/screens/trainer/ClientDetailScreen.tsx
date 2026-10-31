@@ -379,22 +379,27 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     const next = renewedPlanDates(client, new Date());
     if (!next) return Alert.alert("No plan", "This client has no plan length picked.");
     const renewing = client.access_status !== "expired";
+    const save = async (changes: Partial<Client>) => {
+      const { error } = await supabase.from("clients").update(changes).eq("id", client.id);
+      if (error) return Alert.alert("Couldn't update", error.message);
+      setClient((c) => (c ? { ...c, ...changes } : c));
+      // No weigh-in schedule yet: ask how often they weigh and measure (not for a live client).
+      if (!client.weigh_in_every && !changes.live_only && !client.live_only && client.id !== trainer?.id) setAskWeighIn(true);
+    };
     Alert.alert(
       renewing ? "Renew plan?" : "Activate client?",
-      `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: renewing ? "Renew" : "Activate",
-          onPress: async () => {
-            const { error } = await supabase.from("clients").update(next).eq("id", client.id);
-            if (error) return Alert.alert("Couldn't update", error.message);
-            setClient((c) => (c ? { ...c, ...next } : c));
-            // No weigh-in schedule yet: ask how often they weigh and measure.
-            if (!client.weigh_in_every && client.id !== trainer?.id) setAskWeighIn(true);
-          },
-        },
-      ]
+      `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.` +
+        (renewing ? "" : "\n\nLive client only: they get My sessions, Profile and the ☰ menu, with no daily check-ins, programming or habits."),
+      renewing
+        ? [
+            { text: "Cancel", style: "cancel" },
+            { text: "Renew", onPress: () => save(next) },
+          ]
+        : [
+            { text: "Cancel", style: "cancel" },
+            { text: "Activate online", onPress: () => save({ ...next, live_only: false }) },
+            { text: "🤝 Live client only", onPress: () => save({ ...next, live_only: true }) },
+          ]
     );
   };
   const pickWeighIn = async (key: WeighInEvery | null) => {
@@ -486,6 +491,17 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     const { error } = await supabase.from("clients").update({ training_place: next }).eq("id", clientId);
     if (error) {
       setClient((c) => (c ? { ...c, training_place: previous } : c));
+      Alert.alert("Couldn't update", error.message);
+    }
+  };
+
+  // Live client only (GRIZZ, 2026-10-31): in-person sessions, Profile and the
+  // ☰ menu; no daily check-ins, programming or habits.
+  const toggleLiveOnly = async (next: boolean) => {
+    setClient((c) => (c ? { ...c, live_only: next } : c));
+    const { error } = await supabase.from("clients").update({ live_only: next }).eq("id", clientId);
+    if (error) {
+      setClient((c) => (c ? { ...c, live_only: !next } : c));
       Alert.alert("Couldn't update", error.message);
     }
   };
@@ -623,13 +639,27 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               icon="💳"
               title="Plan & payment"
               hint={
-                client.plan_type
+                (client.plan_type
                   ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString()}` : ""}`
-                  : "No plan picked"
+                  : "No plan picked") + (client.live_only ? " · 🤝 Live client only" : "")
               }
               open={overviewOpen === "plan"}
               onToggle={() => toggleOverview("plan")}
             >
+              <View style={styles.libraryRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.libraryTitle}>🤝 Live client only</Text>
+                  <Text style={styles.helper}>
+                    On: they only see My sessions, Profile and the ☰ menu (nutrition, meal plans, timers). No daily check-ins, programming, habits or online reminders.
+                  </Text>
+                </View>
+                <Switch
+                  value={!!client.live_only}
+                  onValueChange={toggleLiveOnly}
+                  trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
+                  accessibilityLabel="Live client only"
+                />
+              </View>
               <ClientPricePicker
                 clientId={client.id}
                 value={client.price_package}

@@ -29,7 +29,7 @@ import HealthSyncOnOpen from "@/components/HealthSyncOnOpen";
 import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
 import HelpSettingsScreen from "@/screens/client/HelpSettingsScreen";
 import NotificationSettingsScreen from "@/screens/client/NotificationSettingsScreen";
-import { groupsOff, loadNotificationPrefs } from "@/lib/notificationPrefs";
+import { groupsOff, loadNotificationPrefs, type NotificationGroup } from "@/lib/notificationPrefs";
 import { cancelRemindersForGroups } from "@/lib/notifications";
 import { useClientWideScreen } from "@/hooks/useWideScreen";
 import ClientSidebar from "@/components/ClientSidebar";
@@ -59,6 +59,10 @@ function ClientTabs() {
   // Laptop view (GRIZZ, 2026-10-27): the sidebar replaces the bottom tabs and
   // the ☰ menu, and four fuller pages come first.
   const wide = useClientWideScreen();
+  // Live client only (GRIZZ, 2026-10-31): in-person sessions, Profile and the
+  // ☰ menu (nutrition, meal plans, timers...), no daily check-ins, programming
+  // or habits.
+  const live = !!client?.live_only;
   return (
     <Tab.Navigator
       tabBar={wide ? () => null : undefined}
@@ -76,7 +80,11 @@ function ClientTabs() {
     >
       {/* 4 tabs, or 5 with the Reset (app-flow review C1, 2026-10-18): Training sits next
           to Check-in, and form videos are filmed from the set log (Profile keeps the list). */}
-      {wide && (
+      {live && <Tab.Screen name="Sessions" component={MySessionsScreen} options={{ title: "My sessions", tabBarIcon: tabIcon("people") }} />}
+      {wide && live && (
+        <Tab.Screen name="Food" component={FoodScreen} options={{ title: "Nutrition & diet", headerShown: false }} layout={fullWidth} />
+      )}
+      {wide && !live && (
         <>
           <Tab.Screen name="MyWeek" component={MyWeekScreen} options={{ title: "My week", headerShown: false }} layout={fullWidth} />
           <Tab.Screen name="Lifts" component={LiftsScreen} options={{ title: "Weights lifted", headerShown: false }} layout={fullWidth} />
@@ -84,10 +92,14 @@ function ClientTabs() {
           <Tab.Screen name="Food" component={FoodScreen} options={{ title: "Nutrition & diet", headerShown: false }} layout={fullWidth} />
         </>
       )}
-      <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
-      <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
-      <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
-      {client?.lifestyle_reset_started_at && (
+      {!live && (
+        <>
+          <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
+          <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
+          <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
+        </>
+      )}
+      {!live && client?.lifestyle_reset_started_at && (
         <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />
       )}
       <Tab.Screen name="Profile" component={ClientProfileScreen} options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }} />
@@ -103,21 +115,27 @@ function ClientTabs() {
 function useNotificationPrefsSync() {
   const { client } = useAuth();
   const clientId = client?.id;
+  const live = !!client?.live_only;
   useEffect(() => {
     if (!clientId) return;
     loadNotificationPrefs(clientId)
-      .then((prefs) => cancelRemindersForGroups(groupsOff(prefs)))
+      // A live client gets none of the online reminders (0169).
+      .then((prefs) => cancelRemindersForGroups(live ? [...new Set([...groupsOff(prefs), ...LIVE_ONLY_OFF])] : groupsOff(prefs)))
       .catch(() => undefined);
-  }, [clientId]);
+  }, [clientId, live]);
 }
+
+const LIVE_ONLY_OFF: NotificationGroup[] = ["checkin_reminders", "training", "habits", "progress"];
 
 export default function ClientNavigator() {
   useNotificationPrefsSync();
   const wide = useClientWideScreen();
+  const { client } = useAuth();
+  const live = !!client?.live_only;
   return (
     <>
-      <DailyStartPopup />
-      <HealthSyncOnOpen />
+      {live ? null : <DailyStartPopup />}
+      {live ? null : <HealthSyncOnOpen />}
       <View style={styles.row}>
         {wide ? <ClientSidebar /> : null}
         <View style={styles.page}>

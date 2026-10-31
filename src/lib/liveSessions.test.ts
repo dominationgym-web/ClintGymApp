@@ -5,6 +5,7 @@ import {
   cancelPreview,
   fillAgreement,
   invoiceText,
+  invoicePeople,
   monthGrid,
   noticeText,
   regularLabel,
@@ -150,6 +151,35 @@ describe("invoiceText", () => {
 
   it("uses capitals instead of stars for email", () => {
     expect(invoiceText(inv, "Nancy", "GRIZZ", { style: "email" }).split("\n")[0]).toBe("INVOICE · OCTOBER 2026");
+  });
+
+  it("lists each person separately when one pays for both (GRIZZ: husband and wife, separate costings)", () => {
+    const pair = {
+      ...inv,
+      charged: 1200,
+      credited: 0,
+      total: 1200,
+      lines: [
+        { at: "2026-10-05T06:00:00", kind: "done", role: "charge", amount: 500, who: "Mike Botha" },
+        { at: "2026-10-05T06:00:00", kind: "done", role: "charge", amount: 500, who: "Sarah Botha" },
+        { at: "2026-10-07T06:00:00", kind: "done", role: "charge", amount: 700, who: "Mike Botha" },
+        { at: "2026-10-07T06:00:00", kind: "excused", role: "diary", amount: 0, who: "Sarah Botha" },
+      ],
+    } as unknown as SessionInvoice;
+    const people = invoicePeople(pair.lines);
+    expect(people.map((p) => [p.who, p.total, p.lines.length])).toEqual([
+      ["Mike Botha", 1200, 2],
+      ["Sarah Botha", 500, 2],
+    ]);
+    const rows = invoiceText(pair, "Mike Botha", "GRIZZ").split("\n");
+    expect(rows).toContain("*Mike Botha · R1 200*");
+    expect(rows).toContain("*Sarah Botha · R500*");
+    expect(rows.indexOf("*Sarah Botha · R500*")).toBeGreaterThan(rows.indexOf("✅ Wed 7 Oct, 06:00 · Trained · R700"));
+  });
+
+  it("keeps one plain list for one person", () => {
+    expect(invoicePeople(inv.lines)).toHaveLength(1);
+    expect(invoicePeople(inv.lines)[0].who).toBeNull();
   });
 });
 
