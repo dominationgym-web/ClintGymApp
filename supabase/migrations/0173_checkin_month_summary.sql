@@ -49,7 +49,6 @@ declare
   b record;
   sent integer := 0;
   body text;
-  arrow text;
 begin
   for v in
     select c.id, c.live_only,
