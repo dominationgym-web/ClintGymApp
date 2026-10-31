@@ -50,9 +50,10 @@ export default function ClientSidebar() {
 
   const main: { tab: keyof ClientTabParamList; label: string; icon: IconName }[] = client?.live_only
     ? [
-        // Live client only (0169): sessions, food and Profile.
+        // Live client only (0169): sessions, food, an optional check-in and Profile.
         { tab: "Sessions", label: "My sessions", icon: "people" },
         { tab: "Food", label: "Nutrition & diet", icon: "restaurant" },
+        { tab: "CheckIn", label: "Check-in", icon: "checkmark-circle" },
         ...(client.library_access ? [{ tab: "Exercises" as const, label: "My training", icon: "fitness" as IconName }] : []),
         { tab: "Profile", label: "Profile", icon: "person-circle" },
       ]

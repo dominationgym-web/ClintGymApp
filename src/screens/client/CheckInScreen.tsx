@@ -308,6 +308,10 @@ export default function CheckInScreen() {
           </>
         )}
         <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>
+        {client?.live_only && !saved && step === 0 ? (
+          // A live client checks in only when they want to (GRIZZ, 2026-10-31).
+          <Text style={styles.optional}>Your choice: fill it in when you like. It helps your coach see your energy, sleep and any niggles or injuries before your session.</Text>
+        ) : null}
         <View style={styles.steps}>
           {CHECKIN_STEPS.map((label, i) => (
             <Pressable key={label} style={styles.stepItem} onPress={() => setStep(i)}>
@@ -461,6 +465,7 @@ export default function CheckInScreen() {
 }
 
 const styles = themedStyles({
+  optional: { color: "#94A3B8", fontSize: 13, lineHeight: 19, marginTop: -6, marginBottom: 14, textAlign: "center" },
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A", padding: 24 },
   centerText: { textAlign: "center" },

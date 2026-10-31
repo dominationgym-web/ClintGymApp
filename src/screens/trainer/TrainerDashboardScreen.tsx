@@ -504,8 +504,8 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
               </View>
               {/* Labelled, so it's clear what the dot means; plus who trained today. */}
               <View style={styles.statusCol}>
-                {item.client.live_only ? (
-                  // A live client doesn't check in in the app (0169).
+                {item.client.live_only && !item.todaysCheckin ? (
+                  // A live client checks in only when they choose to (0169).
                   <Text style={styles.statusText}>🤝 Live client</Text>
                 ) : (
                   <View style={styles.statusLine}>

@@ -264,7 +264,7 @@ export default function ClientProfileScreen() {
 
       </FoldSection>
 
-      <FoldSection icon="📊" title="My progress" hint="Lifts, cardio tests, weight and measurements" open={openFold === "progress"} onToggle={() => fold("progress")}>
+      <FoldSection icon="📊" title="My progress" hint="Lifts, cardio tests, weight and your check-ins month by month" open={openFold === "progress"} onToggle={() => fold("progress")}>
         <ProgressCard clientId={client.id} role="client" />
       </FoldSection>
 

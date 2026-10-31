@@ -650,7 +650,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.libraryTitle}>🤝 Live client only</Text>
                   <Text style={styles.helper}>
-                    On: they only see My sessions, Profile and the ☰ menu (nutrition, meal plans, timers). No daily check-ins, programming, training videos, habits or online reminders. Switch on their workout video library (Training tab) to give them a Training tab.
+                    On: they only see My sessions, an optional Check-in (energy, sleep, injuries), Profile and the ☰ menu (nutrition, meal plans, timers). No programming, training videos, habits or online reminders. Switch on their workout video library (Training tab) to give them a Training tab.
                   </Text>
                 </View>
                 <Switch
