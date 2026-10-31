@@ -4,7 +4,8 @@
 // Two ways in, one list to check: a screenshot of any calendar app (read by
 // the read-calendar edge function), or the phone's own calendar (installed
 // app from the next store build). The trainer ticks what to book, then
-// import_live_sessions (0172) books them.
+// import_live_sessions (0172, 0174) books them. Someone who isn't in the app
+// yet goes in the diary by name (GRIZZ's week: Wasi, Rob V, Sharde ...).
 import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { atTime, dayKey } from "@/lib/liveSessions";
@@ -59,7 +60,7 @@ export function matchClient(title: string, clients: { id: string; name: string }
 
 type PhoneEvent = { title?: string | null; startDate: string | Date; endDate: string | Date; allDay?: boolean };
 
-/** Phone calendar events that name one of the trainer's clients, as sessions. */
+/** Timed phone calendar events as sessions, matched to a client where the title names one. */
 export function eventsToSessions(events: PhoneEvent[], clients: { id: string; name: string }[]): ReadSession[] {
   const out: ReadSession[] = [];
   for (const e of events) {
@@ -68,7 +69,6 @@ export function eventsToSessions(events: PhoneEvent[], clients: { id: string; na
     const end = new Date(e.endDate);
     if (Number.isNaN(start.getTime())) continue;
     const client = matchClient(e.title, clients);
-    if (!client) continue;
     const mins = Math.round((end.getTime() - start.getTime()) / 60000);
     out.push({
       date: dayKey(start),
@@ -81,24 +81,54 @@ export function eventsToSessions(events: PhoneEvent[], clients: { id: string; na
   return out.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
 }
 
+/** A calendar name with no real name in it: "???", "?", "". */
+export const noName = (name: string) => !/\p{L}/u.test(name);
+
+const nameKey = (name: string | null | undefined) => (name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Why a row starts unticked, or the note on a ticked one. */
+export function rowWhy(s: ReadSession, today: string, already: boolean, namesTicked: boolean): { tick: boolean; why: string | null } {
+  if (already) return { tick: false, why: "Already in the app" };
+  if (s.date < today) return { tick: false, why: "Before today" };
+  if (s.client_id) return { tick: true, why: null };
+  if (noName(s.seen_name)) return { tick: false, why: "No name in your calendar: pick who it is, or tick to keep it as \"???\"" };
+  return namesTicked
+    ? { tick: true, why: "Not in the app yet: goes in your diary by name" }
+    : { tick: false, why: "Not matched to a client: tick to add it by name" };
+}
+
 /**
- * The list to check: already in the app, before today or not matched to a
- * client starts unticked, with the reason shown.
+ * The list to check. Someone not in the app is booked by name; already in the
+ * app, before today and "???" start unticked, with the reason shown. From
+ * the phone's calendar (personal events too) only matched clients start ticked.
  */
-export function reviewRows(read: ReadSession[], booked: { client_id: string; starts_at: string }[], today: string): ImportRow[] {
-  const have = new Set(booked.map((b) => `${b.client_id} ${new Date(b.starts_at).getTime()}`));
+export function reviewRows(
+  read: ReadSession[],
+  booked: { client_id: string | null; guest_name?: string | null; starts_at: string }[],
+  today: string,
+  namesTicked = true,
+): ImportRow[] {
+  const have = new Set(booked.map((b) => `${b.client_id ?? nameKey(b.guest_name)} ${new Date(b.starts_at).getTime()}`));
   return read.map((s, i) => {
-    const already = !!s.client_id && have.has(`${s.client_id} ${new Date(atTime(s.date, s.time)).getTime()}`);
-    const why = already ? "Already in the app" : !s.client_id ? "Pick who this is" : s.date < today ? "Before today" : null;
-    return { ...s, key: `${i}-${s.date}-${s.time}`, tick: why === null, why };
+    const already = have.has(`${s.client_id ?? nameKey(s.seen_name)} ${new Date(atTime(s.date, s.time)).getTime()}`);
+    return { ...s, key: `${i}-${s.date}-${s.time}`, ...rowWhy(s, today, already, namesTicked) };
   });
 }
 
-/** Books the ticked rows. */
+/** A second person for the same slot ("J & C", or a name cut off like "Sharde &"). */
+export function addPerson(rows: ImportRow[], key: string): ImportRow[] {
+  const i = rows.findIndex((r) => r.key === key);
+  if (i < 0) return rows;
+  const r = rows[i];
+  const extra: ImportRow = { ...r, key: `${r.key}+${rows.length}`, client_id: null, seen_name: "???", tick: false, why: "Second person: pick who it is" };
+  return [...rows.slice(0, i + 1), extra, ...rows.slice(i + 1)];
+}
+
+/** Books the ticked rows: app clients by id, everyone else by name. */
 export async function bookRows(rows: ImportRow[]): Promise<{ added: number; skipped: number } | { error: string }> {
-  const ticked = rows.filter((r) => r.tick && r.client_id);
+  const ticked = rows.filter((r) => r.tick && (r.client_id || r.seen_name.trim()));
   const { data, error } = await supabase.rpc("import_live_sessions", {
-    p_rows: ticked.map((r) => ({ client_id: r.client_id, starts_at: atTime(r.date, r.time), minutes: r.minutes })),
+    p_rows: ticked.map((r) => ({ client_id: r.client_id, name: r.seen_name.trim().slice(0, 60), starts_at: atTime(r.date, r.time), minutes: r.minutes })),
   });
   if (error) return { error: error.message };
   return data as { added: number; skipped: number };

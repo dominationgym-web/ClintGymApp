@@ -32,7 +32,7 @@ import {
 import type { LiveSession, SessionPolicy, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
-type Step = "menu" | "cancel" | "move";
+type Step = "menu" | "cancel" | "move" | "who";
 
 // Everything a trainer does to one session (0168): mark it done or a no-show,
 // log a cancellation (with the WhatsApp screenshot), charge or credit it,
@@ -44,6 +44,7 @@ export default function SessionActionsModal({
   policy,
   settings,
   sessions,
+  clients,
   onClose,
   onChanged,
 }: {
@@ -54,6 +55,8 @@ export default function SessionActionsModal({
   settings: SessionSettings | null;
   /** The trainer's sessions, shown on the calendar when moving one. */
   sessions: LiveSession[];
+  /** The trainer's clients, to change who a session is for. */
+  clients: { id: string; name: string }[];
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -149,6 +152,10 @@ export default function SessionActionsModal({
                   </View>
                 ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
+                {!session.invoice_id && session.status !== "removed" ? (
+                  <Outline label={session.client_id ? "👤 Change who" : "👤 Link to their app account"} onPress={() => setStep("who")} />
+                ) : null}
+                {!session.client_id ? <Text style={styles.meta}>In your diary by name only: no notifications or invoice until you link them to their app account.</Text> : null}
                 {session.status !== "booked" && session.status !== "removed" && new Date(session.starts_at) > now ? (
                   <Outline label="Undo: back to booked" onPress={() => outcome("booked")} />
                 ) : null}
@@ -157,7 +164,7 @@ export default function SessionActionsModal({
                   <Outline
                     label="💬 WhatsApp"
                     onPress={() => {
-                      markClientContact(session.client_id);
+                      if (session.client_id) markClientContact(session.client_id);
                       Linking.openURL(link);
                     }}
                   />
@@ -170,6 +177,20 @@ export default function SessionActionsModal({
 
             {step === "move" && <MoveForm session={session} sessions={sessions} settings={settings} onSave={(at) => run(() => supabase.rpc("move_live_session", { p_id: session.id, p_starts_at: at }), `${first} has been told.`)} onBack={() => setStep("menu")} />}
 
+            {step === "who" && (
+              <WhoForm
+                session={session}
+                clients={clients}
+                onSave={(client, name, all) =>
+                  run(
+                    () => supabase.rpc("set_live_session_person", { p_id: session.id, p_client: client, p_name: name, p_all: all }),
+                    client ? `${clients.find((c) => c.id === client)?.name.split(" ")[0] ?? "They"} gets a notification for the sessions coming up.` : undefined
+                  )
+                }
+                onBack={() => setStep("menu")}
+              />
+            )}
+
             <Pressable style={styles.close} onPress={onClose}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
@@ -178,6 +199,60 @@ export default function SessionActionsModal({
       </KeyboardSafe>
       <SessionProofModal path={proof} onClose={() => setProof(null)} />
     </Modal>
+  );
+}
+
+// Who a session is for: one of the trainer's app clients, or a name only.
+// Linking a name to a client can take all that name's sessions with it.
+function WhoForm({
+  session,
+  clients,
+  onSave,
+  onBack,
+}: {
+  session: LiveSession;
+  clients: { id: string; name: string }[];
+  onSave: (client: string | null, name: string | null, all: boolean) => void;
+  onBack: () => void;
+}) {
+  const [client, setClient] = useState<string | null>(session.client_id);
+  const [name, setName] = useState(session.client_id ? "" : session.guest_name ?? "");
+  const [all, setAll] = useState(!session.client_id);
+  const guest = session.guest_name ?? null;
+  const changed = client ? client !== session.client_id : !!name.trim() && name.trim() !== (session.guest_name ?? "");
+  return (
+    <View style={{ marginTop: 12 }}>
+      <Text style={styles.label}>Who is it?</Text>
+      <View style={styles.chips}>
+        {clients.map((c) => (
+          <Chip key={c.id} label={c.name} on={client === c.id} onPress={() => setClient(client === c.id ? null : c.id)} />
+        ))}
+      </View>
+      <Text style={styles.label}>Or someone not in the app yet</Text>
+      <TextInput
+        style={styles.input}
+        value={name}
+        onChangeText={(t) => {
+          setName(t);
+          if (t.trim()) setClient(null);
+        }}
+        placeholder="Name"
+        placeholderTextColor="#64748B"
+        maxLength={60}
+      />
+      {guest && client ? (
+        <Pressable style={styles.tickRow} onPress={() => setAll(!all)}>
+          <Text style={styles.tickBox}>{all ? "☑" : "☐"}</Text>
+          <Text style={styles.meta}>All of "{guest}"'s sessions not invoiced yet, and match "{guest}" to them in future imports</Text>
+        </Pressable>
+      ) : null}
+      <Pressable style={[styles.button, !changed && { opacity: 0.5 }]} disabled={!changed} onPress={() => onSave(client, client ? null : name.trim(), !!(guest && client && all))}>
+        <Text style={styles.buttonText}>Save</Text>
+      </Pressable>
+      <Pressable style={styles.close} onPress={onBack}>
+        <Text style={styles.closeText}>Back</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -241,7 +316,7 @@ function CancelForm({
     setSaving(true);
     try {
       let path: string | null = null;
-      if (photo) {
+      if (photo && session.client_id) {
         path = proofPath(session.client_id, session.id);
         const small = await shrinkPhoto(photo.uri, photo.width, photo.height);
         const body = await new File(small.uri).arrayBuffer();
@@ -290,7 +365,8 @@ function CancelForm({
       <TextInput style={styles.input} value={time} onChangeText={setTime} placeholder="17:45" placeholderTextColor="#64748B" maxLength={5} keyboardType="numbers-and-punctuation" />
       <Text style={styles.meta}>The time on their WhatsApp message.</Text>
 
-      {by === "client" ? (
+      {/* A diary-only name has no app account to keep the screenshot under. */}
+      {by === "client" && session.client_id ? (
         <>
           <Text style={styles.label}>Screenshot of the message</Text>
           <Pressable style={styles.outline} onPress={pick}>
@@ -411,6 +487,8 @@ const styles = themedStyles({
   chipOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
   chipText: { color: "#CBD5E1", fontWeight: "600", fontSize: 14 },
   chipTextOn: { color: "#0F172A" },
+  tickRow: { flexDirection: "row", gap: 8, alignItems: "flex-start", marginTop: 12 },
+  tickBox: { color: BRAND_GOLD, fontSize: 18 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, fontSize: 15, marginTop: 6, borderWidth: 1, borderColor: "#334155" },
   result: { borderWidth: 2, borderRadius: 10, padding: 12, marginTop: 14 },
   resultText: { color: "#fff", fontSize: 14, lineHeight: 20 },

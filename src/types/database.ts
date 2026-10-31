@@ -1159,7 +1159,9 @@ export type LiveSessionStatus = "booked" | "done" | "cancelled" | "no_show" | "r
 export type LiveSession = {
   id: string;
   trainer_id: string;
-  client_id: string;
+  // Null for someone in the diary by name only, not in the app yet (0174).
+  client_id: string | null;
+  guest_name?: string | null;
   starts_at: string;
   minutes: number;
   fee: number;
@@ -1644,7 +1646,8 @@ export interface Database {
       set_session_outcome: { Args: { p_id: string; p_outcome: "done" | "no_show" | "booked" }; Returns: LiveSession };
       set_session_fee: { Args: { p_id: string; p_fee: number }; Returns: LiveSession };
       set_session_payer: { Args: { p_client: string; p_paid_by: string | null }; Returns: SessionPlan };
-      import_live_sessions: { Args: { p_rows: { client_id: string | null; starts_at: string; minutes: number | null }[] }; Returns: { added: number; skipped: number } };
+      import_live_sessions: { Args: { p_rows: { client_id: string | null; name?: string; starts_at: string; minutes: number | null }[] }; Returns: { added: number; skipped: number } };
+      set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
       build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };
