@@ -240,8 +240,7 @@ export default function CalendarImportModal({
                         </Text>
                       </Pressable>
                       {r.why ? <Text style={styles.meta}>{r.why}</Text> : null}
-                      {r.colour ? <Text style={styles.meta}>{r.colour[0].toUpperCase() + r.colour.slice(1)} in your calendar</Text> : null}
-                      {picking === r.key ? (
+                        {picking === r.key ? (
                         <>
                           <View style={styles.chips}>
                             {clients.map((c) => (

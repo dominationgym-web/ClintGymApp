@@ -12,9 +12,13 @@
 alter table public.live_sessions alter column client_id drop not null;
 alter table public.live_sessions
   add column if not exists guest_name text check (guest_name is null or char_length(guest_name) between 1 and 60);
-alter table public.live_sessions drop constraint if exists live_sessions_who;
-alter table public.live_sessions
-  add constraint live_sessions_who check (client_id is not null or guest_name is not null);
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'live_sessions_who') then
+    alter table public.live_sessions
+      add constraint live_sessions_who check (client_id is not null or guest_name is not null);
+  end if;
+end $$;
 
 -- Calendar names the trainer has matched to a client ("Q" is Quraish Behari).
 create table if not exists public.diary_name_links (
@@ -25,9 +29,13 @@ create table if not exists public.diary_name_links (
   primary key (trainer_id, name_key)
 );
 alter table public.diary_name_links enable row level security;
-drop policy if exists diary_name_links_read on public.diary_name_links;
-create policy diary_name_links_read on public.diary_name_links
-  for select to authenticated using (trainer_id = (select auth.uid()));
+do $$
+begin
+  if not exists (select 1 from pg_policies where tablename = 'diary_name_links' and policyname = 'diary_name_links_read') then
+    create policy diary_name_links_read on public.diary_name_links
+      for select to authenticated using (trainer_id = (select auth.uid()));
+  end if;
+end $$;
 
 create or replace function public.diary_name_key(p_name text)
 returns text

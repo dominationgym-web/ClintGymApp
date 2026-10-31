@@ -12,8 +12,6 @@ export type ReadSession = {
   client_id: string | null;
   // The name as it appears in the calendar ("???" when it has none).
   seen_name: string;
-  // The block's colour in the calendar ("grey", "red" ...), when it isn't the usual one.
-  colour?: string | null;
 };
 
 export type CalendarRead = { sessions: ReadSession[]; note: string | null };
@@ -57,11 +55,10 @@ export function cleanSessions(input: unknown, clientIds: string[], today: string
     const client = typeof r.client_id === "string" && ids.has(r.client_id) ? r.client_id : null;
     const name = typeof r.seen_name === "string" ? r.seen_name.trim().slice(0, 80) : "";
     const minutes = typeof r.minutes === "number" && r.minutes >= 15 && r.minutes <= 180 ? Math.round(r.minutes / 5) * 5 : null;
-    const colour = typeof r.colour === "string" && r.colour.trim() ? r.colour.trim().toLowerCase().slice(0, 20) : null;
     const key = `${r.date} ${roundClock(time)} ${client ?? name.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    sessions.push({ date: r.date, time: roundClock(time), minutes, client_id: client, seen_name: name || "???", colour });
+    sessions.push({ date: r.date, time: roundClock(time), minutes, client_id: client, seen_name: name || "???" });
     if (sessions.length >= MAX_SESSIONS) break;
   }
   sessions.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));

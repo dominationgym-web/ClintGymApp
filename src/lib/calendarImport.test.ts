@@ -63,8 +63,8 @@ describe("cleanSessions", () => {
       "2026-10-31",
     );
     expect(out.sessions).toEqual([
-      { date: "2026-11-02", time: "05:50", minutes: null, client_id: null, seen_name: "Bob", colour: null },
-      { date: "2026-11-04", time: "06:00", minutes: 40, client_id: "a", seen_name: "Nancy", colour: null },
+      { date: "2026-11-02", time: "05:50", minutes: null, client_id: null, seen_name: "Bob" },
+      { date: "2026-11-04", time: "06:00", minutes: 40, client_id: "a", seen_name: "Nancy" },
     ]);
     expect(out.note).toBe("One event was cut off.");
     expect(cleanClock("7:5")).toBeNull();
@@ -74,8 +74,8 @@ describe("cleanSessions", () => {
     expect(roundClock("06:28")).toBe("06:30");
     expect(roundClock("05:12")).toBe("05:10");
     expect(roundClock("23:59")).toBe("23:55");
-    const out = cleanSessions({ sessions: [{ date: "2026-11-06", time: "6:02", minutes: 41, client_id: null, seen_name: " ", colour: "Red" }] }, [], "2026-10-31");
-    expect(out.sessions).toEqual([{ date: "2026-11-06", time: "06:00", minutes: 40, client_id: null, seen_name: "???", colour: "red" }]);
+    const out = cleanSessions({ sessions: [{ date: "2026-11-06", time: "6:02", minutes: 41, client_id: null, seen_name: " " }] }, [], "2026-10-31");
+    expect(out.sessions).toEqual([{ date: "2026-11-06", time: "06:00", minutes: 40, client_id: null, seen_name: "???" }]);
   });
 });
 

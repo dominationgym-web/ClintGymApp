@@ -32,8 +32,6 @@ List every timed block in every day column, one by one, top to bottom:
 - client_id: the id of the matching client from the list given, only when the name clearly matches
   one client (first name, surname, nickname, initials, or a name the trainer matched before).
   Otherwise null: the trainer picks or keeps the name.
-- colour: the block's colour in plain words ("grey", "red", "green") when it differs from most
-  blocks, else null.
 A block with two people ("J & C", "Mike and Sarah") is two sessions at the same time, one for each
 person, each with their own seen_name ("J", "C"). If a name is cut off ("Sharde &"), give the part
 you can read as one session and say in note that the other person was cut off.
@@ -57,7 +55,6 @@ const TOOL = {
             minutes: { type: ["number", "null"] },
             seen_name: { type: "string" },
             client_id: { type: ["string", "null"] },
-            colour: { type: ["string", "null"] },
           },
           required: ["date", "time", "seen_name", "client_id"],
         },
