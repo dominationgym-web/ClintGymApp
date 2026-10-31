@@ -61,6 +61,12 @@
         }
       ],
       [
+        "expo-calendar",
+        {
+          "calendarPermission": "Lets trainers bring their client sessions in from the phone's calendar into Live sessions. Nothing is changed in your calendar."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",

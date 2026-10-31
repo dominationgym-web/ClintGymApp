@@ -60,8 +60,8 @@ function ClientTabs() {
   // the ☰ menu, and four fuller pages come first.
   const wide = useClientWideScreen();
   // Live client only (GRIZZ, 2026-10-31): in-person sessions, Profile and the
-  // ☰ menu (nutrition, meal plans, timers...), no daily check-ins, programming
-  // or habits.
+  // ☰ menu (nutrition, meal plans, timers...), no programming or habits. The
+  // check-in is there but is their choice: no reminders.
   const live = !!client?.live_only;
   return (
     <Tab.Navigator
@@ -92,12 +92,17 @@ function ClientTabs() {
           <Tab.Screen name="Food" component={FoodScreen} options={{ title: "Nutrition & diet", headerShown: false }} layout={fullWidth} />
         </>
       )}
+      {/* A live client may check in when they choose (GRIZZ, 2026-10-31): no reminders, but the trainer sees their energy and injuries. */}
+      <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
       {!live && (
         <>
-          <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
           <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
           <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
         </>
+      )}
+      {/* A live client sees training only when the trainer switches on their video library (GRIZZ, 2026-10-31). */}
+      {live && client?.library_access && (
+        <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
       )}
       {!live && client?.lifestyle_reset_started_at && (
         <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />

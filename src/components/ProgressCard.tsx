@@ -29,13 +29,15 @@ import {
   type Point,
   type WeighInEvery,
 } from "@/lib/progress";
+import { HABITS, compareMonths, habitSeries, habitValue, monthName, monthlyStats, type HabitKey, type MonthlyRow } from "@/lib/checkinMonthly";
 import { themeText, themedStyles } from "@/lib/theme";
 
 // The Progress section (0143, GRIZZ 2026-10-22). Three pages you tap between,
 // each one graph: main lifts from the training log, timed cardio tests, and
 // weight and measurements. The client sees it on their Profile, the trainer
 // on the client's Training tab, where they also set how often to weigh in.
-type Page = "strength" | "cardio" | "body";
+// A fourth page shows check-in habits month by month (GRIZZ, 2026-10-31).
+type Page = "strength" | "cardio" | "body" | "checkin";
 const RANGES: { label: string; months: number | null }[] = [
   { label: "3 months", months: 3 },
   { label: "6 months", months: 6 },
@@ -56,6 +58,9 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
   const [measure, setMeasure] = useState<"distance" | "calories">("distance");
   const [body, setBody] = useState<BodyMeasureKey>("weight_kg");
   const [adding, setAdding] = useState<"cardio" | "body" | null>(null);
+  const [checkins, setCheckins] = useState<MonthlyRow[]>([]);
+  const [month, setMonth] = useState<string | null>(null);
+  const [habit, setHabit] = useState<HabitKey>("alcoholDays");
 
   const load = useCallback(async () => {
     const all: LiftLog[] = [];
@@ -69,11 +74,21 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
       all.push(...((data as LiftLog[] | null) ?? []));
       if (!data || data.length < 1000) break;
     }
-    const [t, s, c] = await Promise.all([
+    const [t, s, c, k] = await Promise.all([
       supabase.from("client_cardio_tests").select("*").eq("client_id", clientId).order("test_date"),
       supabase.from("client_body_stats").select("*").eq("client_id", clientId).order("measured_on"),
       supabase.from("clients").select("weigh_in_every").eq("id", clientId).maybeSingle(),
+      supabase
+        .from("checkins")
+        .select("checkin_date, alcohol_units, water_litres, sleep_bed_time, sleep_asleep_time, sleep_wake_time, sleep_quality, high_gi_count, wound_down, pain_status, fatigue_status, mental_status")
+        .eq("client_id", clientId)
+        .order("checkin_date", { ascending: false })
+        .limit(800),
     ]);
+    const rows = (k.data as MonthlyRow[] | null) ?? [];
+    setCheckins(rows);
+    // Nothing lifted yet but check-ins done (e.g. a live client): open on those.
+    if (!all.length && rows.length) setPage((p) => (p === "strength" ? "checkin" : p));
     setLogs(all);
     setTests((t.data as CardioTest[] | null) ?? []);
     setStats((s.data as BodyStat[] | null) ?? []);
@@ -97,6 +112,8 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
 
   if (!logs) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 12 }} />;
 
+  const months = monthlyStats(checkins, [...stats].reverse().find((s) => s.weight_kg != null)?.weight_kg ?? null);
+  const monthIdx = months.length ? Math.max(0, month ? months.findIndex((m) => m.month === month) : months.length - 1) : -1;
   let points: Point[] = [];
   let unit = "";
   let better: Better = "up";
@@ -111,6 +128,10 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
     points = bodySeries(stats, body);
     unit = BODY_MEASURES.find((m) => m.key === body)!.unit;
     better = null;
+  } else if (page === "checkin") {
+    points = habitSeries(months, habit);
+    unit = HABITS.find((h) => h.key === habit)!.unit;
+    better = HABITS.find((h) => h.key === habit)!.better;
   }
   points = sinceMonths(points, range, today);
   const cmp = compare(points, better);
@@ -122,13 +143,17 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
       <View style={styles.tabs}>
         {(
           [
-            ["strength", "💪 Strength"],
-            ["cardio", "🚴 Cardio"],
-            ["body", "⚖️ Body"],
+            ["strength", "💪", "Strength"],
+            ["cardio", "🚴", "Cardio"],
+            ["body", "⚖️", "Body"],
+            ["checkin", "📋", "Check-in"],
           ] as const
-        ).map(([k, label]) => (
+        ).map(([k, icon, label]) => (
           <Pressable key={k} style={[styles.tab, page === k && styles.tabOn]} onPress={() => setPage(k)}>
-            <Text style={[styles.tabText, page === k && styles.tabTextOn]}>{label}</Text>
+            <Text style={styles.tabIcon}>{icon}</Text>
+            <Text style={[styles.tabText, page === k && styles.tabTextOn]} numberOfLines={1}>
+              {label}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -187,7 +212,21 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
         </>
       )}
 
-      {(page !== "strength" || liftNow) && (page !== "cardio" || cardioNow) && (
+      {page === "checkin" &&
+        (monthIdx < 0 ? (
+          <Text style={styles.empty}>No check-ins yet. Each month's alcohol, water, sleep and energy show here once you check in.</Text>
+        ) : (
+          <CheckinMonth
+            months={months}
+            idx={monthIdx}
+            onMonth={(i) => setMonth(months[i].month)}
+            habit={habit}
+            onHabit={setHabit}
+            current={months[monthIdx].month === `${today.slice(0, 7)}-01`}
+          />
+        ))}
+
+      {(page !== "strength" || liftNow) && (page !== "cardio" || cardioNow) && (page !== "checkin" || monthIdx >= 0) && (
         <View style={{ marginTop: 12 }}>
           <ProgressChart points={points} unit={unit} color={cmp?.trend === "worse" ? "#EF4444" : cmp?.trend === "better" ? "#22C55E" : BRAND_GOLD} />
           {cmp && points.length > 1 && (
@@ -246,6 +285,55 @@ export default function ProgressCard({ clientId, role }: { clientId: string; rol
           }}
         />
       )}
+    </View>
+  );
+}
+
+// One month of check-in habits against the month before. Tap a habit to graph it by month.
+function CheckinMonth({
+  months,
+  idx,
+  onMonth,
+  habit,
+  onHabit,
+  current,
+}: {
+  months: ReturnType<typeof monthlyStats>;
+  idx: number;
+  onMonth: (i: number) => void;
+  habit: HabitKey;
+  onHabit: (k: HabitKey) => void;
+  current: boolean;
+}) {
+  const now = months[idx];
+  const before = idx > 0 ? months[idx - 1] : null;
+  const rows = compareMonths(now, before);
+  return (
+    <View style={{ marginTop: 12 }}>
+      <View style={styles.monthNav}>
+        <Pressable onPress={() => idx > 0 && onMonth(idx - 1)} hitSlop={10} style={idx === 0 && { opacity: 0.3 }}>
+          <Text style={styles.monthArrow}>‹</Text>
+        </Pressable>
+        <Text style={styles.monthTitle}>
+          {monthName(now.month)}
+          {current ? " (so far)" : ""}
+        </Text>
+        <Pressable onPress={() => idx < months.length - 1 && onMonth(idx + 1)} hitSlop={10} style={idx === months.length - 1 && { opacity: 0.3 }}>
+          <Text style={styles.monthArrow}>›</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.due}>{before ? `▲▼ against ${monthName(before.month)}. Green is better, red is worse.` : "The first month, so nothing to compare with yet."} Tap one to see it month by month.</Text>
+      {rows.map((r) => (
+        <Pressable key={r.habit.key} style={[styles.habitRow, habit === r.habit.key && styles.habitRowOn]} onPress={() => onHabit(r.habit.key)}>
+          <Text style={styles.habitLabel}>
+            {r.habit.icon} {r.habit.label}
+          </Text>
+          <Text style={styles.habitValue}>{habitValue(r.habit, r.now, now.values.checkins ?? 0)}</Text>
+          <Text style={[styles.habitChange, r.trend === "better" && styles.up, r.trend === "worse" && styles.down]}>
+            {r.change === null ? "" : r.change === 0 ? "=" : `${r.change > 0 ? "▲" : "▼"} ${fmt(Math.abs(r.change))}`}
+          </Text>
+        </Pressable>
+      ))}
     </View>
   );
 }
@@ -418,9 +506,10 @@ function BodyStatModal({ clientId, onClose, onSaved }: { clientId: string; onClo
 
 const styles = themedStyles({
   tabs: { flexDirection: "row", gap: 6 },
-  tab: { flex: 1, borderWidth: 1, borderColor: "#334155", borderRadius: 10, paddingVertical: 9, alignItems: "center" },
+  tab: { flex: 1, borderWidth: 1, borderColor: "#334155", borderRadius: 10, paddingVertical: 7, paddingHorizontal: 2, alignItems: "center" },
   tabOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
-  tabText: { color: "#E2E8F0", fontWeight: "700", fontSize: 13 },
+  tabText: { color: "#E2E8F0", fontWeight: "700", fontSize: 12 },
+  tabIcon: { fontSize: 16 },
   tabTextOn: { color: "#0B1426" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { borderWidth: 1, borderColor: "#334155", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
@@ -438,6 +527,14 @@ const styles = themedStyles({
   boxDate: { color: "#64748B", fontSize: 10, marginTop: 2 },
   change: { color: "#CBD5E1", fontWeight: "700", marginTop: 8 },
   up: { color: "#22C55E" },
+  monthNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  monthArrow: { color: BRAND_GOLD, fontSize: 28, fontWeight: "700", paddingHorizontal: 10 },
+  monthTitle: { color: "#fff", fontSize: 16, fontWeight: "800" },
+  habitRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 8, marginTop: 4 },
+  habitRowOn: { backgroundColor: "#0F172A" },
+  habitLabel: { flex: 1, color: "#E2E8F0", fontSize: 13 },
+  habitValue: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  habitChange: { width: 52, textAlign: "right", color: "#94A3B8", fontWeight: "700", fontSize: 13 },
   down: { color: "#EF4444" },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 12 },
   buttonText: { color: "#0B1426", fontWeight: "700", fontSize: 15 },
