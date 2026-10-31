@@ -99,6 +99,10 @@ function ClientTabs() {
           <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
         </>
       )}
+      {/* A live client sees training only when the trainer switches on their video library (GRIZZ, 2026-10-31). */}
+      {live && client?.library_access && (
+        <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
+      )}
       {!live && client?.lifestyle_reset_started_at && (
         <Tab.Screen name="Reset" component={LifestyleResetScreen} options={{ title: "Reset", tabBarIcon: tabIcon("leaf") }} />
       )}

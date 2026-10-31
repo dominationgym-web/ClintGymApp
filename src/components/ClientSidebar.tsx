@@ -53,6 +53,7 @@ export default function ClientSidebar() {
         // Live client only (0169): sessions, food and Profile.
         { tab: "Sessions", label: "My sessions", icon: "people" },
         { tab: "Food", label: "Nutrition & diet", icon: "restaurant" },
+        ...(client.library_access ? [{ tab: "Exercises" as const, label: "My training", icon: "fitness" as IconName }] : []),
         { tab: "Profile", label: "Profile", icon: "person-circle" },
       ]
     : [

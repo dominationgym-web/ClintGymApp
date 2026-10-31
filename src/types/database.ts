@@ -1641,6 +1641,7 @@ export interface Database {
       set_session_outcome: { Args: { p_id: string; p_outcome: "done" | "no_show" | "booked" }; Returns: LiveSession };
       set_session_fee: { Args: { p_id: string; p_fee: number }; Returns: LiveSession };
       set_session_payer: { Args: { p_client: string; p_paid_by: string | null }; Returns: SessionPlan };
+      import_live_sessions: { Args: { p_rows: { client_id: string | null; starts_at: string; minutes: number | null }[] }; Returns: { added: number; skipped: number } };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
       build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };

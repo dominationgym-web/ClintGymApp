@@ -7,6 +7,7 @@ import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionActionsModal from "@/components/sessions/SessionActionsModal";
 import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
+import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
 import { supabase } from "@/lib/supabase";
@@ -452,6 +453,7 @@ function CalendarTab({
 }) {
   const [day, setDay] = useState<string>(dayKey(new Date()));
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const list = sessions.filter((s) => s.status !== "removed" && dayKey(s.starts_at) === day);
   return (
     <>
@@ -473,6 +475,21 @@ function CalendarTab({
           ＋ Book {makeup ? "the catch-up" : "a session"} on {dayLabel(day)}
         </Text>
       </Pressable>
+      {makeup ? null : (
+        <Pressable style={styles.outline} onPress={() => setImporting(true)}>
+          <Text style={styles.outlineText}>📥 Bring in sessions from your calendar</Text>
+        </Pressable>
+      )}
+      <CalendarImportModal
+        visible={importing}
+        clients={clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
+        sessions={sessions}
+        onClose={() => setImporting(false)}
+        onBooked={() => {
+          setImporting(false);
+          onChanged();
+        }}
+      />
       <Text style={styles.meta}>
         🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked
       </Text>
