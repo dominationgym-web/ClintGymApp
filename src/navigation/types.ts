@@ -27,6 +27,8 @@ export type ClientTabParamList = {
   Habits: undefined;
   Reset: undefined;
   Exercises: undefined;
+  // A live-client-only client's in-person sessions (0169).
+  Sessions: undefined;
   // open: the Profile heading to show opened, e.g. "pay" from the plan-ending banner.
   Profile: { open?: "pay" | "progress" } | undefined;
 };

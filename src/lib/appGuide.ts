@@ -217,7 +217,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       key: "mySessions",
       icon: "🤝",
       title: "In-person sessions with your coach",
-      where: "Menu ☰ → My sessions (once your coach sets them up)",
+      where: "Menu ☰ → My sessions (once your coach sets them up), or the My sessions tab if you only train in person",
       points: [
         "Agreement: read the session agreement (your fee, sessions a week, cancellation rule and billing), tick that you agree and type your name to sign. If your coach changes the terms you're asked to sign again.",
         "Sessions: your next sessions. Can't make one? Tap Can't make it. Before you cancel, the app tells you how much notice you're giving and whether it will still be charged. Your coach is told straight away.",
@@ -431,6 +431,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "Calendar: the month with a coloured dot per session. Tap a day to see it, ＋ Book a session for a one-off, or tap a session to mark it done, log a cancellation, move it or take it off.",
         "Cancellations: when a client cancels in the app you get a notification with how much notice they gave. If they cancel on WhatsApp, tap the session, Log a cancellation, pick when they told you, add the screenshot as proof, and the app works out charged (red) or credited (green). You can always change it.",
         "15 minutes after each session you get a notification asking if it happened. Tap ✓ Done on the To do tab (or Cancelled / No-show). The client then confirms with one tap. Running it with ▶ Start live session marks it done for you.",
+        "Live client only: for a client you only train in person, tap 🤝 Live client only when you activate them, or switch it on later under their Overview › Plan & payment. They then see My sessions, Profile and the ☰ menu (nutrition, meal plans, timers), with no daily check-ins, programming, habits or online reminders, and they don't show as \"No check-in yet\" on your Dashboard.",
         "Invoices: on the 1st the app makes every client's invoice with a diary of every session (late cancellations in red, in time in green) and tells you. Check it, tap Send (or send a neat copy with your bank details on WhatsApp or email), and mark it paid when their proof of payment comes in. Changes after sending go on next month's as an extra charge or a credit.",
       ],
     },

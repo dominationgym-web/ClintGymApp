@@ -405,6 +405,8 @@ export type Client = {
   // How often the trainer wants a weigh-in (0143).
   weigh_in_every?: "week" | "2weeks" | "month" | null;
   weigh_in_reminded_on?: string | null;
+  // Live client only (0169): in-person sessions, Profile and the menu; no daily check-ins, programming or habits.
+  live_only?: boolean;
   // Their ready-made recovery program (0108): training, sports or lifestyle.
   recovery_program?: "training" | "sports" | "lifestyle" | null;
   // When the trainer was last told a deload week is due (0115).

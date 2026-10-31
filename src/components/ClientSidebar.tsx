@@ -48,17 +48,24 @@ export default function ClientSidebar() {
   const name = current?.name;
   const sectionKey = name === "Section" ? (current?.params?.sectionKey as string | undefined) : undefined;
 
-  const main: { tab: keyof ClientTabParamList; label: string; icon: IconName }[] = [
-    { tab: "MyWeek", label: "My week", icon: "home" },
-    { tab: "Lifts", label: "Weights lifted", icon: "barbell" },
-    { tab: "Body", label: "Body & weight", icon: "body" },
-    { tab: "Food", label: "Nutrition & diet", icon: "restaurant" },
-    { tab: "CheckIn", label: "Check-in", icon: "checkmark-circle" },
-    { tab: "Exercises", label: "My training", icon: "fitness" },
-    { tab: "Habits", label: "Habits & challenges", icon: "flame" },
-    ...(client?.lifestyle_reset_started_at ? [{ tab: "Reset" as const, label: "My reset", icon: "leaf" as IconName }] : []),
-    { tab: "Profile", label: "Profile", icon: "person-circle" },
-  ];
+  const main: { tab: keyof ClientTabParamList; label: string; icon: IconName }[] = client?.live_only
+    ? [
+        // Live client only (0169): sessions, food and Profile.
+        { tab: "Sessions", label: "My sessions", icon: "people" },
+        { tab: "Food", label: "Nutrition & diet", icon: "restaurant" },
+        { tab: "Profile", label: "Profile", icon: "person-circle" },
+      ]
+    : [
+        { tab: "MyWeek", label: "My week", icon: "home" },
+        { tab: "Lifts", label: "Weights lifted", icon: "barbell" },
+        { tab: "Body", label: "Body & weight", icon: "body" },
+        { tab: "Food", label: "Nutrition & diet", icon: "restaurant" },
+        { tab: "CheckIn", label: "Check-in", icon: "checkmark-circle" },
+        { tab: "Exercises", label: "My training", icon: "fitness" },
+        { tab: "Habits", label: "Habits & challenges", icon: "flame" },
+        ...(client?.lifestyle_reset_started_at ? [{ tab: "Reset" as const, label: "My reset", icon: "leaf" as IconName }] : []),
+        { tab: "Profile", label: "Profile", icon: "person-circle" },
+      ];
 
   return (
     <View style={styles.sidebar}>

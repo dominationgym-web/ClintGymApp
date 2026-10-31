@@ -83,10 +83,11 @@ export function useClientMenuItems(recheck: Recheck): MenuItem[] {
         ]
       : []),
     // In-person sessions with the coach (0168), once the coach has set them up.
-    ...(hasSessions
+    // A live client has My sessions as a tab and no online video check-ins (0169).
+    ...(hasSessions && !client?.live_only
       ? [{ ...CLIENT_SESSIONS_MENU_ITEM, route: "MySessions", onPress: () => navigationRef.navigate("MySessions") }]
       : []),
-    { ...VIDEO_CHECKIN_MENU_ITEM, route: "VideoCheckIn", onPress: () => navigationRef.navigate("VideoCheckIn") },
+    ...(client?.live_only ? [] : [{ ...VIDEO_CHECKIN_MENU_ITEM, route: "VideoCheckIn", onPress: () => navigationRef.navigate("VideoCheckIn") }]),
     { ...RECOVERY_MENU_ITEM, route: "Recovery", onPress: () => navigationRef.navigate("Recovery") },
     ...first.map(item),
     // EMOM, Tabata and interval timers (GRIZZ, 2026-10-25).

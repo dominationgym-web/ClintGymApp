@@ -38,7 +38,8 @@ const priority = (r: ClientStatus): number =>
   clientPriority({
     statusFlag: r.level ?? "green",
     distressFlag: r.distressFlag,
-    hasCheckedInToday: r.todaysCheckin !== null,
+    // A live client never checks in, so they don't jump up the list as "not checked in".
+    hasCheckedInToday: r.todaysCheckin !== null || !!r.client.live_only,
   });
 
 // New videos counted per client, in the order they first appear (newest first).
@@ -503,10 +504,15 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
               </View>
               {/* Labelled, so it's clear what the dot means; plus who trained today. */}
               <View style={styles.statusCol}>
-                <View style={styles.statusLine}>
-                  <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
-                  <Text style={styles.statusText}>{item.todaysCheckin ? "Checked in" : "No check-in yet"}</Text>
-                </View>
+                {item.client.live_only ? (
+                  // A live client doesn't check in in the app (0169).
+                  <Text style={styles.statusText}>🤝 Live client</Text>
+                ) : (
+                  <View style={styles.statusLine}>
+                    <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
+                    <Text style={styles.statusText}>{item.todaysCheckin ? "Checked in" : "No check-in yet"}</Text>
+                  </View>
+                )}
                 {item.trainedToday && <Text style={styles.trainedText}>🏋️ Trained today</Text>}
               </View>
             </Pressable>
