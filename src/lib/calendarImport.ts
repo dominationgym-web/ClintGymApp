@@ -136,12 +136,25 @@ export async function bookRows(rows: ImportRow[]): Promise<{ added: number; skip
 
 // The phone's calendar: only in an installed app built with expo-calendar
 // (the next store build). Older installs and the website get null.
+// Older installs must never load expo-calendar: looking up a native module
+// the build doesn't have closed the app outright when the trainer opened
+// Live sessions › Calendar (GRIZZ, 2026-10-31), and a try/catch can't stop
+// that. So only load it when the build has really installed ExpoCalendar.
 type CalendarModule = typeof import("expo-calendar/legacy");
 let calendarModule: CalendarModule | null | undefined;
+export function buildHasCalendar(): boolean {
+  try {
+    const modules = (globalThis as { expo?: { modules?: Record<string, unknown> } }).expo?.modules;
+    return !!modules && modules.ExpoCalendar != null;
+  } catch {
+    return false;
+  }
+}
 function phoneCalendar(): CalendarModule | null {
   if (calendarModule !== undefined) return calendarModule;
   calendarModule = null;
   if (Platform.OS === "web") return null;
+  if (!buildHasCalendar()) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     calendarModule = require("expo-calendar/legacy") as CalendarModule;
