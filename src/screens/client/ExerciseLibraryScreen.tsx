@@ -17,12 +17,13 @@ import ModalSafeArea from "../../components/ModalSafeArea";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { supabase } from "@/lib/supabase";
 import {
+  categoryLabel,
   clientBrowsable,
   exerciseCategories,
   filterExercises,
   forPlace,
-  withHomeAlternatives,
   swapOptions,
+  withHomeAlternatives,
   type ExercisePlace,
 } from "@/lib/exerciseFilter";
 import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
@@ -1426,7 +1427,7 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.name}>{item.name}</Text>
                 <ExerciseGuideButton name={item.name} category={item.category} onDoSet={() => openExercise(item)} videoUrl={item.external_url} />
               </View>
-              {item.category && <Text style={styles.category}>{item.category}</Text>}
+              {item.category && <Text style={styles.category}>{categoryLabel(item.category)}</Text>}
             </View>
             {/* Trainer's laptop: the clip plays small right in the list (GRIZZ, 2026-10-27). */}
             {wide && item.external_url ? (

@@ -10,8 +10,12 @@ const list = [
 ];
 
 describe("exerciseCategories", () => {
-  it("lists each body part once, in library order", () => {
-    expect(exerciseCategories(list)).toEqual(["Push", "Biceps", "Pull"]);
+  it("lists each muscle group once, main muscles first", () => {
+    expect(exerciseCategories(list)).toEqual(["Chest", "Back", "Biceps"]);
+  });
+  it("puts calves after shoulders and groups the leg parts as Legs", () => {
+    const legs = [{ category: "Calves" }, { category: "Hamstrings" }, { category: "Overhead Press" }, { category: "Glutes" }, { category: "Odd" }];
+    expect(exerciseCategories(legs)).toEqual(["Legs", "Shoulders", "Calves", "Odd"]);
   });
 });
 
@@ -19,12 +23,15 @@ describe("filterExercises", () => {
   it("returns everything with no search or body part", () => {
     expect(filterExercises(list, "  ")).toHaveLength(5);
   });
+  it("finds chest exercises by searching chest", () => {
+    expect(filterExercises(list, "chest").map((e) => e.name)).toEqual(["Bench Press"]);
+  });
   it("matches every word, in any order, ignoring case", () => {
     expect(filterExercises(list, "curl HAMMER cable").map((e) => e.name)).toEqual(["Cable Rope Hammer Curl"]);
     expect(filterExercises(list, "biceps")).toHaveLength(2);
   });
   it("narrows to one body part", () => {
-    expect(filterExercises(list, "", "Pull").map((e) => e.name)).toEqual(["Lat Pulldown"]);
+    expect(filterExercises(list, "", "Back").map((e) => e.name)).toEqual(["Lat Pulldown"]);
     expect(filterExercises(list, "press", "Biceps")).toEqual([]);
   });
 });

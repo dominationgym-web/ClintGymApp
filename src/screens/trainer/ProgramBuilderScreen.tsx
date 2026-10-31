@@ -13,7 +13,7 @@ import TextInput from "@/components/TextInput";
 import ModalSafeArea from "../../components/ModalSafeArea";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";
-import { filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import { categoryLabel, exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -70,6 +70,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const [activeDay, setActiveDay] = useState(1);
   const [picking, setPicking] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [muscle, setMuscle] = useState<string | null>(null);
   const [place, setPlace] = useState<ExercisePlace>("gym");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -185,9 +186,10 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     setPicking(null);
     setPreviewId(null);
     setSearch("");
+    setMuscle(null);
   };
 
-  const filtered = filterExercises(forPlace(library, place), search);
+  const filtered = filterExercises(forPlace(library, place), search, muscle);
 
   // Laptop: where the library's Add goes. The slot the trainer clicked, else
   // the first empty exercise of the day.
@@ -448,6 +450,14 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
             value={search}
             onChangeText={setSearch}
           />
+          {/* Tap a muscle to see all its exercises (GRIZZ, 2026-10-31). */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.muscleChips} contentContainerStyle={{ paddingHorizontal: 20 }}>
+            {[null, ...exerciseCategories(forPlace(library, place))].map((m) => (
+              <Pressable key={m ?? "all"} style={[styles.muscleChip, muscle === m && styles.muscleChipOn]} onPress={() => setMuscle(m)}>
+                <Text style={[styles.muscleChipText, muscle === m && styles.muscleChipTextOn]}>{m ?? "All"}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
           <FlatList
             data={filtered}
             keyExtractor={(e) => e.id}
@@ -459,7 +469,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                   <ExerciseThumb url={item.external_url} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.pickerText}>{item.name}</Text>
-                    {item.category && <Text style={styles.category}>{item.category}</Text>}
+                    {item.category && <Text style={styles.category}>{categoryLabel(item.category)}</Text>}
                   </View>
                   <Pressable hitSlop={6} onPress={() => setPreviewId((id) => (id === item.id ? null : item.id))}>
                     <Text style={styles.watch}>{previewId === item.id ? "Hide" : "▶ Watch"}</Text>
@@ -645,6 +655,11 @@ const styles = themedStyles({
   close: { color: BRAND_GOLD, fontWeight: "600", fontSize: 15 },
   libraryRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 8 },
   libraryTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  muscleChips: { flexGrow: 0, marginBottom: 10 },
+  muscleChip: { backgroundColor: "#1E293B", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8 },
+  muscleChipOn: { backgroundColor: BRAND_GOLD },
+  muscleChipText: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
+  muscleChipTextOn: { color: "#0F172A" },
   watch: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
   useButton: { backgroundColor: BRAND_GOLD, borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
   useText: { color: "#0F172A", fontWeight: "800", fontSize: 13 },
