@@ -9,6 +9,7 @@ import { RECOVERY_MENU_ITEM } from "@/lib/recoveryActivities";
 import { supabase } from "@/lib/supabase";
 import { TIMER_MENU_ITEM } from "@/lib/timerWorkouts";
 import { VIDEO_CHECKIN_MENU_ITEM } from "@/lib/videoCheckins";
+import { CLIENT_SESSIONS_MENU_ITEM } from "@/lib/liveSessions";
 import { HELP_SETTINGS_MENU_ITEM } from "@/screens/client/HelpSettingsScreen";
 import { COACH_MEAL_PLAN_TITLE, useHasMealPlanWith, type Recheck } from "@/hooks/useHasMealPlan";
 import { navigationRef } from "@/navigation/navigationRef";
@@ -44,6 +45,20 @@ export function useClientMenuItems(recheck: Recheck): MenuItem[] {
     return recheck(check);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client?.id]);
+  // In-person sessions (0168): only once the coach has set them up.
+  const [hasSessions, setHasSessions] = useState(false);
+  useEffect(() => {
+    if (!client) return;
+    const check = () =>
+      supabase
+        .from("session_plans")
+        .select("client_id", { count: "exact", head: true })
+        .eq("client_id", client.id)
+        .then(({ count }) => setHasSessions((count ?? 0) > 0));
+    check();
+    return recheck(check);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client?.id]);
   const first = TOP_SECTIONS.flatMap((key) => sections.filter((s) => s.key === key));
   const rest = sections.filter((s) => !TOP_SECTIONS.includes(s.key));
   const item = (section: (typeof sections)[number]): MenuItem => ({
@@ -66,6 +81,10 @@ export function useClientMenuItems(recheck: Recheck): MenuItem[] {
             onPress: () => navigationRef.navigate("Section", { sectionKey: "nutrition", open: COACH_MEAL_PLAN_TITLE }),
           },
         ]
+      : []),
+    // In-person sessions with the coach (0168), once the coach has set them up.
+    ...(hasSessions
+      ? [{ ...CLIENT_SESSIONS_MENU_ITEM, route: "MySessions", onPress: () => navigationRef.navigate("MySessions") }]
       : []),
     { ...VIDEO_CHECKIN_MENU_ITEM, route: "VideoCheckIn", onPress: () => navigationRef.navigate("VideoCheckIn") },
     { ...RECOVERY_MENU_ITEM, route: "Recovery", onPress: () => navigationRef.navigate("Recovery") },

@@ -26,6 +26,7 @@ import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
 import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
 import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
+import LiveSessionsScreen from "@/screens/trainer/LiveSessionsScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
@@ -132,6 +133,7 @@ export default function TrainerNavigator() {
             <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
             <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ title: "Monthly challenges", headerBackTitle: "Back" }} />
             <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />
+            <Stack.Screen name="LiveSessions" component={LiveSessionsScreen} options={{ title: "Live sessions", headerBackTitle: "Back" }} />
             <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
             <Stack.Screen
               name="ProgramBuilder"

@@ -1095,6 +1095,126 @@ export type VideoCheckin = {
   updated_at: string;
 };
 export type OpenVideoSlot = { slot_id: string; starts_at: string; minutes: number };
+// In-person session booking (0168): the trainer's defaults, each client's
+// plan, signed agreements, every session and the month's invoices.
+export type SessionBilling = "advance" | "arrears";
+export type SessionPolicy = "24h" | "12h" | "trainer";
+export type SessionSettings = {
+  trainer_id: string;
+  fee: number | null;
+  currency: BillingCurrency;
+  billing: SessionBilling;
+  policy: SessionPolicy;
+  minutes: number;
+  // "05:10:00": times offered step by the session length from here (0168).
+  day_start: string;
+  day_end: string;
+  time_zone: string;
+  // The trainer's own wording of the session agreement; null = the standard text.
+  agreement_text: string | null;
+  updated_at: string;
+};
+// weekday 0 Sunday; time "06:00" in the trainer's time zone.
+export type RegularTime = { weekday: number; time: string };
+export type SessionPlan = {
+  client_id: string;
+  trainer_id: string;
+  fee: number;
+  per_week: number;
+  // Shared sessions: how many share the slot, and the slot's total fee (fee is this client's share).
+  group_size: number;
+  group_total: number | null;
+  // Special rate: what they pay when they train alone and the others are credited.
+  solo_fee: number | null;
+  billing: SessionBilling;
+  policy: SessionPolicy;
+  minutes: number;
+  regular: RegularTime[];
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+export type SessionAgreement = {
+  id: string;
+  client_id: string;
+  trainer_id: string;
+  signed_name: string;
+  agreement: string;
+  fee: number;
+  per_week: number;
+  group_size: number;
+  billing: SessionBilling;
+  policy: SessionPolicy;
+  regular: RegularTime[];
+  signed_at: string;
+};
+export type LiveSessionStatus = "booked" | "done" | "cancelled" | "no_show" | "removed";
+export type LiveSession = {
+  id: string;
+  trainer_id: string;
+  client_id: string;
+  starts_at: string;
+  minutes: number;
+  fee: number;
+  regular_at: string | null;
+  status: LiveSessionStatus;
+  cancelled_by: "client" | "trainer" | null;
+  cancelled_at: string | null;
+  logged_by: "client" | "trainer" | null;
+  // makeup: kept for a catch-up session instead of a credit.
+  charge: "charge" | "credit" | "makeup" | null;
+  makeup_for: string | null;
+  makeup_session_id: string | null;
+  proof_path: string | null;
+  note: string | null;
+  trainer_confirmed_at: string | null;
+  client_confirmed_at: string | null;
+  client_disputed_at: string | null;
+  asked_trainer: boolean;
+  invoice_id: string | null;
+  credit_invoice_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+// What a session counts as on an invoice (live_session_kind in 0168).
+export type SessionKind = "done" | "unconfirmed" | "booked" | "late" | "no_show" | "notice" | "excused" | "makeup" | "trainer" | "decide" | "removed";
+export type InvoiceLine = {
+  id: string;
+  at: string;
+  kind: SessionKind;
+  // charge: on this invoice; credit: money back for an earlier invoice; diary: listed only.
+  role: "charge" | "credit" | "diary";
+  amount: number;
+  fee: number;
+  by: "client" | "trainer" | null;
+  cancelled_at: string | null;
+  notice_hours: number | null;
+  proof: string | null;
+  note: string | null;
+  client_ok: boolean;
+  disputed: boolean;
+  catch_up: boolean;
+  catch_up_booked: boolean;
+};
+export type SessionInvoice = {
+  id: string;
+  trainer_id: string;
+  client_id: string;
+  month: string;
+  billing: SessionBilling;
+  currency: BillingCurrency;
+  lines: InvoiceLine[];
+  charged: number;
+  credited: number;
+  total: number;
+  undecided: number;
+  unconfirmed: number;
+  status: "draft" | "sent" | "paid";
+  sent_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 // One row of quiet_clients() (0156): a client the trainer hasn't been in touch with lately.
 export type QuietClientRow = { client_id: string; name: string; phone: string | null; last_spoke_at: string | null; days_quiet: number };
 
@@ -1237,6 +1357,16 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      session_settings: {
+        Row: SessionSettings;
+        Insert: Partial<SessionSettings>;
+        Update: Partial<SessionSettings>;
+        Relationships: [];
+      };
+      session_plans: { Row: SessionPlan; Insert: never; Update: never; Relationships: [] };
+      session_agreements: { Row: SessionAgreement; Insert: never; Update: never; Relationships: [] };
+      live_sessions: { Row: LiveSession; Insert: never; Update: never; Relationships: [] };
+      session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
       trainer_problem_messages: {
         Row: TrainerProblemMessage;
         Insert: never;
@@ -1466,6 +1596,48 @@ export interface Database {
       respond_video_checkin: { Args: { p_id: string; p_confirm: boolean; p_reason?: string | null }; Returns: VideoCheckin };
       cancel_video_checkin: { Args: { p_id: string; p_reason?: string | null }; Returns: VideoCheckin };
       set_video_checkin_repeat: { Args: { p_id: string; p_repeat: boolean }; Returns: VideoCheckin };
+      save_session_plan: {
+        Args: {
+          p_client: string;
+          p_fee: number;
+          p_per_week: number;
+          p_billing: SessionBilling;
+          p_policy: SessionPolicy;
+          p_minutes: number;
+          p_regular: RegularTime[];
+          p_active?: boolean;
+          p_group_size?: number;
+          p_group_total?: number | null;
+          p_solo_fee?: number | null;
+        };
+        Returns: SessionPlan;
+      };
+      sign_session_agreement: { Args: { p_name: string; p_agreement: string }; Returns: SessionAgreement };
+      add_live_session: {
+        Args: { p_client: string; p_starts_at: string; p_minutes?: number | null; p_makeup_for?: string | null };
+        Returns: LiveSession;
+      };
+      move_live_session: { Args: { p_id: string; p_starts_at: string }; Returns: LiveSession };
+      remove_live_session: { Args: { p_id: string }; Returns: LiveSession };
+      cancel_live_session: { Args: { p_id: string; p_reason?: string | null }; Returns: LiveSession };
+      log_session_cancellation: {
+        Args: {
+          p_id: string;
+          p_by: "client" | "trainer";
+          p_cancelled_at: string;
+          p_proof_path?: string | null;
+          p_note?: string | null;
+          p_charge?: "charge" | "credit" | "makeup" | null;
+        };
+        Returns: LiveSession;
+      };
+      set_session_outcome: { Args: { p_id: string; p_outcome: "done" | "no_show" | "booked" }; Returns: LiveSession };
+      set_session_fee: { Args: { p_id: string; p_fee: number }; Returns: LiveSession };
+      set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
+      client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
+      build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };
+      send_session_invoice: { Args: { p_id: string }; Returns: SessionInvoice };
+      set_session_invoice_paid: { Args: { p_id: string; p_paid: boolean }; Returns: SessionInvoice };
       send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };
       set_trainer_problem_status: { Args: { p_problem: string; p_status: TrainerProblemStatus }; Returns: undefined };
       share_challenge: { Args: { p_id: string }; Returns: ChallengeLibraryItem };

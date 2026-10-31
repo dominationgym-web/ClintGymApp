@@ -21,6 +21,7 @@ import StabilityScreen from "@/screens/client/StabilityScreen";
 import RecoveryScreen from "@/screens/client/RecoveryScreen";
 import TimersScreen from "@/screens/TimersScreen";
 import VideoCheckInScreen from "@/screens/client/VideoCheckInScreen";
+import MySessionsScreen from "@/screens/client/MySessionsScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
 import { findSection } from "@/lib/sections";
 import DailyStartPopup from "@/components/DailyStartPopup";
@@ -134,6 +135,7 @@ export default function ClientNavigator() {
             <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
             <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
             <Stack.Screen name="VideoCheckIn" component={VideoCheckInScreen} options={{ title: "Video check-in", headerBackTitle: "Back" }} />
+            <Stack.Screen name="MySessions" component={MySessionsScreen} options={{ title: "My sessions", headerBackTitle: "Back" }} />
             <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: "Notifications", headerBackTitle: "Back" }} />
             <Stack.Screen name="HelpSettings" component={HelpSettingsScreen} options={{ title: "Help & settings", headerBackTitle: "Back" }} />
             <Stack.Screen name="FormVideos" component={VideoUploadScreen} options={{ title: "Form videos", headerBackTitle: "Back" }} />
