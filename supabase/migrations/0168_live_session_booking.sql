@@ -14,6 +14,11 @@
 -- Cancellation rule: '24h' / '12h' (notice of at least that many hours is
 -- credited, less is charged) or 'trainer' (the trainer picks each time). A
 -- no-show is charged; a session the trainer cancels is always credited.
+-- Instead of a credit the trainer can give a catch-up (GRIZZ, 2026-10-31:
+-- "Either a credit or a catchup ... They don't get a catchup or credit for
+-- late cancellations"): charge 'makeup' keeps the session paid, the catch-up
+-- is booked later at no fee, and the trainer is reminded on Mondays and
+-- Wednesdays until it is.
 --
 -- Billing: an invoice for month M charges (a) in advance only: M's sessions
 -- still booked, (b) every earlier session that was never on an invoice and
@@ -47,6 +52,15 @@ create table public.session_plans (
   trainer_id uuid not null references public.trainers (id) on delete cascade,
   fee numeric(10, 2) not null check (fee >= 0),
   per_week smallint not null default 3 check (per_week between 1 and 14),
+  -- Shared sessions (GRIZZ, 2026-10-31: "R1 200 for 2 people ... Better to be
+  -- split ... some clients train 4 to 6"): how many share the slot and the
+  -- slot's total fee; fee is then this client's share.
+  group_size smallint not null default 1 check (group_size between 1 and 6),
+  group_total numeric(10, 2) check (group_total is null or group_total >= 0),
+  -- Special rate (GRIZZ, 2026-10-31: "they pay 1000 for a session together.
+  -- But if one shows he pays 700 and the other gets a credit"): what this
+  -- client pays when they end up training alone and the others are credited.
+  solo_fee numeric(10, 2) check (solo_fee is null or solo_fee >= 0),
   billing text not null check (billing in ('advance', 'arrears')),
   policy text not null check (policy in ('24h', '12h', 'trainer')),
   minutes integer not null default 60 check (minutes between 15 and 180),
@@ -66,6 +80,7 @@ create table public.session_agreements (
   agreement text not null check (char_length(agreement) <= 20000),
   fee numeric(10, 2) not null,
   per_week smallint not null,
+  group_size smallint not null default 1,
   billing text not null,
   policy text not null,
   regular jsonb not null default '[]'::jsonb,
@@ -115,8 +130,13 @@ create table public.live_sessions (
   cancelled_at timestamptz,
   -- Who put the cancellation into the app.
   logged_by text check (logged_by is null or logged_by in ('client', 'trainer')),
-  -- For a cancellation or no-show: charged or credited. Null = trainer still to decide.
-  charge text check (charge is null or charge in ('charge', 'credit')),
+  -- For a cancellation or no-show: charged, credited, or kept for a catch-up.
+  -- Null = trainer still to decide.
+  charge text check (charge is null or charge in ('charge', 'credit', 'makeup')),
+  -- A catch-up: the cancelled session it makes up for (booked at no fee).
+  makeup_for uuid references public.live_sessions (id) on delete set null,
+  -- On the cancelled session: its catch-up, once booked.
+  makeup_session_id uuid references public.live_sessions (id) on delete set null,
   proof_path text,
   note text check (note is null or char_length(note) <= 500),
   trainer_confirmed_at timestamptz,
@@ -271,7 +291,10 @@ create or replace function public.save_session_plan(
   p_policy text,
   p_minutes integer,
   p_regular jsonb,
-  p_active boolean default true
+  p_active boolean default true,
+  p_group_size integer default 1,
+  p_group_total numeric default null,
+  p_solo_fee numeric default null
 )
 returns public.session_plans
 language plpgsql
@@ -288,11 +311,14 @@ begin
   tz := public.session_tz(auth.uid());
   select * into was from public.session_plans where client_id = p_client;
 
-  insert into public.session_plans as sp (client_id, trainer_id, fee, per_week, billing, policy, minutes, regular, active, updated_at)
-  values (p_client, auth.uid(), p_fee, p_per_week, p_billing, p_policy, p_minutes, coalesce(p_regular, '[]'::jsonb), coalesce(p_active, true), now())
+  insert into public.session_plans as sp (client_id, trainer_id, fee, per_week, billing, policy, minutes, regular, active, group_size, group_total, solo_fee, updated_at)
+  values (p_client, auth.uid(), p_fee, p_per_week, p_billing, p_policy, p_minutes, coalesce(p_regular, '[]'::jsonb), coalesce(p_active, true),
+          coalesce(p_group_size, 1), case when coalesce(p_group_size, 1) > 1 then p_group_total end,
+          case when coalesce(p_group_size, 1) > 1 then p_solo_fee end, now())
   on conflict (client_id) do update
     set trainer_id = excluded.trainer_id, fee = excluded.fee, per_week = excluded.per_week, billing = excluded.billing,
         policy = excluded.policy, minutes = excluded.minutes, regular = excluded.regular, active = excluded.active,
+        group_size = excluded.group_size, group_total = excluded.group_total, solo_fee = excluded.solo_fee,
         updated_at = now()
   returning * into saved;
 
@@ -350,8 +376,8 @@ begin
   if char_length(btrim(coalesce(p_name, ''))) < 2 then
     raise exception 'Type your full name to sign';
   end if;
-  insert into public.session_agreements (client_id, trainer_id, signed_name, agreement, fee, per_week, billing, policy, regular)
-  values (p.client_id, p.trainer_id, btrim(p_name), p_agreement, p.fee, p.per_week, p.billing, p.policy, p.regular)
+  insert into public.session_agreements (client_id, trainer_id, signed_name, agreement, fee, per_week, group_size, billing, policy, regular)
+  values (p.client_id, p.trainer_id, btrim(p_name), p_agreement, p.fee, p.per_week, p.group_size, p.billing, p.policy, p.regular)
   returning * into saved;
   select c.name into who from public.clients c where c.id = p.client_id;
   perform public.push_to_user(
@@ -365,7 +391,7 @@ end;
 $$;
 
 -- The trainer books a one-off session (fee and length from the client's plan).
-create or replace function public.add_live_session(p_client uuid, p_starts_at timestamptz, p_minutes integer default null)
+create or replace function public.add_live_session(p_client uuid, p_starts_at timestamptz, p_minutes integer default null, p_makeup_for uuid default null)
 returns public.live_sessions
 language plpgsql
 security definer
@@ -382,13 +408,23 @@ begin
   if p.client_id is null and s.fee is null then
     raise exception 'Set this client''s session fee first';
   end if;
-  insert into public.live_sessions (trainer_id, client_id, starts_at, minutes, fee)
-  values (auth.uid(), p_client, p_starts_at, coalesce(p_minutes, p.minutes, s.minutes, 60), coalesce(p.fee, s.fee))
+  if p_makeup_for is not null and not exists (
+    select 1 from public.live_sessions o
+    where o.id = p_makeup_for and o.client_id = p_client and o.charge = 'makeup' and o.makeup_session_id is null
+  ) then
+    raise exception 'That catch-up has already been booked';
+  end if;
+  insert into public.live_sessions (trainer_id, client_id, starts_at, minutes, fee, makeup_for)
+  values (auth.uid(), p_client, p_starts_at, coalesce(p_minutes, p.minutes, s.minutes, 60),
+          case when p_makeup_for is null then coalesce(p.fee, s.fee) else 0 end, p_makeup_for)
   returning * into saved;
+  if p_makeup_for is not null then
+    update public.live_sessions set makeup_session_id = saved.id, updated_at = now() where id = p_makeup_for;
+  end if;
   if p_starts_at > now() then
     perform public.push_to_user(
       p_client,
-      '🤝 Session booked',
+      case when p_makeup_for is null then '🤝 Session booked' else '🤝 Catch-up session booked' end,
       public.video_checkin_when(p_starts_at, public.session_tz(auth.uid())) || ' with your coach.',
       jsonb_build_object('type', 'live_session')
     );
@@ -614,6 +650,29 @@ begin
 end;
 $$;
 
+-- The trainer changes one session's fee: the special rate when someone
+-- trained alone, or back to their normal share. Not once it's on a sent invoice.
+create or replace function public.set_session_fee(p_id uuid, p_fee numeric)
+returns public.live_sessions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  saved public.live_sessions;
+begin
+  update public.live_sessions ls
+  set fee = p_fee, updated_at = now()
+  where ls.id = p_id and ls.trainer_id = auth.uid() and p_fee >= 0
+    and (ls.invoice_id is null or exists (select 1 from public.session_invoices i where i.id = ls.invoice_id and i.status = 'draft'))
+  returning * into saved;
+  if saved.id is null then
+    raise exception 'That session is already on a sent invoice';
+  end if;
+  return saved;
+end;
+$$;
+
 -- The trainer changes charge/credit on a cancellation or no-show.
 create or replace function public.set_session_charge(p_id uuid, p_charge text)
 returns public.live_sessions
@@ -624,15 +683,17 @@ as $$
 declare
   saved public.live_sessions;
 begin
-  if p_charge not in ('charge', 'credit') then
-    raise exception 'Charge or credit?';
+  if p_charge not in ('charge', 'credit', 'makeup') then
+    raise exception 'Charge, credit or catch-up?';
   end if;
   update public.live_sessions
   set charge = p_charge, updated_at = now()
   where id = p_id and trainer_id = auth.uid() and status in ('cancelled', 'no_show')
+    -- A catch-up already booked stays a catch-up.
+    and (makeup_session_id is null or p_charge = 'makeup')
   returning * into saved;
   if saved.id is null then
-    raise exception 'Only a cancelled session can be charged or credited';
+    raise exception 'Only a cancelled session without a booked catch-up can be changed';
   end if;
   return saved;
 end;
@@ -682,11 +743,13 @@ as $$
     when p_status = 'done' then 'done'
     when p_status = 'booked' and p_starts_at + make_interval(mins => p_minutes) < now() then 'unconfirmed'
     when p_status = 'booked' then 'booked'
-    when p_status = 'no_show' then case when p_charge = 'credit' then 'notice' else 'no_show' end
+    -- Didn't come to a (group) session: the trainer forfeits it or credits it.
+    when p_status = 'no_show' then case when p_charge = 'credit' then 'excused' when p_charge = 'makeup' then 'makeup' else 'no_show' end
     when p_status = 'removed' then 'removed'
     when p_by = 'trainer' then 'trainer'
     when p_charge = 'charge' then 'late'
     when p_charge = 'credit' then 'notice'
+    when p_charge = 'makeup' then 'makeup'
     else 'decide'
   end
 $$;
@@ -756,7 +819,7 @@ begin
     amt := 0;
     if r.invoice_id is null then
       -- Not on any invoice yet: charge it if it's billable now.
-      if kind in ('done', 'unconfirmed', 'late', 'no_show') and (r.in_month or r.starts_at < m_start)
+      if kind in ('done', 'unconfirmed', 'late', 'no_show', 'makeup') and (r.in_month or r.starts_at < m_start)
          and (bill = 'advance' or r.starts_at < m_end) then
         role := 'charge';
       elsif kind = 'booked' and bill = 'advance' and r.in_month then
@@ -764,7 +827,7 @@ begin
       elsif r.in_month then
         role := 'diary';
       end if;
-    elsif r.credit_invoice_id is null and kind in ('notice', 'trainer', 'removed')
+    elsif r.credit_invoice_id is null and kind in ('notice', 'excused', 'trainer', 'removed')
           and exists (select 1 from public.session_invoices i where i.id = r.invoice_id and i.status <> 'draft') then
       role := 'credit';
     elsif r.in_month and kind <> 'removed' then
@@ -798,7 +861,9 @@ begin
       'proof', r.proof_path,
       'note', r.note,
       'client_ok', r.client_confirmed_at is not null,
-      'disputed', r.client_disputed_at is not null
+      'disputed', r.client_disputed_at is not null,
+      'catch_up', r.makeup_for is not null,
+      'catch_up_booked', r.makeup_session_id is not null
     );
   end loop;
 
@@ -934,21 +999,28 @@ as $$
 declare
   v record;
 begin
+  -- One question per time slot, so a group session asks once.
   for v in
-    select ls.id, ls.trainer_id, ls.client_id, ls.starts_at, c.name as client_name
+    select ls.trainer_id, ls.starts_at, array_agg(ls.id) as ids, count(*) as n,
+           string_agg(split_part(coalesce(c.name, 'client'), ' ', 1), ', ' order by c.name) as names,
+           (array_agg(ls.client_id))[1] as client_id
     from public.live_sessions ls
     join public.clients c on c.id = ls.client_id
     where ls.status = 'booked' and not ls.asked_trainer
       and ls.starts_at + make_interval(mins => ls.minutes) + interval '15 minutes' <= now()
       and ls.starts_at > now() - interval '2 days'
+    group by ls.trainer_id, ls.starts_at
   loop
-    update public.live_sessions set asked_trainer = true where id = v.id;
+    update public.live_sessions set asked_trainer = true where id = any (v.ids);
     perform public.push_to_user(
       v.trainer_id,
-      '🤝 Did your ' || to_char(v.starts_at at time zone public.session_tz(v.trainer_id), 'HH24:MI') || ' with '
-        || split_part(coalesce(v.client_name, 'your client'), ' ', 1) || ' happen?',
-      'Tap Done, Cancelled or No-show so it''s on their invoice.',
-      jsonb_build_object('type', 'live_session_ask', 'sessionId', v.id, 'clientId', v.client_id)
+      case when v.n > 1
+        then '👥 Who came to your ' || to_char(v.starts_at at time zone public.session_tz(v.trainer_id), 'HH24:MI') || ' group?'
+        else '🤝 Did your ' || to_char(v.starts_at at time zone public.session_tz(v.trainer_id), 'HH24:MI') || ' with ' || v.names || ' happen?'
+      end,
+      case when v.n > 1 then v.names || '. Tick who came so it''s on their invoices.'
+        else 'Tap Done, Cancelled or No-show so it''s on their invoice.' end,
+      jsonb_build_object('type', 'live_session_ask', 'clientId', v.client_id)
     );
   end loop;
 end;
@@ -1011,6 +1083,37 @@ begin
 end;
 $$;
 
+-- Mondays and Wednesdays: remind each trainer of catch-ups still to book.
+create or replace function public.session_makeup_reminders()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  t record;
+begin
+  for t in
+    select ls.trainer_id, count(*) as n,
+           string_agg(distinct split_part(c.name, ' ', 1), ', ') as names
+    from public.live_sessions ls
+    join public.clients c on c.id = ls.client_id and c.trainer_id = ls.trainer_id and c.archived_at is null
+    where ls.charge = 'makeup' and ls.makeup_session_id is null
+      and ls.starts_at > now() - interval '90 days'
+    group by ls.trainer_id
+  loop
+    perform public.push_to_user(
+      t.trainer_id,
+      '🔁 Find a gap for ' || t.n || case when t.n = 1 then ' catch-up' else ' catch-ups' end,
+      'Owed to ' || t.names || '. Tap to book them in.',
+      jsonb_build_object('type', 'live_session')
+    );
+  end loop;
+end;
+$$;
+
+revoke execute on function public.session_makeup_reminders() from public, anon, authenticated;
+
 revoke execute on function public.session_tz(uuid) from public, anon;
 revoke execute on function public.session_require_trainer(uuid) from public, anon, authenticated;
 revoke execute on function public.fill_regular_sessions(uuid) from public, anon, authenticated;
@@ -1025,9 +1128,10 @@ declare
   f text;
 begin
   foreach f in array array[
-    'save_session_plan(uuid, numeric, integer, text, text, integer, jsonb, boolean)',
+    'save_session_plan(uuid, numeric, integer, text, text, integer, jsonb, boolean, integer, numeric, numeric)',
+    'set_session_fee(uuid, numeric)',
     'sign_session_agreement(text, text)',
-    'add_live_session(uuid, timestamptz, integer)',
+    'add_live_session(uuid, timestamptz, integer, uuid)',
     'move_live_session(uuid, timestamptz)',
     'remove_live_session(uuid)',
     'cancel_live_session(uuid, text)',
@@ -1046,5 +1150,7 @@ end;
 $$;
 
 select cron.schedule('live-session-asks', '*/5 * * * *', $$select public.live_session_asks();$$);
+-- Mondays and Wednesdays, 05:00 UTC is 07:00 in South Africa.
+select cron.schedule('session-makeup-reminders', '0 5 * * 1,3', $$select public.session_makeup_reminders();$$);
 -- 03:30 UTC is 05:30 in South Africa: invoices are ready before the day starts.
 select cron.schedule('session-month-end', '30 3 * * *', $$select public.session_month_end();$$);

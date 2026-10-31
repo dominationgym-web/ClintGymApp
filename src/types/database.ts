@@ -1121,6 +1121,11 @@ export type SessionPlan = {
   trainer_id: string;
   fee: number;
   per_week: number;
+  // Shared sessions: how many share the slot, and the slot's total fee (fee is this client's share).
+  group_size: number;
+  group_total: number | null;
+  // Special rate: what they pay when they train alone and the others are credited.
+  solo_fee: number | null;
   billing: SessionBilling;
   policy: SessionPolicy;
   minutes: number;
@@ -1137,6 +1142,7 @@ export type SessionAgreement = {
   agreement: string;
   fee: number;
   per_week: number;
+  group_size: number;
   billing: SessionBilling;
   policy: SessionPolicy;
   regular: RegularTime[];
@@ -1155,7 +1161,10 @@ export type LiveSession = {
   cancelled_by: "client" | "trainer" | null;
   cancelled_at: string | null;
   logged_by: "client" | "trainer" | null;
-  charge: "charge" | "credit" | null;
+  // makeup: kept for a catch-up session instead of a credit.
+  charge: "charge" | "credit" | "makeup" | null;
+  makeup_for: string | null;
+  makeup_session_id: string | null;
   proof_path: string | null;
   note: string | null;
   trainer_confirmed_at: string | null;
@@ -1168,7 +1177,7 @@ export type LiveSession = {
   updated_at: string;
 };
 // What a session counts as on an invoice (live_session_kind in 0168).
-export type SessionKind = "done" | "unconfirmed" | "booked" | "late" | "no_show" | "notice" | "trainer" | "decide" | "removed";
+export type SessionKind = "done" | "unconfirmed" | "booked" | "late" | "no_show" | "notice" | "excused" | "makeup" | "trainer" | "decide" | "removed";
 export type InvoiceLine = {
   id: string;
   at: string;
@@ -1184,6 +1193,8 @@ export type InvoiceLine = {
   note: string | null;
   client_ok: boolean;
   disputed: boolean;
+  catch_up: boolean;
+  catch_up_booked: boolean;
 };
 export type SessionInvoice = {
   id: string;
@@ -1595,11 +1606,17 @@ export interface Database {
           p_minutes: number;
           p_regular: RegularTime[];
           p_active?: boolean;
+          p_group_size?: number;
+          p_group_total?: number | null;
+          p_solo_fee?: number | null;
         };
         Returns: SessionPlan;
       };
       sign_session_agreement: { Args: { p_name: string; p_agreement: string }; Returns: SessionAgreement };
-      add_live_session: { Args: { p_client: string; p_starts_at: string; p_minutes?: number | null }; Returns: LiveSession };
+      add_live_session: {
+        Args: { p_client: string; p_starts_at: string; p_minutes?: number | null; p_makeup_for?: string | null };
+        Returns: LiveSession;
+      };
       move_live_session: { Args: { p_id: string; p_starts_at: string }; Returns: LiveSession };
       remove_live_session: { Args: { p_id: string }; Returns: LiveSession };
       cancel_live_session: { Args: { p_id: string; p_reason?: string | null }; Returns: LiveSession };
@@ -1610,12 +1627,13 @@ export interface Database {
           p_cancelled_at: string;
           p_proof_path?: string | null;
           p_note?: string | null;
-          p_charge?: "charge" | "credit" | null;
+          p_charge?: "charge" | "credit" | "makeup" | null;
         };
         Returns: LiveSession;
       };
       set_session_outcome: { Args: { p_id: string; p_outcome: "done" | "no_show" | "booked" }; Returns: LiveSession };
-      set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" }; Returns: LiveSession };
+      set_session_fee: { Args: { p_id: string; p_fee: number }; Returns: LiveSession };
+      set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
       build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };
       send_session_invoice: { Args: { p_id: string }; Returns: SessionInvoice };

@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { money } from "@/lib/billing";
 import { phoneTimeZone, whatsappDigits } from "@/lib/videoCheckins";
+import { eftRows } from "@/lib/trainers";
 import {
   AGREEMENT_TEMPLATE,
   AGREEMENT_WORDS,
@@ -28,6 +29,7 @@ import {
   dayKey,
   dayLabel,
   fillAgreement,
+  groupFees,
   invoiceText,
   kindDetail,
   monthLabel,
@@ -44,7 +46,7 @@ import type { BillingCurrency, LiveSession, SessionAgreement, SessionInvoice, Se
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 type Tab = "todo" | "calendar" | "clients" | "invoices" | "setup";
-type ClientInfo = { id: string; name: string; phone: string | null };
+type ClientInfo = { id: string; name: string; phone: string | null; email: string | null };
 
 // In-person session booking (0168, GRIZZ 2026-10-31). Five tabs instead of
 // one long page: what needs the trainer now, the month calendar, each
@@ -63,6 +65,8 @@ export default function LiveSessionsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState<LiveSession | null>(null);
+  // A cancelled session whose catch-up is being booked on the Calendar tab.
+  const [makeup, setMakeup] = useState<LiveSession | null>(null);
 
   useEffect(() => {
     if (route.params?.tab) setTab(route.params.tab);
@@ -70,13 +74,13 @@ export default function LiveSessionsScreen() {
 
   const load = useCallback(async () => {
     if (!trainer) return;
-    const from = new Date(Math.min(new Date(`${shiftMonth(month, -1)}T00:00:00`).getTime(), Date.now() - 62 * 86400000)).toISOString();
+    const from = new Date(Math.min(new Date(`${shiftMonth(month, -1)}T00:00:00`).getTime(), Date.now() - 92 * 86400000)).toISOString();
     const to = new Date(`${shiftMonth(month, 2)}T00:00:00`).toISOString();
     const [s, p, a, c, ls, d] = await Promise.all([
       supabase.from("session_settings").select("*").eq("trainer_id", trainer.id).maybeSingle(),
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
-      supabase.from("clients").select("id, name, phone").eq("trainer_id", trainer.id).neq("id", trainer.id).is("archived_at", null).order("name"),
+      supabase.from("clients").select("id, name, phone, email").eq("trainer_id", trainer.id).neq("id", trainer.id).is("archived_at", null).order("name"),
       supabase.from("live_sessions").select("*").eq("trainer_id", trainer.id).gte("starts_at", from).lt("starts_at", to).order("starts_at"),
       supabase.from("session_invoices").select("*").eq("trainer_id", trainer.id).eq("status", "draft").order("month"),
     ]);
@@ -108,9 +112,10 @@ export default function LiveSessionsScreen() {
   const now = new Date();
   const todo = sessions.filter((s) => ["unconfirmed", "decide"].includes(sessionKind(s, now)) || (s.status === "done" && s.client_disputed_at));
   const unsigned = plans.filter((p) => p.active && !agreementCurrent(signed[p.client_id], p));
+  const catchUps = sessions.filter((s) => s.charge === "makeup" && !s.makeup_session_id && (s.status === "cancelled" || s.status === "no_show"));
 
   const tabs: ScreenTab<Tab>[] = [
-    { key: "todo", label: "To do", icon: "checkbox", dot: todo.length || unsigned.length ? "#F59E0B" : null },
+    { key: "todo", label: "To do", icon: "checkbox", dot: todo.length || unsigned.length || catchUps.length ? "#F59E0B" : null },
     { key: "calendar", label: "Calendar", icon: "calendar" },
     { key: "clients", label: "Clients", icon: "people" },
     { key: "invoices", label: "Invoices", icon: "receipt", dot: drafts.length ? "#F59E0B" : null },
@@ -140,6 +145,13 @@ export default function LiveSessionsScreen() {
               todo={todo}
               today={sessions.filter((s) => dayKey(s.starts_at) === dayKey(now) && s.status === "booked")}
               unsigned={unsigned}
+              catchUps={catchUps}
+              planOf={planOf}
+              currency={settings?.currency ?? "ZAR"}
+              onCatchUp={(s) => {
+                setMakeup(s);
+                setTab("calendar");
+              }}
               drafts={drafts.length}
               name={name}
               onOpen={setOpen}
@@ -148,7 +160,19 @@ export default function LiveSessionsScreen() {
             />
           )}
           {tab === "calendar" && (
-            <CalendarTab month={month} onMonth={setMonth} sessions={sessions} clients={clients} plans={plans} settings={settings} name={name} onOpen={setOpen} onChanged={load} />
+            <CalendarTab
+              month={month}
+              onMonth={setMonth}
+              sessions={sessions}
+              clients={clients}
+              plans={plans}
+              settings={settings}
+              name={name}
+              makeup={makeup}
+              onMakeupDone={() => setMakeup(null)}
+              onOpen={setOpen}
+              onChanged={load}
+            />
           )}
           {tab === "clients" && <ClientsTab clients={clients} planOf={planOf} signed={signed} settings={settings} onChanged={load} />}
           {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} onChanged={load} />}
@@ -179,7 +203,7 @@ function SessionLine({ s, name, onOpen, showDay }: { s: LiveSession; name: strin
         {showDay ? ` · ${dayLabel(s.starts_at)}` : ""}
       </Text>
       <Text style={[styles.rowKind, { color: themeText(style.colour) }]}>
-        {style.icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, disputed: !!s.client_disputed_at })}
+        {style.icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, disputed: !!s.client_disputed_at, catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
       </Text>
     </Pressable>
   );
@@ -189,6 +213,10 @@ function ToDo({
   todo,
   today,
   unsigned,
+  catchUps,
+  onCatchUp,
+  planOf,
+  currency,
   drafts,
   name,
   onOpen,
@@ -198,6 +226,10 @@ function ToDo({
   todo: LiveSession[];
   today: LiveSession[];
   unsigned: SessionPlan[];
+  catchUps: LiveSession[];
+  onCatchUp: (s: LiveSession) => void;
+  planOf: Record<string, SessionPlan>;
+  currency: BillingCurrency;
   drafts: number;
   name: (id: string) => string;
   onOpen: (s: LiveSession) => void;
@@ -212,7 +244,14 @@ function ToDo({
     if (error) Alert.alert("Couldn't save", error.message);
     onChanged();
   };
-  const clear = !todo.length && !unsigned.length && !drafts;
+  // Unmarked sessions at the same time are a group: tick who came (GRIZZ, 2026-10-31).
+  const unmarked = todo.filter((s) => sessionKind(s) === "unconfirmed" && !s.client_disputed_at);
+  const byTime = new Map<string, LiveSession[]>();
+  for (const s of unmarked) byTime.set(s.starts_at, [...(byTime.get(s.starts_at) ?? []), s]);
+  const groups = [...byTime.values()].filter((g) => g.length > 1);
+  const inGroup = new Set(groups.flat().map((s) => s.id));
+  const singles = todo.filter((s) => !inGroup.has(s.id));
+  const clear = !todo.length && !unsigned.length && !drafts && !catchUps.length;
   return (
     <>
       {clear ? <Text style={styles.helper}>All clear 👍 Every past session is marked and every invoice is sent.</Text> : null}
@@ -226,7 +265,10 @@ function ToDo({
       ) : null}
 
       {todo.length ? <Text style={styles.sectionTitle}>Did these happen?</Text> : null}
-      {todo.map((s) => {
+      {groups.map((g) => (
+        <GroupCheck key={g[0].starts_at} sessions={g} name={name} planOf={planOf} currency={currency} onChanged={onChanged} />
+      ))}
+      {singles.map((s) => {
         const kind = sessionKind(s);
         return (
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
@@ -250,6 +292,21 @@ function ToDo({
         );
       })}
 
+      {catchUps.length ? <Text style={styles.sectionTitle}>🔁 Catch-ups to book</Text> : null}
+      {catchUps.map((s) => (
+        <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE.makeup.colour) }]}>
+          <Text style={styles.rowTitle}>{name(s.client_id)}</Text>
+          <Text style={styles.rowBody}>
+            For {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)} (cancelled in time)
+          </Text>
+          <View style={styles.actions}>
+            <Pressable style={styles.smallButton} onPress={() => onCatchUp(s)}>
+              <Text style={styles.smallButtonText}>Find a gap</Text>
+            </Pressable>
+          </View>
+        </View>
+      ))}
+
       {unsigned.length ? <Text style={styles.sectionTitle}>Not signed yet</Text> : null}
       {unsigned.map((p) => (
         <Text key={p.client_id} style={styles.helper}>
@@ -263,6 +320,111 @@ function ToDo({
   );
 }
 
+// A group session: tick who came. The rest are forfeited (charged) or
+// credited, the trainer's choice (GRIZZ, 2026-10-31).
+function GroupCheck({
+  sessions,
+  name,
+  planOf,
+  currency,
+  onChanged,
+}: {
+  sessions: LiveSession[];
+  name: (id: string) => string;
+  planOf: Record<string, SessionPlan>;
+  currency: BillingCurrency;
+  onChanged: () => void;
+}) {
+  const [came, setCame] = useState<Set<string>>(new Set(sessions.map((s) => s.id)));
+  const [missed, setMissed] = useState<"charge" | "credit">("charge");
+  const [saving, setSaving] = useState(false);
+  const absent = sessions.filter((s) => !came.has(s.id));
+  // The special rate: one person training alone pays their solo fee.
+  const fees = groupFees(
+    sessions.map((s) => ({
+      id: s.id,
+      came: came.has(s.id),
+      fee: Number(planOf[s.client_id]?.fee ?? s.fee),
+      soloFee: planOf[s.client_id]?.solo_fee != null ? Number(planOf[s.client_id].solo_fee) : null,
+    })),
+    missed
+  );
+  const special = sessions.find((s) => came.has(s.id) && fees[s.id] !== Number(planOf[s.client_id]?.fee ?? s.fee));
+  const save = async () => {
+    setSaving(true);
+    let failed = 0;
+    for (const s of sessions) {
+      if (Number(s.fee) !== fees[s.id]) {
+        const { error } = await supabase.rpc("set_session_fee", { p_id: s.id, p_fee: fees[s.id] });
+        if (error) failed++;
+      }
+      if (came.has(s.id)) {
+        const { error } = await supabase.rpc("set_session_outcome", { p_id: s.id, p_outcome: "done" });
+        if (error) failed++;
+      } else {
+        const { error } = await supabase.rpc("set_session_outcome", { p_id: s.id, p_outcome: "no_show" });
+        if (error) failed++;
+        else if (missed === "credit") {
+          const r = await supabase.rpc("set_session_charge", { p_id: s.id, p_charge: "credit" });
+          if (r.error) failed++;
+        }
+      }
+    }
+    setSaving(false);
+    if (failed) Alert.alert("Some didn't save", "Pull down to refresh and try again.");
+    onChanged();
+  };
+  return (
+    <View style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE.unconfirmed.colour) }]}>
+      <Text style={styles.rowTitle}>
+        👥 Group · {dayLabel(sessions[0].starts_at)}, {clockLabel(sessions[0].starts_at)}
+      </Text>
+      <Text style={styles.rowBody}>Tick who came:</Text>
+      {sessions.map((s) => {
+        const on = came.has(s.id);
+        return (
+          <Pressable
+            key={s.id}
+            style={styles.tickRow}
+            onPress={() => {
+              const next = new Set(came);
+              if (on) next.delete(s.id);
+              else next.add(s.id);
+              setCame(next);
+            }}
+          >
+            <View style={[styles.tick, on && styles.tickOn]}>{on ? <Text style={styles.tickMark}>✓</Text> : null}</View>
+            <Text style={styles.tickText}>{name(s.client_id)}</Text>
+          </Pressable>
+        );
+      })}
+      {absent.length ? (
+        <>
+          <Text style={styles.rowBody}>{absent.length === 1 ? "The one who didn't come:" : "The ones who didn't come:"}</Text>
+          <View style={styles.chips}>
+            <Pressable style={[styles.chip, missed === "charge" && styles.chipOn]} onPress={() => setMissed("charge")}>
+              <Text style={[styles.chipText, missed === "charge" && styles.chipTextOn]}>🔴 Forfeit (charged)</Text>
+            </Pressable>
+            <Pressable style={[styles.chip, missed === "credit" && styles.chipOn]} onPress={() => setMissed("credit")}>
+              <Text style={[styles.chipText, missed === "credit" && styles.chipTextOn]}>🟢 Credit</Text>
+            </Pressable>
+          </View>
+        </>
+      ) : null}
+      {special ? (
+        <Text style={styles.rowBody}>
+          Special rate: {name(special.client_id)} trained alone, so pays {money(fees[special.id], currency)}.
+        </Text>
+      ) : null}
+      <View style={styles.actions}>
+        <Pressable style={styles.smallButton} onPress={save} disabled={saving}>
+          {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.smallButtonText}>Save</Text>}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function CalendarTab({
   month,
   onMonth,
@@ -271,6 +433,8 @@ function CalendarTab({
   plans,
   settings,
   name,
+  makeup,
+  onMakeupDone,
   onOpen,
   onChanged,
 }: {
@@ -280,6 +444,8 @@ function CalendarTab({
   clients: ClientInfo[];
   plans: SessionPlan[];
   settings: SessionSettings | null;
+  makeup: LiveSession | null;
+  onMakeupDone: () => void;
   name: (id: string) => string;
   onOpen: (s: LiveSession) => void;
   onChanged: () => void;
@@ -289,25 +455,39 @@ function CalendarTab({
   const list = sessions.filter((s) => s.status !== "removed" && dayKey(s.starts_at) === day);
   return (
     <>
+      {makeup ? (
+        <View style={styles.notice}>
+          <Text style={styles.noticeText}>
+            🔁 Booking a catch-up for {name(makeup.client_id)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. It's free on their invoice.
+          </Text>
+          <Pressable onPress={onMakeupDone}>
+            <Text style={styles.link}>Stop</Text>
+          </Pressable>
+        </View>
+      ) : null}
       <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} />
       <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
       {list.length ? list.map((s) => <SessionLine key={s.id} s={s} name={name(s.client_id)} onOpen={onOpen} />) : <Text style={styles.helper}>Nothing booked.</Text>}
       <Pressable style={styles.button} onPress={() => setAdding(true)}>
-        <Text style={styles.buttonText}>＋ Book a session on {dayLabel(day)}</Text>
+        <Text style={styles.buttonText}>
+          ＋ Book {makeup ? "the catch-up" : "a session"} on {dayLabel(day)}
+        </Text>
       </Pressable>
       <Text style={styles.meta}>
-        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔵 you cancelled · 🟠 needs you · ⚪ booked
+        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked
       </Text>
       <AddSessionModal
         visible={adding}
         day={day}
-        clients={clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
+        clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
+        makeupFor={makeup?.id ?? null}
         plans={plans}
         settings={settings}
         booked={list.filter((s) => s.status === "booked" || s.status === "done").map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))}
         onClose={() => setAdding(false)}
         onSaved={() => {
           setAdding(false);
+          if (makeup) onMakeupDone();
           onChanged();
         }}
       />
@@ -322,12 +502,14 @@ function AddSessionModal({
   plans,
   settings,
   booked,
+  makeupFor,
   onClose,
   onSaved,
 }: {
   visible: boolean;
   day: string;
   clients: ClientInfo[];
+  makeupFor: string | null;
   plans: SessionPlan[];
   settings: SessionSettings | null;
   booked: { time: string; minutes: number }[];
@@ -346,7 +528,7 @@ function AddSessionModal({
   const save = async () => {
     if (!client || !time) return;
     setSaving(true);
-    const { error } = await supabase.rpc("add_live_session", { p_client: client, p_starts_at: atTime(day, time) });
+    const { error } = await supabase.rpc("add_live_session", { p_client: client, p_starts_at: atTime(day, time), p_makeup_for: makeupFor });
     setSaving(false);
     if (error) {
       Alert.alert("Couldn't book it", error.message);
@@ -358,7 +540,9 @@ function AddSessionModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }}>
-          <Text style={styles.sectionTitle}>Book a session · {dayLabel(day)}</Text>
+          <Text style={styles.sectionTitle}>
+            {makeupFor ? "Book the catch-up" : "Book a session"} · {dayLabel(day)}
+          </Text>
           {clients.length === 0 ? (
             <Text style={styles.helper}>Set up a client's sessions on the Clients tab first (their fee and cancellation rule).</Text>
           ) : (
@@ -567,6 +751,7 @@ function InvoicesTab({
         invoice={open}
         clientName={open ? name(open.client_id) : ""}
         phone={open ? byId[open.client_id]?.phone ?? null : null}
+        email={open ? byId[open.client_id]?.email ?? null : null}
         onClose={() => setOpen(null)}
         onChanged={(inv) => {
           setOpen(inv);
@@ -602,12 +787,14 @@ function InvoiceModal({
   invoice,
   clientName,
   phone,
+  email,
   onClose,
   onChanged,
 }: {
   invoice: SessionInvoice | null;
   clientName: string;
   phone: string | null;
+  email: string | null;
   onClose: () => void;
   onChanged: (inv: SessionInvoice) => void;
 }) {
@@ -638,11 +825,19 @@ function InvoiceModal({
       },
     ]);
   const paid = (p: boolean) => act("paid", () => supabase.rpc("set_session_invoice_paid", { p_id: invoice.id, p_paid: p }));
+  const payTo = eftRows(trainer?.eft_details);
   const whatsapp = () => {
-    const text = invoiceText(invoice, clientName, coach);
+    const text = invoiceText(invoice, clientName, coach, { style: "whatsapp", payTo });
     const digits = whatsappDigits(phone);
     if (digits) Linking.openURL(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`);
     else Share.share({ message: text });
+  };
+  const sendEmail = () => {
+    const text = invoiceText(invoice, clientName, coach, { style: "email", payTo });
+    const subject = `Invoice for ${monthLabel(invoice.month)} sessions · ${coach}`;
+    Linking.openURL(`mailto:${email ?? ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`).catch(() =>
+      Share.share({ message: text })
+    );
   };
 
   return (
@@ -662,9 +857,15 @@ function InvoiceModal({
                 </Pressable>
               </>
             ) : null}
-            <Pressable style={styles.outline} onPress={whatsapp}>
-              <Text style={styles.outlineText}>💬 Send on WhatsApp too</Text>
-            </Pressable>
+            <View style={styles.actions}>
+              <Pressable style={[styles.outline, { flex: 1, marginTop: 0 }]} onPress={whatsapp}>
+                <Text style={styles.outlineText}>💬 WhatsApp</Text>
+              </Pressable>
+              <Pressable style={[styles.outline, { flex: 1, marginTop: 0 }]} onPress={sendEmail}>
+                <Text style={styles.outlineText}>✉️ Email</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.meta}>Sends a neat copy of this invoice, with your bank details, to {clientName.split(" ")[0]}.</Text>
             {invoice.status === "paid" ? (
               <Pressable style={styles.outline} onPress={() => paid(false)} disabled={!!busy}>
                 <Text style={styles.outlineText}>Mark as not paid</Text>
@@ -817,6 +1018,11 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
 
       <Text style={styles.label}>Your session agreement</Text>
       <Text style={styles.meta}>Change any of the wording. Each client signs it with a tick, their name and the date.</Text>
+      <View style={styles.notice}>
+        <Text style={styles.noticeText}>
+          ⚠️ Invoices follow your settings, not the wording. If you change how you bill or your cancellation rule here, change Billing and Cancellation rule above (and on each client) to match, or invoices will be wrong.
+        </Text>
+      </View>
       <TextInput
         style={[styles.input, { minHeight: 220, textAlignVertical: "top", fontSize: 14 }]}
         value={agreement}
@@ -896,6 +1102,11 @@ const styles = themedStyles({
   monthRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 18, marginBottom: 8 },
   arrow: { color: BRAND_GOLD, fontSize: 28, fontWeight: "700", paddingHorizontal: 12 },
   dayRow: { flexDirection: "row", gap: 12 },
+  tickRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
+  tick: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: BRAND_GOLD, alignItems: "center", justifyContent: "center" },
+  tickOn: { backgroundColor: BRAND_GOLD },
+  tickMark: { color: "#0F172A", fontWeight: "900" },
+  tickText: { color: "#fff", fontSize: 15 },
   totals: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
   totalText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },

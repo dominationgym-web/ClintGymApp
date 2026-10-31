@@ -133,11 +133,12 @@ type KindFields = Pick<LiveSession, "status" | "starts_at" | "minutes" | "charge
 export function sessionKind(s: KindFields, now: Date = new Date()): SessionKind {
   if (s.status === "done") return "done";
   if (s.status === "booked") return new Date(s.starts_at).getTime() + s.minutes * 60000 < now.getTime() ? "unconfirmed" : "booked";
-  if (s.status === "no_show") return s.charge === "credit" ? "notice" : "no_show";
+  if (s.status === "no_show") return s.charge === "credit" ? "excused" : s.charge === "makeup" ? "makeup" : "no_show";
   if (s.status === "removed") return "removed";
   if (s.cancelled_by === "trainer") return "trainer";
   if (s.charge === "charge") return "late";
   if (s.charge === "credit") return "notice";
+  if (s.charge === "makeup") return "makeup";
   return "decide";
 }
 
@@ -150,14 +151,21 @@ export const KIND_STYLE: Record<SessionKind, { label: string; colour: string; ic
   late: { label: "Late cancellation", colour: "#EF4444", icon: "✕" },
   no_show: { label: "No-show", colour: "#EF4444", icon: "✕" },
   notice: { label: "Cancelled in time", colour: "#22C55E", icon: "↺" },
+  excused: { label: "Didn't come · credited", colour: "#22C55E", icon: "↺" },
+  makeup: { label: "Cancelled in time · catch-up instead", colour: "#14B8A6", icon: "🔁" },
   trainer: { label: "Cancelled by coach", colour: "#3B82F6", icon: "↺" },
   decide: { label: "Charge or credit?", colour: "#F59E0B", icon: "!" },
   removed: { label: "Taken off", colour: "#64748B", icon: "–" },
 };
 
 /** "Late cancellation · 10 hours' notice", "Trained ✓ confirmed", for a diary line. */
-export function kindDetail(kind: SessionKind, hours: number | null, opts: { clientOk?: boolean; disputed?: boolean } = {}): string {
-  const base = KIND_STYLE[kind].label;
+export function kindDetail(
+  kind: SessionKind,
+  hours: number | null,
+  opts: { clientOk?: boolean; disputed?: boolean; catchUp?: boolean; catchUpBooked?: boolean } = {}
+): string {
+  const base = kind === "done" && opts.catchUp ? "Catch-up session" : KIND_STYLE[kind].label;
+  if (kind === "makeup") return `${base}${hours === null ? "" : ` · ${noticeText(hours)}`} · ${opts.catchUpBooked ? "catch-up booked" : "catch-up to book"}`;
   if (kind === "late" || kind === "notice" || kind === "decide") return hours === null ? base : `${base} · ${noticeText(hours)}`;
   if (kind === "done") return opts.disputed ? `${base} · client says it didn't happen` : opts.clientOk ? `${base} · client confirmed` : base;
   return base;
@@ -170,7 +178,9 @@ export function cancelPreview(policy: SessionPolicy, startsAt: string | Date, no
   if (need === null) {
     return { charged: null, text: `That's ${noticeText(hours)}. Your coach decides whether it's charged.` };
   }
-  if (hours >= need) return { charged: false, text: `That's ${noticeText(hours)}, so it won't be charged.` };
+  if (hours >= need) {
+    return { charged: false, text: `That's ${noticeText(hours)}, so you'll get a credit or a catch-up session. Your coach will let you know which.` };
+  }
   return {
     charged: true,
     text: `That's only ${noticeText(hours)}. Your agreement asks for ${need} hours, so this session will still be charged.`,
@@ -262,30 +272,103 @@ export function toggleRegular(regular: RegularTime[], weekday: number, time: str
   return on ? regular.filter((r) => !(r.weekday === weekday && r.time === time)) : [...regular, { weekday, time }];
 }
 
+/** "R750", or "R600 (your share of R1 200 for 2 people)" for a split shared session. */
+export function feeText(
+  plan: { fee: number; group_size?: number | null; group_total?: number | null; solo_fee?: number | null },
+  currency: BillingCurrency | null | undefined
+): string {
+  const own = money(Number(plan.fee), currency);
+  const size = plan.group_size ?? 1;
+  const solo = size > 1 && plan.solo_fee != null ? `, or ${money(Number(plan.solo_fee), currency)} when I train alone and the others are credited` : "";
+  if (size > 1 && plan.group_total != null) return `${own} (my share of ${money(Number(plan.group_total), currency)} for ${size} people${solo})`;
+  if (size > 1) return `${own} (a shared session with ${size} people${solo})`;
+  return own;
+}
+
+/**
+ * After a group session: each person's fee for it. With the special rate, one
+ * person training alone (the rest credited) pays their solo fee; otherwise
+ * everyone keeps their normal share.
+ */
+export function groupFees(
+  people: { id: string; came: boolean; fee: number; soloFee: number | null }[],
+  missed: "charge" | "credit"
+): Record<string, number> {
+  const came = people.filter((p) => p.came);
+  const alone = came.length === 1 && missed === "credit" && people.length > 1;
+  return Object.fromEntries(people.map((p) => [p.id, alone && p.came && p.soloFee != null ? p.soloFee : p.fee]));
+}
+
 export function sessionMoney(amount: number, currency: BillingCurrency | null | undefined): string {
   return amount < 0 ? `-${money(-amount, currency)}` : money(amount, currency);
 }
 
-/** The invoice as a WhatsApp message: totals, then one line per session. */
-export function invoiceText(inv: SessionInvoice, clientName: string, coachName: string): string {
-  const lines = [...inv.lines].sort((a, b) => a.at.localeCompare(b.at));
+const MARK: Partial<Record<SessionKind, string>> = {
+  done: "✅",
+  unconfirmed: "✅",
+  booked: "📅",
+  late: "🔴",
+  no_show: "🔴",
+  notice: "🟢",
+  excused: "🟢",
+  makeup: "🔁",
+  trainer: "🔵",
+  decide: "🟠",
+};
+
+export type InvoiceTextOptions = {
+  /** "whatsapp" uses *bold*; "email" is plain text. */
+  style: "whatsapp" | "email";
+  /** The trainer's bank details, from eftRows(). */
+  payTo?: { label: string; value: string }[];
+};
+
+/**
+ * The invoice laid out for WhatsApp or email (GRIZZ, 2026-10-31: "a well laid
+ * out invoice style ... sent via email or WhatsApp"): who it's from and to,
+ * every session with its colour, a count of each kind, the total and where
+ * to pay.
+ */
+export function invoiceText(inv: SessionInvoice, clientName: string, coachName: string, opts: InvoiceTextOptions = { style: "whatsapp" }): string {
+  const b = (t: string) => (opts.style === "whatsapp" ? `*${t}*` : t.toUpperCase());
+  const lines = [...inv.lines].sort((a, x) => a.at.localeCompare(x.at));
   const row = (l: InvoiceLine) => {
-    const mark = l.kind === "late" || l.kind === "no_show" ? "🔴" : l.kind === "notice" ? "🟢" : l.kind === "trainer" ? "🔵" : l.kind === "done" ? "✅" : "▫️";
-    const amount = l.role === "diary" ? "" : ` ${sessionMoney(l.amount, inv.currency)}`;
-    const credit = l.role === "credit" ? " (credit)" : "";
-    return `${mark} ${dayLabel(l.at)} ${clockLabel(l.at)} · ${kindDetail(l.kind, l.notice_hours)}${credit}${amount}`;
+    const what = kindDetail(l.kind, l.notice_hours, { catchUp: l.catch_up, catchUpBooked: l.catch_up_booked });
+    const amount = l.role === "diary" ? "no charge" : sessionMoney(l.amount, inv.currency);
+    const credit = l.role === "credit" ? " (credit, paid last month)" : "";
+    return `${MARK[l.kind] ?? "▫️"} ${dayLabel(l.at)}, ${clockLabel(l.at)} · ${what}${credit} · ${amount}`;
   };
+  const count = (kinds: SessionKind[]) => lines.filter((l) => l.role !== "credit" && kinds.includes(l.kind)).length;
+  const counts = [
+    [count(["done", "unconfirmed"]), "trained"],
+    [count(["booked"]), "booked"],
+    [count(["late", "no_show"]), "late or no-show"],
+    [count(["notice", "makeup"]), "cancelled in time"],
+    [count(["excused"]), "missed, credited"],
+    [count(["trainer"]), "cancelled by coach"],
+  ]
+    .filter(([n]) => n)
+    .map(([n, label]) => `${n} ${label}`)
+    .join(" · ");
+  const due = inv.total < 0 ? `${b(`In credit: ${money(-inv.total, inv.currency)}`)}` : b(`Total due: ${sessionMoney(inv.total, inv.currency)}`);
   return [
-    `🧾 Session invoice · ${monthLabel(inv.month)}`,
-    `${coachName} for ${clientName} (${billingLabel(inv.billing).toLowerCase()})`,
+    b(`INVOICE · ${monthLabel(inv.month)}`),
+    `From: ${coachName}`,
+    `To: ${clientName}`,
+    `Billing: ${billingLabel(inv.billing).toLowerCase()}${inv.status === "paid" ? " · PAID ✅" : ""}`,
     "",
+    b("Sessions"),
     ...lines.map(row),
     "",
+    ...(counts ? [counts, ""] : []),
     `Sessions: ${sessionMoney(inv.charged, inv.currency)}`,
     ...(inv.credited ? [`Credits: -${money(inv.credited, inv.currency)}`] : []),
-    `Total: ${sessionMoney(inv.total, inv.currency)}`,
+    due,
+    ...(opts.payTo?.length && inv.total > 0
+      ? ["", b("Pay to"), ...opts.payTo.map((r) => `${r.label}: ${r.value}`), `Reference: ${clientName} ${monthLabel(inv.month)}`]
+      : []),
     "",
-    "🔴 late cancellation or no-show (charged)  🟢 cancelled in time  🔵 cancelled by coach",
+    "🔴 late cancellation or no-show (charged) · 🟢 cancelled in time · 🔁 catch-up instead of credit · 🔵 cancelled by coach",
   ].join("\n");
 }
 
@@ -343,7 +426,7 @@ export function fillAgreement(template: string | null | undefined, t: AgreementT
     .replace(/\{contact\}/g, t.contact?.trim() || "WhatsApp");
 }
 
-type Terms = { fee: number; per_week: number; billing: SessionBilling; policy: SessionPolicy; regular?: RegularTime[] | null };
+type Terms = { fee: number; per_week: number; group_size?: number | null; billing: SessionBilling; policy: SessionPolicy; regular?: RegularTime[] | null };
 const slotKey = (r: RegularTime[] | null | undefined) =>
   (r ?? [])
     .map((x) => `${x.weekday}@${x.time}`)
@@ -356,6 +439,7 @@ export function agreementCurrent(signed: Terms | null | undefined, plan: Terms |
   return (
     Number(signed.fee) === Number(plan.fee) &&
     signed.per_week === plan.per_week &&
+    (signed.group_size ?? 1) === (plan.group_size ?? 1) &&
     signed.billing === plan.billing &&
     signed.policy === plan.policy &&
     slotKey(signed.regular) === slotKey(plan.regular)

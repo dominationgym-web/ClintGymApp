@@ -91,7 +91,11 @@ export default function SessionActionsModal({
       o === "done" ? `${first} gets a notification to confirm with one tap.` : o === "no_show" ? "Marked as a no-show. It's charged." : undefined
     );
 
-  const charge = (c: "charge" | "credit") => run(() => supabase.rpc("set_session_charge", { p_id: session.id, p_charge: c }));
+  const charge = (c: "charge" | "credit" | "makeup") =>
+    run(
+      () => supabase.rpc("set_session_charge", { p_id: session.id, p_charge: c }),
+      c === "makeup" ? `No credit: ${first} gets a catch-up session instead. Book it under To do › Catch-ups. You'll be reminded on Mondays and Wednesdays.` : undefined
+    );
 
   const remove = () =>
     Alert.alert("Take this session off the calendar?", "Use this for a session booked by mistake. To record a cancellation, use Log a cancellation instead.", [
@@ -114,6 +118,8 @@ export default function SessionActionsModal({
               {style.icon} {kindDetail(kind, session.cancelled_at ? noticeHours(session.starts_at, session.cancelled_at) : null, {
                 clientOk: !!session.client_confirmed_at,
                 disputed: !!session.client_disputed_at,
+                catchUp: !!session.makeup_for,
+                catchUpBooked: !!session.makeup_session_id,
               })}
             </Text>
             {session.status === "done" && !session.client_confirmed_at && !session.client_disputed_at ? (
@@ -135,10 +141,11 @@ export default function SessionActionsModal({
                   <Outline label="No-show (charged)" onPress={() => outcome("no_show")} />
                 ) : null}
                 {session.status !== "removed" ? <Outline label="Log a cancellation" onPress={() => setStep("cancel")} /> : null}
-                {session.status === "cancelled" || session.status === "no_show" ? (
+                {(session.status === "cancelled" || session.status === "no_show") && !session.makeup_session_id ? (
                   <View style={styles.chips}>
                     <Chip label="🔴 Charge" on={session.charge === "charge"} onPress={() => charge("charge")} />
                     <Chip label="🟢 Credit" on={session.charge === "credit"} onPress={() => charge("credit")} />
+                    <Chip label="🔁 Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} />
                   </View>
                 ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
@@ -203,14 +210,14 @@ function CancelForm({
   const [time, setTime] = useState(clockLabel(now));
   const [note, setNote] = useState("");
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
-  const [override, setOverride] = useState<"charge" | "credit" | null>(null);
+  const [override, setOverride] = useState<"charge" | "credit" | "makeup" | null>(null);
   const [saving, setSaving] = useState(false);
 
   const validTime = /^([01]?\d|2[0-3]):[0-5]\d$/.test(time.trim());
   const told = validTime ? atTime(day, time.trim().padStart(5, "0")) : null;
   const hours = told ? noticeHours(session.starts_at, told) : null;
   const auto = told ? autoCharge(policy, by, session.starts_at, told) : null;
-  const decided = override ?? auto;
+  const decided: "charge" | "credit" | "makeup" | null = override ?? auto;
 
   const pick = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -250,7 +257,14 @@ function CancelForm({
         p_charge: override,
       });
       if (error) throw error;
-      Alert.alert("Cancellation logged ✅", decided === "charge" ? "It's charged on their invoice, marked red." : "It's credited on their invoice, marked green.");
+      Alert.alert(
+        "Cancellation logged ✅",
+        decided === "charge"
+          ? "It's charged on their invoice, marked red."
+          : decided === "makeup"
+            ? `No credit: ${first} gets a catch-up instead. Book it under To do › Catch-ups.`
+            : "It's credited on their invoice, marked green."
+      );
       onDone();
     } catch (err) {
       Alert.alert("Couldn't save", err instanceof Error ? err.message : "Please try again.");
@@ -305,7 +319,9 @@ function CancelForm({
           <View style={styles.chips}>
             <Chip label="🔴 Charge" on={decided === "charge"} onPress={() => setOverride("charge")} />
             <Chip label="🟢 Credit" on={decided === "credit"} onPress={() => setOverride("credit")} />
+            {by === "client" ? <Chip label="🔁 Catch-up" on={decided === "makeup"} onPress={() => setOverride("makeup")} /> : null}
           </View>
+          {by === "client" && auto !== "charge" ? <Text style={styles.meta}>In time: give a credit, or a catch-up session instead.</Text> : null}
         </View>
       ) : null}
 

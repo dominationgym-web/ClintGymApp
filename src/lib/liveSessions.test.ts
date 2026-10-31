@@ -12,6 +12,8 @@ import {
   shiftMonth,
   slotTimes,
   cleanTime,
+  feeText,
+  groupFees,
   toggleRegular,
 } from "./liveSessions";
 import type { SessionInvoice } from "@/types/database";
@@ -117,27 +119,37 @@ describe("agreement", () => {
 });
 
 describe("invoiceText", () => {
-  it("lists every session with its colour and the total", () => {
-    const inv = {
-      month: "2026-10-01",
-      billing: "arrears",
-      currency: "ZAR",
-      charged: 800,
-      credited: 400,
-      total: 400,
-      lines: [
-        { at: "2026-10-07T06:00:00", kind: "late", role: "charge", amount: 400, notice_hours: 10 },
-        { at: "2026-10-05T06:00:00", kind: "done", role: "charge", amount: 400, notice_hours: null },
-        { at: "2026-10-09T06:00:00", kind: "notice", role: "credit", amount: -400, notice_hours: 49 },
-      ],
-    } as unknown as SessionInvoice;
-    const text = invoiceText(inv, "Nancy", "GRIZZ");
-    const rows = text.split("\n");
-    expect(rows[0]).toBe("🧾 Session invoice · October 2026");
-    expect(rows[3]).toBe("✅ Mon 5 Oct 06:00 · Trained R400");
-    expect(rows[4]).toBe("🔴 Wed 7 Oct 06:00 · Late cancellation · 10 hours' notice R400");
-    expect(rows[5]).toBe("🟢 Fri 9 Oct 06:00 · Cancelled in time · 2 days' notice (credit) -R400");
-    expect(text).toContain("Total: R400");
+  const inv = {
+    month: "2026-10-01",
+    billing: "arrears",
+    currency: "ZAR",
+    status: "sent",
+    charged: 800,
+    credited: 400,
+    total: 400,
+    lines: [
+      { at: "2026-10-07T06:00:00", kind: "late", role: "charge", amount: 400, notice_hours: 10 },
+      { at: "2026-10-05T06:00:00", kind: "done", role: "charge", amount: 400, notice_hours: null },
+      { at: "2026-10-09T06:00:00", kind: "notice", role: "credit", amount: -400, notice_hours: 49 },
+      { at: "2026-10-12T06:00:00", kind: "makeup", role: "charge", amount: 0, notice_hours: 30, catch_up_booked: false },
+    ],
+  } as unknown as SessionInvoice;
+
+  it("lays out every session with its colour, the counts and the total for WhatsApp", () => {
+    const rows = invoiceText(inv, "Nancy", "GRIZZ", { style: "whatsapp", payTo: [{ label: "Bank", value: "FNB" }] }).split("\n");
+    expect(rows.slice(0, 3)).toEqual(["*INVOICE · October 2026*", "From: GRIZZ", "To: Nancy"]);
+    expect(rows).toContain("✅ Mon 5 Oct, 06:00 · Trained · R400");
+    expect(rows).toContain("🔴 Wed 7 Oct, 06:00 · Late cancellation · 10 hours' notice · R400");
+    expect(rows).toContain("🟢 Fri 9 Oct, 06:00 · Cancelled in time · 2 days' notice (credit, paid last month) · -R400");
+    expect(rows).toContain("🔁 Mon 12 Oct, 06:00 · Cancelled in time · catch-up instead · 30 hours' notice · catch-up to book · R0");
+    expect(rows).toContain("1 trained · 1 late or no-show · 1 cancelled in time");
+    expect(rows).toContain("*Total due: R400*");
+    expect(rows).toContain("Bank: FNB");
+    expect(rows).toContain("Reference: Nancy October 2026");
+  });
+
+  it("uses capitals instead of stars for email", () => {
+    expect(invoiceText(inv, "Nancy", "GRIZZ", { style: "email" }).split("\n")[0]).toBe("INVOICE · OCTOBER 2026");
   });
 });
 
@@ -156,5 +168,24 @@ describe("slotTimes", () => {
     expect(cleanTime("05:10:00")).toBe("05:10");
     expect(cleanTime("5.10")).toBe("05:10");
     expect(cleanTime("25:00")).toBeNull();
+  });
+});
+
+describe("special rate", () => {
+  const pair = [
+    { id: "a", came: true, fee: 500, soloFee: 700 },
+    { id: "b", came: false, fee: 500, soloFee: 700 },
+  ];
+  it("charges the solo rate when one comes and the other is credited (GRIZZ's R1 000 / R700 example)", () => {
+    expect(groupFees(pair, "credit")).toEqual({ a: 700, b: 500 });
+  });
+  it("keeps normal shares when the one who missed forfeits, or both came", () => {
+    expect(groupFees(pair, "charge")).toEqual({ a: 500, b: 500 });
+    expect(groupFees(pair.map((p) => ({ ...p, came: true })), "credit")).toEqual({ a: 500, b: 500 });
+  });
+  it("names the special rate in the agreement", () => {
+    expect(feeText({ fee: 500, group_size: 2, group_total: 1000, solo_fee: 700 }, "ZAR")).toBe(
+      "R500 (my share of R1 000 for 2 people, or R700 when I train alone and the others are credited)"
+    );
   });
 });

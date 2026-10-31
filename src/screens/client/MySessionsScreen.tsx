@@ -20,6 +20,7 @@ import {
   clockLabel,
   dayKey,
   dayLabel,
+  feeText,
   fillAgreement,
   kindDetail,
   monthLabel,
@@ -209,7 +210,7 @@ function SessionsTab({ sessions, plan, coach, onChanged }: { sessions: LiveSessi
               {dayLabel(s.starts_at)} · {clockLabel(s.starts_at)}
             </Text>
             <Text style={[styles.kind, { color: themeText(KIND_STYLE[kind].colour) }]}>
-              {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at })}
+              {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
             </Text>
           </View>
         );
@@ -282,12 +283,12 @@ function MonthTab({ month, onMonth, sessions }: { month: string; onMonth: (m: st
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
             <Text style={styles.rowTitle}>{clockLabel(s.starts_at)}</Text>
             <Text style={[styles.kind, { color: themeText(KIND_STYLE[kind].colour) }]}>
-              {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null)}
+              {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
             </Text>
           </View>
         );
       })}
-      <Text style={styles.meta}>🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔵 coach cancelled · ⚪ booked</Text>
+      <Text style={styles.meta}>🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up · 🔵 coach cancelled · ⚪ booked</Text>
     </>
   );
 }
@@ -354,7 +355,7 @@ function AgreementTab({
   const text = fillAgreement(settings?.agreement_text, {
     coach,
     client: clientName,
-    fee: money(Number(plan.fee), settings?.currency ?? "ZAR"),
+    fee: feeText(plan, settings?.currency ?? "ZAR"),
     policy: plan.policy,
     billing: plan.billing,
     minutes: plan.minutes,

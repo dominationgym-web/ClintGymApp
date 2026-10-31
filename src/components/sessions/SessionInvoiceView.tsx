@@ -47,7 +47,7 @@ export default function SessionInvoiceView({ invoice, who }: { invoice: SessionI
                 {dayLabel(l.at)} · {clockLabel(l.at)}
               </Text>
               <Text style={[styles.kind, { color: colour }]}>
-                {style.icon} {kindDetail(l.kind, l.notice_hours, { clientOk: l.client_ok, disputed: l.disputed })}
+                {style.icon} {kindDetail(l.kind, l.notice_hours, { clientOk: l.client_ok, disputed: l.disputed, catchUp: l.catch_up, catchUpBooked: l.catch_up_booked })}
                 {l.role === "credit" ? " · credit for an earlier invoice" : ""}
               </Text>
               {l.cancelled_at ? (
@@ -75,7 +75,7 @@ export default function SessionInvoiceView({ invoice, who }: { invoice: SessionI
         {invoice.credited ? <Row label="Credits" value={`-${sessionMoney(invoice.credited, invoice.currency)}`} /> : null}
         <Row label="Total" value={sessionMoney(invoice.total, invoice.currency)} strong />
       </View>
-      <Text style={styles.key}>🔴 late cancellation or no-show (charged) · 🟢 cancelled in time · 🔵 cancelled by coach</Text>
+      <Text style={styles.key}>🔴 late cancellation or no-show (charged) · 🟢 cancelled in time (credited) · 🔁 catch-up instead of credit · 🔵 cancelled by coach</Text>
 
       <SessionProofModal
         path={proof?.proof ?? null}

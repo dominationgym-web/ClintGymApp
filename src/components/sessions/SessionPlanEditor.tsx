@@ -45,6 +45,11 @@ export default function SessionPlanEditor({
   const [ticked, setTicked] = useState<Set<number>>(new Set());
   const [typed, setTyped] = useState<Record<number, string>>({});
   const [active, setActive] = useState(true);
+  // Shared sessions: how many people, and whether one total fee is split.
+  const [groupSize, setGroupSize] = useState(1);
+  const [split, setSplit] = useState(true);
+  const [total, setTotal] = useState("");
+  const [solo, setSolo] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -56,6 +61,10 @@ export default function SessionPlanEditor({
     setTicked(new Set((plan?.regular ?? []).map((r) => r.weekday)));
     setTyped(Object.fromEntries((plan?.regular ?? []).map((r) => [r.weekday, r.time])));
     setActive(plan?.active ?? true);
+    setGroupSize(plan?.group_size ?? 1);
+    setSplit(plan ? plan.group_total != null : true);
+    setTotal(plan?.group_total != null ? String(plan.group_total) : "");
+    setSolo(plan?.solo_fee != null ? String(plan.solo_fee) : "");
   }, [plan, settings, clientId]);
 
   const first = clientName.split(" ")[0];
@@ -73,10 +82,14 @@ export default function SessionPlanEditor({
     setTicked(next);
   };
 
+  const num = (v: string) => Number(v.replace(",", ".").replace(/[^\d.]/g, ""));
+  const splitting = groupSize > 1 && split;
+  const share = splitting && total.trim() ? Math.round((num(total) / groupSize) * 100) / 100 : null;
+
   const save = async () => {
-    const amount = Number(fee.replace(",", ".").replace(/[^\d.]/g, ""));
-    if (!fee.trim() || Number.isNaN(amount)) {
-      Alert.alert("Add the fee", `What ${first} pays per session, like 350.`);
+    const amount = splitting ? share : num(fee);
+    if (amount === null || (!splitting && !fee.trim()) || Number.isNaN(amount)) {
+      Alert.alert("Add the fee", splitting ? "Type the total fee for the shared session, like 1200." : `What ${first} pays per session, like 350.`);
       return;
     }
     if (missing.length) {
@@ -93,6 +106,9 @@ export default function SessionPlanEditor({
       p_minutes: minutes,
       p_regular: regular,
       p_active: active,
+      p_group_size: groupSize,
+      p_group_total: splitting ? num(total) : null,
+      p_solo_fee: groupSize > 1 && solo.trim() ? num(solo) : null,
     });
     setSaving(false);
     if (error) {
@@ -110,7 +126,7 @@ export default function SessionPlanEditor({
 
   const changedTerms =
     !!plan &&
-    !agreementCurrent({ fee: Number(fee), per_week: perWeek, policy, billing, regular }, plan);
+    !agreementCurrent({ fee: splitting ? share ?? 0 : num(fee), per_week: perWeek, group_size: groupSize, policy, billing, regular }, plan);
 
   return (
     <View>
@@ -122,9 +138,51 @@ export default function SessionPlanEditor({
         </Text>
       ) : null}
 
-      <Text style={styles.label}>Fee per session {settings?.currency === "USD" ? "($)" : "(R)"}</Text>
-      <TextInput style={styles.input} value={fee} onChangeText={setFee} keyboardType="decimal-pad" placeholder="350" placeholderTextColor="#64748B" />
-      {settings?.fee != null ? <Text style={styles.meta}>Your normal fee is {money(Number(settings.fee), settings.currency)}.</Text> : null}
+      <Text style={styles.label}>Who trains in the session?</Text>
+      <View style={styles.chips}>
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <Chip key={n} label={n === 1 ? `Just ${first}` : `${n} people`} on={groupSize === n} onPress={() => setGroupSize(n)} />
+        ))}
+      </View>
+      {groupSize > 1 ? (
+        <>
+          <View style={styles.chips}>
+            <Chip label="Split one fee" on={split} onPress={() => setSplit(true)} />
+            <Chip label="Each pays their own fee" on={!split} onPress={() => setSplit(false)} />
+          </View>
+          <Text style={styles.meta}>Set up each person in the group the same way, at the same days and times. After the session you tick who came.</Text>
+        </>
+      ) : null}
+
+      {splitting ? (
+        <>
+          <Text style={styles.label}>Total fee for the session {settings?.currency === "USD" ? "($)" : "(R)"}</Text>
+          <TextInput style={styles.input} value={total} onChangeText={setTotal} keyboardType="decimal-pad" placeholder="1200" placeholderTextColor="#64748B" />
+          {share !== null && !Number.isNaN(share) ? (
+            <Text style={styles.share}>
+              {first} pays {money(share, settings?.currency)} a session (split {groupSize} ways)
+            </Text>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <Text style={styles.label}>
+            {groupSize > 1 ? `${first}'s fee per session` : "Fee per session"} {settings?.currency === "USD" ? "($)" : "(R)"}
+          </Text>
+          <TextInput style={styles.input} value={fee} onChangeText={setFee} keyboardType="decimal-pad" placeholder="350" placeholderTextColor="#64748B" />
+          {settings?.fee != null ? <Text style={styles.meta}>Your normal fee is {money(Number(settings.fee), settings.currency)}.</Text> : null}
+        </>
+      )}
+
+      {groupSize > 1 ? (
+        <>
+          <Text style={styles.label}>Special rate if {first} trains alone (optional)</Text>
+          <TextInput style={styles.input} value={solo} onChangeText={setSolo} keyboardType="decimal-pad" placeholder="700" placeholderTextColor="#64748B" />
+          <Text style={styles.meta}>
+            When only {first} comes and you credit the others, {first} pays this instead. If the others forfeit, everyone pays their normal share.
+          </Text>
+        </>
+      ) : null}
 
       <Text style={styles.label}>Sessions a week</Text>
       <View style={styles.chips}>
@@ -215,6 +273,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 
 const styles = themedStyles({
   status: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
+  share: { color: "#22C55E", fontSize: 14, fontWeight: "700", marginTop: 6 },
   label: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 16, marginBottom: 4 },
   meta: { color: "#94A3B8", fontSize: 12, marginTop: 4, lineHeight: 17 },
   warn: { color: "#FDE68A", fontSize: 13, marginTop: 14 },
