@@ -12,6 +12,7 @@ import { CHALLENGES_MENU_ITEM } from "@/lib/challenges";
 import { useAuth } from "@/context/AuthContext";
 import { TIMER_MENU_ITEM } from "@/lib/timerWorkouts";
 import { TRAINER_VIDEO_CHECKINS_MENU_ITEM } from "@/lib/videoCheckins";
+import { TRAINER_LIVE_SESSIONS_MENU_ITEM } from "@/lib/liveSessions";
 import { COACHING_GUIDES_MENU_ITEM } from "@/screens/trainer/CoachingGuidesScreen";
 
 // The trainer app's menu (top right of every trainer tab). The things used
@@ -25,6 +26,8 @@ export function useTrainerMenuItems(): MenuItem[] {
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const { trainer } = useAuth();
   return [
+    // In-person sessions: calendar, cancellations, month-end invoices (0168).
+    { ...TRAINER_LIVE_SESSIONS_MENU_ITEM, route: "LiveSessions", onPress: () => navigation.navigate("LiveSessions") },
     // Weekly video check-ins (0155): free times, bookings and call setup.
     { ...TRAINER_VIDEO_CHECKINS_MENU_ITEM, route: "VideoCheckIns", onPress: () => navigation.navigate("VideoCheckIns") },
     // The trainer's own workout, straight from the menu (was Profile → My training).

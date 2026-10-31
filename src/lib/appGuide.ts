@@ -214,6 +214,19 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "mySessions",
+      icon: "🤝",
+      title: "In-person sessions with your coach",
+      where: "Menu ☰ → My sessions (once your coach sets them up)",
+      points: [
+        "Agreement: read the session agreement (your fee, sessions a week, cancellation rule and billing), tick that you agree and type your name to sign. If your coach changes the terms you're asked to sign again.",
+        "Sessions: your next sessions. Can't make one? Tap Can't make it. Before you cancel, the app tells you how much notice you're giving and whether it will still be charged. Your coach is told straight away.",
+        "After a session your coach marks it done and you get a notification: tap ✓ Yes, I trained. If it didn't happen, tap No and your coach is asked to check.",
+        "Month: every session on a calendar. Gold is trained, red a late cancellation or no-show, green cancelled in time, blue cancelled by your coach.",
+        "Invoices: your coach's monthly invoice with every session listed, and any credits. Tap Send proof of payment once you've paid.",
+      ],
+    },
+    {
       key: "profile",
       icon: "👤",
       title: "Profile and progress photos",
@@ -403,6 +416,20 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "Plan ahead: the second tab is next month. Your clients are told about it on the 1st. In the first week of a month with no challenge on, your dashboard reminds you to pick one.",
         "Change or Stop a challenge any time in its month. Changing it starts the new one fresh.",
         "🏆 App owner only: Profile > Challenges is where you add your own challenges (name, daily task, how it works, days to win) and tap Share with all trainers. Every trainer gets a notification and can use it if they wish.",
+      ],
+    },
+    {
+      key: "liveSessions",
+      icon: "🤝",
+      title: "Live sessions: booking, cancellations and invoices",
+      where: "Menu ☰ > Live sessions",
+      points: [
+        "Setup: your normal fee per session, billing (in advance or in arrears), cancellation rule (24 hours, 12 hours or you decide each time), session length, and any lines of your own for the agreement.",
+        "Clients: tap ＋ Set up a client. Set their fee (starts at your normal fee), sessions a week, rule, billing and regular times (tap a day, then the time). Saving fills the calendar to the end of next month and asks the client to sign the agreement.",
+        "Calendar: the month with a coloured dot per session. Tap a day to see it, ＋ Book a session for a one-off, or tap a session to mark it done, log a cancellation, move it or take it off.",
+        "Cancellations: when a client cancels in the app you get a notification with how much notice they gave. If they cancel on WhatsApp, tap the session, Log a cancellation, pick when they told you, add the screenshot as proof, and the app works out charged (red) or credited (green). You can always change it.",
+        "15 minutes after each session you get a notification asking if it happened. Tap ✓ Done on the To do tab (or Cancelled / No-show). The client then confirms with one tap. Running it with ▶ Start live session marks it done for you.",
+        "Invoices: on the 1st the app makes every client's invoice with a diary of every session (late cancellations in red, in time in green) and tells you. Check it, tap Send, and mark it paid when their proof of payment comes in. Changes after sending go on next month's as an extra charge or a credit.",
       ],
     },
     {

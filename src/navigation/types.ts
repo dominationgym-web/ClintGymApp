@@ -47,6 +47,8 @@ export type ClientStackParamList = {
   Timers: { tab?: "saved" } | undefined;
   // Weekly video check-in with the coach (0155).
   VideoCheckIn: undefined;
+  // In-person sessions with the coach, cancelling and invoices (0168).
+  MySessions: { tab?: "sessions" | "invoices" } | undefined;
   // Which notification groups the client gets (0159).
   NotificationSettings: undefined;
   // How to use the app, notifications and the welcome, on one menu line (2026-10-27).
@@ -72,6 +74,8 @@ export type TrainerStackParamList = {
   Challenges: undefined;
   // Weekly video check-ins (0155): bookings, free times and call setup.
   VideoCheckIns: undefined;
+  // In-person session booking, cancellations and invoices (0168).
+  LiveSessions: { tab?: "todo" | "calendar" | "clients" | "invoices" | "setup" } | undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   // With no `tab` it opens on the tab the trainer used last (2026-10-27).

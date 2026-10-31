@@ -14,6 +14,13 @@ describe("notificationRoute", () => {
     expect(notificationRoute({ type: "checkin_nudge" }, "trainer")).toEqual({ stack: "trainer", screen: "Dashboard" });
   });
 
+  it("opens live sessions and their invoices", () => {
+    expect(notificationRoute({ type: "live_session_confirm", sessionId: "s1" }, "client")).toEqual({ stack: "client", screen: "MySessions", tab: "sessions" });
+    expect(notificationRoute({ type: "live_session_ask", clientId: "c1" }, "trainer")).toEqual({ stack: "trainer", screen: "LiveSessions", tab: "todo" });
+    expect(notificationRoute({ type: "session_invoice" }, "client")).toEqual({ stack: "client", screen: "MySessions", tab: "invoices" });
+    expect(notificationRoute({ type: "session_invoices" }, "trainer")).toEqual({ stack: "trainer", screen: "LiveSessions", tab: "invoices" });
+  });
+
   it("sends a client to the right tab", () => {
     expect(notificationRoute({ type: "coach_message", messageId: "m1" }, "client")).toEqual({ stack: "client", screen: "CheckIn" });
     expect(notificationRoute({ type: "catch_up" }, "client")).toEqual({ stack: "client", screen: "Exercises" });

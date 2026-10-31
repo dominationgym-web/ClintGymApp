@@ -7,6 +7,8 @@ export type NotificationRoute =
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
   | { stack: "client"; screen: "Timers" }
   | { stack: "client"; screen: "VideoCheckIn" }
+  | { stack: "client"; screen: "MySessions"; tab?: "sessions" | "invoices" }
+  | { stack: "trainer"; screen: "LiveSessions"; tab?: "todo" | "invoices" }
   | { stack: "trainer"; screen: "VideoCheckIns" }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
   | { stack: "trainer"; screen: "Billing" | "Challenges" }
@@ -46,6 +48,11 @@ export function notificationRoute(
   const type = typeof data?.type === "string" ? data.type : null;
   if (!type || !role) return null;
   if (type === "video_checkin") return role === "client" ? { stack: "client", screen: "VideoCheckIn" } : { stack: "trainer", screen: "VideoCheckIns" };
+  // In-person sessions (0168): the client's My sessions, the trainer's To do or Invoices.
+  if (type === "live_session" || type === "live_session_confirm" || type === "live_session_ask")
+    return role === "client" ? { stack: "client", screen: "MySessions", tab: "sessions" } : { stack: "trainer", screen: "LiveSessions", tab: "todo" };
+  if (type === "session_invoice" || type === "session_invoices")
+    return role === "client" ? { stack: "client", screen: "MySessions", tab: "invoices" } : { stack: "trainer", screen: "LiveSessions", tab: "invoices" };
   if (role === "client") {
     if (type === "timer_workout") return { stack: "client", screen: "Timers" };
     const screen = CLIENT_SCREENS[type];
