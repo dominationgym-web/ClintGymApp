@@ -115,3 +115,18 @@ describe("withHomeAlternatives", () => {
     expect(homeIds).toEqual(["lu"]);
   });
 });
+
+describe("filterExercises other names", () => {
+  const withAka = [
+    { name: "Machine Pec Fly", category: "Push", aka: ["pec deck", "butterfly machine"] },
+    { name: "Bench Press", category: "Push", aka: [] },
+    { name: "Lat Pulldown", category: "Pull" },
+  ];
+  it("finds an exercise by another name it goes by", () => {
+    expect(filterExercises(withAka, "pec deck").map((e) => e.name)).toEqual(["Machine Pec Fly"]);
+    expect(filterExercises(withAka, "BUTTERFLY").map((e) => e.name)).toEqual(["Machine Pec Fly"]);
+  });
+  it("still works for exercises with no other names", () => {
+    expect(filterExercises(withAka, "pulldown").map((e) => e.name)).toEqual(["Lat Pulldown"]);
+  });
+});

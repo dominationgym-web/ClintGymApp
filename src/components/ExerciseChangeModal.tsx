@@ -6,10 +6,11 @@ import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { changesFor, planChangeWrites } from "@/lib/exerciseChanges";
-import { forPlace, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
+import { forPlace, matchesExercise, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
 import { loadExerciseChanges, saveExerciseChanges } from "@/lib/programQueries";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import { ExerciseThumb } from "@/components/YouTubeCard";
 import type { ClientExerciseChange, Exercise, ProgramExercise } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { checkRisks, exerciseKey, exerciseRisks, KEEP_REASONS, riskLine, safeSuggestions } from "@/lib/injuryRisk";
@@ -96,7 +97,7 @@ export default function ExerciseChangeModal({
   const options = forPlace(library, place).filter(
     (e) =>
       (allParts || term || !originalCategory || swapGroup(e.category) === swapGroup(originalCategory)) &&
-      (!term || e.name.toLowerCase().includes(term) || (e.category ?? "").toLowerCase().includes(term)),
+      (!term || matchesExercise(e, [term])),
   );
   const { own, everywhere: everyChange } = changesFor({ id: row.id, exercise_id: original.exercise_id }, changes);
   const isChanged = !!own || !!everyChange;
@@ -237,6 +238,7 @@ export default function ExerciseChangeModal({
                 renderItem={({ item }) => (
                   <View style={styles.libraryRow}>
                     <View style={styles.libraryTop}>
+                      <ExerciseThumb url={item.external_url} />
                       <View style={{ flex: 1 }}>
                         {(() => {
                           const risks = injuries.length ? risksOf(item) : [];

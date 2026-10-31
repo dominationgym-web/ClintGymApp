@@ -5,6 +5,7 @@ import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 import { bodyPartLabel, filterExercises } from "@/lib/exerciseFilter";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import { ExerciseThumb } from "@/components/YouTubeCard";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Exercise } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
@@ -82,6 +83,7 @@ export default function ExerciseSwapModal({
             renderItem={({ item }) => (
               <View style={styles.swapRow}>
                 <View style={styles.swapRowTop}>
+                  <ExerciseThumb url={item.external_url} />
                   <Text style={[styles.name, { flex: 1 }]}>{item.name}</Text>
                   <Pressable hitSlop={6} onPress={() => setPreview((id) => (id === item.id ? null : item.id))}>
                     <Text style={styles.swapWatch}>{preview === item.id ? "Hide" : "▶ Watch"}</Text>

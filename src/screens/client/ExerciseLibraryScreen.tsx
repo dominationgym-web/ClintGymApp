@@ -27,6 +27,8 @@ import {
 } from "@/lib/exerciseFilter";
 import { getCardioDone, getExerciseSwaps, saveCardioDone, saveExerciseSwaps, type ExerciseSwaps } from "@/lib/exerciseSwaps";
 import WatchOnlineLink from "@/components/WatchOnlineLink";
+import YouTubeCard, { ExerciseThumb } from "@/components/YouTubeCard";
+import { playableClip } from "@/lib/watchOnline";
 import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/ExerciseGuide";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
@@ -722,7 +724,7 @@ export default function ExerciseLibraryScreen() {
     openExercise(exercise, row, rest, abs);
   };
 
-  const player = useVideoPlayer(selected?.external_url ?? null, (p) => {
+  const player = useVideoPlayer(playableClip(selected?.external_url), (p) => {
     p.loop = true;
   });
 
@@ -1417,6 +1419,8 @@ export default function ExerciseLibraryScreen() {
         }
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => openExercise(item)}>
+            {/* A picture of the move, so clients who don't know the name can spot it (0171). */}
+            {!wide && <ExerciseThumb url={item.external_url} />}
             <View style={{ flex: 1 }}>
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{item.name}</Text>
@@ -1518,7 +1522,9 @@ export default function ExerciseLibraryScreen() {
           <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
             {/* GRIZZ 2026-10-13: the video first so the client sees the movement straight away,
                 then How to do it, and last time's weights and reps just above Log a set. */}
-            {selected?.external_url ? (
+            {selected?.external_url && !playableClip(selected.external_url) ? (
+              <YouTubeCard url={selected.external_url} />
+            ) : selected?.external_url ? (
               <>
                 <VideoView
                   style={[styles.video, videoExpanded ? styles.videoExpanded : { height: compactVideoHeight }]}

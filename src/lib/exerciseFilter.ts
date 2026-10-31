@@ -10,8 +10,8 @@ export function exerciseCategories(exercises: Pick<Exercise, "category">[]): str
   return seen;
 }
 
-/** Exercises matching every search word (in the name or body part) and the chosen body part, if any. */
-export function filterExercises<T extends Pick<Exercise, "name" | "category">>(
+/** Exercises matching every search word (in the name, other names or body part) and the chosen body part, if any. */
+export function filterExercises<T extends Pick<Exercise, "name" | "category"> & { aka?: string[] | null }>(
   exercises: T[],
   search: string,
   category: string | null = null,
@@ -19,9 +19,16 @@ export function filterExercises<T extends Pick<Exercise, "name" | "category">>(
   const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return exercises.filter((e) => {
     if (category && e.category !== category) return false;
-    const text = `${e.name} ${e.category ?? ""}`.toLowerCase();
-    return words.every((w) => text.includes(w));
+    return matchesExercise(e, words);
   });
+}
+
+// Other names (0171, GRIZZ 2026-10-31): the same move goes by different names
+// in different gyms (pec deck, butterfly), so search looks at those too.
+/** Whether every search word is in the exercise's name, other names or body part. */
+export function matchesExercise(e: Pick<Exercise, "name" | "category"> & { aka?: string[] | null }, words: string[]): boolean {
+  const text = `${e.name} ${(e.aka ?? []).join(" ")} ${e.category ?? ""}`.toLowerCase();
+  return words.every((w) => text.includes(w));
 }
 
 // Body parts only trainers browse (0041): GRIZZ keeps overhead pressing out

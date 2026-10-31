@@ -6,10 +6,11 @@ import ModalSafeArea from "./ModalSafeArea";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
-import { forPlace, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
+import { forPlace, matchesExercise, swapGroup, type ExercisePlace } from "@/lib/exerciseFilter";
 import { SWAP_LENGTHS, swapActive, swapUntil, swapUntilLabel, type SwapLength } from "@/lib/programSwaps";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import { ExerciseThumb } from "@/components/YouTubeCard";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Exercise, ProgramExercise } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
@@ -80,7 +81,7 @@ export default function ProgramExerciseEditModal({
   const options = forPlace(library, place).filter(
     (e) =>
       (allParts || term || !originalCategory || swapGroup(e.category) === swapGroup(originalCategory)) &&
-      (!term || e.name.toLowerCase().includes(term) || (e.category ?? "").toLowerCase().includes(term)),
+      (!term || matchesExercise(e, [term])),
   );
   const newExercise = exercise && exercise.id !== original.id ? exercise : null;
   const setsChanged = sets !== row.sets || reps.trim() !== row.reps;
@@ -207,6 +208,7 @@ export default function ProgramExerciseEditModal({
                   renderItem={({ item }) => (
                     <View style={styles.libraryRow}>
                       <View style={styles.libraryTop}>
+                        <ExerciseThumb url={item.external_url} />
                         <View style={{ flex: 1 }}>
                           <Text style={styles.exerciseName}>{item.name}</Text>
                           {item.category ? <Text style={styles.helper}>{item.category}</Text> : null}
