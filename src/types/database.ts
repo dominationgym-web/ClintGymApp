@@ -619,8 +619,11 @@ export type Exercise = {
   id: string;
   name: string;
   category: string | null;
-  source: "movekit" | "muscle_and_motion" | "own_library";
+  // youtube (0171): external_url is a YouTube watch link, not a clip file.
+  source: "movekit" | "muscle_and_motion" | "own_library" | "youtube";
   external_url: string | null;
+  // Other names the move goes by, found by search (0171).
+  aka?: string[] | null;
   sort_order: number;
   // No gym machine needed: shown on the Home tab (0045).
   home_friendly: boolean;
