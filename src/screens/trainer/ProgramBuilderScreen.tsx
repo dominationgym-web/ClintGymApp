@@ -36,6 +36,7 @@ import {
 } from "@/lib/programs";
 import { clearProgramDraft, loadProgramDraft, saveProgramDraft } from "@/lib/programDraft";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
+import { ExerciseThumb } from "@/components/YouTubeCard";
 import CardioDurationPicker from "@/components/CardioDurationPicker";
 import type { Exercise } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
@@ -455,6 +456,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
             renderItem={({ item }) => (
               <View style={styles.libraryRow}>
                 <View style={styles.libraryTop}>
+                  <ExerciseThumb url={item.external_url} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.pickerText}>{item.name}</Text>
                     {item.category && <Text style={styles.category}>{item.category}</Text>}

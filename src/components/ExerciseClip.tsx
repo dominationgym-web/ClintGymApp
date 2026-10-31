@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
+import { Image, Linking, Pressable, Text, View } from "react-native";
+import { youtubeId, youtubeThumbnail } from "@/lib/watchOnline";
 import { themedStyles } from "@/lib/theme";
 
 // A small looping, silent exercise demo clip for the trainer's laptop layout
@@ -35,6 +36,18 @@ export default function ExerciseClip({
     return () => watcher.disconnect();
   }, [url]);
 
+  // A YouTube exercise (0171): its picture, which opens the video.
+  const ytId = youtubeId(url);
+  if (url && ytId) {
+    return (
+      <Pressable onPress={() => Linking.openURL(url).catch(() => {})} accessibilityRole="link" accessibilityLabel="Watch on YouTube">
+        <Image source={{ uri: youtubeThumbnail(ytId) }} style={[styles.picture, { width, height }]} resizeMode="cover" />
+        <View style={styles.play}>
+          <Text style={styles.playText}>▶</Text>
+        </View>
+      </Pressable>
+    );
+  }
   if (!url) {
     return (
       <View style={[styles.none, { width, height }]}>
@@ -58,4 +71,7 @@ export default function ExerciseClip({
 const styles = themedStyles({
   none: { backgroundColor: "#0F172A", borderRadius: 8, alignItems: "center", justifyContent: "center" },
   noneText: { color: "#475569", fontSize: 11 },
-});
+  picture: { borderRadius: 8, backgroundColor: "#000" },
+  play: { position: "absolute", top: 0, bottom: 0, left: 0, right: 0, alignItems: "center", justifyContent: "center" },
+  playText: { color: "#FFFFFF", fontSize: 18, textShadowColor: "#000", textShadowRadius: 6 },
+}, ["playText"]);
