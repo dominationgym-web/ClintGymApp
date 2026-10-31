@@ -123,7 +123,8 @@ export default function LiveSessionsScreen() {
     { key: "setup", label: "Setup", icon: "settings", dot: settings ? null : "#F59E0B" },
   ];
 
-  const name = (id: string) => byId[id]?.name ?? "Client";
+  // An app client's name, or the name a diary-only session carries (0174).
+  const who = (s: Pick<LiveSession, "client_id" | "guest_name">) => (s.client_id ? byId[s.client_id]?.name : s.guest_name) ?? "Client";
 
   return (
     <View style={styles.container}>
@@ -154,7 +155,7 @@ export default function LiveSessionsScreen() {
                 setTab("calendar");
               }}
               drafts={drafts.length}
-              name={name}
+              name={who}
               onOpen={setOpen}
               onGo={setTab}
               onChanged={load}
@@ -168,7 +169,7 @@ export default function LiveSessionsScreen() {
               clients={clients}
               plans={plans}
               settings={settings}
-              name={name}
+              name={who}
               makeup={makeup}
               onMakeupDone={() => setMakeup(null)}
               onOpen={setOpen}
@@ -182,11 +183,12 @@ export default function LiveSessionsScreen() {
       )}
       <SessionActionsModal
         session={open}
-        clientName={open ? name(open.client_id) : ""}
-        clientPhone={open ? byId[open.client_id]?.phone ?? null : null}
-        policy={(open && planOf[open.client_id]?.policy) || settings?.policy || "24h"}
+        clientName={open ? who(open) : ""}
+        clientPhone={open ? byId[open.client_id ?? ""]?.phone ?? null : null}
+        policy={(open && planOf[open.client_id ?? ""]?.policy) || settings?.policy || "24h"}
         settings={settings}
         sessions={sessions}
+        clients={clients}
         onClose={() => setOpen(null)}
         onChanged={load}
       />
@@ -219,7 +221,7 @@ function ToDo({
   planOf,
   currency,
   drafts,
-  name,
+  name: who,
   onOpen,
   onGo,
   onChanged,
@@ -232,7 +234,7 @@ function ToDo({
   planOf: Record<string, SessionPlan>;
   currency: BillingCurrency;
   drafts: number;
-  name: (id: string) => string;
+  name: (s: Pick<LiveSession, "client_id" | "guest_name">) => string;
   onOpen: (s: LiveSession) => void;
   onGo: (t: Tab) => void;
   onChanged: () => void;
@@ -267,14 +269,14 @@ function ToDo({
 
       {todo.length ? <Text style={styles.sectionTitle}>Did these happen?</Text> : null}
       {groups.map((g) => (
-        <GroupCheck key={g[0].starts_at} sessions={g} name={name} planOf={planOf} currency={currency} onChanged={onChanged} />
+        <GroupCheck key={g[0].starts_at} sessions={g} name={who} planOf={planOf} currency={currency} onChanged={onChanged} />
       ))}
       {singles.map((s) => {
         const kind = sessionKind(s);
         return (
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
             <Text style={styles.rowTitle}>
-              {name(s.client_id)} · {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)}
+              {who(s)} · {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)}
             </Text>
             <Text style={[styles.rowKind, { color: themeText(KIND_STYLE[kind].colour) }]}>
               {s.client_disputed_at ? "They say it didn't happen. Check and fix it." : kind === "decide" ? "Cancelled: charge or credit?" : "Not marked yet"}
@@ -296,7 +298,7 @@ function ToDo({
       {catchUps.length ? <Text style={styles.sectionTitle}>🔁 Catch-ups to book</Text> : null}
       {catchUps.map((s) => (
         <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE.makeup.colour) }]}>
-          <Text style={styles.rowTitle}>{name(s.client_id)}</Text>
+          <Text style={styles.rowTitle}>{who(s)}</Text>
           <Text style={styles.rowBody}>
             For {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)} (cancelled in time)
           </Text>
@@ -311,12 +313,12 @@ function ToDo({
       {unsigned.length ? <Text style={styles.sectionTitle}>Not signed yet</Text> : null}
       {unsigned.map((p) => (
         <Text key={p.client_id} style={styles.helper}>
-          ✍️ {name(p.client_id)} hasn't signed the agreement for their current terms. They see it under Menu › My sessions.
+          ✍️ {who({ client_id: p.client_id })} hasn't signed the agreement for their current terms. They see it under Menu › My sessions.
         </Text>
       ))}
 
       <Text style={styles.sectionTitle}>Today</Text>
-      {today.length ? today.map((s) => <SessionLine key={s.id} s={s} name={name(s.client_id)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
+      {today.length ? today.map((s) => <SessionLine key={s.id} s={s} name={who(s)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
     </>
   );
 }
@@ -325,13 +327,13 @@ function ToDo({
 // credited, the trainer's choice (GRIZZ, 2026-10-31).
 function GroupCheck({
   sessions,
-  name,
+  name: who,
   planOf,
   currency,
   onChanged,
 }: {
   sessions: LiveSession[];
-  name: (id: string) => string;
+  name: (s: Pick<LiveSession, "client_id" | "guest_name">) => string;
   planOf: Record<string, SessionPlan>;
   currency: BillingCurrency;
   onChanged: () => void;
@@ -345,12 +347,12 @@ function GroupCheck({
     sessions.map((s) => ({
       id: s.id,
       came: came.has(s.id),
-      fee: Number(planOf[s.client_id]?.fee ?? s.fee),
-      soloFee: planOf[s.client_id]?.solo_fee != null ? Number(planOf[s.client_id].solo_fee) : null,
+      fee: Number(planOf[s.client_id ?? ""]?.fee ?? s.fee),
+      soloFee: planOf[s.client_id ?? ""]?.solo_fee != null ? Number(planOf[s.client_id ?? ""].solo_fee) : null,
     })),
     missed
   );
-  const special = sessions.find((s) => came.has(s.id) && fees[s.id] !== Number(planOf[s.client_id]?.fee ?? s.fee));
+  const special = sessions.find((s) => came.has(s.id) && fees[s.id] !== Number(planOf[s.client_id ?? ""]?.fee ?? s.fee));
   const save = async () => {
     setSaving(true);
     let failed = 0;
@@ -395,7 +397,7 @@ function GroupCheck({
             }}
           >
             <View style={[styles.tick, on && styles.tickOn]}>{on ? <Text style={styles.tickMark}>✓</Text> : null}</View>
-            <Text style={styles.tickText}>{name(s.client_id)}</Text>
+            <Text style={styles.tickText}>{who(s)}</Text>
           </Pressable>
         );
       })}
@@ -414,7 +416,7 @@ function GroupCheck({
       ) : null}
       {special ? (
         <Text style={styles.rowBody}>
-          Special rate: {name(special.client_id)} trained alone, so pays {money(fees[special.id], currency)}.
+          Special rate: {who(special)} trained alone, so pays {money(fees[special.id], currency)}.
         </Text>
       ) : null}
       <View style={styles.actions}>
@@ -433,7 +435,7 @@ function CalendarTab({
   clients,
   plans,
   settings,
-  name,
+  name: who,
   makeup,
   onMakeupDone,
   onOpen,
@@ -447,7 +449,7 @@ function CalendarTab({
   settings: SessionSettings | null;
   makeup: LiveSession | null;
   onMakeupDone: () => void;
-  name: (id: string) => string;
+  name: (s: Pick<LiveSession, "client_id" | "guest_name">) => string;
   onOpen: (s: LiveSession) => void;
   onChanged: () => void;
 }) {
@@ -460,7 +462,7 @@ function CalendarTab({
       {makeup ? (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            🔁 Booking a catch-up for {name(makeup.client_id)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. It's free on their invoice.
+            🔁 Booking a catch-up for {who(makeup)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. It's free on their invoice.
           </Text>
           <Pressable onPress={onMakeupDone}>
             <Text style={styles.link}>Stop</Text>
@@ -469,7 +471,7 @@ function CalendarTab({
       ) : null}
       <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} />
       <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
-      {list.length ? list.map((s) => <SessionLine key={s.id} s={s} name={name(s.client_id)} onOpen={onOpen} />) : <Text style={styles.helper}>Nothing booked.</Text>}
+      {list.length ? list.map((s) => <SessionLine key={s.id} s={s} name={who(s)} onOpen={onOpen} />) : <Text style={styles.helper}>Nothing booked.</Text>}
       <Pressable style={styles.button} onPress={() => setAdding(true)}>
         <Text style={styles.buttonText}>
           ＋ Book {makeup ? "the catch-up" : "a session"} on {dayLabel(day)}
@@ -482,8 +484,9 @@ function CalendarTab({
       )}
       <CalendarImportModal
         visible={importing}
-        clients={clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
+        clients={clients}
         sessions={sessions}
+        hasFee={settings?.fee != null}
         onClose={() => setImporting(false)}
         onBooked={() => {
           setImporting(false);
@@ -770,8 +773,8 @@ function InvoicesTab({
       <InvoiceModal
         invoice={open}
         clientName={open ? name(open.client_id) : ""}
-        phone={open ? byId[open.client_id]?.phone ?? null : null}
-        email={open ? byId[open.client_id]?.email ?? null : null}
+        phone={open ? byId[open.client_id ?? ""]?.phone ?? null : null}
+        email={open ? byId[open.client_id ?? ""]?.email ?? null : null}
         onClose={() => setOpen(null)}
         onChanged={(inv) => {
           setOpen(inv);

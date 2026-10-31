@@ -10,8 +10,10 @@ export type ReadSession = {
   minutes: number | null;
   // The trainer's client it matched, or null when unsure.
   client_id: string | null;
-  // The name as it appears in the calendar.
+  // The name as it appears in the calendar ("???" when it has none).
   seen_name: string;
+  // The block's colour in the calendar ("grey", "red" ...), when it isn't the usual one.
+  colour?: string | null;
 };
 
 export type CalendarRead = { sessions: ReadSession[]; note: string | null };
@@ -28,6 +30,13 @@ export function cleanClock(v: unknown): string | null {
   const min = Number(m[2]);
   if (h > 23 || min > 59) return null;
   return `${String(h).padStart(2, "0")}:${m[2]}`;
+}
+
+/** To the nearest 5 minutes: times read off a week view are a little out. "06:28" → "06:30". */
+export function roundClock(hhmm: string): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const total = Math.min(Math.round((h * 60 + m) / 5) * 5, 23 * 60 + 55);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
 /**
@@ -47,11 +56,12 @@ export function cleanSessions(input: unknown, clientIds: string[], today: string
     if (Math.abs(Date.parse(r.date) - base) > 366 * 86400000) continue;
     const client = typeof r.client_id === "string" && ids.has(r.client_id) ? r.client_id : null;
     const name = typeof r.seen_name === "string" ? r.seen_name.trim().slice(0, 80) : "";
-    const minutes = typeof r.minutes === "number" && r.minutes >= 15 && r.minutes <= 180 ? Math.round(r.minutes) : null;
-    const key = `${r.date} ${time} ${client ?? name.toLowerCase()}`;
+    const minutes = typeof r.minutes === "number" && r.minutes >= 15 && r.minutes <= 180 ? Math.round(r.minutes / 5) * 5 : null;
+    const colour = typeof r.colour === "string" && r.colour.trim() ? r.colour.trim().toLowerCase().slice(0, 20) : null;
+    const key = `${r.date} ${roundClock(time)} ${client ?? name.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    sessions.push({ date: r.date, time, minutes, client_id: client, seen_name: name });
+    sessions.push({ date: r.date, time: roundClock(time), minutes, client_id: client, seen_name: name || "???", colour });
     if (sessions.length >= MAX_SESSIONS) break;
   }
   sessions.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));

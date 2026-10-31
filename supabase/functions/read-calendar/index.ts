@@ -19,18 +19,27 @@ const json = (status: number, body: Record<string, unknown>) =>
 
 const SYSTEM = `You read screenshots of a personal trainer's calendar (Google Calendar, Samsung Calendar,
 Apple Calendar, Outlook or any other app, in day, week, month or list view) so their in-person
-training sessions can be moved into their coaching app.
-List every appointment that is a session with a client:
-- date (yyyy-mm-dd) and start time (HH:MM, 24-hour). Work out dates from the calendar's headers.
-  If the year isn't shown, use the year that puts the date closest to today.
-- minutes: the length if you can tell from the start and end times, else null.
-- seen_name: the name as written in the calendar.
-- client_id: the id of the matching client from the list given (first name, surname, nickname or
-  initials that clearly match one client). Use null if no client matches or it could be two people.
-An appointment with two client names is two sessions, one for each.
-Leave out things that aren't client sessions (personal events, holidays, birthdays, reminders).
-Never invent anything: only what the screenshots clearly show. Say in note what you left out or weren't sure of.
-Call the save_sessions tool once with everything you found.`;
+training sessions can be moved into their coaching app's diary. Every booked slot matters.
+List every timed block in every day column, one by one, top to bottom:
+- date (yyyy-mm-dd): from the column headers (e.g. "Nov" with Mon 2 ... Sun 8). If the year isn't
+  shown, use the year that puts the date closest to today.
+- time (HH:MM, 24-hour): where the block's top edge sits against the hour lines on the left. Blocks
+  stacked back to back follow on directly: each starts where the one above ends. A gap between
+  blocks means a later start. Check each column's times add up.
+- minutes: the block's length from its height against the hour lines (often the trainer's usual length).
+- seen_name: the text in the block exactly as written ("Rob V", "Sharde &", "???", "B G B").
+  A block with no name or only question marks is still a booked slot: give seen_name "???".
+- client_id: the id of the matching client from the list given, only when the name clearly matches
+  one client (first name, surname, nickname, initials, or a name the trainer matched before).
+  Otherwise null: the trainer picks or keeps the name.
+- colour: the block's colour in plain words ("grey", "red", "green") when it differs from most
+  blocks, else null.
+A block with two people ("J & C", "Mike and Sarah") is two sessions at the same time, one for each
+person, each with their own seen_name ("J", "C"). If a name is cut off ("Sharde &"), give the part
+you can read as one session and say in note that the other person was cut off.
+Leave out all-day events at the top (e.g. "Local Gov"), and blocks that are clearly not a session
+(e.g. "Away", "Leave", "Holiday", birthdays, reminders); say in note what you left out.
+Never invent names or times. Call the save_sessions tool once with everything you found.`;
 
 const TOOL = {
   name: "save_sessions",
@@ -48,6 +57,7 @@ const TOOL = {
             minutes: { type: ["number", "null"] },
             seen_name: { type: "string" },
             client_id: { type: ["string", "null"] },
+            colour: { type: ["string", "null"] },
           },
           required: ["date", "time", "seen_name", "client_id"],
         },
@@ -99,12 +109,24 @@ Deno.serve(async (req) => {
     .neq("id", me)
     .is("archived_at", null);
   const list = (clients ?? []).map((c) => `${c.id}: ${c.name}`).join("\n") || "(none)";
+  // Names this trainer matched before ("Q" is Quraish), and their usual session length and first time.
+  const [{ data: links }, { data: settings }] = await Promise.all([
+    admin.from("diary_name_links").select("name_key, client_id").eq("trainer_id", me),
+    admin.from("session_settings").select("minutes, day_start").eq("trainer_id", me).maybeSingle(),
+  ]);
+  const ids = new Set((clients ?? []).map((c) => c.id));
+  const linked = (links ?? []).filter((l) => ids.has(l.client_id));
+  const known = linked.map((l) => `"${l.name_key}" is ${l.client_id}`).join("\n");
+  const usual = settings?.minutes ? `Sessions are usually ${settings.minutes} minutes${settings.day_start ? `, the first one of the day often at ${String(settings.day_start).slice(0, 5)}` : ""}.` : "";
 
   const content: Record<string, unknown>[] = files.map((f) => ({
     type: "image",
     source: { type: "base64", media_type: (f.type ?? "").toLowerCase(), data: f.data },
   }));
-  content.push({ type: "text", text: `Today is ${today}.\nThe trainer's clients (id: name):\n${list}\n\nRead the screenshots above and call save_sessions.` });
+  content.push({
+    type: "text",
+    text: `Today is ${today}.\n${usual}\nThe trainer's clients (id: name):\n${list}\n${known ? `\nNames matched before:\n${known}\n` : ""}\nRead the screenshots above and call save_sessions.`,
+  });
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -125,5 +147,9 @@ Deno.serve(async (req) => {
   const out = await res.json();
   const call = (out.content ?? []).find((c: { type: string }) => c.type === "tool_use");
   if (!call) return json(502, { error: "ai_failed" });
-  return json(200, cleanSessions(call.input, (clients ?? []).map((c) => c.id), today));
+  const read = cleanSessions(call.input, [...ids], today);
+  // A name matched before goes to that client even if the reader missed it.
+  const byName = new Map(linked.map((l) => [l.name_key, l.client_id]));
+  for (const s of read.sessions) s.client_id ??= byName.get(s.seen_name.trim().toLowerCase().replace(/\s+/g, " ")) ?? null;
+  return json(200, read);
 });
