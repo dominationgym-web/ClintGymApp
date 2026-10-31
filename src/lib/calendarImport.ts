@@ -4,7 +4,7 @@
 // Two ways in, one list to check: a screenshot of any calendar app (read by
 // the read-calendar edge function), or the phone's own calendar (installed
 // app from the next store build). The trainer ticks what to book, then
-// import_live_sessions (0171) books them.
+// import_live_sessions (0172) books them.
 import { Platform } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { atTime, dayKey } from "@/lib/liveSessions";

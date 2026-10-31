@@ -1,7 +1,7 @@
 // Reads a trainer's calendar screenshots (Google, Samsung, Apple or any
 // other) into sessions for Live sessions (GRIZZ, 2026-10-31). Nothing is
 // saved here: the app shows the list for the trainer to check, then books
-// the ticked ones with import_live_sessions (0171).
+// the ticked ones with import_live_sessions (0172).
 //
 // Deployed with verify_jwt on. Needs the ANTHROPIC_API_KEY secret; without
 // it the answer is "no_key".
