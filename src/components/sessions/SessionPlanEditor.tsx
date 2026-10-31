@@ -26,6 +26,8 @@ export default function SessionPlanEditor({
   plan,
   settings,
   signed,
+  payers = [],
+  paysFor = [],
   onSaved,
 }: {
   clientId: string;
@@ -33,6 +35,9 @@ export default function SessionPlanEditor({
   plan: SessionPlan | null;
   settings: SessionSettings | null;
   signed: SessionAgreement | null;
+  // Who else in a shared session could pay for this client, and who this client already pays for (0170).
+  payers?: { id: string; name: string }[];
+  paysFor?: string[];
   onSaved: () => void;
 }) {
   const [fee, setFee] = useState("");
@@ -50,6 +55,9 @@ export default function SessionPlanEditor({
   const [split, setSplit] = useState(true);
   const [total, setTotal] = useState("");
   const [solo, setSolo] = useState("");
+  // Who pays (GRIZZ, 2026-10-31: "Could be husband and wife then 1 pays. But
+  // still separate costings"): null = they pay for themselves.
+  const [payer, setPayer] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -65,6 +73,7 @@ export default function SessionPlanEditor({
     setSplit(plan ? plan.group_total != null : true);
     setTotal(plan?.group_total != null ? String(plan.group_total) : "");
     setSolo(plan?.solo_fee != null ? String(plan.solo_fee) : "");
+    setPayer(plan?.paid_by ?? null);
   }, [plan, settings, clientId]);
 
   const first = clientName.split(" ")[0];
@@ -110,9 +119,15 @@ export default function SessionPlanEditor({
       p_group_total: splitting ? num(total) : null,
       p_solo_fee: groupSize > 1 && solo.trim() ? num(solo) : null,
     });
+    const paidBy = groupSize > 1 ? payer : null;
+    const payerError =
+      !error && paidBy !== (plan?.paid_by ?? null)
+        ? (await supabase.rpc("set_session_payer", { p_client: clientId, p_paid_by: paidBy })).error
+        : null;
     setSaving(false);
-    if (error) {
-      Alert.alert("Couldn't save", error.message);
+    if (error || payerError) {
+      Alert.alert("Couldn't save", (error ?? payerError)?.message ?? "");
+      if (payerError) onSaved();
       return;
     }
     onSaved();
@@ -151,6 +166,28 @@ export default function SessionPlanEditor({
             <Chip label="Each pays their own fee" on={!split} onPress={() => setSplit(false)} />
           </View>
           <Text style={styles.meta}>Set up each person in the group the same way, at the same days and times. After the session you tick who came.</Text>
+          <Text style={styles.label}>Who pays for {first}?</Text>
+          {paysFor.length ? (
+            <Text style={styles.meta}>
+              {first} pays for {paysFor.join(" and ")}, so their sessions are on {first}'s invoice too, each person listed separately.
+            </Text>
+          ) : (
+            <>
+              <View style={styles.chips}>
+                <Chip label={`${first} pays`} on={payer === null} onPress={() => setPayer(null)} />
+                {payers.map((p) => (
+                  <Chip key={p.id} label={`${p.name.split(" ")[0]} pays`} on={payer === p.id} onPress={() => setPayer(p.id)} />
+                ))}
+              </View>
+              <Text style={styles.meta}>
+                {payer
+                  ? `${first}'s sessions go on ${payers.find((p) => p.id === payer)?.name.split(" ")[0] ?? "their"}'s invoice, listed and costed separately. ${first} gets no invoice.`
+                  : payers.length
+                    ? `Or pick who pays for ${first}, like a husband paying for his wife. Each person's sessions stay costed separately.`
+                    : "Set up the others in the group first to let one person pay for everyone."}
+              </Text>
+            </>
+          )}
         </>
       ) : null}
 

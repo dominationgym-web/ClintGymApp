@@ -1128,6 +1128,8 @@ export type SessionPlan = {
   group_total: number | null;
   // Special rate: what they pay when they train alone and the others are credited.
   solo_fee: number | null;
+  // Shared sessions: another client in the group who pays for this one (0170).
+  paid_by?: string | null;
   billing: SessionBilling;
   policy: SessionPolicy;
   minutes: number;
@@ -1182,6 +1184,9 @@ export type LiveSession = {
 export type SessionKind = "done" | "unconfirmed" | "booked" | "late" | "no_show" | "notice" | "excused" | "makeup" | "trainer" | "decide" | "removed";
 export type InvoiceLine = {
   id: string;
+  // Whose session it is: an invoice can hold the sessions of everyone the client pays for (0170).
+  client_id?: string;
+  who?: string;
   at: string;
   kind: SessionKind;
   // charge: on this invoice; credit: money back for an earlier invoice; diary: listed only.
@@ -1635,6 +1640,7 @@ export interface Database {
       };
       set_session_outcome: { Args: { p_id: string; p_outcome: "done" | "no_show" | "booked" }; Returns: LiveSession };
       set_session_fee: { Args: { p_id: string; p_fee: number }; Returns: LiveSession };
+      set_session_payer: { Args: { p_client: string; p_paid_by: string | null }; Returns: SessionPlan };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
       build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };

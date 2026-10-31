@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { KIND_STYLE, billingLabel, clockLabel, dayLabel, kindDetail, monthLabel, sessionMoney } from "@/lib/liveSessions";
+import { KIND_STYLE, billingLabel, clockLabel, dayLabel, invoicePeople, kindDetail, monthLabel, sessionMoney } from "@/lib/liveSessions";
 import type { InvoiceLine, SessionInvoice } from "@/types/database";
 import SessionProofModal from "@/components/sessions/SessionProofModal";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
@@ -11,7 +11,8 @@ import { themeBg, themeText, themedStyles } from "@/lib/theme";
 // Every session in order with its colour; tap 📸 to see the proof.
 export default function SessionInvoiceView({ invoice, who }: { invoice: SessionInvoice; who: "trainer" | "client" }) {
   const [proof, setProof] = useState<InvoiceLine | null>(null);
-  const lines = [...invoice.lines].sort((a, b) => a.at.localeCompare(b.at));
+  // One person, or everyone the client pays for, each with their own sessions and subtotal.
+  const people = invoicePeople(invoice.lines);
   const status =
     invoice.status === "paid" ? "✅ Paid" : invoice.status === "sent" ? (who === "client" ? "Not paid yet" : "Sent · not paid yet") : "Draft · not sent yet";
 
@@ -36,39 +37,49 @@ export default function SessionInvoiceView({ invoice, who }: { invoice: SessionI
         </View>
       ) : null}
 
-      {lines.length === 0 ? <Text style={styles.meta}>No sessions this month.</Text> : null}
-      {lines.map((l) => {
-        const style = KIND_STYLE[l.kind];
-        const colour = themeText(style.colour);
-        return (
-          <View key={`${l.id}-${l.role}`} style={[styles.line, { borderLeftColor: themeBg(style.colour) }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.when}>
-                {dayLabel(l.at)} · {clockLabel(l.at)}
-              </Text>
-              <Text style={[styles.kind, { color: colour }]}>
-                {style.icon} {kindDetail(l.kind, l.notice_hours, { clientOk: l.client_ok, disputed: l.disputed, catchUp: l.catch_up, catchUpBooked: l.catch_up_booked })}
-                {l.role === "credit" ? " · credit for an earlier invoice" : ""}
-              </Text>
-              {l.cancelled_at ? (
-                <Text style={styles.small}>
-                  Cancelled {dayLabel(l.cancelled_at)} at {clockLabel(l.cancelled_at)}
-                  {l.by === "trainer" ? " by the coach" : ""}
-                </Text>
-              ) : null}
-              {l.note ? <Text style={styles.small}>"{l.note}"</Text> : null}
-              {l.proof ? (
-                <Pressable onPress={() => setProof(l)} hitSlop={8}>
-                  <Text style={styles.proof}>📸 See the message</Text>
-                </Pressable>
-              ) : null}
+      {invoice.lines.length === 0 ? <Text style={styles.meta}>No sessions this month.</Text> : null}
+      {people.map((person) => (
+        <View key={person.who ?? "one"}>
+          {people.length > 1 ? (
+            <View style={styles.person}>
+              <Text style={styles.personName}>{person.who}</Text>
+              <Text style={styles.personTotal}>{sessionMoney(person.total, invoice.currency)}</Text>
             </View>
-            <Text style={[styles.amount, l.role === "diary" && styles.amountNone]}>
-              {l.role === "diary" ? (l.kind === "booked" ? "" : "–") : sessionMoney(l.amount, invoice.currency)}
-            </Text>
-          </View>
-        );
-      })}
+          ) : null}
+          {person.lines.map((l) => {
+            const style = KIND_STYLE[l.kind];
+            const colour = themeText(style.colour);
+            return (
+              <View key={`${l.id}-${l.role}`} style={[styles.line, { borderLeftColor: themeBg(style.colour) }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.when}>
+                    {dayLabel(l.at)} · {clockLabel(l.at)}
+                  </Text>
+                  <Text style={[styles.kind, { color: colour }]}>
+                    {style.icon} {kindDetail(l.kind, l.notice_hours, { clientOk: l.client_ok, disputed: l.disputed, catchUp: l.catch_up, catchUpBooked: l.catch_up_booked })}
+                    {l.role === "credit" ? " · credit for an earlier invoice" : ""}
+                  </Text>
+                  {l.cancelled_at ? (
+                    <Text style={styles.small}>
+                      Cancelled {dayLabel(l.cancelled_at)} at {clockLabel(l.cancelled_at)}
+                      {l.by === "trainer" ? " by the coach" : ""}
+                    </Text>
+                  ) : null}
+                  {l.note ? <Text style={styles.small}>"{l.note}"</Text> : null}
+                  {l.proof ? (
+                    <Pressable onPress={() => setProof(l)} hitSlop={8}>
+                      <Text style={styles.proof}>📸 See the message</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+                <Text style={[styles.amount, l.role === "diary" && styles.amountNone]}>
+                  {l.role === "diary" ? (l.kind === "booked" ? "" : "–") : sessionMoney(l.amount, invoice.currency)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      ))}
 
       <View style={styles.totals}>
         <Row label="Sessions" value={sessionMoney(invoice.charged, invoice.currency)} />
@@ -113,4 +124,7 @@ const styles = themedStyles({
   totalValue: { color: "#CBD5E1", fontSize: 14 },
   strong: { color: BRAND_GOLD, fontSize: 17, fontWeight: "800" },
   key: { color: "#64748B", fontSize: 12, marginTop: 10, lineHeight: 17 },
+  person: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, marginBottom: 6 },
+  personName: { color: BRAND_GOLD, fontSize: 15, fontWeight: "800" },
+  personTotal: { color: "#CBD5E1", fontSize: 14, fontWeight: "700" },
 });
