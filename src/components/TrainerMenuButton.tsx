@@ -12,7 +12,7 @@ import { CHALLENGES_MENU_ITEM } from "@/lib/challenges";
 import { useAuth } from "@/context/AuthContext";
 import { TIMER_MENU_ITEM } from "@/lib/timerWorkouts";
 import { TRAINER_VIDEO_CHECKINS_MENU_ITEM } from "@/lib/videoCheckins";
-import { TRAINER_LIVE_SESSIONS_MENU_ITEM } from "@/lib/liveSessions";
+import { useTrainerSide } from "@/context/TrainerSideContext";
 import { COACHING_GUIDES_MENU_ITEM } from "@/screens/trainer/CoachingGuidesScreen";
 
 // The trainer app's menu (top right of every trainer tab). The things used
@@ -25,9 +25,29 @@ export default function TrainerMenuButton() {
 export function useTrainerMenuItems(): MenuItem[] {
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const { trainer } = useAuth();
+  const { side } = useTrainerSide();
+  const problems = {
+    ...(trainer?.is_owner ? OWNER_PROBLEMS_MENU_ITEM : TRAINER_PROBLEMS_MENU_ITEM),
+    route: "TrainerProblems",
+    onPress: () => navigation.navigate("TrainerProblems"),
+  };
+  // The 1 on 1 side keeps the menu short (GRIZZ, 2026-11-01: "minimalistic").
+  if (side === "one")
+    return [
+      {
+        key: "sessionSetup",
+        title: "Session setup",
+        icon: "⚙️",
+        summary: "Your normal fee, session length, first session time and cancellation rule.",
+        route: "LiveSessions",
+        onPress: () => navigation.navigate("LiveSessions", { tab: "setup" }),
+      },
+      { ...TIMER_MENU_ITEM, route: "Timers", onPress: () => navigation.navigate("Timers") },
+      { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
+      problems,
+      { ...SUGGESTION_BOX_MENU_ITEM, route: "SuggestionBox", onPress: () => navigation.navigate("SuggestionBox") },
+    ];
   return [
-    // In-person sessions: calendar, cancellations, month-end invoices (0168).
-    { ...TRAINER_LIVE_SESSIONS_MENU_ITEM, route: "LiveSessions", onPress: () => navigation.navigate("LiveSessions") },
     // Weekly video check-ins (0155): free times, bookings and call setup.
     { ...TRAINER_VIDEO_CHECKINS_MENU_ITEM, route: "VideoCheckIns", onPress: () => navigation.navigate("VideoCheckIns") },
     // The trainer's own workout, straight from the menu (was Profile → My training).
@@ -56,11 +76,7 @@ export function useTrainerMenuItems(): MenuItem[] {
     { ...COACHING_GUIDES_MENU_ITEM, route: "CoachingGuides", onPress: () => navigation.navigate("CoachingGuides") },
     { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
     // Problems go to the owner in the app, linked to the trainer (0151).
-    {
-      ...(trainer?.is_owner ? OWNER_PROBLEMS_MENU_ITEM : TRAINER_PROBLEMS_MENU_ITEM),
-      route: "TrainerProblems",
-      onPress: () => navigation.navigate("TrainerProblems"),
-    },
+    problems,
     { ...SUGGESTION_BOX_MENU_ITEM, route: "SuggestionBox", onPress: () => navigation.navigate("SuggestionBox") },
   ];
 }

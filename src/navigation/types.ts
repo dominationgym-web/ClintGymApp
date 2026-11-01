@@ -58,6 +58,12 @@ export type ClientStackParamList = {
 };
 
 export type TrainerTabParamList = {
+  // The 1 on 1 side (GRIZZ, 2026-11-01): in-person sessions only.
+  OneToday: undefined;
+  OneCalendar: undefined;
+  OneClients: undefined;
+  OneInvoices: undefined;
+  // The Evolution side: online clients.
   Dashboard: undefined;
   Clients: undefined;
   Programs: undefined;

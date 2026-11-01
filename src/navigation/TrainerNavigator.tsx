@@ -27,6 +27,7 @@ import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
 import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
 import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
 import LiveSessionsScreen from "@/screens/trainer/LiveSessionsScreen";
+import { TrainerSideProvider, TrainerSideSwitch, useTrainerSide } from "@/context/TrainerSideContext";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
@@ -43,8 +44,16 @@ import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
 
+// The 1 on 1 side's tabs: one page each of the live sessions screen.
+const OneToday = () => <LiveSessionsScreen only="todo" />;
+const OneCalendar = () => <LiveSessionsScreen only="calendar" />;
+const OneClients = () => <LiveSessionsScreen only="clients" />;
+const OneInvoices = () => <LiveSessionsScreen only="invoices" />;
+
 function TrainerTabs() {
   const { trainer } = useAuth();
+  // 1 on 1 or Evolution (GRIZZ, 2026-11-01): the switch sits in the header.
+  const { side } = useTrainerSide();
   // On a laptop the sidebar has every tab and menu page (TrainerSidebar).
   const wide = useWideScreen();
   return (
@@ -54,6 +63,8 @@ function TrainerTabs() {
         headerStyle: { backgroundColor: themeBg("#0F172A") },
         headerTintColor: themeText("#fff"),
         headerRight: wide ? undefined : () => <TrainerMenuButton />,
+        headerTitle: wide ? undefined : () => <TrainerSideSwitch />,
+        headerTitleAlign: "left",
         tabBarStyle: { backgroundColor: themeBg("#0F172A"), borderTopColor: themeBorder("#1E293B") },
         // So the typing box sits right on the keyboard, not above the tab bar.
         tabBarHideOnKeyboard: true,
@@ -61,17 +72,28 @@ function TrainerTabs() {
         tabBarInactiveTintColor: themeText("#64748B"),
       }}
     >
-      <Tab.Screen name="Dashboard" component={TrainerDashboardScreen} options={{ tabBarIcon: tabIcon("speedometer") }} />
-      <Tab.Screen name="Clients" component={ClientsScreen} options={{ tabBarIcon: tabIcon("people") }} />
-      <Tab.Screen name="Programs" component={ProgramsScreen} options={{ tabBarIcon: tabIcon("barbell") }} />
-      {trainer?.is_owner ? (
-        <Tab.Screen name="Trainers" component={TrainersScreen} options={{ tabBarIcon: tabIcon("ribbon") }} />
-      ) : null}
-      <Tab.Screen
-        name="TrainerProfile"
-        component={TrainerProfileScreen}
-        options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }}
-      />
+      {side === "one" ? (
+        <>
+          <Tab.Screen name="OneToday" component={OneToday} options={{ title: "Today", tabBarIcon: tabIcon("today") }} />
+          <Tab.Screen name="OneCalendar" component={OneCalendar} options={{ title: "Calendar", tabBarIcon: tabIcon("calendar") }} />
+          <Tab.Screen name="OneClients" component={OneClients} options={{ title: "Clients", tabBarIcon: tabIcon("people") }} />
+          <Tab.Screen name="OneInvoices" component={OneInvoices} options={{ title: "Invoices", tabBarIcon: tabIcon("receipt") }} />
+        </>
+      ) : (
+        <>
+          <Tab.Screen name="Dashboard" component={TrainerDashboardScreen} options={{ tabBarIcon: tabIcon("speedometer") }} />
+          <Tab.Screen name="Clients" component={ClientsScreen} options={{ tabBarIcon: tabIcon("people") }} />
+          <Tab.Screen name="Programs" component={ProgramsScreen} options={{ tabBarIcon: tabIcon("barbell") }} />
+          {trainer?.is_owner ? (
+            <Tab.Screen name="Trainers" component={TrainersScreen} options={{ tabBarIcon: tabIcon("ribbon") }} />
+          ) : null}
+          <Tab.Screen
+            name="TrainerProfile"
+            component={TrainerProfileScreen}
+            options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }}
+          />
+        </>
+      )}
     </Tab.Navigator>
   );
 }
@@ -101,7 +123,7 @@ export default function TrainerNavigator() {
     else navigationRef.navigate("ClientDetail", { clientId });
   };
   return (
-    <>
+    <TrainerSideProvider>
       <ReferralPopup />
       <View style={styles.row}>
         {wide ? <TrainerSidebar /> : null}
@@ -157,7 +179,7 @@ export default function TrainerNavigator() {
         </View>
       </View>
       <VideoCheckInDayPopup who="trainer" />
-    </>
+    </TrainerSideProvider>
   );
 }
 
