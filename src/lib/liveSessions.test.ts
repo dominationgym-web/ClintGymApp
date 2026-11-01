@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   agreementCurrent,
+  groupNames,
+  slotGroups,
   autoCharge,
   cancelPreview,
   fillAgreement,
@@ -238,5 +240,25 @@ describe("special rate", () => {
     expect(feeText({ fee: 500, group_size: 2, group_total: 1000, solo_fee: 700 }, "ZAR")).toBe(
       "R500 (my share of R1 000 for 2 people, or R700 when I train alone and the others are credited)"
     );
+  });
+});
+
+describe("group sessions in the diary", () => {
+  const at = (h: number, m: number) => new Date(2026, 10, 3, h, m).toISOString();
+  it("puts people booked at the same time into one slot (Jade & Camilla at 05:50)", () => {
+    const g = slotGroups([
+      { id: "d", starts_at: at(8, 30) },
+      { id: "j", starts_at: at(5, 50) },
+      { id: "c", starts_at: at(5, 50) },
+      { id: "s", starts_at: at(8, 30) },
+      { id: "b", starts_at: at(6, 30) },
+    ]);
+    expect(g.map((x) => x.map((s) => s.id))).toEqual([["j", "c"], ["b"], ["d", "s"]]);
+  });
+  it("names a group by first names", () => {
+    expect(groupNames(["Jade", "Camilla"])).toBe("Jade & Camilla");
+    expect(groupNames(["Sharde", "Dave Campbell"])).toBe("Sharde & Dave");
+    expect(groupNames(["Ann", "Bob", "Cat", "Dee"])).toBe("Ann, Bob, Cat & Dee");
+    expect(groupNames(["Rob V Blerk"])).toBe("Rob V Blerk");
   });
 });

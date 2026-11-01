@@ -262,6 +262,29 @@ export function atTime(day: string, time: string): string {
   return new Date(y, m - 1, d, h, min).toISOString();
 }
 
+/**
+ * Sessions grouped by their slot, in time order. Two or more people booked at
+ * the same time are one group session ("J & C", "Sharde & Dave"): each person
+ * keeps their own row for marking and billing, but it's one session in the
+ * diary (GRIZZ, 2026-11-01: "if 2 names or 4 names are in 1 time slot it
+ * means it's a group session").
+ */
+export function slotGroups<T extends { starts_at: string }>(sessions: T[]): T[][] {
+  const bySlot = new Map<number, T[]>();
+  for (const s of sessions) {
+    const k = new Date(s.starts_at).getTime();
+    bySlot.set(k, [...(bySlot.get(k) ?? []), s]);
+  }
+  return [...bySlot.entries()].sort((a, b) => a[0] - b[0]).map(([, g]) => g);
+}
+
+/** "Jade & Camilla", "Ann, Bob, Cat & Dee". */
+export function groupNames(names: string[]): string {
+  if (names.length <= 1) return names.join("");
+  const first = names.map((n) => n.trim().split(/\s+/)[0] || n);
+  return `${first.slice(0, -1).join(", ")} & ${first[first.length - 1]}`;
+}
+
 // Monday first.
 export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 

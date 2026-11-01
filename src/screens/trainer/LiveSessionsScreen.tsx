@@ -45,6 +45,8 @@ import {
   sessionKind,
   sessionMoney,
   shiftMonth,
+  slotGroups,
+  groupNames,
 } from "@/lib/liveSessions";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { BillingCurrency, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
@@ -240,6 +242,48 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   );
 }
 
+// Two or more people at the same time are one group session (GRIZZ,
+// 2026-11-01). One line for the slot, each person under it to tap: they're
+// still marked and billed one by one.
+function GroupLine({ sessions, name, onOpen, showDay }: { sessions: LiveSession[]; name: (s: LiveSession) => string; onOpen: (s: LiveSession) => void; showDay?: boolean }) {
+  const first = sessions[0];
+  const kinds = sessions.map((s) => sessionKind(s));
+  const lead = KIND_STYLE[kinds.every((k) => k === kinds[0]) ? kinds[0] : "unconfirmed"];
+  return (
+    <View style={[styles.row, { borderLeftColor: themeBg(lead.colour) }]}>
+      <Text style={styles.rowTitle}>
+        {clockLabel(first.starts_at)} · 👥 {groupNames(sessions.map(name))}
+        {showDay ? ` · ${dayLabel(first.starts_at)}` : ""}
+        {sessions.every((s) => s.repeat_id) ? " 🔁" : ""}
+      </Text>
+      <Text style={styles.meta}>Group session · {sessions.length} people</Text>
+      {sessions.map((s) => {
+        const kind = sessionKind(s);
+        const st = KIND_STYLE[kind];
+        return (
+          <Pressable key={s.id} style={styles.groupPerson} onPress={() => onOpen(s)}>
+            <Text style={styles.tickText}>{name(s)}</Text>
+            <Text style={[styles.rowKind, { color: themeText(st.colour), marginTop: 0 }]}>
+              {st.icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, disputed: !!s.client_disputed_at, catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** A day's sessions, people at the same time shown as one group session. */
+function SlotLines({ sessions, name, onOpen }: { sessions: LiveSession[]; name: (s: LiveSession) => string; onOpen: (s: LiveSession) => void }) {
+  return (
+    <>
+      {slotGroups(sessions).map((g) =>
+        g.length > 1 ? <GroupLine key={g[0].id} sessions={g} name={name} onOpen={onOpen} /> : <SessionLine key={g[0].id} s={g[0]} name={name(g[0])} onOpen={onOpen} />,
+      )}
+    </>
+  );
+}
+
 function SessionLine({ s, name, onOpen, showDay }: { s: LiveSession; name: string; onOpen: (s: LiveSession) => void; showDay?: boolean }) {
   const kind = sessionKind(s);
   const style = KIND_STYLE[kind];
@@ -304,7 +348,7 @@ function ToDo({
     <>
       {/* Today's sessions first: the 1 on 1 side is about the day (GRIZZ, 2026-11-01). */}
       <Text style={styles.sectionTitle}>Today · {dayLabel(new Date().toISOString())}</Text>
-      {today.length ? today.map((s) => <SessionLine key={s.id} s={s} name={who(s)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
+      {today.length ? <SlotLines sessions={today} name={who} onOpen={onOpen} /> : <Text style={styles.helper}>No sessions booked today.</Text>}
 
       {clear ? <Text style={styles.helper}>All clear 👍 Every past session is marked and every invoice is sent.</Text> : null}
 
@@ -511,9 +555,10 @@ function CalendarTab({
   const nowClock = clockLabel(new Date().toISOString());
   const open =
     day < today ? [] : openSlots(settings?.day_start ?? "05:00", settings?.day_end ?? "20:00", settings?.minutes ?? 60, taken).filter((t) => day > today || t > nowClock);
-  const lines = [
-    ...list.map((s) => ({ time: clockLabel(s.starts_at), s })),
-    ...(list.length ? open.map((t) => ({ time: t, s: null })) : []),
+  // People at the same time are one group session (GRIZZ, 2026-11-01).
+  const lines: { time: string; g: LiveSession[] | null }[] = [
+    ...slotGroups(list).map((g) => ({ time: clockLabel(g[0].starts_at), g })),
+    ...(list.length ? open.map((t) => ({ time: t, g: null })) : []),
   ].sort((a, b) => a.time.localeCompare(b.time));
   const book = (t: string | null) => {
     setAddAt(t);
@@ -534,8 +579,12 @@ function CalendarTab({
       <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} />
       <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
       {lines.map((l) =>
-        l.s ? (
-          <SessionLine key={l.s.id} s={l.s} name={who(l.s)} onOpen={onOpen} />
+        l.g ? (
+          l.g.length > 1 ? (
+            <GroupLine key={l.g[0].id} sessions={l.g} name={who} onOpen={onOpen} />
+          ) : (
+            <SessionLine key={l.g[0].id} s={l.g[0]} name={who(l.g[0])} onOpen={onOpen} />
+          )
         ) : (
           <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
             <Text style={styles.openText}>{l.time} · ??? · open</Text>
@@ -1241,6 +1290,7 @@ const styles = themedStyles({
   monthRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 18, marginBottom: 8 },
   arrow: { color: BRAND_GOLD, fontSize: 28, fontWeight: "700", paddingHorizontal: 12 },
   dayRow: { flexDirection: "row", gap: 12 },
+  groupPerson: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8, paddingVertical: 6, borderTopWidth: 1, borderTopColor: "#334155", marginTop: 6 },
   tickRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
   tick: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: BRAND_GOLD, alignItems: "center", justifyContent: "center" },
   tickOn: { backgroundColor: BRAND_GOLD },

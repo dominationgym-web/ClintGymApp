@@ -1,14 +1,15 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { KIND_STYLE, dayKey, monthGrid, monthLabel, sessionKind, shiftMonth } from "@/lib/liveSessions";
+import { KIND_STYLE, dayKey, monthGrid, monthLabel, sessionKind, shiftMonth, slotGroups } from "@/lib/liveSessions";
 import type { LiveSession } from "@/types/database";
 import { themeBg, themedStyles } from "@/lib/theme";
 
 const HEAD = ["M", "T", "W", "T", "F", "S", "S"];
 
 // A month of in-person sessions (0168): one coloured dot per session on its
-// day (red late, green in time, gold done ...). Tap a day to see it.
+// day (red late, green in time, gold done ...). Tap a day to see it. A group
+// (two or more people at the same time) is one session, so one dot.
 export default function SessionMonthCalendar({
   month,
   onMonth,
@@ -53,7 +54,7 @@ export default function SessionMonthCalendar({
         <View key={wi} style={styles.row}>
           {week.map((day, di) => {
             if (!day) return <View key={di} style={styles.cell} />;
-            const list = (byDay.get(day) ?? []).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+            const list = slotGroups(byDay.get(day) ?? []).map((g) => g[0]);
             return (
               <Pressable
                 key={di}
