@@ -45,11 +45,19 @@ export default function SessionActionsModal({
   settings,
   sessions,
   clients,
+  partners = [],
+  nameOf,
+  onSwitch,
   onClose,
   onChanged,
 }: {
   session: LiveSession | null;
   clientName: string;
+  /** The others booked in the same slot: a joint session (GRIZZ 2026-11-01). */
+  partners?: LiveSession[];
+  nameOf?: (s: LiveSession) => string;
+  /** Opens a partner's session instead (their cancellation, no-show, etc.). */
+  onSwitch?: (s: LiveSession) => void;
   clientPhone: string | null;
   policy: SessionPolicy;
   settings: SessionSettings | null;
@@ -105,41 +113,77 @@ export default function SessionActionsModal({
   // going forward long term").
   const weekly = !!session.repeat_id;
 
-  const remove = () =>
+  // A joint session moves and comes off together, unless the trainer says
+  // just this person (e.g. one of them stops coming).
+  const joint = session.status === "booked" ? partners.filter((p) => p.status === "booked") : [];
+  const jointNames = [first, ...joint.map((p) => (nameOf ? nameOf(p) : "").split(" ")[0])].join(" & ");
+  const withPartners = (onlyMe: boolean, go: (who: LiveSession[]) => void) => () => go(onlyMe ? [session] : [session, ...joint]);
+  const forWho = (verb: string, go: (who: LiveSession[]) => void) =>
+    joint.length
+      ? Alert.alert(`${verb} the joint session?`, `${jointNames} train together at this time.`, [
+          { text: "Back", style: "cancel" },
+          { text: `Just ${first}`, onPress: withPartners(true, go) },
+          { text: joint.length === 1 ? "Both" : "All of them", onPress: withPartners(false, go) },
+        ])
+      : go([session]);
+  const each = (who: LiveSession[], rpc: (s: LiveSession) => PromiseLike<{ error: { message: string } | null }>) => async () => {
+    for (const s of who) {
+      const res = await rpc(s);
+      if (res.error) return res;
+    }
+    return { error: null };
+  };
+  const label = (who: LiveSession[]) => (who.length > 1 ? jointNames : first);
+
+  const remove = () => forWho("Take off", removeFor);
+  const removeFor = (who: LiveSession[]) =>
     weekly
       ? Alert.alert("Take off just this one, or every week?", "To record a cancellation, use Log a cancellation instead.", [
           { text: "Back", style: "cancel" },
-          { text: "Just this one", onPress: () => run(() => supabase.rpc("remove_live_session", { p_id: session.id })) },
+          { text: "Just this one", onPress: () => run(each(who, (s) => supabase.rpc("remove_live_session", { p_id: s.id }))) },
           {
             text: "This and every week after",
             style: "destructive",
-            onPress: () => run(() => supabase.rpc("stop_live_repeat", { p_id: session.id }), `${first}'s weekly session stops from ${dayLabel(session.starts_at)}.`),
+            onPress: () =>
+              run(
+                each(who, (s) => (s.repeat_id ? supabase.rpc("stop_live_repeat", { p_id: s.id }) : supabase.rpc("remove_live_session", { p_id: s.id }))),
+                `${label(who)}'s weekly session stops from ${dayLabel(session.starts_at)}.`
+              ),
           },
         ])
       : Alert.alert("Take this session off the calendar?", "Use this for a session booked by mistake. To record a cancellation, use Log a cancellation instead.", [
           { text: "Back", style: "cancel" },
-          { text: "Take it off", style: "destructive", onPress: () => run(() => supabase.rpc("remove_live_session", { p_id: session.id })) },
+          { text: "Take it off", style: "destructive", onPress: () => run(each(who, (s) => supabase.rpc("remove_live_session", { p_id: s.id }))) },
         ]);
 
-  const moveOne = (at: string) => run(() => supabase.rpc("move_live_session", { p_id: session.id, p_starts_at: at }), session.client_id ? `${first} has been told.` : undefined);
-  const move = (at: string) =>
+  const moveOne = (who: LiveSession[], at: string) =>
+    run(each(who, (s) => supabase.rpc("move_live_session", { p_id: s.id, p_starts_at: at })), who.some((s) => s.client_id) ? `${label(who)} has been told.` : undefined);
+  const move = (at: string) => forWho("Move", (who) => moveFor(who, at));
+  const moveFor = (who: LiveSession[], at: string) =>
     weekly
       ? Alert.alert("Move just this one, or every week?", `${dayLabel(at)} at ${clockLabel(at)}.`, [
           { text: "Back", style: "cancel" },
-          { text: "Just this one", onPress: () => moveOne(at) },
+          { text: "Just this one", onPress: () => moveOne(who, at) },
           {
             text: "This and every week after",
             onPress: () =>
               run(
-                () => supabase.rpc("move_live_repeat", { p_id: session.id, p_starts_at: at }),
-                `From ${dayLabel(at)}, every week at ${clockLabel(at)}.${session.client_id ? ` ${first} has been told.` : ""}`
+                each(who, (s) =>
+                  s.repeat_id ? supabase.rpc("move_live_repeat", { p_id: s.id, p_starts_at: at }) : supabase.rpc("move_live_session", { p_id: s.id, p_starts_at: at })
+                ),
+                `From ${dayLabel(at)}, every week at ${clockLabel(at)}.${who.some((s) => s.client_id) ? ` ${label(who)} has been told.` : ""}`
               ),
           },
         ])
-      : moveOne(at);
+      : moveOne(who, at);
 
-  const makeWeekly = () =>
-    run(() => supabase.rpc("repeat_live_session", { p_id: session.id }), `${first} is now booked every week at this day and time. Change or take one off any time.`);
+  const makeWeekly = () => {
+    const who = [session, ...joint.filter((p) => !p.repeat_id)];
+    run(
+      each(who, (s) => supabase.rpc("repeat_live_session", { p_id: s.id })),
+      `${label(who)} ${who.length > 1 ? "are" : "is"} now booked every week at this day and time. Change or take one off any time.`
+    );
+  };
 
   const link = whatsappLink(clientPhone);
 
@@ -164,6 +208,19 @@ export default function SessionActionsModal({
               <Text style={styles.meta}>Waiting for {first} to confirm.</Text>
             ) : null}
             {weekly ? <Text style={styles.meta}>🔁 Every week at this time</Text> : null}
+            {joint.length ? (
+              <View style={{ marginTop: 6 }}>
+                <Text style={styles.meta}>👥 Joint session with {joint.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
+                {onSwitch ? (
+                  <View style={styles.chips}>
+                    <Chip label={first} on onPress={() => {}} />
+                    {joint.map((p) => (
+                      <Chip key={p.id} label={(nameOf ? nameOf(p) : "").split(" ")[0]} on={false} onPress={() => onSwitch(p)} />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
             {session.note ? <Text style={styles.meta}>"{session.note}"</Text> : null}
             {session.proof_path ? (
               <Pressable onPress={() => setProof(session.proof_path)}>

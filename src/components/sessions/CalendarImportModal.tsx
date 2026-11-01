@@ -238,6 +238,7 @@ export default function CalendarImportModal({
                       <Text style={styles.when}>
                         {dayLabel(r.date)} · {r.time}
                         {r.minutes ? ` · ${r.minutes} min` : ""}
+                        {rows.some((x) => x.key !== r.key && x.date === r.date && x.time === r.time) ? " · 👥 joint" : ""}
                       </Text>
                       <Pressable onPress={() => setPicking(picking === r.key ? null : r.key)} hitSlop={6}>
                         <Text style={[styles.who, !r.client_id && noName(r.seen_name) && styles.whoMissing]}>

@@ -236,6 +236,9 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
         settings={settings}
         sessions={sessions}
         clients={clients}
+        partners={open ? sessions.filter((x) => x.id !== open.id && x.starts_at === open.starts_at && x.status === "booked") : []}
+        nameOf={who}
+        onSwitch={setOpen}
         onClose={() => setOpen(null)}
         onChanged={load}
       />
@@ -514,9 +517,17 @@ function CalendarTab({
   const nowClock = clockLabel(new Date().toISOString());
   const open =
     day < today ? [] : openSlots(settings?.day_start ?? "05:00", settings?.day_end ?? "20:00", settings?.minutes ?? 60, taken).filter((t) => day > today || t > nowClock);
+  // Two or more people booked at the same time are one joint session (GRIZZ
+  // 2026-11-01: "Jade & Camilla is 1 joint session"): one line with all names.
+  const shown: { time: string; s: LiveSession; with: LiveSession[] }[] = [];
+  for (const s of list) {
+    const joint = s.status === "booked" ? shown.find((x) => x.s.status === "booked" && x.s.starts_at === s.starts_at) : undefined;
+    if (joint) joint.with.push(s);
+    else shown.push({ time: clockLabel(s.starts_at), s, with: [] });
+  }
   const lines = [
-    ...list.map((s) => ({ time: clockLabel(s.starts_at), s })),
-    ...(list.length ? open.map((t) => ({ time: t, s: null })) : []),
+    ...shown,
+    ...(list.length ? open.map((t) => ({ time: t, s: null, with: [] as LiveSession[] })) : []),
   ].sort((a, b) => a.time.localeCompare(b.time));
   const book = (t: string | null) => {
     setAddAt(t);
@@ -538,7 +549,7 @@ function CalendarTab({
       <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
       {lines.map((l) =>
         l.s ? (
-          <SessionLine key={l.s.id} s={l.s} name={who(l.s)} onOpen={onOpen} />
+          <SessionLine key={l.s.id} s={l.s} name={[l.s, ...l.with].map((x) => (l.with.length ? who(x).split(" ")[0] : who(x))).join(" & ") + (l.with.length ? " 👥" : "")} onOpen={onOpen} />
         ) : (
           <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
             <Text style={styles.openText}>{l.time} · ??? · open</Text>
@@ -573,7 +584,7 @@ function CalendarTab({
         }}
       />
       <Text style={styles.meta}>
-        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked. A 🔁 after a name means every week.
+        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked. A 🔁 after a name means every week, 👥 a joint session.
       </Text>
       <AddSessionModal
         visible={adding}
