@@ -124,14 +124,24 @@ export function addPerson(rows: ImportRow[], key: string): ImportRow[] {
   return [...rows.slice(0, i + 1), extra, ...rows.slice(i + 1)];
 }
 
-/** Books the ticked rows: app clients by id, everyone else by name. */
-export async function bookRows(rows: ImportRow[]): Promise<{ added: number; skipped: number } | { error: string }> {
+/**
+ * Books the ticked rows: app clients by id, everyone else by name. With
+ * weekly, each one also becomes the same time every week from then on
+ * (GRIZZ, 2026-11-01: trainers keep the same schedule for months).
+ */
+export async function bookRows(rows: ImportRow[], weekly = false): Promise<{ added: number; skipped: number; weekly?: number } | { error: string }> {
   const ticked = rows.filter((r) => r.tick && (r.client_id || r.seen_name.trim()));
   const { data, error } = await supabase.rpc("import_live_sessions", {
-    p_rows: ticked.map((r) => ({ client_id: r.client_id, name: r.seen_name.trim().slice(0, 60), starts_at: atTime(r.date, r.time), minutes: r.minutes })),
+    p_rows: ticked.map((r) => ({
+      client_id: r.client_id,
+      name: r.seen_name.trim().slice(0, 60),
+      starts_at: atTime(r.date, r.time),
+      minutes: r.minutes,
+      ...(weekly ? { repeat: true } : {}),
+    })),
   });
   if (error) return { error: error.message };
-  return data as { added: number; skipped: number };
+  return data as { added: number; skipped: number; weekly?: number };
 }
 
 // The phone's calendar: only in an installed app built with expo-calendar

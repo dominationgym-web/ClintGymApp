@@ -204,6 +204,7 @@ function SessionLine({ s, name, onOpen, showDay }: { s: LiveSession; name: strin
       <Text style={styles.rowTitle}>
         {clockLabel(s.starts_at)} · {name}
         {showDay ? ` · ${dayLabel(s.starts_at)}` : ""}
+        {s.repeat_id ? " 🔁" : ""}
       </Text>
       <Text style={[styles.rowKind, { color: themeText(style.colour) }]}>
         {style.icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, disputed: !!s.client_disputed_at, catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
@@ -494,7 +495,7 @@ function CalendarTab({
         }}
       />
       <Text style={styles.meta}>
-        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked
+        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked. A 🔁 after a name means every week.
       </Text>
       <AddSessionModal
         visible={adding}
