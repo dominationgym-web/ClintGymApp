@@ -115,7 +115,9 @@ async function readWithClaude(key: string, today: string, files: InFile[]): Prom
       max_tokens: 32000,
       system: SYSTEM,
       tools: [TOOL],
-      tool_choice: { type: "tool", name: TOOL.name },
+      // claude-opus-5-5 refuses a forced tool_choice (400), so let it choose
+      // and say in the prompt to call the tool.
+      tool_choice: { type: "auto" },
       messages: [{ role: "user", content }],
     }),
   });
