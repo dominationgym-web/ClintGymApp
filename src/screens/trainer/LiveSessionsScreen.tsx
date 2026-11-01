@@ -13,6 +13,8 @@ import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
 import { TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
+import { regularFromCalendar } from "@/lib/calendarRegular";
+import DiaryPeople from "@/components/sessions/DiaryPeople";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -211,6 +213,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               settings={settings}
               onChanged={load}
               oneOnOne={!!only}
+              sessions={sessions}
               onOpenPage={(clientId) => navigation.navigate("ClientDetail", { clientId })}
             />
           )}
@@ -703,7 +706,9 @@ function ClientsTab({
   onChanged,
   oneOnOne,
   onOpenPage,
+  sessions,
 }: {
+  sessions: LiveSession[];
   clients: ClientInfo[];
   planOf: Record<string, SessionPlan>;
   signed: Record<string, SessionAgreement>;
@@ -716,7 +721,9 @@ function ClientsTab({
   const [picked, setPicked] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
   const withPlan = clients.filter((c) => planOf[c.id]);
-  const notSetUp = oneOnOne ? clients.filter((c) => !planOf[c.id] && (c.one_on_one || c.live_only)) : [];
+  // 1 on 1 clients, and anyone already on the calendar (an import), not set up yet.
+  const onCalendar = new Set(sessions.filter((s) => s.client_id && s.status !== "removed").map((s) => s.client_id as string));
+  const notSetUp = oneOnOne ? clients.filter((c) => !planOf[c.id] && (c.one_on_one || c.live_only || onCalendar.has(c.id))) : [];
   const others = clients.filter((c) => !planOf[c.id] && !notSetUp.includes(c));
   if (picked) {
     const c = clients.find((x) => x.id === picked);
@@ -739,6 +746,7 @@ function ClientsTab({
           settings={settings}
           signed={plan && agreementCurrent(signed[picked], plan) ? signed[picked] : null}
           payers={withPlan.filter((x) => x.id !== picked && planOf[x.id].group_size > 1 && !planOf[x.id].paid_by).map((x) => ({ id: x.id, name: x.name }))}
+          fromCalendar={regularFromCalendar(sessions, picked)}
           paysFor={withPlan.filter((x) => planOf[x.id].paid_by === picked).map((x) => x.name.split(" ")[0])}
           onSaved={onChanged}
         />
@@ -753,7 +761,11 @@ function ClientsTab({
       {notSetUp.map((c) => (
         <Pressable key={c.id} style={[styles.row, { borderLeftColor: themeBg("#F59E0B") }]} onPress={() => setPicked(c.id)}>
           <Text style={styles.rowTitle}>{c.name}</Text>
-          <Text style={[styles.meta, { color: themeText("#F59E0B") }]}>Sessions not set up yet. Tap to set their fee and times.</Text>
+          <Text style={[styles.meta, { color: themeText("#F59E0B") }]}>
+            {regularFromCalendar(sessions, c.id).regular.length
+              ? `Not set up yet. On your calendar: ${regularLabel(regularFromCalendar(sessions, c.id).regular)}. Tap to check and save.`
+              : "Sessions not set up yet. Tap to set their fee and times."}
+          </Text>
         </Pressable>
       ))}
       {withPlan.map((c) => {
@@ -768,7 +780,11 @@ function ClientsTab({
             <Text style={styles.rowBody}>
               {money(Number(p.fee), currency)} · {p.per_week} a week · {policyLabel(p.policy)} · {BILLINGS.find((b) => b.key === p.billing)?.label}
             </Text>
-            <Text style={styles.meta}>{regularLabel(p.regular)}</Text>
+            <Text style={styles.meta}>
+              {p.regular.length || !regularFromCalendar(sessions, c.id).regular.length
+                ? regularLabel(p.regular)
+                : `📅 On your calendar: ${regularLabel(regularFromCalendar(sessions, c.id).regular)}. Tap to save as their regular times.`}
+            </Text>
             {p.paid_by ? <Text style={styles.meta}>💳 Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
             <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "✍️ Signed" : "✍️ Not signed yet"}</Text>
           </Pressable>
@@ -785,6 +801,8 @@ function ClientsTab({
           ))
         : null}
       {showOthers && others.length === 0 ? <Text style={styles.helper}>Every client is set up.</Text> : null}
+      {/* Calendar people who aren't app clients: their times and their own price (GRIZZ, 2026-11-01). */}
+      {oneOnOne ? <DiaryPeople sessions={sessions} currency={currency} normalFee={settings?.fee ?? null} onChanged={onChanged} /> : null}
     </>
   );
 }
