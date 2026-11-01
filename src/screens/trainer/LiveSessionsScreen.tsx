@@ -15,7 +15,7 @@ import SessionTimeChips from "@/components/sessions/SessionTimeChips";
 import { ForecastStrip, TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
 import { takings } from "@/lib/sessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
-import { diaryKey, diaryNames, regularFromCalendar } from "@/lib/calendarRegular";
+import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } from "@/lib/calendarRegular";
 import DiaryPeople from "@/components/sessions/DiaryPeople";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import { supabase } from "@/lib/supabase";
@@ -602,9 +602,12 @@ function CalendarTab({
         clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
         makeupFor={makeup?.id ?? null}
         guests={makeup ? [] : diaryNames(sessions)}
+        groups={makeup ? [] : usualGroups(sessions)}
         plans={plans}
         settings={settings}
-        booked={list.filter((s) => s.status === "booked" || s.status === "done").map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))}
+        booked={list
+          .filter((s) => s.status === "booked" || s.status === "done")
+          .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes, names: s.status === "booked" ? [who(s).split(" ")[0]] : [] }))}
         onClose={() => setAdding(false)}
         onSaved={() => {
           setAdding(false);
@@ -626,9 +629,12 @@ function AddSessionModal({
   makeupFor,
   initialTime,
   guests = [],
+  groups = [],
   onClose,
   onSaved,
 }: {
+  /** People not in the app who train together, e.g. ["Camilla", "Jade"]. */
+  groups?: string[][];
   visible: boolean;
   day: string;
   initialTime?: string | null;
@@ -638,56 +644,98 @@ function AddSessionModal({
   makeupFor: string | null;
   plans: SessionPlan[];
   settings: SessionSettings | null;
-  booked: { time: string; minutes: number }[];
+  /** Sessions already that day, with who's in them (to add someone to one). */
+  booked: { time: string; minutes: number; names?: string[] }[];
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [client, setClient] = useState<string | null>(null);
-  // Someone who isn't in the app: a name from the calendar or typed (GRIZZ, 2026-11-01).
-  const [guest, setGuest] = useState<string | null>(null);
+  // Who: one or more people, booked together as one joint session (GRIZZ,
+  // 2026-11-01: "Jade & Camilla always train together"). App clients by id,
+  // people not in the app by name.
+  const [picked, setPicked] = useState<string[]>([]);
   const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState("");
   const [time, setTime] = useState<string | null>(null);
   const [weekly, setWeekly] = useState(false);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (visible) {
-      setClient(clients.length === 1 && !guests.length ? clients[0].id : null);
-      setGuest(null);
+      setPicked(clients.length === 1 && !guests.length ? [`c:${clients[0].id}`] : []);
       setTyping(false);
+      setTyped("");
       setTime(initialTime ?? null);
       setWeekly(false);
     }
   }, [visible]);
-  const guestName = guest?.trim().slice(0, 60) ?? "";
-  const who = client || guestName;
+  const toggle = (key: string) => {
+    // A catch-up is for one person.
+    if (makeupFor) return setPicked([key]);
+    setPicked((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
+  };
+  // Typed the way it's written in the calendar, "Jade & Camilla" is two people
+  // (GRIZZ, 2026-11-01); a part that's an app client's name books that client.
+  const typedParts = typing ? splitNames(typed.slice(0, 120), guests).map((n) => n.slice(0, 60)) : [];
+  const clientFor = (n: string) => {
+    const k = diaryKey(n);
+    return clients.find((c) => diaryKey(c.name) === k) ?? clients.find((c) => diaryKey(c.name.split(" ")[0]) === k && clients.filter((x) => diaryKey(x.name.split(" ")[0]) === k).length === 1);
+  };
+  const appIds = [...new Set([...picked.filter((k) => k.startsWith("c:")).map((k) => k.slice(2)), ...typedParts.map((n) => clientFor(n)?.id).filter((x): x is string => !!x)])];
+  const names = [...new Set([...picked.filter((k) => k.startsWith("g:")).map((k) => k.slice(2)), ...typedParts.filter((n) => !clientFor(n))])];
+  const count = appIds.length + names.length;
+  const firstClient = appIds[0] ?? null;
   const save = async () => {
-    if (!who || !time) return;
+    if (!count || !time) return;
     setSaving(true);
-    if (!client) {
+    const at = atTime(day, time);
+    const failed: string[] = [];
+    let weeklyFailed = false;
+    for (const id of appIds) {
+      const { data, error } = await supabase.rpc("add_live_session", { p_client: id, p_starts_at: at, p_makeup_for: makeupFor });
+      if (error) {
+        failed.push(`${clients.find((c) => c.id === id)?.name ?? "Client"}: ${error.message}`);
+        continue;
+      }
+      // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
+      if (weekly && !makeupFor && data?.id) {
+        const r = await supabase.rpc("repeat_live_session", { p_id: data.id });
+        if (r.error) weeklyFailed = true;
+      }
+    }
+    if (names.length) {
       // Not in the app: on the calendar by name, at their own price if they have one.
       const { error } = await supabase.rpc("import_live_sessions", {
-        p_rows: [{ client_id: null, name: guestName, starts_at: atTime(day, time), minutes: settings?.minutes ?? 60, repeat: weekly }],
+        p_rows: names.map((name) => ({ client_id: null, name, starts_at: at, minutes: settings?.minutes ?? 60, repeat: weekly })),
       });
-      if (!error) {
-        const { data: fee } = await supabase.from("diary_name_fees").select("fee").eq("name_key", diaryKey(guestName)).maybeSingle();
-        if (fee) await supabase.rpc("set_diary_fee", { p_name: guestName, p_fee: Number(fee.fee) });
+      if (error) failed.push(`${names.join(" & ")}: ${error.message}`);
+      else {
+        const { data: fees } = await supabase.from("diary_name_fees").select("name_key, fee").in("name_key", names.map(diaryKey));
+        for (const name of names) {
+          const f = (fees ?? []).find((x) => x.name_key === diaryKey(name));
+          if (f) await supabase.rpc("set_diary_fee", { p_name: name, p_fee: Number(f.fee) });
+        }
       }
-      setSaving(false);
-      if (error) return Alert.alert("Couldn't book it", error.message);
-      onSaved();
-      return;
     }
-    const { data, error } = await supabase.rpc("add_live_session", { p_client: client, p_starts_at: atTime(day, time), p_makeup_for: makeupFor });
-    // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
-    const repeat = !error && weekly && !makeupFor && data?.id ? await supabase.rpc("repeat_live_session", { p_id: data.id }) : null;
     setSaving(false);
-    if (error) {
-      Alert.alert("Couldn't book it", error.message);
-      return;
-    }
-    if (repeat?.error) Alert.alert("Booked for this day only", `Couldn't make it weekly: ${repeat.error.message}`);
+    if (failed.length) Alert.alert("Couldn't book everyone", failed.join("\n"));
+    else if (weeklyFailed) Alert.alert("Booked for this day only", "Couldn't make it weekly for everyone. Tap the session › 🔁 Repeat every week.");
     onSaved();
   };
+  const chip = (key: string, label: string) => {
+    const on = picked.includes(key);
+    return (
+      <Pressable key={key} style={[styles.chip, on && styles.chipOn]} onPress={() => toggle(key)}>
+        <Text style={[styles.chipText, on && styles.chipTextOn]}>
+          {on && !makeupFor ? "✓ " : ""}
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+  // Sessions already booked that day: tap one to add people to it (a joint session).
+  const joinable = [...new Set(booked.filter((b) => b.names?.length).map((b) => b.time))].map((t) => ({
+    time: t,
+    names: booked.filter((b) => b.time === t).flatMap((b) => b.names ?? []),
+  }));
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardSafe>
@@ -701,61 +749,62 @@ function AddSessionModal({
           ) : (
             <>
               <Text style={styles.label}>Who?</Text>
-              <View style={styles.chips}>
-                {clients.map((c) => (
-                  <Pressable
-                    key={c.id}
-                    style={[styles.chip, client === c.id && styles.chipOn]}
-                    onPress={() => {
-                      setClient(c.id);
-                      setGuest(null);
-                      setTyping(false);
-                    }}
-                  >
-                    <Text style={[styles.chipText, client === c.id && styles.chipTextOn]}>{c.name}</Text>
-                  </Pressable>
-                ))}
-                {guests.map((g) => {
-                  const on = !client && !typing && guest === g;
-                  return (
-                    <Pressable
-                      key={g}
-                      style={[styles.chip, on && styles.chipOn]}
-                      onPress={() => {
-                        setClient(null);
-                        setGuest(g);
-                        setTyping(false);
-                      }}
-                    >
-                      <Text style={[styles.chipText, on && styles.chipTextOn]}>{g}</Text>
-                    </Pressable>
-                  );
-                })}
+              {makeupFor ? null : <Text style={styles.meta}>Tap two or more people to book them together as one joint session 👥.</Text>}
+              <View style={[styles.chips, { marginTop: 6 }]}>
+                {/* People who usually train together: one tap books them all. */}
+                {makeupFor
+                  ? null
+                  : groups.map((g) => {
+                      const keys = g.map((n) => `g:${n}`);
+                      const on = keys.every((k) => picked.includes(k));
+                      return (
+                        <Pressable
+                          key={keys.join("|")}
+                          style={[styles.chip, on && styles.chipOn]}
+                          onPress={() => setPicked((p) => (on ? p.filter((k) => !keys.includes(k)) : [...new Set([...p, ...keys])]))}
+                        >
+                          <Text style={[styles.chipText, on && styles.chipTextOn]}>👥 {g.join(" & ")}</Text>
+                        </Pressable>
+                      );
+                    })}
+                {clients.map((c) => chip(`c:${c.id}`, c.name))}
+                {guests.map((g) => chip(`g:${g}`, g))}
                 {makeupFor ? null : (
-                  <Pressable
-                    style={[styles.chip, typing && styles.chipOn]}
-                    onPress={() => {
-                      setClient(null);
-                      setGuest("");
-                      setTyping(true);
-                    }}
-                  >
+                  <Pressable style={[styles.chip, typing && styles.chipOn]} onPress={() => setTyping(!typing)}>
                     <Text style={[styles.chipText, typing && styles.chipTextOn]}>＋ Someone not in the app</Text>
                   </Pressable>
                 )}
               </View>
               {typing ? (
-                <TextInput style={styles.nameInput} value={guest ?? ""} onChangeText={setGuest} placeholder="Their name" placeholderTextColor="#64748B" maxLength={60} autoFocus />
+                <TextInput style={styles.nameInput} value={typed} onChangeText={setTyped} placeholder="As in your calendar, e.g. Jade & Camilla" placeholderTextColor="#64748B" maxLength={120} autoFocus />
               ) : null}
+              {count > 1 ? <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>👥 One joint session: {[...appIds.map((id) => clients.find((c) => c.id === id)?.name.split(" ")[0] ?? ""), ...names].join(" & ")}</Text> : null}
               <Text style={styles.label}>What time?</Text>
               <SessionTimeChips
                 dayStart={settings?.day_start ?? "05:00"}
                 dayEnd={settings?.day_end ?? "20:00"}
-                minutes={plans.find((p) => p.client_id === client)?.minutes ?? settings?.minutes ?? 60}
+                minutes={plans.find((p) => p.client_id === firstClient)?.minutes ?? settings?.minutes ?? 60}
                 booked={booked}
                 selected={time ? [time] : []}
                 onPick={setTime}
               />
+              {joinable.length && !makeupFor ? (
+                <>
+                  <Text style={styles.meta}>Or add them to a session already booked:</Text>
+                  <View style={[styles.chips, { marginTop: 6 }]}>
+                    {joinable.map((j) => {
+                      const on = time === j.time;
+                      return (
+                        <Pressable key={j.time} style={[styles.chip, on && styles.chipOn]} onPress={() => setTime(j.time)}>
+                          <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                            👥 {j.time} with {j.names.join(" & ")}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
               {makeupFor ? null : (
                 <>
                   <Text style={styles.label}>How often?</Text>
@@ -769,8 +818,8 @@ function AddSessionModal({
                   </View>
                 </>
               )}
-              <Pressable style={[styles.button, !(who && time) && { opacity: 0.5 }]} onPress={save} disabled={!who || !time || saving}>
-                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Book it</Text>}
+              <Pressable style={[styles.button, !(count && time) && { opacity: 0.5 }]} onPress={save} disabled={!count || !time || saving}>
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>{count > 1 ? `Book them together (${count})` : "Book it"}</Text>}
               </Pressable>
             </>
           )}
