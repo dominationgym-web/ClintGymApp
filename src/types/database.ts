@@ -1396,6 +1396,8 @@ export interface Database {
       session_agreements: { Row: SessionAgreement; Insert: never; Update: never; Relationships: [] };
       live_sessions: { Row: LiveSession; Insert: never; Update: never; Relationships: [] };
       trainer_time_off: { Row: TrainerTimeOff; Insert: never; Update: never; Relationships: [] };
+      // A diary-only person's price per session (0178).
+      diary_name_fees: { Row: { trainer_id: string; name_key: string; fee: number; updated_at: string }; Insert: never; Update: never; Relationships: [] };
       session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
       trainer_problem_messages: {
         Row: TrainerProblemMessage;
@@ -1674,6 +1676,7 @@ export interface Database {
       // Blocked-out time (0177).
       block_trainer_time: { Args: { p_from: string; p_to: string; p_reason: string }; Returns: TrainerTimeOff };
       remove_trainer_time_off: { Args: { p_id: string }; Returns: undefined };
+      set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
       set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };

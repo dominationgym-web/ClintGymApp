@@ -28,6 +28,7 @@ export default function SessionPlanEditor({
   signed,
   payers = [],
   paysFor = [],
+  fromCalendar,
   onSaved,
 }: {
   clientId: string;
@@ -38,6 +39,8 @@ export default function SessionPlanEditor({
   // Who else in a shared session could pay for this client, and who this client already pays for (0170).
   payers?: { id: string; name: string }[];
   paysFor?: string[];
+  // Their days and times as already on the calendar (calendarRegular.ts): filled in when the plan has none yet.
+  fromCalendar?: { regular: RegularTime[]; minutes: number | null };
   onSaved: () => void;
 }) {
   const [fee, setFee] = useState("");
@@ -61,20 +64,25 @@ export default function SessionPlanEditor({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    // No regular times saved yet: start from what's on the calendar (GRIZZ, 2026-11-01).
+    const cal = !plan?.regular?.length && fromCalendar?.regular.length ? fromCalendar : null;
+    const startRegular = cal ? cal.regular : (plan?.regular ?? []);
     setFee(String(plan?.fee ?? settings?.fee ?? ""));
-    setPerWeek(plan?.per_week ?? 3);
+    setPerWeek(cal ? cal.regular.length : (plan?.per_week ?? 3));
     setPolicy(plan?.policy ?? settings?.policy ?? "24h");
     setBilling(plan?.billing ?? settings?.billing ?? "arrears");
-    setMinutes(plan?.minutes ?? settings?.minutes ?? 60);
-    setTicked(new Set((plan?.regular ?? []).map((r) => r.weekday)));
-    setTyped(Object.fromEntries((plan?.regular ?? []).map((r) => [r.weekday, r.time])));
+    setMinutes(plan?.minutes ?? cal?.minutes ?? settings?.minutes ?? 60);
+    setTicked(new Set(startRegular.map((r) => r.weekday)));
+    setTyped(Object.fromEntries(startRegular.map((r) => [r.weekday, r.time])));
     setActive(plan?.active ?? true);
     setGroupSize(plan?.group_size ?? 1);
     setSplit(plan ? plan.group_total != null : true);
     setTotal(plan?.group_total != null ? String(plan.group_total) : "");
     setSolo(plan?.solo_fee != null ? String(plan.solo_fee) : "");
     setPayer(plan?.paid_by ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fromCalendar is rebuilt each render; its content only matters when the client changes.
   }, [plan, settings, clientId]);
+  const filledFromCalendar = !plan?.regular?.length && !!fromCalendar?.regular.length;
 
   const first = clientName.split(" ")[0];
   const regular: RegularTime[] = WEEK_ORDER.filter((d) => ticked.has(d) && cleanTime(typed[d])).map((d) => ({ weekday: d, time: cleanTime(typed[d]) as string }));
@@ -145,6 +153,11 @@ export default function SessionPlanEditor({
 
   return (
     <View>
+      {filledFromCalendar ? (
+        <Text style={[styles.status, { color: themeText(BRAND_GOLD) }]}>
+          📅 From your calendar: {regularLabel(fromCalendar!.regular, true)}. Their days and times below are filled in.
+        </Text>
+      ) : null}
       {plan ? (
         <Text style={[styles.status, { color: themeText(signed ? "#22C55E" : "#F59E0B") }]}>
           {signed
@@ -252,6 +265,9 @@ export default function SessionPlanEditor({
 
       <Text style={styles.label}>Their days and times</Text>
       <Text style={styles.meta}>Tick their days and type the time for each. Leave all empty if their times change every week.</Text>
+      {filledFromCalendar ? (
+        <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>📅 Filled in from your calendar. Check them and tap Save.</Text>
+      ) : null}
       {WEEK_ORDER.map((d) => {
         const on = ticked.has(d);
         return (
