@@ -36,6 +36,7 @@ import {
   monthLabel,
   monthStart,
   noticeHours,
+  openSlots,
   policyLabel,
   regularLabel,
   sessionKind,
@@ -456,8 +457,23 @@ function CalendarTab({
 }) {
   const [day, setDay] = useState<string>(dayKey(new Date()));
   const [adding, setAdding] = useState(false);
+  const [addAt, setAddAt] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const list = sessions.filter((s) => s.status !== "removed" && dayKey(s.starts_at) === day);
+  const taken = list.filter((s) => s.status === "booked" || s.status === "done").map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }));
+  // Open slots show as "???" between bookings (GRIZZ 2026-11-01), today and later only.
+  const today = dayKey(new Date());
+  const nowClock = clockLabel(new Date().toISOString());
+  const open =
+    day < today ? [] : openSlots(settings?.day_start ?? "05:00", settings?.day_end ?? "20:00", settings?.minutes ?? 60, taken).filter((t) => day > today || t > nowClock);
+  const lines = [
+    ...list.map((s) => ({ time: clockLabel(s.starts_at), s })),
+    ...(list.length ? open.map((t) => ({ time: t, s: null })) : []),
+  ].sort((a, b) => a.time.localeCompare(b.time));
+  const book = (t: string | null) => {
+    setAddAt(t);
+    setAdding(true);
+  };
   return (
     <>
       {makeup ? (
@@ -472,8 +488,20 @@ function CalendarTab({
       ) : null}
       <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} />
       <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
-      {list.length ? list.map((s) => <SessionLine key={s.id} s={s} name={who(s)} onOpen={onOpen} />) : <Text style={styles.helper}>Nothing booked.</Text>}
-      <Pressable style={styles.button} onPress={() => setAdding(true)}>
+      {lines.map((l) =>
+        l.s ? (
+          <SessionLine key={l.s.id} s={l.s} name={who(l.s)} onOpen={onOpen} />
+        ) : (
+          <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
+            <Text style={styles.openText}>{l.time} · ??? · open</Text>
+          </Pressable>
+        ),
+      )}
+      {list.length === 0 ? (
+        <Text style={styles.helper}>{open.length ? `Nothing booked. The whole day is open (${open[0]} to ${settings?.day_end?.slice(0, 5) ?? "20:00"}).` : "Nothing booked."}</Text>
+      ) : null}
+      {list.length && open.length ? <Text style={styles.meta}>??? is an open slot. Tap one to book it.</Text> : null}
+      <Pressable style={styles.button} onPress={() => book(null)}>
         <Text style={styles.buttonText}>
           ＋ Book {makeup ? "the catch-up" : "a session"} on {dayLabel(day)}
         </Text>
@@ -500,6 +528,7 @@ function CalendarTab({
       <AddSessionModal
         visible={adding}
         day={day}
+        initialTime={addAt}
         clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
         makeupFor={makeup?.id ?? null}
         plans={plans}
@@ -524,11 +553,13 @@ function AddSessionModal({
   settings,
   booked,
   makeupFor,
+  initialTime,
   onClose,
   onSaved,
 }: {
   visible: boolean;
   day: string;
+  initialTime?: string | null;
   clients: ClientInfo[];
   makeupFor: string | null;
   plans: SessionPlan[];
@@ -544,7 +575,7 @@ function AddSessionModal({
   useEffect(() => {
     if (visible) {
       setClient(clients.length === 1 ? clients[0].id : null);
-      setTime(null);
+      setTime(initialTime ?? null);
       setWeekly(false);
     }
   }, [visible]);
@@ -1129,6 +1160,8 @@ const styles = themedStyles({
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, fontSize: 15, marginTop: 6, borderWidth: 1, borderColor: "#334155" },
   row: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: "#334155" },
   rowTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  openRow: { backgroundColor: "transparent", borderWidth: 1, borderStyle: "dashed", borderColor: "#475569", borderLeftWidth: 1, paddingVertical: 8 },
+  openText: { color: "#94A3B8", fontSize: 14, fontWeight: "600" },
   rowBody: { color: "#CBD5E1", fontSize: 14, marginTop: 4 },
   rowKind: { fontSize: 13, fontWeight: "600", marginTop: 3 },
   meta: { color: "#64748B", fontSize: 12, marginTop: 6, lineHeight: 17 },

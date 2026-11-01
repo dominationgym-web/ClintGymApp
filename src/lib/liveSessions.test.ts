@@ -12,6 +12,7 @@ import {
   sessionKind,
   shiftMonth,
   slotTimes,
+  openSlots,
   cleanTime,
   feeText,
   groupFees,
@@ -180,6 +181,26 @@ describe("invoiceText", () => {
   it("keeps one plain list for one person", () => {
     expect(invoicePeople(inv.lines)).toHaveLength(1);
     expect(invoicePeople(inv.lines)[0].who).toBeNull();
+  });
+});
+
+describe("openSlots", () => {
+  it("fills an empty morning from the first session time", () => {
+    expect(openSlots("05:10", "07:30", 40)).toEqual(["05:10", "05:50", "06:30"]);
+  });
+
+  it("shows the gaps between bookings and skips a gap shorter than a session", () => {
+    const booked = [
+      { time: "05:10", minutes: 40 },
+      { time: "07:10", minutes: 40 },
+      { time: "09:10", minutes: 40 },
+      { time: "10:00", minutes: 40 },
+    ];
+    expect(openSlots("05:10", "11:30", 40, booked)).toEqual(["05:50", "06:30", "07:50", "08:30", "10:40"]);
+  });
+
+  it("handles two people booked at the same time", () => {
+    expect(openSlots("08:00", "10:00", 40, [{ time: "08:00", minutes: 40 }, { time: "08:00", minutes: 40 }])).toEqual(["08:40", "09:20"]);
   });
 });
 
