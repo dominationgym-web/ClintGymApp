@@ -100,11 +100,46 @@ export default function SessionActionsModal({
       c === "makeup" ? `No credit: ${first} gets a catch-up session instead. Book it under To do › Catch-ups. You'll be reminded on Mondays and Wednesdays.` : undefined
     );
 
+  // A weekly session (0175) asks whether a change is for this day only or
+  // for every week after (GRIZZ, 2026-11-01: "a change just for today or
+  // going forward long term").
+  const weekly = !!session.repeat_id;
+
   const remove = () =>
-    Alert.alert("Take this session off the calendar?", "Use this for a session booked by mistake. To record a cancellation, use Log a cancellation instead.", [
-      { text: "Back", style: "cancel" },
-      { text: "Take it off", style: "destructive", onPress: () => run(() => supabase.rpc("remove_live_session", { p_id: session.id })) },
-    ]);
+    weekly
+      ? Alert.alert("Take off just this one, or every week?", "To record a cancellation, use Log a cancellation instead.", [
+          { text: "Back", style: "cancel" },
+          { text: "Just this one", onPress: () => run(() => supabase.rpc("remove_live_session", { p_id: session.id })) },
+          {
+            text: "This and every week after",
+            style: "destructive",
+            onPress: () => run(() => supabase.rpc("stop_live_repeat", { p_id: session.id }), `${first}'s weekly session stops from ${dayLabel(session.starts_at)}.`),
+          },
+        ])
+      : Alert.alert("Take this session off the calendar?", "Use this for a session booked by mistake. To record a cancellation, use Log a cancellation instead.", [
+          { text: "Back", style: "cancel" },
+          { text: "Take it off", style: "destructive", onPress: () => run(() => supabase.rpc("remove_live_session", { p_id: session.id })) },
+        ]);
+
+  const moveOne = (at: string) => run(() => supabase.rpc("move_live_session", { p_id: session.id, p_starts_at: at }), session.client_id ? `${first} has been told.` : undefined);
+  const move = (at: string) =>
+    weekly
+      ? Alert.alert("Move just this one, or every week?", `${dayLabel(at)} at ${clockLabel(at)}.`, [
+          { text: "Back", style: "cancel" },
+          { text: "Just this one", onPress: () => moveOne(at) },
+          {
+            text: "This and every week after",
+            onPress: () =>
+              run(
+                () => supabase.rpc("move_live_repeat", { p_id: session.id, p_starts_at: at }),
+                `From ${dayLabel(at)}, every week at ${clockLabel(at)}.${session.client_id ? ` ${first} has been told.` : ""}`
+              ),
+          },
+        ])
+      : moveOne(at);
+
+  const makeWeekly = () =>
+    run(() => supabase.rpc("repeat_live_session", { p_id: session.id }), `${first} is now booked every week at this day and time. Change or take one off any time.`);
 
   const link = whatsappLink(clientPhone);
 
@@ -128,6 +163,7 @@ export default function SessionActionsModal({
             {session.status === "done" && !session.client_confirmed_at && !session.client_disputed_at ? (
               <Text style={styles.meta}>Waiting for {first} to confirm.</Text>
             ) : null}
+            {weekly ? <Text style={styles.meta}>🔁 Every week at this time</Text> : null}
             {session.note ? <Text style={styles.meta}>"{session.note}"</Text> : null}
             {session.proof_path ? (
               <Pressable onPress={() => setProof(session.proof_path)}>
@@ -152,6 +188,7 @@ export default function SessionActionsModal({
                   </View>
                 ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
+                {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="🔁 Repeat every week" onPress={makeWeekly} /> : null}
                 {!session.invoice_id && session.status !== "removed" ? (
                   <Outline label={session.client_id ? "👤 Change who" : "👤 Link to their app account"} onPress={() => setStep("who")} />
                 ) : null}
@@ -175,7 +212,7 @@ export default function SessionActionsModal({
 
             {step === "cancel" && <CancelForm session={session} policy={policy} first={first} onDone={() => (onChanged(), onClose())} onBack={() => setStep("menu")} />}
 
-            {step === "move" && <MoveForm session={session} sessions={sessions} settings={settings} onSave={(at) => run(() => supabase.rpc("move_live_session", { p_id: session.id, p_starts_at: at }), `${first} has been told.`)} onBack={() => setStep("menu")} />}
+            {step === "move" && <MoveForm session={session} sessions={sessions} settings={settings} onSave={move} onBack={() => setStep("menu")} />}
 
             {step === "who" && (
               <WhoForm

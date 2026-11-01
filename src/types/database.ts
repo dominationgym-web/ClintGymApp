@@ -1166,6 +1166,9 @@ export type LiveSession = {
   minutes: number;
   fee: number;
   regular_at: string | null;
+  // Made by a weekly repeat (0175): the same time every week.
+  repeat_id?: string | null;
+  repeat_at?: string | null;
   status: LiveSessionStatus;
   cancelled_by: "client" | "trainer" | null;
   cancelled_at: string | null;
@@ -1646,7 +1649,13 @@ export interface Database {
       set_session_outcome: { Args: { p_id: string; p_outcome: "done" | "no_show" | "booked" }; Returns: LiveSession };
       set_session_fee: { Args: { p_id: string; p_fee: number }; Returns: LiveSession };
       set_session_payer: { Args: { p_client: string; p_paid_by: string | null }; Returns: SessionPlan };
-      import_live_sessions: { Args: { p_rows: { client_id: string | null; name?: string; starts_at: string; minutes: number | null }[] }; Returns: { added: number; skipped: number } };
+      import_live_sessions: {
+        Args: { p_rows: { client_id: string | null; name?: string; starts_at: string; minutes: number | null; repeat?: boolean }[] };
+        Returns: { added: number; skipped: number; weekly?: number };
+      };
+      repeat_live_session: { Args: { p_id: string }; Returns: { repeat_id: string | null; added: number } };
+      move_live_repeat: { Args: { p_id: string; p_starts_at: string }; Returns: { repeat_id: string; removed: number } };
+      stop_live_repeat: { Args: { p_id: string }; Returns: { removed: number } };
       set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };

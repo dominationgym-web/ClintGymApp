@@ -49,12 +49,16 @@ export default function CalendarImportModal({
   const [rows, setRows] = useState<ImportRow[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
+  // Same time every week from then on (GRIZZ, 2026-11-01): on by default,
+  // trainers keep the same schedule for months.
+  const [weekly, setWeekly] = useState(true);
 
   useEffect(() => {
     if (visible) {
       setRows(null);
       setNote(null);
       setPicking(null);
+      setWeekly(true);
     }
   }, [visible]);
 
@@ -152,12 +156,14 @@ export default function CalendarImportModal({
     const ticked = rows.filter((r) => r.tick);
     if (!ticked.length) return;
     setBusy("Booking…");
-    const res = await bookRows(rows);
+    const res = await bookRows(rows, weekly);
     setBusy(null);
     if ("error" in res) return Alert.alert("Couldn't book them", res.error);
     Alert.alert(
       "In your diary ✅",
-      `${res.added} session${res.added === 1 ? "" : "s"} added.${res.skipped ? ` ${res.skipped} were already in the app.` : ""} Clients in the app get one notification each. Tap any session to change it.`
+      `${res.added} session${res.added === 1 ? "" : "s"} added.${res.skipped ? ` ${res.skipped} were already in the app.` : ""}${
+        weekly ? " They repeat every week from now on." : ""
+      } Clients in the app get one notification each. Tap any session to change it${weekly ? " just for that day, or for every week after" : ""}.`
     );
     onBooked();
   };
@@ -266,9 +272,23 @@ export default function CalendarImportModal({
                     </View>
                   </View>
                 ))}
+                <Pressable style={[styles.weekly, weekly && styles.weeklyOn]} onPress={() => setWeekly((w) => !w)}>
+                  <View style={[styles.box, weekly && styles.boxOn]}>
+                    <Text style={styles.tick}>{weekly ? "✓" : ""}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.when}>🔁 Same every week from now on</Text>
+                    <Text style={styles.meta}>
+                      {weekly
+                        ? "Each session repeats at the same day and time every week. Change or take one off just for that day, or for every week after."
+                        : "Only the dates in your screenshot are booked."}
+                    </Text>
+                  </View>
+                </Pressable>
                 <Pressable style={[styles.button, !ticked && { opacity: 0.5 }]} onPress={book} disabled={!ticked}>
                   <Text style={styles.buttonText}>
                     Book {ticked} session{ticked === 1 ? "" : "s"}
+                    {weekly ? ", every week" : ""}
                   </Text>
                 </Pressable>
                 <Pressable style={styles.outline} onPress={() => setRows(null)}>
@@ -326,6 +346,17 @@ const styles = themedStyles({
     marginTop: 8,
   },
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
+  weekly: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+    borderWidth: 1,
+    borderColor: "#1E293B",
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 14,
+  },
+  weeklyOn: { borderColor: BRAND_GOLD },
   row: {
     flexDirection: "row",
     gap: 12,
