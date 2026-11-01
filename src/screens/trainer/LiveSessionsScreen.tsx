@@ -11,6 +11,8 @@ import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
+import { TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
+import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -72,6 +74,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState<LiveSession | null>(null);
+  const [weekMoney, setWeekMoney] = useState(false);
   // A cancelled session whose catch-up is being booked on the Calendar tab.
   const [makeup, setMakeup] = useState<LiveSession | null>(null);
 
@@ -135,6 +138,9 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     { key: "setup", label: "Setup", icon: "settings", dot: settings ? null : "#F59E0B" },
   ];
 
+  const sessionsLeftToday = sessions.some((s) => dayKey(s.starts_at) === dayKey(now) && sessionKind(s, now) === "booked");
+  const moneyCard = settings ? <TodayMoneyCard sessions={sessions} currency={settings.currency} onWeek={() => setWeekMoney(true)} /> : null;
+
   // An app client's name, or the name a diary-only session carries (0174).
   const who = (s: Pick<LiveSession, "client_id" | "guest_name">) => (s.client_id ? byId[s.client_id]?.name : s.guest_name) ?? "Client";
 
@@ -159,6 +165,9 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               <Text style={styles.noticeText}>Start under Setup: your normal fee and cancellation rule. Then set up each client under Clients.</Text>
             </Pressable>
           ) : null}
+          {/* What the day (and week) made after cancellations and credits (GRIZZ, 2026-11-01):
+              at the top once the day's sessions are over, under them until then. */}
+          {tab === "todo" && settings && !sessionsLeftToday ? moneyCard : null}
           {tab === "todo" && (
             <ToDo
               todo={todo}
@@ -178,6 +187,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               onChanged={load}
             />
           )}
+          {tab === "todo" && settings && sessionsLeftToday ? <View style={{ marginTop: 20 }}>{moneyCard}</View> : null}
           {tab === "calendar" && (
             <CalendarTab
               month={month}
@@ -208,6 +218,13 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
           {tab === "setup" && <SetupTab settings={settings} onSaved={setSettings} />}
         </ScrollView>
       )}
+      <WeekMoneyModal
+        visible={weekMoney}
+        sessions={sessions}
+        currency={settings?.currency ?? "ZAR"}
+        name={who}
+        onClose={() => setWeekMoney(false)}
+      />
       <SessionActionsModal
         session={open}
         clientName={open ? who(open) : ""}
@@ -539,6 +556,8 @@ function CalendarTab({
           <Text style={styles.outlineText}>📥 Bring in sessions from your calendar</Text>
         </Pressable>
       )}
+      {/* Away or can't train: block it out, clients are told and not charged (GRIZZ, 2026-11-01). */}
+      {makeup ? null : <TimeOffSection day={day} sessions={sessions} currency={settings?.currency ?? "ZAR"} name={who} onChanged={onChanged} />}
       <CalendarImportModal
         visible={importing}
         clients={clients}
