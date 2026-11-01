@@ -85,6 +85,25 @@ export function slotTimes(dayStart: string, dayEnd: string, minutes: number, boo
   }
   return [...times].sort((a, b) => a - b).map(toClock);
 }
+/**
+ * The open slots in a trainer's day, shown as "???" lines between bookings
+ * (GRIZZ 2026-11-01) so the gaps are easy to see. Slots run on from the first
+ * session time and straight after each booking, never overlap a booking, and
+ * a gap shorter than one session (e.g. 09:50 to 10:00) is left out.
+ */
+export function openSlots(dayStart: string, dayEnd: string, minutes: number, booked: { time: string; minutes: number }[] = []): string[] {
+  const start = toMins(cleanTime(dayStart) ?? "05:00");
+  const end = toMins(cleanTime(dayEnd) ?? "20:00");
+  const len = Math.max(15, minutes);
+  const busy = booked.map((b) => ({ from: toMins(b.time), to: toMins(b.time) + b.minutes })).sort((a, b) => a.from - b.from);
+  const out: number[] = [];
+  let at = start;
+  for (const b of [...busy, { from: end, to: end }]) {
+    for (; at + len <= Math.min(b.from, end); at += len) out.push(at);
+    at = Math.max(at, b.to);
+  }
+  return out.map(toClock);
+}
 const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const LONG_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
