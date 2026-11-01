@@ -4,7 +4,19 @@ import { ScrollView } from "@/components/ScrollView";
 import ModalSafeArea from "@/components/ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 import { KIND_STYLE, clockLabel, dayKey, dayLabel, sessionKind, sessionMoney } from "@/lib/liveSessions";
-import { shiftWeek, takings, takingsByPerson, weekLabel, weekStart, weekTakings, type Takings } from "@/lib/sessionEarnings";
+import {
+  monthForecast,
+  percentOf,
+  shiftWeek,
+  takings,
+  takingsByPerson,
+  weekForecast,
+  weekLabel,
+  weekStart,
+  weekTakings,
+  type Forecast,
+  type Takings,
+} from "@/lib/sessionEarnings";
 import type { BillingCurrency, LiveSession } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 
@@ -40,6 +52,84 @@ function TakingsLines({ t, currency }: { t: Takings; currency: BillingCurrency }
         </Text>
       ))}
     </>
+  );
+}
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// A gold bar: how much of the predicted income is made.
+function Bar({ part, whole }: { part: number; whole: number }) {
+  const pct = Math.max(0, Math.min(100, percentOf(part, whole)));
+  return (
+    <View style={styles.barTrack}>
+      <View style={[styles.barFill, { width: `${pct}%` }]} />
+    </View>
+  );
+}
+
+// Predicted against made (GRIZZ, 2026-11-01: "as a motivation ... predicted
+// weekly and monthly income. As well as predicted vs actual at the end of the
+// week" and "that number stays visible and drops as clients cancel or trainer
+// cancels like a countdown clock"). While the week or month runs, the big
+// number is what it's heading for and drops with every cancellation; when it's
+// over, predicted against actual.
+export function ForecastLines({ f, currency, label, small }: { f: Forecast; currency: BillingCurrency; label: string; small?: boolean }) {
+  if (!f.predicted && !f.made) return null;
+  const pct = percentOf(f.made, f.predicted);
+  if (f.finished) {
+    const gap = f.predicted - f.made;
+    return (
+      <View style={{ marginTop: small ? 8 : 10 }}>
+        <Text style={styles.forecastTitle}>
+          🏁 {label}: {sessionMoney(f.made, currency)} of {sessionMoney(f.predicted, currency)} predicted
+        </Text>
+        <Bar part={f.made} whole={f.predicted} />
+        <Text style={[styles.line, { color: themeText(gap <= 0 ? "#22C55E" : "#F59E0B") }]}>
+          {gap <= 0
+            ? `🔥 ${pct}%: you beat the prediction${gap < 0 ? ` by ${sessionMoney(-gap, currency)}` : ""}!`
+            : `${pct}% of predicted. ${sessionMoney(gap, currency)} lost to cancellations and missed sessions.`}
+        </Text>
+      </View>
+    );
+  }
+  const lost = f.predicted - f.heading;
+  return (
+    <View style={{ marginTop: small ? 8 : 10 }}>
+      <View style={styles.forecastRow}>
+        <Text style={styles.forecastTitle}>🎯 {label}</Text>
+        <Text style={[styles.forecastBig, small && { fontSize: 18 }]}>{sessionMoney(f.heading, currency)}</Text>
+      </View>
+      <Bar part={f.heading} whole={f.predicted} />
+      <Text style={styles.line}>
+        {lost > 0 ? (
+          <Text style={{ color: themeText("#F59E0B") }}>
+            ▼ {sessionMoney(lost, currency)} cancelled of {sessionMoney(f.predicted, currency)} predicted
+          </Text>
+        ) : (
+          `All ${sessionMoney(f.predicted, currency)} predicted still on`
+        )}
+        {` · ${sessionMoney(f.made, currency)} made so far`}
+      </Text>
+    </View>
+  );
+}
+
+// Always at the top of the 1 on 1 Today tab: this week and this month,
+// counting down as sessions are cancelled. Monday and Tuesday also show how
+// last week ended.
+export function ForecastStrip({ sessions, currency }: { sessions: LiveSession[]; currency: BillingCurrency }) {
+  const now = new Date();
+  const monday = weekStart(now);
+  const week = weekForecast(sessions, monday, now);
+  const month = monthForecast(sessions, now);
+  const last = weekForecast(sessions, shiftWeek(monday, -1), now);
+  if (!week.predicted && !month.predicted) return null;
+  return (
+    <View style={[styles.card, { paddingTop: 6 }]}>
+      <ForecastLines f={week} currency={currency} label="This week" small />
+      <ForecastLines f={month} currency={currency} label={MONTHS[now.getMonth()]} small />
+      {now.getDay() >= 1 && now.getDay() <= 2 ? <ForecastLines f={last} currency={currency} label="Last week" small /> : null}
+    </View>
   );
 }
 
@@ -86,6 +176,7 @@ export function WeekMoneyModal({
   const [openDay, setOpenDay] = useState<string | null>(null);
   const [view, setView] = useState<"days" | "clients">("days");
   const week = useMemo(() => weekTakings(sessions, monday), [sessions, monday]);
+  const weekF = useMemo(() => weekForecast(sessions, monday), [sessions, monday]);
   const inWeek = useMemo(() => {
     const days = new Set(week.days.map((d) => d.day));
     return sessions.filter((s) => s.status !== "removed" && days.has(dayKey(s.starts_at)));
@@ -120,6 +211,7 @@ export function WeekMoneyModal({
             <Text style={styles.cardLabel}>{monday === thisWeek && now.getDay() !== 0 ? "Made so far" : "Made this week"}</Text>
             <Text style={styles.big}>{sessionMoney(week.total.made, currency)}</Text>
             <TakingsLines t={week.total} currency={currency} />
+            <ForecastLines f={weekF} currency={currency} label={monday === thisWeek ? "This week" : "That week"} />
           </View>
 
           <View style={styles.switchRow}>
@@ -199,6 +291,11 @@ const styles = themedStyles({
   weekButton: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#334155" },
   weekText: { color: "#fff", fontSize: 14, fontWeight: "700" },
   weekLink: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 2 },
+  forecastTitle: { color: "#fff", fontSize: 14, fontWeight: "700", flexShrink: 1 },
+  forecastRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", gap: 8 },
+  forecastBig: { color: BRAND_GOLD, fontSize: 22, fontWeight: "800" },
+  barTrack: { height: 8, borderRadius: 4, backgroundColor: "#334155", marginTop: 6, overflow: "hidden" },
+  barFill: { height: 8, borderRadius: 4, backgroundColor: BRAND_GOLD },
   switchRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
   chip: { flex: 1, borderRadius: 18, paddingVertical: 8, alignItems: "center", backgroundColor: "#1E293B" },
   chipOn: { backgroundColor: BRAND_GOLD },

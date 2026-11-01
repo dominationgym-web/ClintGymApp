@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shiftWeek, takings, takingsByPerson, weekDays, weekLabel, weekStart, weekTakings } from "./sessionEarnings";
+import { monthForecast, percentOf, predicted, shiftWeek, takings, takingsByPerson, weekDays, weekForecast, weekLabel, weekStart, weekTakings } from "./sessionEarnings";
 
 const now = new Date(2026, 10, 4, 12, 0); // Wed 4 Nov 2026, 12:00
 const at = (d: number, h: number) => new Date(2026, 10, d, h, 0).toISOString();
@@ -63,5 +63,32 @@ describe("weeks", () => {
     expect(w.days[0].takings.made).toBe(350);
     expect(w.days[2].sessions).toBe(0);
     expect(takingsByPerson(list.slice(0, 2), (x) => x.who, now).map((p) => p.name)).toEqual(["A", "B"]);
+  });
+});
+
+describe("predicted income", () => {
+  const p = (o: Partial<Parameters<typeof predicted>[0][number]>) => ({ ...s({}), makeup_for: null, updated_at: at(1, 9), ...o });
+  const list = [
+    p({ status: "done", starts_at: at(2, 6) }), // Mon, trained
+    p({ status: "cancelled", charge: "credit", cancelled_by: "client", starts_at: at(3, 6) }), // in time: predicted, not made
+    p({ status: "booked", starts_at: at(6, 6) }), // Fri, to come
+    p({ status: "booked", starts_at: at(5, 6), makeup_for: "x", fee: 0 }), // catch-up: not predicted again
+    p({ status: "removed", starts_at: at(4, 6), updated_at: at(3, 9) }), // moved before: left out
+    p({ status: "removed", starts_at: at(3, 17), updated_at: at(3, 19) }), // didn't come: predicted
+    p({ status: "booked", starts_at: at(10, 6) }), // next week
+    p({ status: "done", starts_at: new Date(2026, 9, 30, 6).toISOString() }), // October
+  ];
+  it("counts what was on the calendar, whatever happened", () => {
+    expect(predicted(list)).toBe(350 * 6);
+  });
+  it("gives the week and the month, predicted against made", () => {
+    const w = weekForecast(list, "2026-11-02", now);
+    expect(w).toEqual({ predicted: 1400, made: 350, toCome: 350, heading: 700, finished: false });
+    expect(weekForecast(list, "2026-11-02", new Date(2026, 10, 9, 8)).finished).toBe(true);
+    const m = monthForecast(list, now);
+    expect(m.predicted).toBe(1750);
+    expect(m.made).toBe(350);
+    expect(percentOf(350, 1400)).toBe(25);
+    expect(percentOf(0, 0)).toBe(0);
   });
 });

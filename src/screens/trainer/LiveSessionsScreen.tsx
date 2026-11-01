@@ -12,7 +12,7 @@ import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
-import { TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
+import { ForecastStrip, TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
 import { takings } from "@/lib/sessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
 import { diaryKey, diaryNames, regularFromCalendar } from "@/lib/calendarRegular";
@@ -173,6 +173,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               <Text style={styles.noticeText}>Start under Setup: your normal fee and cancellation rule. Then set up each client under Clients.</Text>
             </Pressable>
           ) : null}
+          {/* Predicted week and month, counting down with cancellations (GRIZZ, 2026-11-01). */}
+          {tab === "todo" && settings ? <ForecastStrip sessions={sessions} currency={settings.currency} /> : null}
           {/* What the day (and week) made after cancellations and credits (GRIZZ, 2026-11-01):
               at the top once the day's sessions are over, under them until then. */}
           {tab === "todo" && settings && !sessionsLeftToday ? moneyCard : null}
