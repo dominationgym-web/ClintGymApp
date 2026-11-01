@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, RefreshControl, Share, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Linking, Modal, PanResponder, Pressable, RefreshControl, Share, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -542,6 +542,27 @@ function CalendarTab({
     setAddAt(t);
     setAdding(true);
   };
+  // Next or previous day by swiping or the ‹ › arrows (GRIZZ, 2026-11-01:
+  // "swipe left to get to the next day"); the month follows.
+  const goDay = (by: number) => {
+    const [y, m, d] = day.split("-").map(Number);
+    const next = dayKey(new Date(y, m - 1, d + by));
+    setDay(next);
+    if (next.slice(0, 7) !== month.slice(0, 7)) onMonth(`${next.slice(0, 7)}-01`);
+  };
+  const goDayRef = useRef(goDay);
+  goDayRef.current = goDay;
+  const swipe = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 24 && Math.abs(g.dx) > Math.abs(g.dy) * 2,
+        onPanResponderRelease: (_e, g) => {
+          if (g.dx <= -50) goDayRef.current(1);
+          else if (g.dx >= 50) goDayRef.current(-1);
+        },
+      }),
+    []
+  );
   return (
     <>
       {makeup ? (
@@ -555,7 +576,17 @@ function CalendarTab({
         </View>
       ) : null}
       <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} />
-      <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
+      <View {...swipe.panHandlers}>
+      <View style={styles.dayNav}>
+        <Pressable onPress={() => goDay(-1)} hitSlop={12} accessibilityLabel="Day before">
+          <Text style={styles.arrow}>‹</Text>
+        </Pressable>
+        <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>{dayLabel(day)}</Text>
+        <Pressable onPress={() => goDay(1)} hitSlop={12} accessibilityLabel="Next day">
+          <Text style={styles.arrow}>›</Text>
+        </Pressable>
+      </View>
+      <Text style={[styles.meta, { textAlign: "center", marginTop: 0, marginBottom: 6 }]}>Swipe left for the next day, right for the day before</Text>
       {lines.map((l) =>
         l.s ? (
           <SessionLine key={l.s.id} s={l.s} name={[l.s, ...l.with].map((x) => (l.with.length ? who(x).split(" ")[0] : who(x))).join(" & ") + (l.with.length ? " 👥" : "")} onOpen={onOpen} />
@@ -569,6 +600,7 @@ function CalendarTab({
         <Text style={styles.helper}>{open.length ? `Nothing booked. The whole day is open (${open[0]} to ${settings?.day_end?.slice(0, 5) ?? "20:00"}).` : "Nothing booked."}</Text>
       ) : null}
       {list.length && open.length ? <Text style={styles.meta}>??? is an open slot. Tap one to book it.</Text> : null}
+      </View>
       <Pressable style={styles.button} onPress={() => book(null)}>
         <Text style={styles.buttonText}>
           ＋ Book {makeup ? "the catch-up" : "a session"} on {dayLabel(day)}
@@ -1425,6 +1457,7 @@ const styles = themedStyles({
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   notice: { backgroundColor: "#3B2F0B", borderRadius: 10, padding: 12, marginBottom: 8 },
   noticeText: { color: "#FDE68A", fontSize: 14, lineHeight: 20 },
+  dayNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 4 },
   monthRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 18, marginBottom: 8 },
   arrow: { color: BRAND_GOLD, fontSize: 28, fontWeight: "700", paddingHorizontal: 12 },
   dayRow: { flexDirection: "row", gap: 12 },
