@@ -233,11 +233,13 @@ export default function SessionActionsModal({
                 {(session.status === "booked" || session.status === "no_show" || session.status === "cancelled") && started ? (
                   <Big label="✓ Done, we trained" onPress={() => outcome("done")} busy={busy} />
                 ) : null}
-                {session.status !== "no_show" && session.status !== "removed" && started ? (
+                {/* Cancellations, no-shows and catch-ups only for clients signed up to the app
+                    (GRIZZ, 2026-11-01). A name-only session counts in earnings when it happens. */}
+                {session.client_id && session.status !== "no_show" && session.status !== "removed" && started ? (
                   <Outline label="No-show (charged)" onPress={() => outcome("no_show")} />
                 ) : null}
-                {session.status !== "removed" ? <Outline label="Log a cancellation" onPress={() => setStep("cancel")} /> : null}
-                {(session.status === "cancelled" || session.status === "no_show") && !session.makeup_session_id ? (
+                {session.client_id && session.status !== "removed" ? <Outline label="Log a cancellation" onPress={() => setStep("cancel")} /> : null}
+                {session.client_id && (session.status === "cancelled" || session.status === "no_show") && !session.makeup_session_id ? (
                   <View style={styles.chips}>
                     <Chip label="🔴 Charge" on={session.charge === "charge"} onPress={() => charge("charge")} />
                     <Chip label="🟢 Credit" on={session.charge === "credit"} onPress={() => charge("credit")} />
@@ -249,7 +251,12 @@ export default function SessionActionsModal({
                 {!session.invoice_id && session.status !== "removed" ? (
                   <Outline label={session.client_id ? "👤 Change who" : "👤 Link to their app account"} onPress={() => setStep("who")} />
                 ) : null}
-                {!session.client_id ? <Text style={styles.meta}>In your diary by name only: no notifications or invoice until you link them to their app account.</Text> : null}
+                {!session.client_id ? (
+                  <Text style={styles.meta}>
+                    Not in the app yet: this session counts in your earnings, but cancellations, catch-ups, notifications and invoices start once you link them to
+                    their app account. If they didn't come, take it off the calendar.
+                  </Text>
+                ) : null}
                 {session.status !== "booked" && session.status !== "removed" && new Date(session.starts_at) > now ? (
                   <Outline label="Undo: back to booked" onPress={() => outcome("booked")} />
                 ) : null}

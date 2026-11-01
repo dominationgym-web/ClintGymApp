@@ -13,6 +13,7 @@ import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
 import { TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
+import { takings } from "@/lib/sessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
 import { diaryKey, diaryNames, regularFromCalendar } from "@/lib/calendarRegular";
 import DiaryPeople from "@/components/sessions/DiaryPeople";
@@ -219,7 +220,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               onOpenPage={(clientId) => navigation.navigate("ClientDetail", { clientId })}
             />
           )}
-          {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} onChanged={load} />}
+          {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} sessions={sessions} onChanged={load} />}
           {tab === "setup" && <SetupTab settings={settings} onSaved={setSettings} />}
         </ScrollView>
       )}
@@ -345,7 +346,7 @@ function ToDo({
                 </Pressable>
               ) : null}
               <Pressable style={styles.outline} onPress={() => onOpen(s)}>
-                <Text style={styles.outlineText}>{kind === "unconfirmed" ? "Cancelled / No-show" : "Open"}</Text>
+                <Text style={styles.outlineText}>{kind === "unconfirmed" ? (s.client_id ? "Cancelled / No-show" : "Didn't come") : "Open"}</Text>
               </Pressable>
             </View>
           </View>
@@ -422,7 +423,8 @@ function GroupCheck({
       } else {
         const { error } = await supabase.rpc("set_session_outcome", { p_id: s.id, p_outcome: "no_show" });
         if (error) failed++;
-        else if (missed === "credit") {
+        // Not in the app yet: never charged for missing (GRIZZ, 2026-11-01).
+        else if (missed === "credit" || !s.client_id) {
           const r = await supabase.rpc("set_session_charge", { p_id: s.id, p_charge: "credit" });
           if (r.error) failed++;
         }
@@ -907,8 +909,10 @@ function InvoicesTab({
   plans,
   drafts,
   byId,
+  sessions,
   onChanged,
 }: {
+  sessions: LiveSession[];
   plans: SessionPlan[];
   drafts: SessionInvoice[];
   byId: Record<string, ClientInfo>;
@@ -952,6 +956,8 @@ function InvoicesTab({
   const paid = rows.filter((r) => r.status === "paid").reduce((t, r) => t + Number(r.total), 0);
   const name = (id: string) => byId[id]?.name ?? "Client";
   const otherDrafts = drafts.filter((d) => d.month !== month);
+  // People not in the app get no invoice, but what they paid counts (GRIZZ, 2026-11-01).
+  const notInApp = takings(sessions.filter((s) => !s.client_id && s.status !== "removed" && monthStart(new Date(s.starts_at)) === month)).made;
 
   return (
     <>
@@ -982,6 +988,11 @@ function InvoicesTab({
           <Text style={[styles.totalText, { color: themeText("#22C55E") }]}>Paid {sessionMoney(paid, currency)}</Text>
           <Text style={[styles.totalText, { color: themeText("#F59E0B") }]}>Owed {sessionMoney(total - paid, currency)}</Text>
         </View>
+      ) : null}
+      {notInApp > 0 ? (
+        <Text style={styles.helper}>
+          📅 Plus {sessionMoney(notInApp, currency)} from people not in the app yet (no invoice for them). This month in all: {sessionMoney(total + notInApp, currency)}.
+        </Text>
       ) : null}
       {rows.map((inv) => (
         <InvoiceRow key={inv.id} inv={inv} name={name(inv.client_id)} onPress={() => setOpen(inv)} />
