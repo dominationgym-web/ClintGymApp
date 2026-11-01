@@ -5,6 +5,7 @@ import type { LoadedProgressPhoto } from "@/components/progressPhotoData";
 import { parseIsoDate } from "@/lib/dates";
 import { ANGLE_LABEL, PROGRESS_ANGLES, groupIntoSets, setLabel, weeksBetween } from "@/lib/progressPhotos";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 type Props = {
   photos: LoadedProgressPhoto[];
@@ -21,6 +22,8 @@ const SETS_SHOWN = 3;
 // first. Used on the client's Profile and, when shared, by the trainer.
 export default function ProgressHistory({ photos, onLongPress }: Props) {
   const [showAll, setShowAll] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(showAll, () => setShowAll(false));
   const [open, setOpen] = useState<LoadedProgressPhoto | null>(null);
 
   const sets = groupIntoSets(photos);

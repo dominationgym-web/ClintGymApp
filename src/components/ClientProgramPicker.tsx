@@ -13,6 +13,7 @@ import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { StabilityArea } from "@/lib/stability";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // For a weekly program: which session the client is on, and when they last finished one.
 function progressLine(active: ActiveProgram): string | null {
@@ -45,6 +46,8 @@ export default function ClientProgramPicker({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [showWorkouts, setShowWorkouts] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(showWorkouts, () => setShowWorkouts(false));
   const [changing, setChanging] = useState<ProgramExercise | null>(null);
 
   const load = useCallback(async () => {

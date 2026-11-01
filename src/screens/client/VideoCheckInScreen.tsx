@@ -21,6 +21,7 @@ import {
 } from "@/lib/videoCheckins";
 import type { OpenVideoSlot, VideoCheckin, VideoCheckinSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // Weekly video check-in (0155, GRIZZ 2026-10-25). The client books one of the
 // times their coach is free, at most one a week, and can keep the same time
@@ -37,6 +38,8 @@ export default function VideoCheckInScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [week, setWeek] = useState<"this" | "next">("this");
   const [picked, setPicked] = useState<OpenVideoSlot | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(picked !== null, () => setPicked(null));
   const [topic, setTopic] = useState("");
   const [repeat, setRepeat] = useState(true);
   const [busy, setBusy] = useState(false);

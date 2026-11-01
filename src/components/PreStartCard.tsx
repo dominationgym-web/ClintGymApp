@@ -16,6 +16,7 @@ import PreStartFormModal from "@/components/PreStartFormModal";
 import PreStartRiskList from "@/components/PreStartRiskList";
 import type { ClientPrestartForm } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const COLOURS = { green: "#22C55E", amber: "#F59E0B", red: "#EF4444" };
 
@@ -50,6 +51,8 @@ export default function PreStartCard({
   const [loaded, setLoaded] = useState(false);
   const [filling, setFilling] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(showAll, () => setShowAll(false));
   const [sign, setSign] = useState(false);
   const seenKey = useRef(refreshKey);
 

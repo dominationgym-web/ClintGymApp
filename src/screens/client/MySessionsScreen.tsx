@@ -35,6 +35,7 @@ import {
 import type { ClientStackParamList } from "@/navigation/types";
 import type { LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 type Tab = "sessions" | "month" | "invoices" | "agreement";
 
@@ -295,6 +296,8 @@ function MonthTab({ month, onMonth, sessions }: { month: string; onMonth: (m: st
 
 function InvoicesTab({ invoices, paidForYou }: { invoices: SessionInvoice[]; paidForYou: boolean }) {
   const [open, setOpen] = useState<SessionInvoice | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   if (open) {
     return (
       <>

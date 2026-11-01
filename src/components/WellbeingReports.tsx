@@ -8,6 +8,7 @@ import { cleanMessage, MAX_MESSAGE_LENGTH } from "@/lib/coachMessages";
 import RehabSuggestion from "@/components/stability/RehabSuggestion";
 import { reportsByTopic, WELLBEING_TOPICS, type WellbeingKey, type WellbeingReport } from "@/lib/wellbeing";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // On the trainer's Check-ins tab (review 2026-10-18, moved from Notes): what the client reported on their check-ins
 // (0055), in three sections (Injury or pain, Fatigue, Mental exhaustion), so
@@ -19,6 +20,8 @@ export default function WellbeingReports({ clientId, clientName }: { clientId: s
   const { trainer } = useAuth();
   const [reports, setReports] = useState<Record<WellbeingKey, WellbeingReport[]> | null>(null);
   const [open, setOpen] = useState<WellbeingKey | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   const [writing, setWriting] = useState<WellbeingKey | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);

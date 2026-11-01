@@ -25,6 +25,7 @@ import {
 import DietFoodPicker from "@/components/DietFoodPicker";
 import type { Client } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 type Direction = "same" | "over" | "under";
 
@@ -65,6 +66,8 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
   const [days, setDays] = useState<DietDay[]>(emptyWeek());
   const [day, setDay] = useState(weekdayIndex(new Date()));
   const [targetOpen, setTargetOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(targetOpen, () => setTargetOpen(false));
   const [adding, setAdding] = useState<number | null>(null);
   const [editing, setEditing] = useState<{ meal: number; index: number } | null>(null);
 

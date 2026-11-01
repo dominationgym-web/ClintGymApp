@@ -10,9 +10,17 @@ import { themedStyles } from "@/lib/theme";
 // side the trainer was on last.
 export type TrainerSide = "one" | "evolution";
 
-const SideContext = createContext<{ side: TrainerSide; setSide: (s: TrainerSide) => void }>({
+const SideContext = createContext<{
+  side: TrainerSide;
+  setSide: (s: TrainerSide) => void;
+  // The side the trainer switched from, so the phone's Back button can go back to it.
+  cameFrom: TrainerSide | null;
+  backToCameFrom: () => void;
+}>({
   side: "evolution",
   setSide: () => {},
+  cameFrom: null,
+  backToCameFrom: () => {},
 });
 
 const key = (trainerId: string) => `trainer-side:${trainerId}`;
@@ -20,6 +28,7 @@ const key = (trainerId: string) => `trainer-side:${trainerId}`;
 export function TrainerSideProvider({ children }: { children: React.ReactNode }) {
   const { trainer } = useAuth();
   const [side, setSideState] = useState<TrainerSide>("evolution");
+  const [cameFrom, setCameFrom] = useState<TrainerSide | null>(null);
   useEffect(() => {
     if (!trainer) return;
     AsyncStorage.getItem(key(trainer.id))
@@ -28,14 +37,26 @@ export function TrainerSideProvider({ children }: { children: React.ReactNode })
       })
       .catch(() => {});
   }, [trainer]);
-  const setSide = useCallback(
+  const save = useCallback(
     (s: TrainerSide) => {
       setSideState(s);
       if (trainer) AsyncStorage.setItem(key(trainer.id), s).catch(() => {});
     },
     [trainer]
   );
-  return <SideContext.Provider value={{ side, setSide }}>{children}</SideContext.Provider>;
+  const setSide = useCallback(
+    (s: TrainerSide) => {
+      if (s !== side) setCameFrom(side);
+      save(s);
+    },
+    [save, side]
+  );
+  const backToCameFrom = useCallback(() => {
+    if (!cameFrom) return;
+    setCameFrom(null);
+    save(cameFrom);
+  }, [cameFrom, save]);
+  return <SideContext.Provider value={{ side, setSide, cameFrom, backToCameFrom }}>{children}</SideContext.Provider>;
 }
 
 export const useTrainerSide = () => useContext(SideContext);

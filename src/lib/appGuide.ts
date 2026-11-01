@@ -27,7 +27,7 @@ export const APP_GUIDE_MENU_ITEM = {
 
 export const CLIENT_APP_GUIDE: AppGuide = {
   intro:
-    "This app is your coach in your pocket. The more honestly you use it, the better your coach can guide you. Tap a heading to see what it does and how to get the most from it.",
+    "This app is your coach in your pocket. The more honestly you use it, the better your coach can guide you. Tap a heading to see what it does and how to get the most from it. The phone's Back button goes back one step at a time: it closes what you opened last (a heading, a day, a page), then goes to the tab you were on before, and only closes the app when there's nothing left to go back to.",
   topics: [
     {
       key: "daily",
@@ -278,7 +278,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
 
 export const TRAINER_APP_GUIDE: AppGuide = {
   intro:
-    "Everything you need to coach your clients well, in one place. Tap a heading to see what it does and how to get the most from it.",
+    "Everything you need to coach your clients well, in one place. Tap a heading to see what it does and how to get the most from it. The phone's Back button goes back one step at a time: it closes what you opened last (a heading, a day, a client in the 1 on 1 list), then goes to the tab you were on before, then back to the side (🤝 1 on 1 or 🌐 Evolution) you switched from, and only closes the app when there's nothing left to go back to.",
   topics: [
     {
       key: "dashboard",

@@ -8,6 +8,7 @@ import { regularLabel, sessionMoney } from "@/lib/liveSessions";
 import { diaryKey, regularFromCalendar } from "@/lib/calendarRegular";
 import type { BillingCurrency, LiveSession } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The people on the 1 on 1 calendar who aren't in the app yet (names from a
 // calendar import, 0174), each with the days and times worked out from the
@@ -26,6 +27,8 @@ export default function DiaryPeople({
   const { trainer } = useAuth();
   const [fees, setFees] = useState<Record<string, number>>({});
   const [open, setOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
 

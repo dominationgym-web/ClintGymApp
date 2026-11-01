@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // A tap-to-open heading for a long page, so the client sees a short list of
 // headings instead of scrolling (GRIZZ dislikes scrolling). `hint` is a short
@@ -21,6 +22,8 @@ export default function FoldSection({
   onToggle: () => void;
   children: React.ReactNode;
 }) {
+  // The phone's Back button closes an open fold first.
+  useStepBack(open, onToggle);
   return (
     <View style={[styles.fold, open && styles.foldOpen]}>
       <Pressable style={styles.header} onPress={onToggle}>

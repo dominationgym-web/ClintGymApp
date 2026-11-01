@@ -51,6 +51,7 @@ import {
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { BillingCurrency, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 export type LiveTab = "todo" | "calendar" | "clients" | "invoices" | "setup";
 type Tab = LiveTab;
@@ -89,6 +90,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       if (only) setTab(only);
     }, [only])
   );
+  // On a 1 on 1 tab, Back from an inside page (e.g. Setup) goes to the tab's own page first.
+  useStepBack(!!only && tab !== only, () => only && setTab(only));
 
   const load = useCallback(async () => {
     if (!trainer) return;
@@ -731,6 +734,9 @@ function ClientsTab({
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
+  // Phone Back goes from a client back to the list, one step at a time.
+  useStepBack(picked !== null, () => setPicked(null));
+  useStepBack(showOthers, () => setShowOthers(false));
   const withPlan = clients.filter((c) => planOf[c.id]);
   // 1 on 1 clients, and anyone already on the calendar (an import), not set up yet.
   const onCalendar = new Set(sessions.filter((s) => s.client_id && s.status !== "removed").map((s) => s.client_id as string));

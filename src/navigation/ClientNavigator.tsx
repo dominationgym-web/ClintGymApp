@@ -65,6 +65,8 @@ function ClientTabs() {
   const live = !!client?.live_only;
   return (
     <Tab.Navigator
+      // Back goes to the tab you were on before, one at a time (GRIZZ, 2026-11-01).
+      backBehavior="history"
       tabBar={wide ? () => null : undefined}
       screenLayout={wide ? phoneColumn : undefined}
       screenOptions={{

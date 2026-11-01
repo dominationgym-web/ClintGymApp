@@ -13,6 +13,7 @@ import { useNavigation, useRoute, type RouteProp } from "@react-navigation/nativ
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList, TrainerTabParamList } from "@/navigation/types";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The app owner's list of every trainer (0029): approve new ones, or block one.
 // Also each trainer's free trial and referral rewards (0060): the owner can add
@@ -38,6 +39,9 @@ export default function TrainersScreen() {
   const [problems, setProblems] = useState<Pick<TrainerProblem, "trainer_id" | "status">[]>([]);
   // The client list of the opened trainer, loaded when it's opened.
   const [clientsOpen, setClientsOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(openId !== null, () => setOpenId(null));
+  useStepBack(clientsOpen !== null, () => setClientsOpen(null));
   const [clientRows, setClientRows] = useState<Record<string, OwnerTrainerClientRow[]>>({});
 
   // Opened from a problem's "See their clients".
