@@ -43,3 +43,31 @@ export function regularFromCalendar(sessions: Fields[], who: string | { name: st
   const minutes = lengths.length ? [...lengths].sort((a, b) => lengths.filter((x) => x === b).length - lengths.filter((x) => x === a).length)[0] : null;
   return { regular, minutes };
 }
+
+/**
+ * The first session from now for each regular day and time, as ISO times in
+ * the phone's time: today when the time is still to come, otherwise that
+ * weekday next time round. Used to put someone who isn't in the app on the
+ * calendar every week (GRIZZ, 2026-11-01).
+ */
+export function firstStarts(regular: RegularTime[], now = new Date()): string[] {
+  return regular.map((r) => {
+    const [h, m] = r.time.split(":").map(Number);
+    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+    let ahead = (r.weekday - now.getDay() + 7) % 7;
+    if (ahead === 0 && at.getTime() <= now.getTime()) ahead = 7;
+    at.setDate(at.getDate() + ahead);
+    return at.toISOString();
+  });
+}
+
+/** Everyone on the calendar who isn't in the app, by name (first spelling seen), A to Z. */
+export function diaryNames(sessions: Pick<LiveSession, "client_id" | "guest_name" | "status">[]): string[] {
+  const byKey = new Map<string, string>();
+  for (const s of sessions) {
+    if (s.client_id || !s.guest_name || s.status === "removed") continue;
+    const k = diaryKey(s.guest_name);
+    if (k && !k.includes("???") && /\p{L}/u.test(k) && !byKey.has(k)) byKey.set(k, s.guest_name.trim());
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+}
