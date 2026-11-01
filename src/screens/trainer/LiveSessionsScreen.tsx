@@ -539,22 +539,27 @@ function AddSessionModal({
 }) {
   const [client, setClient] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
+  const [weekly, setWeekly] = useState(false);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (visible) {
       setClient(clients.length === 1 ? clients[0].id : null);
       setTime(null);
+      setWeekly(false);
     }
   }, [visible]);
   const save = async () => {
     if (!client || !time) return;
     setSaving(true);
-    const { error } = await supabase.rpc("add_live_session", { p_client: client, p_starts_at: atTime(day, time), p_makeup_for: makeupFor });
+    const { data, error } = await supabase.rpc("add_live_session", { p_client: client, p_starts_at: atTime(day, time), p_makeup_for: makeupFor });
+    // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
+    const repeat = !error && weekly && !makeupFor && data?.id ? await supabase.rpc("repeat_live_session", { p_id: data.id }) : null;
     setSaving(false);
     if (error) {
       Alert.alert("Couldn't book it", error.message);
       return;
     }
+    if (repeat?.error) Alert.alert("Booked for this day only", `Couldn't make it weekly: ${repeat.error.message}`);
     onSaved();
   };
   return (
@@ -585,6 +590,19 @@ function AddSessionModal({
                 selected={time ? [time] : []}
                 onPick={setTime}
               />
+              {makeupFor ? null : (
+                <>
+                  <Text style={styles.label}>How often?</Text>
+                  <View style={styles.chips}>
+                    <Pressable style={[styles.chip, !weekly && styles.chipOn]} onPress={() => setWeekly(false)}>
+                      <Text style={[styles.chipText, !weekly && styles.chipTextOn]}>Just this day</Text>
+                    </Pressable>
+                    <Pressable style={[styles.chip, weekly && styles.chipOn]} onPress={() => setWeekly(true)}>
+                      <Text style={[styles.chipText, weekly && styles.chipTextOn]}>🔁 Every week from then</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
               <Pressable style={[styles.button, !(client && time) && { opacity: 0.5 }]} onPress={save} disabled={!client || !time || saving}>
                 {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Book it</Text>}
               </Pressable>
