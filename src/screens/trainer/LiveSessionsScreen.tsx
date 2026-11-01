@@ -4,6 +4,7 @@ import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
+import KeyboardSafe from "@/components/KeyboardSafe";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionActionsModal from "@/components/sessions/SessionActionsModal";
@@ -13,8 +14,9 @@ import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
 import { TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
-import { regularFromCalendar } from "@/lib/calendarRegular";
+import { diaryKey, diaryNames, regularFromCalendar } from "@/lib/calendarRegular";
 import DiaryPeople from "@/components/sessions/DiaryPeople";
+import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -592,6 +594,7 @@ function CalendarTab({
         initialTime={addAt}
         clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
         makeupFor={makeup?.id ?? null}
+        guests={makeup ? [] : diaryNames(sessions)}
         plans={plans}
         settings={settings}
         booked={list.filter((s) => s.status === "booked" || s.status === "done").map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))}
@@ -615,6 +618,7 @@ function AddSessionModal({
   booked,
   makeupFor,
   initialTime,
+  guests = [],
   onClose,
   onSaved,
 }: {
@@ -622,6 +626,8 @@ function AddSessionModal({
   day: string;
   initialTime?: string | null;
   clients: ClientInfo[];
+  /** People on the calendar who aren't in the app (names). */
+  guests?: string[];
   makeupFor: string | null;
   plans: SessionPlan[];
   settings: SessionSettings | null;
@@ -630,19 +636,40 @@ function AddSessionModal({
   onSaved: () => void;
 }) {
   const [client, setClient] = useState<string | null>(null);
+  // Someone who isn't in the app: a name from the calendar or typed (GRIZZ, 2026-11-01).
+  const [guest, setGuest] = useState<string | null>(null);
+  const [typing, setTyping] = useState(false);
   const [time, setTime] = useState<string | null>(null);
   const [weekly, setWeekly] = useState(false);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (visible) {
-      setClient(clients.length === 1 ? clients[0].id : null);
+      setClient(clients.length === 1 && !guests.length ? clients[0].id : null);
+      setGuest(null);
+      setTyping(false);
       setTime(initialTime ?? null);
       setWeekly(false);
     }
   }, [visible]);
+  const guestName = guest?.trim().slice(0, 60) ?? "";
+  const who = client || guestName;
   const save = async () => {
-    if (!client || !time) return;
+    if (!who || !time) return;
     setSaving(true);
+    if (!client) {
+      // Not in the app: on the calendar by name, at their own price if they have one.
+      const { error } = await supabase.rpc("import_live_sessions", {
+        p_rows: [{ client_id: null, name: guestName, starts_at: atTime(day, time), minutes: settings?.minutes ?? 60, repeat: weekly }],
+      });
+      if (!error) {
+        const { data: fee } = await supabase.from("diary_name_fees").select("fee").eq("name_key", diaryKey(guestName)).maybeSingle();
+        if (fee) await supabase.rpc("set_diary_fee", { p_name: guestName, p_fee: Number(fee.fee) });
+      }
+      setSaving(false);
+      if (error) return Alert.alert("Couldn't book it", error.message);
+      onSaved();
+      return;
+    }
     const { data, error } = await supabase.rpc("add_live_session", { p_client: client, p_starts_at: atTime(day, time), p_makeup_for: makeupFor });
     // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
     const repeat = !error && weekly && !makeupFor && data?.id ? await supabase.rpc("repeat_live_session", { p_id: data.id }) : null;
@@ -656,23 +683,63 @@ function AddSessionModal({
   };
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }}>
-          <Text style={styles.sectionTitle}>
+      <KeyboardSafe>
+        <View style={styles.backdrop}>
+          <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+            <Text style={styles.sectionTitle}>
             {makeupFor ? "Book the catch-up" : "Book a session"} · {dayLabel(day)}
           </Text>
-          {clients.length === 0 ? (
+          {clients.length === 0 && makeupFor ? (
             <Text style={styles.helper}>Set up a client's sessions on the Clients tab first (their fee and cancellation rule).</Text>
           ) : (
             <>
               <Text style={styles.label}>Who?</Text>
               <View style={styles.chips}>
                 {clients.map((c) => (
-                  <Pressable key={c.id} style={[styles.chip, client === c.id && styles.chipOn]} onPress={() => setClient(c.id)}>
+                  <Pressable
+                    key={c.id}
+                    style={[styles.chip, client === c.id && styles.chipOn]}
+                    onPress={() => {
+                      setClient(c.id);
+                      setGuest(null);
+                      setTyping(false);
+                    }}
+                  >
                     <Text style={[styles.chipText, client === c.id && styles.chipTextOn]}>{c.name}</Text>
                   </Pressable>
                 ))}
+                {guests.map((g) => {
+                  const on = !client && !typing && guest === g;
+                  return (
+                    <Pressable
+                      key={g}
+                      style={[styles.chip, on && styles.chipOn]}
+                      onPress={() => {
+                        setClient(null);
+                        setGuest(g);
+                        setTyping(false);
+                      }}
+                    >
+                      <Text style={[styles.chipText, on && styles.chipTextOn]}>{g}</Text>
+                    </Pressable>
+                  );
+                })}
+                {makeupFor ? null : (
+                  <Pressable
+                    style={[styles.chip, typing && styles.chipOn]}
+                    onPress={() => {
+                      setClient(null);
+                      setGuest("");
+                      setTyping(true);
+                    }}
+                  >
+                    <Text style={[styles.chipText, typing && styles.chipTextOn]}>＋ Someone not in the app</Text>
+                  </Pressable>
+                )}
               </View>
+              {typing ? (
+                <TextInput style={styles.nameInput} value={guest ?? ""} onChangeText={setGuest} placeholder="Their name" placeholderTextColor="#64748B" maxLength={60} autoFocus />
+              ) : null}
               <Text style={styles.label}>What time?</Text>
               <SessionTimeChips
                 dayStart={settings?.day_start ?? "05:00"}
@@ -695,7 +762,7 @@ function AddSessionModal({
                   </View>
                 </>
               )}
-              <Pressable style={[styles.button, !(client && time) && { opacity: 0.5 }]} onPress={save} disabled={!client || !time || saving}>
+              <Pressable style={[styles.button, !(who && time) && { opacity: 0.5 }]} onPress={save} disabled={!who || !time || saving}>
                 {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Book it</Text>}
               </Pressable>
             </>
@@ -703,8 +770,9 @@ function AddSessionModal({
           <Pressable style={styles.closeRow} onPress={onClose}>
             <Text style={styles.closeText}>Close</Text>
           </Pressable>
-        </ScrollView>
-      </View>
+          </ScrollView>
+        </View>
+      </KeyboardSafe>
     </Modal>
   );
 }
@@ -731,6 +799,7 @@ function ClientsTab({
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
+  const [addingPerson, setAddingPerson] = useState(false);
   const withPlan = clients.filter((c) => planOf[c.id]);
   // 1 on 1 clients, and anyone already on the calendar (an import), not set up yet.
   const onCalendar = new Set(sessions.filter((s) => s.client_id && s.status !== "removed").map((s) => s.client_id as string));
@@ -801,8 +870,24 @@ function ClientsTab({
           </Pressable>
         );
       })}
+      {/* Someone who hasn't signed up to the app (GRIZZ, 2026-11-01). */}
+      {oneOnOne ? (
+        <Pressable style={styles.button} onPress={() => setAddingPerson(true)}>
+          <Text style={styles.buttonText}>＋ Add a client who isn't in the app</Text>
+        </Pressable>
+      ) : null}
+      <AddDiaryPersonModal
+        visible={addingPerson}
+        settings={settings}
+        onClose={() => setAddingPerson(false)}
+        onSaved={(n) => {
+          setAddingPerson(false);
+          onChanged();
+          Alert.alert("Added", `${n} is on your calendar every week. You'll find them under "On your calendar, not in the app yet".`);
+        }}
+      />
       <Pressable style={styles.outline} onPress={() => setShowOthers(!showOthers)}>
-        <Text style={styles.outlineText}>{showOthers ? "Hide" : "＋ Set up a client"}</Text>
+        <Text style={styles.outlineText}>{showOthers ? "Hide" : "＋ Set up a client who has the app"}</Text>
       </Pressable>
       {showOthers
         ? others.map((c) => (
@@ -1261,6 +1346,7 @@ const styles = themedStyles({
   actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 8 },
   smallButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9, minWidth: 90, alignItems: "center" },
   smallButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 14 },
+  nameInput: { backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15, marginTop: 10 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
   outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 11, alignItems: "center", marginTop: 8 },
