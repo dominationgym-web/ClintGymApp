@@ -767,6 +767,10 @@ function ClientsTab({
           paysFor={withPlan.filter((x) => planOf[x.id].paid_by === picked).map((x) => x.name.split(" ")[0])}
           onSaved={onChanged}
         />
+        {/* A second way back at the bottom, so there's no scrolling up after making changes (GRIZZ, 2026-11-01). */}
+        <Pressable style={[styles.outline, { marginTop: 16 }]} onPress={() => setPicked(null)}>
+          <Text style={styles.outlineText}>‹ Back to all clients</Text>
+        </Pressable>
       </>
     );
   }
