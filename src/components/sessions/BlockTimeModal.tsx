@@ -79,7 +79,7 @@ export default function BlockTimeModal({
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>🚫 Block out time</Text>
-            <Text style={styles.helper}>For when you're away or can't train. Booked sessions are cancelled, your clients aren't charged, and each one gets your reason.</Text>
+            <Text style={styles.helper}>For when you're away or can't train. Booked sessions are cancelled and not charged, each client gets your reason, and their sessions go on your catch-up list (under Today) to book again.</Text>
 
             <Text style={styles.label}>From {dayLabel(`${firstDay}T12:00:00`)}, for</Text>
             <View style={styles.chips}>

@@ -4,7 +4,10 @@
 -- Blocking a time cancels every booked session in it as cancelled by the
 -- coach (never charged, credited on an invoice already sent), tells each
 -- client once with the coach's reason, and keeps weekly repeats from booking
--- into it later.
+-- into it later. GRIZZ: "always try and slot in clients for catch-ups in
+-- that situation", so each app client's session goes on the coach's
+-- catch-up list, and the catch-up is charged at the normal fee (the missed
+-- session wasn't).
 
 create table if not exists public.trainer_time_off (
   id uuid primary key default gen_random_uuid(),
@@ -80,14 +83,14 @@ begin
         then 'Your coach cancelled ' || public.video_checkin_when(c.first_at, tz)
         else 'Your coach cancelled ' || c.n || ' sessions'
       end,
-      why || ' You won''t be charged for ' || case when c.n = 1 then 'it.' else 'them.' end,
+      why || ' You won''t be charged for ' || case when c.n = 1 then 'it' else 'them' end || ', and your coach will find you a catch-up time.',
       jsonb_build_object('type', 'live_session')
     );
   end loop;
 
   update public.live_sessions
   set status = 'cancelled', cancelled_by = 'trainer', cancelled_at = now(), logged_by = 'trainer',
-      charge = 'credit', note = left('Coach away: ' || why, 500),
+      charge = case when client_id is null then 'credit' else 'makeup' end, note = left('Coach away: ' || why, 500),
       trainer_confirmed_at = null, asked_trainer = false, updated_at = now()
   where trainer_id = me and status = 'booked' and starts_at >= p_from and starts_at < p_to;
 
@@ -170,3 +173,52 @@ revoke execute on function public.remove_trainer_time_off(uuid) from public, ano
 grant execute on function public.block_trainer_time(timestamptz, timestamptz, text) to authenticated;
 grant execute on function public.remove_trainer_time_off(uuid) to authenticated;
 revoke execute on function public.fill_live_repeats(uuid) from public, anon, authenticated;
+
+-- A catch-up for a session the coach missed is paid at that session's fee
+-- (the missed one wasn't charged). A catch-up for a client's in-time
+-- cancellation stays free, as before (0168).
+create or replace function public.add_live_session(p_client uuid, p_starts_at timestamptz, p_minutes integer default null, p_makeup_for uuid default null)
+returns public.live_sessions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  p public.session_plans;
+  s public.session_settings;
+  o public.live_sessions;
+  saved public.live_sessions;
+begin
+  perform public.session_require_trainer(p_client);
+  select * into p from public.session_plans where client_id = p_client;
+  select * into s from public.session_settings where trainer_id = auth.uid();
+  if p.client_id is null and s.fee is null then
+    raise exception 'Set this client''s session fee first';
+  end if;
+  if p_makeup_for is not null then
+    select * into o from public.live_sessions
+    where id = p_makeup_for and client_id = p_client and charge = 'makeup' and makeup_session_id is null;
+    if o.id is null then
+      raise exception 'That catch-up has already been booked';
+    end if;
+  end if;
+  insert into public.live_sessions (trainer_id, client_id, starts_at, minutes, fee, makeup_for)
+  values (auth.uid(), p_client, p_starts_at, coalesce(p_minutes, p.minutes, s.minutes, 60),
+          case when p_makeup_for is null then coalesce(p.fee, s.fee)
+               when o.cancelled_by = 'trainer' then o.fee
+               else 0 end, p_makeup_for)
+  returning * into saved;
+  if p_makeup_for is not null then
+    update public.live_sessions set makeup_session_id = saved.id, updated_at = now() where id = p_makeup_for;
+  end if;
+  if p_starts_at > now() then
+    perform public.push_to_user(
+      p_client,
+      case when p_makeup_for is null then '🤝 Session booked' else '🤝 Catch-up session booked' end,
+      public.video_checkin_when(p_starts_at, public.session_tz(auth.uid())) || ' with your coach.',
+      jsonb_build_object('type', 'live_session')
+    );
+  end if;
+  return saved;
+end;
+$$;

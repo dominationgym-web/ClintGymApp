@@ -349,7 +349,7 @@ function ToDo({
         <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE.makeup.colour) }]}>
           <Text style={styles.rowTitle}>{who(s)}</Text>
           <Text style={styles.rowBody}>
-            For {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)} (cancelled in time)
+            For {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)} ({s.cancelled_by === "trainer" ? "you were away: the catch-up is charged" : "cancelled in time"})
           </Text>
           <View style={styles.actions}>
             <Pressable style={styles.smallButton} onPress={() => onCatchUp(s)}>
