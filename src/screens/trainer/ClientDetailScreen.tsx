@@ -68,6 +68,7 @@ import { whatsappLink } from "@/lib/videoCheckins";
 import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import TrainingTypePicker, { TrainingTypeRows, trainingTypeFields, trainingTypeLabel, trainingTypeOf, type TrainingType } from "@/components/TrainingTypePicker";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -117,6 +118,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
   const [askWeighIn, setAskWeighIn] = useState(false);
+  // The activate pop-up's "1 on 1, Evolution or both" step.
+  const [activating, setActivating] = useState<{ message: string; save: (t: TrainingType) => void } | null>(null);
   const wide = useWideScreen();
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
@@ -153,6 +156,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const [tab, setTab] = useState<TabKey>(
     route.params.tab ?? lastClientTab(TABS.map((t) => t.key)) ?? "overview",
   );
+  // A 1 on 1 only client has no Habits tab: land on the Overview instead.
+  useEffect(() => {
+    if (client?.live_only && tab === "habits") setTab("overview");
+  }, [client?.live_only, tab]);
   // Unsaved diet plan changes: ask before leaving the Diet tab or the client.
   // A ref, so "Leave" takes effect at once rather than on the next render.
   const dietDirty = useRef(false);
@@ -386,21 +393,13 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       // No weigh-in schedule yet: ask how often they weigh and measure (not for a live client).
       if (!client.weigh_in_every && !changes.live_only && !client.live_only && client.id !== trainer?.id) setAskWeighIn(true);
     };
-    Alert.alert(
-      renewing ? "Renew plan?" : "Activate client?",
-      `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.` +
-        (renewing ? "" : "\n\nLive client only: they get My sessions, Profile and the ☰ menu, with no daily check-ins, programming or habits."),
-      renewing
-        ? [
-            { text: "Cancel", style: "cancel" },
-            { text: "Renew", onPress: () => save(next) },
-          ]
-        : [
-            { text: "Cancel", style: "cancel" },
-            { text: "Activate online", onPress: () => save({ ...next, live_only: false }) },
-            { text: "🤝 Live client only", onPress: () => save({ ...next, live_only: true }) },
-          ]
-    );
+    const message = `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.`;
+    // Activating asks 1 on 1, Evolution or both (GRIZZ, 2026-11-01).
+    if (!renewing) return setActivating({ message, save: (t) => save({ ...next, ...trainingTypeFields(t) }) });
+    Alert.alert("Renew plan?", message, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Renew", onPress: () => save(next) },
+    ]);
   };
   const pickWeighIn = async (key: WeighInEvery | null) => {
     setAskWeighIn(false);
@@ -497,11 +496,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
 
   // Live client only (GRIZZ, 2026-10-31): in-person sessions, Profile and the
   // ☰ menu; no daily check-ins, programming or habits.
-  const toggleLiveOnly = async (next: boolean) => {
-    setClient((c) => (c ? { ...c, live_only: next } : c));
-    const { error } = await supabase.from("clients").update({ live_only: next }).eq("id", clientId);
+  // 1 on 1, Evolution or both (GRIZZ, 2026-11-01): which trainer side they're on.
+  const pickTrainingType = async (t: TrainingType) => {
+    if (!client) return;
+    const before = { live_only: !!client.live_only, one_on_one: !!client.one_on_one };
+    const next = trainingTypeFields(t);
+    setClient((c) => (c ? { ...c, ...next } : c));
+    const { error } = await supabase.from("clients").update(next).eq("id", clientId);
     if (error) {
-      setClient((c) => (c ? { ...c, live_only: !next } : c));
+      setClient((c) => (c ? { ...c, ...before } : c));
       Alert.alert("Couldn't update", error.message);
     }
   };
@@ -532,7 +535,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               setTab(next);
               rememberClientTab(next);
             }))}
-      tabs={TABS.map((t) => ({
+      // A 1 on 1 only client has no habits (GRIZZ, 2026-11-01). Training stays: it's where live sessions are logged.
+      tabs={TABS.filter((t) => !(client?.live_only && t.key === "habits")).map((t) => ({
         ...t,
         dot:
           t.key === "overview"
@@ -547,6 +551,17 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   return (
     <View style={styles.container}>
       <WeighInPicker name={client.name} visible={askWeighIn} onPick={pickWeighIn} />
+      <TrainingTypePicker
+        visible={!!activating}
+        name={client.name}
+        message={activating?.message}
+        onCancel={() => setActivating(null)}
+        onPick={(t) => {
+          const go = activating?.save;
+          setActivating(null);
+          go?.(t);
+        }}
+      />
       {/* On a laptop the tabs run along the top (GRIZZ, 2026-10-27). */}
       {wide ? tabBar : null}
       <ScrollView key={tab} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
@@ -641,25 +656,16 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               hint={
                 (client.plan_type
                   ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString()}` : ""}`
-                  : "No plan picked") + (client.live_only ? " · 🤝 Live client only" : "")
+                  : "No plan picked") + ` · ${trainingTypeLabel(trainingTypeOf(client))}`
               }
               open={overviewOpen === "plan"}
               onToggle={() => toggleOverview("plan")}
             >
-              <View style={styles.libraryRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.libraryTitle}>🤝 Live client only</Text>
-                  <Text style={styles.helper}>
-                    On: they only see My sessions, an optional Check-in (energy, sleep, injuries), Profile and the ☰ menu (nutrition, meal plans, timers). No programming, training videos, habits or online reminders. Switch on their workout video library (Training tab) to give them a Training tab.
-                  </Text>
-                </View>
-                <Switch
-                  value={!!client.live_only}
-                  onValueChange={toggleLiveOnly}
-                  trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
-                  accessibilityLabel="Live client only"
-                />
-              </View>
+              <Text style={styles.libraryTitle}>How you train them</Text>
+              <TrainingTypeRows value={trainingTypeOf(client)} onPick={pickTrainingType} />
+              <Text style={styles.helper}>
+                1 on 1 clients show on your 🤝 1 on 1 side, Evolution clients on your 🌐 Evolution side, and Both on each. A 1 on 1 client can still get a Training tab: switch on their workout video library.
+              </Text>
               <ClientPricePicker
                 clientId={client.id}
                 value={client.price_package}

@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Linking, Modal, Pressable, RefreshControl, Share, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
-import { useFocusEffect, useRoute, type RouteProp } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
@@ -47,16 +48,20 @@ import type { TrainerStackParamList } from "@/navigation/types";
 import type { BillingCurrency, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
-type Tab = "todo" | "calendar" | "clients" | "invoices" | "setup";
-type ClientInfo = { id: string; name: string; phone: string | null; email: string | null };
+export type LiveTab = "todo" | "calendar" | "clients" | "invoices" | "setup";
+type Tab = LiveTab;
+type ClientInfo = { id: string; name: string; phone: string | null; email: string | null; live_only?: boolean; one_on_one?: boolean };
 
 // In-person session booking (0168, GRIZZ 2026-10-31). Five tabs instead of
 // one long page: what needs the trainer now, the month calendar, each
 // client's deal, the month's invoices, and the trainer's normal fee and rule.
-export default function LiveSessionsScreen() {
+// On the trainer's 1 on 1 side (GRIZZ, 2026-11-01) each of these is its own
+// bottom tab: `only` shows that one page with no top tab bar.
+export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const { trainer } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const route = useRoute<RouteProp<TrainerStackParamList, "LiveSessions">>();
-  const [tab, setTab] = useState<Tab>(route.params?.tab ?? "todo");
+  const [tab, setTab] = useState<Tab>(only ?? route.params?.tab ?? "todo");
   const [settings, setSettings] = useState<SessionSettings | null>(null);
   const [plans, setPlans] = useState<SessionPlan[]>([]);
   const [signed, setSigned] = useState<Record<string, SessionAgreement>>({});
@@ -71,8 +76,14 @@ export default function LiveSessionsScreen() {
   const [makeup, setMakeup] = useState<LiveSession | null>(null);
 
   useEffect(() => {
-    if (route.params?.tab) setTab(route.params.tab);
-  }, [route.params?.tab]);
+    if (!only && route.params?.tab) setTab(route.params.tab);
+  }, [only, route.params?.tab]);
+  // Back on the tab's own page each time the trainer comes to the tab.
+  useFocusEffect(
+    useCallback(() => {
+      if (only) setTab(only);
+    }, [only])
+  );
 
   const load = useCallback(async () => {
     if (!trainer) return;
@@ -82,7 +93,7 @@ export default function LiveSessionsScreen() {
       supabase.from("session_settings").select("*").eq("trainer_id", trainer.id).maybeSingle(),
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
-      supabase.from("clients").select("id, name, phone, email").eq("trainer_id", trainer.id).neq("id", trainer.id).is("archived_at", null).order("name"),
+      supabase.from("clients").select("id, name, phone, email, live_only, one_on_one").eq("trainer_id", trainer.id).neq("id", trainer.id).is("archived_at", null).order("name"),
       supabase.from("live_sessions").select("*").eq("trainer_id", trainer.id).gte("starts_at", from).lt("starts_at", to).order("starts_at"),
       supabase.from("session_invoices").select("*").eq("trainer_id", trainer.id).eq("status", "draft").order("month"),
     ]);
@@ -117,7 +128,7 @@ export default function LiveSessionsScreen() {
   const catchUps = sessions.filter((s) => s.charge === "makeup" && !s.makeup_session_id && (s.status === "cancelled" || s.status === "no_show"));
 
   const tabs: ScreenTab<Tab>[] = [
-    { key: "todo", label: "To do", icon: "checkbox", dot: todo.length || unsigned.length || catchUps.length ? "#F59E0B" : null },
+    { key: "todo", label: only ? "Today" : "To do", icon: "checkbox", dot: todo.length || unsigned.length || catchUps.length ? "#F59E0B" : null },
     { key: "calendar", label: "Calendar", icon: "calendar" },
     { key: "clients", label: "Clients", icon: "people" },
     { key: "invoices", label: "Invoices", icon: "receipt", dot: drafts.length ? "#F59E0B" : null },
@@ -129,7 +140,7 @@ export default function LiveSessionsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenTabBar tabs={tabs} current={tab} onChange={setTab} position="top" />
+      {only ? null : <ScreenTabBar tabs={tabs} current={tab} onChange={setTab} position="top" />}
       {loading ? (
         <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 24 }} />
       ) : (
@@ -138,6 +149,11 @@ export default function LiveSessionsScreen() {
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeText(BRAND_GOLD)} />}
         >
+          {only && tab !== only ? (
+            <Pressable onPress={() => setTab(only)} hitSlop={10}>
+              <Text style={[styles.back, { marginBottom: 12 }]}>‹ Back to {tabs.find((t) => t.key === only)?.label ?? "the list"}</Text>
+            </Pressable>
+          ) : null}
           {!settings && tab !== "setup" ? (
             <Pressable style={styles.notice} onPress={() => setTab("setup")}>
               <Text style={styles.noticeText}>Start under Setup: your normal fee and cancellation rule. Then set up each client under Clients.</Text>
@@ -146,7 +162,7 @@ export default function LiveSessionsScreen() {
           {tab === "todo" && (
             <ToDo
               todo={todo}
-              today={sessions.filter((s) => dayKey(s.starts_at) === dayKey(now) && s.status === "booked")}
+              today={sessions.filter((s) => dayKey(s.starts_at) === dayKey(now) && s.status !== "removed" && !todo.includes(s))}
               unsigned={unsigned}
               catchUps={catchUps}
               planOf={planOf}
@@ -177,7 +193,17 @@ export default function LiveSessionsScreen() {
               onChanged={load}
             />
           )}
-          {tab === "clients" && <ClientsTab clients={clients} planOf={planOf} signed={signed} settings={settings} onChanged={load} />}
+          {tab === "clients" && (
+            <ClientsTab
+              clients={clients}
+              planOf={planOf}
+              signed={signed}
+              settings={settings}
+              onChanged={load}
+              oneOnOne={!!only}
+              onOpenPage={(clientId) => navigation.navigate("ClientDetail", { clientId })}
+            />
+          )}
           {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} onChanged={load} />}
           {tab === "setup" && <SetupTab settings={settings} onSaved={setSettings} />}
         </ScrollView>
@@ -259,6 +285,10 @@ function ToDo({
   const clear = !todo.length && !unsigned.length && !drafts && !catchUps.length;
   return (
     <>
+      {/* Today's sessions first: the 1 on 1 side is about the day (GRIZZ, 2026-11-01). */}
+      <Text style={styles.sectionTitle}>Today · {dayLabel(new Date().toISOString())}</Text>
+      {today.length ? today.map((s) => <SessionLine key={s.id} s={s} name={who(s)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
+
       {clear ? <Text style={styles.helper}>All clear 👍 Every past session is marked and every invoice is sent.</Text> : null}
 
       {drafts ? (
@@ -286,7 +316,7 @@ function ToDo({
             <View style={styles.actions}>
               {kind === "unconfirmed" ? (
                 <Pressable style={styles.smallButton} onPress={() => done(s)} disabled={busy === s.id}>
-                  {busy === s.id ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.smallButtonText}>✓ Done</Text>}
+                  {busy === s.id ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.smallButtonText}>✓ Came</Text>}
                 </Pressable>
               ) : null}
               <Pressable style={styles.outline} onPress={() => onOpen(s)}>
@@ -319,8 +349,6 @@ function ToDo({
         </Text>
       ))}
 
-      <Text style={styles.sectionTitle}>Today</Text>
-      {today.length ? today.map((s) => <SessionLine key={s.id} s={s} name={who(s)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
     </>
   );
 }
@@ -654,17 +682,23 @@ function ClientsTab({
   signed,
   settings,
   onChanged,
+  oneOnOne,
+  onOpenPage,
 }: {
   clients: ClientInfo[];
   planOf: Record<string, SessionPlan>;
   signed: Record<string, SessionAgreement>;
   settings: SessionSettings | null;
   onChanged: () => void;
+  // The 1 on 1 side's Clients tab: also lists 1 on 1 clients with no sessions set up yet.
+  oneOnOne?: boolean;
+  onOpenPage?: (clientId: string) => void;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
   const withPlan = clients.filter((c) => planOf[c.id]);
-  const others = clients.filter((c) => !planOf[c.id]);
+  const notSetUp = oneOnOne ? clients.filter((c) => !planOf[c.id] && (c.one_on_one || c.live_only)) : [];
+  const others = clients.filter((c) => !planOf[c.id] && !notSetUp.includes(c));
   if (picked) {
     const c = clients.find((x) => x.id === picked);
     const plan = planOf[picked] ?? null;
@@ -674,6 +708,11 @@ function ClientsTab({
           <Text style={styles.back}>‹ All clients</Text>
         </Pressable>
         <Text style={styles.sectionTitle}>{c?.name}</Text>
+        {onOpenPage ? (
+          <Pressable style={[styles.outline, { marginBottom: 12 }]} onPress={() => onOpenPage(picked)}>
+            <Text style={styles.outlineText}>Open their page: food, progress, check-ins</Text>
+          </Pressable>
+        ) : null}
         <SessionPlanEditor
           clientId={picked}
           clientName={c?.name ?? "Client"}
@@ -691,7 +730,13 @@ function ClientsTab({
   return (
     <>
       <Text style={styles.helper}>Each client's fee, sessions a week, cancellation rule and regular times. Tap one to change it.</Text>
-      {withPlan.length === 0 ? <Text style={styles.helper}>No clients set up for live sessions yet.</Text> : null}
+      {withPlan.length === 0 && notSetUp.length === 0 ? <Text style={styles.helper}>No clients set up for live sessions yet.</Text> : null}
+      {notSetUp.map((c) => (
+        <Pressable key={c.id} style={[styles.row, { borderLeftColor: themeBg("#F59E0B") }]} onPress={() => setPicked(c.id)}>
+          <Text style={styles.rowTitle}>{c.name}</Text>
+          <Text style={[styles.meta, { color: themeText("#F59E0B") }]}>Sessions not set up yet. Tap to set their fee and times.</Text>
+        </Pressable>
+      ))}
       {withPlan.map((c) => {
         const p = planOf[c.id];
         const ok = agreementCurrent(signed[c.id], p);

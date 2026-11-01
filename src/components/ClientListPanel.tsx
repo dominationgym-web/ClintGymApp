@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
 import PaymentProofModal from "@/components/PaymentProofModal";
 import WeighInPicker from "@/components/WeighInPicker";
+import TrainingTypePicker, { trainingTypeFields, type TrainingType } from "@/components/TrainingTypePicker";
 import BulkWeighInModal from "@/components/BulkWeighInModal";
 import type { WeighInEvery } from "@/lib/progress";
 import { waitingByPerson } from "@/lib/paymentProofs";
@@ -41,10 +42,14 @@ export default function ClientListPanel({
   // clients from 0097 land under Dormant).
   const [group, setGroup] = useState<ClientGroup>("active");
   const [askWeighIn, setAskWeighIn] = useState<Client | null>(null);
+  // Being activated: asks 1 on 1, Evolution or both first.
+  const [pickType, setPickType] = useState<Client | null>(null);
   const [bulkWeighIn, setBulkWeighIn] = useState(false);
   const today = toIsoDate(new Date());
   const groupOf = (c: Client) => clientGroup(c, today);
-  const clients = allClients.filter((c) => groupOf(c) === group);
+  // The Evolution side: 1 on 1 only clients live on the 1 on 1 side once active
+  // (GRIZZ, 2026-11-01); new sign-ups and renewals still come here.
+  const clients = allClients.filter((c) => groupOf(c) === group && !(c.live_only && group === "active"));
   const current = CLIENT_GROUPS.find((g) => g.key === group)!;
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
@@ -115,17 +120,19 @@ export default function ClientListPanel({
 
   // Payment received: set the plan dates and open access. Paying early adds the
   // new plan on from the current end date (renewedPlanDates).
-  const activateNow = async (client: Client) => {
-    const updates = renewedPlanDates(client, new Date());
-    if (!updates) {
+  // `type`: 1 on 1, Evolution or both, asked when activating (GRIZZ, 2026-11-01).
+  const activateNow = async (client: Client, type?: TrainingType) => {
+    const dates = renewedPlanDates(client, new Date());
+    if (!dates) {
       Alert.alert("Error", "No plan type selected for this client.");
       return;
     }
+    const updates: Partial<Client> = type ? { ...dates, ...trainingTypeFields(type) } : dates;
     const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
     if (!error) {
       setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
-      // A client with no weigh-in schedule yet: ask how often they weigh and measure.
-      if (!client.weigh_in_every && client.id !== trainer?.id) setAskWeighIn(client);
+      // A client with no weigh-in schedule yet: ask how often they weigh and measure (not 1 on 1 only).
+      if (!client.weigh_in_every && client.id !== trainer?.id && !updates.live_only) setAskWeighIn(client);
     } else {
       Alert.alert("Error", "Failed to update the client's plan.");
     }
@@ -164,7 +171,7 @@ export default function ClientListPanel({
         : `Confirm payment received for ${client.name}. Their access will activate now.${until}`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: renewing ? "Renew" : "Activate", style: "default", onPress: () => activateNow(client) },
+        { text: renewing ? "Renew" : "Activate", style: "default", onPress: () => (renewing ? activateNow(client) : setPickType(client)) },
       ]
     );
   };
@@ -205,7 +212,7 @@ export default function ClientListPanel({
       <Text style={styles.title}>Clients</Text>
       <View style={styles.tabs}>
         {CLIENT_GROUPS.map((g) => {
-          const count = allClients.filter((c) => groupOf(c) === g.key).length;
+          const count = allClients.filter((c) => groupOf(c) === g.key && !(c.live_only && g.key === "active")).length;
           const on = g.key === group;
           return (
             <Pressable key={g.key} style={[styles.tab, on && styles.tabOn]} onPress={() => setGroup(g.key)}>
@@ -278,12 +285,25 @@ export default function ClientListPanel({
         onClose={() => setBulkWeighIn(false)}
       />
       <WeighInPicker name={askWeighIn?.name ?? "your client"} visible={!!askWeighIn} onPick={pickWeighIn} />
+      <TrainingTypePicker
+        visible={!!pickType}
+        name={pickType?.name ?? "your client"}
+        onCancel={() => setPickType(null)}
+        onPick={(t) => {
+          const who = pickType;
+          setPickType(null);
+          if (who) activateNow(who, t);
+        }}
+      />
       <PaymentProofModal
         proof={viewing}
         from={viewingClient?.name ?? "your client"}
         confirmLabel={viewingClient?.access_status === "expired" ? "✓ Paid, activate them" : "✓ Paid, renew their plan"}
         onConfirm={() => {
-          if (viewingClient && !viewingClient.archived_at) activateNow(viewingClient);
+          if (viewingClient && !viewingClient.archived_at) {
+            if (viewingClient.access_status === "expired") setPickType(viewingClient);
+            else activateNow(viewingClient);
+          }
           setViewing(null);
         }}
         onReviewed={loadProofs}

@@ -407,6 +407,8 @@ export type Client = {
   weigh_in_reminded_on?: string | null;
   // Live client only (0169): in-person sessions, Profile and the menu; no daily check-ins, programming or habits.
   live_only?: boolean;
+  // On the trainer's 1 on 1 side (0176): live_only means 1 on 1 only, this alone means both.
+  one_on_one?: boolean;
   // Their ready-made recovery program (0108): training, sports or lifestyle.
   recovery_program?: "training" | "sports" | "lifestyle" | null;
   // When the trainer was last told a deload week is due (0115).
