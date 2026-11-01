@@ -4,6 +4,7 @@ import { breakdownStyles as styles } from "@/components/breakdownStyles";
 import { UNDERSTANDING_INSULIN } from "@/lib/nutrition";
 import InsulinGuide from "@/components/InsulinGuide";
 import { CarbsGuide } from "@/components/GuideBreakdown";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // One short carb card instead of two long guides (nutrition review,
 // "one carb story", 2026-10-18). The short version says what matters; the
@@ -25,6 +26,8 @@ const insulinResistance =
 
 export default function CarbsInShort() {
   const [more, setMore] = useState<"insulin" | "carbs" | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(more !== null, () => setMore(null));
   return (
     <View>
       <View style={styles.card}>

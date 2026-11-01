@@ -18,6 +18,7 @@ import AppUpdateBanner from "@/components/AppUpdateBanner";
 import { CycleTodayBanner } from "@/components/CycleTracker";
 import { CoachMessageCard } from "@/components/CoachMessages";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // What sits above the check-in (app-flow review C3, 2026-10-18). Up to seven
 // cards used to stack there and push the first question off the screen. Now:
@@ -30,6 +31,8 @@ import { themedStyles } from "@/lib/theme";
 // counts the ones that took up space.
 export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
   const [heights, setHeights] = useState<Record<number, number>>({});
   const items = [
     <NotificationsPrompt key="n" who="client" />,

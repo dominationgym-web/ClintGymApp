@@ -14,6 +14,7 @@ import {
   WELCOME_SIGN_OFF,
 } from "@/lib/welcome";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const NAVY = "#0F172A";
 const CARD = "#1E293B";
@@ -33,6 +34,8 @@ export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionB
   const insets = useSafeAreaInsets();
   const fade = useRef(new Animated.Value(0)).current;
   const [page, setPage] = useState(0);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(page > 0, () => setPage((p) => Math.max(0, p - 1)));
 
   useEffect(() => {
     fade.setValue(0);

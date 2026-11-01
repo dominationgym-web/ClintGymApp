@@ -54,6 +54,7 @@ import {
 } from "@/lib/mealPlanMaker";
 import type { ClientMealPlan } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // Carbs and insulin, in line with the trainer guide (nutrition review,
 // 2026-10-18): fat loss comes from the calorie deficit, not from cutting carbs.
@@ -207,6 +208,8 @@ export default function MealPlanMaker() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [step, setStep] = useState(0);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(step > 0, () => setStep((s) => Math.max(0, s - 1)));
   const [declined, setDeclined] = useState(false);
   const [count, setCount] = useState(4);
   const [times, setTimes] = useState<string[]>(() => mealTimesFor(4, "17:30"));

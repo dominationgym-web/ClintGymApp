@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { CheckinFeedback } from "@/lib/checkinFeedback";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The app's feedback on the last week of check-ins: a win, then up to three
 // things to work on. Each tip opens to show what to do and what it will do,
@@ -15,6 +16,8 @@ export default function CheckinFeedbackCard({
   forTrainer?: boolean;
 }) {
   const [open, setOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   if (feedback.days === 0) return null;
   return (
     <View style={styles.card}>

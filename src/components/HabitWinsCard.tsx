@@ -15,6 +15,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { isPersonalMessage, winsShownFrom, winWeekLabel, type HabitWin } from "@/lib/habitWins";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 type Row = HabitWin & { clientName: string };
 
@@ -29,6 +30,8 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
   const [sending, setSending] = useState(false);
   // Opens on tap, so the dashboard's client list stays in view.
   const [expanded, setExpanded] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(expanded, () => setExpanded(false));
 
   const load = useCallback(async () => {
     const { data: wins } = await supabase

@@ -7,6 +7,7 @@ import { money, monthLabel } from "@/lib/billing";
 import { clientIncomeTotals, trackerTotals, trainerPlanLine, type ClientIncomeRow } from "@/lib/tracker";
 import type { BillingCurrency, OwnerTrackerRow } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const SIDES: { currency: BillingCurrency; label: string }[] = [
   { currency: "ZAR", label: "🇿🇦 South Africa" },
@@ -20,6 +21,8 @@ export default function OwnerTracker() {
   const [income, setIncome] = useState<ClientIncomeRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showTrainers, setShowTrainers] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(showTrainers, () => setShowTrainers(false));
 
   const load = useCallback(async () => {
     const [tracker, clientIncome] = await Promise.all([supabase.rpc("owner_tracker"), supabase.rpc("owner_client_income")]);

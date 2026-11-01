@@ -10,6 +10,7 @@ import { loadRecoverySuggestions } from "@/lib/recoveryPlanQueries";
 import type { RecoverySuggestion } from "@/lib/recoverySuggest";
 import RecoveryActivityModal, { RECOVERY_GREEN } from "@/components/RecoveryActivityModal";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The app's recovery suggestion for today (0107), worked out from the
 // client's training and check-ins. On the Check-in screen it shows the top
@@ -31,6 +32,8 @@ export default function RecoverySuggestionCard({
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const [suggestions, setSuggestions] = useState<RecoverySuggestion[]>([]);
   const [open, setOpen] = useState<RecoverySuggestion | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
 
   const load = useCallback(() => {
     loadRecoverySuggestions(clientId, todayIso(), limit).then(setSuggestions);

@@ -22,6 +22,7 @@ import {
   type StepDay,
 } from "@/lib/steps";
 import { themeBg, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 type Goal = { goal: number; reminders: boolean };
 
@@ -38,6 +39,8 @@ export default function StepsCard() {
   const [loaded, setLoaded] = useState(false);
   const [watch, setWatch] = useState(false);
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
 
   const load = useCallback(async () => {
     if (!clientId) return;

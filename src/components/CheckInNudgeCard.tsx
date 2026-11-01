@@ -9,6 +9,7 @@ import { whatsappLink } from "@/lib/videoCheckins";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { QuietClientRow } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // "Check in on Nancy" (0156, GRIZZ 2026-10-25): active clients the trainer
 // hasn't been in touch with for a few days. A reminder to the trainer only:
@@ -23,6 +24,9 @@ export default function CheckInNudgeCard() {
   const [open, setOpen] = useState(false);
   // A few at a time, so the dashboard doesn't turn into a long scroll.
   const [showAll, setShowAll] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
+  useStepBack(showAll, () => setShowAll(false));
 
   const load = useCallback(() => {
     supabase.rpc("quiet_clients").then(({ data }) => setRows(data ?? []));

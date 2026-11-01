@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // "What's a high-GI meal?" under the check-in's high-GI question (GRIZZ,
 // 2026-10-25: some clients won't know). Tap to open, so the step stays short.
@@ -21,6 +22,8 @@ export const HIGH_GI_COUNT_IT =
 
 export default function HighGiInfo() {
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
   return (
     <View style={styles.wrap}>
       <Pressable onPress={() => setOpen((o) => !o)} hitSlop={8} accessibilityRole="button">

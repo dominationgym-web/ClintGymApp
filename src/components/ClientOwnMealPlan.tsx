@@ -5,12 +5,15 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { MealDayView } from "@/components/MealPlanMaker";
 import type { ClientMealPlan } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // On the trainer's Diet tab: the plan the client made for themselves with the
 // meal plan maker (0077), read-only, under a tap-to-open heading.
 export default function ClientOwnMealPlan({ clientId, clientName }: { clientId: string; clientName: string }) {
   const [plan, setPlan] = useState<ClientMealPlan | null>(null);
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
   const [dayKind, setDayKind] = useState<"training" | "rest">("training");
 
   useEffect(() => {

@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -31,6 +32,24 @@ export default function ScreenTabBar<K extends string>({
   position?: "top" | "bottom";
 }) {
   const insets = useSafeAreaInsets();
+  // The phone's Back button goes back through the tabs the trainer or client
+  // looked at on this page, one at a time, before leaving the page.
+  const history = useRef<K[]>([]);
+  const last = useRef(current);
+  const [depth, setDepth] = useState(0);
+  useEffect(() => {
+    if (current === last.current) return;
+    const h = history.current;
+    // Coming back to the tab before this one is a step back; anything else is a step forward.
+    if (h[h.length - 1] === current) history.current = h.slice(0, -1);
+    else history.current = [...h.filter((k) => k !== last.current && k !== current), last.current];
+    last.current = current;
+    setDepth(history.current.length);
+  }, [current]);
+  useStepBack(depth > 0, () => {
+    const prev = history.current[history.current.length - 1];
+    if (prev !== undefined) onChange(prev);
+  });
   const edge =
     position === "bottom"
       ? { borderTopWidth: 1, paddingBottom: Math.max(insets.bottom, 8) }

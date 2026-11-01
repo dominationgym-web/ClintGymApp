@@ -5,6 +5,7 @@ import { todayIso } from "@/lib/dates";
 import { DELOAD_BLUE, deloadStartChoices } from "@/lib/deload";
 import type { DeloadCheck } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // Deload weeks (0115, GRIZZ, 2026-10-18), above the client's calendar. When
 // deload_check() says one is due (weeks of training in a row, or signs of
@@ -27,6 +28,8 @@ export default function DeloadCard({
   const today = todayIso();
   const [check, setCheck] = useState<DeloadCheck | null>(null);
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
   const [adding, setAdding] = useState(false);
   const firstName = clientName.trim().split(/\s+/)[0] || "Your client";
 

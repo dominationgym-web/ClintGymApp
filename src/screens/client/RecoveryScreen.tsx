@@ -23,6 +23,7 @@ import RecoveryActivityModal, { RECOVERY_GREEN } from "@/components/RecoveryActi
 import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 import type { RecoveryActivityRow } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The client's Recovery section (GRIZZ, 2026-10-17, 0107/0108): the app's
 // suggestion for today, their ready-made recovery program, eight activities
@@ -38,6 +39,9 @@ export default function RecoveryScreen() {
   const [completing, setCompleting] = useState<RecoveryActivityRow | null>(null);
   const [programOpen, setProgramOpen] = useState<RecoveryProgramKey | null>(null);
   const [whyOpen, setWhyOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(programOpen !== null, () => setProgramOpen(null));
+  useStepBack(whyOpen, () => setWhyOpen(false));
   const [version, setVersion] = useState(0);
 
   const load = useCallback(() => {

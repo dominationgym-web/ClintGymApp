@@ -7,6 +7,7 @@ import { todayIso } from "@/lib/dates";
 import { INJURY_AREAS } from "@/lib/injuryRisk";
 import type { ClientInjury } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // Each injury a client has, as many as they need (GRIZZ, 2026-10-17): where
 // it is and a short note. Ticked off once healed. The client keeps it up to
@@ -30,6 +31,8 @@ export default function InjuryList({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [showHealed, setShowHealed] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(showHealed, () => setShowHealed(false));
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("client_injuries").select("*").eq("client_id", clientId).order("created_at");

@@ -12,6 +12,7 @@ import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ProgramExercise } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const AMBER = "#F59E0B";
 const GREEN = "#22C55E";
@@ -57,6 +58,8 @@ export default function InjuryCheckCard({
   const [fixing, setFixing] = useState<Flagged | null>(null);
   const [step, setStep] = useState({ done: 0, total: 0 });
   const [showAll, setShowAll] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(showAll, () => setShowAll(false));
   // Exercises checked (swapped, adjusted or kept) in this visit, shown in green.
   const [fixed, setFixed] = useState<string[]>([]);
   // The injury check sign: shown after a program pick and when all are fixed.

@@ -1,7 +1,7 @@
 import { registerForCoachMessages } from "@/lib/notifications";
-import React, { useEffect, useState } from "react";
-import { View } from "react-native";
-import { StackActions } from "@react-navigation/native";
+import React, { useContext, useEffect, useState } from "react";
+import { BackHandler, View } from "react-native";
+import { NavigationContext, StackActions } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { tabIcon } from "@/navigation/tabIcon";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -50,14 +50,36 @@ const OneCalendar = () => <LiveSessionsScreen only="calendar" />;
 const OneClients = () => <LiveSessionsScreen only="clients" />;
 const OneInvoices = () => <LiveSessionsScreen only="invoices" />;
 
+// After switching between 1 on 1 and Evolution, the phone's Back button (once
+// the tabs on this side have nothing left to go back to) takes the trainer
+// back to the side they came from, instead of closing the app.
+function useBackToOtherSide() {
+  const navigation = useContext(NavigationContext);
+  const { cameFrom, backToCameFrom } = useTrainerSide();
+  useEffect(() => {
+    if (!cameFrom) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (navigation && !navigation.isFocused()) return false;
+      // Tabs on this side still to go back through come first.
+      if (navigationRef.isReady() && navigationRef.canGoBack()) return false;
+      backToCameFrom();
+      return true;
+    });
+    return () => sub.remove();
+  }, [cameFrom, navigation, backToCameFrom]);
+}
+
 function TrainerTabs() {
   const { trainer } = useAuth();
   // 1 on 1 or Evolution (GRIZZ, 2026-11-01): the switch sits in the header.
   const { side } = useTrainerSide();
+  useBackToOtherSide();
   // On a laptop the sidebar has every tab and menu page (TrainerSidebar).
   const wide = useWideScreen();
   return (
     <Tab.Navigator
+      // Back goes to the tab you were on before, one at a time (GRIZZ, 2026-11-01).
+      backBehavior="history"
       tabBar={wide ? () => null : undefined}
       screenOptions={{
         headerStyle: { backgroundColor: themeBg("#0F172A") },

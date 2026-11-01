@@ -21,6 +21,7 @@ import { trainerDisplayName } from "@/lib/trainers";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { Trainer, TrainerProblem, TrainerProblemArea, TrainerProblemMessage, TrainerProblemStatus } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const INBOX_TABS: TrainerProblemStatus[] = ["new", "fixing", "fixed"];
 
@@ -39,6 +40,8 @@ export default function TrainerProblemsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<TrainerProblemStatus>("new");
   const [openId, setOpenId] = useState<string | null>(route.params?.problemId ?? null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(openId !== null, () => setOpenId(null));
   // New problem form (trainers).
   const [area, setArea] = useState<TrainerProblemArea>("app");
   const [text, setText] = useState("");

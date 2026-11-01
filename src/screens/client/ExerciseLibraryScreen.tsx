@@ -108,6 +108,7 @@ import { useFormVideoUpload } from "@/components/useFormVideoUpload";
 import ExerciseClip from "@/components/ExerciseClip";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 export default function ExerciseLibraryScreen() {
   // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
@@ -197,11 +198,15 @@ export default function ExerciseLibraryScreen() {
   const [cardioDone, setCardioDone] = useState<string[]>([]);
   // The program's how-to and nutrition notes open on tap, so the workout stays near the top.
   const [openInfo, setOpenInfo] = useState<"how" | "food" | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(openInfo !== null, () => setOpenInfo(null));
   // The simple Today view (GRIZZ, 2026-10-18: "a simplified structure when you
   // open. So the client can see what's on for the day. Then only if he clicks
   // on it then it opens up."): which part is open, undefined until tapped.
   const [openPart, setOpenPart] = useState<string | null | undefined>(undefined);
   const [timerOpen, setTimerOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(!!openPart, () => setOpenPart(null));
   // Drop set programs (0099, GRIZZ, 2026-10-16) log in their own logger.
   const [dropRow, setDropRow] = useState<ProgramExercise | null>(null);
   const { height: screenHeight } = useWindowDimensions();

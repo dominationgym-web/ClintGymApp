@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { painAreaLabel, shortDate, type ExercisePain } from "@/lib/painSwap";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // "This hurts" (0129), on the client's Training tab under the injury check:
 // which exercises hurt them in the last 8 weeks, where, and what they tried
@@ -20,6 +21,8 @@ export default function ExercisePainList({
 }) {
   const [rows, setRows] = useState<ExercisePain[]>([]);
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
   useEffect(() => {
     const since = new Date();
     since.setDate(since.getDate() - 56);

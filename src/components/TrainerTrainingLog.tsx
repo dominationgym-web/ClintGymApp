@@ -7,6 +7,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { SESSION_COLORS, SESSION_LABELS, STAR_GOLD } from "@/lib/workoutSessions";
 import type { WorkoutLog, WorkoutSession } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const EFFORT_LABEL: Record<string, string> = PROGRESSION_EFFORT_LABEL;
 
@@ -25,6 +26,8 @@ export default function TrainerTrainingLog({
 }) {
   const days = groupTrainingLog(logs, todayIso());
   const [open, setOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
 
   return (
     <View>

@@ -16,6 +16,7 @@ import {
 } from "@/lib/challenges";
 import type { TrainerChallenge } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The client's side of this month's challenge (0153): what to do, a tick for
 // today (and yesterday, if they forgot), and how close they are to winning.
@@ -24,6 +25,8 @@ export default function ChallengeCard({ clientId, trainerId }: { clientId: strin
   const [challenge, setChallenge] = useState<TrainerChallenge | null>(null);
   const [days, setDays] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
   const [busy, setBusy] = useState(false);
   // Confetti pop-up when this tick wins the challenge.
   const [won, setWon] = useState(false);

@@ -55,6 +55,7 @@ import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ClientCalendarBlock, ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise, WorkoutLog } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // What the picker is choosing: the day's main workout, or an extra block (0098).
 type PickMode = "main" | "block";
@@ -147,6 +148,9 @@ export default function ClientCalendarCard({
   // right on the calendar (GRIZZ, 2026-10-29: no hunting in the training log).
   const [weekLogs, setWeekLogs] = useState<WorkoutLog[]>([]);
   const [showLogged, setShowLogged] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(selected !== null, () => setSelected(null));
+  useStepBack(showLogged, () => setShowLogged(false));
 
   const range = { from: monday, to: addDays(monday, 6) };
   const loadMonth = useCallback(async () => {
