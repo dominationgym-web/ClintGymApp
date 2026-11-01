@@ -6,6 +6,7 @@ import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigationRef";
 import { useTrainerMenuItems } from "@/components/TrainerMenuButton";
 import { useAuth } from "@/context/AuthContext";
+import { TrainerSideSwitch, useTrainerSide } from "@/context/TrainerSideContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { trainerDisplayName } from "@/lib/trainers";
 import type { TrainerTabParamList } from "@/navigation/types";
@@ -69,7 +70,17 @@ const itemStyle = (on: boolean) => (state: PressableStateCallbackType) => [
   on && styles.itemOn,
 ];
 
-const MAIN: { tab: keyof TrainerTabParamList; label: string; icon: IconName; also?: string[]; ownerOnly?: boolean }[] = [
+type MainItem = { tab: keyof TrainerTabParamList; label: string; icon: IconName; also?: string[]; ownerOnly?: boolean };
+
+// The 1 on 1 side (GRIZZ, 2026-11-01): in-person sessions only.
+const ONE_ON_ONE: MainItem[] = [
+  { tab: "OneToday", label: "Today", icon: "today" },
+  { tab: "OneCalendar", label: "Calendar", icon: "calendar" },
+  { tab: "OneClients", label: "Clients", icon: "people", also: ["ClientDetail"] },
+  { tab: "OneInvoices", label: "Invoices", icon: "receipt" },
+];
+
+const MAIN: MainItem[] = [
   { tab: "Dashboard", label: "Dashboard", icon: "speedometer" },
   { tab: "Clients", label: "Clients", icon: "people", also: ["ClientDetail", "LiveWorkout", "GroupLive"] },
   { tab: "Programs", label: "Programs", icon: "barbell", also: ["ProgramBuilder"] },
@@ -82,6 +93,7 @@ const MAIN: { tab: keyof TrainerTabParamList; label: string; icon: IconName; als
 // bottom tabs and the ☰ menu on a wide window; phones keep those.
 export default function TrainerSidebar() {
   const { trainer } = useAuth();
+  const { side } = useTrainerSide();
   const menu = useTrainerMenuItems();
   const current = useCurrentRoute();
   const name = current?.name;
@@ -101,7 +113,11 @@ export default function TrainerSidebar() {
           </Text>
         ) : null}
 
-        {MAIN.filter((m) => !m.ownerOnly || trainer?.is_owner).map((m) => {
+        <View style={styles.switch}>
+          <TrainerSideSwitch compact />
+        </View>
+
+        {(side === "one" ? ONE_ON_ONE : MAIN).filter((m) => !m.ownerOnly || trainer?.is_owner).map((m) => {
           const on = !menuKey && (name === m.tab || (!!name && !!m.also?.includes(name)));
           return (
             <Pressable
@@ -158,7 +174,8 @@ const styles = themedStyles({
   sidebar: { width: 270, backgroundColor: "#0B1222", borderRightWidth: 1, borderRightColor: "#1E293B" },
   inner: { paddingVertical: 18, paddingHorizontal: 12, gap: 2 },
   brand: { color: BRAND_GOLD, fontSize: 20, fontWeight: "800", paddingHorizontal: 10 },
-  who: { color: "#94A3B8", fontSize: 12, paddingHorizontal: 10, marginTop: 2, marginBottom: 16 },
+  who: { color: "#94A3B8", fontSize: 12, paddingHorizontal: 10, marginTop: 2, marginBottom: 12 },
+  switch: { paddingHorizontal: 4, marginBottom: 12 },
   heading: {
     color: "#64748B",
     fontSize: 11,

@@ -306,7 +306,8 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 
     result.sort((a, b) => priority(a) - priority(b));
 
-    setRows(result);
+    // The Evolution side: a 1 on 1 only client shows only when they checked in or raised a problem (GRIZZ, 2026-11-01).
+    setRows(result.filter((r) => !r.client.live_only || r.todaysCheckin || r.problems.length));
   }, [trainer]);
 
   useEffect(() => {

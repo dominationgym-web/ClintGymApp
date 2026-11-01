@@ -407,6 +407,8 @@ export type Client = {
   weigh_in_reminded_on?: string | null;
   // Live client only (0169): in-person sessions, Profile and the menu; no daily check-ins, programming or habits.
   live_only?: boolean;
+  // On the trainer's 1 on 1 side (0176): live_only means 1 on 1 only, this alone means both.
+  one_on_one?: boolean;
   // Their ready-made recovery program (0108): training, sports or lifestyle.
   recovery_program?: "training" | "sports" | "lifestyle" | null;
   // When the trainer was last told a deload week is due (0115).
@@ -1189,6 +1191,18 @@ export type LiveSession = {
   updated_at: string;
 };
 // What a session counts as on an invoice (live_session_kind in 0168).
+// The coach's blocked-out time (0177): sessions in it are cancelled and not charged.
+export type TrainerTimeOff = {
+  id: string;
+  trainer_id: string;
+  starts_at: string;
+  ends_at: string;
+  reason: string;
+  missed: number;
+  missed_fees: number;
+  removed_at: string | null;
+  created_at: string;
+};
 export type SessionKind = "done" | "unconfirmed" | "booked" | "late" | "no_show" | "notice" | "excused" | "makeup" | "trainer" | "decide" | "removed";
 export type InvoiceLine = {
   id: string;
@@ -1381,6 +1395,9 @@ export interface Database {
       session_plans: { Row: SessionPlan; Insert: never; Update: never; Relationships: [] };
       session_agreements: { Row: SessionAgreement; Insert: never; Update: never; Relationships: [] };
       live_sessions: { Row: LiveSession; Insert: never; Update: never; Relationships: [] };
+      trainer_time_off: { Row: TrainerTimeOff; Insert: never; Update: never; Relationships: [] };
+      // A diary-only person's price per session (0178).
+      diary_name_fees: { Row: { trainer_id: string; name_key: string; fee: number; updated_at: string }; Insert: never; Update: never; Relationships: [] };
       session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
       trainer_problem_messages: {
         Row: TrainerProblemMessage;
@@ -1656,6 +1673,10 @@ export interface Database {
       repeat_live_session: { Args: { p_id: string }; Returns: { repeat_id: string | null; added: number } };
       move_live_repeat: { Args: { p_id: string; p_starts_at: string }; Returns: { repeat_id: string; removed: number } };
       stop_live_repeat: { Args: { p_id: string }; Returns: { removed: number } };
+      // Blocked-out time (0177).
+      block_trainer_time: { Args: { p_from: string; p_to: string; p_reason: string }; Returns: TrainerTimeOff };
+      remove_trainer_time_off: { Args: { p_id: string }; Returns: undefined };
+      set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
       set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
