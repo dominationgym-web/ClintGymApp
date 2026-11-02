@@ -26,6 +26,7 @@ import {
   sumTotals,
   targetStatus,
   findFood,
+  normaliseWeek,
   type DietDay,
   type DietItem,
   type DietSex,
@@ -52,7 +53,7 @@ import {
   whyFoodMatters,
   type MealPlanSettings,
 } from "@/lib/mealPlanMaker";
-import type { ClientMealPlan } from "@/types/database";
+import type { Client, ClientMealPlan } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -66,6 +67,9 @@ const TIMED_CARBS =
   "Your carbs are timed around your training. Before training they give you energy, and after training your muscles use them to refuel and recover. Your other meals have a bit less carbs and more protein and veg. It's about energy for your sessions; your total calories are what decide fat loss or gain.";
 const SNACK_SALT = "Biltong is high in salt, so go easier on it if you have high blood pressure.";
 
+// What the client gets when the trainer taps Tell them (a coach message, 0034).
+export const MEAL_PLAN_READY_MESSAGE = "Your meal plan is ready. Open Menu ☰ → My meal plan to see it. Swap any food you don't like. 🥗";
+
 /**
  * A day of meals, with Swap and Leave out on each food when `onSwap` /
  * `onLeaveOut` are given, "Put in my own" on each meal with `onOwnMeal`, and
@@ -78,6 +82,7 @@ export function MealDayView({
   onLeaveOut,
   onOwnMeal,
   tick,
+  coachView,
 }: {
   day: DietDay;
   targetKcal: number | null;
@@ -85,6 +90,8 @@ export function MealDayView({
   onLeaveOut?: (meal: number, index: number) => void;
   onOwnMeal?: (meal: number) => void;
   tick?: MealTickProps;
+  /** Seen by the trainer: "their" own meal, not "your". */
+  coachView?: boolean;
 }) {
   const totals = dayTotals(day);
   const status = targetKcal ? targetStatus(totals.kcal, targetKcal) : null;
@@ -111,7 +118,7 @@ export function MealDayView({
             <Text style={styles.mealMacros}>
               P {t.protein} g · C {t.carbs} g · F {t.fat} g
             </Text>
-            {meal.own && <Text style={styles.ownTag}>⭐ Your own meal, the same every day</Text>}
+            {meal.own && <Text style={styles.ownTag}>⭐ {coachView ? "Their" : "Your"} own meal, the same every day</Text>}
             {meal.items.length === 0 && !meal.own && onOwnMeal && (
               <View style={styles.emptyMeal}>
                 <Text style={styles.helper}>Nothing left in this meal. Do you eat the same thing every day? Put in what you eat and the app balances the rest of your day around it.</Text>
@@ -168,14 +175,19 @@ export function MealTickButton({ on, onPress }: { on: boolean; onPress: () => vo
   );
 }
 
-// The client's own meal plan maker (GRIZZ, 2026-10-12), in the Nutrition
-// section. It walks them through a page at a time: their height, weight, age
-// and activity, their goal, whether they want Daily Evolution to work out a
-// plan, how many meals they eat and when they train, and whether they eat
-// meat or dairy. Most carbs go around training. Every plan has a protein snack
-// (biltong for meat eaters) with fruit. Tap Swap to change a food for another
-// with the same protein, carbs or fat. Clients the intake says should see a
-// doctor or dietitian first (see referralReasons) only get "Stay the same".
+// The meal plan maker (GRIZZ, 2026-10-12). Since 2026-11-02 the trainer works
+// the plan out on the client's Diet tab ("the trainer has control of the meal
+// planning"): a page at a time, the client's height, weight, age and activity,
+// their goal, how many meals they eat and when they train, and whether they
+// eat meat or dairy. Most carbs go around training. Every plan has a protein
+// snack (biltong for meat eaters) with fruit. Clients the intake says should
+// see a doctor or dietitian first (see referralReasons) only get "Stay the
+// same".
+//
+// The client sees the plan under Nutrition → Your meal plan from your coach,
+// and can still Swap a food for another with the same protein, carbs or fat,
+// leave foods out, put in their own meal, tick meals and make a shopping
+// list. They no longer work the plan out themselves.
 type Details = { height: string; weight: string; age: string; sex: DietSex | null; activity: string };
 
 // A food in the client's own meal while they type it: an amount in the food's
@@ -192,12 +204,19 @@ const ownRow = (item: DietItem): OwnRow => {
 
 const ownGrams = (row: OwnRow) => Math.round(num(row.amount) * row.unit.grams);
 
-const STEPS = ["details", "goal", "offer", "meals", "diet"] as const;
+const STEPS = ["details", "goal", "meals", "diet"] as const;
 
 const num = (text: string) => Number(text.replace(",", "."));
 
-export default function MealPlanMaker() {
-  const { client, refreshProfile } = useAuth();
+/** The trainer making the plan for one of their clients (Diet tab). */
+export type MealPlanForTrainer = { client: Client; trainerId: string; onDetailsSaved?: () => void };
+
+export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanForTrainer } = {}) {
+  const auth = useAuth();
+  const coachMode = !!forTrainer;
+  const client = forTrainer?.client ?? auth.client;
+  const refreshProfile = forTrainer?.onDetailsSaved ?? auth.refreshProfile;
+  const first = client?.name?.trim().split(/\s+/)[0] || "your client";
   const [plan, setPlan] = useState<ClientMealPlan | null>(null);
   const [coachKcal, setCoachKcal] = useState<number | null>(null);
   const [details, setDetails] = useState<Details>({ height: "", weight: "", age: "", sex: null, activity: "" });
@@ -210,13 +229,17 @@ export default function MealPlanMaker() {
   const [step, setStep] = useState(0);
   // Phone Back closes what is open first, one step at a time.
   useStepBack(step > 0, () => setStep((s) => Math.max(0, s - 1)));
-  const [declined, setDeclined] = useState(false);
+  // The trainer told the client this version of the plan is ready.
+  const [told, setTold] = useState(false);
+  const [telling, setTelling] = useState(false);
+  // The trainer's diet planner week, which the client sees first while it has meals.
+  const [coachWeek, setCoachWeek] = useState(false);
   const [count, setCount] = useState(4);
   const [times, setTimes] = useState<string[]>(() => mealTimesFor(4, "17:30"));
   const [training, setTraining] = useState<string | null>("17:30");
   const [dayKind, setDayKind] = useState<"training" | "rest">("training");
   // Today's ticked meals (0165). The plan opens on the day they've been ticking.
-  const mealTicks = useMealTicks(client?.id);
+  const mealTicks = useMealTicks(coachMode ? undefined : client?.id);
   const tickedKind = tickedSource(mealTicks.ticks, todayIso());
   useEffect(() => {
     if (tickedKind === "training" || tickedKind === "rest") setDayKind(tickedKind);
@@ -240,6 +263,7 @@ export default function MealPlanMaker() {
       const coachDetails = coach ? { ...coach, activity: Number(coach.activity) } : null;
       const coachTarget = coachDetails ? dailyTarget(coachDetails) : null;
       setCoachKcal(coachTarget);
+      setCoachWeek(!!coach && normaliseWeek(coach.days).some((d) => d.meals.some((m) => m.items.length > 0)));
       // Fill in what we already know: the client's own answers first, then the coach's.
       const intake = intakeDetails(client);
       const pickNum = (a: number | null | undefined, b: number | null | undefined) => (a ?? b ?? "") === "" ? "" : String(a ?? b);
@@ -261,7 +285,7 @@ export default function MealPlanMaker() {
         if (mine.settings.diet) setDiet(mine.settings.diet);
         if (mine.settings.dairyFree) setDairyFree(true);
         if (!mine.settings.training) setDayKind("rest");
-      } else {
+      } else if (coachMode) {
         setEditing(true);
       }
       setLoading(false);
@@ -299,7 +323,11 @@ export default function MealPlanMaker() {
 
   const header = (
     <View style={styles.headerRow}>
-      <Text style={styles.headerTitle}>Work out your own meal plan and diet based on your BMR and goals.</Text>
+      <Text style={styles.headerTitle}>
+        {coachMode
+          ? `Made from ${first}'s BMR and goal. ${first} can swap foods, leave foods out and put in their own meals.`
+          : "Your coach worked out this plan for you. Swap or leave out any food, or put in your own meal."}
+      </Text>
       <Pressable style={styles.help} onPress={() => setExplain(true)} accessibilityLabel="How it works" hitSlop={8}>
         <Text style={styles.helpText}>?</Text>
       </Pressable>
@@ -341,9 +369,13 @@ export default function MealPlanMaker() {
               Tap ⇄ Swap next to it and pick something you like. The app changes the weight so you still get the same amount of
               protein, carbs or fat. Or tap ✕ to leave it out: the app tells you why it's there, and can top up the other foods
               like it so you still get the same. Eat the same breakfast (or any meal) every day? Tap Put in my own meal and add what you eat: the app keeps it and balances the
-              rest of your day around it. Tap New ideas for a fresh set of foods, or Change my meals to change your details or goal.
+              rest of your day around it.{coachMode ? " Tap New ideas for a fresh set of foods, or Change meals to change the details or goal." : ""}
             </Text>
-            <Text style={styles.explain}>Your coach can see your plan. If your coach makes you a diet plan, follow theirs first.</Text>
+            <Text style={styles.explain}>
+              {coachMode
+                ? `You work the plan out; ${first} sees it under Nutrition and can swap foods, leave foods out and put in their own meals. You see every change here.`
+                : "Your coach worked this plan out for you and sees any change you make. Want a different goal or meal times? Ask your coach."}
+            </Text>
           </ScrollView>
           <Pressable style={[styles.button, styles.primary, { marginTop: 12, flex: 0 }]} onPress={() => setExplain(false)}>
             <Text style={styles.primaryText}>Got it</Text>
@@ -359,7 +391,21 @@ export default function MealPlanMaker() {
     setSaving(true);
     const { error } = await supabase.from("client_meal_plans").upsert({ ...next, updated_at: new Date().toISOString() });
     setSaving(false);
-    if (error) Alert.alert("Couldn't save your plan", error.message);
+    if (error) Alert.alert("Couldn't save the plan", error.message);
+    else setTold(false);
+  };
+
+  // Tells the client their plan is ready, as a coach message: a phone
+  // notification and a card on their Check-in, like Save and tell for workouts.
+  const tell = async () => {
+    if (!client || !forTrainer) return;
+    setTelling(true);
+    const { error } = await supabase
+      .from("coach_messages")
+      .insert({ client_id: client.id, trainer_id: forTrainer.trainerId, body: MEAL_PLAN_READY_MESSAGE });
+    setTelling(false);
+    if (error) return Alert.alert(`Couldn't tell ${first}`, error.message);
+    setTold(true);
   };
 
   // Their height, weight, age and activity go on their profile too, so their
@@ -370,11 +416,11 @@ export default function MealPlanMaker() {
       Alert.alert(title, message);
       return false;
     };
-    if (!(body.height_cm >= 100 && body.height_cm <= 250)) return fail("Your height", "Type your height in centimetres, for example 165.");
-    if (!(body.weight_kg >= 25 && body.weight_kg <= 400)) return fail("Your weight", "Type your weight in kilograms, for example 68.");
-    if (!(body.age >= 12 && body.age <= 100)) return fail("Your age", "Type your age in years, for example 34.");
-    if (!body.sex) return fail("Male or female?", "Tap the one that fits you. It changes your BMR.");
-    if (!factor) return fail("How active are you?", "Tap the option that fits you best.");
+    if (!(body.height_cm >= 100 && body.height_cm <= 250)) return fail("Height", "Type the height in centimetres, for example 165.");
+    if (!(body.weight_kg >= 25 && body.weight_kg <= 400)) return fail("Weight", "Type the weight in kilograms, for example 68.");
+    if (!(body.age >= 12 && body.age <= 100)) return fail("Age", "Type the age in years, for example 34.");
+    if (!body.sex) return fail("Male or female?", "Tap the one that fits. It changes the BMR.");
+    if (!factor) return fail("How active?", "Tap the option that fits best.");
     setSaving(true);
     const { error } = await supabase
       .from("clients")
@@ -390,7 +436,7 @@ export default function MealPlanMaker() {
       })
       .eq("id", client.id);
     setSaving(false);
-    if (error) return fail("Couldn't save your details", error.message);
+    if (error) return fail("Couldn't save the details", error.message);
     refreshProfile();
     return true;
   };
@@ -429,6 +475,15 @@ export default function MealPlanMaker() {
     </Pressable>
   );
 
+  if (!coachMode && !plan) {
+    return (
+      <Text style={styles.helper}>
+        Your coach hasn't worked out your meal plan yet. When they do, it shows here, and you can swap any food you don't like, leave
+        foods out and put in your own meals.
+      </Text>
+    );
+  }
+
   if (editing || !plan) {
     const page = STEPS[step];
     const next = async () => {
@@ -438,23 +493,6 @@ export default function MealPlanMaker() {
     };
     const back = () => (step > 0 ? setStep(step - 1) : plan ? setEditing(false) : null);
 
-    if (declined) {
-      return (
-        <View>
-          {header}
-          {explainer}
-          <Text style={styles.helper}>
-            No problem. Your body uses about {need?.toLocaleString()} kcal a day
-            {safeGoal === "lose" ? ", so aim a bit under that to lose fat" : safeGoal === "gain" ? ", so aim a bit over that to build muscle" : ""}.
-            Come back here any time and Daily Evolution will work out a meal plan for you.
-          </Text>
-          <Pressable style={[styles.button, styles.primary, { flex: 0, marginTop: 8 }]} onPress={() => { setDeclined(false); setStep(3); }}>
-            <Text style={styles.primaryText}>Work out my meal plan</Text>
-          </Pressable>
-        </View>
-      );
-    }
-
     return (
       <View>
         {header}
@@ -463,7 +501,7 @@ export default function MealPlanMaker() {
 
         {page === "details" && (
           <View>
-            <Text style={styles.label}>About you</Text>
+            <Text style={styles.label}>About {first}</Text>
             <View style={styles.detailRow}>
               {([["height", "Height (cm)", "165"], ["weight", "Weight (kg)", "68"], ["age", "Age", "34"]] as const).map(([key, label, hint]) => (
                 <View key={key} style={styles.detailBox}>
@@ -486,14 +524,14 @@ export default function MealPlanMaker() {
                 {chip(details.sex === "male", "Male", () => setDetails({ ...details, sex: "male" }))}
               </View>
             )}
-            <Text style={styles.label}>How active are you?</Text>
+            <Text style={styles.label}>How active is {first}?</Text>
             <View style={styles.chips}>
               {INTAKE_ACTIVITY_LEVELS.map((a) => chip(details.activity === a.label, a.label, () => setDetails({ ...details, activity: a.label })))}
             </View>
             {details.activity ? <Text style={styles.note}>{INTAKE_ACTIVITY_LEVELS.find((a) => a.label === details.activity)?.detail}</Text> : null}
             {base && need ? (
               <Text style={[styles.helper, { marginTop: 8 }]}>
-                Your BMR is {base.toLocaleString()} kcal. With your activity your body uses about {need.toLocaleString()} kcal a day.
+                {first}'s BMR is {base.toLocaleString()} kcal. With their activity their body uses about {need.toLocaleString()} kcal a day.
               </Text>
             ) : null}
           </View>
@@ -501,15 +539,15 @@ export default function MealPlanMaker() {
 
         {page === "goal" && (
           <View>
-            <Text style={styles.label}>Do you want to lose fat, build muscle or stay the same?</Text>
+            <Text style={styles.label}>Does {first} want to lose fat, build muscle or stay the same?</Text>
             <View style={styles.chips}>
-              {coachKcal ? chip(goal === "coach", "My coach's target", () => setGoal("coach")) : null}
+              {coachKcal ? chip(goal === "coach", "Your diet planner target", () => setGoal("coach")) : null}
               {goals.map((g) => chip(safeGoal === g.key, g.label, () => setGoal(g.key), g.key))}
             </View>
             {need ? (
               <Text style={styles.note}>
                 {safeGoal === "coach"
-                  ? `${coachKcal?.toLocaleString()} kcal a day, as your coach set it.`
+                  ? `${coachKcal?.toLocaleString()} kcal a day, as you set it in the diet planner.`
                   : `${MEAL_GOALS.find((g) => g.key === safeGoal)?.detail}: ${kcalFor(safeGoal).toLocaleString()} kcal a day.`}
                 {safeGoal === "lose" && need && kcalFor("lose") >= need ? " That's already the lowest safe amount for you, so the plan keeps you here." : ""}
               </Text>
@@ -522,39 +560,21 @@ export default function MealPlanMaker() {
           </View>
         )}
 
-        {page === "offer" && (
-          <View>
-            <Text style={styles.bigQuestion}>Would you like Daily Evolution to work out a meal plan for you?</Text>
-            <Text style={styles.helper}>It takes a few taps: how many meals you eat, when you train and what you eat.</Text>
-            <View style={styles.buttons}>
-              <Pressable style={[styles.button, styles.secondary]} onPress={() => setDeclined(true)}>
-                <Text style={styles.secondaryText}>Not now</Text>
-              </Pressable>
-              <Pressable style={[styles.button, styles.primary]} onPress={() => setStep(step + 1)}>
-                <Text style={styles.primaryText}>Yes please</Text>
-              </Pressable>
-            </View>
-            <Pressable onPress={back} style={{ marginTop: 12 }}>
-              <Text style={styles.backLink}>‹ Back</Text>
-            </Pressable>
-          </View>
-        )}
-
         {page === "meals" && (
           <View>
-            <Text style={styles.label}>How many meals do you tend to eat in a day?</Text>
+            <Text style={styles.label}>How many meals does {first} tend to eat in a day?</Text>
             <View style={styles.chips}>
               {Array.from({ length: MAX_MEALS - MIN_MEALS + 1 }, (_, i) => MIN_MEALS + i).map((n) =>
                 chip(count === n, String(n), () => chooseMeals(n, training)),
               )}
             </View>
             <Text style={styles.note}>Plus a protein snack, which the app adds for you.</Text>
-            <Text style={styles.label}>When do you train?</Text>
+            <Text style={styles.label}>When does {first} train?</Text>
             <View style={styles.chips}>
               {TRAINING_TIMES.map((t) => chip(training === t.time, t.label, () => chooseMeals(count, t.time), t.key))}
-              {chip(training === null, "I don't train", () => chooseMeals(count, null))}
+              {chip(training === null, "Doesn't train", () => chooseMeals(count, null))}
             </View>
-            <Text style={styles.label}>Your meal times</Text>
+            <Text style={styles.label}>{first}'s meal times</Text>
             <Text style={styles.note}>Set around your training. Tap a time to change it.</Text>
             <View style={styles.times}>
               {times.slice(0, count).map((t, i) => (
@@ -575,7 +595,7 @@ export default function MealPlanMaker() {
 
         {page === "diet" && (
           <View>
-            <Text style={styles.label}>What do you eat?</Text>
+            <Text style={styles.label}>What does {first} eat?</Text>
             {MEAL_DIETS.map((d) => (
               <Pressable key={d.key} style={[styles.dietOption, diet === d.key && styles.dietOptionOn]} onPress={() => setDiet(d.key)}>
                 <Text style={[styles.dietLabel, diet === d.key && styles.chipTextOn]}>{d.label}</Text>
@@ -584,14 +604,13 @@ export default function MealPlanMaker() {
             ))}
             <Text style={styles.label}>Milk, yoghurt and cheese?</Text>
             <View style={styles.chips}>
-              {chip(!dairyFree, "I have dairy", () => setDairyFree(false))}
+              {chip(!dairyFree, "Has dairy", () => setDairyFree(false))}
               {chip(dairyFree, "No dairy (lactose or allergy)", () => setDairyFree(true))}
             </View>
           </View>
         )}
 
-        {page !== "offer" && (
-          <View style={styles.buttons}>
+        <View style={styles.buttons}>
             {(step > 0 || plan) && (
               <Pressable style={[styles.button, styles.secondary]} onPress={back}>
                 <Text style={styles.secondaryText}>Back</Text>
@@ -601,11 +620,10 @@ export default function MealPlanMaker() {
               {saving ? (
                 <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
-                <Text style={styles.primaryText}>{page === "diet" ? "Make my plan" : "Next"}</Text>
+                <Text style={styles.primaryText}>{page === "diet" ? "Make the plan" : "Next"}</Text>
               )}
             </Pressable>
-          </View>
-        )}
+        </View>
       </View>
     );
   }
@@ -634,7 +652,7 @@ export default function MealPlanMaker() {
     setLeaving(null);
     const current = dayKind === "training" ? training : rest;
     if (!current.rebalanced) {
-      Alert.alert("Left out", `Nothing else on this day gives what ${food} did, so it's a little lower now. Tap New ideas for a fresh plan without it.`);
+      Alert.alert("Left out", `Nothing else on this day gives what ${food} did, so it's a little lower now. ${coachMode ? "Tap New ideas for a fresh plan without it." : "Your coach can make you a fresh plan without it."}`);
     }
   };
   // Their own meal (GRIZZ, 2026-10-27): the foods they eat at this meal every
@@ -692,17 +710,29 @@ export default function MealPlanMaker() {
         </View>
       )}
       {referralBox}
+      {coachMode && (
+        <Text style={styles.helper}>
+          {plan.settings.meals.length} meals at {plan.settings.meals.join(", ")}
+          {plan.settings.training ? `, training at ${plan.settings.training}` : ", no training"}.
+          {coachWeek ? ` ${first} sees your diet planner week below instead while it has meals in it.` : ""}
+        </Text>
+      )}
       <MealDayView
         day={day}
         targetKcal={plan.targets.kcal}
         onSwap={(meal, index) => setSwapping({ meal, index })}
         onLeaveOut={(meal, index) => setLeaving({ meal, index })}
-        onOwnMeal={openOwnMeal}
-        tick={{ isTicked: (m) => mealTicks.isTicked(dayKind, m, day.meals[m]), onTick: (m) => mealTicks.toggle(dayKind, m, day.meals[m]) }}
+        onOwnMeal={coachMode ? undefined : openOwnMeal}
+        coachView={coachMode}
+        tick={
+          coachMode
+            ? undefined
+            : { isTicked: (m) => mealTicks.isTicked(dayKind, m, day.meals[m]), onTick: (m) => mealTicks.toggle(dayKind, m, day.meals[m]) }
+        }
       />
       {(plan.settings.avoid ?? []).length > 0 && (
         <View style={styles.avoidBox}>
-          <Text style={styles.avoidTitle}>You don't eat (left out of every plan)</Text>
+          <Text style={styles.avoidTitle}>{coachMode ? `${first} doesn't eat` : "You don't eat"} (left out of every plan)</Text>
           <View style={styles.chips}>
             {(plan.settings.avoid ?? []).map((f) => (
               <Pressable key={f} style={styles.avoidChip} onPress={() => putBack(f)} accessibilityLabel={`Put ${f} back`}>
@@ -710,7 +740,9 @@ export default function MealPlanMaker() {
               </Pressable>
             ))}
           </View>
-          <Text style={styles.avoidHint}>Tap one to allow it again. It comes back next time you tap New ideas.</Text>
+          <Text style={styles.avoidHint}>
+            {coachMode ? "Tap one to allow it again. It comes back next time you tap New ideas." : "Tap one to allow it again. It comes back the next time your coach makes your plan."}
+          </Text>
         </View>
       )}
       <View style={styles.insulinBox}>
@@ -720,28 +752,39 @@ export default function MealPlanMaker() {
       <Text style={styles.note}>
         Weights are for the food as listed, for example cooked rice. Swap keeps the same protein, carbs or fat. Tap ✕ to leave a food out. {SNACK_SALT}
       </Text>
-      <View style={styles.buttons}>
-        <Pressable
-          style={[styles.button, styles.secondary]}
-          onPress={() => {
-            setStep(0);
-            setEditing(true);
-          }}
-        >
-          <Text style={styles.secondaryText}>Change my meals</Text>
-        </Pressable>
-        <Pressable style={[styles.button, styles.primary]} onPress={() => build(plan.variety + 1)} disabled={saving}>
-          {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>New ideas</Text>}
-        </Pressable>
-      </View>
-
-      <View style={styles.shopBox}>
-        <Text style={styles.shopTitle}>🛒 Happy with your plan?</Text>
-        <Text style={styles.insulinText}>Would you like a shopping list for the week? The app adds up everything you need to buy, in the packs shops sell.</Text>
-        <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => setShopping(true)}>
-          <Text style={styles.primaryText}>Yes, make my shopping list</Text>
-        </Pressable>
-      </View>
+      {coachMode ? (
+        <>
+          <View style={styles.buttons}>
+            <Pressable
+              style={[styles.button, styles.secondary]}
+              onPress={() => {
+                setStep(0);
+                setEditing(true);
+              }}
+            >
+              <Text style={styles.secondaryText}>Change meals</Text>
+            </Pressable>
+            <Pressable style={[styles.button, styles.primary]} onPress={() => build(plan.variety + 1)} disabled={saving}>
+              {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>New ideas</Text>}
+            </Pressable>
+          </View>
+          <Pressable style={[styles.button, told ? styles.secondary : styles.primary, styles.stacked]} onPress={tell} disabled={telling || told}>
+            {telling ? (
+              <ActivityIndicator color={themeText("#0F172A")} />
+            ) : (
+              <Text style={told ? styles.secondaryText : styles.primaryText}>{told ? `Sent ✓ ${first} was told` : `📣 Tell ${first} their meal plan is ready`}</Text>
+            )}
+          </Pressable>
+        </>
+      ) : (
+        <View style={styles.shopBox}>
+          <Text style={styles.shopTitle}>🛒 Happy with your plan?</Text>
+          <Text style={styles.insulinText}>Would you like a shopping list for the week? The app adds up everything you need to buy, in the packs shops sell.</Text>
+          <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => setShopping(true)}>
+            <Text style={styles.primaryText}>Yes, make my shopping list</Text>
+          </Pressable>
+        </View>
+      )}
       <ShoppingListSheet
         visible={shopping}
         trainingDay={plan.training_day}
@@ -800,16 +843,18 @@ export default function MealPlanMaker() {
             >
               <Text style={styles.secondaryText}>⇄ Swap it for something else</Text>
             </Pressable>
-            <Pressable
-              style={[styles.button, styles.secondary, styles.stacked]}
-              onPress={() => {
-                const meal = leaving?.meal;
-                setLeaving(null);
-                if (meal != null) setTimeout(() => openOwnMeal(meal), 400);
-              }}
-            >
-              <Text style={styles.secondaryText}>✎ Put in my own meal instead</Text>
-            </Pressable>
+            {!coachMode && (
+              <Pressable
+                style={[styles.button, styles.secondary, styles.stacked]}
+                onPress={() => {
+                  const meal = leaving?.meal;
+                  setLeaving(null);
+                  if (meal != null) setTimeout(() => openOwnMeal(meal), 400);
+                }}
+              >
+                <Text style={styles.secondaryText}>✎ Put in my own meal instead</Text>
+              </Pressable>
+            )}
             <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => setLeaving(null)}>
               <Text style={styles.secondaryText}>Keep it</Text>
             </Pressable>

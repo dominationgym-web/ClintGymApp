@@ -124,7 +124,7 @@ export const MUSCLE_YEAR_TRAINER_GUIDE: TrainerGuide = {
           heading: "Your own plan for them",
           points: [
             "If you'd rather set their food yourself, use the Diet tab on their profile: it has the same BMR and lets you set the calories.",
-            "Their own meal plan (Build muscle goal) uses the same numbers, so it lines up with their BMR page.",
+            "The meal plan you work out for them on their Diet tab (Build muscle goal) uses the same numbers, so it lines up with their BMR page.",
           ],
         },
       ],

@@ -9,7 +9,7 @@ import { eatenOn, tickedSource, weekFoodTip } from "@/lib/mealTicks";
 import { grouped } from "@/lib/clientDashboard";
 import { useMealTicks } from "@/hooks/useMealTicks";
 import { planDay, useFoodPlan } from "@/hooks/useClientDashboardData";
-import MealPlanMaker, { MealTickButton } from "@/components/MealPlanMaker";
+import { MealTickButton } from "@/components/MealPlanMaker";
 import ClientDietPlanView from "@/components/ClientDietPlanView";
 import { Card, CardTitle, DashChips, DashPage, DashTabs, Muted, Pill, Row, Stat, Tip, dash, natural } from "@/components/DashboardParts";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
@@ -50,8 +50,10 @@ export default function FoodScreen() {
 
   if (tab === "plan" || food.kind === "none") {
     return (
-      <DashPage title="Nutrition & diet" subtitle={food.kind === "none" ? "Make your meal plan and you can tick off each meal as you eat it" : "Your whole plan"} right={food.kind === "none" ? undefined : tabs}>
-        <Card style={styles.plan}>{food.kind === "coach" ? <ClientDietPlanView /> : <MealPlanMaker />}</Card>
+      <DashPage title="Nutrition & diet" subtitle={food.kind === "none" ? "When your coach has worked out your meal plan, you can tick off each meal here as you eat it" : "Your whole plan"} right={food.kind === "none" ? undefined : tabs}>
+        <Card style={styles.plan}>
+          <ClientDietPlanView />
+        </Card>
       </DashPage>
     );
   }
