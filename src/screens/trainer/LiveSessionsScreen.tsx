@@ -12,7 +12,7 @@ import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
-import { ForecastStrip, TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
+import { ForecastStrip, LossesCard, TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
 import { takings } from "@/lib/sessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
 import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } from "@/lib/calendarRegular";
@@ -179,6 +179,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
           ) : null}
           {/* Predicted week and month, counting down with cancellations (GRIZZ, 2026-11-01). */}
           {tab === "todo" && settings ? <ForecastStrip sessions={sessions} currency={settings.currency} /> : null}
+          {/* What cancellations cost and what catch-ups bring back (GRIZZ, 2026-11-02). */}
+          {tab === "todo" && settings ? <LossesCard sessions={sessions} currency={settings.currency} name={who} onOpen={setOpen} /> : null}
           {/* What the day (and week) made after cancellations and credits (GRIZZ, 2026-11-01):
               at the top once the day's sessions are over, under them until then. */}
           {tab === "todo" && settings && !sessionsLeftToday ? moneyCard : null}

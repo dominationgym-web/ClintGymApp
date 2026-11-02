@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { monthForecast, percentOf, predicted, shiftWeek, takings, takingsByPerson, weekDays, weekForecast, weekLabel, weekStart, weekTakings } from "./sessionEarnings";
+import { losses, monthForecast, percentOf, predicted, shiftWeek, takings, takingsByPerson, weekDays, weekForecast, weekLabel, weekStart, weekTakings } from "./sessionEarnings";
 
 const now = new Date(2026, 10, 4, 12, 0); // Wed 4 Nov 2026, 12:00
 const at = (d: number, h: number) => new Date(2026, 10, d, h, 0).toISOString();
@@ -90,5 +90,31 @@ describe("predicted income", () => {
     expect(m.made).toBe(350);
     expect(percentOf(350, 1400)).toBe(25);
     expect(percentOf(0, 0)).toBe(0);
+  });
+});
+
+describe("losses", () => {
+  const l = (o: Partial<Parameters<typeof losses>[0][number]>) => ({ ...s({}), client_id: "c1", makeup_session_id: null, invoice_id: null, credit_invoice_id: null, ...o });
+  it("adds up lost sessions and what catch-ups bring back", () => {
+    const t = losses(
+      [
+        l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup" }), // you cancelled, catch-up owed: can come back
+        l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup", makeup_session_id: "m1" }), // catch-up booked
+        l({ status: "cancelled", cancelled_by: "trainer", charge: "credit", client_id: null }), // name only: lost
+        l({ status: "cancelled", cancelled_by: "client", charge: "credit" }), // credited, not invoiced: can come back
+        l({ status: "cancelled", cancelled_by: "client", charge: "credit", credit_invoice_id: "i1" }), // credited on an invoice: lost
+        l({ status: "cancelled", cancelled_by: "client", charge: null }), // decide
+        l({ status: "cancelled", cancelled_by: "client", charge: "makeup" }), // already paid, time owed
+        l({ status: "done" }),
+      ],
+      now
+    );
+    expect(t.lost).toBe(350 * 4);
+    expect(t.coach).toBe(700);
+    expect(t.credited).toBe(700);
+    expect(t.undecided).toBe(350);
+    expect(t.canComeBack).toBe(350 * 2);
+    expect(t.bookedBack).toBe(350);
+    expect(t.owedCount).toBe(1);
   });
 });
