@@ -363,14 +363,13 @@ ${[
   <h3>🤝 What you get with 1 on 1</h3>
   <h4>📅 Your sessions and money</h4>
   <ul>
-      <li>Today: every session, tap Came, Cancelled or No-show</li>
-      <li>Your earnings for the day and week, and predicted income for the week and month</li>
-      <li>Calendar: weekly repeats, joint sessions (e.g. Jade &amp; Camilla), open slots, swipe day to day</li>
+      <li>Full client session tracking</li>
+      <li>Cancellation tracking, with your 24 or 12 hour rule applied for you</li>
+      <li>Catch-up sessions tracked and reminded</li>
+      <li>Month-end invoicing worked out for you, sent by WhatsApp or email</li>
+      <li>Your earnings and predicted income for the week and month</li>
+      <li>Smart calendar: weekly repeats, joint sessions, open slots and time off</li>
       <li>Bring in your existing calendar from screenshots</li>
-      <li>Block out time off: clients are told and catch-ups wait for you</li>
-      <li>Cancellation rules (24 or 12 hours): charged or credited for you, with WhatsApp proof</li>
-      <li>Catch-ups tracked with reminders, and what cancellations cost you</li>
-      <li>Month-end invoices worked out for you, shared sessions and who pays, sent by WhatsApp or email</li>
       <li>Proof of payment straight into the app</li>
       <li>Meal planning for your clients: the app works out a plan from their calories and macros, and you adjust it</li>
       <li>All the coaching guides: nutrition, supplements, sleep and recovery</li>
