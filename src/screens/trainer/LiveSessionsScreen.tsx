@@ -17,6 +17,7 @@ import { takings } from "@/lib/sessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
 import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } from "@/lib/calendarRegular";
 import DiaryPeople from "@/components/sessions/DiaryPeople";
+import CatchUpRows from "@/components/sessions/CatchUpRows";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -437,20 +438,8 @@ function ToDo({
         );
       })}
 
-      {catchUps.length ? <Text style={styles.sectionTitle}>🔁 Catch-ups to book</Text> : null}
-      {catchUps.map((s) => (
-        <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE.makeup.colour) }]}>
-          <Text style={styles.rowTitle}>{who(s)}</Text>
-          <Text style={styles.rowBody}>
-            For {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)} ({s.cancelled_by === "trainer" ? "you were away: the catch-up is charged" : "cancelled in time"})
-          </Text>
-          <View style={styles.actions}>
-            <Pressable style={styles.smallButton} onPress={() => onCatchUp(s)}>
-              <Text style={styles.smallButtonText}>Find a gap</Text>
-            </Pressable>
-          </View>
-        </View>
-      ))}
+      {/* Book by the end of the month, or credit / move to next month before invoicing (GRIZZ, 2026-11-02). */}
+      <CatchUpRows catchUps={catchUps} name={who} onCatchUp={onCatchUp} onChanged={onChanged} />
 
       {unsigned.length ? <Text style={styles.sectionTitle}>Not signed yet</Text> : null}
       {unsigned.map((p) => (
@@ -1132,6 +1121,8 @@ function InvoicesTab({
   const paid = rows.filter((r) => r.status === "paid").reduce((t, r) => t + Number(r.total), 0);
   const name = (id: string) => byId[id]?.name ?? "Client";
   const otherDrafts = drafts.filter((d) => d.month !== month);
+  // Catch-ups not done in time: decided before invoices go out (GRIZZ, 2026-11-02).
+  const owed = sessions.filter((s) => s.charge === "makeup" && !s.makeup_session_id && (s.status === "cancelled" || s.status === "no_show"));
   // People not in the app get no invoice, but what they paid counts (GRIZZ, 2026-11-01).
   const notInApp = takings(sessions.filter((s) => !s.client_id && s.status !== "removed" && monthStart(new Date(s.starts_at)) === month)).made;
 
@@ -1140,6 +1131,7 @@ function InvoicesTab({
       <Text style={styles.helper}>
         On the 1st the app makes every client's invoice by itself (in advance: that month; in arrears: last month) and lets you know. Check it and tap Send.
       </Text>
+      <CatchUpRows catchUps={owed} name={(s) => (s.client_id ? byId[s.client_id]?.name : s.guest_name) ?? "Client"} onChanged={onChanged} onlyLate />
       {otherDrafts.length ? (
         <>
           <Text style={styles.sectionTitle}>Ready to send</Text>

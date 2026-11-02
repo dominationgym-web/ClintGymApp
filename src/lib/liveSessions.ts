@@ -522,3 +522,24 @@ export const STORAGE_BUCKET = "session-proofs";
 export function proofPath(clientId: string, sessionId: string, now: Date = new Date()): string {
   return `${clientId}/${sessionId}-${now.getTime()}.jpg`;
 }
+
+/**
+ * The last day a catch-up can be booked (GRIZZ, 2026-11-02: done by the end
+ * of the month, or the coach credits it or moves it to the next month before
+ * invoicing): the end of the missed session's month, or catchup_until.
+ */
+export function catchUpDeadline(s: Pick<LiveSession, "starts_at"> & { catchup_until?: string | null }): string {
+  if (s.catchup_until) return s.catchup_until.slice(0, 10);
+  const d = new Date(s.starts_at);
+  return dayKey(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+}
+
+/** "late" once the deadline has passed (decide: credit or next month), "soon" in its last 3 days. */
+export function catchUpDue(s: Pick<LiveSession, "starts_at"> & { catchup_until?: string | null }, now: Date = new Date()): "late" | "soon" | "ok" {
+  const due = catchUpDeadline(s);
+  const today = dayKey(now);
+  if (today > due) return "late";
+  const [y, m, d] = due.split("-").map(Number);
+  const soon = dayKey(new Date(y, m - 1, d - 3));
+  return today >= soon ? "soon" : "ok";
+}
