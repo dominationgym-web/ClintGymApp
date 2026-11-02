@@ -153,20 +153,31 @@ export function LossesCard({
   onOpen: (s: LiveSession) => void;
 }) {
   const now = new Date();
-  const [range, setRange] = useState<"week" | "month">("week");
+  const [picked, setPicked] = useState<"week" | "month" | null>(null);
   const [listOpen, setListOpen] = useState(false);
   useStepBack(listOpen, () => setListOpen(false));
-  const inRange = useMemo(() => {
+  const { weekRows, monthRows } = useMemo(() => {
     const days = new Set(weekDays(weekStart(now)));
     const month = dayKey(now).slice(0, 8);
-    return sessions.filter((s) => (range === "week" ? days.has(dayKey(s.starts_at)) : dayKey(s.starts_at).startsWith(month)));
-  }, [sessions, range]);
-  const t = losses(inRange, now);
+    return {
+      weekRows: sessions.filter((s) => days.has(dayKey(s.starts_at))),
+      monthRows: sessions.filter((s) => dayKey(s.starts_at).startsWith(month)),
+    };
+  }, [sessions]);
+  const any = (x: ReturnType<typeof losses>) => !!(x.lostCount || x.undecidedCount || x.bookedBackCount || x.owedCount);
+  // Shown whenever the month has a cancellation (GRIZZ, 2026-11-02), opening
+  // on the week when this week has one and on the month when it doesn't.
+  const weekT = losses(weekRows, now);
+  const monthT = losses(monthRows, now);
+  const range = picked ?? (any(weekT) ? "week" : "month");
+  const setRange = setPicked;
+  const inRange = range === "week" ? weekRows : monthRows;
+  const t = range === "week" ? weekT : monthT;
   const back = inRange
     .map((s) => ({ s, r: lostRow(s, now) }))
     .filter((x) => x.r && x.r.back === "can" && x.r.kind !== "decide")
     .sort((a, b) => a.s.starts_at.localeCompare(b.s.starts_at));
-  if (!t.lostCount && !t.undecidedCount && !t.bookedBackCount && !t.owedCount) return null;
+  if (!any(weekT) && !any(monthT)) return null;
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
   const what = (kind: string) =>
     kind === "coach" ? "you cancelled: book the catch-up (Today › Catch-ups)" : "credited: tap it › 🔁 Catch-up to win it back";
