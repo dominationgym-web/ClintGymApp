@@ -488,7 +488,7 @@ export default function BillingScreen() {
                 </View>
               );
             })}
-            <Text style={styles.muted}>Clients counted: everyone active in the app, plus people only in a 1 on 1 diary who had a session that month.</Text>
+            <Text style={styles.muted}>Clients counted: on Evolution, everyone active in the app plus people only in a 1 on 1 diary who had a session that month. On 1 on 1 only, everyone on the calendar that month.</Text>
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lineName}>Lock out unpaid trainers</Text>

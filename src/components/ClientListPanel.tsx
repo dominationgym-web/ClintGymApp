@@ -7,6 +7,7 @@ import { renewedPlanDates } from "@/lib/planRenewal";
 import { bringBackChanges } from "@/lib/comeback";
 import { CLIENT_GROUPS, clientGroup, type ClientGroup } from "@/lib/clientGroups";
 import { useAuth } from "@/context/AuthContext";
+import { useTrainerSide } from "@/context/TrainerSideContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
 import PaymentProofModal from "@/components/PaymentProofModal";
 import WeighInPicker from "@/components/WeighInPicker";
@@ -37,6 +38,7 @@ export default function ClientListPanel({
   reloadKey?: number;
 }) {
   const { trainer } = useAuth();
+  const { guardEvolution, reloadPriceSide } = useTrainerSide();
   const [allClients, setClients] = useState<Client[]>([]);
   // Four tabs: Active / Waiting approval / Awaiting payment / Dormant (archived
   // clients from 0097 land under Dormant).
@@ -292,7 +294,11 @@ export default function ClientListPanel({
         onPick={(t) => {
           const who = pickType;
           setPickType(null);
-          if (who) activateNow(who, t);
+          if (!who) return;
+          if (t === "one") {
+            activateNow(who, t);
+            reloadPriceSide();
+          } else guardEvolution(() => activateNow(who, t), `Yes, activate ${who.name.split(" ")[0]}`);
         }}
       />
       <PaymentProofModal

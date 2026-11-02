@@ -197,10 +197,16 @@ export function trainersPage(escape) {
   .price ul { margin: 0; padding-left: 20px; }
   .save { display: inline-block; margin-left: 6px; background: #13301F; color: #86EFAC; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 700; }
   .price li { margin-bottom: 4px; }
-  .examples { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; max-width: 520px; margin: 0 auto 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; font-size: 14px; }
-  .examples div { padding: 4px 0; border-bottom: 1px solid var(--line); }
-  .examples div:nth-last-child(-n+3) { border-bottom: 0; }
-  .examples .ex-head { color: var(--muted); font-weight: 700; }
+  h3.region { color: #fff; font-size: 20px; margin: 28px 0 12px; text-align: center; }
+  .get-btn { display: block; width: 100%; margin-top: 14px; padding: 12px; border-radius: 12px; border: 1.5px solid var(--gold); background: transparent; color: var(--gold); font-weight: 700; font-size: 16px; cursor: pointer; }
+  dialog.get { max-width: 560px; width: calc(100% - 32px); max-height: 85vh; background: var(--card); color: #E2E8F0; border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+  dialog.get::backdrop { background: rgba(0,0,0,0.65); }
+  dialog.get h3 { color: #fff; margin: 0 0 8px; font-size: 20px; }
+  dialog.get h4 { color: var(--gold); margin: 16px 0 6px; font-size: 15px; }
+  dialog.get h4 em { font-style: normal; font-size: 12px; color: #F59E0B; border: 1px solid #F59E0B; border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
+  dialog.get ul { margin: 0; padding-left: 20px; }
+  dialog.get li { margin-bottom: 5px; }
+  dialog.get .close { display: block; margin: 18px auto 0; padding: 10px 28px; border-radius: 12px; border: 0; background: var(--gold); color: #0F172A; font-weight: 700; font-size: 15px; cursor: pointer; }
   .price .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
   .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 40px; }
   .why div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -316,43 +322,89 @@ ${slides}
 <div class="modes">${modes}</div>
 
 <h2 class="section">Simple pricing</h2>
-<p class="section">Free for 30 days, then pay only for what you use. Pick the side you need: one price covers everything, or just track your in-person sessions for less.</p>
+<p class="section">Free for 30 days, then pay only for what you use. Pick the side you need: one price covers everything, or just run your in-person sessions for less.</p>
+${[
+  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 20, t2: 10, per: 10, evoMax: "1 100", oneMax: 200, six: ["1 000", 500], year: ["1 800", 900] },
+  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 2, t2: 1, per: 1, evoMax: "110", oneMax: 20, six: ["100", 50], year: ["180", 90] },
+].map((r) => `<h3 class="region">${r.flag} ${r.title}</h3>
 <div class="prices">
   <div class="price">
     <div class="where">🌐 Evolution <em>Both sides</em></div>
-    <div class="amount">R200<span>/month</span></div>
-    <div class="amount" style="font-size: 22px; margin-top: -4px">$20<span>/month international</span></div>
+    <div class="amount">${r.c}${r.evo}<span>/month</span></div>
     <ul>
       <li>Online coaching and 1 on 1 sessions in one price</li>
       <li>First 5 clients included</li>
-      <li>Clients 6-35: R20 / $2 each</li>
-      <li>Clients 36-65: R10 / $1 each</li>
-      <li>Clients 66+: free <span class="save">Max R1 100 / $110 a month</span></li>
-      <li>6 months: R1 000 / $100 upfront <span class="save">1 month free</span></li>
-      <li>12 months: R1 800 / $180 upfront <span class="save">3 months free</span></li>
+      <li>Clients 6-35: ${r.c}${r.t1} each</li>
+      <li>Clients 36-65: ${r.c}${r.t2} each</li>
+      <li>Clients 66+: free</li>
+      <li><b>Max ${r.c}${r.evoMax} a month</b>, however many clients</li>
+      <li>6 months: ${r.c}${r.six[0]} upfront <span class="save">1 month free</span></li>
+      <li>12 months: ${r.c}${r.year[0]} upfront <span class="save">3 months free</span></li>
     </ul>
+    <button type="button" class="get-btn" data-open="get-evo">What you get ›</button>
   </div>
   <div class="price">
     <div class="where">🤝 1 on 1 only <em>In-person</em></div>
-    <div class="amount">R100<span>/month</span></div>
-    <div class="amount" style="font-size: 22px; margin-top: -4px">$10<span>/month international</span></div>
+    <div class="amount">${r.c}${r.one}<span>/month</span></div>
     <ul>
-      <li>Session diary, cancellations, catch-ups and month-end invoices worked out for you</li>
-      <li>R10 / $1 a month per client</li>
-      <li>Max R800 / $80 a month</li>
-      <li>6 months: R500 / $50 upfront <span class="save">1 month free</span></li>
-      <li>12 months: R900 / $90 upfront <span class="save">3 months free</span></li>
+      <li>${r.c}${r.per} per client a month, first 10 clients only</li>
+      <li>Clients counted from your calendar: they don't need the app</li>
+      <li><b>Max ${r.c}${r.oneMax} a month</b>, however many clients</li>
+      <li>6 months: ${r.c}${r.six[1]} upfront <span class="save">1 month free</span></li>
+      <li>12 months: ${r.c}${r.year[1]} upfront <span class="save">3 months free</span></li>
     </ul>
-    <p class="note">Add an online client any time and you move to Evolution, which covers both.</p>
+    <button type="button" class="get-btn" data-open="get-one">What you get ›</button>
+    <p class="note">Add an online client any time and you move to Evolution, which covers both. The app tells you first.</p>
   </div>
-</div>
-<p class="section" style="font-size: 13px">Clients counted each month: everyone in the app, plus anyone only in your session diary who trained with you that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
-<div class="examples">
-  <div class="ex-head">Clients</div><div class="ex-head">🌐 Evolution a month</div><div class="ex-head">🤝 1 on 1 only a month</div>
-${[[10, "R300 · $30", "R200 · $20"], [20, "R500 · $50", "R300 · $30"], [30, "R700 · $70", "R400 · $40"], [50, "R950 · $95", "R600 · $60"], ["70+", "R1 100 · $110", "R800 · $80"]]
-  .map(([n, evo, one]) => `  <div>${n}</div><div>${evo}</div><div>${one}</div>`)
-  .join("\n")}
-</div>
+</div>`).join("\n")}
+<p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1 only, everyone on your calendar that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
+
+<dialog id="get-one" class="get" tabindex="-1" autofocus>
+  <h3>🤝 What you get with 1 on 1</h3>
+  <h4>📅 Your sessions and money</h4>
+  <ul>
+      <li>Full client session tracking</li>
+      <li>Cancellation tracking, with your 24 or 12 hour rule applied for you</li>
+      <li>Catch-up sessions tracked and reminded</li>
+      <li>Month-end invoicing worked out for you, sent by WhatsApp or email</li>
+      <li>Your earnings and predicted income for the week and month</li>
+      <li>Smart calendar: weekly repeats, joint sessions, open slots and time off</li>
+      <li>Bring in your existing calendar from screenshots</li>
+      <li>Proof of payment straight into the app</li>
+      <li>Meal planning for your clients: the app works out a plan from their calories and macros, and you adjust it</li>
+      <li>All the coaching guides: nutrition, supplements, sleep and recovery</li>
+    </ul>
+  <h4>🥗 For clients who join the app <em>Free for them</em></h4>
+  <ul>
+      <li>Their meal plan from you, built around their calories and macros</li>
+      <li>Swaps, leaving foods out or their own meals, with the day rebalanced</li>
+      <li>Weekly shopping list they can tick off and send</li>
+      <li>Nutrition guidance: BMR and macros, insulin explained, cooking ideas for each protein and low-calorie sauces</li>
+      <li>Supplement guidance</li>
+      <li>Sleep and recovery guidance, and the cycle tracker for women</li>
+      <li>Their sessions: confirm, cancel in the app, sign your agreement</li>
+      <li>Optional check-in: energy, sleep and any pain or injury</li>
+      <li>Progress graphs, weigh-ins and progress photos</li>
+      <li>Timers, and your workout video library if you switch it on</li>
+    </ul>
+  <button type="button" class="close">Close</button>
+</dialog>
+<dialog id="get-evo" class="get" tabindex="-1" autofocus>
+  <h3>🌐 What you get with Evolution</h3>
+  <h4>Everything in 1 on 1, plus online coaching</h4>
+  <ul>
+    <li>Programs built for each client, planned onto their calendar</li>
+    <li>Ready-made programs: muscle building, fat loss, sports off-season, stability and more</li>
+    <li>Injury-aware training: pain tracking, injury checks and safe starting weights</li>
+    <li>Progression and deload weeks worked out from each client's real logs</li>
+    <li>Daily check-ins, habits, step goals and reminders</li>
+    <li>A daily summary of who needs you, and nudges to check in personally</li>
+    <li>Weekly video check-in bookings (calls on WhatsApp)</li>
+    <li>Monthly challenges, timers and the exercise video library</li>
+    <li>Clients' payments and proof of payment in one place</li>
+  </ul>
+  <button type="button" class="close">Close</button>
+</dialog>
 <div class="final" style="padding: 0 0 36px">
   <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
   <div class="fine"><strong>No credit card required.</strong> Nothing is charged during your trial.</div>
@@ -377,6 +429,15 @@ ${[[10, "R300 · $30", "R200 · $20"], [20, "R500 · $50", "R300 · $30"], [30, 
 <footer><a href="/privacy">Privacy policy</a><a href="/support">Support</a><a href="/app/">Trainer login</a></footer>
 </div>
 <div class="sticky hide"><a class="cta" href="${SIGNUP}">Start your free 30-day trial</a></div>
+<script>
+  document.querySelectorAll("[data-open]").forEach(function (b) {
+    b.addEventListener("click", function () { var d = document.getElementById(b.getAttribute("data-open")); if (d && d.showModal) { d.showModal(); d.scrollTop = 0; } });
+  });
+  document.querySelectorAll("dialog.get").forEach(function (d) {
+    d.querySelector(".close").addEventListener("click", function () { d.close(); });
+    d.addEventListener("click", function (e) { if (e.target === d) d.close(); });
+  });
+</script>
 <script>
   (function () {
     var tabs = document.querySelectorAll(".tab"), slides = document.querySelectorAll(".slide"), cur = 0;
