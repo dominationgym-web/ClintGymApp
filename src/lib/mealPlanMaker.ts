@@ -57,7 +57,47 @@ export type MealPlanSettings = {
   weekly?: boolean;
   /** For a weekly plan, the days they train: 0 = Monday ... 6 = Sunday. */
   trainDays?: number[];
+  /**
+   * Snack times, "HH:MM" (GRIZZ, 2026-11-02: "some people only eat twice a
+   * day with maybe 1 snack"): none, one or two. Not set means one protein
+   * snack in the longest gap between meals.
+   */
+  snacks?: string[];
 };
+
+export const MAX_SNACKS = 2;
+
+/** The snack times for a plan: the ones set, or one in the longest gap between meals. */
+export function snackTimes(settings: Pick<MealPlanSettings, "meals" | "snacks">): string[] {
+  if (settings.snacks) return settings.snacks.slice(0, MAX_SNACKS);
+  return settings.meals.length ? [snackTime(settings.meals)] : [];
+}
+
+/**
+ * Snack times spread through the day's gaps, for `count` snacks: the longest
+ * gaps first, never within an hour of training, then after the last meal.
+ */
+export function snackTimesFor(meals: string[], count: number, training?: string | null): string[] {
+  if (count <= 0 || !meals.length) return [];
+  const sorted = [...meals].sort((a, b) => minutes(a) - minutes(b));
+  const gaps = sorted.slice(1).map((t, i) => ({ at: (minutes(sorted[i]) + minutes(t)) / 2, len: minutes(t) - minutes(sorted[i]) }));
+  const last = minutes(sorted[sorted.length - 1]);
+  const first = minutes(sorted[0]);
+  const candidates = [
+    ...gaps.filter((g) => g.len >= 120).sort((a, b) => b.len - a.len).map((g) => g.at),
+    Math.min(last + 120, 21 * 60 + 30),
+    ...(first - 150 >= 7 * 60 ? [first - 150] : []),
+    ...gaps.filter((g) => g.len < 120).map((g) => g.at),
+  ];
+  const t = training ? minutes(training) : null;
+  const clear = candidates.filter((m) => t === null || Math.abs(m - t) >= 60);
+  const picks = [...clear, ...candidates.filter((m) => !clear.includes(m))].filter((m) => m > last ? m - last >= 60 : true).slice(0, count);
+  const fmt = (m: number) => {
+    const r = Math.round(m / 15) * 15;
+    return `${String(Math.floor(r / 60) % 24).padStart(2, "0")}:${String(r % 60).padStart(2, "0")}`;
+  };
+  return [...new Set(picks.sort((a, b) => a - b).map(fmt))];
+}
 
 const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey|wors|venison|bacon|\bham\b/i;
 const FISH = /salmon|hake|fish|tuna|prawn|sardine|pilchard|snoek|kingklip|cod|tilapia|trout|mackerel|mussel/i;
@@ -200,8 +240,12 @@ export function mealTimesFor(count: number, training: string | null): string[] {
   const pre = t - 90 >= 5 * 60 + 30 ? t - 90 : t - 45;
   const post = t + 75;
   // Morning trainers eat a small meal first thing and breakfast after.
-  const times = new Set<number>([pre, post]);
+  // Two meals a day: no small pre-workout meal, a real meal earlier in the day
+  // and one after training (GRIZZ, 2026-11-02: "some people only eat twice a day").
+  const times = new Set<number>(count <= 2 ? [post] : [pre, post]);
   const others = base.map(minutes).filter((m) => Math.abs(m - t) > 150);
+  // The other meal for a two-meal eater is the one furthest from training.
+  if (count <= 2) others.sort((a, b) => Math.abs(b - t) - Math.abs(a - t));
   for (const m of others) {
     if (times.size >= count) break;
     times.add(m);
@@ -234,7 +278,8 @@ export function mealRoles(times: string[], training: string | null): MealRole[] 
   let post = -1;
   times.forEach((time, i) => {
     const m = minutes(time);
-    if (m <= t - 45) pre = i;
+    // A meal more than 4 hours before training is an ordinary meal, not pre-workout.
+    if (m <= t - 45 && m >= t - 240) pre = i;
     if (m >= t + 15 && post === -1) post = i;
   });
   if (pre >= 0) roles[pre] = "pre";
@@ -505,16 +550,26 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
   // first; their protein, carbs and fat come off what the meals need.
   const likedFruit = prefs.likes.filter((f) => groupOf(f) === "Fruit & dairy" && !DAIRY.test(f) && !PLANT_MILK.test(f) && ok(f, prefs));
   const fruit = [...likedFruit, ...FRUIT.filter((f) => ok(f, prefs))];
-  const snackItems = [proteinSnack(targets, prefs.diet, prefs.dairyFree, prefs.avoid)];
-  if (fruit.length) {
+  // The first snack is the protein snack with a fruit; a second one is a
+  // fruit with nuts. With no snacks the meals carry all the protein.
+  const snackAt = snackTimes(settings).map(cleanTime).filter((t): t is string => !!t);
+  const snackItems: DietItem[] = snackAt.length ? [proteinSnack(targets, prefs.diet, prefs.dairyFree, prefs.avoid)] : [];
+  if (snackAt.length && fruit.length) {
     const name = pick(fruit, variety);
     snackItems.push(item(name, findFood(name)?.usual ?? 120));
+  }
+  const secondItems: DietItem[] = [];
+  if (snackAt.length > 1) {
+    const name = fruit.length ? pick(fruit, variety + 2) : null;
+    if (name) secondItems.push(item(name, findFood(name)?.usual ?? 120));
+    const nuts = ["Almonds", "Mixed nuts, unsalted", "Pumpkin seeds"].find((f) => ok(f, prefs) && findFood(f));
+    if (nuts) secondItems.push(item(nuts, 20));
   }
   const dairyFoods = DAIRY_FOODS.filter((d) => ok(d.food, prefs));
   // No extra dairy when their own meal already has some, or no meal is left for it.
   const ownDairy = ownAll.some((it) => DAIRY.test(it.food) && !PLANT_MILK.test(it.food));
   const dairy = prefs.diet === "everything" && !prefs.dairyFree && dairyFoods.length && !ownDairy && firstFree !== -1 ? [dairyFoods[((variety % dairyFoods.length) + dairyFoods.length) % dairyFoods.length]] : [];
-  const fixed = sumTotals([...snackItems, ...dairy, ...ownAll]);
+  const fixed = sumTotals([...snackItems, ...secondItems, ...dairy, ...ownAll]);
   const proteinEach = Math.max(0, targets.protein - fixed.protein) / Math.max(1, own.filter((o) => !o).length);
   const carbsLeft = Math.max(0, targets.carbs - fixed.carbs);
   const fatLeft = Math.max(0, targets.fat - fixed.fat);
@@ -526,10 +581,13 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
       items: buildMeal(slotFor(roles[i], time, i), proteinEach, carbsLeft * carbs[i], fatLeft * fats[i], variety + i * 3, prefs, i === firstFree ? dairy : []),
     };
   });
-  const at = snackTime(times);
-  const snackMeal: DietMeal = { name: `${at} · Protein snack`, items: snackItems };
-  const index = times.findIndex((t) => minutes(t) > minutes(at));
-  meals.splice(index === -1 ? meals.length : index, 0, snackMeal);
+  const snackMeals: DietMeal[] = snackAt.map((at, i) => ({ name: `${at} · ${i === 0 ? "Protein snack" : "Snack"}`, items: i === 0 ? snackItems : secondItems }));
+  // Each snack goes in the day by its time.
+  for (const snack of snackMeals.filter((m) => m.items.length)) {
+    const at = minutes(snack.name.slice(0, 5));
+    const index = meals.findIndex((m) => minutes(m.name.slice(0, 5)) > at);
+    meals.splice(index === -1 ? meals.length : index, 0, snack);
+  }
   // Only the app's foods are fitted to the calories and fibre: their own meals stay as they are.
   const ownTotals = sumTotals(ownAll);
   const kcal = targets.kcal - ownTotals.kcal;
@@ -558,7 +616,7 @@ export function mealPlace(day: DietDay, meal: number): number {
   return day.meals.slice(0, meal).filter((m) => !isSnack(m)).length;
 }
 
-export const isSnack = (meal: DietMeal) => meal.name.includes("Protein snack");
+export const isSnack = (meal: DietMeal) => meal.name.includes("Protein snack") || / · Snack$/.test(meal.name);
 
 // Changes only the meals the app made, and puts the client's own meals back
 // where they were.
@@ -580,7 +638,8 @@ function addFibre(day: DietDay, chia = true, already = 0): DietDay {
     meals = meals.map((m) => ({ ...m, items: m.items.map((it) => (veg.has(it.food) ? { ...it, grams: it.grams + 50 } : it)) }));
   }
   if (chia && fibre() < aim) {
-    const snack = meals.findIndex((m) => m.name.includes("Protein snack"));
+    // With the snack, or the first meal when there's no snack.
+    const snack = Math.max(0, meals.findIndex((m) => isSnack(m)));
     const grams = Math.min(36, Math.ceil(((aim - fibre()) / 34) * 100 / 12) * 12);
     meals = meals.map((m, i) => (i === snack ? { ...m, items: [...m.items, item("Chia seeds", grams)] } : m));
   }

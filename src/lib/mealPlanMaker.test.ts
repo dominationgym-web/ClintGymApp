@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
-import { carbShares, cleanTime, keepOwnMeals, mealPlace, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, leaveOutEverywhere, leaveOutFood, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions, whyFoodMatters } from "./mealPlanMaker";
+import { carbShares, cleanTime, keepOwnMeals, mealPlace, dietAllows, FIBRE_TARGET, foodAllowed, goalKcal, kcalFloor, macroTargets, leaveOutEverywhere, leaveOutFood, makeDay, mealLabel, mealRoles, mealTimesFor, proteinWeight, swapItem, swapOptions, whyFoodMatters, isSnack, snackTimes, snackTimesFor, type MealPlanSettings } from "./mealPlanMaker";
+import type { DietDay } from "./dietPlan";
 import { TARGET_MARGIN } from "./dietPlan";
 
 const targets = macroTargets(2400, 80);
@@ -314,5 +315,42 @@ describe("their own meal (GRIZZ, 2026-10-27)", () => {
     const snack = day.meals.findIndex((m) => m.name.includes("Protein snack"));
     expect(mealPlace(day, snack + 1)).toBe(snack);
     expect(keepOwnMeals({ "0": breakfast, "5": lunch }, 4)).toEqual({ "0": breakfast });
+  });
+});
+
+describe("snacks the trainer sets (GRIZZ, 2026-11-02)", () => {
+  const targets = macroTargets(2200, 80, "maintain", 178);
+  const base: MealPlanSettings = { meals: ["08:00", "18:00"], training: null, goal: "maintain", diet: "everything" };
+  const snackCount = (d: DietDay) => d.meals.filter(isSnack).length;
+  const kcal = (d: DietDay) => dayTotals(d).kcal;
+
+  it("two meals and one snack", () => {
+    const day = makeDay({ ...base, snacks: ["13:00"] }, targets, false, 0);
+    expect(day.meals.map((m) => m.name.slice(0, 5))).toEqual(["08:00", "13:00", "18:00"]);
+    expect(snackCount(day)).toBe(1);
+  });
+
+  it("no snacks still meets the day", () => {
+    const day = makeDay({ ...base, snacks: [] }, targets, false, 0);
+    expect(snackCount(day)).toBe(0);
+    expect(day.meals).toHaveLength(2);
+    expect(Math.abs(kcal(day) - targets.kcal)).toBeLessThan(targets.kcal * 0.1);
+  });
+
+  it("two snacks go in by time", () => {
+    const day = makeDay({ ...base, meals: ["07:00", "12:30", "19:00"], snacks: snackTimesFor(["07:00", "12:30", "19:00"], 2) }, targets, true, 1);
+    expect(snackCount(day)).toBe(2);
+    const times = day.meals.map((m) => m.name.slice(0, 5));
+    expect([...times].sort()).toEqual(times);
+  });
+
+  it("old plans keep their one snack", () => {
+    expect(snackTimes({ meals: ["07:00", "12:00", "18:00"] })).toHaveLength(1);
+    expect(snackTimesFor(["08:00", "18:00"], 1)).toEqual(["13:00"]);
+  });
+
+  it("two-meal eaters get a real meal before training, and no snack during it", () => {
+    expect(mealTimesFor(2, "17:30")).toEqual(["10:00", "18:45"]);
+    expect(snackTimesFor(["16:00", "18:45"], 1, "17:30")).not.toContain("17:30");
   });
 });
