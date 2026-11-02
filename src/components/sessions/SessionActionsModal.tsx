@@ -138,7 +138,7 @@ export default function SessionActionsModal({
   const remove = () => forWho("Take off", removeFor);
   const removeFor = (who: LiveSession[]) =>
     weekly
-      ? Alert.alert("Take off just this one, or every week?", "To record a cancellation, use Log a cancellation instead.", [
+      ? Alert.alert("Take off just this one, or every week?", "To record a cancellation, use ❌ Cancelled instead.", [
           { text: "Back", style: "cancel" },
           { text: "Just this one", onPress: () => run(each(who, (s) => supabase.rpc("remove_live_session", { p_id: s.id }))) },
           {
@@ -151,7 +151,7 @@ export default function SessionActionsModal({
               ),
           },
         ])
-      : Alert.alert("Take this session off the calendar?", "Use this for a session booked by mistake. To record a cancellation, use Log a cancellation instead.", [
+      : Alert.alert("Take this session off the calendar?", "Use this for a session booked by mistake. To record a cancellation, use ❌ Cancelled instead.", [
           { text: "Back", style: "cancel" },
           { text: "Take it off", style: "destructive", onPress: () => run(each(who, (s) => supabase.rpc("remove_live_session", { p_id: s.id }))) },
         ]);
@@ -233,17 +233,19 @@ export default function SessionActionsModal({
                 {(session.status === "booked" || session.status === "no_show" || session.status === "cancelled") && started ? (
                   <Big label="✓ Done, we trained" onPress={() => outcome("done")} busy={busy} />
                 ) : null}
-                {/* Cancellations, no-shows and catch-ups only for clients signed up to the app
-                    (GRIZZ, 2026-11-01). A name-only session counts in earnings when it happens. */}
-                {session.client_id && session.status !== "no_show" && session.status !== "removed" && started ? (
+                {/* ❌ Cancelled for everyone, people not in the app too (GRIZZ 2026-11-02:
+                    "when client cancels the trainer can load cancellation", with the screenshot).
+                    Catch-ups stay for app clients only. */}
+                {session.status !== "removed" && session.status !== "cancelled" ? <Outline label="❌ Cancelled" onPress={() => setStep("cancel")} danger /> : null}
+                {session.status === "cancelled" ? <Outline label="❌ Change the cancellation" onPress={() => setStep("cancel")} /> : null}
+                {session.status !== "no_show" && session.status !== "removed" && started ? (
                   <Outline label="No-show (charged)" onPress={() => outcome("no_show")} />
                 ) : null}
-                {session.client_id && session.status !== "removed" ? <Outline label="Log a cancellation" onPress={() => setStep("cancel")} /> : null}
-                {session.client_id && (session.status === "cancelled" || session.status === "no_show") && !session.makeup_session_id ? (
+                {(session.status === "cancelled" || session.status === "no_show") && !session.makeup_session_id ? (
                   <View style={styles.chips}>
                     <Chip label="🔴 Charge" on={session.charge === "charge"} onPress={() => charge("charge")} />
                     <Chip label="🟢 Credit" on={session.charge === "credit"} onPress={() => charge("credit")} />
-                    <Chip label="🔁 Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} />
+                    {session.client_id ? <Chip label="🔁 Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} /> : null}
                   </View>
                 ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
@@ -253,8 +255,8 @@ export default function SessionActionsModal({
                 ) : null}
                 {!session.client_id ? (
                   <Text style={styles.meta}>
-                    Not in the app yet: this session counts in your earnings, but cancellations, catch-ups, notifications and invoices start once you link them to
-                    their app account. If they didn't come, take it off the calendar.
+                    Not in the app yet: cancellations and no-shows count in your earnings, but catch-ups, notifications and invoices start once you link them to
+                    their app account.
                   </Text>
                 ) : null}
                 {session.status !== "booked" && session.status !== "removed" && new Date(session.starts_at) > now ? (
@@ -405,7 +407,14 @@ function CancelForm({
     if (!result.canceled && result.assets[0]) setPhoto(result.assets[0]);
   };
 
-  const save = async () => {
+  const save = async (skipPhoto = false) => {
+    if (by === "client" && !photo && !session.proof_path && !skipPhoto) {
+      Alert.alert("Add the screenshot?", `The WhatsApp message where ${first} cancelled is your proof.`, [
+        { text: "Add it", onPress: pick },
+        { text: "Save without", style: "cancel", onPress: () => save(true) },
+      ]);
+      return;
+    }
     if (!told) {
       Alert.alert("Check the time", "Type the time they told you, like 17:45.");
       return;
@@ -417,8 +426,8 @@ function CancelForm({
     setSaving(true);
     try {
       let path: string | null = null;
-      if (photo && session.client_id) {
-        path = proofPath(session.client_id, session.id);
+      if (photo) {
+        path = proofPath(session.client_id ?? session.trainer_id, session.id);
         const small = await shrinkPhoto(photo.uri, photo.width, photo.height);
         const body = await new File(small.uri).arrayBuffer();
         const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, body, { contentType: "image/jpeg" });
@@ -466,14 +475,14 @@ function CancelForm({
       <TextInput style={styles.input} value={time} onChangeText={setTime} placeholder="17:45" placeholderTextColor="#64748B" maxLength={5} keyboardType="numbers-and-punctuation" />
       <Text style={styles.meta}>The time on their WhatsApp message.</Text>
 
-      {/* A diary-only name has no app account to keep the screenshot under. */}
-      {by === "client" && session.client_id ? (
+      {/* Someone not in the app: the screenshot goes in the trainer's own folder (0180). */}
+      {by === "client" ? (
         <>
           <Text style={styles.label}>Screenshot of the message</Text>
           <Pressable style={styles.outline} onPress={pick}>
             <Text style={styles.outlineText}>{photo ? "✓ Screenshot added · change" : "📸 Add the WhatsApp screenshot"}</Text>
           </Pressable>
-          <Text style={styles.meta}>Saved as proof. {first} can see it on their invoice.</Text>
+          <Text style={styles.meta}>Saved as proof.{session.client_id ? ` ${first} can see it on their invoice.` : ""}</Text>
         </>
       ) : null}
 
@@ -502,7 +511,7 @@ function CancelForm({
         </View>
       ) : null}
 
-      <Big label="Save cancellation" onPress={save} busy={saving} />
+      <Big label="Save cancellation" onPress={() => save()} busy={saving} />
       <Outline label="Back" onPress={onBack} />
     </View>
   );
