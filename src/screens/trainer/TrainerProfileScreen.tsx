@@ -16,6 +16,7 @@ import { File } from "expo-file-system";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
+import { myPlanPrices } from "@/lib/myPlanPrices";
 import { avatarContentType } from "@/lib/avatars";
 import {
   EFT_FIELDS,
@@ -88,12 +89,7 @@ export default function TrainerProfileScreen() {
   useEffect(() => {
     if (!trainer || trainer.is_owner) return;
     supabase.rpc("my_referral_progress").then(({ data }) => setReferrals(data ?? []));
-    supabase
-      .from("billing_settings")
-      .select("prices")
-      .eq("id", 1)
-      .maybeSingle()
-      .then(({ data }) => setPrices((data?.prices as BillingPrices | undefined) ?? null));
+    myPlanPrices(trainer.id).then(setPrices);
   }, [trainer?.id, tab]);
 
   if (!trainer) return null;

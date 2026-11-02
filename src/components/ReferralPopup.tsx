@@ -4,6 +4,7 @@ import { ScrollView } from "@/components/ScrollView";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { myPlanPrices } from "@/lib/myPlanPrices";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { REFERRAL_DISCOUNT_PERCENT, REFERRALS_PER_FREE_MONTH, REFERRAL_WAIT_MONTHS, referralRewards } from "@/lib/trainers";
@@ -33,12 +34,9 @@ export default function ReferralPopup() {
     try {
       const last = await AsyncStorage.getItem(shownKey(t.id));
       if (!referralPopupDue(last, todayIso())) return;
-      const [refs, settings] = await Promise.all([
-        supabase.rpc("my_referral_progress"),
-        supabase.from("billing_settings").select("prices").eq("id", 1).maybeSingle(),
-      ]);
+      const [refs, planPrices] = await Promise.all([supabase.rpc("my_referral_progress"), myPlanPrices(t.id)]);
       setCounted((refs.data ?? []).filter((r: { counted: boolean }) => r.counted).length);
-      setPrices((settings.data?.prices as BillingPrices | undefined) ?? null);
+      setPrices(planPrices);
       setFirstTime(!last);
       setVisible(true);
     } catch {

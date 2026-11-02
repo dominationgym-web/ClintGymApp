@@ -104,6 +104,10 @@ async function quote(admin: Admin, trainerId: string, planWindow: number): Promi
     admin.rpc("billing_status_for", { p_trainer: trainerId }),
     admin.from("trainers").select("id", { count: "exact", head: true }).eq("referred_by", trainerId).not("referral_counted_at", "is", null),
   ]);
+  // Plan prices follow the trainer's side (0179): Evolution, or 1 on 1 only
+  // when none of their clients is an Evolution client.
+  const { data: sideRow } = await admin.rpc("price_side_for", { p_trainer: trainerId });
+  const planPrices = sideRow === "one_on_one" && settings?.one_on_one_prices ? settings.one_on_one_prices : settings?.prices;
   if (!settings || !trainer || trainer.is_owner) return null;
   const currency: "USD" | "ZAR" = trainer.billing_currency ?? (trainer.signup_country === "ZA" ? "ZAR" : "USD");
   const today = saToday();
@@ -115,12 +119,12 @@ async function quote(admin: Admin, trainerId: string, planWindow: number): Promi
     trainer.billing_started_on <= addDays(today, planWindow) &&
     !!paidThrough &&
     paidThrough < addDays(today, planWindow);
-  const plan_amount = planDue ? Number(settings.prices?.[currency]?.[trainer.billing_plan] ?? 0) : 0;
+  const plan_amount = planDue ? Number(planPrices?.[currency]?.[trainer.billing_plan] ?? 0) : 0;
   const fees_amount = Math.max(0, Number(status?.[0]?.client_fees_owed ?? 0));
   // Referral credit: enough whole credits to cover the plan (as creditsUsable
   // in src/lib/billing.ts), or for free use whole credits within the fees.
   const unused = Math.max(0, (counted ?? 0) - Number(trainer.referral_credits_used ?? 0));
-  const perCredit = (REFERRAL_DISCOUNT_PERCENT * Number(settings.prices?.[currency]?.monthly ?? 0)) / 100;
+  const perCredit = (REFERRAL_DISCOUNT_PERCENT * Number(planPrices?.[currency]?.monthly ?? 0)) / 100;
   let referral_credits = 0;
   let credit_amount = 0;
   if (unused > 0 && perCredit > 0) {

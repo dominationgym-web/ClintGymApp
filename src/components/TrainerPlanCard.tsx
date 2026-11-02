@@ -3,11 +3,11 @@ import { ActivityIndicator, Platform, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
-import { clientTierLines, freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, shortDate } from "@/lib/billing";
+import { clientTierLines, freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, PRICE_SIDE_LABEL, shortDate, sidePricing } from "@/lib/billing";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import CardPayment from "@/components/CardPayment";
-import type { BillingSettings, EftDetails, Trainer, TrainerBillingStatus } from "@/types/database";
+import type { BillingSettings, EftDetails, PriceSide, Trainer, TrainerBillingStatus } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 
 // A trainer's own plan (0064): what they pay, when it's due, client fees owed,
@@ -23,6 +23,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
   const [status, setStatus] = useState<TrainerBillingStatus | null>(null);
   const [settings, setSettings] = useState<BillingSettings | null>(null);
   const [owner, setOwner] = useState<{ eft_details: EftDetails; pop_whatsapp: string | null } | null>(null);
+  const [side, setSide] = useState<PriceSide>("evolution");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,8 +32,10 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
       supabase.rpc("trainer_billing_status", { p_trainer: trainer.id }),
       supabase.from("billing_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.rpc("owner_payment_details"),
-    ]).then(([s, b, o]) => {
+      supabase.rpc("trainer_price_sides"),
+    ]).then(([s, b, o, ps]) => {
       if (cancelled) return;
+      setSide(ps.data?.find((r) => r.trainer_id === trainer.id)?.side ?? "evolution");
       setStatus(s.data?.[0] ?? null);
       setSettings(b.data ?? null);
       setOwner(o.data?.[0] ?? null);
@@ -51,6 +54,8 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
   const state = planState({ ...status, trial_ends_at: trainer.trial_ends_at, free_use_from: freeUse }, todayIso());
   const owed = Number(status.client_fees_owed);
   const due = state.kind === "overdue" || owed > 0;
+  // Evolution gets both sides; a trainer with only 1 on 1 clients pays the 1 on 1 price (0179).
+  const pricing = sidePricing(settings, side);
 
   return (
     <View style={[styles.box, due && styles.boxDue]}>
@@ -60,7 +65,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
           <Text style={styles.line}>No monthly subscription.</Text>
           <Text style={styles.line}>
             {SELLS
-              ? `From ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))} you pay a monthly fee for each active client (${clientTierLines(settings.client_tiers ?? [], currency, 0).join(", ")}). The app reminds you before then.`
+              ? `From ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))} you pay a monthly fee for each active client (${clientTierLines(pricing.tiers, currency, 0).join(", ")}). The app reminds you before then.`
               : `Per-client fees start ${shortDate(status.client_fees_from ?? freeUseFeesStart(freeUse))}.`}
           </Text>
           <Text style={styles.line}>Banked referrals come off your client fees.</Text>
@@ -69,15 +74,23 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
         <>
           <Text style={styles.title}>
             Your plan: {PLAN_LABEL[status.billing_plan!]}
-            {SELLS ? ` · ${money(planPrice(settings.prices, currency, status.billing_plan!), currency)}` : ""}
+            {SELLS ? ` · ${money(planPrice(pricing.prices, currency, status.billing_plan!), currency)}` : ""}
           </Text>
           <Text style={[styles.line, state.kind === "overdue" && styles.warn]}>{planStateLabel(state)}</Text>
+          {SELLS ? (
+            <Text style={styles.line}>
+              Price: {PRICE_SIDE_LABEL[side]}.{" "}
+              {side === "one_on_one"
+                ? "Your clients are all 1 on 1. Once you activate an Evolution client you move to the Evolution price, which covers both sides."
+                : "One price covers both sides, Evolution and 1 on 1."}
+            </Text>
+          ) : null}
         </>
       )}
       {SELLS && status.client_fees_from && !freeUse ? (
         <Text style={styles.line}>
           Client fees from {shortDate(status.client_fees_from)}, a month per active client:{" "}
-          {clientTierLines(settings.client_tiers ?? [], currency, settings.free_clients).join(", ")}.
+          {clientTierLines(pricing.tiers, currency, pricing.included).join(", ")}. People only in your 1 on 1 diary count in the months they have a session.
         </Text>
       ) : null}
       {owed > 0 ? (

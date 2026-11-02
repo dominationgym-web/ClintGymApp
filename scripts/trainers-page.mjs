@@ -316,42 +316,41 @@ ${slides}
 <div class="modes">${modes}</div>
 
 <h2 class="section">Simple pricing</h2>
-<p class="section">Free for 30 days, then pay only for what you use. The more clients you coach, the less each one costs.</p>
+<p class="section">Free for 30 days, then pay only for what you use. Pick the side you need: one price covers everything, or just track your in-person sessions for less.</p>
 <div class="prices">
   <div class="price">
-    <div class="where">🇿🇦 South Africa</div>
+    <div class="where">🌐 Evolution <em>Both sides</em></div>
     <div class="amount">R200<span>/month</span></div>
+    <div class="amount" style="font-size: 22px; margin-top: -4px">$20<span>/month international</span></div>
     <ul>
-      <li>First 5 active clients included</li>
-      <li>Clients 6-15: R50 each</li>
-      <li>Clients 16-25: R40 each</li>
-      <li>Clients 26-35: R30 each</li>
-      <li>Clients 36-65: R10 each</li>
-      <li>Clients 66+: free <span class="save">Max R1 700/month</span></li>
-      <li>6 months: R1 000 upfront <span class="save">1 month free</span></li>
-      <li>12 months: R1 800 upfront <span class="save">3 months free</span></li>
+      <li>Online coaching and 1 on 1 sessions in one price</li>
+      <li>First 5 clients included</li>
+      <li>Clients 6-35: R20 / $2 each</li>
+      <li>Clients 36-65: R10 / $1 each</li>
+      <li>Clients 66+: free <span class="save">Max R1 100 / $110 a month</span></li>
+      <li>6 months: R1 000 / $100 upfront <span class="save">1 month free</span></li>
+      <li>12 months: R1 800 / $180 upfront <span class="save">3 months free</span></li>
     </ul>
   </div>
   <div class="price">
-    <div class="where">🌍 International <em>Proposed USD pricing</em></div>
-    <div class="amount">$20<span>/month</span></div>
+    <div class="where">🤝 1 on 1 only <em>In-person</em></div>
+    <div class="amount">R100<span>/month</span></div>
+    <div class="amount" style="font-size: 22px; margin-top: -4px">$10<span>/month international</span></div>
     <ul>
-      <li>First 5 active clients included</li>
-      <li>Clients 6-15: $5 each</li>
-      <li>Clients 16-25: $4 each</li>
-      <li>Clients 26-35: $3 each</li>
-      <li>Clients 36-65: $1 each</li>
-      <li>Clients 66+: free <span class="save">Max $170/month</span></li>
-      <li>6 months: $100 upfront <span class="save">1 month free</span></li>
-      <li>12 months: $180 upfront <span class="save">3 months free</span></li>
+      <li>Session diary, cancellations, catch-ups and month-end invoices worked out for you</li>
+      <li>R10 / $1 a month per client</li>
+      <li>Max R800 / $80 a month</li>
+      <li>6 months: R500 / $50 upfront <span class="save">1 month free</span></li>
+      <li>12 months: R900 / $90 upfront <span class="save">3 months free</span></li>
     </ul>
-    <p class="note">Proposed until the payment provider and currency arrangements are confirmed.</p>
+    <p class="note">Add an online client any time and you move to Evolution, which covers both.</p>
   </div>
 </div>
+<p class="section" style="font-size: 13px">Clients counted each month: everyone in the app, plus anyone only in your session diary who trained with you that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
 <div class="examples">
-  <div class="ex-head">Active clients</div><div class="ex-head">🇿🇦 a month</div><div class="ex-head">🌍 a month</div>
-${[[10, "R450", "$45"], [15, "R700", "$70"], [20, "R900", "$90"], [25, "R1 100", "$110"], [35, "R1 400", "$140"], [50, "R1 550", "$155"], ["65+", "R1 700", "$170"]]
-  .map(([n, zar, usd]) => `  <div>${n}</div><div>${zar}</div><div>${usd}</div>`)
+  <div class="ex-head">Clients</div><div class="ex-head">🌐 Evolution a month</div><div class="ex-head">🤝 1 on 1 only a month</div>
+${[[10, "R300 · $30", "R200 · $20"], [20, "R500 · $50", "R300 · $30"], [30, "R700 · $70", "R400 · $40"], [50, "R950 · $95", "R600 · $60"], ["70+", "R1 100 · $110", "R800 · $80"]]
+  .map(([n, evo, one]) => `  <div>${n}</div><div>${evo}</div><div>${one}</div>`)
   .join("\n")}
 </div>
 <div class="final" style="padding: 0 0 36px">

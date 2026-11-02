@@ -34,6 +34,8 @@ import {
   PLAN_MONTHS,
   planAmountDue,
   planPrice,
+  PRICE_SIDE_LABEL,
+  sidePricing,
   PLANS,
   planState,
   planStateLabel,
@@ -47,10 +49,12 @@ import type {
   BillingSettings,
   ClientActivation,
   PaymentProof,
+  PriceSide,
   Trainer,
   TrainerBillingMonth,
   TrainerBillingStatus,
   TrainerPayment,
+  TrainerPriceSide,
 } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import PaymentProofModal from "@/components/PaymentProofModal";
@@ -83,6 +87,7 @@ export default function BillingScreen() {
   // Trainers' proofs of payment sent through the app, not checked yet (0117).
   const [proofs, setProofs] = useState<PaymentProof[]>([]);
   const [viewing, setViewing] = useState<PaymentProof | null>(null);
+  const [sides, setSides] = useState<Record<string, TrainerPriceSide>>({});
   const today = todayIso();
 
   const load = useCallback(async () => {
@@ -94,6 +99,9 @@ export default function BillingScreen() {
       supabase.from("trainer_payments").select("*").order("paid_on", { ascending: false }),
       supabase.from("client_activations").select("*").order("activated_on", { ascending: false }),
     ]);
+    // Each trainer's price side (0179): Evolution or 1 on 1 only.
+    const { data: sideRows } = await supabase.rpc("trainer_price_sides");
+    setSides(Object.fromEntries((sideRows ?? []).map((x) => [x.trainer_id, x])));
     const { data: proofRows } = await supabase
       .from("payment_proofs")
       .select("*")
@@ -387,12 +395,19 @@ export default function BillingScreen() {
                   </Text>
                 )}
                 <Text style={state.kind === "overdue" ? styles.warn : styles.lineDetail}>{planStateLabel(state)}</Text>
+                {sides[t.id] ? (
+                  <Text style={styles.lineDetail}>
+                    Price: {PRICE_SIDE_LABEL[sides[t.id].side]} · {sides[t.id].counted_clients} client
+                    {sides[t.id].counted_clients === 1 ? "" : "s"} this month
+                    {sides[t.id].diary_clients > 0 ? ` (${sides[t.id].diary_clients} only in the diary)` : ""}
+                  </Text>
+                ) : null}
                 {s?.client_fees_from ? (
                   <Text style={styles.lineDetail}>Client fees from {shortDate(s.client_fees_from)}</Text>
                 ) : null}
                 {unused > 0 && settings ? (
                   <Text style={styles.lineDetail}>
-                    Referral credit: {unused} × 25% = {money(referralCreditValue(settings.prices, t.billing_currency ?? "USD", unused), t.billing_currency ?? "USD")}
+                    Referral credit: {unused} × 25% = {money(referralCreditValue(sidePricing(settings, sides[t.id]?.side ?? "evolution").prices, t.billing_currency ?? "USD", unused), t.billing_currency ?? "USD")}
                   </Text>
                 ) : null}
                 {t.free_use_from ? (
@@ -442,22 +457,38 @@ export default function BillingScreen() {
       {section("prices", "Prices and lockout", null, () =>
         settings ? (
           <>
-            {CURRENCIES.map((c) => (
-              <View key={c} style={styles.line}>
-                <Text style={styles.lineName}>{CURRENCY_LABEL[c]}</Text>
-                {PLANS.map((p) => (
-                  <Text key={p} style={styles.lineDetail}>
-                    {PLAN_LABEL[p]}: {money(planPrice(settings.prices, c, p), c)}
-                  </Text>
-                ))}
-                <Text style={styles.lineDetail}>First {settings.free_clients} active clients included, then a month:</Text>
-                {clientTierLines(settings.client_tiers ?? [], c, settings.free_clients).map((line) => (
-                  <Text key={line} style={styles.lineDetail}>
-                    {line}
-                  </Text>
-                ))}
-              </View>
-            ))}
+            {CURRENCIES.map((c) => {
+              const one = sidePricing(settings, "one_on_one");
+              return (
+                <View key={c} style={styles.line}>
+                  <Text style={styles.lineName}>{CURRENCY_LABEL[c]}</Text>
+                  <Text style={styles.lineDetail}>🌐 Evolution (covers both sides)</Text>
+                  {PLANS.map((p) => (
+                    <Text key={p} style={styles.lineDetail}>
+                      {PLAN_LABEL[p]}: {money(planPrice(settings.prices, c, p), c)}
+                    </Text>
+                  ))}
+                  <Text style={styles.lineDetail}>First {settings.free_clients} active clients included, then a month:</Text>
+                  {clientTierLines(settings.client_tiers ?? [], c, settings.free_clients).map((line) => (
+                    <Text key={line} style={styles.lineDetail}>
+                      {line}
+                    </Text>
+                  ))}
+                  <Text style={[styles.lineDetail, { marginTop: 8 }]}>🤝 1 on 1 only (no Evolution clients)</Text>
+                  {PLANS.map((p) => (
+                    <Text key={p} style={styles.lineDetail}>
+                      {PLAN_LABEL[p]}: {money(planPrice(one.prices, c, p), c)}
+                    </Text>
+                  ))}
+                  {clientTierLines(one.tiers, c, 0).map((line) => (
+                    <Text key={line} style={styles.lineDetail}>
+                      {line}
+                    </Text>
+                  ))}
+                </View>
+              );
+            })}
+            <Text style={styles.muted}>Clients counted: everyone active in the app, plus people only in a 1 on 1 diary who had a session that month.</Text>
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lineName}>Lock out unpaid trainers</Text>
@@ -505,13 +536,14 @@ export default function BillingScreen() {
       />
       {planFor ? <SetPlanModal trainer={planFor} onClose={() => setPlanFor(null)} onSaved={load} /> : null}
       {freeUseFor && settings ? (
-        <FreeUseModal trainer={freeUseFor} settings={settings} onClose={() => setFreeUseFor(null)} onSaved={load} />
+        <FreeUseModal trainer={freeUseFor} settings={settings} side={sides[freeUseFor.id]?.side ?? "evolution"} onClose={() => setFreeUseFor(null)} onSaved={load} />
       ) : null}
       {payFor && settings ? (
         <RecordPaymentModal
           trainer={payFor}
           settings={settings}
           status={statuses[payFor.id]}
+          side={sides[payFor.id]?.side ?? "evolution"}
           unusedCredits={unusedCredits(payFor)}
           onClose={() => setPayFor(null)}
           onSaved={load}
@@ -599,11 +631,13 @@ function SetPlanModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose
 function FreeUseModal({
   trainer,
   settings,
+  side,
   onClose,
   onSaved,
 }: {
   trainer: Trainer;
   settings: BillingSettings;
+  side: PriceSide;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
@@ -636,7 +670,7 @@ function FreeUseModal({
           <Text style={styles.modalTitle}>Free use for {trainerDisplayName(trainer)}</Text>
           <Text style={styles.lineDetail}>
             No monthly subscription from today. From {shortDate(feesFrom)} they pay{" "}
-            a monthly fee for every active client: {clientTierLines(settings.client_tiers ?? [], currency, 0).join(", ")}.
+            a monthly fee for every active client: {clientTierLines(sidePricing(settings, side).tiers, currency, 0).join(", ")}.
           </Text>
           <Text style={styles.muted}>
             The app reminds them and you 30 days and 7 days before, and on the day. Fees are worked out on the 1st of
@@ -658,7 +692,8 @@ function FreeUseModal({
 
 function RecordPaymentModal({
   trainer,
-  settings,
+  settings: billingSettings,
+  side,
   status,
   unusedCredits,
   onClose,
@@ -667,10 +702,13 @@ function RecordPaymentModal({
   trainer: Trainer;
   settings: BillingSettings;
   status: TrainerBillingStatus | undefined;
+  side: PriceSide;
   unusedCredits: number;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  // Plan prices and referral credit follow the trainer's price side (0179).
+  const settings = { ...billingSettings, prices: sidePricing(billingSettings, side).prices };
   const currency = trainer.billing_currency ?? "USD";
   const owed = Number(status?.client_fees_owed ?? 0);
   const [kind, setKind] = useState<"subscription" | "client_fees">(
