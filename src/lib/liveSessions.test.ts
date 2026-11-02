@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   agreementCurrent,
+  awayLabel,
+  isAway,
   catchUpDeadline,
   catchUpDue,
   autoCharge,
@@ -281,5 +283,17 @@ describe("catch-up deadline", () => {
     expect(catchUpDue({ starts_at: missed }, new Date(2026, 9, 28))).toBe("soon");
     expect(catchUpDue({ starts_at: missed }, new Date(2026, 10, 1))).toBe("late");
     expect(catchUpDue({ starts_at: missed, catchup_until: "2026-11-30" }, new Date(2026, 10, 1))).toBe("ok");
+  });
+});
+
+describe("away (0184)", () => {
+  it("is away only while cancelled with an away", () => {
+    expect(isAway({ status: "cancelled", away_id: "a1" })).toBe(true);
+    expect(isAway({ status: "booked", away_id: "a1" })).toBe(false);
+    expect(isAway({ status: "cancelled", away_id: null })).toBe(false);
+  });
+  it("labels the last day from the note", () => {
+    expect(awayLabel({ note: "Away until 14 November" })).toBe("Away till 14 Nov");
+    expect(awayLabel({ note: null })).toBe("Away");
   });
 });

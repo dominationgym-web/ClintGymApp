@@ -19,6 +19,7 @@ import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } fr
 import DiaryPeople from "@/components/sessions/DiaryPeople";
 import CatchUpRows from "@/components/sessions/CatchUpRows";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
+import AwayModal, { awayOf, type AwayWho } from "@/components/sessions/AwayModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -28,6 +29,7 @@ import { eftRows } from "@/lib/trainers";
 import {
   AGREEMENT_TEMPLATE,
   AGREEMENT_WORDS,
+  awayLabel,
   BILLINGS,
   KIND_STYLE,
   POLICIES,
@@ -39,6 +41,7 @@ import {
   dayKey,
   dayLabel,
   fillAgreement,
+  isAway,
   groupFees,
   invoiceText,
   kindDetail,
@@ -55,7 +58,7 @@ import {
   shiftMonth,
 } from "@/lib/liveSessions";
 import type { TrainerStackParamList } from "@/navigation/types";
-import type { BillingCurrency, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
+import type { BillingCurrency, ClientAway, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -88,6 +91,9 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const [makeup, setMakeup] = useState<LiveSession | null>(null);
   // A ??? gap tapped on Today: open Book a session on the calendar at that time.
   const [bookAt, setBookAt] = useState<string | null>(null);
+  // Clients marked away (0184) and whose Away calendar is open.
+  const [aways, setAways] = useState<ClientAway[]>([]);
+  const [awayFor, setAwayFor] = useState<AwayWho | null>(null);
 
   useEffect(() => {
     if (!only && route.params?.tab) setTab(route.params.tab);
@@ -105,13 +111,14 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     if (!trainer) return;
     const from = new Date(Math.min(new Date(`${shiftMonth(month, -1)}T00:00:00`).getTime(), Date.now() - 92 * 86400000)).toISOString();
     const to = new Date(`${shiftMonth(month, 2)}T00:00:00`).toISOString();
-    const [s, p, a, c, ls, d] = await Promise.all([
+    const [s, p, a, c, ls, d, aw] = await Promise.all([
       supabase.from("session_settings").select("*").eq("trainer_id", trainer.id).maybeSingle(),
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
       supabase.from("clients").select("id, name, phone, email, live_only, one_on_one").eq("trainer_id", trainer.id).neq("id", trainer.id).is("archived_at", null).order("name"),
       supabase.from("live_sessions").select("*").eq("trainer_id", trainer.id).gte("starts_at", from).lt("starts_at", to).order("starts_at"),
       supabase.from("session_invoices").select("*").eq("trainer_id", trainer.id).eq("status", "draft").order("month"),
+      supabase.from("client_away").select("*").eq("trainer_id", trainer.id).is("ended_at", null).gt("until_at", new Date().toISOString()),
     ]);
     setSettings(s.data ?? null);
     setPlans(p.data ?? []);
@@ -121,6 +128,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     setClients((c.data ?? []) as ClientInfo[]);
     setSessions(ls.data ?? []);
     setDrafts(d.data ?? []);
+    setAways((aw.data ?? []) as ClientAway[]);
     setLoading(false);
   }, [trainer, month]);
 
@@ -194,7 +202,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
                 settings?.day_end ?? "20:00",
                 settings?.minutes ?? 60,
                 sessions
-                  .filter((s) => dayKey(s.starts_at) === dayKey(now) && (s.status === "booked" || s.status === "done"))
+                  .filter((s) => dayKey(s.starts_at) === dayKey(now) && (s.status === "booked" || s.status === "done" || isAway(s)))
                   .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))
               ).filter((t) => t > clockLabel(now.toISOString()))}
               onBookAt={(t) => {
@@ -243,6 +251,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               onChanged={load}
               oneOnOne={!!only}
               sessions={sessions}
+              aways={aways}
+              onAway={setAwayFor}
               onOpenPage={(clientId) => navigation.navigate("ClientDetail", { clientId })}
             />
           )}
@@ -268,8 +278,24 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
         partners={open ? sessions.filter((x) => x.id !== open.id && x.starts_at === open.starts_at && x.status !== "removed") : []}
         nameOf={who}
         onSwitch={setOpen}
+        onAway={() => {
+          if (!open) return;
+          setAwayFor({ clientId: open.client_id, name: who(open) });
+          setOpen(null);
+        }}
         onClose={() => setOpen(null)}
         onChanged={load}
+      />
+      <AwayModal
+        visible={!!awayFor}
+        who={awayFor}
+        sessions={sessions}
+        away={awayFor ? awayOf(aways, awayFor) : null}
+        onClose={() => setAwayFor(null)}
+        onDone={() => {
+          setAwayFor(null);
+          load();
+        }}
       />
     </View>
   );
@@ -294,6 +320,7 @@ function SessionLine({
   const kind = sessionKind(s);
   const style = KIND_STYLE[kind];
   const detail = (x: LiveSession) => {
+    if (isAway(x)) return `✈️ ${awayLabel(x)}`;
     const k = sessionKind(x);
     return `${KIND_STYLE[k].icon} ${kindDetail(k, x.cancelled_at ? noticeHours(x.starts_at, x.cancelled_at) : null, {
       clientOk: !!x.client_confirmed_at,
@@ -320,6 +347,43 @@ function SessionLine({
       ) : (
         <Text style={[styles.rowKind, { color: themeText(style.colour) }]}>{detail(s)}</Text>
       )}
+    </Pressable>
+  );
+}
+
+/** Everyone on the line is away: the slot is free to book. */
+const allAway = (l: { s: LiveSession; with: LiveSession[] }) => [l.s, ...l.with].every(isAway);
+
+// A slot whose people are away (GRIZZ, 2026-11-02): "the name stays there,
+// but the colour will switch to green, meaning it's available to book".
+function AwayLine({
+  l,
+  name,
+  onBook,
+  onOpen,
+}: {
+  l: { s: LiveSession; with: LiveSession[] };
+  name: string;
+  onBook: (time: string) => void;
+  onOpen: (s: LiveSession) => void;
+}) {
+  const time = clockLabel(l.s.starts_at);
+  return (
+    <Pressable
+      style={[styles.row, styles.openRow]}
+      onPress={() =>
+        Alert.alert(`${time} · ${name}`, `${awayLabel(l.s)}. The slot is free to book.`, [
+          { text: "Book someone in", onPress: () => onBook(time) },
+          { text: `See ${name.split(" ")[0]}'s session`, onPress: () => onOpen(l.s) },
+          { text: "Close", style: "cancel" },
+        ])
+      }
+    >
+      <Text style={styles.openText}>
+        {time} · {name}
+        {l.s.repeat_id ? " 🔁" : ""}
+      </Text>
+      <Text style={styles.awayText}>✈️ {awayLabel(l.s)} · free to book</Text>
     </Pressable>
   );
 }
@@ -382,7 +446,9 @@ function ToDo({
       ]
         .sort((a, b) => a.time.localeCompare(b.time))
         .map(({ time, l }) =>
-          l ? (
+          l && allAway(l) ? (
+            <AwayLine key={l.s.id} l={l} name={jointName(l, who)} onBook={onBookAt} onOpen={onOpen} />
+          ) : l ? (
             <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />
           ) : (
             <Pressable key={`open-${time}`} style={[styles.row, styles.openRow]} onPress={() => onBookAt(time)}>
@@ -599,7 +665,8 @@ function CalendarTab({
   }, [bookAt]);
   const [importing, setImporting] = useState(false);
   const list = sessions.filter((s) => s.status !== "removed" && dayKey(s.starts_at) === day);
-  const taken = list.filter((s) => s.status === "booked" || s.status === "done").map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }));
+  // Away sessions keep their slot: shown green with the name, free to book (0184).
+  const taken = list.filter((s) => s.status === "booked" || s.status === "done" || isAway(s)).map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }));
   // Open slots show as "???" between bookings (GRIZZ 2026-11-01), today and later only.
   const today = dayKey(new Date());
   const nowClock = clockLabel(new Date().toISOString());
@@ -660,7 +727,9 @@ function CalendarTab({
       </View>
       <Text style={[styles.meta, { textAlign: "center", marginTop: 0, marginBottom: 6 }]}>Swipe left for the next day, right for the day before</Text>
       {lines.map((l) =>
-        l.s ? (
+        l.s && allAway({ s: l.s, with: l.with }) ? (
+          <AwayLine key={l.s.id} l={{ s: l.s, with: l.with }} name={jointName({ s: l.s, with: l.with }, who)} onBook={book} onOpen={onOpen} />
+        ) : l.s ? (
           <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} others={l.with} nameOf={who} onOpen={onOpen} />
         ) : (
           <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
@@ -697,7 +766,7 @@ function CalendarTab({
         }}
       />
       <Text style={styles.meta}>
-        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked. A 🔁 after a name means every week, 👥 a joint session.
+        🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · ✈️ away (green box: free to book) · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked. A 🔁 after a name means every week, 👥 a joint session.
       </Text>
       <AddSessionModal
         visible={adding}
@@ -946,8 +1015,13 @@ function ClientsTab({
   oneOnOne,
   onOpenPage,
   sessions,
+  aways = [],
+  onAway,
 }: {
   sessions: LiveSession[];
+  /** Clients marked away (0184); onAway opens the Away calendar. */
+  aways?: ClientAway[];
+  onAway?: (who: AwayWho) => void;
   clients: ClientInfo[];
   planOf: Record<string, SessionPlan>;
   signed: Record<string, SessionAgreement>;
@@ -977,6 +1051,20 @@ function ClientsTab({
           <Text style={styles.back}>‹ All clients</Text>
         </Pressable>
         <Text style={styles.sectionTitle}>{c?.name}</Text>
+        {/* Going away: tap, pick the last day on a calendar (GRIZZ, 2026-11-02). */}
+        {onAway ? (
+          <Pressable
+            style={[styles.outline, { marginBottom: 12 }, awayOf(aways, { clientId: picked, name: c?.name ?? "" }) && styles.awayButton]}
+            onPress={() => onAway({ clientId: picked, name: c?.name ?? "Client" })}
+          >
+            <Text style={styles.outlineText}>
+              {(() => {
+                const a = awayOf(aways, { clientId: picked, name: c?.name ?? "" });
+                return a ? `✈️ Away till ${dayLabel(`${a.until_on}T12:00:00`)} · tap to change` : "✈️ Away: going away for a while";
+              })()}
+            </Text>
+          </Pressable>
+        ) : null}
         {onOpenPage ? (
           <Pressable style={[styles.outline, { marginBottom: 12 }]} onPress={() => onOpenPage(picked)}>
             <Text style={styles.outlineText}>Open their page: food, progress, check-ins</Text>
@@ -1034,6 +1122,10 @@ function ClientsTab({
             </Text>
             {p.paid_by ? <Text style={styles.meta}>💳 Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
             <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "✍️ Signed" : "✍️ Not signed yet"}</Text>
+            {(() => {
+              const a = awayOf(aways, { clientId: c.id, name: c.name });
+              return a ? <Text style={[styles.meta, { color: themeText("#22C55E") }]}>✈️ Away till {dayLabel(`${a.until_on}T12:00:00`)}</Text> : null;
+            })()}
           </Pressable>
         );
       })}
@@ -1065,7 +1157,9 @@ function ClientsTab({
         : null}
       {showOthers && others.length === 0 ? <Text style={styles.helper}>Every client is set up.</Text> : null}
       {/* Calendar people who aren't app clients: their times and their own price (GRIZZ, 2026-11-01). */}
-      {oneOnOne ? <DiaryPeople sessions={sessions} currency={currency} normalFee={settings?.fee ?? null} onChanged={onChanged} /> : null}
+      {oneOnOne ? (
+        <DiaryPeople sessions={sessions} currency={currency} normalFee={settings?.fee ?? null} onChanged={onChanged} aways={aways} onAway={onAway} />
+      ) : null}
     </>
   );
 }
@@ -1518,6 +1612,8 @@ const styles = themedStyles({
   row: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: "#334155" },
   rowTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
   // Open slots in bright green so the coach sees his openings at a glance (GRIZZ, 2026-11-02).
+  awayButton: { borderColor: "#22C55E", backgroundColor: "#14532D" },
+  awayText: { color: "#4ADE80", fontSize: 13, fontWeight: "600", marginTop: 3 },
   openRow: { backgroundColor: "#14532D", borderWidth: 2, borderColor: "#22C55E", borderLeftWidth: 6, borderLeftColor: "#22C55E", paddingVertical: 8 },
   openText: { color: "#4ADE80", fontSize: 14, fontWeight: "800" },
   rowBody: { color: "#CBD5E1", fontSize: 14, marginTop: 4 },

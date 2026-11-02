@@ -18,6 +18,8 @@ import {
   STORAGE_BUCKET,
   atTime,
   autoCharge,
+  awayLabel,
+  isAway,
   clockLabel,
   dayKey,
   dayLabel,
@@ -48,9 +50,12 @@ export default function SessionActionsModal({
   partners = [],
   nameOf,
   onSwitch,
+  onAway,
   onClose,
   onChanged,
 }: {
+  /** Mark this person away until a day (GRIZZ 2026-11-02). */
+  onAway?: () => void;
   session: LiveSession | null;
   clientName: string;
   /** The others booked in the same slot: a joint session (GRIZZ 2026-11-01). */
@@ -197,12 +202,14 @@ export default function SessionActionsModal({
               {dayLabel(session.starts_at)} · {clockLabel(session.starts_at)} · {session.minutes} min
             </Text>
             <Text style={[styles.kind, { color: themeText(style.colour) }]}>
-              {style.icon} {kindDetail(kind, session.cancelled_at ? noticeHours(session.starts_at, session.cancelled_at) : null, {
-                clientOk: !!session.client_confirmed_at,
-                disputed: !!session.client_disputed_at,
-                catchUp: !!session.makeup_for,
-                catchUpBooked: !!session.makeup_session_id,
-              })}
+              {isAway(session)
+                ? `✈️ ${awayLabel(session)} · not charged · the slot is free to book`
+                : `${style.icon} ${kindDetail(kind, session.cancelled_at ? noticeHours(session.starts_at, session.cancelled_at) : null, {
+                    clientOk: !!session.client_confirmed_at,
+                    disputed: !!session.client_disputed_at,
+                    catchUp: !!session.makeup_for,
+                    catchUpBooked: !!session.makeup_session_id,
+                  })}`}
             </Text>
             {session.status === "done" && !session.client_confirmed_at && !session.client_disputed_at ? (
               <Text style={styles.meta}>Waiting for {first} to confirm.</Text>
@@ -221,7 +228,7 @@ export default function SessionActionsModal({
                 ) : null}
               </View>
             ) : null}
-            {session.note ? <Text style={styles.meta}>"{session.note}"</Text> : null}
+            {session.note && !isAway(session) ? <Text style={styles.meta}>"{session.note}"</Text> : null}
             {session.proof_path ? (
               <Pressable onPress={() => setProof(session.proof_path)}>
                 <Text style={styles.link}>📸 See the cancellation message</Text>
@@ -257,6 +264,10 @@ export default function SessionActionsModal({
                     <Chip label="🟢 Credit" on={session.charge === "credit"} onPress={() => charge("credit")} />
                     {session.client_id ? <Chip label="🔁 Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} /> : null}
                   </View>
+                ) : null}
+                {/* Going away for a while: their sessions turn green, free to book (GRIZZ 2026-11-02). */}
+                {onAway && session.status !== "removed" && new Date(session.starts_at) > now ? (
+                  <Outline label={session.away_id && session.status === "cancelled" ? "✈️ Away: back early or change the date" : "✈️ Away (going away for a while)"} onPress={onAway} />
                 ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
                 {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="🔁 Repeat every week" onPress={makeWeekly} /> : null}

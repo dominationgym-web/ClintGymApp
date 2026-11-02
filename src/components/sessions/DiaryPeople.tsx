@@ -4,9 +4,10 @@ import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
-import { regularLabel, sessionMoney } from "@/lib/liveSessions";
+import { dayLabel, regularLabel, sessionMoney } from "@/lib/liveSessions";
 import { diaryKey, regularFromCalendar } from "@/lib/calendarRegular";
-import type { BillingCurrency, LiveSession } from "@/types/database";
+import type { BillingCurrency, ClientAway, LiveSession } from "@/types/database";
+import { awayOf, type AwayWho } from "@/components/sessions/AwayModal";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -18,7 +19,12 @@ export default function DiaryPeople({
   currency,
   normalFee,
   onChanged,
+  aways = [],
+  onAway,
 }: {
+  /** People marked away (0184); onAway opens the Away calendar. */
+  aways?: ClientAway[];
+  onAway?: (who: AwayWho) => void;
   sessions: LiveSession[];
   currency: BillingCurrency;
   normalFee: number | null;
@@ -62,6 +68,7 @@ export default function DiaryPeople({
 
   if (!people.length) return null;
 
+  const away = (name: string) => awayOf(aways, { clientId: null, name });
   const priceOf = (p: (typeof people)[number]) => fees[p.key] ?? Number(p.last.fee ?? normalFee ?? 0);
   const save = async (name: string) => {
     const fee = Number(typed.replace(",", "."));
@@ -78,7 +85,7 @@ export default function DiaryPeople({
   return (
     <View style={{ marginTop: 18 }}>
       <Text style={styles.title}>📅 On your calendar, not in the app yet</Text>
-      <Text style={styles.meta}>Worked out from your calendar. Tap a name to set their price per session. When they join the app, tap one of their sessions › Link to their app account.</Text>
+      <Text style={styles.meta}>Worked out from your calendar. Tap a name to set their price per session or mark them away. When they join the app, tap one of their sessions › Link to their app account.</Text>
       {people.map((p) => {
         const on = open === p.key;
         return (
@@ -93,6 +100,7 @@ export default function DiaryPeople({
                 {p.name} · {sessionMoney(priceOf(p), currency)}
               </Text>
               <Text style={styles.meta}>{p.cal.regular.length ? `${regularLabel(p.cal.regular)}${p.cal.minutes ? ` · ${p.cal.minutes} min` : ""}` : "No regular times yet"}</Text>
+              {away(p.name) ? <Text style={styles.away}>✈️ Away till {dayLabel(`${away(p.name)!.until_on}T12:00:00`)}</Text> : null}
             </Pressable>
             {on ? (
               <View style={styles.edit}>
@@ -103,6 +111,12 @@ export default function DiaryPeople({
               </View>
             ) : null}
             {on ? <Text style={styles.meta}>Their sessions from now on take the new price.</Text> : null}
+            {/* Going away: pick the last day on a calendar (GRIZZ, 2026-11-02). */}
+            {on && onAway ? (
+              <Pressable style={styles.outline} onPress={() => onAway({ clientId: null, name: p.name })}>
+                <Text style={styles.outlineText}>{away(p.name) ? "✈️ Away: back early or change the date" : "✈️ Away: going away for a while"}</Text>
+              </Pressable>
+            ) : null}
           </View>
         );
       })}
@@ -119,4 +133,7 @@ const styles = themedStyles({
   input: { width: 140, backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 14 },
   buttonText: { color: "#0F172A", fontWeight: "800" },
+  away: { color: "#22C55E", fontSize: 12, fontWeight: "700", marginTop: 3 },
+  outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 10, alignItems: "center", marginTop: 10 },
+  outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
 });

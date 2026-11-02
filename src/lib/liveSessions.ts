@@ -121,6 +121,20 @@ export function jointLines<T extends { starts_at: string; status: string }>(list
   return out;
 }
 
+/**
+ * Cancelled because they're away (0184, GRIZZ 2026-11-02): the slot keeps
+ * their name and shows green, free to book.
+ */
+export function isAway(s: { status: string; away_id?: string | null }): boolean {
+  return s.status === "cancelled" && !!s.away_id;
+}
+
+/** "Away till 14 Nov" from an away session's note ("Away until 14 November"). */
+export function awayLabel(s: { note?: string | null }): string {
+  const m = /until (\d+) (\w{3})/.exec(s.note ?? "");
+  return m ? `Away till ${m[1]} ${m[2]}` : "Away";
+}
+
 /** "Camilla & Jade 👥" for a joint line, the full name for one person. */
 export function jointName<T>(line: { s: T; with: T[] }, name: (s: T) => string): string {
   if (!line.with.length) return name(line.s);
