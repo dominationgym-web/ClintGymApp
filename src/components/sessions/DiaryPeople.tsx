@@ -4,10 +4,10 @@ import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
-import { dayLabel, regularLabel, sessionMoney } from "@/lib/liveSessions";
+import { regularLabel, sessionMoney } from "@/lib/liveSessions";
 import { diaryKey, regularFromCalendar } from "@/lib/calendarRegular";
 import type { BillingCurrency, ClientAway, LiveSession } from "@/types/database";
-import { awayOf, type AwayWho } from "@/components/sessions/AwayModal";
+import { awayOf, awaySpan, type AwayWho } from "@/components/sessions/AwayModal";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -100,7 +100,7 @@ export default function DiaryPeople({
                 {p.name} · {sessionMoney(priceOf(p), currency)}
               </Text>
               <Text style={styles.meta}>{p.cal.regular.length ? `${regularLabel(p.cal.regular)}${p.cal.minutes ? ` · ${p.cal.minutes} min` : ""}` : "No regular times yet"}</Text>
-              {away(p.name) ? <Text style={styles.away}>✈️ Away till {dayLabel(`${away(p.name)!.until_on}T12:00:00`)}</Text> : null}
+              {away(p.name) ? <Text style={styles.away}>✈️ Away {awaySpan(away(p.name)!)}</Text> : null}
             </Pressable>
             {on ? (
               <View style={styles.edit}>

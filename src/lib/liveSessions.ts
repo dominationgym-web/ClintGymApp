@@ -129,8 +129,11 @@ export function isAway(s: { status: string; away_id?: string | null }): boolean 
   return s.status === "cancelled" && !!s.away_id;
 }
 
-/** "Away till 14 Nov" from an away session's note ("Away until 14 November"). */
+/** "Away 9 Nov to 13 Nov" (or "Away till 14 Nov") from an away session's note. */
 export function awayLabel(s: { note?: string | null }): string {
+  // "Away from 9 November until 13 November" (0185): "Away 9 Nov to 13 Nov".
+  const r = /from (\d+) (\w{3})\w* until (\d+) (\w{3})/.exec(s.note ?? "");
+  if (r) return `Away ${r[1]} ${r[2]} to ${r[3]} ${r[4]}`;
   const m = /until (\d+) (\w{3})/.exec(s.note ?? "");
   return m ? `Away till ${m[1]} ${m[2]}` : "Away";
 }
