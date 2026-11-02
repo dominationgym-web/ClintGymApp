@@ -1096,8 +1096,22 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         )}
         {tab === "diet" && (
           <>
+            {/* The trainer works out the client's meal plan (GRIZZ, 2026-11-02). */}
+            {trainer && (
+              <ClientOwnMealPlan
+                client={client}
+                trainerId={trainer.id}
+                onDetailsSaved={() =>
+                  supabase
+                    .from("clients")
+                    .select("*")
+                    .eq("id", client.id)
+                    .maybeSingle()
+                    .then(({ data }) => data && setClient(data as Client))
+                }
+              />
+            )}
             <DietPlanner client={client} onDirtyChange={setDietDirty} />
-            <ClientOwnMealPlan clientId={client.id} clientName={client.name} />
           </>
         )}
 

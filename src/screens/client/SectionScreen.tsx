@@ -13,7 +13,6 @@ import CalorieCalculator from "@/components/CalorieCalculator";
 import MealBuilder from "@/components/MealBuilder";
 import ClientDietPlanView from "@/components/ClientDietPlanView";
 import { COACH_MEAL_PLAN_TITLE } from "@/hooks/useHasMealPlan";
-import MealPlanMaker from "@/components/MealPlanMaker";
 import MuscleBuildingGuide from "@/components/MuscleBuildingGuide";
 import SupplementCard, { LEVEL_COLOURS, SupplementLevelsKey } from "@/components/SupplementCard";
 import { SUPPLEMENTS, type SupplementLevel } from "@/lib/supplements";
@@ -29,7 +28,6 @@ import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
-const MEAL_PLAN_TITLE = "Work out your own meal plan and diet";
 const MUSCLE_GUIDE_TITLE = "Muscle building: your BMR and macros";
 export const PROTEIN_COOKING_TITLE = "Cooking ideas for your protein";
 export const LIGHT_SAUCES_TITLE = "Low-calorie sauces";
@@ -48,12 +46,9 @@ export default function SectionScreen({ route }: Props) {
   if (section.key === "nutrition") {
     parts.push({ title: COACH_MEAL_PLAN_TITLE, icon: "🥗", body: <ClientDietPlanView /> });
     // Muscle Year (GRIZZ, 2026-10-24): BMR, macros and the 2-weekly weight check.
-    parts.push({
-      title: MUSCLE_GUIDE_TITLE,
-      icon: "💪",
-      body: <MuscleBuildingGuide onMakeMealPlan={() => setOpen(MEAL_PLAN_TITLE)} />,
-    });
-    parts.push({ title: MEAL_PLAN_TITLE, icon: "🤖", body: <MealPlanMaker /> });
+    // The meal plan itself is the coach's (GRIZZ, 2026-11-02): it opens under
+    // the heading above, where the client swaps foods and puts in their own meals.
+    parts.push({ title: MUSCLE_GUIDE_TITLE, icon: "💪", body: <MuscleBuildingGuide /> });
     // Five simple ways to cook each protein, and light sauces (GRIZZ, 2026-10-27).
     parts.push({ title: PROTEIN_COOKING_TITLE, icon: "🍳", body: <ProteinCookingIdeas /> });
     parts.push({ title: LIGHT_SAUCES_TITLE, icon: "🥣", body: <LightSauces /> });

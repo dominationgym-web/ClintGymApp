@@ -189,7 +189,7 @@ export function checkinFeedback(all: Recent[], today: string, weightKg?: number 
       icon: "🍽",
       title: "Make each meal count for protein",
       because: `You're eating about ${one(Math.round(meals * 10) / 10)} meals a day.`,
-      doThis: "Two or three meals is fine if it suits you. Make each one protein-heavy: about 2 palms of protein (meat, fish, eggs, maas, yoghurt or beans), plus veg. Use the meal plan maker under Nutrition if you need ideas.",
+      doThis: "Two or three meals is fine if it suits you. Make each one protein-heavy: about 2 palms of protein (meat, fish, eggs, maas, yoghurt or beans), plus veg. Ask your coach for a meal plan, or use the meal builder under Nutrition if you need ideas.",
       itWill: "Enough protein to build and keep muscle, and meals that keep you full for longer.",
       priority: 60,
     });

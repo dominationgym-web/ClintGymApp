@@ -21,12 +21,13 @@ export function useHasMealPlanWith(clientId: string | undefined, recheck: Rechec
   const [has, setHas] = useState(false);
   useEffect(() => {
     if (!clientId) return;
+    // Either the diet planner week or the plan the coach worked out with the
+    // meal plan maker (GRIZZ, 2026-11-02).
     const check = () =>
-      supabase
-        .from("client_diet_plans")
-        .select("client_id", { count: "exact", head: true })
-        .eq("client_id", clientId)
-        .then(({ count }) => setHas((count ?? 0) > 0));
+      Promise.all([
+        supabase.from("client_diet_plans").select("client_id", { count: "exact", head: true }).eq("client_id", clientId),
+        supabase.from("client_meal_plans").select("client_id", { count: "exact", head: true }).eq("client_id", clientId),
+      ]).then(([coach, made]) => setHas((coach.count ?? 0) + (made.count ?? 0) > 0));
     check();
     return recheck(check);
     // recheck is a new function each render; the subscription only depends on the client.

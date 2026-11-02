@@ -7,12 +7,13 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { DIET_WEEKDAYS, INTAKE_ACTIVITY_LEVELS, intakeDetails, amountLabel, dailyTarget, dayTotals, normaliseWeek, sumTotals, weekdayIndex, type DietDay } from "@/lib/dietPlan";
 import type { ClientDietPlan } from "@/types/database";
 import { useMealTicks } from "@/hooks/useMealTicks";
-import { MealTickButton } from "@/components/MealPlanMaker";
+import MealPlanMaker, { MealTickButton } from "@/components/MealPlanMaker";
 import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import { themeText, themedStyles } from "@/lib/theme";
 
-// The client's meal plan from their trainer (0071), read-only, in the
-// Nutrition section. Opens on today, one day at a time.
+// The client's meal plan from their trainer, in the Nutrition section: the
+// diet planner week (0071), read-only, opening on today one day at a time, or
+// else the plan the trainer worked out with the meal plan maker (0077).
 function MealPlan() {
   const { client } = useAuth();
   const userId = client?.id;
@@ -53,7 +54,9 @@ function MealPlan() {
   }
   const days: DietDay[] = plan ? normaliseWeek(plan.days) : [];
   if (!plan || days.every((d) => d.meals.every((m) => m.items.length === 0))) {
-    return <Text style={styles.empty}>Your coach hasn't set a meal plan for you yet. When they do, it shows here.</Text>;
+    // No week from the diet planner: the plan the coach worked out with the
+    // meal plan maker, where the client can swap foods (GRIZZ, 2026-11-02).
+    return <MealPlanMaker />;
   }
 
   const target = dailyTarget({ ...plan, activity: Number(plan.activity) });
@@ -168,9 +171,10 @@ const styles = themedStyles({
   ask: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   askTitle: { color: "#fff", fontWeight: "800", marginBottom: 4 },
   askRow: { flexDirection: "row", gap: 8, marginTop: 10 },
-  askInput: { flex: 1, backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 10, fontSize: 14 },
+  askInput: { flex: 1, minWidth: 0, backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 10, fontSize: 14 },
   askChips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
-  askChip: { flex: 0, paddingHorizontal: 12, backgroundColor: "#1E293B" },
+  // flexBasis auto, as flex 0 squashes the text on the laptop app.
+  askChip: { flexGrow: 0, flexShrink: 0, flexBasis: "auto", paddingHorizontal: 12, backgroundColor: "#1E293B" },
   askSave: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 12 },
   askSaveText: { color: "#0F172A", fontWeight: "800" },
   empty: { color: "#94A3B8", fontSize: 14, lineHeight: 20 },
