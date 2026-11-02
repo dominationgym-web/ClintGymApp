@@ -372,15 +372,19 @@ ${r.ex.map(([n, evo, one]) => `  <div>${n}</div><div>${evo} a month</div><div>${
       <li>Catch-ups tracked with reminders, and what cancellations cost you</li>
       <li>Month-end invoices worked out for you, shared sessions and who pays, sent by WhatsApp or email</li>
       <li>Proof of payment straight into the app</li>
+      <li>Meal planning for your clients: the app works out a plan from their calories and macros, and you adjust it</li>
+      <li>All the coaching guides: nutrition, supplements, sleep and recovery</li>
     </ul>
   </div>
   <div class="price">
     <div class="where">🥗 For clients who join the app <em>Free for them</em></div>
     <ul>
-      <li>Meal plans you work out for them, built around their calories and macros</li>
-      <li>BMR and macro targets, and swaps or their own meals with the day rebalanced</li>
-      <li>Weekly shopping list they can tick off</li>
-      <li>Cooking ideas for each protein and low-calorie sauces</li>
+      <li>Their meal plan from you, built around their calories and macros</li>
+      <li>Swaps, leaving foods out or their own meals, with the day rebalanced</li>
+      <li>Weekly shopping list they can tick off and send</li>
+      <li>Nutrition guidance: BMR and macros, insulin explained, cooking ideas for each protein and low-calorie sauces</li>
+      <li>Supplement guidance</li>
+      <li>Sleep and recovery guidance, and the cycle tracker for women</li>
       <li>Their sessions: confirm, cancel in the app, sign your agreement</li>
       <li>Optional check-in: energy, sleep and any pain or injury</li>
       <li>Progress graphs, weigh-ins and progress photos</li>
