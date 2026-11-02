@@ -1066,8 +1066,10 @@ function ClientsTab({
           </Pressable>
         ) : null}
         {onOpenPage ? (
-          <Pressable style={[styles.outline, { marginBottom: 12 }]} onPress={() => onOpenPage(picked)}>
-            <Text style={styles.outlineText}>Open their page: food, progress, check-ins</Text>
+          // Says what's there (GRIZZ, 2026-11-02: "you don't know that's where you set up the diets").
+          <Pressable style={styles.pageButton} onPress={() => onOpenPage(picked)} accessibilityRole="button">
+            <Text style={styles.pageTitle}>🥗 Diet and meal plan, progress, check-ins ›</Text>
+            <Text style={styles.pageDetail}>Set up {(c?.name ?? "their").trim().split(/\s+/)[0]}'s diet and see how they're doing</Text>
           </Pressable>
         ) : null}
         <SessionPlanEditor
@@ -1625,6 +1627,9 @@ const styles = themedStyles({
   nameInput: { backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15, marginTop: 10 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
+  pageButton: { backgroundColor: "#14532D", borderWidth: 1, borderColor: "#22C55E", borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginTop: 8, marginBottom: 12 },
+  pageTitle: { color: "#4ADE80", fontWeight: "800", fontSize: 15 },
+  pageDetail: { color: "#BBF7D0", fontSize: 13, marginTop: 2 },
   outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 11, alignItems: "center", marginTop: 8 },
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   notice: { backgroundColor: "#3B2F0B", borderRadius: 10, padding: 12, marginBottom: 8 },
