@@ -246,7 +246,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
         settings={settings}
         sessions={sessions}
         clients={clients}
-        partners={open ? sessions.filter((x) => x.id !== open.id && x.starts_at === open.starts_at && x.status === "booked") : []}
+        partners={open ? sessions.filter((x) => x.id !== open.id && x.starts_at === open.starts_at && x.status !== "removed") : []}
         nameOf={who}
         onSwitch={setOpen}
         onClose={() => setOpen(null)}
@@ -256,9 +256,35 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   );
 }
 
-function SessionLine({ s, name, onOpen, showDay }: { s: LiveSession; name: string; onOpen: (s: LiveSession) => void; showDay?: boolean }) {
+function SessionLine({
+  s,
+  name,
+  onOpen,
+  showDay,
+  others = [],
+  nameOf,
+}: {
+  s: LiveSession;
+  name: string;
+  onOpen: (s: LiveSession) => void;
+  showDay?: boolean;
+  /** The rest of a joint session (same time). */
+  others?: LiveSession[];
+  nameOf?: (s: LiveSession) => string;
+}) {
   const kind = sessionKind(s);
   const style = KIND_STYLE[kind];
+  const detail = (x: LiveSession) => {
+    const k = sessionKind(x);
+    return `${KIND_STYLE[k].icon} ${kindDetail(k, x.cancelled_at ? noticeHours(x.starts_at, x.cancelled_at) : null, {
+      clientOk: !!x.client_confirmed_at,
+      disputed: !!x.client_disputed_at,
+      catchUp: !!x.makeup_for,
+      catchUpBooked: !!x.makeup_session_id,
+    })}`;
+  };
+  // A joint session where people differ (one cancelled): a line per person.
+  const each = others.length && others.some((o) => sessionKind(o) !== kind) ? [s, ...others] : null;
   return (
     <Pressable style={[styles.row, { borderLeftColor: themeBg(style.colour) }]} onPress={() => onOpen(s)}>
       <Text style={styles.rowTitle}>
@@ -266,9 +292,15 @@ function SessionLine({ s, name, onOpen, showDay }: { s: LiveSession; name: strin
         {showDay ? ` · ${dayLabel(s.starts_at)}` : ""}
         {s.repeat_id ? " 🔁" : ""}
       </Text>
-      <Text style={[styles.rowKind, { color: themeText(style.colour) }]}>
-        {style.icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, disputed: !!s.client_disputed_at, catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
-      </Text>
+      {each ? (
+        each.map((x) => (
+          <Text key={x.id} style={[styles.rowKind, { color: themeText(KIND_STYLE[sessionKind(x)].colour) }]}>
+            {(nameOf ? nameOf(x) : "").split(" ")[0]}: {detail(x)}
+          </Text>
+        ))
+      ) : (
+        <Text style={[styles.rowKind, { color: themeText(style.colour) }]}>{detail(s)}</Text>
+      )}
     </Pressable>
   );
 }
@@ -320,7 +352,7 @@ function ToDo({
     <>
       {/* Today's sessions first: the 1 on 1 side is about the day (GRIZZ, 2026-11-01). */}
       <Text style={styles.sectionTitle}>Today · {dayLabel(new Date().toISOString())}</Text>
-      {today.length ? jointLines(today).map((l) => <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
+      {today.length ? jointLines(today).map((l) => <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
 
       {clear ? <Text style={styles.helper}>All clear 👍 Every past session is marked and every invoice is sent.</Text> : null}
 
@@ -590,7 +622,7 @@ function CalendarTab({
       <Text style={[styles.meta, { textAlign: "center", marginTop: 0, marginBottom: 6 }]}>Swipe left for the next day, right for the day before</Text>
       {lines.map((l) =>
         l.s ? (
-          <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} onOpen={onOpen} />
+          <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} others={l.with} nameOf={who} onOpen={onOpen} />
         ) : (
           <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
             <Text style={styles.openText}>{l.time} · ??? · open</Text>

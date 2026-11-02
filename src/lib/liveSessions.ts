@@ -112,7 +112,9 @@ export function openSlots(dayStart: string, dayEnd: string, minutes: number, boo
 export function jointLines<T extends { starts_at: string; status: string }>(list: T[]): { s: T; with: T[] }[] {
   const out: { s: T; with: T[] }[] = [];
   for (const s of list) {
-    const joint = s.status === "booked" ? out.find((x) => x.s.status === "booked" && x.s.starts_at === s.starts_at) : undefined;
+    // Everyone at the same time stays on one line, whatever happened to each
+    // (GRIZZ 2026-11-02: Jade cancelled and the line split again).
+    const joint = s.status !== "removed" ? out.find((x) => x.s.status !== "removed" && x.s.starts_at === s.starts_at) : undefined;
     if (joint) joint.with.push(s);
     else out.push({ s, with: [] });
   }
