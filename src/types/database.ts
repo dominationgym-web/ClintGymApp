@@ -80,12 +80,20 @@ export type BillingPrices = Record<BillingCurrency, Record<BillingPlan | "client
 // starting after the previous tier. Clients past the last tier are free.
 export type ClientTier = { upto: number } & Record<BillingCurrency, number>;
 
+// Which price a trainer pays (0179): Evolution (gets both sides) or 1 on 1 only.
+export type PriceSide = "evolution" | "one_on_one";
+
+export type TrainerPriceSide = { trainer_id: string; side: PriceSide; counted_clients: number; diary_clients: number };
+
 export type BillingSettings = {
   id: number;
   prices: BillingPrices;
   free_client_months: number;
   free_clients: number;
   client_tiers: ClientTier[];
+  // 1 on 1 only pricing (0179): plan prices and per-client tiers (no free clients).
+  one_on_one_prices: Record<BillingCurrency, Record<BillingPlan, number>>;
+  one_on_one_tiers: ClientTier[];
   client_fees_due_day: number;
   lockout_enabled: boolean;
   // Card payments on the website (0136), off until the store launch.
@@ -1617,6 +1625,7 @@ export interface Database {
       trainer_billing_status: { Args: { p_trainer: string }; Returns: TrainerBillingStatus[] };
       billing_month_rows: { Args: { p_month: string }; Returns: BillingMonthRow[] };
       owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
+      trainer_price_sides: { Args: Record<string, never>; Returns: TrainerPriceSide[] };
       owner_trainer_clients: { Args: { p_trainer: string }; Returns: OwnerTrainerClientRow[] };
       quiet_clients: { Args: Record<string, never>; Returns: QuietClientRow[] };
       mark_client_contact: { Args: { p_client: string }; Returns: undefined };
