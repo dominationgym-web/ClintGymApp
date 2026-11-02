@@ -196,3 +196,97 @@ export function monthForecast(sessions: PredictFields[], now: Date = new Date())
 export function percentOf(made: number, predictedTotal: number): number {
   return predictedTotal > 0 ? Math.round((made / predictedTotal) * 100) : 0;
 }
+
+// Lost sessions and the income that can come back (GRIZZ, 2026-11-02: "every
+// client that cancels and needs to be credited or caught up or if the trainer
+// cancels those sessions must be added up in value and show the loss &
+// possible income return if those sessions are caught up").
+type LostFields = EarningFields & Pick<LiveSession, "client_id" | "makeup_session_id" | "invoice_id" | "credit_invoice_id">;
+
+export type LostRow = { kind: "coach" | "credited" | "decide"; fee: number; back: "can" | "booked" | "no" };
+
+export type Losses = {
+  /** Sessions not paid for: your cancellations and in-time credits. */
+  lost: number;
+  lostCount: number;
+  coach: number;
+  coachCount: number;
+  credited: number;
+  creditedCount: number;
+  /** Cancellations still to decide: not lost yet (charge or catch-up keeps them). */
+  undecided: number;
+  undecidedCount: number;
+  /** What catch-ups (or charging) would still bring back. */
+  canComeBack: number;
+  canComeBackCount: number;
+  /** Your cancellations whose catch-up is already booked. */
+  bookedBack: number;
+  bookedBackCount: number;
+  /** Client in-time cancellations kept for a catch-up: already paid, time owed. */
+  owedCount: number;
+};
+
+/** One session's part in the losses, or null when it isn't one. */
+export function lostRow(s: LostFields, now: Date = new Date()): LostRow | null {
+  const kind = sessionKind(s, now);
+  const fee = Number(s.fee) || 0;
+  // Only app clients can be caught up (people not in the app: no catch-ups, 2026-11-01).
+  const app = !!s.client_id;
+  if (kind === "trainer") {
+    if (app && s.charge === "makeup") return { kind: "coach", fee, back: s.makeup_session_id ? "booked" : "can" };
+    return { kind: "coach", fee, back: "no" };
+  }
+  if (kind === "notice" || kind === "excused") {
+    // Not on an invoice yet: switching the credit to a catch-up wins it back.
+    return { kind: "credited", fee, back: app && !s.invoice_id && !s.credit_invoice_id ? "can" : "no" };
+  }
+  if (kind === "decide") return { kind: "decide", fee, back: app ? "can" : "no" };
+  return null;
+}
+
+export function losses(sessions: LostFields[], now: Date = new Date()): Losses {
+  const t: Losses = {
+    lost: 0,
+    lostCount: 0,
+    coach: 0,
+    coachCount: 0,
+    credited: 0,
+    creditedCount: 0,
+    undecided: 0,
+    undecidedCount: 0,
+    canComeBack: 0,
+    canComeBackCount: 0,
+    bookedBack: 0,
+    bookedBackCount: 0,
+    owedCount: 0,
+  };
+  for (const s of sessions) {
+    if (sessionKind(s, now) === "makeup" && s.client_id && !s.makeup_session_id) t.owedCount += 1;
+    const r = lostRow(s, now);
+    if (!r) continue;
+    if (r.back === "booked") {
+      t.bookedBack += r.fee;
+      t.bookedBackCount += 1;
+      continue;
+    }
+    if (r.kind === "decide") {
+      t.undecided += r.fee;
+      t.undecidedCount += 1;
+      continue;
+    }
+    t.lost += r.fee;
+    t.lostCount += 1;
+    if (r.kind === "coach") {
+      t.coach += r.fee;
+      t.coachCount += 1;
+    } else {
+      t.credited += r.fee;
+      t.creditedCount += 1;
+    }
+    if (r.back === "can") {
+      t.canComeBack += r.fee;
+      t.canComeBackCount += 1;
+    }
+  }
+  return t;
+}

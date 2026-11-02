@@ -1,15 +1,19 @@
 import React, { useMemo, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
+import { useStepBack } from "@/hooks/useStepBack";
 import ModalSafeArea from "@/components/ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";
 import { KIND_STYLE, clockLabel, dayKey, dayLabel, sessionKind, sessionMoney } from "@/lib/liveSessions";
 import {
+  losses,
+  lostRow,
   monthForecast,
   percentOf,
   shiftWeek,
   takings,
   takingsByPerson,
+  weekDays,
   weekForecast,
   weekLabel,
   weekStart,
@@ -129,6 +133,104 @@ export function ForecastStrip({ sessions, currency }: { sessions: LiveSession[];
       <ForecastLines f={week} currency={currency} label="This week" small />
       <ForecastLines f={month} currency={currency} label={MONTHS[now.getMonth()]} small />
       {now.getDay() >= 1 && now.getDay() <= 2 ? <ForecastLines f={last} currency={currency} label="Last week" small /> : null}
+    </View>
+  );
+}
+
+// 📉 Lost sessions and 🔁 what can come back (GRIZZ, 2026-11-02): every
+// session not paid for this week or month (your cancellations, in-time
+// credits, undecided cancellations), and how much catch-ups would bring back.
+// Tap one to sort it out.
+export function LossesCard({
+  sessions,
+  currency,
+  name,
+  onOpen,
+}: {
+  sessions: LiveSession[];
+  currency: BillingCurrency;
+  name: Who;
+  onOpen: (s: LiveSession) => void;
+}) {
+  const now = new Date();
+  const [range, setRange] = useState<"week" | "month">("week");
+  const [listOpen, setListOpen] = useState(false);
+  useStepBack(listOpen, () => setListOpen(false));
+  const inRange = useMemo(() => {
+    const days = new Set(weekDays(weekStart(now)));
+    const month = dayKey(now).slice(0, 8);
+    return sessions.filter((s) => (range === "week" ? days.has(dayKey(s.starts_at)) : dayKey(s.starts_at).startsWith(month)));
+  }, [sessions, range]);
+  const t = losses(inRange, now);
+  const back = inRange
+    .map((s) => ({ s, r: lostRow(s, now) }))
+    .filter((x) => x.r && x.r.back === "can" && x.r.kind !== "decide")
+    .sort((a, b) => a.s.starts_at.localeCompare(b.s.starts_at));
+  if (!t.lostCount && !t.undecidedCount && !t.bookedBackCount && !t.owedCount) return null;
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const what = (kind: string) =>
+    kind === "coach" ? "you cancelled: book the catch-up (Today › Catch-ups)" : "credited: tap it › 🔁 Catch-up to win it back";
+  return (
+    <View style={[styles.card, { borderLeftColor: themeText("#EF4444") }]}>
+      <View style={styles.switchRow}>
+        {(["week", "month"] as const).map((v) => (
+          <Pressable key={v} style={[styles.chip, range === v && styles.chipOn]} onPress={() => setRange(v)}>
+            <Text style={[styles.chipText, range === v && styles.chipTextOn]}>{v === "week" ? "This week" : MONTHS[now.getMonth()]}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.forecastRow}>
+        <Text style={styles.forecastTitle}>📉 Lost to cancellations</Text>
+        <Text style={[styles.forecastBig, { color: themeText("#EF4444") }]} numberOfLines={1}>{sessionMoney(t.lost, currency)}</Text>
+      </View>
+      {t.coachCount ? (
+        <Text style={[styles.line, { color: themeText("#3B82F6") }]}>
+          🔵 {t.coachCount} you cancelled or blocked out · {sessionMoney(t.coach, currency)}
+        </Text>
+      ) : null}
+      {t.creditedCount ? (
+        <Text style={[styles.line, { color: themeText("#22C55E") }]}>
+          ↺ {plural(t.creditedCount, "client", "clients")} cancelled in time, credited · {sessionMoney(t.credited, currency)}
+        </Text>
+      ) : null}
+      {t.undecidedCount ? (
+        <Text style={[styles.line, { color: themeText("#F59E0B") }]}>
+          ! {plural(t.undecidedCount, "cancellation", "cancellations")} still to decide · {sessionMoney(t.undecided, currency)} not lost yet: charge it or give a catch-up to keep it
+        </Text>
+      ) : null}
+      <View style={[styles.forecastRow, { marginTop: 10 }]}>
+        <Text style={styles.forecastTitle}>🔁 Can come back</Text>
+        <Text style={[styles.forecastBig, { color: themeText("#22C55E") }]} numberOfLines={1}>{sessionMoney(t.canComeBack, currency)}</Text>
+      </View>
+      <Bar part={t.canComeBack} whole={t.lost} />
+      <Text style={styles.line}>
+        {t.canComeBackCount
+          ? `${plural(t.canComeBackCount, "session", "sessions")} you can still win back.`
+          : "Nothing left to win back."}
+        {t.bookedBackCount ? ` ✓ ${t.bookedBackCount} catch-up${t.bookedBackCount === 1 ? "" : "s"} already booked (${sessionMoney(t.bookedBack, currency)} back).` : ""}
+      </Text>
+      {t.owedCount ? (
+        <Text style={styles.line}>
+          🔁 {t.owedCount} catch-up{t.owedCount === 1 ? "" : "s"} owed to clients who cancelled in time (already paid, just the time owed).
+        </Text>
+      ) : null}
+      {back.length ? (
+        <Pressable onPress={() => setListOpen(!listOpen)} style={{ marginTop: 8 }} accessibilityRole="button">
+          <Text style={styles.weekLink}>
+            {listOpen ? "Hide them ▴" : `See them (${back.length}) ▾`}
+          </Text>
+        </Pressable>
+      ) : null}
+      {listOpen
+        ? back.map(({ s, r }) => (
+            <Pressable key={s.id} style={styles.sessionRow} onPress={() => onOpen(s)}>
+              <Text style={styles.sessionName}>
+                {dayLabel(s.starts_at)} {clockLabel(s.starts_at)} · {name(s)} · {what(r!.kind)}
+              </Text>
+              <Text style={[styles.sessionMoney, { color: themeText("#22C55E") }]}>{sessionMoney(r!.fee, currency)} ›</Text>
+            </Pressable>
+          ))
+        : null}
     </View>
   );
 }
