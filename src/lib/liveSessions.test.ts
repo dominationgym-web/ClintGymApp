@@ -196,8 +196,18 @@ describe("jointLines", () => {
       { id: "x", starts_at: at, status: "cancelled", n: "Sam" },
     ];
     const lines = jointLines(list);
-    expect(lines.map((l) => [l.s.id, l.with.map((w) => w.id)])).toEqual([["c", ["j"]], ["q", []], ["x", []]]);
-    expect(lines.map((l) => jointName(l, (s) => s.n))).toEqual(["Camilla & Jade 👥", "Quraish Behari", "Sam"]);
+    expect(lines.map((l) => [l.s.id, l.with.map((w) => w.id)])).toEqual([["c", ["j", "x"]], ["q", []]]);
+    expect(lines.map((l) => jointName(l, (s) => s.n))).toEqual(["Camilla & Jade & Sam 👥", "Quraish Behari"]);
+  });
+
+  it("keeps a removed session off the joint line", () => {
+    const at = "2026-11-02T03:50:00Z";
+    const lines = jointLines([
+      { id: "c", starts_at: at, status: "cancelled" },
+      { id: "r", starts_at: at, status: "removed" },
+      { id: "j", starts_at: at, status: "booked" },
+    ]);
+    expect(lines.map((l) => [l.s.id, l.with.map((w) => w.id)])).toEqual([["c", ["j"]], ["r", []]]);
   });
 });
 

@@ -208,13 +208,13 @@ export default function SessionActionsModal({
               <Text style={styles.meta}>Waiting for {first} to confirm.</Text>
             ) : null}
             {weekly ? <Text style={styles.meta}>🔁 Every week at this time</Text> : null}
-            {joint.length ? (
+            {partners.length ? (
               <View style={{ marginTop: 6 }}>
-                <Text style={styles.meta}>👥 Joint session with {joint.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
+                <Text style={styles.meta}>👥 Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
                 {onSwitch ? (
                   <View style={styles.chips}>
                     <Chip label={first} on onPress={() => {}} />
-                    {joint.map((p) => (
+                    {partners.map((p) => (
                       <Chip key={p.id} label={(nameOf ? nameOf(p) : "").split(" ")[0]} on={false} onPress={() => onSwitch(p)} />
                     ))}
                   </View>
