@@ -9,6 +9,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ShoppingListSheet from "@/components/ShoppingListSheet";
+import MealTimesPicker from "@/components/MealTimesPicker";
 import { trainingDaysGuess } from "@/lib/shoppingList";
 import { useMealTicks } from "@/hooks/useMealTicks";
 import { tickedSource } from "@/lib/mealTicks";
@@ -42,11 +43,8 @@ import {
   type MealDiet,
   type MealGoal,
   makeDay,
-  MAX_MEALS,
-  MAX_SNACKS,
   snackTimes,
   snackTimesFor,
-  MIN_MEALS,
   isSnack,
   keepOwnMeals,
   leaveOutEverywhere,
@@ -649,25 +647,6 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
                 ? `A different plan for each day, Monday to Sunday. Each new week is made again around the foods ${first} picks.`
                 : "The same training-day and rest-day plan every week."}
             </Text>
-            <Text style={styles.label}>How many meals does {first} tend to eat in a day?</Text>
-            <View style={styles.chips}>
-              {Array.from({ length: MAX_MEALS - MIN_MEALS + 1 }, (_, i) => MIN_MEALS + i).map((n) =>
-                chip(count === n, String(n), () => chooseMeals(n, training)),
-              )}
-            </View>
-            <Text style={styles.label}>And how many snacks?</Text>
-            <View style={styles.chips}>
-              {Array.from({ length: MAX_SNACKS + 1 }, (_, n) => n).map((n) =>
-                chip(snacks.length === n, n === 0 ? "None" : String(n), () => setSnacks(snackTimesFor(times.slice(0, count), n, training)), `snack${n}`),
-              )}
-            </View>
-            <Text style={styles.note}>
-              {snacks.length === 0
-                ? "No snacks: the meals carry all the protein and calories."
-                : snacks.length === 1
-                  ? "A protein snack with a piece of fruit."
-                  : "A protein snack with fruit, and a fruit and nut snack."}
-            </Text>
             <Text style={styles.label}>When does {first} train?</Text>
             <View style={styles.chips}>
               {TRAINING_TIMES.map((t) => chip(training === t.time, t.label, () => chooseMeals(count, t.time), t.key))}
@@ -684,41 +663,24 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
                 <Text style={styles.note}>Training days get more carbs around the session.</Text>
               </>
             )}
-            <Text style={styles.label}>{first}'s meal times</Text>
-            <Text style={styles.note}>Set around your training. Tap a time to change it.</Text>
-            <View style={styles.times}>
-              {times.slice(0, count).map((t, i) => (
-                <TextInput
-                  key={i}
-                  style={styles.timeInput}
-                  value={t}
-                  onChangeText={(v) => setTimes(times.map((x, j) => (j === i ? v : x)))}
-                  placeholder="07:00"
-                  placeholderTextColor="#64748B"
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-              ))}
-            </View>
-            {snacks.length > 0 && (
-              <>
-                <Text style={styles.label}>{first}'s snack times</Text>
-                <View style={styles.times}>
-                  {snacks.map((t, i) => (
-                    <TextInput
-                      key={i}
-                      style={styles.timeInput}
-                      value={t}
-                      onChangeText={(v) => setSnacks(snacks.map((x, j) => (j === i ? v : x)))}
-                      placeholder="10:30"
-                      placeholderTextColor="#64748B"
-                      keyboardType="numbers-and-punctuation"
-                      maxLength={5}
-                    />
-                  ))}
-                </View>
-              </>
-            )}
+            <MealTimesPicker
+              first={first}
+              meals={times.slice(0, count)}
+              snacks={snacks}
+              training={training}
+              onChange={(m, sn) => {
+                setCount(m.length);
+                setTimes(m);
+                setSnacks(sn);
+              }}
+            />
+            <Text style={styles.note}>
+              {snacks.length === 0
+                ? "No snacks: the meals carry all the protein and calories."
+                : snacks.length === 1
+                  ? "The snack is a protein snack with a piece of fruit."
+                  : "A protein snack with fruit, and a fruit and nut snack."}
+            </Text>
           </View>
         )}
 
