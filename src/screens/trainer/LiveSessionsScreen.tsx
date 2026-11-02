@@ -1517,8 +1517,9 @@ const styles = themedStyles({
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, fontSize: 15, marginTop: 6, borderWidth: 1, borderColor: "#334155" },
   row: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: "#334155" },
   rowTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  openRow: { backgroundColor: "transparent", borderWidth: 1, borderStyle: "dashed", borderColor: "#475569", borderLeftWidth: 1, paddingVertical: 8 },
-  openText: { color: "#94A3B8", fontSize: 14, fontWeight: "600" },
+  // Open slots in bright green so the coach sees his openings at a glance (GRIZZ, 2026-11-02).
+  openRow: { backgroundColor: "#14532D", borderWidth: 2, borderColor: "#22C55E", borderLeftWidth: 6, borderLeftColor: "#22C55E", paddingVertical: 8 },
+  openText: { color: "#4ADE80", fontSize: 14, fontWeight: "800" },
   rowBody: { color: "#CBD5E1", fontSize: 14, marginTop: 4 },
   rowKind: { fontSize: 13, fontWeight: "600", marginTop: 3 },
   meta: { color: "#64748B", fontSize: 12, marginTop: 6, lineHeight: 17 },
