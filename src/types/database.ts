@@ -768,12 +768,28 @@ export type ClientMealTick = {
 // The client's own meal plan, made by the app (0077, src/lib/mealPlanMaker.ts).
 export type ClientMealPlan = {
   client_id: string;
-  settings: { meals: string[]; training: string | null; goal?: "coach" | "lose" | "maintain" | "gain"; diet?: "everything" | "vegetarian" | "pescatarian"; dairyFree?: boolean; avoid?: string[]; ownMeals?: Record<string, DietItem[]>; trainingDays?: number };
+  settings: {
+    meals: string[];
+    training: string | null;
+    goal?: "coach" | "lose" | "maintain" | "gain";
+    diet?: "everything" | "vegetarian" | "pescatarian";
+    dairyFree?: boolean;
+    avoid?: string[];
+    ownMeals?: Record<string, DietItem[]>;
+    trainingDays?: number;
+    likes?: string[];
+    weekly?: boolean;
+    trainDays?: number[];
+  };
   targets: { kcal: number; protein: number; carbs: number; fat: number };
   training_day: DietDay;
   rest_day: DietDay;
   variety: number;
   updated_at: string;
+  // A weekly plan (0186): {startsOn, days}, or {} for a training/rest day plan.
+  week?: { startsOn?: string; days?: DietDay[] } | null;
+  // What the client likes, learned from their swaps (0186): see src/lib/mealWeek.ts.
+  taste?: { liked?: Record<string, number>; disliked?: Record<string, number>; adaptedOn?: string; note?: string } | null;
 };
 
 // A trainer's change to an exercise for one client (0070): one row of one

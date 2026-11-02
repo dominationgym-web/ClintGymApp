@@ -59,7 +59,8 @@ export default function FoodScreen() {
   }
 
   const ticked = tickedSource(mealTicks.ticks, today);
-  const trains = food.kind === "own" && !!food.plan.settings.training;
+  // A weekly plan already knows which day today is, so no training/rest choice.
+  const trains = food.kind === "own" && !!food.plan.settings.training && !food.plan.settings.weekly;
   const kind = picked ?? (ticked === "rest" || (ticked == null && food.kind === "own" && !trains) ? "rest" : "training");
   const current = planDay(food, new Date(), kind)!;
   const planned = dayTotals(current.day);

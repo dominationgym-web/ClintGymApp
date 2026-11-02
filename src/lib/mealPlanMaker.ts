@@ -48,6 +48,15 @@ export type MealPlanSettings = {
   ownMeals?: Record<string, DietItem[]>;
   /** Training days a week, for the shopping list (GRIZZ, 2026-10-27). */
   trainingDays?: number;
+  /**
+   * Foods the client likes, learned from what they swap in and put in their
+   * own meals (and read by the AI, 2026-11-02): used more often in new plans.
+   */
+  likes?: string[];
+  /** A different plan for each day of the week, Monday to Sunday (GRIZZ, 2026-11-02). */
+  weekly?: boolean;
+  /** For a weekly plan, the days they train: 0 = Monday ... 6 = Sunday. */
+  trainDays?: number[];
 };
 
 const MEAT = /chicken|beef|ostrich|biltong|pork|lamb|turkey|wors|venison|bacon|\bham\b/i;
@@ -317,13 +326,32 @@ const NO_MEAT_PROTEIN: Record<MealDiet, Partial<Record<Slot, string[]>>> = {
   },
 };
 
-type Prefs = { diet: MealDiet; dairyFree: boolean; avoid: string[] };
+type Prefs = { diet: MealDiet; dairyFree: boolean; avoid: string[]; likes: string[] };
 
 // Fits the diet, dairy-free, and isn't a food they left out.
 const ok = (name: string, prefs: Prefs) => foodAllowed(name, prefs.diet, prefs.dairyFree) && !prefs.avoid.includes(name);
 
+/** The food list's group for a food, if it's in the list. */
+const groupOf = (name: string) => findFood(name)?.group ?? null;
+
+/**
+ * Foods they like come up more often (GRIZZ, 2026-11-02: "get a feel for what
+ * they like"): a liked food already in the list goes in again at the front,
+ * and in the main and reload meals a liked food from the same food group joins
+ * the list. Liked foods are only foods the client chose themselves.
+ */
+export function favour(list: string[], prefs: Pick<Prefs, "likes" | "avoid" | "diet" | "dairyFree">, group: string | null, open: boolean): string[] {
+  if (!prefs.likes.length || !list.length) return list;
+  const liked = prefs.likes.filter(
+    (f) => foodAllowed(f, prefs.diet, prefs.dairyFree) && !prefs.avoid.includes(f) && (list.includes(f) || (open && group != null && groupOf(f) === group)),
+  );
+  return liked.length ? [...liked, ...list] : list;
+}
+
+const OPEN_SLOTS: Slot[] = ["main", "post"];
+
 function proteinPool(slot: Slot, prefs: Prefs): string[] {
-  const list = (NO_MEAT_PROTEIN[prefs.diet][slot] ?? POOLS[slot].protein).filter((f) => ok(f, prefs));
+  const list = favour((NO_MEAT_PROTEIN[prefs.diet][slot] ?? POOLS[slot].protein).filter((f) => ok(f, prefs)), prefs, "Protein", OPEN_SLOTS.includes(slot));
   if (list.length) return list;
   const fallback = ["Chicken breast (cooked)", "Tuna in water (drained)", "Eggs", "Tofu, firm", "Egg whites"].filter((f) => ok(f, prefs));
   return fallback.length ? fallback : ["Eggs"];
@@ -406,7 +434,12 @@ const item = (food: string, grams: number): DietItem => ({ food, grams });
 
 function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: number, prefs: Prefs, extras: DietItem[] = []): DietItem[] {
   const all = POOLS[slot];
-  const pool = { veg: all.veg.filter((f) => ok(f, prefs)), carbs: all.carbs.filter((f) => ok(f, prefs)), fat: all.fat };
+  const open = OPEN_SLOTS.includes(slot);
+  const pool = {
+    veg: favour(all.veg.filter((f) => ok(f, prefs)), prefs, "Veg", open),
+    carbs: favour(all.carbs.filter((f) => ok(f, prefs)), prefs, "Carbs", open),
+    fat: favour(all.fat.filter((f) => ok(f, prefs)), prefs, "Fats", open),
+  };
   if (!pool.carbs.length) pool.carbs = ["White rice (cooked)", "Potatoes (boiled)", "Brown rice (cooked)"].filter((f) => ok(f, prefs) && findFood(f));
   const sides: DietItem[] = [...extras];
   if (pool.veg.length) sides.push(item(pick(pool.veg, n + slot.length), slot === "breakfast" ? 100 : 150));
@@ -454,7 +487,7 @@ function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: n
 export function makeDay(settings: MealPlanSettings, targets: MacroTargets, trainingDay: boolean, variety = 0): DietDay {
   const times = [...settings.meals].sort((a, b) => minutes(a) - minutes(b));
   const roles = mealRoles(times, trainingDay ? settings.training : null);
-  const prefs: Prefs = { diet: settings.diet ?? "everything", dairyFree: !!settings.dairyFree, avoid: settings.avoid ?? [] };
+  const prefs: Prefs = { diet: settings.diet ?? "everything", dairyFree: !!settings.dairyFree, avoid: settings.avoid ?? [], likes: settings.likes ?? [] };
   // The client's own meals are kept as they are; the app's meals share out
   // what's left of the day, with the same split between them as before.
   const own = times.map((_, i) => ownMealItems(settings, i));
@@ -470,7 +503,8 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
   const firstFree = own.findIndex((o) => !o);
   // The snack (protein plus a fruit) and the meat eater's daily dairy are set
   // first; their protein, carbs and fat come off what the meals need.
-  const fruit = FRUIT.filter((f) => ok(f, prefs));
+  const likedFruit = prefs.likes.filter((f) => groupOf(f) === "Fruit & dairy" && !DAIRY.test(f) && !PLANT_MILK.test(f) && ok(f, prefs));
+  const fruit = [...likedFruit, ...FRUIT.filter((f) => ok(f, prefs))];
   const snackItems = [proteinSnack(targets, prefs.diet, prefs.dairyFree, prefs.avoid)];
   if (fruit.length) {
     const name = pick(fruit, variety);

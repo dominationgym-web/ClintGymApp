@@ -292,9 +292,30 @@ export function weekGrams(trainingDay: DietDay, restDay: DietDay, trainingDays: 
  */
 export function shoppingList(trainingDay: DietDay, restDay: DietDay, trainingDays: number): ShoppingList {
   const days = Math.max(0, Math.min(7, Math.round(trainingDays)));
+  return listFromGrams(weekGrams(trainingDay, restDay, days), days);
+}
+
+/** Every food in a weekly plan (a different plan each day), in grams. */
+export function daysGrams(days: DietDay[]): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const day of days)
+    for (const meal of day.meals)
+      for (const item of meal.items) {
+        if (!(item.grams > 0)) continue;
+        totals.set(item.food, (totals.get(item.food) ?? 0) + item.grams);
+      }
+  return totals;
+}
+
+/** The shopping list for a weekly plan (GRIZZ, 2026-11-02): the seven days as planned. */
+export function weekShoppingList(days: DietDay[], trainingDays: number): ShoppingList {
+  return listFromGrams(daysGrams(days), Math.max(0, Math.min(7, Math.round(trainingDays))));
+}
+
+function listFromGrams(totals: Map<string, number>, days: number): ShoppingList {
   // Foods bought as the same thing (both kinds of pap are maize meal) are added up first.
   const bought = new Map<string, { rule: BuyRule; amount: number; from: string[]; ml: boolean }>();
-  for (const [food, grams] of weekGrams(trainingDay, restDay, days)) {
+  for (const [food, grams] of totals) {
     const rule = ruleFor(food);
     const name = rule.buy ?? nameOf(food);
     const entry = bought.get(name) ?? { rule, amount: 0, from: [], ml: isMl(food) };
