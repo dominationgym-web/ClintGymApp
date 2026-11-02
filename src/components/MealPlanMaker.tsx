@@ -872,6 +872,18 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
           {coachWeek ? ` ${first} sees your diet planner week below instead while it has meals in it.` : ""}
         </Text>
       )}
+      {/* Right at the top, so the setup is easy to change once the plan is made (GRIZZ, 2026-11-02). */}
+      {coachMode && (
+        <Pressable
+          style={[styles.button, styles.secondary, styles.stacked, { marginTop: 0, marginBottom: 10 }]}
+          onPress={() => {
+            setStep(0);
+            setEditing(true);
+          }}
+        >
+          <Text style={styles.secondaryText}>✎ Change details, goal, meals or training time</Text>
+        </Pressable>
+      )}
       <MealDayView
         day={day}
         targetKcal={plan.targets.kcal}
