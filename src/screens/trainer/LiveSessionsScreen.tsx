@@ -85,6 +85,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const [weekMoney, setWeekMoney] = useState(false);
   // A cancelled session whose catch-up is being booked on the Calendar tab.
   const [makeup, setMakeup] = useState<LiveSession | null>(null);
+  // A ??? gap tapped on Today: open Book a session on the calendar at that time.
+  const [bookAt, setBookAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!only && route.params?.tab) setTab(route.params.tab);
@@ -184,6 +186,18 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
             <ToDo
               todo={todo}
               today={sessions.filter((s) => dayKey(s.starts_at) === dayKey(now) && s.status !== "removed" && !todo.includes(s))}
+              openToday={openSlots(
+                settings?.day_start ?? "05:00",
+                settings?.day_end ?? "20:00",
+                settings?.minutes ?? 60,
+                sessions
+                  .filter((s) => dayKey(s.starts_at) === dayKey(now) && (s.status === "booked" || s.status === "done"))
+                  .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))
+              ).filter((t) => t > clockLabel(now.toISOString()))}
+              onBookAt={(t) => {
+                setBookAt(t);
+                setTab("calendar");
+              }}
               unsigned={unsigned}
               catchUps={catchUps}
               planOf={planOf}
@@ -211,6 +225,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               name={who}
               makeup={makeup}
               onMakeupDone={() => setMakeup(null)}
+              bookAt={bookAt}
+              onBookAtDone={() => setBookAt(null)}
               onOpen={setOpen}
               onChanged={load}
             />
@@ -308,6 +324,8 @@ function SessionLine({
 function ToDo({
   todo,
   today,
+  openToday,
+  onBookAt,
   unsigned,
   catchUps,
   onCatchUp,
@@ -321,6 +339,9 @@ function ToDo({
 }: {
   todo: LiveSession[];
   today: LiveSession[];
+  /** Open slots left today, shown as ??? (GRIZZ 2026-11-02). */
+  openToday: string[];
+  onBookAt: (time: string) => void;
   unsigned: SessionPlan[];
   catchUps: LiveSession[];
   onCatchUp: (s: LiveSession) => void;
@@ -352,7 +373,23 @@ function ToDo({
     <>
       {/* Today's sessions first: the 1 on 1 side is about the day (GRIZZ, 2026-11-01). */}
       <Text style={styles.sectionTitle}>Today · {dayLabel(new Date().toISOString())}</Text>
-      {today.length ? jointLines(today).map((l) => <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
+      {[
+        ...jointLines(today).map((l) => ({ time: clockLabel(l.s.starts_at), l })),
+        ...(today.length ? openToday.map((t) => ({ time: t, l: null })) : []),
+      ]
+        .sort((a, b) => a.time.localeCompare(b.time))
+        .map(({ time, l }) =>
+          l ? (
+            <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />
+          ) : (
+            <Pressable key={`open-${time}`} style={[styles.row, styles.openRow]} onPress={() => onBookAt(time)}>
+              <Text style={styles.openText}>{time} · ??? · open</Text>
+            </Pressable>
+          )
+        )}
+      {!today.length ? (
+        <Text style={styles.helper}>{openToday.length ? `No sessions booked today. Open from ${openToday[0]}.` : "No sessions booked today."}</Text>
+      ) : null}
 
       {clear ? <Text style={styles.helper}>All clear 👍 Every past session is marked and every invoice is sent.</Text> : null}
 
@@ -540,6 +577,8 @@ function CalendarTab({
   name: who,
   makeup,
   onMakeupDone,
+  bookAt,
+  onBookAtDone,
   onOpen,
   onChanged,
 }: {
@@ -551,6 +590,8 @@ function CalendarTab({
   settings: SessionSettings | null;
   makeup: LiveSession | null;
   onMakeupDone: () => void;
+  bookAt?: string | null;
+  onBookAtDone?: () => void;
   name: (s: Pick<LiveSession, "client_id" | "guest_name">) => string;
   onOpen: (s: LiveSession) => void;
   onChanged: () => void;
@@ -558,6 +599,13 @@ function CalendarTab({
   const [day, setDay] = useState<string>(dayKey(new Date()));
   const [adding, setAdding] = useState(false);
   const [addAt, setAddAt] = useState<string | null>(null);
+  useEffect(() => {
+    if (!bookAt) return;
+    setDay(dayKey(new Date()));
+    setAddAt(bookAt);
+    setAdding(true);
+    onBookAtDone?.();
+  }, [bookAt]);
   const [importing, setImporting] = useState(false);
   const list = sessions.filter((s) => s.status !== "removed" && dayKey(s.starts_at) === day);
   const taken = list.filter((s) => s.status === "booked" || s.status === "done").map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }));
