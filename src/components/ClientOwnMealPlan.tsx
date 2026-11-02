@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import MealPlanMaker from "@/components/MealPlanMaker";
@@ -27,6 +27,12 @@ export default function ClientOwnMealPlan({
   ownPlan: React.ReactNode;
 }) {
   const [open, setOpen] = useState<"de" | "own" | null>(null);
+  // Once opened, the app's plan stays on the page (folded away, never
+  // display:none) so closing it doesn't lose the setup half way through.
+  const [deMounted, setDeMounted] = useState(false);
+  useEffect(() => {
+    if (open === "de") setDeMounted(true);
+  }, [open]);
   // Phone Back closes what is open first, one step at a time.
   useStepBack(open !== null, () => setOpen(null));
   const first = client.name.trim().split(/\s+/)[0] || client.name;
@@ -56,11 +62,11 @@ export default function ClientOwnMealPlan({
           "de",
           "🤖",
           `Let Daily Evolution work out ${first}'s diet`,
-          "Answer a few questions and the app builds the meals from their BMR and goal. They can swap foods they don't like.",
+          "Two quick pages and the app builds the meals from their BMR and goal.",
         )}
-        {open === "de" && (
-          <View style={{ marginTop: 12 }}>
-            <MealPlanMaker forTrainer={{ client, trainerId, onDetailsSaved }} />
+        {deMounted && (
+          <View style={open === "de" ? { marginTop: 12 } : styles.clipped}>
+            <MealPlanMaker forTrainer={{ client, trainerId, onDetailsSaved, hidden: open !== "de" }} />
           </View>
         )}
       </View>
@@ -69,7 +75,7 @@ export default function ClientOwnMealPlan({
           "own",
           "✍️",
           `Work out your own diet for ${first}`,
-          `Add each food yourself, day by day. While it has meals in it, ${first} sees this one instead of the app's.`,
+          `Add each food yourself, day by day. ${first} sees this one while it has food in it.`,
         )}
         {/* Kept mounted (clipped, never display:none) so unsaved foods aren't lost. */}
         <View style={open === "own" ? { marginTop: 12 } : styles.clipped}>{ownPlan}</View>
