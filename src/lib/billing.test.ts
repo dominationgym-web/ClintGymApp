@@ -10,6 +10,9 @@ import {
   halfYearLabel,
   halfYearTotals,
   money,
+  monthlyBill,
+  planPrice,
+  sidePricing,
   planAmountDue,
   planState,
   planStateLabel,
@@ -164,5 +167,46 @@ describe("tiered client fees (GRIZZ 2026-10-22, bands 2026-10-24)", () => {
       "Clients 66+: free",
     ]);
     expect(clientTierLines(tiers, "USD", 0)[0]).toBe("Clients 1-15: $5 each");
+  });
+});
+
+describe("pricing by side (0179)", () => {
+  const settings = {
+    prices: {
+      USD: { monthly: 20, six_months: 100, yearly: 180, client: 5 },
+      ZAR: { monthly: 200, six_months: 1000, yearly: 1800, client: 50 },
+    },
+    free_clients: 5,
+    client_tiers: [
+      { upto: 35, ZAR: 20, USD: 2 },
+      { upto: 65, ZAR: 10, USD: 1 },
+    ],
+    one_on_one_prices: {
+      USD: { monthly: 10, six_months: 50, yearly: 90 },
+      ZAR: { monthly: 100, six_months: 500, yearly: 900 },
+    },
+    one_on_one_tiers: [{ upto: 70, ZAR: 10, USD: 1 }],
+  };
+
+  it("bills Evolution with 5 free, $2 to 35, $1 to 65, then free", () => {
+    expect(monthlyBill(settings, "evolution", "USD", 10)).toBe(30);
+    expect(monthlyBill(settings, "evolution", "USD", 30)).toBe(70);
+    expect(monthlyBill(settings, "evolution", "USD", 70)).toBe(110);
+    expect(monthlyBill(settings, "evolution", "ZAR", 30)).toBe(700);
+    expect(monthlyBill(settings, "evolution", "ZAR", 200)).toBe(1100);
+  });
+
+  it("bills 1 on 1 only at $10 plus $1 a client, most $80", () => {
+    expect(monthlyBill(settings, "one_on_one", "USD", 0)).toBe(10);
+    expect(monthlyBill(settings, "one_on_one", "USD", 10)).toBe(20);
+    expect(monthlyBill(settings, "one_on_one", "ZAR", 30)).toBe(400);
+    expect(monthlyBill(settings, "one_on_one", "USD", 100)).toBe(80);
+    expect(planPrice(sidePricing(settings, "one_on_one").prices, "ZAR", "yearly")).toBe(900);
+    expect(referralCreditValue(sidePricing(settings, "one_on_one").prices, "USD", 1)).toBe(2.5);
+  });
+
+  it("lists the tiers per side", () => {
+    expect(clientTierLines(settings.client_tiers, "ZAR", 5)).toEqual(["Clients 6-35: R20 each", "Clients 36-65: R10 each", "Clients 66+: free"]);
+    expect(clientTierLines(settings.one_on_one_tiers, "USD", 0)).toEqual(["Clients 1-70: $1 each", "Clients 71+: free"]);
   });
 });

@@ -1,7 +1,7 @@
 // Plain helpers for trainer billing (0064). Kept free of Supabase and React
 // Native imports so they can be unit tested.
 import { REFERRAL_DISCOUNT_PERCENT, trialDaysLeft } from "@/lib/trainers";
-import type { BillingCurrency, BillingPlan, BillingPrices, ClientActivation, ClientTier, TrainerBillingMonth, TrainerPayment } from "@/types/database";
+import type { BillingCurrency, BillingPlan, BillingPrices, BillingSettings, ClientActivation, ClientTier, PriceSide, TrainerBillingMonth, TrainerPayment } from "@/types/database";
 
 export const PLANS: BillingPlan[] = ["monthly", "six_months", "yearly"];
 export const CURRENCIES: BillingCurrency[] = ["USD", "ZAR"];
@@ -60,6 +60,34 @@ export function clientTierLines(tiers: ClientTier[], currency: BillingCurrency, 
   }
   if (tiers.length > 0) lines.push(`Clients ${prev + 1}+: free`);
   return lines;
+}
+
+export const PRICE_SIDE_LABEL: Record<PriceSide, string> = {
+  evolution: "Evolution (both sides)",
+  one_on_one: "1 on 1 only",
+};
+
+type SideSettings = Pick<BillingSettings, "prices" | "free_clients" | "client_tiers"> &
+  Partial<Pick<BillingSettings, "one_on_one_prices" | "one_on_one_tiers">>;
+
+/**
+ * Pricing for one side (0179): Evolution gets both sides; 1 on 1 only is
+ * cheaper with no free clients. Plan prices come back shaped like
+ * BillingPrices so planPrice and the referral helpers work unchanged.
+ */
+export function sidePricing(settings: SideSettings, side: PriceSide): { prices: BillingPrices; tiers: ClientTier[]; included: number } {
+  if (side === "one_on_one" && settings.one_on_one_prices) {
+    const prices = {} as BillingPrices;
+    for (const c of CURRENCIES) prices[c] = { ...settings.prices[c], ...settings.one_on_one_prices[c] };
+    return { prices, tiers: settings.one_on_one_tiers ?? [], included: 0 };
+  }
+  return { prices: settings.prices, tiers: settings.client_tiers ?? [], included: settings.free_clients };
+}
+
+/** A whole month's bill on one side: monthly plan plus client fees. */
+export function monthlyBill(settings: SideSettings, side: PriceSide, currency: BillingCurrency, clients: number): number {
+  const p = sidePricing(settings, side);
+  return planPrice(p.prices, currency, "monthly") + clientFeeTotal(p.tiers, currency, clients, p.included);
 }
 
 /** Each unused referral is 25% off one month of the trainer's plan. */
