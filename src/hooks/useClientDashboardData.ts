@@ -5,6 +5,7 @@ import { normaliseWeek, weekdayIndex, type DietDay } from "@/lib/dietPlan";
 import type { DashLog } from "@/lib/clientDashboard";
 import type { BodyStat } from "@/lib/progress";
 import type { ClientMealPlan } from "@/types/database";
+import { readWeek, trainsOn } from "@/lib/mealWeek";
 
 // Data for the client's laptop pages (GRIZZ, 2026-10-27), loaded again each
 // time the page comes into view, so a set logged on the phone shows up.
@@ -85,6 +86,12 @@ export function useFoodPlan(clientId: string | undefined) {
 /** The plan day for `date`: the coach's weekday, or the own plan's training or rest day. */
 export function planDay(food: FoodPlan, date: Date, kind: "training" | "rest"): { day: DietDay; source: DayKind } | null {
   if (food.kind === "coach") return { day: food.week[weekdayIndex(date)], source: "coach" };
+  // A weekly plan (GRIZZ, 2026-11-02): that weekday's own meals.
+  const week = food.kind === "own" && food.plan.settings.weekly ? readWeek(food.plan.week) : null;
+  if (food.kind === "own" && week) {
+    const i = weekdayIndex(date);
+    return { day: week.days[i], source: trainsOn(food.plan.settings, i) ? "training" : "rest" };
+  }
   if (food.kind === "own") return kind === "training" ? { day: food.plan.training_day, source: "training" } : { day: food.plan.rest_day, source: "rest" };
   return null;
 }

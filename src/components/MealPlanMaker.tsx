@@ -56,6 +56,25 @@ import {
 import type { Client, ClientMealPlan } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import { intakeTrainingDays } from "@/lib/intakePages";
+import { adaptPlan } from "@/lib/mealAdapt";
+import {
+  defaultTrainDays,
+  makeWeek,
+  readTaste,
+  readWeek,
+  tasteLeaveOut,
+  tasteOwnMeal,
+  tastePutBack,
+  tasteSwap,
+  trainsOn,
+  WEEK_DAY_NAMES,
+  WEEK_DAYS,
+  weekdayOf,
+  weekIsOld,
+  weekStart,
+  type Taste,
+} from "@/lib/mealWeek";
 
 // Carbs and insulin, in line with the trainer guide (nutrition review,
 // 2026-10-18): fat loss comes from the calorie deficit, not from cutting carbs.
@@ -253,6 +272,13 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   const [ownDraft, setOwnDraft] = useState<OwnRow[]>([]);
   const [ownSearch, setOwnSearch] = useState("");
   const [shopping, setShopping] = useState(false);
+  // A week at a time (GRIZZ, 2026-11-02): a different plan each day, and the days they train.
+  const [weekly, setWeekly] = useState(false);
+  const [trainDays, setTrainDays] = useState<number[]>([]);
+  const [weekDay, setWeekDay] = useState(() => weekdayOf(todayIso()));
+  // Making the plan again around what they like, and what came of it.
+  const [adapting, setAdapting] = useState(false);
+  const [newWeek, setNewWeek] = useState(false);
 
   useEffect(() => {
     if (!client) return;
@@ -285,10 +311,27 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
         if (mine.settings.diet) setDiet(mine.settings.diet);
         if (mine.settings.dairyFree) setDairyFree(true);
         if (!mine.settings.training) setDayKind("rest");
+        setWeekly(!!mine.settings.weekly);
+        setTrainDays(mine.settings.trainDays ?? defaultTrainDays(intakeTrainingDays(client.intake_responses as Record<string, string> | null)));
       } else if (coachMode) {
+        setTrainDays(defaultTrainDays(intakeTrainingDays(client.intake_responses as Record<string, string> | null)));
         setEditing(true);
       }
       setLoading(false);
+      // A new week: next week's plan, adapted to what they like (GRIZZ,
+      // 2026-11-02: "make changes over time accordingly").
+      const today = todayIso();
+      if (mine?.settings?.weekly && (weekIsOld(readWeek(mine.week), today) || !readWeek(mine.week))) {
+        setAdapting(true);
+        adaptPlan(mine, client.name?.trim().split(/\s+/)[0] || "your client", today)
+          .then(({ plan: next }) => supabase.from("client_meal_plans").upsert(next).then(({ error }) => {
+            if (!error) {
+              setPlan(next);
+              setNewWeek(true);
+            }
+          }))
+          .finally(() => setAdapting(false));
+      }
     });
   }, [client?.id]);
 
@@ -349,6 +392,13 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
               • To lose fat, eat a bit less than your body uses. It then takes the difference from your stored fat.{"\n"}• To
               stay the same, eat what your body uses.{"\n"}• To build muscle, eat a bit more than your body uses, and train
               hard. The extra food gives your body what it needs to build new muscle.
+            </Text>
+            <Text style={styles.explainHead}>A week at a time</Text>
+            <Text style={styles.explain}>
+              A weekly plan has different meals for each day, Monday to Sunday, with more carbs on training days (marked ●). Every
+              food swapped in, left out or put in an own meal teaches the plan what they like, and each new week is made again
+              around those foods. The AI reads the choices and picks more of what they enjoy, and the app's maths keeps the
+              calories, protein, carbs and fat on target.
             </Text>
             <Text style={styles.explainHead}>3. Carbs and insulin</Text>
             <Text style={styles.explain}>{INSULIN_SPIKE}</Text>
@@ -448,7 +498,20 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
     // Foods they left out stay out of every new plan.
     // Their own meals stay too, for the meals the day still has.
     const ownMeals = keepOwnMeals(plan?.settings.ownMeals, cleaned.length);
-    const settings: MealPlanSettings = { meals: cleaned as string[], training, goal: safeGoal, diet, dairyFree, avoid: plan?.settings.avoid ?? [], ownMeals, trainingDays: plan?.settings.trainingDays };
+    if (weekly && training && !trainDays.length) return Alert.alert("Training days", `Tap the days ${first} trains.`);
+    const settings: MealPlanSettings = {
+      meals: cleaned as string[],
+      training,
+      goal: safeGoal,
+      diet,
+      dairyFree,
+      avoid: plan?.settings.avoid ?? [],
+      ownMeals,
+      trainingDays: weekly && training ? trainDays.length : plan?.settings.trainingDays,
+      likes: plan?.settings.likes ?? [],
+      weekly,
+      trainDays: [...trainDays].sort(),
+    };
     const targets = macroTargets(kcalFor(safeGoal), body.weight_kg, safeGoal, body.height_cm);
     save({
       client_id: client.id,
@@ -456,6 +519,8 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
       targets,
       training_day: makeDay(settings, targets, true, variety),
       rest_day: makeDay(settings, targets, false, variety),
+      week: weekly ? makeWeek(settings, targets, variety, weekStart(todayIso())) : {},
+      taste: plan?.taste ?? {},
       variety,
       updated_at: new Date().toISOString(),
     });
@@ -562,6 +627,16 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
 
         {page === "meals" && (
           <View>
+            <Text style={styles.label}>Plan for</Text>
+            <View style={styles.chips}>
+              {chip(!weekly, "A training and a rest day", () => setWeekly(false))}
+              {chip(weekly, "A whole week, different each day", () => setWeekly(true))}
+            </View>
+            <Text style={styles.note}>
+              {weekly
+                ? `A different plan for each day, Monday to Sunday. Each new week is made again around the foods ${first} picks.`
+                : "The same training-day and rest-day plan every week."}
+            </Text>
             <Text style={styles.label}>How many meals does {first} tend to eat in a day?</Text>
             <View style={styles.chips}>
               {Array.from({ length: MAX_MEALS - MIN_MEALS + 1 }, (_, i) => MIN_MEALS + i).map((n) =>
@@ -574,6 +649,17 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
               {TRAINING_TIMES.map((t) => chip(training === t.time, t.label, () => chooseMeals(count, t.time), t.key))}
               {chip(training === null, "Doesn't train", () => chooseMeals(count, null))}
             </View>
+            {training && weekly && (
+              <>
+                <Text style={styles.label}>Which days does {first} train?</Text>
+                <View style={styles.chips}>
+                  {WEEK_DAYS.map((d, i) =>
+                    chip(trainDays.includes(i), d, () => setTrainDays(trainDays.includes(i) ? trainDays.filter((x) => x !== i) : [...trainDays, i]), d),
+                  )}
+                </View>
+                <Text style={styles.note}>Training days get more carbs around the session.</Text>
+              </>
+            )}
             <Text style={styles.label}>{first}'s meal times</Text>
             <Text style={styles.note}>Set around your training. Tap a time to change it.</Text>
             <View style={styles.times}>
@@ -628,14 +714,29 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
     );
   }
 
-  const day = dayKind === "training" ? plan.training_day : plan.rest_day;
+  const week = plan.settings.weekly ? readWeek(plan.week) : null;
+  const taste = readTaste(plan.taste);
+  const todayDay = weekdayOf(todayIso());
+  // On a weekly plan the day is a weekday, and today's meals can be ticked.
+  const kind: "training" | "rest" = week ? (trainsOn(plan.settings, weekDay) ? "training" : "rest") : dayKind;
+  const day = week ? week.days[weekDay] : dayKind === "training" ? plan.training_day : plan.rest_day;
+  const canTick = !coachMode && (!week || weekDay === todayDay);
+  /** The plan with this day's meals changed. */
+  const withDay = (meals: DietDay["meals"]): ClientMealPlan =>
+    week
+      ? { ...plan, week: { ...week, days: week.days.map((d, i) => (i === weekDay ? { meals } : d)) } }
+      : dayKind === "training"
+        ? { ...plan, training_day: { meals } }
+        : { ...plan, rest_day: { meals } };
+  // Each choice the client makes teaches the plan what they like (not the trainer's).
+  const learn = (next: Taste) => (coachMode ? plan.taste ?? {} : next);
   const swapTarget: DietItem | null = swapping ? day.meals[swapping.meal]?.items[swapping.index] ?? null : null;
   const pickSwap = (food: string) => {
     if (!swapping || !swapTarget) return;
     const meals = day.meals.map((m, mi) =>
       mi !== swapping.meal ? m : { ...m, items: m.items.map((it, ii) => (ii === swapping.index ? swapItem(it, food) : it)) },
     );
-    save(dayKind === "training" ? { ...plan, training_day: { meals } } : { ...plan, rest_day: { meals } });
+    save({ ...withDay(meals), taste: learn(tasteSwap(taste, swapTarget.food, food)) });
     setSwapping(null);
   };
 
@@ -647,10 +748,18 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
     const food = leaveTarget.food;
     const training = leaveOutEverywhere(plan.training_day, food);
     const rest = leaveOutEverywhere(plan.rest_day, food);
+    const days = week?.days.map((d) => leaveOutEverywhere(d, food));
     const avoid = [...new Set([...(plan.settings.avoid ?? []), food])];
-    save({ ...plan, settings: { ...plan.settings, avoid }, training_day: training.day, rest_day: rest.day });
+    save({
+      ...plan,
+      settings: { ...plan.settings, avoid },
+      training_day: training.day,
+      rest_day: rest.day,
+      ...(week && days ? { week: { ...week, days: days.map((d) => d.day) } } : {}),
+      taste: learn(tasteLeaveOut(taste, food)),
+    });
     setLeaving(null);
-    const current = dayKind === "training" ? training : rest;
+    const current = days ? days[weekDay] : dayKind === "training" ? training : rest;
     if (!current.rebalanced) {
       Alert.alert("Left out", `Nothing else on this day gives what ${food} did, so it's a little lower now. ${coachMode ? "Tap New ideas for a fresh plan without it." : "Your coach can make you a fresh plan without it."}`);
     }
@@ -677,6 +786,8 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
       settings,
       training_day: makeDay(settings, plan.targets, true, plan.variety),
       rest_day: makeDay(settings, plan.targets, false, plan.variety),
+      ...(week ? { week: makeWeek(settings, plan.targets, plan.variety, week.startsOn) } : {}),
+      taste: learn(tasteOwnMeal(taste, (items ?? []).map((it) => it.food))),
       updated_at: new Date().toISOString(),
     });
     setOwnMeal(null);
@@ -693,14 +804,58 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   };
   const putBack = (food: string) => {
     const avoid = (plan.settings.avoid ?? []).filter((f) => f !== food);
-    save({ ...plan, settings: { ...plan.settings, avoid } });
+    save({ ...plan, settings: { ...plan.settings, avoid }, taste: learn(tastePutBack(taste, food)) });
+  };
+  // Makes the plan again now around what they like (the AI reads their swaps).
+  const adaptNow = async () => {
+    setAdapting(true);
+    try {
+      const { plan: next, fromAi } = await adaptPlan(plan, first, todayIso());
+      await save(next);
+      if (!fromAi && Object.keys(taste.liked).length + Object.keys(taste.disliked).length > 0)
+        Alert.alert("Made with the app's own reading", "The AI couldn't be reached, so the app used its own reading of what they pick.");
+    } finally {
+      setAdapting(false);
+    }
   };
 
   return (
     <View>
       {header}
       {explainer}
-      {plan.settings.training && (
+      {newWeek && (
+        <View style={styles.insulinBox}>
+          <Text style={styles.insulinTitle}>🗓️ A new week's plan</Text>
+          <Text style={styles.insulinText}>
+            {coachMode
+              ? `This week's plan for ${first} was made around the foods they pick.`
+              : "Your plan for this week is ready, made around the foods you pick."}
+          </Text>
+        </View>
+      )}
+      {adapting && <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 8 }} />}
+      {week && (
+        <>
+          <View style={styles.weekRow}>
+            {WEEK_DAYS.map((d, i) => (
+              <Pressable
+                key={d}
+                style={[styles.weekDay, weekDay === i && styles.chipOn]}
+                onPress={() => setWeekDay(i)}
+                accessibilityLabel={WEEK_DAY_NAMES[i]}
+              >
+                <Text style={[styles.weekDayText, weekDay === i && styles.chipTextOn]}>{d}</Text>
+                {trainsOn(plan.settings, i) && <Text style={[styles.weekDot, weekDay === i && styles.chipTextOn]}>●</Text>}
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.weekLabel}>
+            {WEEK_DAY_NAMES[weekDay]}
+            {weekDay === todayDay ? " (today)" : ""} · {kind === "training" ? "training day" : "rest day"}
+          </Text>
+        </>
+      )}
+      {!week && plan.settings.training && (
         <View style={styles.chips}>
           {(["training", "rest"] as const).map((k) => (
             <Pressable key={k} style={[styles.chip, styles.flex, dayKind === k && styles.chipOn]} onPress={() => setDayKind(k)}>
@@ -717,6 +872,18 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
           {coachWeek ? ` ${first} sees your diet planner week below instead while it has meals in it.` : ""}
         </Text>
       )}
+      {/* Right at the top, so the setup is easy to change once the plan is made (GRIZZ, 2026-11-02). */}
+      {coachMode && (
+        <Pressable
+          style={[styles.button, styles.secondary, styles.stacked, { marginTop: 0, marginBottom: 10 }]}
+          onPress={() => {
+            setStep(0);
+            setEditing(true);
+          }}
+        >
+          <Text style={styles.secondaryText}>✎ Change details, goal, meals or training time</Text>
+        </Pressable>
+      )}
       <MealDayView
         day={day}
         targetKcal={plan.targets.kcal}
@@ -725,9 +892,9 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
         onOwnMeal={coachMode ? undefined : openOwnMeal}
         coachView={coachMode}
         tick={
-          coachMode
-            ? undefined
-            : { isTicked: (m) => mealTicks.isTicked(dayKind, m, day.meals[m]), onTick: (m) => mealTicks.toggle(dayKind, m, day.meals[m]) }
+          canTick
+            ? { isTicked: (m) => mealTicks.isTicked(kind, m, day.meals[m]), onTick: (m) => mealTicks.toggle(kind, m, day.meals[m]) }
+            : undefined
         }
       />
       {(plan.settings.avoid ?? []).length > 0 && (
@@ -745,6 +912,19 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
           </Text>
         </View>
       )}
+      <View style={styles.insulinBox}>
+        <Text style={styles.insulinTitle}>🧠 {coachMode ? `What ${first} likes` : "Your plan learns what you like"}</Text>
+        <Text style={styles.insulinText}>
+          {coachMode
+            ? taste.note || `Each food ${first} swaps in, leaves out or puts in their own meal teaches the plan what they like.`
+            : `Each food you swap in, leave out or put in your own meal teaches your plan what you like.${week ? " Each new week uses more of the foods you pick." : ""}`}
+        </Text>
+        {coachMode && (
+          <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={adaptNow} disabled={adapting || saving}>
+            {adapting ? <ActivityIndicator color={themeText("#fff")} /> : <Text style={styles.secondaryText}>✨ Adapt the plan to {first}'s tastes now</Text>}
+          </Pressable>
+        )}
+      </View>
       <View style={styles.insulinBox}>
         <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
         <Text style={styles.insulinText}>{plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
@@ -790,11 +970,12 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
         trainingDay={plan.training_day}
         restDay={plan.rest_day}
         trains={!!plan.settings.training}
-        days={plan.settings.trainingDays ?? trainingDaysGuess(details.activity)}
+        days={week ? (plan.settings.trainDays ?? []).length : plan.settings.trainingDays ?? trainingDaysGuess(details.activity)}
         onDays={(trainingDays) => {
           if (trainingDays !== plan.settings.trainingDays) save({ ...plan, settings: { ...plan.settings, trainingDays } });
         }}
         onClose={() => setShopping(false)}
+        week={week?.days ?? null}
       />
 
       <Modal visible={!!swapTarget} animationType="slide" transparent onRequestClose={() => setSwapping(null)}>
@@ -1000,6 +1181,11 @@ const styles = themedStyles({
   detailInput: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 10, textAlign: "center", fontSize: 16 },
   bigQuestion: { color: "#fff", fontSize: 18, fontWeight: "800", lineHeight: 25, marginVertical: 8 },
   backLink: { color: "#94A3B8", fontWeight: "700" },
+  weekRow: { flexDirection: "row", gap: 4, marginBottom: 6 },
+  weekDay: { flex: 1, backgroundColor: "#0F172A", borderRadius: 8, paddingVertical: 8, alignItems: "center" },
+  weekDayText: { color: "#CBD5E1", fontWeight: "700", fontSize: 12 },
+  weekDot: { color: BRAND_GOLD, fontSize: 8, marginTop: 2 },
+  weekLabel: { color: "#94A3B8", fontSize: 13, fontWeight: "700", marginBottom: 8 },
   insulinBox: { backgroundColor: "#0F172A", borderRadius: 10, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD, padding: 12, marginTop: 10 },
   insulinTitle: { color: BRAND_GOLD, fontWeight: "800", marginBottom: 4 },
   insulinText: { color: "#E2E8F0", fontSize: 13, lineHeight: 19 },

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Modal, Platform, Pressable, Share, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { BRAND_GOLD } from "@/lib/brand";
-import { emailShareLink, shoppingList, shoppingListText, whatsappShareLink } from "@/lib/shoppingList";
+import { emailShareLink, shoppingList, shoppingListText, weekShoppingList, whatsappShareLink } from "@/lib/shoppingList";
 import type { DietDay } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
 
@@ -18,6 +18,7 @@ export default function ShoppingListSheet({
   days,
   onDays,
   onClose,
+  week,
 }: {
   visible: boolean;
   trainingDay: DietDay;
@@ -29,8 +30,11 @@ export default function ShoppingListSheet({
   /** They picked their training days: saved for next time. */
   onDays: (days: number) => void;
   onClose: () => void;
+  /** A weekly plan (GRIZZ, 2026-11-02): the list adds up its seven days, so there's no days question. */
+  week?: DietDay[] | null;
 }) {
-  const [page, setPage] = useState<"days" | "list">(trains ? "days" : "list");
+  const asks = trains && !week;
+  const [page, setPage] = useState<"days" | "list">(asks ? "days" : "list");
   const [picked, setPicked] = useState(days);
   const [open, setOpen] = useState(0);
   const [ticked, setTicked] = useState<Set<string>>(new Set());
@@ -45,12 +49,12 @@ export default function ShoppingListSheet({
 
   useEffect(() => {
     if (!visible) return;
-    setPage(trains ? "days" : "list");
+    setPage(asks ? "days" : "list");
     setPicked(days);
     setOpen(0);
   }, [visible]);
 
-  const list = shoppingList(trainingDay, restDay, trains ? picked : 0);
+  const list = week ? weekShoppingList(week, days) : shoppingList(trainingDay, restDay, trains ? picked : 0);
   const total = list.sections.reduce((n, s) => n + s.items.length, 0);
   const tick = (name: string) => {
     const next = new Set(ticked);
@@ -114,7 +118,9 @@ export default function ShoppingListSheet({
             <View style={{ flexShrink: 1 }}>
               <Text style={styles.title}>🛒 Your shopping list for the week</Text>
               <Text style={styles.helper}>
-                {trains
+                {week
+                  ? "For the 7 days of this week's plan. "
+                  : trains
                   ? `For ${list.trainingDays} training ${dayWord(list.trainingDays)} and ${list.restDays} rest ${dayWord(list.restDays)}. `
                   : "For 7 days of your plan. "}
                 Tap a food to tick it off. {ticked.size > 0 ? `${ticked.size} of ${total} in the trolley.` : ""}
@@ -173,7 +179,7 @@ export default function ShoppingListSheet({
               <Pressable style={[styles.button, styles.primary]} onPress={onClose}>
                 <Text style={styles.primaryText}>Done</Text>
               </Pressable>
-              {trains && (
+              {asks && (
                 <Pressable onPress={() => setPage("days")} hitSlop={8} style={{ marginTop: 12, alignSelf: "center" }}>
                   <Text style={styles.link}>Change my training days</Text>
                 </Pressable>
