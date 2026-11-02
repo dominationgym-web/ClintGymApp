@@ -23,6 +23,16 @@ function isLatest(step: Step) {
   return false;
 }
 
+/**
+ * Whether a step is open on this page (its route key). A page's own "are you
+ * sure you want to leave?" check skips the back arrow while one is, because
+ * that Back only closes the step (GRIZZ, 2026-11-02: the diet setup "kept
+ * sending me back to the beginning").
+ */
+export function hasOpenStep(screen: string | undefined) {
+  return openSteps.some((s) => s.screen === screen);
+}
+
 export function useStepBack(stepOpen: boolean, closeStep: () => void) {
   const navigation = useContext(NavigationContext);
   const route = useContext(NavigationRouteContext);

@@ -224,12 +224,20 @@ const ownRow = (item: DietItem): OwnRow => {
 
 const ownGrams = (row: OwnRow) => Math.round(num(row.amount) * row.unit.grams);
 
-const STEPS = ["details", "goal", "meals", "diet"] as const;
+// Two pages (GRIZZ, 2026-11-02: "very confusing setup... minimise buttons"):
+// about them (body, goal, what they eat), then their meals and training.
+const STEPS = ["about", "meals"] as const;
 
 const num = (text: string) => Number(text.replace(",", "."));
 
 /** The trainer making the plan for one of their clients (Diet tab). */
-export type MealPlanForTrainer = { client: Client; trainerId: string; onDetailsSaved?: () => void };
+export type MealPlanForTrainer = {
+  client: Client;
+  trainerId: string;
+  onDetailsSaved?: () => void;
+  /** Kept on the page but folded away: Back doesn't step through it. */
+  hidden?: boolean;
+};
 
 export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanForTrainer } = {}) {
   const auth = useAuth();
@@ -248,7 +256,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   const [editing, setEditing] = useState(false);
   const [step, setStep] = useState(0);
   // Phone Back closes what is open first, one step at a time.
-  useStepBack(step > 0, () => setStep((s) => Math.max(0, s - 1)));
+  useStepBack(step > 0 && !forTrainer?.hidden, () => setStep((s) => Math.max(0, s - 1)));
   // The trainer told the client this version of the plan is ready.
   const [told, setTold] = useState(false);
   const [telling, setTelling] = useState(false);
@@ -424,7 +432,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
               Tap ⇄ Swap next to it and pick something you like. The app changes the weight so you still get the same amount of
               protein, carbs or fat. Or tap ✕ to leave it out: the app tells you why it's there, and can top up the other foods
               like it so you still get the same. Eat the same breakfast (or any meal) every day? Tap Put in my own meal and add what you eat: the app keeps it and balances the
-              rest of your day around it.{coachMode ? " Tap New ideas for a fresh set of foods, or Change meals to change the details or goal." : ""}
+              rest of your day around it.{coachMode ? " Tap 🔄 New foods for a fresh set of foods, or ✎ Change the setup to change the details, goal or meals." : ""}
             </Text>
             <Text style={styles.explain}>
               {coachMode
@@ -562,19 +570,17 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   if (editing || !plan) {
     const page = STEPS[step];
     const next = async () => {
-      if (page === "details" && !(await saveDetails())) return;
-      if (page === "diet") return build(plan ? plan.variety + 1 : 0);
+      if (page === "about" && !(await saveDetails())) return;
+      if (page === "meals") return build(plan ? plan.variety + 1 : 0);
       setStep(step + 1);
     };
     const back = () => (step > 0 ? setStep(step - 1) : plan ? setEditing(false) : null);
 
     return (
       <View>
-        {header}
-        {explainer}
         <Text style={styles.stepCount}>Step {step + 1} of {STEPS.length}</Text>
 
-        {page === "details" && (
+        {page === "about" && (
           <View>
             <Text style={styles.label}>About {first}</Text>
             <View style={styles.detailRow}>
@@ -609,12 +615,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
                 {first}'s BMR is {base.toLocaleString()} kcal. With their activity their body uses about {need.toLocaleString()} kcal a day.
               </Text>
             ) : null}
-          </View>
-        )}
-
-        {page === "goal" && (
-          <View>
-            <Text style={styles.label}>Does {first} want to lose fat, build muscle or stay the same?</Text>
+            <Text style={styles.label}>{first}'s goal</Text>
             <View style={styles.chips}>
               {coachKcal ? chip(goal === "coach", "Your diet planner target", () => setGoal("coach")) : null}
               {goals.map((g) => chip(safeGoal === g.key, g.label, () => setGoal(g.key), g.key))}
@@ -628,10 +629,15 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
               </Text>
             ) : null}
             {referralBox}
-            <View style={styles.insulinBox}>
-              <Text style={styles.insulinTitle}>{safeGoal === "lose" ? "📉 How you lose fat" : "⏱️ Carbs timed around training"}</Text>
-              <Text style={styles.insulinText}>{safeGoal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
+            <Text style={styles.label}>What does {first} eat?</Text>
+            <View style={styles.chips}>
+              {MEAL_DIETS.map((d) => chip(diet === d.key, d.label, () => setDiet(d.key), d.key))}
+              {chip(dairyFree, "No dairy", () => setDairyFree(!dairyFree), "nodairy")}
             </View>
+            <Text style={styles.note}>
+              {MEAL_DIETS.find((d) => d.key === diet)?.detail}
+              {dairyFree ? " No milk, yoghurt or cheese." : ""}
+            </Text>
           </View>
         )}
 
@@ -684,23 +690,6 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
           </View>
         )}
 
-        {page === "diet" && (
-          <View>
-            <Text style={styles.label}>What does {first} eat?</Text>
-            {MEAL_DIETS.map((d) => (
-              <Pressable key={d.key} style={[styles.dietOption, diet === d.key && styles.dietOptionOn]} onPress={() => setDiet(d.key)}>
-                <Text style={[styles.dietLabel, diet === d.key && styles.chipTextOn]}>{d.label}</Text>
-                <Text style={[styles.note, { marginTop: 2 }, diet === d.key && styles.chipTextOn]}>{d.detail}</Text>
-              </Pressable>
-            ))}
-            <Text style={styles.label}>Milk, yoghurt and cheese?</Text>
-            <View style={styles.chips}>
-              {chip(!dairyFree, "Has dairy", () => setDairyFree(false))}
-              {chip(dairyFree, "No dairy (lactose or allergy)", () => setDairyFree(true))}
-            </View>
-          </View>
-        )}
-
         <View style={styles.buttons}>
             {(step > 0 || plan) && (
               <Pressable style={[styles.button, styles.secondary]} onPress={back}>
@@ -711,7 +700,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
               {saving ? (
                 <ActivityIndicator color={themeText("#0F172A")} />
               ) : (
-                <Text style={styles.primaryText}>{page === "diet" ? "Make the plan" : "Next"}</Text>
+                <Text style={styles.primaryText}>{page === "meals" ? "Make the plan" : "Next"}</Text>
               )}
             </Pressable>
         </View>
@@ -721,6 +710,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
 
   const week = plan.settings.weekly ? readWeek(plan.week) : null;
   const taste = readTaste(plan.taste);
+  const hasTaste = !!taste.note || Object.keys(taste.liked).length + Object.keys(taste.disliked).length > 0;
   const todayDay = weekdayOf(todayIso());
   // On a weekly plan the day is a weekday, and today's meals can be ticked.
   const kind: "training" | "rest" = week ? (trainsOn(plan.settings, weekDay) ? "training" : "rest") : dayKind;
@@ -766,7 +756,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
     setLeaving(null);
     const current = days ? days[weekDay] : dayKind === "training" ? training : rest;
     if (!current.rebalanced) {
-      Alert.alert("Left out", `Nothing else on this day gives what ${food} did, so it's a little lower now. ${coachMode ? "Tap New ideas for a fresh plan without it." : "Your coach can make you a fresh plan without it."}`);
+      Alert.alert("Left out", `Nothing else on this day gives what ${food} did, so it's a little lower now. ${coachMode ? "Tap 🔄 New foods for a fresh plan without it." : "Your coach can make you a fresh plan without it."}`);
     }
   };
   // Their own meal (GRIZZ, 2026-10-27): the foods they eat at this meal every
@@ -826,7 +816,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
 
   return (
     <View>
-      {header}
+      {!coachMode && header}
       {explainer}
       {newWeek && (
         <View style={styles.insulinBox}>
@@ -890,7 +880,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             setEditing(true);
           }}
         >
-          <Text style={styles.secondaryText}>✎ Change details, goal, meals or training time</Text>
+          <Text style={styles.secondaryText}>✎ Change the setup</Text>
         </Pressable>
       )}
       <MealDayView
@@ -917,10 +907,11 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             ))}
           </View>
           <Text style={styles.avoidHint}>
-            {coachMode ? "Tap one to allow it again. It comes back next time you tap New ideas." : "Tap one to allow it again. It comes back the next time your coach makes your plan."}
+            {coachMode ? "Tap one to allow it again. It comes back next time you tap New foods." : "Tap one to allow it again. It comes back the next time your coach makes your plan."}
           </Text>
         </View>
       )}
+      {(!coachMode || hasTaste) && (
       <View style={styles.insulinBox}>
         <Text style={styles.insulinTitle}>🧠 {coachMode ? `What ${first} likes` : "Your plan learns what you like"}</Text>
         <Text style={styles.insulinText}>
@@ -934,36 +925,32 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
           </Pressable>
         )}
       </View>
-      <View style={styles.insulinBox}>
-        <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
-        <Text style={styles.insulinText}>{plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
-      </View>
+      )}
+      {/* The why is for the client; the trainer knows it (fewer boxes, GRIZZ 2026-11-02). */}
+      {!coachMode && (
+        <View style={styles.insulinBox}>
+          <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
+          <Text style={styles.insulinText}>{plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
+        </View>
+      )}
       <Text style={styles.note}>
         Weights are for the food as listed, for example cooked rice. Swap keeps the same protein, carbs or fat. Tap ✕ to leave a food out. {SNACK_SALT}
       </Text>
       {coachMode ? (
         <>
+          {/* Two buttons: new foods, or send it (GRIZZ, 2026-11-02: "minimise buttons"). */}
           <View style={styles.buttons}>
-            <Pressable
-              style={[styles.button, styles.secondary]}
-              onPress={() => {
-                setStep(0);
-                setEditing(true);
-              }}
-            >
-              <Text style={styles.secondaryText}>Change meals</Text>
+            <Pressable style={[styles.button, styles.secondary]} onPress={() => build(plan.variety + 1)} disabled={saving}>
+              {saving ? <ActivityIndicator color={themeText("#fff")} /> : <Text style={styles.secondaryText}>🔄 New foods</Text>}
             </Pressable>
-            <Pressable style={[styles.button, styles.primary]} onPress={() => build(plan.variety + 1)} disabled={saving}>
-              {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>New ideas</Text>}
+            <Pressable style={[styles.button, told ? styles.secondary : styles.primary]} onPress={tell} disabled={telling || told}>
+              {telling ? (
+                <ActivityIndicator color={themeText("#0F172A")} />
+              ) : (
+                <Text style={told ? styles.secondaryText : styles.primaryText}>{told ? `Sent ✓` : `📣 Send to ${first}`}</Text>
+              )}
             </Pressable>
           </View>
-          <Pressable style={[styles.button, told ? styles.secondary : styles.primary, styles.stacked]} onPress={tell} disabled={telling || told}>
-            {telling ? (
-              <ActivityIndicator color={themeText("#0F172A")} />
-            ) : (
-              <Text style={told ? styles.secondaryText : styles.primaryText}>{told ? `Sent ✓ ${first} was told` : `📣 Tell ${first} their meal plan is ready`}</Text>
-            )}
-          </Pressable>
         </>
       ) : (
         <View style={styles.shopBox}>
