@@ -104,6 +104,27 @@ export function openSlots(dayStart: string, dayEnd: string, minutes: number, boo
   }
   return out.map(toClock);
 }
+/**
+ * Two or more people booked at the same time are one joint session (GRIZZ
+ * 2026-11-01: "Jade & Camilla is 1 joint session"). Each person keeps their
+ * own row (their own cancellations and fee); lists show them as one line.
+ */
+export function jointLines<T extends { starts_at: string; status: string }>(list: T[]): { s: T; with: T[] }[] {
+  const out: { s: T; with: T[] }[] = [];
+  for (const s of list) {
+    const joint = s.status === "booked" ? out.find((x) => x.s.status === "booked" && x.s.starts_at === s.starts_at) : undefined;
+    if (joint) joint.with.push(s);
+    else out.push({ s, with: [] });
+  }
+  return out;
+}
+
+/** "Camilla & Jade 👥" for a joint line, the full name for one person. */
+export function jointName<T>(line: { s: T; with: T[] }, name: (s: T) => string): string {
+  if (!line.with.length) return name(line.s);
+  return [line.s, ...line.with].map((x) => name(x).split(" ")[0]).join(" & ") + " 👥";
+}
+
 const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const LONG_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

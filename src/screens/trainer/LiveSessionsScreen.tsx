@@ -44,6 +44,8 @@ import {
   monthLabel,
   monthStart,
   noticeHours,
+  jointLines,
+  jointName,
   openSlots,
   policyLabel,
   regularLabel,
@@ -318,7 +320,7 @@ function ToDo({
     <>
       {/* Today's sessions first: the 1 on 1 side is about the day (GRIZZ, 2026-11-01). */}
       <Text style={styles.sectionTitle}>Today · {dayLabel(new Date().toISOString())}</Text>
-      {today.length ? today.map((s) => <SessionLine key={s.id} s={s} name={who(s)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
+      {today.length ? jointLines(today).map((l) => <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} onOpen={onOpen} />) : <Text style={styles.helper}>No sessions booked today.</Text>}
 
       {clear ? <Text style={styles.helper}>All clear 👍 Every past session is marked and every invoice is sent.</Text> : null}
 
@@ -526,14 +528,7 @@ function CalendarTab({
   const nowClock = clockLabel(new Date().toISOString());
   const open =
     day < today ? [] : openSlots(settings?.day_start ?? "05:00", settings?.day_end ?? "20:00", settings?.minutes ?? 60, taken).filter((t) => day > today || t > nowClock);
-  // Two or more people booked at the same time are one joint session (GRIZZ
-  // 2026-11-01: "Jade & Camilla is 1 joint session"): one line with all names.
-  const shown: { time: string; s: LiveSession; with: LiveSession[] }[] = [];
-  for (const s of list) {
-    const joint = s.status === "booked" ? shown.find((x) => x.s.status === "booked" && x.s.starts_at === s.starts_at) : undefined;
-    if (joint) joint.with.push(s);
-    else shown.push({ time: clockLabel(s.starts_at), s, with: [] });
-  }
+  const shown = jointLines(list).map((l) => ({ ...l, time: clockLabel(l.s.starts_at) }));
   const lines = [
     ...shown,
     ...(list.length ? open.map((t) => ({ time: t, s: null, with: [] as LiveSession[] })) : []),
@@ -589,7 +584,7 @@ function CalendarTab({
       <Text style={[styles.meta, { textAlign: "center", marginTop: 0, marginBottom: 6 }]}>Swipe left for the next day, right for the day before</Text>
       {lines.map((l) =>
         l.s ? (
-          <SessionLine key={l.s.id} s={l.s} name={[l.s, ...l.with].map((x) => (l.with.length ? who(x).split(" ")[0] : who(x))).join(" & ") + (l.with.length ? " 👥" : "")} onOpen={onOpen} />
+          <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} onOpen={onOpen} />
         ) : (
           <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
             <Text style={styles.openText}>{l.time} · ??? · open</Text>
