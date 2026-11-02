@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   agreementCurrent,
+  catchUpDeadline,
+  catchUpDue,
   autoCharge,
   cancelPreview,
   fillAgreement,
@@ -265,5 +267,19 @@ describe("special rate", () => {
     expect(feeText({ fee: 500, group_size: 2, group_total: 1000, solo_fee: 700 }, "ZAR")).toBe(
       "R500 (my share of R1 000 for 2 people, or R700 when I train alone and the others are credited)"
     );
+  });
+});
+
+describe("catch-up deadline", () => {
+  const missed = new Date(2026, 9, 14, 6, 0).toISOString(); // 14 Oct
+  it("is the end of the missed session's month, or the moved-to day", () => {
+    expect(catchUpDeadline({ starts_at: missed })).toBe("2026-10-31");
+    expect(catchUpDeadline({ starts_at: missed, catchup_until: "2026-11-30" })).toBe("2026-11-30");
+  });
+  it("is late after the deadline and soon in its last three days", () => {
+    expect(catchUpDue({ starts_at: missed }, new Date(2026, 9, 20))).toBe("ok");
+    expect(catchUpDue({ starts_at: missed }, new Date(2026, 9, 28))).toBe("soon");
+    expect(catchUpDue({ starts_at: missed }, new Date(2026, 10, 1))).toBe("late");
+    expect(catchUpDue({ starts_at: missed, catchup_until: "2026-11-30" }, new Date(2026, 10, 1))).toBe("ok");
   });
 });

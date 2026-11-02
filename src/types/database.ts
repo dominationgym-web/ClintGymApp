@@ -1187,6 +1187,8 @@ export type LiveSession = {
   charge: "charge" | "credit" | "makeup" | null;
   makeup_for: string | null;
   makeup_session_id: string | null;
+  /** A catch-up moved to a later month: book it by this day (0181). */
+  catchup_until?: string | null;
   proof_path: string | null;
   note: string | null;
   trainer_confirmed_at: string | null;
@@ -1686,6 +1688,7 @@ export interface Database {
       block_trainer_time: { Args: { p_from: string; p_to: string; p_reason: string }; Returns: TrainerTimeOff };
       remove_trainer_time_off: { Args: { p_id: string }; Returns: undefined };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
+      decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };
       set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
