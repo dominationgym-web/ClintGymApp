@@ -23,6 +23,9 @@ import {
   type DietSex,
 } from "@/lib/dietPlan";
 import DietFoodPicker from "@/components/DietFoodPicker";
+import MealTimesPicker from "@/components/MealTimesPicker";
+import { dayLayout, foodsMoving, relayoutDay, type MealLayout } from "@/lib/mealLayout";
+import { cleanTime } from "@/lib/mealPlanMaker";
 import type { Client } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
@@ -75,8 +78,12 @@ export default function DietPlanner({
   const [days, setDays] = useState<DietDay[]>(emptyWeek());
   const [day, setDay] = useState(weekdayIndex(new Date()));
   const [targetOpen, setTargetOpen] = useState(false);
+  // How many meals and snacks, and when (GRIZZ, 2026-11-02): the same picker
+  // as the Daily Evolution plan. The draft is used when the trainer taps Use.
+  const [layoutDraft, setLayoutDraft] = useState<MealLayout | null>(null);
   // Phone Back closes what is open first, one step at a time.
   useStepBack(targetOpen, () => setTargetOpen(false));
+  useStepBack(layoutDraft !== null, () => setLayoutDraft(null));
   const [adding, setAdding] = useState<number | null>(null);
   const [editing, setEditing] = useState<{ meal: number; index: number } | null>(null);
 
@@ -198,7 +205,30 @@ export default function DietPlanner({
       { text: "Copy", onPress: () => updateDays(days.map(() => JSON.parse(JSON.stringify(days[day])))) },
     ]);
 
+  const applyLayout = () => {
+    if (!layoutDraft) return;
+    const meals = layoutDraft.meals.map(cleanTime);
+    const snacks = layoutDraft.snacks.map(cleanTime);
+    if ([...meals, ...snacks].some((t) => !t)) return Alert.alert("Meal times", "Type each time like 07:00 or 13:30.");
+    const layout = { meals: meals as string[], snacks: snacks as string[] };
+    const apply = () => {
+      updateDays(days.map((d) => relayoutDay(d, layout)));
+      setLayoutDraft(null);
+    };
+    const moving = days.reduce((n, d) => n + foodsMoving(d, layout), 0);
+    if (!moving) return apply();
+    Alert.alert(
+      "Some foods will move",
+      `${moving} food${moving === 1 ? "" : "s"} in the meals or snacks you're taking away will move into the last meal or snack of that day. You can move or remove them after.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Go ahead", onPress: apply },
+      ],
+    );
+  };
+
   const today = days[day];
+  const layout = dayLayout(today);
   const totals = dayTotals(today);
   const status = target != null ? targetStatus(totals.kcal, target) : null;
   const editingItem = editing ? today.meals[editing.meal]?.items[editing.index] ?? null : null;
@@ -276,6 +306,31 @@ export default function DietPlanner({
               </View>
             )}
           </View>
+        )}
+      </View>
+
+      {/* Meals and snacks, tap to open */}
+      <View style={styles.card}>
+        <Pressable style={styles.cardHeader} onPress={() => setLayoutDraft(layoutDraft ? null : layout)}>
+          <Text style={styles.cardTitle}>
+            🍽 {layout.meals.length} meals{layout.snacks.length ? ` and ${layout.snacks.length} snack${layout.snacks.length === 1 ? "" : "s"}` : ", no snacks"} a day
+          </Text>
+          <Text style={styles.chevron}>{layoutDraft ? "▲" : "▼"}</Text>
+        </Pressable>
+        {layoutDraft ? (
+          <View>
+            <MealTimesPicker
+              first={client.name.trim().split(/\s+/)[0] || client.name}
+              meals={layoutDraft.meals}
+              snacks={layoutDraft.snacks}
+              onChange={(meals, snacks) => setLayoutDraft({ meals, snacks })}
+            />
+            <Pressable style={styles.saveButton} onPress={applyLayout}>
+              <Text style={styles.saveText}>Use these for every day</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Text style={styles.helper}>Tap to change how many meals and snacks, and their times.</Text>
         )}
       </View>
 

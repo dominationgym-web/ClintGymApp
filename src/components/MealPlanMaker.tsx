@@ -9,6 +9,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ShoppingListSheet from "@/components/ShoppingListSheet";
+import MealTimesPicker from "@/components/MealTimesPicker";
 import { trainingDaysGuess } from "@/lib/shoppingList";
 import { useMealTicks } from "@/hooks/useMealTicks";
 import { tickedSource } from "@/lib/mealTicks";
@@ -42,8 +43,8 @@ import {
   type MealDiet,
   type MealGoal,
   makeDay,
-  MAX_MEALS,
-  MIN_MEALS,
+  snackTimes,
+  snackTimesFor,
   isSnack,
   keepOwnMeals,
   leaveOutEverywhere,
@@ -256,6 +257,8 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   const [count, setCount] = useState(4);
   const [times, setTimes] = useState<string[]>(() => mealTimesFor(4, "17:30"));
   const [training, setTraining] = useState<string | null>("17:30");
+  // Snack times: none, one or two (GRIZZ, 2026-11-02: "some people only eat twice a day with maybe 1 snack").
+  const [snacks, setSnacks] = useState<string[]>(() => snackTimesFor(mealTimesFor(4, "17:30"), 1, "17:30"));
   const [dayKind, setDayKind] = useState<"training" | "rest">("training");
   // Today's ticked meals (0165). The plan opens on the day they've been ticking.
   const mealTicks = useMealTicks(coachMode ? undefined : client?.id);
@@ -306,6 +309,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
         setPlan(mine);
         setCount(mine.settings.meals.length);
         setTimes(mine.settings.meals);
+        setSnacks(snackTimes(mine.settings));
         setTraining(mine.settings.training);
         if (mine.settings.goal) setGoal(mine.settings.goal);
         if (mine.settings.diet) setDiet(mine.settings.diet);
@@ -411,7 +415,8 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             </Text>
             <Text style={styles.explainHead}>5. Your protein snack</Text>
             <Text style={styles.explain}>
-              Every plan has a protein snack with a piece of fruit between meals to help you reach your protein. Lean biltong works
+              Unless your coach set no snacks, your day has a protein snack with a piece of fruit between meals to help you reach your
+              protein (a second snack is fruit with a few nuts). Lean biltong works
               really well, especially if you don't eat a lot. {SNACK_SALT} Vegetarians and pescatarians get Greek yoghurt instead.
             </Text>
             <Text style={styles.explainHead}>6. Don't like a food?</Text>
@@ -495,6 +500,8 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
     if (!client || !need) return;
     const cleaned = times.slice(0, count).map(cleanTime);
     if (cleaned.some((t) => !t)) return Alert.alert("Meal times", "Type each time like 07:00 or 13:30.");
+    const snackAt = snacks.map(cleanTime);
+    if (snackAt.some((t) => !t)) return Alert.alert("Snack times", "Type each time like 10:30 or 15:30.");
     // Foods they left out stay out of every new plan.
     // Their own meals stay too, for the meals the day still has.
     const ownMeals = keepOwnMeals(plan?.settings.ownMeals, cleaned.length);
@@ -511,6 +518,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
       likes: plan?.settings.likes ?? [],
       weekly,
       trainDays: [...trainDays].sort(),
+      snacks: snackAt as string[],
     };
     const targets = macroTargets(kcalFor(safeGoal), body.weight_kg, safeGoal, body.height_cm);
     save({
@@ -531,7 +539,9 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   const chooseMeals = (n: number, trainAt: string | null) => {
     setCount(n);
     setTraining(trainAt);
-    setTimes(mealTimesFor(n, trainAt));
+    const next = mealTimesFor(n, trainAt);
+    setTimes(next);
+    setSnacks(snackTimesFor(next, snacks.length, trainAt));
   };
 
   const chip = (on: boolean, label: string, onPress: () => void, key?: string) => (
@@ -637,13 +647,6 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
                 ? `A different plan for each day, Monday to Sunday. Each new week is made again around the foods ${first} picks.`
                 : "The same training-day and rest-day plan every week."}
             </Text>
-            <Text style={styles.label}>How many meals does {first} tend to eat in a day?</Text>
-            <View style={styles.chips}>
-              {Array.from({ length: MAX_MEALS - MIN_MEALS + 1 }, (_, i) => MIN_MEALS + i).map((n) =>
-                chip(count === n, String(n), () => chooseMeals(n, training)),
-              )}
-            </View>
-            <Text style={styles.note}>Plus a protein snack, which the app adds for you.</Text>
             <Text style={styles.label}>When does {first} train?</Text>
             <View style={styles.chips}>
               {TRAINING_TIMES.map((t) => chip(training === t.time, t.label, () => chooseMeals(count, t.time), t.key))}
@@ -660,22 +663,24 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
                 <Text style={styles.note}>Training days get more carbs around the session.</Text>
               </>
             )}
-            <Text style={styles.label}>{first}'s meal times</Text>
-            <Text style={styles.note}>Set around your training. Tap a time to change it.</Text>
-            <View style={styles.times}>
-              {times.slice(0, count).map((t, i) => (
-                <TextInput
-                  key={i}
-                  style={styles.timeInput}
-                  value={t}
-                  onChangeText={(v) => setTimes(times.map((x, j) => (j === i ? v : x)))}
-                  placeholder="07:00"
-                  placeholderTextColor="#64748B"
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                />
-              ))}
-            </View>
+            <MealTimesPicker
+              first={first}
+              meals={times.slice(0, count)}
+              snacks={snacks}
+              training={training}
+              onChange={(m, sn) => {
+                setCount(m.length);
+                setTimes(m);
+                setSnacks(sn);
+              }}
+            />
+            <Text style={styles.note}>
+              {snacks.length === 0
+                ? "No snacks: the meals carry all the protein and calories."
+                : snacks.length === 1
+                  ? "The snack is a protein snack with a piece of fruit."
+                  : "A protein snack with fruit, and a fruit and nut snack."}
+            </Text>
           </View>
         )}
 
@@ -868,6 +873,10 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
       {coachMode && (
         <Text style={styles.helper}>
           {plan.settings.meals.length} meals at {plan.settings.meals.join(", ")}
+          {(() => {
+            const s = snackTimes(plan.settings);
+            return s.length ? `, ${s.length === 1 ? "a snack" : `${s.length} snacks`} at ${s.join(", ")}` : ", no snacks";
+          })()}
           {plan.settings.training ? `, training at ${plan.settings.training}` : ", no training"}.
           {coachWeek ? ` ${first} sees your diet planner week below instead while it has meals in it.` : ""}
         </Text>
