@@ -198,6 +198,15 @@ export function trainersPage(escape) {
   .save { display: inline-block; margin-left: 6px; background: #13301F; color: #86EFAC; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 700; }
   .price li { margin-bottom: 4px; }
   h3.region { color: #fff; font-size: 20px; margin: 28px 0 12px; text-align: center; }
+  .get-btn { display: block; width: 100%; margin-top: 14px; padding: 12px; border-radius: 12px; border: 1.5px solid var(--gold); background: transparent; color: var(--gold); font-weight: 700; font-size: 16px; cursor: pointer; }
+  dialog.get { max-width: 560px; width: calc(100% - 32px); max-height: 85vh; background: var(--card); color: #E2E8F0; border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+  dialog.get::backdrop { background: rgba(0,0,0,0.65); }
+  dialog.get h3 { color: #fff; margin: 0 0 8px; font-size: 20px; }
+  dialog.get h4 { color: var(--gold); margin: 16px 0 6px; font-size: 15px; }
+  dialog.get h4 em { font-style: normal; font-size: 12px; color: #F59E0B; border: 1px solid #F59E0B; border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
+  dialog.get ul { margin: 0; padding-left: 20px; }
+  dialog.get li { margin-bottom: 5px; }
+  dialog.get .close { display: block; margin: 18px auto 0; padding: 10px 28px; border-radius: 12px; border: 0; background: var(--gold); color: #0F172A; font-weight: 700; font-size: 15px; cursor: pointer; }
   .price .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
   .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 40px; }
   .why div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -332,6 +341,7 @@ ${[
       <li>6 months: ${r.c}${r.six[0]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[0]} upfront <span class="save">3 months free</span></li>
     </ul>
+    <button type="button" class="get-btn" data-open="get-evo">What you get ›</button>
   </div>
   <div class="price">
     <div class="where">🤝 1 on 1 only <em>In-person</em></div>
@@ -343,17 +353,16 @@ ${[
       <li>6 months: ${r.c}${r.six[1]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[1]} upfront <span class="save">3 months free</span></li>
     </ul>
+    <button type="button" class="get-btn" data-open="get-one">What you get ›</button>
     <p class="note">Add an online client any time and you move to Evolution, which covers both. The app tells you first.</p>
   </div>
 </div>`).join("\n")}
 <p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1 only, everyone on your calendar that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
 
-<h2 class="section">What 1 on 1 gives you</h2>
-<p class="section">Everything to run your in-person training, and the full nutrition side for any client who wants the app.</p>
-<div class="prices">
-  <div class="price">
-    <div class="where">📅 Your sessions and money</div>
-    <ul>
+<dialog id="get-one" class="get" tabindex="-1" autofocus>
+  <h3>🤝 What you get with 1 on 1</h3>
+  <h4>📅 Your sessions and money</h4>
+  <ul>
       <li>Today: every session, tap Came, Cancelled or No-show</li>
       <li>Your earnings for the day and week, and predicted income for the week and month</li>
       <li>Calendar: weekly repeats, joint sessions (e.g. Jade &amp; Camilla), open slots, swipe day to day</li>
@@ -366,10 +375,8 @@ ${[
       <li>Meal planning for your clients: the app works out a plan from their calories and macros, and you adjust it</li>
       <li>All the coaching guides: nutrition, supplements, sleep and recovery</li>
     </ul>
-  </div>
-  <div class="price">
-    <div class="where">🥗 For clients who join the app <em>Free for them</em></div>
-    <ul>
+  <h4>🥗 For clients who join the app <em>Free for them</em></h4>
+  <ul>
       <li>Their meal plan from you, built around their calories and macros</li>
       <li>Swaps, leaving foods out or their own meals, with the day rebalanced</li>
       <li>Weekly shopping list they can tick off and send</li>
@@ -381,8 +388,24 @@ ${[
       <li>Progress graphs, weigh-ins and progress photos</li>
       <li>Timers, and your workout video library if you switch it on</li>
     </ul>
-  </div>
-</div>
+  <button type="button" class="close">Close</button>
+</dialog>
+<dialog id="get-evo" class="get" tabindex="-1" autofocus>
+  <h3>🌐 What you get with Evolution</h3>
+  <h4>Everything in 1 on 1, plus online coaching</h4>
+  <ul>
+    <li>Programs built for each client, planned onto their calendar</li>
+    <li>Ready-made programs: muscle building, fat loss, sports off-season, stability and more</li>
+    <li>Injury-aware training: pain tracking, injury checks and safe starting weights</li>
+    <li>Progression and deload weeks worked out from each client's real logs</li>
+    <li>Daily check-ins, habits, step goals and reminders</li>
+    <li>A daily summary of who needs you, and nudges to check in personally</li>
+    <li>Weekly video check-in bookings (calls on WhatsApp)</li>
+    <li>Monthly challenges, timers and the exercise video library</li>
+    <li>Clients' payments and proof of payment in one place</li>
+  </ul>
+  <button type="button" class="close">Close</button>
+</dialog>
 <div class="final" style="padding: 0 0 36px">
   <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
   <div class="fine"><strong>No credit card required.</strong> Nothing is charged during your trial.</div>
@@ -407,6 +430,15 @@ ${[
 <footer><a href="/privacy">Privacy policy</a><a href="/support">Support</a><a href="/app/">Trainer login</a></footer>
 </div>
 <div class="sticky hide"><a class="cta" href="${SIGNUP}">Start your free 30-day trial</a></div>
+<script>
+  document.querySelectorAll("[data-open]").forEach(function (b) {
+    b.addEventListener("click", function () { var d = document.getElementById(b.getAttribute("data-open")); if (d && d.showModal) { d.showModal(); d.scrollTop = 0; } });
+  });
+  document.querySelectorAll("dialog.get").forEach(function (d) {
+    d.querySelector(".close").addEventListener("click", function () { d.close(); });
+    d.addEventListener("click", function (e) { if (e.target === d) d.close(); });
+  });
+</script>
 <script>
   (function () {
     var tabs = document.querySelectorAll(".tab"), slides = document.querySelectorAll(".slide"), cur = 0;
