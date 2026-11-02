@@ -13,6 +13,8 @@ import {
   shiftMonth,
   slotTimes,
   openSlots,
+  jointLines,
+  jointName,
   cleanTime,
   feeText,
   groupFees,
@@ -181,6 +183,21 @@ describe("invoiceText", () => {
   it("keeps one plain list for one person", () => {
     expect(invoicePeople(inv.lines)).toHaveLength(1);
     expect(invoicePeople(inv.lines)[0].who).toBeNull();
+  });
+});
+
+describe("jointLines", () => {
+  it("puts people booked at the same time on one line", () => {
+    const at = "2026-11-02T03:50:00Z";
+    const list = [
+      { id: "c", starts_at: at, status: "booked", n: "Camilla" },
+      { id: "j", starts_at: at, status: "booked", n: "Jade Smith" },
+      { id: "q", starts_at: "2026-11-02T04:30:00Z", status: "booked", n: "Quraish Behari" },
+      { id: "x", starts_at: at, status: "cancelled", n: "Sam" },
+    ];
+    const lines = jointLines(list);
+    expect(lines.map((l) => [l.s.id, l.with.map((w) => w.id)])).toEqual([["c", ["j"]], ["q", []], ["x", []]]);
+    expect(lines.map((l) => jointName(l, (s) => s.n))).toEqual(["Camilla & Jade 👥", "Quraish Behari", "Sam"]);
   });
 });
 
