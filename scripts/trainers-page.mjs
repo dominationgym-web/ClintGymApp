@@ -197,10 +197,6 @@ export function trainersPage(escape) {
   .price ul { margin: 0; padding-left: 20px; }
   .save { display: inline-block; margin-left: 6px; background: #13301F; color: #86EFAC; border-radius: 999px; padding: 1px 9px; font-size: 12px; font-weight: 700; }
   .price li { margin-bottom: 4px; }
-  .examples { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; max-width: 520px; margin: 0 auto 24px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; font-size: 14px; }
-  .examples div { padding: 4px 0; border-bottom: 1px solid var(--line); }
-  .examples div:nth-last-child(-n+3) { border-bottom: 0; }
-  .examples .ex-head { color: var(--muted); font-weight: 700; }
   h3.region { color: #fff; font-size: 20px; margin: 28px 0 12px; text-align: center; }
   .price .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
   .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 40px; }
@@ -319,10 +315,8 @@ ${slides}
 <h2 class="section">Simple pricing</h2>
 <p class="section">Free for 30 days, then pay only for what you use. Pick the side you need: one price covers everything, or just run your in-person sessions for less.</p>
 ${[
-  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 20, t2: 10, per: 10, evoMax: "1 100", oneMax: 200, six: ["1 000", 500], year: ["1 800", 900],
-    ex: [[5, "R200", "R150"], [10, "R300", "R200"], [20, "R500", "R200"], [30, "R700", "R200"], [50, "R950", "R200"], ["70+", "R1 100", "R200"]] },
-  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 2, t2: 1, per: 1, evoMax: "110", oneMax: 20, six: ["100", 50], year: ["180", 90],
-    ex: [[5, "$20", "$15"], [10, "$30", "$20"], [20, "$50", "$20"], [30, "$70", "$20"], [50, "$95", "$20"], ["70+", "$110", "$20"]] },
+  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 20, t2: 10, per: 10, evoMax: "1 100", oneMax: 200, six: ["1 000", 500], year: ["1 800", 900] },
+  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 2, t2: 1, per: 1, evoMax: "110", oneMax: 20, six: ["100", 50], year: ["180", 90] },
 ].map((r) => `<h3 class="region">${r.flag} ${r.title}</h3>
 <div class="prices">
   <div class="price">
@@ -333,7 +327,8 @@ ${[
       <li>First 5 clients included</li>
       <li>Clients 6-35: ${r.c}${r.t1} each</li>
       <li>Clients 36-65: ${r.c}${r.t2} each</li>
-      <li>Clients 66+: free <span class="save">Max ${r.c}${r.evoMax}/month</span></li>
+      <li>Clients 66+: free</li>
+      <li><b>Max ${r.c}${r.evoMax} a month</b>, however many clients</li>
       <li>6 months: ${r.c}${r.six[0]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[0]} upfront <span class="save">3 months free</span></li>
     </ul>
@@ -344,16 +339,12 @@ ${[
     <ul>
       <li>${r.c}${r.per} per client a month, first 10 clients only</li>
       <li>Clients counted from your calendar: they don't need the app</li>
-      <li>Max ${r.c}${r.oneMax}/month, however many clients</li>
+      <li><b>Max ${r.c}${r.oneMax} a month</b>, however many clients</li>
       <li>6 months: ${r.c}${r.six[1]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[1]} upfront <span class="save">3 months free</span></li>
     </ul>
     <p class="note">Add an online client any time and you move to Evolution, which covers both. The app tells you first.</p>
   </div>
-</div>
-<div class="examples">
-  <div class="ex-head">Clients</div><div class="ex-head">🌐 Evolution</div><div class="ex-head">🤝 1 on 1 only</div>
-${r.ex.map(([n, evo, one]) => `  <div>${n}</div><div>${evo} a month</div><div>${one} a month</div>`).join("\n")}
 </div>`).join("\n")}
 <p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1 only, everyone on your calendar that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
 
