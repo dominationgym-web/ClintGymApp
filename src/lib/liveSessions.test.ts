@@ -295,5 +295,6 @@ describe("away (0184)", () => {
   it("labels the last day from the note", () => {
     expect(awayLabel({ note: "Away until 14 November" })).toBe("Away till 14 Nov");
     expect(awayLabel({ note: null })).toBe("Away");
+    expect(awayLabel({ note: "Away from 9 November until 13 November" })).toBe("Away 9 Nov to 13 Nov");
   });
 });

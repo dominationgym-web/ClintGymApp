@@ -1210,6 +1210,9 @@ export type ClientAway = {
   client_id: string | null;
   guest_name: string | null;
   guest_key: string | null;
+  /** First day away (0185); null on an away from 0184, which started the day it was made. */
+  from_on?: string | null;
+  from_at?: string | null;
   until_on: string;
   until_at: string;
   ended_at: string | null;
@@ -1702,7 +1705,10 @@ export interface Database {
       // Blocked-out time (0177).
       block_trainer_time: { Args: { p_from: string; p_to: string; p_reason: string }; Returns: TrainerTimeOff };
       remove_trainer_time_off: { Args: { p_id: string }; Returns: undefined };
-      set_client_away: { Args: { p_client: string | null; p_guest: string | null; p_until: string }; Returns: ClientAway };
+      set_client_away: {
+        Args: { p_client: string | null; p_guest: string | null; p_from: string; p_until: string; p_replace: string | null };
+        Returns: ClientAway;
+      };
       end_client_away: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
       decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };

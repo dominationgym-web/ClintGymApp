@@ -18,21 +18,30 @@ export function sessionsOf(sessions: LiveSession[], who: AwayWho): LiveSession[]
   return sessions.filter((s) => (who.clientId ? s.client_id === who.clientId : !s.client_id && diaryKey(s.guest_name) === diaryKey(who.name)));
 }
 
-/** Their current away, if any. */
+/** Their current (or next) away, if any. */
 export function awayOf(aways: ClientAway[], who: AwayWho): ClientAway | null {
   const now = Date.now();
   return (
-    aways.find(
-      (a) =>
-        !a.ended_at &&
-        new Date(a.until_at).getTime() > now &&
-        (who.clientId ? a.client_id === who.clientId : !a.client_id && a.guest_key === diaryKey(who.name))
-    ) ?? null
+    aways
+      .filter(
+        (a) =>
+          !a.ended_at &&
+          new Date(a.until_at).getTime() > now &&
+          (who.clientId ? a.client_id === who.clientId : !a.client_id && a.guest_key === diaryKey(who.name))
+      )
+      .sort((a, b) => a.until_on.localeCompare(b.until_on))[0] ?? null
   );
 }
 
 /** "Fri 14 Nov" for "2026-11-14". */
 const dayText = (key: string) => dayLabel(`${key}T12:00:00`);
+
+/** "Mon 9 Nov to Fri 13 Nov", or "till Fri 13 Nov" for an away from 0184. */
+export function awaySpan(a: Pick<ClientAway, "from_on" | "until_on">): string {
+  if (!a.from_on) return `till ${dayText(a.until_on)}`;
+  if (a.from_on === a.until_on) return `on ${dayText(a.until_on)}`;
+  return `${dayText(a.from_on)} to ${dayText(a.until_on)}`;
+}
 
 // A client going away (GRIZZ, 2026-11-02): tap the last day they're away on a
 // month calendar. Every session of theirs until then stays on the calendar
@@ -55,12 +64,16 @@ export default function AwayModal({
 }) {
   const today = dayKey(new Date());
   const [month, setMonth] = useState(monthStart(new Date()));
+  // Tap the first day away, then the last (GRIZZ, 2026-11-02: "must select
+  // day to start and day to finish").
+  const [from, setFrom] = useState<string | null>(null);
   const [until, setUntil] = useState<string | null>(null);
   const [changing, setChanging] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!visible) return;
     setMonth(monthStart(new Date()));
+    setFrom(null);
     setUntil(null);
     setChanging(false);
   }, [visible]);
@@ -68,26 +81,43 @@ export default function AwayModal({
   const first = (who?.name ?? "They").split(" ")[0];
   const mine = useMemo(() => (who ? sessionsOf(sessions, who).filter((s) => s.status !== "removed") : []), [sessions, who]);
   const days = useMemo(() => new Set(mine.filter((s) => new Date(s.starts_at).getTime() > Date.now()).map((s) => dayKey(s.starts_at))), [mine]);
-  // What turns green: their booked sessions from now to the end of the day picked.
+  // What turns green: their booked sessions from the first day to the end of the last.
   const hit = useMemo(() => {
-    if (!until) return [];
+    if (!from || !until) return [];
     const now = Date.now();
-    return mine.filter((s) => (s.status === "booked" || (s.status === "cancelled" && !!s.away_id)) && new Date(s.starts_at).getTime() > now && dayKey(s.starts_at) <= until);
-  }, [mine, until]);
+    return mine.filter((s) => {
+      const d = dayKey(s.starts_at);
+      return (s.status === "booked" || (s.status === "cancelled" && !!s.away_id)) && new Date(s.starts_at).getTime() > now && d >= from && d <= until;
+    });
+  }, [mine, from, until]);
+  // First tap is the first day, second tap the last day; a third tap starts again.
+  const pick = (day: string) => {
+    if (!from || until || day < from) {
+      setFrom(day);
+      setUntil(null);
+    } else setUntil(day);
+  };
 
   if (!who) return null;
   const showCalendar = !away || changing;
 
+  const span = from && until ? (from === until ? `on ${dayText(from)}` : `${dayText(from)} to ${dayText(until)}`) : "";
   const save = async () => {
-    if (!until) return;
+    if (!from || !until) return;
     setBusy(true);
-    const { error } = await supabase.rpc("set_client_away", { p_client: who.clientId, p_guest: who.clientId ? null : who.name, p_until: until });
+    const { error } = await supabase.rpc("set_client_away", {
+      p_client: who.clientId,
+      p_guest: who.clientId ? null : who.name,
+      p_from: from,
+      p_until: until,
+      p_replace: away?.id ?? null,
+    });
     setBusy(false);
     if (error) return Alert.alert("Couldn't mark them away", error.message);
     onDone();
     Alert.alert(
-      `✈️ ${first} is away until ${dayText(until)}`,
-      `Their sessions until then are green on your calendar: free to book. Their name stays on each one.${who.clientId ? ` ${first} gets a message and isn't charged for them.` : ""}`
+      `✈️ ${first} is away ${span}`,
+      `Their sessions in that time are green on your calendar: free to book. Their name stays on each one.${who.clientId ? ` ${first} gets a message and isn't charged for them.` : ""}`
     );
   };
 
@@ -121,8 +151,8 @@ export default function AwayModal({
           <Text style={styles.title}>✈️ {who.name} is away</Text>
           {away ? (
             <View style={styles.preview}>
-              <Text style={styles.previewTitle}>Away until {dayText(away.until_on)}</Text>
-              <Text style={styles.meta}>Their sessions until then are green on your calendar, free to book.</Text>
+              <Text style={styles.previewTitle}>Away {awaySpan(away)}</Text>
+              <Text style={styles.meta}>Their sessions in that time are green on your calendar, free to book.</Text>
               <Pressable style={styles.button} onPress={backEarly} disabled={busy}>
                 {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>🤝 Back early: book their sessions again</Text>}
               </Pressable>
@@ -133,12 +163,12 @@ export default function AwayModal({
               )}
             </View>
           ) : (
-            <Text style={styles.helper}>Tap the last day they're away. Their sessions until then turn green: free to book. Their name stays on each one.</Text>
+            <Text style={styles.helper}>Tap the first day they're away, then the last day. Their sessions in that time turn green: free to book. Their name stays on each one.</Text>
           )}
 
           {showCalendar ? (
             <>
-              {away ? <Text style={styles.label}>Tap their new last day away</Text> : null}
+              <Text style={styles.label}>{!from ? "Tap the first day they're away" : !until ? "Now tap the last day they're away" : "Picked. Tap a day to start again"}</Text>
               <View style={styles.header}>
                 <Pressable
                   onPress={() => setMonth(shiftMonth(month, -1))}
@@ -165,13 +195,13 @@ export default function AwayModal({
                   {week.map((day, di) => {
                     if (!day) return <View key={di} style={styles.cell} />;
                     const past = day < today;
-                    const inside = !!until && day >= today && day <= until;
+                    const inside = !!from && (until ? day >= from && day <= until : day === from);
                     return (
                       <Pressable
                         key={di}
                         disabled={past}
-                        style={[styles.cell, styles.day, past && { opacity: 0.3 }, inside && styles.inside, day === until && styles.picked]}
-                        onPress={() => setUntil(day)}
+                        style={[styles.cell, styles.day, past && { opacity: 0.3 }, inside && styles.inside, (day === from || day === until) && styles.picked]}
+                        onPress={() => pick(day)}
                       >
                         <Text style={[styles.num, inside && styles.numInside]}>{Number(day.slice(8))}</Text>
                         {days.has(day) ? <View style={[styles.dot, inside && styles.dotInside]} /> : null}
@@ -182,27 +212,25 @@ export default function AwayModal({
               ))}
               <Text style={styles.meta}>A dot is a day they train.</Text>
 
-              {until ? (
+              {from && until ? (
                 <View style={styles.preview}>
-                  <Text style={styles.previewTitle}>
-                    Away from today until {dayText(until)}
-                  </Text>
+                  <Text style={styles.previewTitle}>Away {span}</Text>
                   <Text style={styles.meta}>
                     {hit.length
                       ? `${hit.length} session${hit.length === 1 ? "" : "s"} turn${hit.length === 1 ? "s" : ""} green, free to book: ${hit
                           .slice(0, 6)
                           .map((s) => `${dayLabel(s.starts_at)} ${clockLabel(s.starts_at)}`)
                           .join(", ")}${hit.length > 6 ? " ..." : ""}. Not charged.`
-                      : "No sessions of theirs on your calendar in that time. Weekly sessions that fill in later turn green too."}
+                      : "No sessions of theirs on your calendar in those days. Weekly sessions that fill in later turn green too."}
                   </Text>
                 </View>
               ) : null}
 
-              <Pressable style={[styles.button, (!until || busy) && { opacity: 0.5 }]} onPress={save} disabled={!until || busy}>
+              <Pressable style={[styles.button, (!from || !until || busy) && { opacity: 0.5 }]} onPress={save} disabled={!from || !until || busy}>
                 {busy ? (
                   <ActivityIndicator color={themeText("#0F172A")} />
                 ) : (
-                  <Text style={styles.buttonText}>{until ? `✈️ Away until ${dayText(until)}` : "Tap their last day away"}</Text>
+                  <Text style={styles.buttonText}>{from && until ? `✈️ Away ${span}` : from ? "Now tap their last day away" : "Tap their first day away"}</Text>
                 )}
               </Pressable>
             </>

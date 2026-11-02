@@ -19,7 +19,7 @@ import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } fr
 import DiaryPeople from "@/components/sessions/DiaryPeople";
 import CatchUpRows from "@/components/sessions/CatchUpRows";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
-import AwayModal, { awayOf, type AwayWho } from "@/components/sessions/AwayModal";
+import AwayModal, { awayOf, awaySpan, type AwayWho } from "@/components/sessions/AwayModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -1060,7 +1060,7 @@ function ClientsTab({
             <Text style={styles.outlineText}>
               {(() => {
                 const a = awayOf(aways, { clientId: picked, name: c?.name ?? "" });
-                return a ? `✈️ Away till ${dayLabel(`${a.until_on}T12:00:00`)} · tap to change` : "✈️ Away: going away for a while";
+                return a ? `✈️ Away ${awaySpan(a)} · tap to change` : "✈️ Away: going away for a while";
               })()}
             </Text>
           </Pressable>
@@ -1124,7 +1124,7 @@ function ClientsTab({
             <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "✍️ Signed" : "✍️ Not signed yet"}</Text>
             {(() => {
               const a = awayOf(aways, { clientId: c.id, name: c.name });
-              return a ? <Text style={[styles.meta, { color: themeText("#22C55E") }]}>✈️ Away till {dayLabel(`${a.until_on}T12:00:00`)}</Text> : null;
+              return a ? <Text style={[styles.meta, { color: themeText("#22C55E") }]}>✈️ Away {awaySpan(a)}</Text> : null;
             })()}
           </Pressable>
         );
