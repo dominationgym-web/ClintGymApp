@@ -201,6 +201,7 @@ export function trainersPage(escape) {
   .examples div { padding: 4px 0; border-bottom: 1px solid var(--line); }
   .examples div:nth-last-child(-n+3) { border-bottom: 0; }
   .examples .ex-head { color: var(--muted); font-weight: 700; }
+  h3.region { color: #fff; font-size: 20px; margin: 28px 0 12px; text-align: center; }
   .price .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
   .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 40px; }
   .why div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -316,43 +317,76 @@ ${slides}
 <div class="modes">${modes}</div>
 
 <h2 class="section">Simple pricing</h2>
-<p class="section">Free for 30 days, then pay only for what you use. Pick the side you need: one price covers everything, or just track your in-person sessions for less.</p>
+<p class="section">Free for 30 days, then pay only for what you use. Pick the side you need: one price covers everything, or just run your in-person sessions for less.</p>
+${[
+  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 20, t2: 10, per: 10, evoMax: "1 100", oneMax: 200, six: ["1 000", 500], year: ["1 800", 900],
+    ex: [[5, "R200", "R150"], [10, "R300", "R200"], [20, "R500", "R200"], [30, "R700", "R200"], [50, "R950", "R200"], ["70+", "R1 100", "R200"]] },
+  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 2, t2: 1, per: 1, evoMax: "110", oneMax: 20, six: ["100", 50], year: ["180", 90],
+    ex: [[5, "$20", "$15"], [10, "$30", "$20"], [20, "$50", "$20"], [30, "$70", "$20"], [50, "$95", "$20"], ["70+", "$110", "$20"]] },
+].map((r) => `<h3 class="region">${r.flag} ${r.title}</h3>
 <div class="prices">
   <div class="price">
     <div class="where">🌐 Evolution <em>Both sides</em></div>
-    <div class="amount">R200<span>/month</span></div>
-    <div class="amount" style="font-size: 22px; margin-top: -4px">$20<span>/month international</span></div>
+    <div class="amount">${r.c}${r.evo}<span>/month</span></div>
     <ul>
       <li>Online coaching and 1 on 1 sessions in one price</li>
       <li>First 5 clients included</li>
-      <li>Clients 6-35: R20 / $2 each</li>
-      <li>Clients 36-65: R10 / $1 each</li>
-      <li>Clients 66+: free <span class="save">Max R1 100 / $110 a month</span></li>
-      <li>6 months: R1 000 / $100 upfront <span class="save">1 month free</span></li>
-      <li>12 months: R1 800 / $180 upfront <span class="save">3 months free</span></li>
+      <li>Clients 6-35: ${r.c}${r.t1} each</li>
+      <li>Clients 36-65: ${r.c}${r.t2} each</li>
+      <li>Clients 66+: free <span class="save">Max ${r.c}${r.evoMax}/month</span></li>
+      <li>6 months: ${r.c}${r.six[0]} upfront <span class="save">1 month free</span></li>
+      <li>12 months: ${r.c}${r.year[0]} upfront <span class="save">3 months free</span></li>
     </ul>
   </div>
   <div class="price">
     <div class="where">🤝 1 on 1 only <em>In-person</em></div>
-    <div class="amount">R100<span>/month</span></div>
-    <div class="amount" style="font-size: 22px; margin-top: -4px">$10<span>/month international</span></div>
+    <div class="amount">${r.c}${r.one}<span>/month</span></div>
     <ul>
-      <li>Session diary, cancellations, catch-ups and month-end invoices worked out for you</li>
-      <li>Clients don't need the app: counted from your calendar</li>
-      <li>R10 / $1 a month per client, first 10 clients only</li>
-      <li>Max R200 / $20 a month</li>
-      <li>6 months: R500 / $50 upfront <span class="save">1 month free</span></li>
-      <li>12 months: R900 / $90 upfront <span class="save">3 months free</span></li>
+      <li>${r.c}${r.per} per client a month, first 10 clients only</li>
+      <li>Clients counted from your calendar: they don't need the app</li>
+      <li>Max ${r.c}${r.oneMax}/month, however many clients</li>
+      <li>6 months: ${r.c}${r.six[1]} upfront <span class="save">1 month free</span></li>
+      <li>12 months: ${r.c}${r.year[1]} upfront <span class="save">3 months free</span></li>
     </ul>
-    <p class="note">Add an online client any time and you move to Evolution, which covers both.</p>
+    <p class="note">Add an online client any time and you move to Evolution, which covers both. The app tells you first.</p>
   </div>
 </div>
-<p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1 only, everyone on your calendar that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
 <div class="examples">
-  <div class="ex-head">Clients</div><div class="ex-head">🌐 Evolution a month</div><div class="ex-head">🤝 1 on 1 only a month</div>
-${[[5, "R200 · $20", "R150 · $15"], [10, "R300 · $30", "R200 · $20"], [20, "R500 · $50", "R200 · $20"], [30, "R700 · $70", "R200 · $20"], [50, "R950 · $95", "R200 · $20"], ["70+", "R1 100 · $110", "R200 · $20"]]
-  .map(([n, evo, one]) => `  <div>${n}</div><div>${evo}</div><div>${one}</div>`)
-  .join("\n")}
+  <div class="ex-head">Clients</div><div class="ex-head">🌐 Evolution</div><div class="ex-head">🤝 1 on 1 only</div>
+${r.ex.map(([n, evo, one]) => `  <div>${n}</div><div>${evo} a month</div><div>${one} a month</div>`).join("\n")}
+</div>`).join("\n")}
+<p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1 only, everyone on your calendar that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
+
+<h2 class="section">What 1 on 1 gives you</h2>
+<p class="section">Everything to run your in-person training, and the full nutrition side for any client who wants the app.</p>
+<div class="prices">
+  <div class="price">
+    <div class="where">📅 Your sessions and money</div>
+    <ul>
+      <li>Today: every session, tap Came, Cancelled or No-show</li>
+      <li>Your earnings for the day and week, and predicted income for the week and month</li>
+      <li>Calendar: weekly repeats, joint sessions (e.g. Jade &amp; Camilla), open slots, swipe day to day</li>
+      <li>Bring in your existing calendar from screenshots</li>
+      <li>Block out time off: clients are told and catch-ups wait for you</li>
+      <li>Cancellation rules (24 or 12 hours): charged or credited for you, with WhatsApp proof</li>
+      <li>Catch-ups tracked with reminders, and what cancellations cost you</li>
+      <li>Month-end invoices worked out for you, shared sessions and who pays, sent by WhatsApp or email</li>
+      <li>Proof of payment straight into the app</li>
+    </ul>
+  </div>
+  <div class="price">
+    <div class="where">🥗 For clients who join the app <em>Free for them</em></div>
+    <ul>
+      <li>Meal plans you work out for them, built around their calories and macros</li>
+      <li>BMR and macro targets, and swaps or their own meals with the day rebalanced</li>
+      <li>Weekly shopping list they can tick off</li>
+      <li>Cooking ideas for each protein and low-calorie sauces</li>
+      <li>Their sessions: confirm, cancel in the app, sign your agreement</li>
+      <li>Optional check-in: energy, sleep and any pain or injury</li>
+      <li>Progress graphs, weigh-ins and progress photos</li>
+      <li>Timers, and your workout video library if you switch it on</li>
+    </ul>
+  </div>
 </div>
 <div class="final" style="padding: 0 0 36px">
   <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
