@@ -231,7 +231,17 @@ export default function SessionActionsModal({
             {step === "menu" && (
               <View style={{ marginTop: 12, gap: 8 }}>
                 {(session.status === "booked" || session.status === "no_show" || session.status === "cancelled") && started ? (
-                  <Big label="✓ Done, we trained" onPress={() => outcome("done")} busy={busy} />
+                  <Big
+                    label="✓ Done, we trained"
+                    busy={busy}
+                    onPress={() =>
+                      // Asks first: one tap by mistake marked a cancelled session done (GRIZZ 2026-11-02).
+                      Alert.alert(`Did ${first} train?`, `${dayLabel(session.starts_at)} at ${clockLabel(session.starts_at)}.`, [
+                        { text: "No", style: "cancel" },
+                        { text: "Yes, we trained", onPress: () => outcome("done") },
+                      ])
+                    }
+                  />
                 ) : null}
                 {/* ❌ Cancelled for everyone, people not in the app too (GRIZZ 2026-11-02:
                     "when client cancels the trainer can load cancellation", with the screenshot).

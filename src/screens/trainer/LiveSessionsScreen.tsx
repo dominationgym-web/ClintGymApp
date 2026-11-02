@@ -348,12 +348,18 @@ function ToDo({
             </Text>
             <View style={styles.actions}>
               {kind === "unconfirmed" ? (
-                <Pressable style={styles.smallButton} onPress={() => done(s)} disabled={busy === s.id}>
+                <Pressable style={styles.smallButton} onPress={() =>
+                    // Asks first: a mistaken tap marked a cancelled session done (GRIZZ 2026-11-02).
+                    Alert.alert(`Did ${who(s).split(" ")[0]} train?`, `${dayLabel(s.starts_at)} at ${clockLabel(s.starts_at)}.`, [
+                      { text: "No", style: "cancel" },
+                      { text: "Yes, they came", onPress: () => done(s) },
+                    ])
+                  } disabled={busy === s.id}>
                   {busy === s.id ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.smallButtonText}>✓ Came</Text>}
                 </Pressable>
               ) : null}
               <Pressable style={styles.outline} onPress={() => onOpen(s)}>
-                <Text style={styles.outlineText}>{kind === "unconfirmed" ? (s.client_id ? "Cancelled / No-show" : "Didn't come") : "Open"}</Text>
+                <Text style={styles.outlineText}>{kind === "unconfirmed" ? "Cancelled / No-show" : "Open"}</Text>
               </Pressable>
             </View>
           </View>
