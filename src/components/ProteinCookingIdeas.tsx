@@ -11,6 +11,7 @@ import {
   type ProteinCooking,
 } from "@/lib/proteinCooking";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // Protein cooking ideas and low-calorie sauces (GRIZZ, 2026-10-27). Everything
 // is a tap-to-open line, one open at a time, so the client sees a short list
@@ -41,6 +42,8 @@ function Idea({ idea, number, open, onToggle }: { idea: CookingIdea; number: num
 /** One protein's tip and five ideas. */
 export function CookingSet({ set }: { set: ProteinCooking }) {
   const [open, setOpen] = useState<number | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   return (
     <View>
       <View style={styles.tip}>
@@ -56,6 +59,8 @@ export function CookingSet({ set }: { set: ProteinCooking }) {
 /** Every protein as a heading; tap one for its five ideas. */
 export default function ProteinCookingIdeas() {
   const [open, setOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   return (
     <View style={styles.card}>
       <Text style={styles.intro}>Five simple ways to cook each protein, with flavour and without many extra calories. Tap a food, then an idea for the steps.</Text>
@@ -119,6 +124,8 @@ function Sauce({ sauce, open, onToggle }: { sauce: LightSauce; open: boolean; on
 /** The low-calorie sauces, each a heading that opens its recipe. */
 export function LightSauces() {
   const [open, setOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   return (
     <View style={styles.card}>
       <Text style={styles.intro}>Sauces add flavour, but shop-bought ones are often full of sugar and oil. These are quick, fresh and light.</Text>

@@ -5,6 +5,7 @@ import { todayIso } from "@/lib/dates";
 import { ENERGY_COLOR, ruleSummary, type WeekFacts } from "@/lib/clientSummary";
 import { loadDailySummary, loadWeekFacts, type SummaryResult } from "@/lib/clientSummaryQueries";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The trainer's daily summary of a client's energy and needs (0114, GRIZZ,
 // 2026-10-18), from their last 7 days of check-ins, "How are you doing?"
@@ -18,6 +19,8 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
   const [result, setResult] = useState<SummaryResult | null>(null);
   const [writing, setWriting] = useState(false);
   const [showSleep, setShowSleep] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(showSleep, () => setShowSleep(false));
 
   const load = useCallback(
     async (force = false) => {

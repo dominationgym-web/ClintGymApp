@@ -3,10 +3,13 @@ import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { EVERY_REP_TIPS } from "@/lib/exerciseTechnique";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // "Get the most from every rep": range of motion and muscle tension, tap to open.
 export default function EveryRepTips() {
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
   return (
     <View style={styles.box}>
       <Pressable onPress={() => setOpen((o) => !o)} hitSlop={6}>

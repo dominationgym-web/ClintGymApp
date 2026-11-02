@@ -24,6 +24,7 @@ import {
   type ResetLocation,
 } from "@/lib/resetProgram";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The Reset Training tab: the sessions for a week of the programme, with a
 // demo video under each exercise, a Log button to log weight and reps (with
@@ -55,6 +56,8 @@ export default function ResetTraining({
   const { client } = useAuth();
   const [info, setInfo] = useState<Record<string, LogExercise>>({});
   const [open, setOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   const [logging, setLogging] = useState<{ exercise: LogExercise; note?: string } | null>(null);
   // Sets logged today per exercise name, for the "✓ 2 sets" next to each.
   const [setsToday, setSetsToday] = useState<Record<string, number>>({});

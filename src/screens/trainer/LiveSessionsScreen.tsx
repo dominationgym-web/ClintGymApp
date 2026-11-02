@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, RefreshControl, Share, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Linking, Modal, PanResponder, Pressable, RefreshControl, Share, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
+import KeyboardSafe from "@/components/KeyboardSafe";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionActionsModal from "@/components/sessions/SessionActionsModal";
@@ -11,10 +12,12 @@ import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
-import { TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
+import { ForecastStrip, TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
+import { takings } from "@/lib/sessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
-import { regularFromCalendar } from "@/lib/calendarRegular";
+import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } from "@/lib/calendarRegular";
 import DiaryPeople from "@/components/sessions/DiaryPeople";
+import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -51,6 +54,7 @@ import {
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { BillingCurrency, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 export type LiveTab = "todo" | "calendar" | "clients" | "invoices" | "setup";
 type Tab = LiveTab;
@@ -89,6 +93,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       if (only) setTab(only);
     }, [only])
   );
+  // On a 1 on 1 tab, Back from an inside page (e.g. Setup) goes to the tab's own page first.
+  useStepBack(!!only && tab !== only, () => only && setTab(only));
 
   const load = useCallback(async () => {
     if (!trainer) return;
@@ -167,6 +173,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               <Text style={styles.noticeText}>Start under Setup: your normal fee and cancellation rule. Then set up each client under Clients.</Text>
             </Pressable>
           ) : null}
+          {/* Predicted week and month, counting down with cancellations (GRIZZ, 2026-11-01). */}
+          {tab === "todo" && settings ? <ForecastStrip sessions={sessions} currency={settings.currency} /> : null}
           {/* What the day (and week) made after cancellations and credits (GRIZZ, 2026-11-01):
               at the top once the day's sessions are over, under them until then. */}
           {tab === "todo" && settings && !sessionsLeftToday ? moneyCard : null}
@@ -217,7 +225,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               onOpenPage={(clientId) => navigation.navigate("ClientDetail", { clientId })}
             />
           )}
-          {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} onChanged={load} />}
+          {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} sessions={sessions} onChanged={load} />}
           {tab === "setup" && <SetupTab settings={settings} onSaved={setSettings} />}
         </ScrollView>
       )}
@@ -343,7 +351,7 @@ function ToDo({
                 </Pressable>
               ) : null}
               <Pressable style={styles.outline} onPress={() => onOpen(s)}>
-                <Text style={styles.outlineText}>{kind === "unconfirmed" ? "Cancelled / No-show" : "Open"}</Text>
+                <Text style={styles.outlineText}>{kind === "unconfirmed" ? (s.client_id ? "Cancelled / No-show" : "Didn't come") : "Open"}</Text>
               </Pressable>
             </View>
           </View>
@@ -420,7 +428,8 @@ function GroupCheck({
       } else {
         const { error } = await supabase.rpc("set_session_outcome", { p_id: s.id, p_outcome: "no_show" });
         if (error) failed++;
-        else if (missed === "credit") {
+        // Not in the app yet: never charged for missing (GRIZZ, 2026-11-01).
+        else if (missed === "credit" || !s.client_id) {
           const r = await supabase.rpc("set_session_charge", { p_id: s.id, p_charge: "credit" });
           if (r.error) failed++;
         }
@@ -533,6 +542,27 @@ function CalendarTab({
     setAddAt(t);
     setAdding(true);
   };
+  // Next or previous day by swiping or the ‹ › arrows (GRIZZ, 2026-11-01:
+  // "swipe left to get to the next day"); the month follows.
+  const goDay = (by: number) => {
+    const [y, m, d] = day.split("-").map(Number);
+    const next = dayKey(new Date(y, m - 1, d + by));
+    setDay(next);
+    if (next.slice(0, 7) !== month.slice(0, 7)) onMonth(`${next.slice(0, 7)}-01`);
+  };
+  const goDayRef = useRef(goDay);
+  goDayRef.current = goDay;
+  const swipe = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 24 && Math.abs(g.dx) > Math.abs(g.dy) * 2,
+        onPanResponderRelease: (_e, g) => {
+          if (g.dx <= -50) goDayRef.current(1);
+          else if (g.dx >= 50) goDayRef.current(-1);
+        },
+      }),
+    []
+  );
   return (
     <>
       {makeup ? (
@@ -546,7 +576,17 @@ function CalendarTab({
         </View>
       ) : null}
       <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} />
-      <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
+      <View {...swipe.panHandlers}>
+      <View style={styles.dayNav}>
+        <Pressable onPress={() => goDay(-1)} hitSlop={12} accessibilityLabel="Day before">
+          <Text style={styles.arrow}>‹</Text>
+        </Pressable>
+        <Text style={[styles.sectionTitle, { marginTop: 0, marginBottom: 0 }]}>{dayLabel(day)}</Text>
+        <Pressable onPress={() => goDay(1)} hitSlop={12} accessibilityLabel="Next day">
+          <Text style={styles.arrow}>›</Text>
+        </Pressable>
+      </View>
+      <Text style={[styles.meta, { textAlign: "center", marginTop: 0, marginBottom: 6 }]}>Swipe left for the next day, right for the day before</Text>
       {lines.map((l) =>
         l.s ? (
           <SessionLine key={l.s.id} s={l.s} name={[l.s, ...l.with].map((x) => (l.with.length ? who(x).split(" ")[0] : who(x))).join(" & ") + (l.with.length ? " 👥" : "")} onOpen={onOpen} />
@@ -560,6 +600,7 @@ function CalendarTab({
         <Text style={styles.helper}>{open.length ? `Nothing booked. The whole day is open (${open[0]} to ${settings?.day_end?.slice(0, 5) ?? "20:00"}).` : "Nothing booked."}</Text>
       ) : null}
       {list.length && open.length ? <Text style={styles.meta}>??? is an open slot. Tap one to book it.</Text> : null}
+      </View>
       <Pressable style={styles.button} onPress={() => book(null)}>
         <Text style={styles.buttonText}>
           ＋ Book {makeup ? "the catch-up" : "a session"} on {dayLabel(day)}
@@ -592,9 +633,13 @@ function CalendarTab({
         initialTime={addAt}
         clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
         makeupFor={makeup?.id ?? null}
+        guests={makeup ? [] : diaryNames(sessions)}
+        groups={makeup ? [] : usualGroups(sessions)}
         plans={plans}
         settings={settings}
-        booked={list.filter((s) => s.status === "booked" || s.status === "done").map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))}
+        booked={list
+          .filter((s) => s.status === "booked" || s.status === "done")
+          .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes, names: s.status === "booked" ? [who(s).split(" ")[0]] : [] }))}
         onClose={() => setAdding(false)}
         onSaved={() => {
           setAdding(false);
@@ -615,73 +660,183 @@ function AddSessionModal({
   booked,
   makeupFor,
   initialTime,
+  guests = [],
+  groups = [],
   onClose,
   onSaved,
 }: {
+  /** People not in the app who train together, e.g. ["Camilla", "Jade"]. */
+  groups?: string[][];
   visible: boolean;
   day: string;
   initialTime?: string | null;
   clients: ClientInfo[];
+  /** People on the calendar who aren't in the app (names). */
+  guests?: string[];
   makeupFor: string | null;
   plans: SessionPlan[];
   settings: SessionSettings | null;
-  booked: { time: string; minutes: number }[];
+  /** Sessions already that day, with who's in them (to add someone to one). */
+  booked: { time: string; minutes: number; names?: string[] }[];
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [client, setClient] = useState<string | null>(null);
+  // Who: one or more people, booked together as one joint session (GRIZZ,
+  // 2026-11-01: "Jade & Camilla always train together"). App clients by id,
+  // people not in the app by name.
+  const [picked, setPicked] = useState<string[]>([]);
+  const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState("");
   const [time, setTime] = useState<string | null>(null);
   const [weekly, setWeekly] = useState(false);
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (visible) {
-      setClient(clients.length === 1 ? clients[0].id : null);
+      setPicked(clients.length === 1 && !guests.length ? [`c:${clients[0].id}`] : []);
+      setTyping(false);
+      setTyped("");
       setTime(initialTime ?? null);
       setWeekly(false);
     }
   }, [visible]);
+  const toggle = (key: string) => {
+    // A catch-up is for one person.
+    if (makeupFor) return setPicked([key]);
+    setPicked((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
+  };
+  // Typed the way it's written in the calendar, "Jade & Camilla" is two people
+  // (GRIZZ, 2026-11-01); a part that's an app client's name books that client.
+  const typedParts = typing ? splitNames(typed.slice(0, 120), guests).map((n) => n.slice(0, 60)) : [];
+  const clientFor = (n: string) => {
+    const k = diaryKey(n);
+    return clients.find((c) => diaryKey(c.name) === k) ?? clients.find((c) => diaryKey(c.name.split(" ")[0]) === k && clients.filter((x) => diaryKey(x.name.split(" ")[0]) === k).length === 1);
+  };
+  const appIds = [...new Set([...picked.filter((k) => k.startsWith("c:")).map((k) => k.slice(2)), ...typedParts.map((n) => clientFor(n)?.id).filter((x): x is string => !!x)])];
+  const names = [...new Set([...picked.filter((k) => k.startsWith("g:")).map((k) => k.slice(2)), ...typedParts.filter((n) => !clientFor(n))])];
+  const count = appIds.length + names.length;
+  const firstClient = appIds[0] ?? null;
   const save = async () => {
-    if (!client || !time) return;
+    if (!count || !time) return;
     setSaving(true);
-    const { data, error } = await supabase.rpc("add_live_session", { p_client: client, p_starts_at: atTime(day, time), p_makeup_for: makeupFor });
-    // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
-    const repeat = !error && weekly && !makeupFor && data?.id ? await supabase.rpc("repeat_live_session", { p_id: data.id }) : null;
-    setSaving(false);
-    if (error) {
-      Alert.alert("Couldn't book it", error.message);
-      return;
+    const at = atTime(day, time);
+    const failed: string[] = [];
+    let weeklyFailed = false;
+    for (const id of appIds) {
+      const { data, error } = await supabase.rpc("add_live_session", { p_client: id, p_starts_at: at, p_makeup_for: makeupFor });
+      if (error) {
+        failed.push(`${clients.find((c) => c.id === id)?.name ?? "Client"}: ${error.message}`);
+        continue;
+      }
+      // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
+      if (weekly && !makeupFor && data?.id) {
+        const r = await supabase.rpc("repeat_live_session", { p_id: data.id });
+        if (r.error) weeklyFailed = true;
+      }
     }
-    if (repeat?.error) Alert.alert("Booked for this day only", `Couldn't make it weekly: ${repeat.error.message}`);
+    if (names.length) {
+      // Not in the app: on the calendar by name, at their own price if they have one.
+      const { error } = await supabase.rpc("import_live_sessions", {
+        p_rows: names.map((name) => ({ client_id: null, name, starts_at: at, minutes: settings?.minutes ?? 60, repeat: weekly })),
+      });
+      if (error) failed.push(`${names.join(" & ")}: ${error.message}`);
+      else {
+        const { data: fees } = await supabase.from("diary_name_fees").select("name_key, fee").in("name_key", names.map(diaryKey));
+        for (const name of names) {
+          const f = (fees ?? []).find((x) => x.name_key === diaryKey(name));
+          if (f) await supabase.rpc("set_diary_fee", { p_name: name, p_fee: Number(f.fee) });
+        }
+      }
+    }
+    setSaving(false);
+    if (failed.length) Alert.alert("Couldn't book everyone", failed.join("\n"));
+    else if (weeklyFailed) Alert.alert("Booked for this day only", "Couldn't make it weekly for everyone. Tap the session › 🔁 Repeat every week.");
     onSaved();
   };
+  const chip = (key: string, label: string) => {
+    const on = picked.includes(key);
+    return (
+      <Pressable key={key} style={[styles.chip, on && styles.chipOn]} onPress={() => toggle(key)}>
+        <Text style={[styles.chipText, on && styles.chipTextOn]}>
+          {on && !makeupFor ? "✓ " : ""}
+          {label}
+        </Text>
+      </Pressable>
+    );
+  };
+  // Sessions already booked that day: tap one to add people to it (a joint session).
+  const joinable = [...new Set(booked.filter((b) => b.names?.length).map((b) => b.time))].map((t) => ({
+    time: t,
+    names: booked.filter((b) => b.time === t).flatMap((b) => b.names ?? []),
+  }));
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }}>
-          <Text style={styles.sectionTitle}>
+      <KeyboardSafe>
+        <View style={styles.backdrop}>
+          <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+            <Text style={styles.sectionTitle}>
             {makeupFor ? "Book the catch-up" : "Book a session"} · {dayLabel(day)}
           </Text>
-          {clients.length === 0 ? (
+          {clients.length === 0 && makeupFor ? (
             <Text style={styles.helper}>Set up a client's sessions on the Clients tab first (their fee and cancellation rule).</Text>
           ) : (
             <>
               <Text style={styles.label}>Who?</Text>
-              <View style={styles.chips}>
-                {clients.map((c) => (
-                  <Pressable key={c.id} style={[styles.chip, client === c.id && styles.chipOn]} onPress={() => setClient(c.id)}>
-                    <Text style={[styles.chipText, client === c.id && styles.chipTextOn]}>{c.name}</Text>
+              {makeupFor ? null : <Text style={styles.meta}>Tap two or more people to book them together as one joint session 👥.</Text>}
+              <View style={[styles.chips, { marginTop: 6 }]}>
+                {/* People who usually train together: one tap books them all. */}
+                {makeupFor
+                  ? null
+                  : groups.map((g) => {
+                      const keys = g.map((n) => `g:${n}`);
+                      const on = keys.every((k) => picked.includes(k));
+                      return (
+                        <Pressable
+                          key={keys.join("|")}
+                          style={[styles.chip, on && styles.chipOn]}
+                          onPress={() => setPicked((p) => (on ? p.filter((k) => !keys.includes(k)) : [...new Set([...p, ...keys])]))}
+                        >
+                          <Text style={[styles.chipText, on && styles.chipTextOn]}>👥 {g.join(" & ")}</Text>
+                        </Pressable>
+                      );
+                    })}
+                {clients.map((c) => chip(`c:${c.id}`, c.name))}
+                {guests.map((g) => chip(`g:${g}`, g))}
+                {makeupFor ? null : (
+                  <Pressable style={[styles.chip, typing && styles.chipOn]} onPress={() => setTyping(!typing)}>
+                    <Text style={[styles.chipText, typing && styles.chipTextOn]}>＋ Someone not in the app</Text>
                   </Pressable>
-                ))}
+                )}
               </View>
+              {typing ? (
+                <TextInput style={styles.nameInput} value={typed} onChangeText={setTyped} placeholder="As in your calendar, e.g. Jade & Camilla" placeholderTextColor="#64748B" maxLength={120} autoFocus />
+              ) : null}
+              {count > 1 ? <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>👥 One joint session: {[...appIds.map((id) => clients.find((c) => c.id === id)?.name.split(" ")[0] ?? ""), ...names].join(" & ")}</Text> : null}
               <Text style={styles.label}>What time?</Text>
               <SessionTimeChips
                 dayStart={settings?.day_start ?? "05:00"}
                 dayEnd={settings?.day_end ?? "20:00"}
-                minutes={plans.find((p) => p.client_id === client)?.minutes ?? settings?.minutes ?? 60}
+                minutes={plans.find((p) => p.client_id === firstClient)?.minutes ?? settings?.minutes ?? 60}
                 booked={booked}
                 selected={time ? [time] : []}
                 onPick={setTime}
               />
+              {joinable.length && !makeupFor ? (
+                <>
+                  <Text style={styles.meta}>Or add them to a session already booked:</Text>
+                  <View style={[styles.chips, { marginTop: 6 }]}>
+                    {joinable.map((j) => {
+                      const on = time === j.time;
+                      return (
+                        <Pressable key={j.time} style={[styles.chip, on && styles.chipOn]} onPress={() => setTime(j.time)}>
+                          <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                            👥 {j.time} with {j.names.join(" & ")}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              ) : null}
               {makeupFor ? null : (
                 <>
                   <Text style={styles.label}>How often?</Text>
@@ -695,16 +850,17 @@ function AddSessionModal({
                   </View>
                 </>
               )}
-              <Pressable style={[styles.button, !(client && time) && { opacity: 0.5 }]} onPress={save} disabled={!client || !time || saving}>
-                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Book it</Text>}
+              <Pressable style={[styles.button, !(count && time) && { opacity: 0.5 }]} onPress={save} disabled={!count || !time || saving}>
+                {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>{count > 1 ? `Book them together (${count})` : "Book it"}</Text>}
               </Pressable>
             </>
           )}
           <Pressable style={styles.closeRow} onPress={onClose}>
             <Text style={styles.closeText}>Close</Text>
           </Pressable>
-        </ScrollView>
-      </View>
+          </ScrollView>
+        </View>
+      </KeyboardSafe>
     </Modal>
   );
 }
@@ -731,6 +887,10 @@ function ClientsTab({
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
+  const [addingPerson, setAddingPerson] = useState(false);
+  // Phone Back goes from a client back to the list, one step at a time.
+  useStepBack(picked !== null, () => setPicked(null));
+  useStepBack(showOthers, () => setShowOthers(false));
   const withPlan = clients.filter((c) => planOf[c.id]);
   // 1 on 1 clients, and anyone already on the calendar (an import), not set up yet.
   const onCalendar = new Set(sessions.filter((s) => s.client_id && s.status !== "removed").map((s) => s.client_id as string));
@@ -761,6 +921,10 @@ function ClientsTab({
           paysFor={withPlan.filter((x) => planOf[x.id].paid_by === picked).map((x) => x.name.split(" ")[0])}
           onSaved={onChanged}
         />
+        {/* A second way back at the bottom, so there's no scrolling up after making changes (GRIZZ, 2026-11-01). */}
+        <Pressable style={[styles.outline, { marginTop: 16 }]} onPress={() => setPicked(null)}>
+          <Text style={styles.outlineText}>‹ Back to all clients</Text>
+        </Pressable>
       </>
     );
   }
@@ -801,8 +965,24 @@ function ClientsTab({
           </Pressable>
         );
       })}
+      {/* Someone who hasn't signed up to the app (GRIZZ, 2026-11-01). */}
+      {oneOnOne ? (
+        <Pressable style={styles.button} onPress={() => setAddingPerson(true)}>
+          <Text style={styles.buttonText}>＋ Add a client who isn't in the app</Text>
+        </Pressable>
+      ) : null}
+      <AddDiaryPersonModal
+        visible={addingPerson}
+        settings={settings}
+        onClose={() => setAddingPerson(false)}
+        onSaved={(n) => {
+          setAddingPerson(false);
+          onChanged();
+          Alert.alert("Added", `${n} is on your calendar every week. You'll find them under "On your calendar, not in the app yet".`);
+        }}
+      />
       <Pressable style={styles.outline} onPress={() => setShowOthers(!showOthers)}>
-        <Text style={styles.outlineText}>{showOthers ? "Hide" : "＋ Set up a client"}</Text>
+        <Text style={styles.outlineText}>{showOthers ? "Hide" : "＋ Set up a client who has the app"}</Text>
       </Pressable>
       {showOthers
         ? others.map((c) => (
@@ -822,8 +1002,10 @@ function InvoicesTab({
   plans,
   drafts,
   byId,
+  sessions,
   onChanged,
 }: {
+  sessions: LiveSession[];
   plans: SessionPlan[];
   drafts: SessionInvoice[];
   byId: Record<string, ClientInfo>;
@@ -867,6 +1049,8 @@ function InvoicesTab({
   const paid = rows.filter((r) => r.status === "paid").reduce((t, r) => t + Number(r.total), 0);
   const name = (id: string) => byId[id]?.name ?? "Client";
   const otherDrafts = drafts.filter((d) => d.month !== month);
+  // People not in the app get no invoice, but what they paid counts (GRIZZ, 2026-11-01).
+  const notInApp = takings(sessions.filter((s) => !s.client_id && s.status !== "removed" && monthStart(new Date(s.starts_at)) === month)).made;
 
   return (
     <>
@@ -897,6 +1081,11 @@ function InvoicesTab({
           <Text style={[styles.totalText, { color: themeText("#22C55E") }]}>Paid {sessionMoney(paid, currency)}</Text>
           <Text style={[styles.totalText, { color: themeText("#F59E0B") }]}>Owed {sessionMoney(total - paid, currency)}</Text>
         </View>
+      ) : null}
+      {notInApp > 0 ? (
+        <Text style={styles.helper}>
+          📅 Plus {sessionMoney(notInApp, currency)} from people not in the app yet (no invoice for them). This month in all: {sessionMoney(total + notInApp, currency)}.
+        </Text>
       ) : null}
       {rows.map((inv) => (
         <InvoiceRow key={inv.id} inv={inv} name={name(inv.client_id)} onPress={() => setOpen(inv)} />
@@ -1261,12 +1450,14 @@ const styles = themedStyles({
   actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 8 },
   smallButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9, minWidth: 90, alignItems: "center" },
   smallButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 14 },
+  nameInput: { backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15, marginTop: 10 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
   outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 11, alignItems: "center", marginTop: 8 },
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   notice: { backgroundColor: "#3B2F0B", borderRadius: 10, padding: 12, marginBottom: 8 },
   noticeText: { color: "#FDE68A", fontSize: 14, lineHeight: 20 },
+  dayNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 16, marginBottom: 4 },
   monthRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 18, marginBottom: 8 },
   arrow: { color: BRAND_GOLD, fontSize: 28, fontWeight: "700", paddingHorizontal: 12 },
   dayRow: { flexDirection: "row", gap: 12 },

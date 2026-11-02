@@ -5,6 +5,7 @@ import { todayIso } from "@/lib/dates";
 import { findHabit, HABIT_GROUPS, isRunning } from "@/lib/habitLibrary";
 import type { Habit } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The trainer's habit options when adding a habit for a client (GRIZZ,
 // 2026-10-14): the same list clients choose from, under tap-to-open headings.
@@ -27,6 +28,8 @@ export default function HabitOptionsPicker({
   adding?: boolean;
 }) {
   const [open, setOpen] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   const today = todayIso();
   const statusOf = (name: string): "added" | "used" | null => {
     const h = findHabit(habits, name);

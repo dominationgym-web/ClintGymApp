@@ -10,6 +10,7 @@ import { TRAINING_LEVELS } from "@/lib/foundation";
 import InjuryList from "@/components/InjuryList";
 import { firstIntakeProblem, INTAKE_DAYS, INTAKE_PAGES, intakePageProblem, type IntakeRequired } from "@/lib/intakePages";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 function YesNo({
   label,
@@ -127,6 +128,8 @@ export default function IntakeFormScreen() {
   const [saving, setSaving] = useState(false);
   // One page per section, like the check-in (app-flow review C6, 2026-10-18).
   const [page, setPage] = useState(0);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(page > 0, () => setPage((p) => Math.max(0, p - 1)));
   const scrollRef = useRef<ScrollView>(null);
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });

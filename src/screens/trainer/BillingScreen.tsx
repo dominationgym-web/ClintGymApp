@@ -58,6 +58,7 @@ import { proofWhen } from "@/lib/paymentProofs";
 import { countryName } from "@/lib/phoneCountry";
 import OwnerTracker from "@/components/OwnerTracker";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // The owner's billing view (0064): who owes what, this month's client count
 // and fees per trainer, the monthly log, 6-month totals, each trainer's plan
@@ -74,6 +75,8 @@ export default function BillingScreen() {
   const [payments, setPayments] = useState<TrainerPayment[]>([]);
   const [activations, setActivations] = useState<ClientActivation[]>([]);
   const [open, setOpen] = useState<string | null>("outstanding");
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open !== null, () => setOpen(null));
   const [planFor, setPlanFor] = useState<Trainer | null>(null);
   const [payFor, setPayFor] = useState<Trainer | null>(null);
   const [freeUseFor, setFreeUseFor] = useState<Trainer | null>(null);

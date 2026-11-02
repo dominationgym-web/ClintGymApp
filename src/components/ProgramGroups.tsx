@@ -4,6 +4,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { PROGRAM_GROUPS, programGroupHeading, type ProgramGroup } from "@/lib/programs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import { themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 type GroupedFamily = { key: string; group: ProgramGroup; programs: unknown[] };
 
@@ -26,6 +27,8 @@ export default function ProgramGroups<F extends GroupedFamily>({
   renderFamily: (family: F) => React.ReactNode;
   extra?: Partial<Record<ProgramGroup, React.ReactNode>>;
 }) {
+  // Phone Back closes the open group first.
+  useStepBack(open !== null, () => onToggle(null));
   return (
     <>
       {PROGRAM_GROUPS.map((g) => {

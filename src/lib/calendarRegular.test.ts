@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { regularFromCalendar } from "./calendarRegular";
+import { firstStarts, regularFromCalendar, splitNames, usualGroups } from "./calendarRegular";
 
 const now = new Date(2026, 10, 1, 9, 0); // Sun 1 Nov 2026
 const s = (d: number, h: number, m: number, o: Partial<{ client_id: string; status: "booked" | "removed" | "done"; repeat_id: string | null; minutes: number }> = {}) => ({
@@ -33,5 +33,38 @@ describe("regular times from the calendar", () => {
       { weekday: 3, time: "07:10" },
       { weekday: 4, time: "07:10" },
     ]);
+  });
+});
+
+describe("firstStarts", () => {
+  it("books today when the time is still to come, else next week", () => {
+    const got = firstStarts(
+      [
+        { weekday: 0, time: "17:00" }, // Sunday later today
+        { weekday: 0, time: "06:00" }, // Sunday, already past
+        { weekday: 2, time: "05:50" }, // Tuesday
+      ],
+      now,
+    ).map((iso) => new Date(iso));
+    expect(got.map((d) => [d.getDate(), d.getHours(), d.getMinutes()])).toEqual([
+      [1, 17, 0],
+      [8, 6, 0],
+      [3, 5, 50],
+    ]);
+  });
+});
+
+describe("splitNames and usualGroups", () => {
+  const known = ["Jade", "Camilla", "Pieter & Anna"];
+  it("splits a joint name into the people in it, keeping calendar spellings", () => {
+    expect(splitNames("jade & camilla", known)).toEqual(["Jade", "Camilla"]);
+    expect(splitNames("Jade and Mike", known)).toEqual(["Jade", "Mike"]);
+    expect(splitNames("Pieter & Anna", known)).toEqual(["Pieter & Anna"]);
+    expect(splitNames("  Sam ", known)).toEqual(["Sam"]);
+    expect(splitNames("", known)).toEqual([]);
+  });
+  it("finds people booked together at least twice", () => {
+    const g = (name: string, d: number) => ({ client_id: null, guest_name: name, status: "booked" as const, starts_at: new Date(2026, 10, d, 6).toISOString() });
+    expect(usualGroups([g("Jade", 3), g("Camilla", 3), g("Jade", 5), g("Camilla", 5), g("Sam", 4), g("Jade", 4)])).toEqual([["Camilla", "Jade"]]);
   });
 });

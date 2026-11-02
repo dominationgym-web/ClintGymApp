@@ -43,3 +43,76 @@ export function regularFromCalendar(sessions: Fields[], who: string | { name: st
   const minutes = lengths.length ? [...lengths].sort((a, b) => lengths.filter((x) => x === b).length - lengths.filter((x) => x === a).length)[0] : null;
   return { regular, minutes };
 }
+
+/**
+ * The first session from now for each regular day and time, as ISO times in
+ * the phone's time: today when the time is still to come, otherwise that
+ * weekday next time round. Used to put someone who isn't in the app on the
+ * calendar every week (GRIZZ, 2026-11-01).
+ */
+export function firstStarts(regular: RegularTime[], now = new Date()): string[] {
+  return regular.map((r) => {
+    const [h, m] = r.time.split(":").map(Number);
+    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+    let ahead = (r.weekday - now.getDay() + 7) % 7;
+    if (ahead === 0 && at.getTime() <= now.getTime()) ahead = 7;
+    at.setDate(at.getDate() + ahead);
+    return at.toISOString();
+  });
+}
+
+/** Everyone on the calendar who isn't in the app, by name (first spelling seen), A to Z. */
+export function diaryNames(sessions: Pick<LiveSession, "client_id" | "guest_name" | "status">[]): string[] {
+  const byKey = new Map<string, string>();
+  for (const s of sessions) {
+    if (s.client_id || !s.guest_name || s.status === "removed") continue;
+    const k = diaryKey(s.guest_name);
+    if (k && !k.includes("???") && /\p{L}/u.test(k) && !byKey.has(k)) byKey.set(k, s.guest_name.trim());
+  }
+  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * A typed name, split into the people in it (GRIZZ, 2026-11-01: "I will
+ * always use the same words as in the calendar. For eg Jade & Camilla").
+ * A name already on the calendar as one person (e.g. a couple booked as
+ * "Pieter & Anna") stays one; otherwise "&", "and", "+" and commas split it.
+ * Each part takes the spelling already on the calendar when there is one.
+ */
+export function splitNames(typed: string, known: string[]): string[] {
+  const name = typed.trim().replace(/\s+/g, " ");
+  if (!name) return [];
+  const byKey = new Map(known.map((k) => [diaryKey(k), k]));
+  const whole = byKey.get(diaryKey(name));
+  if (whole) return [whole];
+  const parts = name
+    .split(/\s*(?:&|\+|,|\band\b)\s*/i)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return [name];
+  return [...new Set(parts.map((p) => byKey.get(diaryKey(p)) ?? p))];
+}
+
+/**
+ * People who train together: names booked at the same time as each other at
+ * least twice, as groups like ["Camilla", "Jade"] (people not in the app).
+ */
+export function usualGroups(sessions: Pick<LiveSession, "client_id" | "guest_name" | "status" | "starts_at">[]): string[][] {
+  const bySlot = new Map<string, string[]>();
+  for (const s of sessions) {
+    if (s.client_id || !s.guest_name || s.status === "removed") continue;
+    const k = diaryKey(s.guest_name);
+    if (!k || k.includes("???")) continue;
+    bySlot.set(s.starts_at, [...(bySlot.get(s.starts_at) ?? []), s.guest_name.trim()]);
+  }
+  const counts = new Map<string, { names: string[]; n: number }>();
+  for (const names of bySlot.values()) {
+    const uniq = [...new Map(names.map((n) => [diaryKey(n), n])).values()].sort((a, b) => a.localeCompare(b));
+    if (uniq.length < 2) continue;
+    const key = uniq.map(diaryKey).join("|");
+    const row = counts.get(key) ?? { names: uniq, n: 0 };
+    row.n += 1;
+    counts.set(key, row);
+  }
+  return [...counts.values()].filter((r) => r.n >= 2).map((r) => r.names);
+}

@@ -17,6 +17,7 @@ import {
   type WeightCheck,
 } from "@/lib/muscleYear";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // Nutrition > Muscle building: your BMR and macros (GRIZZ, 2026-10-24: "They
 // need to est their BMR so we can guide them through their macros"). One
@@ -36,6 +37,9 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
   const [details, setDetails] = useState<Details>({ height: "", weight: "", age: "", sex: null, activity: "" });
   const [weighIns, setWeighIns] = useState<{ measured_on: string; weight_kg: number | null }[] | null>(null);
   const [openBlock, setOpenBlock] = useState<number | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(page > 0, () => setPage((p) => Math.max(0, p - 1)));
+  useStepBack(openBlock !== null, () => setOpenBlock(null));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {

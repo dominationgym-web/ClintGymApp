@@ -23,6 +23,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import ChooseHabitsModal from "@/components/ChooseHabitsModal";
 import ChallengeCard from "@/components/ChallengeCard";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const todayWeekday = () => new Date().getDay(); // 0 = Sunday .. 6 = Saturday
@@ -45,6 +46,8 @@ export default function HabitsScreen() {
   const [savedTimeFor, setSavedTimeFor] = useState<string | null>(null);
   // The habit whose days and reminder are open; the rest stay folded away.
   const [settingsFor, setSettingsFor] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(settingsFor !== null, () => setSettingsFor(null));
   const [loading, setLoading] = useState(true);
   const [choosing, setChoosing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

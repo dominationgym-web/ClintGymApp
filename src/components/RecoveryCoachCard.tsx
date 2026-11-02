@@ -8,6 +8,7 @@ import { loadRecoveryActivities, loadRecoverySuggestions } from "@/lib/recoveryP
 import type { RecoverySuggestion } from "@/lib/recoverySuggest";
 import type { RecoveryActivityRow } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 const GREEN = "#4ADE80";
 
@@ -30,6 +31,8 @@ export default function RecoveryCoachCard({
   const [rows, setRows] = useState<RecoveryActivityRow[] | null>(null);
   const [suggestions, setSuggestions] = useState<RecoverySuggestion[]>([]);
   const [open, setOpen] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
 
   useEffect(() => {
     loadRecoveryActivities(clientId, addDays(today, -13), addDays(today, 13)).then(setRows);

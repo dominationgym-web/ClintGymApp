@@ -15,6 +15,7 @@ import ProgramGroups from "@/components/ProgramGroups";
 import ProgramExerciseEditModal from "@/components/ProgramExerciseEditModal";
 import { useAuth } from "@/context/AuthContext";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 type Props = TrainerTabScreenProps<"Programs">;
 
@@ -34,6 +35,9 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
   const [openFamily, setOpenFamily] = useState<ProgramFamily | null>(null);
   const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(openFamily !== null, () => setOpenFamily(null));
+  useStepBack(open !== null, () => setOpen(null));
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [place, setPlace] = useState<ExercisePlace>("gym");

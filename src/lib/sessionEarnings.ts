@@ -139,3 +139,60 @@ export function takingsByPerson<T extends EarningFields>(sessions: T[], who: (s:
     .map(([name, list]) => ({ name, takings: takings(list, now) }))
     .sort((a, b) => b.takings.made - a.takings.made || a.name.localeCompare(b.name));
 }
+
+// Predicted income (GRIZZ, 2026-11-01: "as a motivation I would like a
+// predicted weekly and monthly income. As well as predicted vs actual at the
+// end of the week"). Predicted is everything that was on the calendar: each
+// session's fee whatever happened to it, so cancellations and no-shows show
+// as the gap between predicted and actual. Left out: catch-ups (they replace
+// a session already counted) and sessions taken off the calendar before their
+// time (moved or booked by mistake). One taken off after its time (a person
+// not in the app who didn't come) still counts as predicted.
+type PredictFields = EarningFields & Pick<LiveSession, "makeup_for" | "updated_at">;
+
+export function predicted(sessions: PredictFields[]): number {
+  let total = 0;
+  for (const s of sessions) {
+    if (s.makeup_for) continue;
+    if (s.status === "removed" && new Date(s.updated_at).getTime() < new Date(s.starts_at).getTime()) continue;
+    total += Number(s.fee) || 0;
+  }
+  return total;
+}
+
+export type Forecast = {
+  predicted: number;
+  made: number;
+  toCome: number;
+  /**
+   * The countdown (GRIZZ: "drops as clients cancel or trainer cancels like a
+   * countdown clock"): made + still to come + cancellations not decided yet.
+   * Starts at predicted and only goes down.
+   */
+  heading: number;
+  finished: boolean;
+};
+
+function forecast(sessions: PredictFields[], inRange: (day: string) => boolean, lastDay: string, now: Date): Forecast {
+  const list = sessions.filter((s) => inRange(dayKey(s.starts_at)));
+  const t = takings(list.filter((s) => s.status !== "removed"), now);
+  return { predicted: predicted(list), made: t.made, toCome: t.toCome, heading: t.made + t.toCome + t.undecided, finished: dayKey(now) > lastDay };
+}
+
+/** The week from Monday: predicted, made so far, still to come. */
+export function weekForecast(sessions: PredictFields[], monday: string, now: Date = new Date()): Forecast {
+  const days = new Set(weekDays(monday));
+  return forecast(sessions, (d) => days.has(d), weekDays(monday)[6], now);
+}
+
+/** The calendar month the day is in. */
+export function monthForecast(sessions: PredictFields[], now: Date = new Date()): Forecast {
+  const prefix = dayKey(now).slice(0, 8);
+  const last = dayKey(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  return forecast(sessions, (d) => d.startsWith(prefix), last, now);
+}
+
+/** "92%" of predicted made (0 when nothing was predicted). */
+export function percentOf(made: number, predictedTotal: number): number {
+  return predictedTotal > 0 ? Math.round((made / predictedTotal) * 100) : 0;
+}

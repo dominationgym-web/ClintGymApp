@@ -37,6 +37,7 @@ import type { Checkin, ClientSleep } from "@/types/database";
 import { syncHealthOnOpen } from "@/lib/healthLink";
 import { clockTime, sleepLength } from "@/lib/sleepSync";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -68,6 +69,9 @@ export default function CheckInScreen() {
   const [step, setStep] = useState(0);
   // Today's saved answers stay folded away until the client asks to see them.
   const [showAnswers, setShowAnswers] = useState(false);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(step > 0, () => setStep((s) => Math.max(0, s - 1)));
+  useStepBack(showAnswers, () => setShowAnswers(false));
   const scrollRef = useRef<ScrollView>(null);
   // Each new page starts at the top.
   useEffect(() => {

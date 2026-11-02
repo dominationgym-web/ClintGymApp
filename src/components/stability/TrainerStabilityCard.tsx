@@ -21,6 +21,7 @@ import {
   type StabilityLevel,
 } from "@/lib/stability";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useStepBack } from "@/hooks/useStepBack";
 
 // For the trainer, on the client's Training tab. Stability programs are the
 // trainer's to give (GRIZZ, 2026-10-14): pick an area and a level to start one
@@ -47,6 +48,9 @@ export default function TrainerStabilityCard({
   // Every exercise opens its video and how-to, so the trainer can do and coach
   // it too (GRIZZ, 2026-10-16).
   const [openEx, setOpenEx] = useState<string | null>(null);
+  // Phone Back closes what is open first, one step at a time.
+  useStepBack(open, () => setOpen(false));
+  useStepBack(openEx !== null, () => setOpenEx(null));
   const [videos, setVideos] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
