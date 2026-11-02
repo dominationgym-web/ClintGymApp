@@ -221,8 +221,7 @@ begin
 end;
 $$;
 
-drop trigger if exists live_session_mark_away on public.live_sessions;
-create trigger live_session_mark_away
+create or replace trigger live_session_mark_away
   before insert on public.live_sessions
   for each row execute function public.live_session_mark_away();
 
