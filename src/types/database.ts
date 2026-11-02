@@ -1189,6 +1189,8 @@ export type LiveSession = {
   makeup_session_id: string | null;
   /** A catch-up moved to a later month: book it by this day (0181). */
   catchup_until?: string | null;
+  /** Cancelled because they're away (0184): the slot shows green with their name. */
+  away_id?: string | null;
   proof_path: string | null;
   note: string | null;
   trainer_confirmed_at: string | null;
@@ -1201,6 +1203,18 @@ export type LiveSession = {
   updated_at: string;
 };
 // What a session counts as on an invoice (live_session_kind in 0168).
+// A 1 on 1 client away until a day (0184, GRIZZ 2026-11-02).
+export type ClientAway = {
+  id: string;
+  trainer_id: string;
+  client_id: string | null;
+  guest_name: string | null;
+  guest_key: string | null;
+  until_on: string;
+  until_at: string;
+  ended_at: string | null;
+  created_at: string;
+};
 // The coach's blocked-out time (0177): sessions in it are cancelled and not charged.
 export type TrainerTimeOff = {
   id: string;
@@ -1406,6 +1420,7 @@ export interface Database {
       session_agreements: { Row: SessionAgreement; Insert: never; Update: never; Relationships: [] };
       live_sessions: { Row: LiveSession; Insert: never; Update: never; Relationships: [] };
       trainer_time_off: { Row: TrainerTimeOff; Insert: never; Update: never; Relationships: [] };
+      client_away: { Row: ClientAway; Insert: never; Update: never; Relationships: [] };
       // A diary-only person's price per session (0178).
       diary_name_fees: { Row: { trainer_id: string; name_key: string; fee: number; updated_at: string }; Insert: never; Update: never; Relationships: [] };
       session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
@@ -1687,6 +1702,8 @@ export interface Database {
       // Blocked-out time (0177).
       block_trainer_time: { Args: { p_from: string; p_to: string; p_reason: string }; Returns: TrainerTimeOff };
       remove_trainer_time_off: { Args: { p_id: string }; Returns: undefined };
+      set_client_away: { Args: { p_client: string | null; p_guest: string | null; p_until: string }; Returns: ClientAway };
+      end_client_away: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
       decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };
       set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };
