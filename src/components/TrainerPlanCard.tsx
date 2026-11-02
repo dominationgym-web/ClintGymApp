@@ -81,7 +81,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
             <Text style={styles.line}>
               Price: {PRICE_SIDE_LABEL[side]}.{" "}
               {side === "one_on_one"
-                ? "Your clients are all 1 on 1. Once you activate an Evolution client you move to the Evolution price, which covers both sides."
+                ? "Your clients are all 1 on 1, counted from your calendar each month (they don't need the app). Once you activate an Evolution client you move to the Evolution price, which covers both sides."
                 : "One price covers both sides, Evolution and 1 on 1."}
             </Text>
           ) : null}
@@ -90,7 +90,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
       {SELLS && status.client_fees_from && !freeUse ? (
         <Text style={styles.line}>
           Client fees from {shortDate(status.client_fees_from)}, a month per active client:{" "}
-          {clientTierLines(pricing.tiers, currency, pricing.included).join(", ")}. People only in your 1 on 1 diary count in the months they have a session.
+          {clientTierLines(pricing.tiers, currency, pricing.included).join(", ")}.{side === "one_on_one" ? " Clients are everyone on your calendar that month." : " People only in your 1 on 1 diary count in the months they have a session."}
         </Text>
       ) : null}
       {owed > 0 ? (

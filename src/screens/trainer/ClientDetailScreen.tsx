@@ -16,6 +16,7 @@ import DropSetRoundsCard from "@/components/DropSetRoundsCard";
 import type { Checkin, Client, ClientProblem, CoachMessage, Habit, WorkoutLog } from "@/types/database";
 import { TRAINING_LEVELS, levelLabel } from "@/lib/foundation";
 import { useAuth } from "@/context/AuthContext";
+import { useTrainerSide } from "@/context/TrainerSideContext";
 import ClientPricePicker from "@/components/ClientPricePicker";
 import ReplyToClientModal from "@/components/ReplyToClientModal";
 import FoundationOfferCard from "@/components/FoundationOfferCard";
@@ -117,6 +118,7 @@ function formatIntakeLabel(key: string) {
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
+  const { guardEvolution, reloadPriceSide } = useTrainerSide();
   const [askWeighIn, setAskWeighIn] = useState(false);
   // The activate pop-up's "1 on 1, Evolution or both" step.
   const [activating, setActivating] = useState<{ message: string; save: (t: TrainingType) => void } | null>(null);
@@ -559,7 +561,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         onPick={(t) => {
           const go = activating?.save;
           setActivating(null);
-          go?.(t);
+          if (!go) return;
+          if (t === "one") {
+            go(t);
+            reloadPriceSide();
+          } else guardEvolution(() => go(t), `Yes, activate ${client.name.split(" ")[0]}`);
         }}
       />
       {/* On a laptop the tabs run along the top (GRIZZ, 2026-10-27). */}
@@ -662,7 +668,16 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               onToggle={() => toggleOverview("plan")}
             >
               <Text style={styles.libraryTitle}>How you train them</Text>
-              <TrainingTypeRows value={trainingTypeOf(client)} onPick={pickTrainingType} />
+              <TrainingTypeRows
+                value={trainingTypeOf(client)}
+                onPick={(t) => {
+                  if (t === trainingTypeOf(client)) return;
+                  if (t === "one") {
+                    pickTrainingType(t);
+                    reloadPriceSide();
+                  } else guardEvolution(() => pickTrainingType(t), "Yes, change it");
+                }}
+              />
               <Text style={styles.helper}>
                 1 on 1 clients show on your 🤝 1 on 1 side, Evolution clients on your 🌐 Evolution side, and Both on each. A 1 on 1 client can still get a Training tab: switch on their workout video library.
               </Text>

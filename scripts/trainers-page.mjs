@@ -338,18 +338,19 @@ ${slides}
     <div class="amount" style="font-size: 22px; margin-top: -4px">$10<span>/month international</span></div>
     <ul>
       <li>Session diary, cancellations, catch-ups and month-end invoices worked out for you</li>
-      <li>R10 / $1 a month per client</li>
-      <li>Max R800 / $80 a month</li>
+      <li>Clients don't need the app: counted from your calendar</li>
+      <li>R10 / $1 a month per client, first 10 clients only</li>
+      <li>Max R200 / $20 a month</li>
       <li>6 months: R500 / $50 upfront <span class="save">1 month free</span></li>
       <li>12 months: R900 / $90 upfront <span class="save">3 months free</span></li>
     </ul>
     <p class="note">Add an online client any time and you move to Evolution, which covers both.</p>
   </div>
 </div>
-<p class="section" style="font-size: 13px">Clients counted each month: everyone in the app, plus anyone only in your session diary who trained with you that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
+<p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1 only, everyone on your calendar that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
 <div class="examples">
   <div class="ex-head">Clients</div><div class="ex-head">🌐 Evolution a month</div><div class="ex-head">🤝 1 on 1 only a month</div>
-${[[10, "R300 · $30", "R200 · $20"], [20, "R500 · $50", "R300 · $30"], [30, "R700 · $70", "R400 · $40"], [50, "R950 · $95", "R600 · $60"], ["70+", "R1 100 · $110", "R800 · $80"]]
+${[[5, "R200 · $20", "R150 · $15"], [10, "R300 · $30", "R200 · $20"], [20, "R500 · $50", "R200 · $20"], [30, "R700 · $70", "R200 · $20"], [50, "R950 · $95", "R200 · $20"], ["70+", "R1 100 · $110", "R200 · $20"]]
   .map(([n, evo, one]) => `  <div>${n}</div><div>${evo}</div><div>${one}</div>`)
   .join("\n")}
 </div>
