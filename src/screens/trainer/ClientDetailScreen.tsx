@@ -1124,9 +1124,9 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                     .maybeSingle()
                     .then(({ data }) => data && setClient(data as Client))
                 }
+                ownPlan={<DietPlanner client={client} onDirtyChange={setDietDirty} hideHeading />}
               />
             )}
-            <DietPlanner client={client} onDirtyChange={setDietDirty} />
           </>
         )}
 

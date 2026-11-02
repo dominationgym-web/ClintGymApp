@@ -50,7 +50,16 @@ const inRange = (text: string, key: keyof typeof LIMITS) => {
 // The trainer's diet planner on a client's Diet tab (0071): set the client's
 // calorie target from their BMR, then build each day of the week meal by
 // meal. Each day shows a red warning while it's over or under the target.
-export default function DietPlanner({ client, onDirtyChange }: { client: Client; onDirtyChange?: (dirty: boolean) => void }) {
+export default function DietPlanner({
+  client,
+  onDirtyChange,
+  hideHeading,
+}: {
+  client: Client;
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Sits under its own tap-to-open heading on the Diet tab (GRIZZ, 2026-11-02). */
+  hideHeading?: boolean;
+}) {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [reload, setReload] = useState(0);
@@ -196,7 +205,7 @@ export default function DietPlanner({ client, onDirtyChange }: { client: Client;
 
   return (
     <View>
-      <Text style={styles.heading}>🥗 Diet plan for {client.name}</Text>
+      {!hideHeading && <Text style={styles.heading}>🥗 Diet plan for {client.name}</Text>}
       {referral.length > 0 && (
         <View style={styles.warnBox}>
           <Text style={styles.warnTitle}>🩺 Refer before a calorie deficit</Text>
