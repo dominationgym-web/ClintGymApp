@@ -22,6 +22,7 @@ import {
 import WatchLink from "@/components/WatchLink";
 import type { ClientActivity } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // Exercise outside the programs (0114, GRIZZ, 2026-10-18): walks, runs, rides,
 // hikes, anything, with the time, distance and average heart rate. The client
@@ -242,6 +243,7 @@ function LogActivityModal({ visible, clientId, onClose, onSaved }: { visible: bo
             <Pressable style={styles.cancel} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

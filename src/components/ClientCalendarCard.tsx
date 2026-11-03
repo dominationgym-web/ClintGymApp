@@ -56,6 +56,7 @@ import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ClientCalendarBlock, ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise, WorkoutLog } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 // What the picker is choosing: the day's main workout, or an extra block (0098).
 type PickMode = "main" | "block";
@@ -933,6 +934,7 @@ function WorkoutPicker({
             />
             {families.length === 0 && <Text style={styles.description}>No {place} workouts yet.</Text>}
           </ScrollView>
+          <SafeBottom />
         </View>
       </View>
     </Modal>

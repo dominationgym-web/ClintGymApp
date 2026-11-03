@@ -21,6 +21,7 @@ import {
 } from "@/lib/calendarImport";
 import type { LiveSession } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 type Client = { id: string; name: string };
 
@@ -300,6 +301,7 @@ export default function CalendarImportModal({
             <Pressable style={styles.closeRow} onPress={onClose}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

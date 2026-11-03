@@ -19,6 +19,7 @@ import {
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Exercise } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 export const EQUIPMENT_BUCKET = "equipment-photos";
 
@@ -395,6 +396,7 @@ function EquipmentForm({
                 </Pressable>
               </ScrollView>
             )}
+            <SafeBottom />
           </View>
         </View>
       </KeyboardSafe>

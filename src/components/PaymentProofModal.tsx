@@ -6,6 +6,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { PAYMENT_PROOF_BUCKET, proofWhen } from "@/lib/paymentProofs";
 import type { PaymentProof } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // The receiver's side of proof of payment (0117): the slip or screenshot, who
 // sent it and when, and one tap to act on it (Activate for a trainer, Record
@@ -93,6 +94,7 @@ export default function PaymentProofModal({
               </Pressable>
             </>
           ) : null}
+          <SafeBottom />
         </ScrollView>
       </View>
     </Modal>

@@ -34,6 +34,7 @@ import {
 } from "@/lib/liveSessions";
 import type { LiveSession, SessionPolicy, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 type Step = "menu" | "cancel" | "move" | "who" | "price";
 
@@ -347,6 +348,7 @@ export default function SessionActionsModal({
             <Pressable style={styles.close} onPress={onClose}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

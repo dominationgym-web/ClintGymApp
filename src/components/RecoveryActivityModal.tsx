@@ -19,6 +19,7 @@ import {
 import { planRecovery } from "@/lib/recoveryPlanQueries";
 import type { RecoveryActivityRow } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 export const RECOVERY_GREEN = "#4ADE80";
 
@@ -183,6 +184,7 @@ export default function RecoveryActivityModal({
             <Pressable style={styles.close} onPress={activity || completing || !info ? onClose : () => setPicked(null)}>
               <Text style={styles.closeText}>{activity || completing || !info ? "Close" : "‹ Back to activities"}</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

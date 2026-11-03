@@ -8,6 +8,7 @@ import { EFFORT_OPTIONS, EFFORT_QUESTION } from "@/lib/progression";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { SetEffort, WorkoutLog } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // GRIZZ 2026-10-29: logged a set wrong during a workout? Tap it to fix the
 // weight, reps or reps left. The client changes their own sets ("update own",
@@ -104,6 +105,7 @@ export default function EditSetModal({
               <Pressable style={styles.cancel} onPress={onClose}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
+              <SafeBottom />
             </View>
           )}
         </View>

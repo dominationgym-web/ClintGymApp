@@ -45,6 +45,7 @@ import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import WeekBrowser from "@/components/reset/WeekBrowser";
 import ResetTraining from "@/components/reset/ResetTraining";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 type HabitKey = ResetHabitKey;
 type TabKey = "plan" | "training" | "guide";
@@ -546,6 +547,7 @@ function HabitGuideSheet({
               {done ? "✓ Done today" : "Mark as done today"}
             </Text>
           </Pressable>
+          <SafeBottom />
         </View>
       )}
     </Modal>

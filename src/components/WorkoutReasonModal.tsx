@@ -6,6 +6,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { MISSED_REASONS, PARTIAL_REASONS } from "@/lib/workoutSessions";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // Asked when a client finishes only part of a workout, or can't train (0076):
 // their coach is told why.
@@ -70,6 +71,7 @@ export default function WorkoutReasonModal({
                 {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Tell my coach</Text>}
               </Pressable>
             </View>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

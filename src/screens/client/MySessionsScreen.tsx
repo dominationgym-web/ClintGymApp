@@ -36,6 +36,7 @@ import type { ClientStackParamList } from "@/navigation/types";
 import type { LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 type Tab = "sessions" | "month" | "invoices" | "agreement";
 
@@ -263,6 +264,7 @@ function CancelModal({ session, plan, coach, onClose, onDone }: { session: LiveS
             <Pressable style={styles.closeRow} onPress={onClose}>
               <Text style={styles.closeText}>Keep it</Text>
             </Pressable>
+            <SafeBottom />
           </View>
         </View>
       </KeyboardSafe>

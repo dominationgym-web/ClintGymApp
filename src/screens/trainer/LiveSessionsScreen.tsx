@@ -61,6 +61,7 @@ import type { TrainerStackParamList } from "@/navigation/types";
 import type { BillingCurrency, ClientAway, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 export type LiveTab = "todo" | "calendar" | "clients" | "invoices" | "setup";
 type Tab = LiveTab;
@@ -1062,6 +1063,7 @@ function AddSessionModal({
           <Pressable style={styles.closeRow} onPress={onClose}>
             <Text style={styles.closeText}>Close</Text>
           </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>
@@ -1468,6 +1470,7 @@ function InvoiceModal({
           <Pressable style={styles.closeRow} onPress={onClose}>
             <Text style={styles.closeText}>Close</Text>
           </Pressable>
+          <SafeBottom />
         </ScrollView>
       </View>
     </Modal>
