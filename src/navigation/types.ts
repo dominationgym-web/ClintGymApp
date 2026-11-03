@@ -80,6 +80,8 @@ export type TrainerStackParamList = {
   TrainerProblems: { problemId?: string } | undefined;
   // Monthly challenges (0153): pick one for all clients and see who's winning.
   Challenges: undefined;
+  // One file with all clients' history (0190).
+  BulkImport: undefined;
   // Weekly video check-ins (0155): bookings, free times and call setup.
   VideoCheckIns: undefined;
   // In-person session booking, cancellations and invoices (0168).

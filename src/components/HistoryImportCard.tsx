@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { pickScreenshots, pickWebFiles } from "@/lib/pickImportFiles";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -72,50 +72,8 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
     load();
   };
 
-  const pickScreenshots = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo access to choose the screenshots.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-      quality: 0.6,
-      base64: true,
-    });
-    if (result.canceled) return;
-    send(
-      result.assets
-        .filter((a) => a.base64)
-        .map((a, i) => ({ name: a.fileName ?? `screenshot-${i + 1}.jpg`, type: a.mimeType ?? "image/jpeg", data: a.base64! })),
-    );
-  };
-
-  // The laptop app can take any export file: CSV, PDF or pictures.
-  const pickFiles = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.accept = ".csv,.tsv,.txt,.json,.pdf,image/*";
-    input.onchange = async () => {
-      const picked = Array.from(input.files ?? []).slice(0, 10);
-      const files = await Promise.all(
-        picked.map(
-          (f) =>
-            new Promise<ImportFile>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve({ name: f.name, type: f.type, data: String(reader.result).split(",")[1] ?? "" });
-              reader.onerror = () => reject(reader.error);
-              reader.readAsDataURL(f);
-            }),
-        ),
-      );
-      send(files.filter((f) => f.data));
-    };
-    input.click();
-  };
+  const pickShots = async () => send(await pickScreenshots());
+  const pickFiles = () => pickWebFiles(send);
 
   const act = async (row: ClientImport, action: "add" | "dismiss") => {
     setBusy(row.id);
@@ -143,7 +101,7 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
           : "Send screenshots or the export file from their old app. The app reads it, you check what it found, then add it to their history."}
       </Text>
       <View style={styles.buttons}>
-        <Pressable style={[styles.button, sending && styles.disabled]} onPress={pickScreenshots} disabled={sending}>
+        <Pressable style={[styles.button, sending && styles.disabled]} onPress={pickShots} disabled={sending}>
           <Text style={styles.buttonText}>📸 Screenshots</Text>
         </Pressable>
         {Platform.OS === "web" && (

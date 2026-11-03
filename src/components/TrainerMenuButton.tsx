@@ -73,6 +73,15 @@ export function useTrainerMenuItems(): MenuItem[] {
     { ...TIMER_MENU_ITEM, route: "Timers", onPress: () => navigation.navigate("Timers") },
     // One challenge a month for all their clients (0153).
     { ...CHALLENGES_MENU_ITEM, route: "Challenges", onPress: () => navigation.navigate("Challenges") },
+    // One file with all clients' history from an old app or spreadsheet (0190).
+    {
+      key: "bulkImport",
+      title: "Client history from a file",
+      icon: "📥",
+      summary: "One file with all your clients' past training: the app splits it by name and adds it to each client.",
+      route: "BulkImport",
+      onPress: () => navigation.navigate("BulkImport"),
+    },
     { ...COACHING_GUIDES_MENU_ITEM, route: "CoachingGuides", onPress: () => navigation.navigate("CoachingGuides") },
     { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
     // Problems go to the owner in the app, linked to the trainer (0151).

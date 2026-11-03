@@ -25,10 +25,12 @@ const ERRORS: Record<string, string> = {
   too_big: "That's too much in one go. Try fewer screenshots or a smaller file.",
   bad_type: "Only screenshots, PDFs and CSV or text files can be read. Save Excel files as CSV first.",
   too_many_today: "That's 10 uploads today. Try again tomorrow.",
+  too_many_bulk_today: "That's 5 whole-file uploads today. Try again tomorrow.",
+  add_failed: "Something went wrong while adding. Nothing was doubled; please try again.",
   "Already added": "This was already added.",
 };
 
-async function call(body: Record<string, unknown>): Promise<{ data: unknown; error: string | null }> {
+export async function callImportHistory(body: Record<string, unknown>): Promise<{ data: unknown; error: string | null }> {
   const { data, error } = await supabase.functions.invoke("import-history", { method: "POST", body });
   if (!error) return { data, error: null };
   let code: string | null = null;
@@ -42,15 +44,15 @@ async function call(body: Record<string, unknown>): Promise<{ data: unknown; err
 }
 
 export async function sendForReading(clientId: string, today: string, files: ImportFile[]): Promise<string | null> {
-  return (await call({ action: "read", client_id: clientId, today, files })).error;
+  return (await callImportHistory({ action: "read", client_id: clientId, today, files })).error;
 }
 
 export async function addImport(importId: string): Promise<string | null> {
-  return (await call({ action: "add", import_id: importId })).error;
+  return (await callImportHistory({ action: "add", import_id: importId })).error;
 }
 
 export async function dismissImport(importId: string): Promise<string | null> {
-  return (await call({ action: "dismiss", import_id: importId })).error;
+  return (await callImportHistory({ action: "dismiss", import_id: importId })).error;
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
