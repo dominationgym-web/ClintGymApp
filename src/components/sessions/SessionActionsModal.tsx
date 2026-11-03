@@ -30,11 +30,12 @@ import {
   policyHours,
   proofPath,
   sessionKind,
+  sessionMoney,
 } from "@/lib/liveSessions";
 import type { LiveSession, SessionPolicy, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
-type Step = "menu" | "cancel" | "move" | "who";
+type Step = "menu" | "cancel" | "move" | "who" | "price";
 
 // Everything a trainer does to one session (0168): mark it done or a no-show,
 // log a cancellation (with the WhatsApp screenshot), charge or credit it,
@@ -76,6 +77,7 @@ export default function SessionActionsModal({
   const [step, setStep] = useState<Step>("menu");
   const [busy, setBusy] = useState(false);
   const [proof, setProof] = useState<string | null>(null);
+  const [price, setPrice] = useState("");
 
   useEffect(() => {
     setStep("menu");
@@ -269,6 +271,16 @@ export default function SessionActionsModal({
                 {onAway && session.status !== "removed" && new Date(session.starts_at) > now ? (
                   <Outline label={session.away_id && session.status === "cancelled" ? "✈️ Away: back early or change the date" : "✈️ Away (going away for a while)"} onPress={onAway} />
                 ) : null}
+                {/* Log this session's own price, e.g. a catch-up for a joint session (GRIZZ 2026-11-03). */}
+                {session.status !== "removed" && !session.invoice_id ? (
+                  <Outline
+                    label={`💲 Price for this session: ${sessionMoney(Number(session.fee ?? 0), settings?.currency ?? "ZAR")}`}
+                    onPress={() => {
+                      setPrice(String(Number(session.fee ?? 0)));
+                      setStep("price");
+                    }}
+                  />
+                ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
                 {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="🔁 Repeat every week" onPress={makeWeekly} /> : null}
                 {!session.invoice_id && session.status !== "removed" ? (
@@ -298,6 +310,23 @@ export default function SessionActionsModal({
             )}
 
             {step === "cancel" && <CancelForm session={session} policy={policy} first={first} onDone={() => (onChanged(), onClose())} onBack={() => setStep("menu")} />}
+
+            {step === "price" && (
+              <View style={{ marginTop: 12, gap: 8 }}>
+                <Text style={styles.meta}>The price for just this session. Their other sessions keep their usual price.</Text>
+                <TextInput style={styles.priceInput} value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="e.g. 350, or 0 if free" />
+                <Big
+                  label="Save the price"
+                  busy={busy}
+                  onPress={() => {
+                    const fee = Number(price.replace(",", ".").replace(/[^\d.]/g, ""));
+                    if (!price.trim() || !Number.isFinite(fee) || fee < 0) return Alert.alert("Type a price", "e.g. 350, or 0 if it's free.");
+                    run(() => supabase.rpc("set_session_fee", { p_id: session.id, p_fee: fee }));
+                  }}
+                />
+                <Outline label="‹ Back" onPress={() => setStep("menu")} />
+              </View>
+            )}
 
             {step === "move" && <MoveForm session={session} sessions={sessions} settings={settings} onSave={move} onBack={() => setStep("menu")} />}
 
@@ -631,4 +660,5 @@ const styles = themedStyles({
   dangerText: { color: "#EF4444" },
   close: { padding: 12, alignItems: "center", marginTop: 8 },
   closeText: { color: "#94A3B8", fontWeight: "700", fontSize: 15 },
+  priceInput: { backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15 },
 });
