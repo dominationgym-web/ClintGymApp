@@ -774,7 +774,8 @@ function CalendarTab({
         initialTime={addAt}
         clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
         makeupFor={makeup?.id ?? null}
-        guests={makeup ? [] : diaryNames(sessions)}
+        // A catch-up for someone not in the app is booked by their calendar name (GRIZZ, 2026-11-03).
+        guests={makeup ? (makeup.client_id || !makeup.guest_name ? [] : [makeup.guest_name]) : diaryNames(sessions)}
         groups={makeup ? [] : usualGroups(sessions)}
         plans={plans}
         settings={settings}
@@ -833,7 +834,9 @@ function AddSessionModal({
   const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (visible) {
-      setPicked(clients.length === 1 && !guests.length ? [`c:${clients[0].id}`] : []);
+      setPicked(
+        clients.length === 1 && !guests.length ? [`c:${clients[0].id}`] : makeupFor && !clients.length && guests.length === 1 ? [`g:${guests[0]}`] : []
+      );
       setTyping(false);
       setTyped("");
       setTime(initialTime ?? null);
@@ -874,7 +877,15 @@ function AddSessionModal({
         if (r.error) weeklyFailed = true;
       }
     }
-    if (names.length) {
+    if (names.length && makeupFor) {
+      // A catch-up for someone not in the app: linked to the session they missed (0187).
+      const { error } = await supabase.rpc("add_diary_catch_up", {
+        p_makeup_for: makeupFor,
+        p_starts_at: at,
+        p_minutes: settings?.minutes ?? 60,
+      });
+      if (error) failed.push(`${names[0]}: ${error.message}`);
+    } else if (names.length) {
       // Not in the app: on the calendar by name, at their own price if they have one.
       const { error } = await supabase.rpc("import_live_sessions", {
         p_rows: names.map((name) => ({ client_id: null, name, starts_at: at, minutes: settings?.minutes ?? 60, repeat: weekly })),
@@ -917,7 +928,7 @@ function AddSessionModal({
             <Text style={styles.sectionTitle}>
             {makeupFor ? "Book the catch-up" : "Book a session"} · {dayLabel(day)}
           </Text>
-          {clients.length === 0 && makeupFor ? (
+          {clients.length === 0 && !guests.length && makeupFor ? (
             <Text style={styles.helper}>Set up a client's sessions on the Clients tab first (their fee and cancellation rule).</Text>
           ) : (
             <>
