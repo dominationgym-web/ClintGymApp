@@ -37,3 +37,16 @@ export function youtubeThumbnail(id: string): string {
 export function playableClip(url: string | null | undefined): string | null {
   return url && !youtubeId(url) ? url : null;
 }
+
+// A still picture of each uploaded clip (GRIZZ 2026-11-03: see the move in
+// the lists without opening each video, handy in live sessions). The website
+// build makes them with scripts/exercise-thumbs.sh into /exercise-thumbs.
+export const CLIP_THUMBS_BASE = "https://dailyevolution.co.za/exercise-thumbs/";
+
+/** A small picture of the move: the YouTube thumbnail, or the still made from an uploaded clip; null when there is neither. */
+export function exerciseThumbnail(url: string | null | undefined): string | null {
+  const id = youtubeId(url);
+  if (id) return youtubeThumbnail(id);
+  const m = url?.match(/\/storage\/v1\/object\/public\/exercise-library\/([A-Za-z0-9._-]+)\.mp4$/);
+  return m ? `${CLIP_THUMBS_BASE}${m[1]}.jpg` : null;
+}

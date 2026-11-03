@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { playableClip, youtubeId, youtubeSearchUrl, youtubeThumbnail } from "@/lib/watchOnline";
+import { exerciseThumbnail, playableClip, youtubeId, youtubeSearchUrl, youtubeThumbnail } from "@/lib/watchOnline";
 
 describe("youtubeSearchUrl", () => {
   it("joins words with %20", () => {
@@ -31,5 +31,20 @@ describe("playableClip", () => {
 describe("youtubeThumbnail", () => {
   it("is the video's picture", () => {
     expect(youtubeThumbnail("nCh8VfWY5_g")).toBe("https://i.ytimg.com/vi/nCh8VfWY5_g/hqdefault.jpg");
+  });
+});
+
+describe("exerciseThumbnail", () => {
+  it("uses the YouTube picture for YouTube links", () => {
+    expect(exerciseThumbnail("https://youtu.be/nCh8VfWY5_g")).toBe("https://i.ytimg.com/vi/nCh8VfWY5_g/hqdefault.jpg");
+  });
+  it("uses the website still for uploaded clips", () => {
+    expect(exerciseThumbnail("https://vrasgqqubyurzoknsbgm.supabase.co/storage/v1/object/public/exercise-library/push-up.mp4")).toBe(
+      "https://dailyevolution.co.za/exercise-thumbs/push-up.jpg",
+    );
+  });
+  it("is null for other links and nothing", () => {
+    expect(exerciseThumbnail("https://example.com/a.mp4")).toBeNull();
+    expect(exerciseThumbnail(null)).toBeNull();
   });
 });
