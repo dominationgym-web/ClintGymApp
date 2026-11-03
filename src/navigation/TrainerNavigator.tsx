@@ -25,6 +25,7 @@ import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
 import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
+import BulkImportScreen from "@/screens/trainer/BulkImportScreen";
 import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
 import LiveSessionsScreen from "@/screens/trainer/LiveSessionsScreen";
 import { TrainerSideProvider, TrainerSideSwitch, useTrainerSide } from "@/context/TrainerSideContext";
@@ -176,6 +177,7 @@ export default function TrainerNavigator() {
             <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
             <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
             <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ title: "Monthly challenges", headerBackTitle: "Back" }} />
+            <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: "Client history from a file", headerBackTitle: "Back" }} />
             <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />
             <Stack.Screen name="LiveSessions" component={LiveSessionsScreen} options={{ title: "Live sessions", headerBackTitle: "Back" }} />
             <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
