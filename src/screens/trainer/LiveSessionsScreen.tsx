@@ -707,7 +707,7 @@ function CalendarTab({
       {makeup ? (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            🔁 Booking a catch-up for {who(makeup)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. It's free on their invoice.
+            🔁 Booking a catch-up for {who(makeup)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. You set its price when you book it.
           </Text>
           <Pressable onPress={onMakeupDone}>
             <Text style={styles.link}>Stop</Text>
@@ -774,6 +774,7 @@ function CalendarTab({
         initialTime={addAt}
         clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
         makeupFor={makeup?.id ?? null}
+        makeupPrice={makeup ? catchUpPrice(makeup, sessions, plans, settings) : null}
         // A catch-up for someone not in the app is booked by their calendar name (GRIZZ, 2026-11-03).
         guests={makeup ? (makeup.client_id || !makeup.guest_name ? [] : [makeup.guest_name]) : diaryNames(sessions)}
         groups={makeup ? [] : usualGroups(sessions)}
@@ -793,6 +794,27 @@ function CalendarTab({
   );
 }
 
+/**
+ * What a catch-up costs before the coach changes it (GRIZZ, 2026-11-03). A
+ * catch-up for a joint session (Sharde & Dave) is them training alone in
+ * another slot, so a normal slot's price; for the coach's own cancellation,
+ * the missed session's price; otherwise free (they cancelled in time).
+ */
+export function catchUpPrice(
+  missed: LiveSession,
+  sessions: LiveSession[],
+  plans: SessionPlan[],
+  settings: SessionSettings | null
+): number {
+  const joint = sessions.some((s) => s.id !== missed.id && s.starts_at === missed.starts_at && s.status !== "removed");
+  if (joint) {
+    const plan = missed.client_id ? plans.find((p) => p.client_id === missed.client_id) : null;
+    return Number((plan && (plan.solo_fee ?? (plan.group_size > 1 ? null : plan.fee))) ?? settings?.fee ?? missed.fee ?? 0);
+  }
+  if (missed.cancelled_by === "trainer") return Number(missed.fee ?? 0);
+  return 0;
+}
+
 function AddSessionModal({
   visible,
   day,
@@ -801,6 +823,7 @@ function AddSessionModal({
   settings,
   booked,
   makeupFor,
+  makeupPrice = null,
   initialTime,
   guests = [],
   groups = [],
@@ -816,6 +839,8 @@ function AddSessionModal({
   /** People on the calendar who aren't in the app (names). */
   guests?: string[];
   makeupFor: string | null;
+  /** What the catch-up costs, filled in for the coach to check (GRIZZ, 2026-11-03). */
+  makeupPrice?: number | null;
   plans: SessionPlan[];
   settings: SessionSettings | null;
   /** Sessions already that day, with who's in them (to add someone to one). */
@@ -832,8 +857,10 @@ function AddSessionModal({
   const [time, setTime] = useState<string | null>(null);
   const [weekly, setWeekly] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [price, setPrice] = useState("");
   useEffect(() => {
     if (visible) {
+      setPrice(makeupPrice != null ? String(makeupPrice) : "");
       setPicked(
         clients.length === 1 && !guests.length ? [`c:${clients[0].id}`] : makeupFor && !clients.length && guests.length === 1 ? [`g:${guests[0]}`] : []
       );
@@ -861,7 +888,15 @@ function AddSessionModal({
   const firstClient = appIds[0] ?? null;
   const save = async () => {
     if (!count || !time) return;
+    const fee = Number(price.replace(",", ".").replace(/[^\d.]/g, ""));
+    if (makeupFor && (!price.trim() || !Number.isFinite(fee) || fee < 0)) return Alert.alert("Type a price", "What this catch-up costs, e.g. 350, or 0 if it's free.");
     setSaving(true);
+    // The price the coach typed goes on the catch-up session itself (GRIZZ, 2026-11-03).
+    const setPriceOn = async (id: string | undefined, now: number | undefined) => {
+      if (!makeupFor || !id || Number(now) === fee) return;
+      const r = await supabase.rpc("set_session_fee", { p_id: id, p_fee: fee });
+      if (r.error) failed.push(`Price: ${r.error.message}`);
+    };
     const at = atTime(day, time);
     const failed: string[] = [];
     let weeklyFailed = false;
@@ -871,6 +906,7 @@ function AddSessionModal({
         failed.push(`${clients.find((c) => c.id === id)?.name ?? "Client"}: ${error.message}`);
         continue;
       }
+      await setPriceOn(data?.id, data?.fee);
       // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
       if (weekly && !makeupFor && data?.id) {
         const r = await supabase.rpc("repeat_live_session", { p_id: data.id });
@@ -879,12 +915,13 @@ function AddSessionModal({
     }
     if (names.length && makeupFor) {
       // A catch-up for someone not in the app: linked to the session they missed (0187).
-      const { error } = await supabase.rpc("add_diary_catch_up", {
+      const { data, error } = await supabase.rpc("add_diary_catch_up", {
         p_makeup_for: makeupFor,
         p_starts_at: at,
         p_minutes: settings?.minutes ?? 60,
       });
       if (error) failed.push(`${names[0]}: ${error.message}`);
+      else await setPriceOn(data?.id, data?.fee);
     } else if (names.length) {
       // Not in the app: on the calendar by name, at their own price if they have one.
       const { error } = await supabase.rpc("import_live_sessions", {
@@ -989,7 +1026,22 @@ function AddSessionModal({
                   </View>
                 </>
               ) : null}
-              {makeupFor ? null : (
+              {makeupFor ? (
+                <>
+                  <Text style={styles.label}>Price for this catch-up</Text>
+                  <TextInput
+                    style={styles.nameInput}
+                    value={price}
+                    onChangeText={setPrice}
+                    keyboardType="decimal-pad"
+                    placeholder="e.g. 350, or 0 if it's free"
+                    placeholderTextColor="#64748B"
+                  />
+                  <Text style={styles.meta}>
+                    {makeupPrice ? "Filled in with a normal slot's price because they trained in a joint session: alone in the catch-up, it's a full slot. Change it if you need to." : "Filled in as free because they cancelled in time. Type a price if this one is charged."}
+                  </Text>
+                </>
+              ) : (
                 <>
                   <Text style={styles.label}>How often?</Text>
                   <View style={styles.chips}>
