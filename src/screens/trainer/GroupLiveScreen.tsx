@@ -16,7 +16,8 @@ import { sessionTitle } from "@/lib/programSchedule";
 import { EFFORT_OPTIONS } from "@/lib/progression";
 import { parseWeight } from "@/lib/weightInput";
 import { findImprovements } from "@/lib/workoutSessions";
-import { exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import { categoryLabel, exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import { ExerciseThumb } from "@/components/YouTubeCard";
 import { MAX_GROUP, clientSets, nextSetNumber, setsByClient, slotFor, startWeight } from "@/lib/groupSession";
 import { SUPERSET_MAX, SUPERSET_MIN, roundProblem, type RoundEntry } from "@/lib/superset";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -705,9 +706,12 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
             </ScrollView>
             <ScrollView keyboardShouldPersistTaps="handled">
               {filterExercises(shown, search, category).map((e) => (
-                <Pressable key={e.id} style={styles.libRow} onPress={() => addExercise(e)}>
-                  <Text style={styles.pickName}>{e.name}</Text>
-                  {e.category && <Text style={styles.helper}>{e.category}</Text>}
+                <Pressable key={e.id} style={[styles.libRow, styles.libRowWithPic]} onPress={() => addExercise(e)}>
+                  <ExerciseThumb url={e.external_url} />
+                  <View style={styles.libRowText}>
+                    <Text style={styles.pickName}>{e.name}</Text>
+                    {e.category && <Text style={styles.helper}>{categoryLabel(e.category)}</Text>}
+                  </View>
                 </Pressable>
               ))}
             </ScrollView>
@@ -780,4 +784,6 @@ const styles = themedStyles({
   supersetLine: { color: "#fff", fontSize: 15, fontWeight: "700", marginTop: 4 },
   roundBox: { borderBottomWidth: 1, borderBottomColor: "#334155", paddingBottom: 10, marginBottom: 10 },
   libRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 6 },
+  libRowWithPic: { flexDirection: "row", alignItems: "center" },
+  libRowText: { flex: 1 },
 });
