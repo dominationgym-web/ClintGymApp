@@ -16,6 +16,7 @@ import { todayIso } from "@/lib/dates";
 import { isPersonalMessage, winsShownFrom, winWeekLabel, type HabitWin } from "@/lib/habitWins";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 type Row = HabitWin & { clientName: string };
 
@@ -140,6 +141,7 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
                 {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Send</Text>}
               </Pressable>
             </View>
+            <SafeBottom />
           </View>
         </KeyboardAvoidingView>
       </Modal>

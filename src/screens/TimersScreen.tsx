@@ -27,6 +27,7 @@ import {
   type TimerSettings,
 } from "@/lib/timerWorkouts";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 type TabKey = TimerKind | "saved";
 
@@ -412,6 +413,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
               <Pressable style={styles.secondary} onPress={() => setSaveOpen(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
+              <SafeBottom />
             </View>
           </ModalSafeArea>
         </KeyboardSafe>

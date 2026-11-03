@@ -23,6 +23,7 @@ import {
 } from "@/lib/steps";
 import { themeBg, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 type Goal = { goal: number; reminders: boolean };
 
@@ -254,6 +255,7 @@ function StepsModal({
                 <Text style={styles.buttonText}>{saving ? "Saving…" : "Save"}</Text>
               </Pressable>
             </ScrollView>
+            <SafeBottom />
           </View>
         </View>
       </KeyboardSafe>

@@ -8,6 +8,7 @@ import { findHabit, HABIT_GROUPS, isRunning } from "@/lib/habitLibrary";
 import type { Habit } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { themeBorder, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // The client picks habits to work on: suggested ones under tap-to-open
 // headings, or one they type themselves.
@@ -138,6 +139,7 @@ export default function ChooseHabitsModal({
           <Pressable style={[styles.button, { marginTop: 12 }]} onPress={onClose}>
             <Text style={styles.buttonText}>Done</Text>
           </Pressable>
+          <SafeBottom />
         </View>
       </View>
       </KeyboardSafe>

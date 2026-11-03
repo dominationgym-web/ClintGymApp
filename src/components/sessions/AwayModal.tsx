@@ -7,6 +7,7 @@ import { clockLabel, dayKey, dayLabel, monthGrid, monthLabel, monthStart, shiftM
 import { diaryKey } from "@/lib/calendarRegular";
 import type { ClientAway, LiveSession } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 const HEAD = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -239,6 +240,7 @@ export default function AwayModal({
           <Pressable style={styles.outline} onPress={onClose}>
             <Text style={styles.outlineText}>Close</Text>
           </Pressable>
+          <SafeBottom />
         </ScrollView>
       </View>
     </Modal>

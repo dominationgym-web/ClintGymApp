@@ -76,6 +76,7 @@ import {
   weekStart,
   type Taste,
 } from "@/lib/mealWeek";
+import SafeBottom from "@/components/SafeBottom";
 
 // Carbs and insulin, in line with the trainer guide (nutrition review,
 // 2026-10-18): fat loss comes from the calorie deficit, not from cutting carbs.
@@ -435,6 +436,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
           <Pressable style={[styles.button, styles.primary, { marginTop: 12, flex: 0 }]} onPress={() => setExplain(false)}>
             <Text style={styles.primaryText}>Got it</Text>
           </Pressable>
+          <SafeBottom />
         </View>
       </View>
     </Modal>
@@ -1005,6 +1007,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
               <Pressable style={[styles.button, styles.secondary, { marginTop: 12 }]} onPress={() => setSwapping(null)}>
                 <Text style={styles.secondaryText}>Cancel</Text>
               </Pressable>
+              <SafeBottom />
             </View>
           </View>
         </KeyboardSafe>
@@ -1048,6 +1051,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => setLeaving(null)}>
               <Text style={styles.secondaryText}>Keep it</Text>
             </Pressable>
+            <SafeBottom />
           </View>
         </View>
       </Modal>
@@ -1117,6 +1121,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
                   <Text style={styles.secondaryText}>Cancel</Text>
                 </Pressable>
               </ScrollView>
+              <SafeBottom />
             </View>
           </View>
         </KeyboardSafe>

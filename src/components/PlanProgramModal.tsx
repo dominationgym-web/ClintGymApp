@@ -32,6 +32,7 @@ import type { StabilityArea, StabilityLevel } from "@/lib/stability";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 
 function dayHeading(date: string): string {
@@ -527,6 +528,7 @@ export default function PlanProgramModal({
                 </Pressable>
               ))}
           </ScrollView>
+          <SafeBottom />
         </View>
       </View>
     </Modal>

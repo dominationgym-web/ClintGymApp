@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { blockRanges, sessionsInBlock } from "@/lib/timeOff";
 import type { BillingCurrency, LiveSession, TrainerTimeOff } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 const LENGTHS = [1, 2, 3, 5, 7, 14];
 
@@ -145,6 +146,7 @@ export default function BlockTimeModal({
             <Pressable style={styles.outline} onPress={onClose}>
               <Text style={styles.outlineText}>Cancel</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

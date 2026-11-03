@@ -23,6 +23,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { Client, Exercise, SetEffort, WorkoutLog } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // Group live session (GRIZZ, 2026-10-21): "a trainer might be training up to
 // 4 people ... the same session ... when the session is done it logs it all
@@ -548,6 +549,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 <Pressable style={styles.cancel} onPress={() => setEntryFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
+                <SafeBottom />
               </View>
             )}
           </View>
@@ -586,6 +588,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               <Pressable style={styles.cancel} onPress={() => setChoosing(null)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
+              <SafeBottom />
             </View>
           )}
         </View>
@@ -639,6 +642,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 <Pressable style={styles.cancel} onPress={() => setRoundFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
+                <SafeBottom />
               </View>
             )}
           </View>
@@ -672,6 +676,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               <Pressable style={styles.cancel} onPress={() => setMoving(null)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
+              <SafeBottom />
             </View>
           )}
         </View>

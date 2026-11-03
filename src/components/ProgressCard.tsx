@@ -31,6 +31,7 @@ import {
 } from "@/lib/progress";
 import { HABITS, compareMonths, habitSeries, habitValue, monthName, monthlyStats, type HabitKey, type MonthlyRow } from "@/lib/checkinMonthly";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // The Progress section (0143, GRIZZ 2026-10-22). Three pages you tap between,
 // each one graph: main lifts from the training log, timed cardio tests, and
@@ -439,6 +440,7 @@ function CardioTestModal({ clientId, onClose, onSaved }: { clientId: string; onC
             <Pressable style={styles.cancel} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>
@@ -497,6 +499,7 @@ function BodyStatModal({ clientId, onClose, onSaved }: { clientId: string; onClo
             <Pressable style={styles.cancel} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

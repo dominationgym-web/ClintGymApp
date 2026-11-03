@@ -12,6 +12,7 @@ import {
 } from "@/lib/proteinCooking";
 import { themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 // Protein cooking ideas and low-calorie sauces (GRIZZ, 2026-10-27). Everything
 // is a tap-to-open line, one open at a time, so the client sees a short list
@@ -167,6 +168,7 @@ export function CookingIdeasLink({ food }: { food: string }) {
             <Pressable style={styles.close} onPress={() => setVisible(false)}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
+            <SafeBottom />
           </View>
         </View>
       </Modal>

@@ -5,6 +5,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { emailShareLink, shoppingList, shoppingListText, weekShoppingList, whatsappShareLink } from "@/lib/shoppingList";
 import type { DietDay } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // The week's shopping list from the client's meal plan (GRIZZ, 2026-10-27).
 // When they train, it first asks how many days this week, as training days
@@ -186,6 +187,7 @@ export default function ShoppingListSheet({
               )}
             </View>
           )}
+          <SafeBottom />
         </View>
       </View>
     </Modal>
