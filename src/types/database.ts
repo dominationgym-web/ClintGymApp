@@ -1721,6 +1721,7 @@ export interface Database {
       // Blocked-out time (0177).
       block_trainer_time: { Args: { p_from: string; p_to: string; p_reason: string }; Returns: TrainerTimeOff };
       remove_trainer_time_off: { Args: { p_id: string }; Returns: undefined };
+      add_diary_catch_up: { Args: { p_makeup_for: string; p_starts_at: string; p_minutes: number }; Returns: LiveSession };
       set_client_away: {
         Args: { p_client: string | null; p_guest: string | null; p_from: string; p_until: string; p_replace: string | null };
         Returns: ClientAway;
