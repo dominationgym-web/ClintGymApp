@@ -1,6 +1,6 @@
 // The For Personal Trainers landing page (GRIZZ, 2026-10-19): where Facebook
 // and Instagram adverts send trainers. It says straight away why Daily
-// Evolution is worth paying for, shows the five main features as a tap-through
+// Evolution is worth paying for, shows the main features as a tap-through
 // demo (one feature at a time, no long scroll), and its trial button opens the
 // trainer application in the laptop version of the app (/app/?signup=trainer).
 // Everything shown is something the app really does; no made-up numbers or
@@ -10,6 +10,31 @@ const SIGNUP = "/app/?signup=trainer";
 
 // One tap-through slide per feature: what it does, and a mock of the screen.
 const FEATURES = [
+  {
+    key: "oneonone",
+    tab: "1 on 1",
+    title: "1 on 1 Sessions",
+    tagline: "Your calendar does the admin.",
+    lead: "Start from the calendar you already keep. Daily Evolution does the rest.",
+    points: [
+      "Bring in your sessions from calendar screenshots in one go.",
+      "Cancellations sorted by your 24 or 12 hour rule, catch-ups tracked and reminded.",
+      "Joint sessions, special rates and one person paying for others.",
+      "Month-end invoices worked out for you, sent by WhatsApp or email.",
+    ],
+    closer: "No spreadsheets. No chasing. Just coach.",
+    demo: `
+      <div class="m-title">🤝 1 on 1 · Today</div>
+      <div class="m-card">💰 This week: <b>R6 400</b> · Predicted month: <b>R25 600</b></div>
+      <div class="week times">
+        <div class="d"><b>05:10</b><span class="g">Thabo</span></div>
+        <div class="d"><b>05:50</b><span class="g">Jade &amp; Camilla</span></div>
+        <div class="d"><b>06:30</b><span class="r">Open slot</span></div>
+        <div class="d"><b>07:10</b><span class="g">Sarah</span><i>❌ Cancelled in time · catch-up by 30 Nov</i></div>
+      </div>
+      <div class="m-card amber">🔁 <b>2 catch-ups to book</b> before month end</div>
+      <div class="m-card green">🧾 <b>November invoices ready</b><br>12 sessions · 1 catch-up · 1 credit<div class="btn-mini">Send on WhatsApp</div></div>`,
+  },
   {
     key: "progression",
     tab: "Programming",
@@ -242,6 +267,7 @@ export function trainersPage(escape) {
   .week .d { display: grid; grid-template-columns: 36px 1fr; align-items: center; background: var(--card); border-radius: 9px; padding: 6px 8px; }
   .week .d i { grid-column: 2; color: var(--muted); font-style: normal; font-size: 11px; }
   .week b { color: var(--muted); font-size: 12px; }
+  .week.times .d { grid-template-columns: 46px 1fr; }
   .g { color: var(--gold); font-weight: 700; } .t { color: #2DD4BF; font-weight: 700; } .p { color: #C084FC; font-weight: 700; } .r { color: #4ADE80; font-weight: 700; } .m { color: #64748B; }
   .targets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .targets div { background: var(--card); border-radius: 10px; padding: 10px; text-align: center; }
@@ -305,6 +331,18 @@ export function trainersPage(escape) {
   <p class="strong">We don't replace personal trainers. We empower them.</p>
 </section>
 
+<section class="control">
+  <h2>🤝 1 on 1: your calendar does the admin</h2>
+  <p class="lead">Most booking apps make you type every session in again. Daily Evolution starts from the calendar you already keep.</p>
+  <div class="pts">
+    <div><b>📅 Bring in your calendar</b><span>Screenshots of your diary become booked sessions, weekly repeats included.</span></div>
+    <div><b>❌ Cancellations and catch-ups</b><span>Your 24 or 12 hour rule applied for you. Catch-ups tracked and reminded before month end.</span></div>
+    <div><b>👥 Joint sessions</b><span>Pairs and small groups, special rates, and one person paying for others.</span></div>
+    <div><b>🧾 Invoices done for you</b><span>Month-end invoices worked out and sent by WhatsApp or email. Earnings and predicted income at a glance.</span></div>
+  </div>
+  <p class="strong">Track every session, catch-up and payment without lifting a pen.</p>
+</section>
+
 <div class="why">
   <div><b>Safer clients</b><p>Injury checks, pain tracking and no sets to failure in a client's first 6 weeks.</p></div>
   <div><b>Smarter plans</b><p>Starting weights, progression and deload weeks worked out from each client's real logs.</p></div>
@@ -313,7 +351,7 @@ export function trainersPage(escape) {
 
 <div id="demo">
 <h2 class="section">See what it does</h2>
-<p class="section">Tap through the five things that set it apart: programming, injury-aware training, nutrition, recovery and business management.</p>
+<p class="section">Tap through what sets it apart: 1 on 1 sessions, programming, injury-aware training, nutrition, recovery and business management.</p>
 <div class="tabs" role="tablist">${tabs}</div>
 ${slides}
 <div class="nav"><button type="button" id="prev">‹ Back</button><button type="button" id="next">Next ›</button></div>
