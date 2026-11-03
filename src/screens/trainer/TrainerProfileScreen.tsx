@@ -41,9 +41,10 @@ import MyTraining from "@/components/MyTraining";
 import OwnerChallenges from "@/components/OwnerChallenges";
 import FoldSection from "@/components/FoldSection";
 import ThemePicker from "@/components/ThemePicker";
+import UnitsPicker, { UNITS_HINT } from "@/components/UnitsPicker";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
-import type { BillingPrices, EftDetails } from "@/types/database";
+import type { BillingPrices, EftDetails, Units } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "settings";
@@ -61,7 +62,7 @@ const TABS: ScreenTab<TabKey>[] = [
 
 // A trainer's own setup (0029): the code their clients sign up with, the logo
 // their clients see, and the payment details shown after a client signs up.
-type SettingKey = "details" | "payments" | "theme" | "account";
+type SettingKey = "details" | "payments" | "units" | "theme" | "account";
 let lastOpenSetting: SettingKey | null = null;
 
 export default function TrainerProfileScreen() {
@@ -179,6 +180,16 @@ export default function TrainerProfileScreen() {
     }
     await refreshProfile();
     Alert.alert("Saved", "Your profile is up to date.");
+  };
+
+  const saveUnits = async (units: Units) => {
+    if (units === (trainer.units ?? "metric")) return;
+    const { error } = await supabase.from("trainers").update({ units }).eq("id", trainer.id);
+    if (error) {
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    await refreshProfile();
   };
 
   const togglePlanningReminders = async (on: boolean) => {
@@ -328,6 +339,16 @@ export default function TrainerProfileScreen() {
               <Pressable style={styles.button} onPress={save} disabled={saving}>
                 {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save</Text>}
               </Pressable>
+            </FoldSection>
+            <FoldSection
+              icon="📏"
+              title="Metric or Imperial"
+              hint={trainer.units === "imperial" ? "Imperial: lb and inches" : "Metric: kg and cm"}
+              open={openSetting === "units"}
+              onToggle={() => toggleSetting("units")}
+            >
+              <Text style={styles.hint}>{UNITS_HINT}</Text>
+              <UnitsPicker value={trainer.units === "imperial" ? "imperial" : "metric"} onChange={saveUnits} />
             </FoldSection>
             <FoldSection icon="🌗" title="Light or dark" hint="Dark, Light or Match phone" open={openSetting === "theme"} onToggle={() => toggleSetting("theme")}>
               <ThemePicker showTitle={false} />

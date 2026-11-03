@@ -10,6 +10,7 @@ import { parseWeight } from "@/lib/weightInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatRest } from "@/lib/programs";
 import { EFFORT_LABEL, EFFORT_OPTIONS, EFFORT_QUESTION, suggestNext, type Suggestion } from "@/lib/progression";
+import { beforeTheAppSuggestion } from "@/lib/historyImport";
 import { techniqueFor } from "@/lib/exerciseTechnique";
 import ExerciseGuideButton, { ExerciseGuideContent, MuscleNotWeight, WatchOnlineLink } from "@/components/ExerciseGuide";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
@@ -80,7 +81,10 @@ export default function LogSetModal({
       const today = data ?? [];
       setTodaysSets(today);
       const lastDate = earlier?.[0]?.log_date;
-      const next = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), target?.reps, exercise) : null;
+      const next = lastDate
+        ? suggestNext(earlier.filter((s) => s.log_date === lastDate), target?.reps, exercise)
+        : await beforeTheAppSuggestion(client.id, exercise, target?.reps);
+      if (!live) return;
       setSuggestion(next);
       const lastToday = today[today.length - 1]?.weight_kg;
       if (lastToday) setWeight(String(lastToday));

@@ -13,6 +13,8 @@ import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementConten
 import { isValidSignature } from "@/lib/trainers";
 import { countryCheckMessage, phoneCountry } from "@/lib/phoneCountry";
 import { themeText, themedStyles } from "@/lib/theme";
+import UnitsPicker from "@/components/UnitsPicker";
+import type { Units } from "@/types/database";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "TrainerSignup">;
 
@@ -31,6 +33,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [signedName, setSignedName] = useState("");
   const [agreed, setAgreed] = useState(false);
+  // Metric or Imperial (0189), so history imports know kg from lb.
+  const [units, setUnits] = useState<Units>("metric");
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -107,6 +111,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         agreement_signed_name: signedName.trim(),
         referred_by_code: referralCode.trim() || null,
         signup_country: check.ok ? check.country : null,
+        units,
       })
     );
     if (error) {
@@ -167,6 +172,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         value={referralCode}
         onChangeText={setReferralCode}
       />
+      <Text style={styles.label}>Do you work in kg or pounds?</Text>
+      <UnitsPicker value={units} onChange={setUnits} />
       <AgreementSignFields
         signedName={signedName}
         onChangeSignedName={setSignedName}
