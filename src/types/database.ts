@@ -69,7 +69,12 @@ export type Trainer = {
   free_use_from: string | null;
   // What this trainer's clients pay them a month (0106).
   client_prices?: ClientPrices | null;
+  // 0189: Metric (kg, cm) or Imperial (lb, inches). History imports read
+  // numbers with no unit shown in these units. Stored values stay kg and cm.
+  units?: Units;
 }
+
+export type Units = "metric" | "imperial";
 
 export type BillingPlan = "monthly" | "six_months" | "yearly";
 export type BillingCurrency = "USD" | "ZAR";

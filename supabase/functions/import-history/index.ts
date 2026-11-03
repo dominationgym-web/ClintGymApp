@@ -6,14 +6,18 @@
 //   ("ready", or "failed" with a reason). The trainer gets a push.
 // action "add": the trainer adds a ready import to workout_logs and
 //   client_body_stats. Days and exercises the client already has are skipped,
-//   so adding twice never doubles anything.
+//   so adding twice never doubles anything. Workouts with no date go into
+//   client_undated_sets as "before the app" sessions (0189).
+//
+// Numbers with no unit shown are read in the trainer's units (trainers.units,
+// 0189) and stored in kg and cm.
 // action "dismiss": the trainer throws a ready or failed import away.
 //
 // Deployed with verify_jwt on. Needs the ANTHROPIC_API_KEY secret; without
 // it "read" answers "no_key" and nothing is saved.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { BODY_FIELDS, cleanResult, importCounts, nameKey, type ImportResult } from "./shape.ts";
+import { cleanResult, importCounts, nameKey, undatedSessions, type ImportResult, type Units } from "./shape.ts";
 
 const MODEL = "claude-opus-5-5";
 const MAX_FILES = 10;
@@ -26,17 +30,26 @@ const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 const SYSTEM = `You read a fitness client's history exported from another training or fitness app
-(screenshots, PDFs, CSV or text files) so it can be moved into a new coaching app.
+(screenshots, PDFs, CSV or text files, including spreadsheet logs) so it can be moved into a new coaching app.
 Pull out:
-- workouts: each exercise done on a date, with its sets (weight in kg and reps). One entry per exercise per date.
-  Convert pounds to kg (1 lb = 0.4536 kg). Leave weight_kg null for body-weight exercises.
-  Skip sets with no reps (timed or distance work), warm-up rows marked as such are fine to include.
-- body: body weight and measurements by date (kg, %, cm). Convert inches to cm (1 in = 2.54 cm).
-Dates are yyyy-mm-dd. Today is given. If a date has no year, use the most recent such date that is not after today.
-Never invent numbers: only what the files clearly show. If something can't be read, leave it out and say so in note.
+- workouts: each exercise done, with its sets (weight and reps). One entry per exercise per date or per session.
+  Give numbers exactly as shown: do not convert units. Put the unit in "unit" ("kg" or "lb") only if the files
+  show it for that exercise (or set weight_unit once for the whole file); otherwise leave it null and the app uses
+  the trainer's units. Half values like 22.5 or 7,5 are real weights: keep them.
+  Leave weight null for body-weight exercises. Skip empty boxes and sets with no reps (timed or distance work).
+  Leave out exercises with nothing filled in. Warm-up rows are fine to include.
+- Dates: yyyy-mm-dd. Today is given. If a date has no year, use the most recent such date that is not after today.
+  If the files show no date, still save the workouts: set date to null and set session to the label the files
+  give (like "Week 1" or "Day A"), keeping sessions in the order shown, oldest first. Never make up a date.
+- body: body weight and measurements by date (weight, body_fat_pct, waist, hips, chest, arm, thigh) as shown,
+  with weight_unit ("kg"/"lb") and length_unit ("cm"/"in") only when the files show them. Only entries with a date.
+Never invent numbers: only what the files clearly show. If something can't be read (cut off, blurry), leave it out.
+note: one or two short plain sentences for the trainer on anything left out. Don't list the numbers you saved.
 Give app_name if you can tell which app it came from.
 Call the save_history tool once with everything you found.`;
 
+const MASS_UNIT = { type: ["string", "null"], description: "kg or lb, or null when not shown." };
+const LENGTH_UNIT = { type: ["string", "null"], description: "cm or in, or null when not shown." };
 const TOOL = {
   name: "save_history",
   description: "Save the client's workouts and body stats read from the files.",
@@ -44,18 +57,21 @@ const TOOL = {
     type: "object",
     properties: {
       app_name: { type: ["string", "null"] },
+      weight_unit: { ...MASS_UNIT, description: "Weight unit for the whole file, only if the files show it." },
       workouts: {
         type: "array",
         items: {
           type: "object",
           properties: {
-            date: { type: "string" },
+            date: { type: ["string", "null"], description: "yyyy-mm-dd, or null when the files show no date." },
+            session: { type: ["string", "null"], description: "The files' label for the session, like Week 1, when there is no date." },
             exercise: { type: "string" },
+            unit: MASS_UNIT,
             sets: {
               type: "array",
               items: {
                 type: "object",
-                properties: { weight_kg: { type: ["number", "null"] }, reps: { type: "number" } },
+                properties: { weight: { type: ["number", "null"] }, reps: { type: "number" } },
                 required: ["reps"],
               },
             },
@@ -69,12 +85,20 @@ const TOOL = {
           type: "object",
           properties: {
             date: { type: "string" },
-            ...Object.fromEntries(BODY_FIELDS.map((f) => [f, { type: "number" }])),
+            weight_unit: MASS_UNIT,
+            length_unit: LENGTH_UNIT,
+            weight: { type: "number" },
+            body_fat_pct: { type: "number" },
+            waist: { type: "number" },
+            hips: { type: "number" },
+            chest: { type: "number" },
+            arm: { type: "number" },
+            thigh: { type: "number" },
           },
           required: ["date"],
         },
       },
-      note: { type: ["string", "null"], description: "Short plain note for the trainer on anything left out or unclear." },
+      note: { type: ["string", "null"], description: "One or two short plain sentences for the trainer on anything left out or unclear." },
     },
     required: ["workouts", "body"],
   },
@@ -104,9 +128,12 @@ function contentFor(f: InFile): Record<string, unknown> | null {
   return null;
 }
 
-async function readWithClaude(key: string, today: string, files: InFile[]): Promise<ImportResult> {
+async function readWithClaude(key: string, today: string, units: Units, files: InFile[]): Promise<ImportResult> {
   const content = files.map(contentFor).filter(Boolean) as Record<string, unknown>[];
-  content.push({ type: "text", text: `Today is ${today}. Read everything above and call save_history.` });
+  content.push({
+    type: "text",
+    text: `Today is ${today}. The trainer works in ${units === "imperial" ? "pounds and inches" : "kg and cm"}. Read everything above and call save_history.`,
+  });
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -130,7 +157,7 @@ async function readWithClaude(key: string, today: string, files: InFile[]): Prom
   const call = (out.content ?? []).find((c: { type: string }) => c.type === "tool_use");
   if (!call) throw new Error("ai_failed");
   if (out.stop_reason === "max_tokens") throw new Error("too_big");
-  return cleanResult(call.input, today);
+  return cleanResult(call.input, today, units);
 }
 
 async function push(admin: SupabaseClient, userId: string, title: string, body: string, clientId: string) {
@@ -156,12 +183,13 @@ async function runRead(
   files: InFile[],
   client: { id: string; name: string; trainer_id: string },
   byClient: boolean,
+  units: Units,
 ) {
   let status = "failed";
   let result: ImportResult | null = null;
   let error: string | null = null;
   try {
-    result = await readWithClaude(key, today, files);
+    result = await readWithClaude(key, today, units, files);
     if (!result.workouts.length && !result.body.length) error = result.note ?? "No workouts or body stats were found in these files.";
     else status = "ready";
   } catch (e) {
@@ -174,7 +202,7 @@ async function runRead(
       admin,
       client.trainer_id,
       `${client.name} sent their history`,
-      `${c.days} training days and ${c.body} body stats from another app. Open their Training tab to check and add them.`,
+      `${c.days + c.undated} workouts and ${c.body} body stats from another app. Open their Training tab to check and add them.`,
       client.id,
     );
   }
@@ -218,6 +246,7 @@ async function addImport(admin: SupabaseClient, imp: { id: string; client_id: st
   let workouts = 0;
   let skipped = 0;
   for (const w of r.workouts) {
+    if (!w.date) continue;
     const k = `${w.date}|${nameKey(w.exercise)}`;
     if (have.has(k)) {
       skipped++;
@@ -260,7 +289,70 @@ async function addImport(admin: SupabaseClient, imp: { id: string; client_id: st
     const { error } = await admin.from("client_body_stats").insert(bodyRows);
     if (error) throw error;
   }
-  return { workouts, sets: logRows.length, body: bodyRows.length, skipped, skipped_body: r.body.length - bodyRows.length };
+
+  // No date (0189): "before the app" sessions. The same session sent twice
+  // (same label, exercise and sets) is only kept once.
+  const setsKey = (label: string | null, exercise: string, sets: { weight_kg: number | null; reps: number }[]) =>
+    `${label ?? ""}|${nameKey(exercise)}|${sets.map((x) => `${x.weight_kg === null ? "" : Number(x.weight_kg)}x${x.reps}`).join(",")}`;
+  const sessions = undatedSessions(r);
+  const undatedRows: Record<string, unknown>[] = [];
+  let undated = 0;
+  if (sessions.length) {
+    const old = await allRows<{ session_label: string | null; exercise_name: string; set_number: number; weight_kg: number | null; reps: number; import_id: string | null; session_order: number }>(
+      (a, b) =>
+        admin
+          .from("client_undated_sets")
+          .select("session_label, exercise_name, set_number, weight_kg, reps, import_id, session_order")
+          .eq("client_id", clientId)
+          .order("id")
+          .range(a, b),
+    );
+    const grouped = new Map<string, { label: string | null; exercise: string; sets: { set_number: number; weight_kg: number | null; reps: number }[] }>();
+    for (const x of old) {
+      const g = `${x.import_id}|${x.session_order}|${nameKey(x.exercise_name)}`;
+      if (!grouped.has(g)) grouped.set(g, { label: x.session_label, exercise: x.exercise_name, sets: [] });
+      grouped.get(g)!.sets.push(x);
+    }
+    const haveUndated = new Set(
+      [...grouped.values()].map((g) => setsKey(g.label, g.exercise, g.sets.sort((a, b) => a.set_number - b.set_number))),
+    );
+    sessions.forEach((session, order) => {
+      for (const w of session.workouts) {
+        const k = setsKey(session.label, w.exercise, w.sets);
+        if (haveUndated.has(k)) {
+          skipped++;
+          continue;
+        }
+        haveUndated.add(k);
+        undated++;
+        w.sets.forEach((s, i) =>
+          undatedRows.push({
+            client_id: clientId,
+            import_id: imp.id,
+            session_label: session.label,
+            session_order: order,
+            exercise_id: byName.get(nameKey(w.exercise)) ?? null,
+            exercise_name: w.exercise,
+            set_number: i + 1,
+            weight_kg: s.weight_kg,
+            reps: s.reps,
+          }),
+        );
+      }
+    });
+    for (let i = 0; i < undatedRows.length; i += 500) {
+      const { error } = await admin.from("client_undated_sets").insert(undatedRows.slice(i, i + 500));
+      if (error) throw error;
+    }
+  }
+  return {
+    workouts: workouts + undated,
+    sets: logRows.length + undatedRows.length,
+    body: bodyRows.length,
+    skipped,
+    skipped_body: r.body.length - bodyRows.length,
+    undated,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -354,6 +446,10 @@ Deno.serve(async (req) => {
     .single();
   if (error) return json(500, { error: error.message });
 
-  EdgeRuntime.waitUntil(runRead(admin, key, row.id, today, files, client, byClient));
+  // Numbers with no unit shown are read in the trainer's units (0189).
+  const { data: trainer } = await admin.from("trainers").select("units").eq("id", client.trainer_id).maybeSingle();
+  const units: Units = trainer?.units === "imperial" ? "imperial" : "metric";
+
+  EdgeRuntime.waitUntil(runRead(admin, key, row.id, today, files, client, byClient, units));
   return json(200, { import: row });
 });

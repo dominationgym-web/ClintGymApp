@@ -50,6 +50,7 @@ import { AB_MAX_ROUNDS, AB_REPS, abExerciseFor, absAfterExercise, absBetweenSets
 import EveryRepTips from "@/components/EveryRepTips";
 import { EFFORT_LABEL, EFFORT_OPTIONS, EFFORT_QUESTION, suggestNext, type Suggestion } from "@/lib/progression";
 import { apreBase, apreNextSet, apreRestAfter, isApre, type ApreStart } from "@/lib/apre";
+import { beforeTheAppSuggestion } from "@/lib/historyImport";
 import { gaugeWeight, inIntro, introWeeks, needsGauge, needsSafeties, SAFETIES_NOTE, type GaugeResult } from "@/lib/gauge";
 import { DELOAD_BLUE, deloadSuggestion } from "@/lib/deload";
 import { loadCalendarWorkoutFor, loadClientProgram, type ActiveProgram, type CalendarDayWorkout } from "@/lib/programQueries";
@@ -794,7 +795,9 @@ export default function ExerciseLibraryScreen() {
       setWeight(plan.weight ? String(plan.weight) : "");
       return;
     }
-    const usual = lastDate ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise, intro ? 2 : 1) : null;
+    const usual = lastDate
+      ? suggestNext(earlier.filter((s) => s.log_date === lastDate), programRow?.reps, exercise, intro ? 2 : 1)
+      : await beforeTheAppSuggestion(client.id, exercise, programRow?.reps, intro ? 2 : 1);
     // Deload week (0115): about 70% of the usual weight, and no gauge set.
     const next = deloadToday && calendarToday ? deloadSuggestion(usual, exercise) : usual;
     setSuggestion(next);
