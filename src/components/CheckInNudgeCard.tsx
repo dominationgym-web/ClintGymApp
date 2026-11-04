@@ -56,8 +56,8 @@ export default function CheckInNudgeCard() {
       {open ? (
         <>
           <Text style={styles.help}>
-            You haven't been in touch with {rows.length === 1 ? "this client" : "these clients"} for {QUIET_AFTER_DAYS}+ days. A quick
-            personal message, in your own words, makes them feel special.
+            You haven't been in touch with {rows.length === 1 ? "this client" : "these clients"} for {QUIET_AFTER_DAYS}+ days. Regular client
+            interaction improves client retention.
           </Text>
           {(showAll ? rows : rows.slice(0, SHOWN_AT_FIRST)).map((r) => {
             const link = whatsappLink(r.phone);
