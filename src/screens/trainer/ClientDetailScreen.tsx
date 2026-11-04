@@ -395,7 +395,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       // No weigh-in schedule yet: ask how often they weigh and measure (not for a live client).
       if (!client.weigh_in_every && !changes.live_only && !client.live_only && client.id !== trainer?.id) setAskWeighIn(true);
     };
-    const message = `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.`;
+    const message = `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.`;
     // Activating asks 1 on 1, Evolution or both (GRIZZ, 2026-11-01).
     if (!renewing) return setActivating({ message, save: (t) => save({ ...next, ...trainingTypeFields(t) }) });
     Alert.alert("Renew plan?", message, [
@@ -592,7 +592,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             ) : null}
             <Text style={styles.memberSince}>
               {timeWithYou === "Joined today" ? timeWithYou : `With you ${timeWithYou}`} · since{" "}
-              {new Date(client.created_at).toLocaleDateString()}
+              {new Date(client.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
             </Text>
           </View>
         </View>
@@ -614,7 +614,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             {client.archived_at && (
               <View style={styles.archivedBanner}>
                 <Text style={styles.archivedText}>
-                  🗄 Archived on {new Date(client.archived_at).toLocaleDateString()}. All their data is kept.
+                  🗄 Archived on {new Date(client.archived_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}. All their data is kept.
                 </Text>
                 <Pressable style={styles.button} onPress={archiveOrBringBack}>
                   <Text style={styles.buttonText}>Bring back</Text>
@@ -661,7 +661,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               title="Plan & payment"
               hint={
                 (client.plan_type
-                  ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString()}` : ""}`
+                  ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""}`
                   : "No plan picked") + ` · ${trainingTypeLabel(trainingTypeOf(client))}`
               }
               open={overviewOpen === "plan"}
@@ -696,12 +696,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   <Text style={styles.planLabel}>{PLAN_LABEL[client.plan_type] ?? "12 Month"} Plan</Text>
                   {client.plan_started_at && (
                     <Text style={styles.planDate}>
-                      Started: {new Date(client.plan_started_at).toLocaleDateString()}
+                      Started: {new Date(client.plan_started_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </Text>
                   )}
                   {client.plan_expires_at && (
                     <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
-                      Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
+                      Expires: {new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </Text>
                   )}
                   {!client.archived_at && (

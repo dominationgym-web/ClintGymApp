@@ -95,11 +95,11 @@ export default function VideoUploadScreen() {
               <View style={styles.flex1}>
                 <Text style={styles.label}>{item.exercise_name || "Form video"}</Text>
                 <Text style={styles.expiry}>
-                  {new Date(item.uploaded_at).toLocaleDateString()}
+                  {new Date(item.uploaded_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   {item.viewed_at ? " · Coach watched ✓" : " · Sent to your coach"}
                 </Text>
               </View>
-              <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString()}</Text>
+              <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</Text>
             </View>
             {(feedback[item.id] ?? []).map((m) => (
               <View key={m.id} style={styles.feedback}>

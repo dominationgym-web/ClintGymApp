@@ -204,7 +204,7 @@ export default function ClientProfileScreen() {
       </View>
 
       {client.plan_expires_at && (
-        <Text style={styles.helper}>Plan renews/expires {new Date(client.plan_expires_at).toLocaleDateString()}</Text>
+        <Text style={styles.helper}>Plan ends {new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</Text>
       )}
 
       {trainer ? (

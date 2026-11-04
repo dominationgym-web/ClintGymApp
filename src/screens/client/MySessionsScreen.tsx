@@ -406,7 +406,7 @@ function AgreementTab({
         </>
       ) : signed ? (
         <Text style={[styles.helper, { color: themeText("#22C55E") }]}>
-          ✍️ Signed by {signed.signed_name} on {new Date(signed.signed_at).toLocaleDateString()} at {clockLabel(signed.signed_at)}.
+          ✍️ Signed by {signed.signed_name} on {new Date(signed.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} at {clockLabel(signed.signed_at)}.
         </Text>
       ) : null}
     </>

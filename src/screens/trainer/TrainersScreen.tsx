@@ -235,7 +235,7 @@ export default function TrainersScreen() {
                 </Text>
                 <Text style={styles.detail}>
                 {item.agreement_accepted_at
-                  ? `Signed the agreement as "${item.agreement_signed_name}" on ${new Date(item.agreement_accepted_at).toLocaleDateString()}`
+                  ? `Signed the agreement as "${item.agreement_signed_name}" on ${new Date(item.agreement_accepted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
                   : "Hasn't signed the trainer agreement yet"}
               </Text>
               <Text style={[styles.status, { color: themeText(item.approved ? "#22C55E" : "#F59E0B") }]}>

@@ -76,7 +76,7 @@ export default function ClientProblems({
             {fixing && (
               <Text style={styles.meta}>
                 {p.followup_sent_at
-                  ? `The app checked in with them on ${new Date(p.followup_sent_at).toLocaleDateString()}`
+                  ? `The app checked in with them on ${new Date(p.followup_sent_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
                   : "The app will check in with them tomorrow morning"}
               </Text>
             )}

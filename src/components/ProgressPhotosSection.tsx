@@ -222,7 +222,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
           {showSlots ? (
             <View style={styles.setCard}>
               <Text style={styles.setTitle}>
-                {isBeforeSet ? "Your before set" : `Progress set · ${parseIsoDate(openSet.takenOn).toLocaleDateString()}`}
+                {isBeforeSet ? "Your before set" : `Progress set · ${parseIsoDate(openSet.takenOn).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
               </Text>
               <Text style={styles.helper}>
                 {doneCount === 3 ? "All 3 done. Tap one to retake it." : `${doneCount} of 3 done. Tap a box to add that photo.`}

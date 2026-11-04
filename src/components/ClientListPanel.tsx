@@ -165,7 +165,7 @@ export default function ClientListPanel({
     }
     const renewing = client.access_status !== "expired";
     const next = renewedPlanDates(client, new Date());
-    const until = next ? ` Their plan will run to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.` : "";
+    const until = next ? ` Their plan will run to ${parseIsoDate(next.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.` : "";
     Alert.alert(
       renewing ? "Renew plan?" : "Activate client?",
       renewing
@@ -257,7 +257,7 @@ export default function ClientListPanel({
                     <Text style={styles.statusLabel}>{STATUS_LABEL[item.access_status]}</Text>
                   </View>
                   {item.plan_expires_at && (
-                    <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString()}</Text>
+                    <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</Text>
                   )}
                 </View>
                 {proofs[item.id] && (

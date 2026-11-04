@@ -161,7 +161,7 @@ export default function SessionPlanEditor({
       {plan ? (
         <Text style={[styles.status, { color: themeText(signed ? "#22C55E" : "#F59E0B") }]}>
           {signed
-            ? `✍️ Agreement signed by ${signed.signed_name} on ${new Date(signed.signed_at).toLocaleDateString()}`
+            ? `✍️ Agreement signed by ${signed.signed_name} on ${new Date(signed.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
             : `✍️ ${first} hasn't signed the agreement for these terms yet`}
         </Text>
       ) : null}
