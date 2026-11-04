@@ -29,6 +29,7 @@ import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
 import BulkImportScreen from "@/screens/trainer/BulkImportScreen";
 import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
 import LiveSessionsScreen from "@/screens/trainer/LiveSessionsScreen";
+import OneNutritionScreen from "@/screens/trainer/OneNutritionScreen";
 import { TrainerSideProvider, TrainerSideSwitch, useTrainerSide } from "@/context/TrainerSideContext";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
@@ -101,6 +102,7 @@ function TrainerTabs() {
           <Tab.Screen name="OneToday" component={OneToday} options={{ title: "Today", tabBarIcon: tabIcon("today") }} />
           <Tab.Screen name="OneCalendar" component={OneCalendar} options={{ title: "Calendar", tabBarIcon: tabIcon("calendar") }} />
           <Tab.Screen name="OneClients" component={OneClients} options={{ title: "Clients", tabBarIcon: tabIcon("people") }} />
+          <Tab.Screen name="OneNutrition" component={OneNutritionScreen} options={{ title: "Nutrition", tabBarIcon: tabIcon("nutrition") }} />
           <Tab.Screen name="OneInvoices" component={OneInvoices} options={{ title: "Invoices", tabBarIcon: tabIcon("receipt") }} />
         </>
       ) : (

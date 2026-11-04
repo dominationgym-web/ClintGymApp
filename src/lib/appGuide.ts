@@ -428,7 +428,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "1 on 1: live sessions, cancellations and invoices",
       where: "The 🤝 1 on 1 side (switch at the top)",
       points: [
-        "Two sides: tap 🤝 1 on 1 or 🌐 Evolution at the top of the app. 1 on 1 is for the people you train in person: Today, Calendar, Clients and Invoices. Evolution is your online coaching: Dashboard, Clients, Programs and Profile. The app opens on the side you used last.",
+        "Two sides: tap 🤝 1 on 1 or 🌐 Evolution at the top of the app. 1 on 1 is for the people you train in person: Today, Calendar, Clients, Nutrition and Invoices. Nutrition: pick a client and their Diet page opens (meal plan, BMR and macros). People only in your diary show as Not on the app: they get nutrition once they sign up. Evolution is your online coaching: Dashboard, Clients, Programs and Profile. The app opens on the side you used last.",
         "Today: today's sessions first, with the free gaps in green marked Available (tap one to book it), then anything to sort out (sessions not marked yet, catch-ups to book, agreements not signed). Tap ✓ Came, or Cancelled / No-show. Money sits underneath.",
         "Clients: tap ＋ Add client. It asks if they have the app: No adds someone who only lives in your calendar, Yes lists your app clients to set up.",
         "Setup sits in the ☰ menu on the 1 on 1 side (Session setup).",
