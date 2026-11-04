@@ -64,7 +64,7 @@ export default function ProteinCookingIdeas() {
   useStepBack(open !== null, () => setOpen(null));
   return (
     <View style={styles.card}>
-      <Text style={styles.intro}>Five simple ways to cook each protein, with flavour and without many extra calories. Tap a food, then an idea for the steps.</Text>
+      <Text style={styles.intro}>Tap a food, then an idea for the steps.</Text>
       {PROTEIN_COOKING.map((set) => {
         const isOpen = open === set.key;
         return (

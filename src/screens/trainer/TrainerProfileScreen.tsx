@@ -308,7 +308,7 @@ export default function TrainerProfileScreen() {
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <Text style={styles.switchTitle}>Planning reminders</Text>
                   <Text style={styles.hint}>
-                    A reminder 2 days and 1 day before a client's planned workouts on their training calendar run out, so you can plan their next week.
+                    A reminder 2 days before a client's planned workouts run out.
                   </Text>
                 </View>
                 <Switch

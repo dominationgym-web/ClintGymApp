@@ -117,7 +117,7 @@ export default function TrainerProblemsScreen() {
         <View style={styles.card}>
           <Text style={styles.heading}>Something not working? 🛠</Text>
           <Text style={styles.helper}>
-            Tell the app owner here. It goes straight to them with your name on it, and their answer comes back on this page.
+            It goes straight to the app owner; their answer shows here.
           </Text>
           <Text style={styles.label}>What is it about?</Text>
           <View style={styles.chips}>

@@ -679,7 +679,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 }}
               />
               <Text style={styles.helper}>
-                1 on 1 clients show on your 🤝 1 on 1 side, Evolution clients on your 🌐 Evolution side, and Both on each. A 1 on 1 client can still get a Training tab: switch on their workout video library.
+                Decides which side of your app they show on.
               </Text>
               <ClientPricePicker
                 clientId={client.id}
@@ -895,8 +895,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
           <>
             <Text style={styles.sectionHeading}>Habits</Text>
             <Text style={styles.helper}>
-              Habits you set stay until you remove them. Clients can also choose their own habits from a list
-              (marked "Chosen by client") and stop those themselves.
+              Clients can add their own too (marked "Chosen by client").
             </Text>
             {habits.length === 0 && <Text style={styles.helper}>No habits set up yet.</Text>}
             {habits.map((h) => {

@@ -138,7 +138,7 @@ export default function AddDiaryPersonModal({
                 {priceOk ? ` · ${sessionMoney(price, currency)} a session` : ""}
               </Text>
             ) : (
-              <Text style={styles.meta}>No set days? Book them one session at a time on the Calendar tab: tap a day › Book a session › type their name.</Text>
+              <Text style={styles.meta}>No set days? Book them from the Calendar tab instead.</Text>
             )}
 
             <Pressable style={[styles.button, !ready && { opacity: 0.5 }]} onPress={save} disabled={!ready || saving}>

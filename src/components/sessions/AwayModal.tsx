@@ -164,7 +164,7 @@ export default function AwayModal({
               )}
             </View>
           ) : (
-            <Text style={styles.helper}>Tap the first day they're away, then the last day. Their sessions in that time turn green: free to book. Their name stays on each one.</Text>
+            <Text style={styles.helper}>Tap the first day away, then the last. Their sessions turn green: free to book.</Text>
           )}
 
           {showCalendar ? (

@@ -204,8 +204,7 @@ export default function CalendarImportModal({
             ) : !rows ? (
               <>
                 <Text style={styles.helper}>
-                  Take screenshots of your calendar (Google, Samsung, Apple or any app, week or list view works best). The app reads the names and times, and
-                  you check them before anything is booked.
+                  Screenshot your calendar (week or list view). You check every session before it's booked.
                 </Text>
                 <Pressable style={styles.button} onPress={pickScreenshots}>
                   <Text style={styles.buttonText}>Pick screenshots (up to 6)</Text>
@@ -227,7 +226,7 @@ export default function CalendarImportModal({
             ) : (
               <>
                 <Text style={styles.helper}>
-                  Tick the ones to put in your diary. Tap a name to change who it is. People not in the app yet go in by name; link them to their account later.
+                  Tick the ones to add. Tap a name to change who it is.
                 </Text>
                 {note ? <Text style={styles.meta}>Note: {note}</Text> : null}
                 {rows.map((r) => (

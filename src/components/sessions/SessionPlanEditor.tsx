@@ -178,7 +178,7 @@ export default function SessionPlanEditor({
             <Chip label="Split one fee" on={split} onPress={() => setSplit(true)} />
             <Chip label="Each pays their own fee" on={!split} onPress={() => setSplit(false)} />
           </View>
-          <Text style={styles.meta}>Set up each person in the group the same way, at the same days and times. After the session you tick who came.</Text>
+          <Text style={styles.meta}>Set up each person the same way and times.</Text>
           <Text style={styles.label}>Who pays for {first}?</Text>
           {paysFor.length ? (
             <Text style={styles.meta}>

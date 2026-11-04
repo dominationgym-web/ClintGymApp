@@ -142,7 +142,7 @@ export function MealDayView({
             {meal.own && <Text style={styles.ownTag}>⭐ {coachView ? "Their" : "Your"} own meal, the same every day</Text>}
             {meal.items.length === 0 && !meal.own && onOwnMeal && (
               <View style={styles.emptyMeal}>
-                <Text style={styles.helper}>Nothing left in this meal. Do you eat the same thing every day? Put in what you eat and the app balances the rest of your day around it.</Text>
+                <Text style={styles.helper}>Nothing left in this meal. Put in your own and the day balances around it.</Text>
                 <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => onOwnMeal(m)}>
                   <Text style={styles.primaryText}>+ Put in what I eat</Text>
                 </Pressable>
@@ -422,10 +422,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             </Text>
             <Text style={styles.explainHead}>6. Don't like a food?</Text>
             <Text style={styles.explain}>
-              Tap ⇄ Swap next to it and pick something you like. The app changes the weight so you still get the same amount of
-              protein, carbs or fat. Or tap ✕ to leave it out: the app tells you why it's there, and can top up the other foods
-              like it so you still get the same. Eat the same breakfast (or any meal) every day? Tap Put in my own meal and add what you eat: the app keeps it and balances the
-              rest of your day around it.{coachMode ? " Tap New ideas for a fresh set of foods, or Change meals to change the details or goal." : ""}
+              ⇄ Swap a food for one you like, ✕ leave it out, or Put in my own meal. The app keeps your totals the same.{coachMode ? " Tap New ideas for a fresh set of foods, or Change meals to change the details or goal." : ""}
             </Text>
             <Text style={styles.explain}>
               {coachMode
@@ -555,8 +552,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   if (!coachMode && !plan) {
     return (
       <Text style={styles.helper}>
-        Your coach hasn't worked out your meal plan yet. When they do, it shows here, and you can swap any food you don't like, leave
-        foods out and put in your own meals.
+        Your coach hasn't made your meal plan yet. It shows here when they do.
       </Text>
     );
   }
@@ -1063,8 +1059,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
               <ScrollView keyboardShouldPersistTaps="handled">
                 <Text style={styles.sheetTitle}>Your own meal: {ownMeal?.name}</Text>
                 <Text style={styles.helper}>
-                  Eat the same thing every day? Add each food and how much you have. The app keeps this meal the same on training and rest
-                  days, and works the rest of your day around it so you still hit your target.
+                  Add what you eat. The rest of your day balances around it.
                 </Text>
                 {ownDraft.map((row, i) => (
                   <View key={row.food + i} style={styles.ownRow}>

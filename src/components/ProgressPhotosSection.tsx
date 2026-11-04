@@ -275,8 +275,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
               <Text style={styles.subheading}>Your progress history</Text>
               <ProgressHistory photos={photos} onLongPress={confirmDelete} />
               <Text style={styles.helper}>
-                Tap a photo to see it big. Press and hold to delete it. Every photo stays here for as long as you have
-                an account; deleting your account removes them all.
+                Tap to see it big. Press and hold to delete.
               </Text>
             </View>
           )}

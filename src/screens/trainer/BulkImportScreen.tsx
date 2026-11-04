@@ -122,8 +122,7 @@ export default function BulkImportScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.helper}>
-        Got one file with all your clients' training from your old app or spreadsheet? Send it here. The app splits it by name and matches
-        each name to your client. You check it, then add everyone in one go.
+        One file with all your clients' past training. The app splits it by name; you check it, then add everyone.
       </Text>
       <View style={styles.buttons}>
         {Platform.OS === "web" && (

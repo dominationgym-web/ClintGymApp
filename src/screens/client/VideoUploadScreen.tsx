@@ -65,7 +65,7 @@ export default function VideoUploadScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.helper}>
-        Film a set straight from your workout: tap 🎥 Film this set in the set log. Or send one here. Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
+        Up to 60 seconds. Videos are removed after 7 days; your trainer's notes stay.
       </Text>
       <Text style={styles.fieldLabel}>Which exercise is it?</Text>
       <TextInput

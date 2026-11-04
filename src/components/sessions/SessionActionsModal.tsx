@@ -289,8 +289,7 @@ export default function SessionActionsModal({
                 ) : null}
                 {!session.client_id ? (
                   <Text style={styles.meta}>
-                    Not in the app yet: cancellations and no-shows count in your earnings, but catch-ups, notifications and invoices start once you link them to
-                    their app account.
+                    Not in the app yet: no invoices or notifications until you link them.
                   </Text>
                 ) : null}
                 {session.status !== "booked" && session.status !== "removed" && new Date(session.starts_at) > now ? (
