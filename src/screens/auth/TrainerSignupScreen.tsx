@@ -132,7 +132,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         clients can join you, and then you get a free 30-day trial.
       </Text>
       <Text style={styles.body}>
-        📍 Please have your location on. We check your country once so you're charged the right prices. Only your
+        Please have your location on. We check your country once so you're charged the right prices. Only your
         country is saved.
       </Text>
       <Text style={styles.label}>Name and surname</Text>

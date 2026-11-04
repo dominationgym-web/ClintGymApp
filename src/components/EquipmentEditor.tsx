@@ -351,7 +351,7 @@ function EquipmentForm({
                       ) : preview ? (
                         <Image source={{ uri: preview }} style={styles.preview} />
                       ) : (
-                        <Text style={styles.link}>{draft.photo ? "📷 Photo saved. Tap to change it" : "📷 Add a photo"}</Text>
+                        <Text style={styles.link}>{draft.photo ? "Photo saved. Tap to change it" : "Add a photo"}</Text>
                       )}
                     </Pressable>
                   </>

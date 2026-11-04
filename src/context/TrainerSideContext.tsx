@@ -125,7 +125,7 @@ export function TrainerSideProvider({ children }: { children: React.ReactNode })
 
 export const useTrainerSide = () => useContext(SideContext);
 
-export const SIDE_LABEL: Record<TrainerSide, string> = { one: "🤝 1 on 1", evolution: "🌐 Evolution" };
+export const SIDE_LABEL: Record<TrainerSide, string> = { one: "1 on 1", evolution: "Evolution" };
 
 // The pill at the top of every trainer tab (and the laptop sidebar).
 export function TrainerSideSwitch({ compact }: { compact?: boolean }) {

@@ -215,7 +215,7 @@ export default function ExerciseLibraryScreen() {
   const [planRows, setPlanRows] = useState(0);
   // Done / Couldn't do it on extra blocks (0123), as just tapped, by block id.
   const [blockResults, setBlockResults] = useState<Record<string, "done" | "skipped" | null>>({});
-  // "🎥 Film this set" in the set log (C2): the video goes to the coach with the exercise filled in.
+  // "Film this set" in the set log (C2): the video goes to the coach with the exercise filled in.
   const film = useFormVideoUpload(client?.id);
   // Keep the demo video (shown under the set log) compact so it fits on screen;
   // the client can tap to make it bigger.
@@ -882,7 +882,7 @@ export default function ExerciseLibraryScreen() {
       if (result) {
         setWeight(String(result.weight));
         setStartWeight(String(result.weight));
-        Alert.alert(`🎯 Your working weight: ${result.weight}kg`, result.advice);
+        Alert.alert(`Your working weight: ${result.weight}kg`, result.advice);
       }
     }
     if (warmUp) {
@@ -1035,7 +1035,7 @@ export default function ExerciseLibraryScreen() {
                 {client && !live && !hold && <TodayPlanRows clientId={client.id} refreshKey={refresh} onCount={setPlanRows} />}
                 {(!program || todaysWorkout.length === 0) && calendarExtras.length === 0 && planRows === 0 && (
                   <Text style={styles.todayRest}>
-                    {program ? "😌 Rest day. Let your body recover." : "Nothing planned for today."}
+                    {program ? "Rest day. Let your body recover." : "Nothing planned for today."}
                   </Text>
                 )}
                 {/* On a weekday yesterday's missed workout is offered here too, so it's seen without opening today's. */}
@@ -1043,7 +1043,7 @@ export default function ExerciseLibraryScreen() {
                   <View style={styles.catchUpChips}>
                     {catchUpChoices(today, missed).map((m) => (
                       <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
-                        <Text style={styles.catchUpChipText}>🔁 Catch up {weekdayOf(m.workout_date)}'s workout</Text>
+                        <Text style={styles.catchUpChipText}>Catch up {weekdayOf(m.workout_date)}'s workout</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -1059,7 +1059,7 @@ export default function ExerciseLibraryScreen() {
               <View style={styles.programCard}>
                 {catchUpFor ? (
                   <View style={styles.catchUp}>
-                    <Text style={styles.catchUpTitle}>🔁 Catching up {weekdayOf(catchUpFor)}'s missed workout</Text>
+                    <Text style={styles.catchUpTitle}>Catching up {weekdayOf(catchUpFor)}'s missed workout</Text>
                     {!todaySession && (
                       <View style={styles.catchUpChips}>
                         {catchUpChoices(today, missed)
@@ -1077,7 +1077,7 @@ export default function ExerciseLibraryScreen() {
                   </View>
                 ) : (
                   <>
-                    {calendarToday && <Text style={styles.fromCalendar}>📅 Today's workout from your training calendar</Text>}
+                    {calendarToday && <Text style={styles.fromCalendar}>Today's workout from your training calendar</Text>}
                     {calendarToday && client && !live && (
                       <WorkoutSwapRow
                         clientId={client.id}
@@ -1092,7 +1092,7 @@ export default function ExerciseLibraryScreen() {
                       <View style={styles.catchUpChips}>
                         {catchUpChoices(today, missed).map((m) => (
                           <Pressable key={m.workout_date} style={styles.catchUpChip} onPress={() => setChosenDay(m.workout_date)}>
-                            <Text style={styles.catchUpChipText}>🔁 Catch up {weekdayOf(m.workout_date)}'s workout</Text>
+                            <Text style={styles.catchUpChipText}>Catch up {weekdayOf(m.workout_date)}'s workout</Text>
                           </Pressable>
                         ))}
                       </View>
@@ -1114,7 +1114,7 @@ export default function ExerciseLibraryScreen() {
                 )}
                 {deloadToday && calendarToday && (
                   <View style={styles.deload}>
-                    <Text style={styles.deloadTitle}>🌙 Deload week</Text>
+                    <Text style={styles.deloadTitle}>Deload week</Text>
                     <Text style={styles.deloadText}>
                       Your coach has given you a lighter week so your body can recover and come back stronger: half the sets, about 70% of
                       your usual weights, and stop 3 or more reps before failure. Your normal program carries on next week.
@@ -1129,7 +1129,7 @@ export default function ExerciseLibraryScreen() {
                 ) : null}
                 {program.program.nutrition ? (
                   <Pressable style={styles.howTo} onPress={() => setOpenInfo(openInfo === "food" ? null : "food")}>
-                    <Text style={styles.howToTitle}>🍽 Nutrition for this program {openInfo === "food" ? "▲" : "▼"}</Text>
+                    <Text style={styles.howToTitle}>Nutrition for this program {openInfo === "food" ? "▲" : "▼"}</Text>
                     {openInfo === "food" ? <Text style={styles.howToText}>{program.program.nutrition}</Text> : null}
                   </Pressable>
                 ) : null}
@@ -1190,7 +1190,7 @@ export default function ExerciseLibraryScreen() {
                       return (
                         <Pressable key={row.id} style={[styles.programRow, styles.cardioRow]} onPress={() => toggleCardio(row)}>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.name}>🔥 Cardio</Text>
+                            <Text style={styles.name}>Cardio</Text>
                             <Text style={styles.category}>{cardioLabel(row)}</Text>
                           </View>
                           <Text style={[styles.setsDone, ticked && { color: themeText("#22C55E") }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
@@ -1220,7 +1220,7 @@ export default function ExerciseLibraryScreen() {
                             }
                           />
                           {swaps[row.id] && <Text style={styles.swappedText}>Swapped from {plannedRow(row).exercise_name}</Text>}
-                          {!swaps[row.id] && gymName(row) && <Text style={styles.swappedText}>🏠 Home version of {gymName(row)}</Text>}
+                          {!swaps[row.id] && gymName(row) && <Text style={styles.swappedText}>Home version of {gymName(row)}</Text>}
                           {(() => {
                             // It hurt last time: say so, and offer what they tried instead.
                             const hurt = swaps[row.id] ? null : lastPainFor(pains, row);
@@ -1229,7 +1229,7 @@ export default function ExerciseLibraryScreen() {
                             return (
                               <View style={styles.hurtBox}>
                                 <Text style={styles.hurtText}>
-                                  😣 Hurt your {painAreaLabel(hurt.area).toLowerCase()} on {shortDate(hurt.created_at)}
+                                  Hurt your {painAreaLabel(hurt.area).toLowerCase()} on {shortDate(hurt.created_at)}
                                   {hurt.tried_name ? `. You tried ${hurt.tried_name} instead.` : "."}
                                 </Text>
                                 {tried && (
@@ -1252,7 +1252,7 @@ export default function ExerciseLibraryScreen() {
                               <Text style={styles.changeLink}>⇄ Change exercise</Text>
                             </Pressable>
                             <Pressable onPress={() => setHurting(row)} hitSlop={8}>
-                              <Text style={styles.changeLink}>😣 This hurts</Text>
+                              <Text style={styles.changeLink}>This hurts</Text>
                             </Pressable>
                           </View>
                         </View>
@@ -1296,7 +1296,7 @@ export default function ExerciseLibraryScreen() {
             {calendarExtras.map((block, i) =>
               part !== `extra-${i}` ? null : (
               <View key={`${block.program.id}-${i}`} style={styles.programCard}>
-                <Text style={styles.fromCalendar}>📅 Extra block from your coach for today</Text>
+                <Text style={styles.fromCalendar}>Extra block from your coach for today</Text>
                 <Text style={styles.programTitle}>{displayProgramName(block.program)}</Text>
                 {block.daySlot != null && <Text style={styles.category}>{sessionTitle(block.program, block.daySlot)}</Text>}
                 {block.program.warm_up ? (
@@ -1313,7 +1313,7 @@ export default function ExerciseLibraryScreen() {
                       return (
                         <Pressable key={row.id} style={[styles.programRow, styles.cardioRow]} onPress={() => toggleCardio(row)}>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.name}>🔥 Cardio</Text>
+                            <Text style={styles.name}>Cardio</Text>
                             <Text style={styles.category}>{cardioLabel(row)}</Text>
                           </View>
                           <Text style={[styles.setsDone, ticked && { color: themeText("#22C55E") }]}>{ticked ? "Done ✓" : "Tap when done"}</Text>
@@ -1564,7 +1564,7 @@ export default function ExerciseLibraryScreen() {
                   </Pressable>
                 )}
                 <Pressable onPress={() => hurtsFromLog(target)} hitSlop={8}>
-                  <Text style={styles.changeLink}>😣 This hurts</Text>
+                  <Text style={styles.changeLink}>This hurts</Text>
                 </Pressable>
               </View>
             )}
@@ -1594,7 +1594,7 @@ export default function ExerciseLibraryScreen() {
               })()}
             {gaugeDue && !warmUpDue && (
               <View style={styles.gaugeBox}>
-                <Text style={styles.gaugeTitle}>🎯 Gauge set: first time doing this exercise</Text>
+                <Text style={styles.gaugeTitle}>Gauge set: first time doing this exercise</Text>
                 <Text style={styles.warmUpText}>
                   Your coach isn't there to pick your weight, so this set finds it. Pick a weight you think you can lift about 6-10 times.
                   Do a hard set, and stop when you think you have 1-2 good reps left, or as soon as a rep slows right down or your form
@@ -1609,7 +1609,7 @@ export default function ExerciseLibraryScreen() {
             )}
             {gaugeResult && (
               <View style={styles.gaugeBox}>
-                <Text style={styles.gaugeTitle}>🎯 Your working weight: {gaugeResult.weight}kg</Text>
+                <Text style={styles.gaugeTitle}>Your working weight: {gaugeResult.weight}kg</Text>
                 <Text style={styles.warmUpText}>{gaugeResult.advice}</Text>
               </View>
             )}
@@ -1677,7 +1677,7 @@ export default function ExerciseLibraryScreen() {
             </Pressable>
             {selected && !live && (
               <Pressable style={styles.filmButton} onPress={() => film.filmOrPick(selected.name)} disabled={film.uploading}>
-                {film.uploading ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.filmText}>🎥 Film this set for my coach</Text>}
+                {film.uploading ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.filmText}>Film this set for my coach</Text>}
               </Pressable>
             )}
 

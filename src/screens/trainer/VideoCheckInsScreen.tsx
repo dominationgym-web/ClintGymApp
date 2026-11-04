@@ -290,7 +290,7 @@ function WhatsAppButton({ clientId, phone, strong }: { clientId: string; phone: 
         Linking.openURL(link);
       }}
     >
-      <Text style={strong ? styles.smallButtonText : styles.outlineText}>💬 WhatsApp</Text>
+      <Text style={strong ? styles.smallButtonText : styles.outlineText}>WhatsApp</Text>
     </Pressable>
   );
 }

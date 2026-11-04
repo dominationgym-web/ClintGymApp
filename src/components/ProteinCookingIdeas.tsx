@@ -48,7 +48,7 @@ export function CookingSet({ set }: { set: ProteinCooking }) {
   return (
     <View>
       <View style={styles.tip}>
-        <Text style={styles.tipText}>💡 {set.tip}</Text>
+        <Text style={styles.tipText}>{set.tip}</Text>
       </View>
       {set.ideas.map((idea, i) => (
         <Idea key={idea.name} idea={idea} number={i + 1} open={open === i} onToggle={() => setOpen(open === i ? null : i)} />
@@ -146,7 +146,7 @@ export function CookingIdeasLink({ food }: { food: string }) {
   return (
     <>
       <Pressable onPress={() => setVisible(true)} hitSlop={8} accessibilityLabel={`Cooking ideas for ${food}`}>
-        <Text style={styles.link}>🍳 Ideas</Text>
+        <Text style={styles.link}>Ideas</Text>
       </Pressable>
       <Modal visible={visible} animationType="slide" transparent onRequestClose={() => setVisible(false)}>
         <View style={styles.backdrop}>

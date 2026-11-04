@@ -55,7 +55,7 @@ export default function AppGuideScreen({ who }: { who: "client" | "trainer" }) {
         );
       })}
       <View style={styles.bottomLine}>
-        <Text style={styles.bottomLineText}>💪 {guide.bottomLine}</Text>
+        <Text style={styles.bottomLineText}>{guide.bottomLine}</Text>
       </View>
     </ScrollView>
   );

@@ -27,7 +27,7 @@ export default function SupplementCard({ supplement: s }: { supplement: Suppleme
       <Block icon="⚠️" label="Good to know" text={s.careful} />
       {s.brain ? <Block icon="🧠" label="For your brain on exhausted days" text={s.brain} highlight="#A78BFA" /> : null}
       <View style={styles.ask}>
-        <Text style={styles.askText}>💬 Not sure if it's right for you? Ask your trainer.</Text>
+        <Text style={styles.askText}>Not sure if it's right for you? Ask your trainer.</Text>
       </View>
     </View>
   );

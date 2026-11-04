@@ -89,7 +89,7 @@ export default function ClientProblems({
             <View style={styles.buttons}>
               {onReply && (
                 <Pressable style={[styles.button, styles.replyButton]} onPress={onReply} disabled={!!busy}>
-                  <Text style={styles.buttonText}>💬 Reply</Text>
+                  <Text style={styles.buttonText}>Reply</Text>
                 </Pressable>
               )}
               {!fixing && !medical && (
@@ -99,7 +99,7 @@ export default function ClientProblems({
               )}
               {medical ? (
                 <Pressable style={[styles.button, styles.fixed]} onPress={() => setClearing(p)} disabled={!!busy}>
-                  <Text style={styles.buttonText}>🩺 Clear the hold</Text>
+                  <Text style={styles.buttonText}>Clear the hold</Text>
                 </Pressable>
               ) : (
                 <Pressable style={[styles.button, styles.fixed]} onPress={() => setStatus(p, "fixed")} disabled={!!busy}>

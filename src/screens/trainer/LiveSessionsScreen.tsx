@@ -468,7 +468,7 @@ function ToDo({
       {drafts ? (
         <Pressable style={styles.notice} onPress={() => onGo("invoices")}>
           <Text style={styles.noticeText}>
-            🧾 {drafts} invoice{drafts === 1 ? " is" : "s are"} ready to check and send. Tap to see.
+            {drafts} invoice{drafts === 1 ? " is" : "s are"} ready to check and send. Tap to see.
           </Text>
         </Pressable>
       ) : null}
@@ -513,7 +513,7 @@ function ToDo({
       {unsigned.length ? <Text style={styles.sectionTitle}>Not signed yet</Text> : null}
       {unsigned.map((p) => (
         <Text key={p.client_id} style={styles.helper}>
-          ✍️ {who({ client_id: p.client_id })} hasn't signed the agreement for their current terms. They see it under Menu › My sessions.
+          {who({ client_id: p.client_id })} hasn't signed the agreement for their current terms. They see it under Menu › My sessions.
         </Text>
       ))}
 
@@ -579,7 +579,7 @@ function GroupCheck({
   return (
     <View style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE.unconfirmed.colour) }]}>
       <Text style={styles.rowTitle}>
-        👥 Group · {dayLabel(sessions[0].starts_at)}, {clockLabel(sessions[0].starts_at)}
+        Group · {dayLabel(sessions[0].starts_at)}, {clockLabel(sessions[0].starts_at)}
       </Text>
       <Text style={styles.rowBody}>Tick who came:</Text>
       {sessions.map((s) => {
@@ -710,7 +710,7 @@ function CalendarTab({
       {makeup ? (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            🔁 Booking a catch-up for {who(makeup)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. You set its price when you book it.
+            Booking a catch-up for {who(makeup)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. You set its price when you book it.
           </Text>
           <Pressable onPress={onMakeupDone}>
             <Text style={styles.link}>Stop</Text>
@@ -751,7 +751,7 @@ function CalendarTab({
       </Pressable>
       {makeup ? null : (
         <Pressable style={styles.outline} onPress={() => setImporting(true)}>
-          <Text style={styles.outlineText}>📥 Bring in sessions from your calendar</Text>
+          <Text style={styles.outlineText}>Bring in sessions from your calendar</Text>
         </Pressable>
       )}
       {/* Away or can't train: block it out, clients are told and not charged (GRIZZ, 2026-11-01). */}
@@ -986,7 +986,7 @@ function AddSessionModal({
                           style={[styles.chip, on && styles.chipOn]}
                           onPress={() => setPicked((p) => (on ? p.filter((k) => !keys.includes(k)) : [...new Set([...p, ...keys])]))}
                         >
-                          <Text style={[styles.chipText, on && styles.chipTextOn]}>👥 {g.join(" & ")}</Text>
+                          <Text style={[styles.chipText, on && styles.chipTextOn]}>{g.join(" & ")}</Text>
                         </Pressable>
                       );
                     })}
@@ -1001,7 +1001,7 @@ function AddSessionModal({
               {typing ? (
                 <TextInput style={styles.nameInput} value={typed} onChangeText={setTyped} placeholder="As in your calendar, e.g. Jade & Camilla" placeholderTextColor="#64748B" maxLength={120} autoFocus />
               ) : null}
-              {count > 1 ? <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>👥 One joint session: {[...appIds.map((id) => clients.find((c) => c.id === id)?.name.split(" ")[0] ?? ""), ...names].join(" & ")}</Text> : null}
+              {count > 1 ? <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>One joint session: {[...appIds.map((id) => clients.find((c) => c.id === id)?.name.split(" ")[0] ?? ""), ...names].join(" & ")}</Text> : null}
               <Text style={styles.label}>What time?</Text>
               <SessionTimeChips
                 dayStart={settings?.day_start ?? "05:00"}
@@ -1020,7 +1020,7 @@ function AddSessionModal({
                       return (
                         <Pressable key={j.time} style={[styles.chip, on && styles.chipOn]} onPress={() => setTime(j.time)}>
                           <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                            👥 {j.time} with {j.names.join(" & ")}
+                            {j.time} with {j.names.join(" & ")}
                           </Text>
                         </Pressable>
                       );
@@ -1051,7 +1051,7 @@ function AddSessionModal({
                       <Text style={[styles.chipText, !weekly && styles.chipTextOn]}>Just this day</Text>
                     </Pressable>
                     <Pressable style={[styles.chip, weekly && styles.chipOn]} onPress={() => setWeekly(true)}>
-                      <Text style={[styles.chipText, weekly && styles.chipTextOn]}>🔁 Every week from then</Text>
+                      <Text style={[styles.chipText, weekly && styles.chipTextOn]}>Every week from then</Text>
                     </Pressable>
                   </View>
                 </>
@@ -1134,7 +1134,7 @@ function ClientsTab({
         {onOpenPage ? (
           // Says what's there (GRIZZ, 2026-11-02: "you don't know that's where you set up the diets").
           <Pressable style={styles.pageButton} onPress={() => onOpenPage(picked)} accessibilityRole="button">
-            <Text style={styles.pageTitle}>🥗 Diet and meal plan, progress, check-ins ›</Text>
+            <Text style={styles.pageTitle}>Diet and meal plan, progress, check-ins ›</Text>
             <Text style={styles.pageDetail}>Set up {(c?.name ?? "their").trim().split(/\s+/)[0]}'s diet and see how they're doing</Text>
           </Pressable>
         ) : null}
@@ -1187,7 +1187,7 @@ function ClientsTab({
                 ? regularLabel(p.regular)
                 : regularLabel(regularFromCalendar(sessions, c.id).regular)}
             </Text>
-            {p.paid_by ? <Text style={styles.meta}>💳 Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
+            {p.paid_by ? <Text style={styles.meta}>Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
             <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "Signed" : "Not signed yet"}</Text>
             {(() => {
               const a = awayOf(aways, { clientId: c.id, name: c.name });
@@ -1463,10 +1463,10 @@ function InvoiceModal({
             ) : null}
             <View style={styles.actions}>
               <Pressable style={[styles.outline, { flex: 1, marginTop: 0 }]} onPress={whatsapp}>
-                <Text style={styles.outlineText}>💬 WhatsApp</Text>
+                <Text style={styles.outlineText}>WhatsApp</Text>
               </Pressable>
               <Pressable style={[styles.outline, { flex: 1, marginTop: 0 }]} onPress={sendEmail}>
-                <Text style={styles.outlineText}>✉️ Email</Text>
+                <Text style={styles.outlineText}>Email</Text>
               </Pressable>
             </View>
             <Text style={styles.meta}>Sends a neat copy of this invoice, with your bank details, to {clientName.split(" ")[0]}.</Text>

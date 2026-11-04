@@ -244,7 +244,7 @@ export default function ClientCalendarView({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>📅 Your training calendar</Text>
+        <Text style={styles.title}>Your training calendar</Text>
       </View>
       <View style={{ marginTop: 10 }}>
           <WeekCalendar
@@ -298,7 +298,7 @@ export default function ClientCalendarView({
           {selected && sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
           {selected && dayLogs.length > 0 && (
             <View style={{ marginTop: 10 }}>
-              <Text style={styles.doneTitle}>{sessions[selected]?.in_person ? "🤝 What you did with your coach" : "✅ What you did"}</Text>
+              <Text style={styles.doneTitle}>{sessions[selected]?.in_person ? "What you did with your coach" : "✅ What you did"}</Text>
               <View style={styles.doneBox}>
                 <LoggedExercises exercises={groupTrainingLog(dayLogs, selected, 1)[0].exercises} session={sessions[selected]} client />
               </View>
@@ -325,7 +325,7 @@ export default function ClientCalendarView({
                 setSelected(null);
               }}
             >
-              <Text style={styles.catchUpText}>🔁 Missed this one? Do it today</Text>
+              <Text style={styles.catchUpText}>Missed this one? Do it today</Text>
             </Pressable>
           )}
           {pickedProgram &&
@@ -333,7 +333,7 @@ export default function ClientCalendarView({
               if (row.kind === "cardio") {
                 return (
                   <View key={row.id} style={styles.row}>
-                    <Text style={styles.rowName}>🔥 Cardio</Text>
+                    <Text style={styles.rowName}>Cardio</Text>
                   </View>
                 );
               }
@@ -377,7 +377,7 @@ export default function ClientCalendarView({
                   const ex = exercises.find((e) => e.id === row.exercise_id) ?? exercises.find((e) => e.name === row.exercise_name);
                   return (
                     <View key={row.id} style={styles.row}>
-                      <Text style={styles.rowName}>{row.kind === "cardio" ? "🔥 Cardio" : row.exercise_name}</Text>
+                      <Text style={styles.rowName}>{row.kind === "cardio" ? "Cardio" : row.exercise_name}</Text>
                       {row.kind !== "cardio" && (
                         <>
                           <Text style={styles.rowSets}>

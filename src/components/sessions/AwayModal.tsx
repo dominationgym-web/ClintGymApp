@@ -155,11 +155,11 @@ export default function AwayModal({
               <Text style={styles.previewTitle}>Away {awaySpan(away)}</Text>
               <Text style={styles.meta}>Their sessions in that time are green on your calendar, free to book.</Text>
               <Pressable style={styles.button} onPress={backEarly} disabled={busy}>
-                {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>🤝 Back early: book their sessions again</Text>}
+                {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Back early: book their sessions again</Text>}
               </Pressable>
               {changing ? null : (
                 <Pressable style={styles.outline} onPress={() => setChanging(true)}>
-                  <Text style={styles.outlineText}>📅 Change the date</Text>
+                  <Text style={styles.outlineText}>Change the date</Text>
                 </Pressable>
               )}
             </View>

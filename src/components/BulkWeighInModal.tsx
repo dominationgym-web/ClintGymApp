@@ -42,7 +42,7 @@ export default function BulkWeighInModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>⚖️ Weigh-in schedule</Text>
+          <Text style={styles.title}>Weigh-in schedule</Text>
           <Text style={styles.text}>Tick the clients, then pick how often they weigh and measure. They get a reminder until it's done.</Text>
           <View style={styles.quick}>
             <Pressable onPress={() => setPicked(clients.map((c) => c.id))}>

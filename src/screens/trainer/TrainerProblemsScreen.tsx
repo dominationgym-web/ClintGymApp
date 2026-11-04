@@ -282,22 +282,22 @@ function ProblemPage({
               <Text style={styles.body}>{trainerDisplayName(sender)}</Text>
               {sender.business_name ? <Text style={styles.helper}>{sender.name}</Text> : null}
               <Pressable onPress={() => Linking.openURL(`mailto:${sender.email}`)} hitSlop={6}>
-                <Text style={styles.link}>✉️ {sender.email}</Text>
+                <Text style={styles.link}>{sender.email}</Text>
               </Pressable>
               {phone ? (
                 <View style={styles.actions}>
                   <Pressable onPress={() => Linking.openURL(`tel:${phone}`)} hitSlop={6}>
-                    <Text style={styles.link}>📞 {phone}</Text>
+                    <Text style={styles.link}>{phone}</Text>
                   </Pressable>
                   {whatsapp ? (
                     <Pressable onPress={() => Linking.openURL(`https://wa.me/${whatsapp}`)} hitSlop={6}>
-                      <Text style={styles.link}>💬 WhatsApp</Text>
+                      <Text style={styles.link}>WhatsApp</Text>
                     </Pressable>
                   ) : null}
                 </View>
               ) : null}
               <Pressable style={styles.outline} onPress={() => onSeeClients(problem.trainer_id)} accessibilityRole="button">
-                <Text style={styles.outlineText}>👥 See {trainerDisplayName(sender)}'s clients</Text>
+                <Text style={styles.outlineText}>See {trainerDisplayName(sender)}'s clients</Text>
               </Pressable>
             </>
           ) : (
@@ -310,7 +310,7 @@ function ProblemPage({
         <View style={styles.actions}>
           {problem.status !== "fixing" && (
             <Pressable style={styles.outline} onPress={() => setStatus("fixing")} disabled={busy}>
-              <Text style={styles.outlineText}>🛠 Busy fixing</Text>
+              <Text style={styles.outlineText}>Busy fixing</Text>
             </Pressable>
           )}
           {problem.status !== "fixed" && (

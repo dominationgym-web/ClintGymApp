@@ -102,7 +102,7 @@ export default function SendProofOfPayment({
         maxLength={40}
       />
       <Pressable style={styles.button} onPress={choose} disabled={sending} accessibilityRole="button">
-        {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>🧾 Send proof of payment</Text>}
+        {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Send proof of payment</Text>}
       </Pressable>
     </View>
   );

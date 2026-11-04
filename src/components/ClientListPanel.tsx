@@ -227,7 +227,7 @@ export default function ClientListPanel({
       </View>
       <Text style={styles.helper}>{current.helper}</Text>
       <Pressable style={styles.bulkButton} onPress={() => setBulkWeighIn(true)} accessibilityRole="button">
-        <Text style={styles.bulkText}>⚖️ Set weigh-ins for several clients</Text>
+        <Text style={styles.bulkText}>Set weigh-ins for several clients</Text>
       </Pressable>
       <FlatList
         data={clients}
@@ -262,7 +262,7 @@ export default function ClientListPanel({
                 </View>
                 {proofs[item.id] && (
                   <Pressable onPress={() => setViewing(proofs[item.id])} hitSlop={6} style={styles.proofChip}>
-                    <Text style={styles.proofChipText}>🧾 Proof of payment sent · View</Text>
+                    <Text style={styles.proofChipText}>Proof of payment sent · View</Text>
                   </Pressable>
                 )}
               </View>

@@ -94,7 +94,7 @@ export default function TrainerIncome() {
     <>
       {/* GRIZZ 2026-10-23: the fee calculator stays open and easy to spot, not a drop-down. */}
       <View style={styles.calc}>
-        <Text style={styles.calcTitle}>🧮 Calculate your fee structure here</Text>
+        <Text style={styles.calcTitle}>Calculate your fee structure here</Text>
         <Text style={styles.calcIntro}>Fill in what you charge each client a month. Your monthly income below adds up from these prices.</Text>
         <View style={styles.box}>
           <Text style={styles.label}>Currency</Text>

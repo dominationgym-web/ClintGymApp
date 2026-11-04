@@ -155,14 +155,14 @@ export default function SessionPlanEditor({
     <View>
       {filledFromCalendar ? (
         <Text style={[styles.status, { color: themeText(BRAND_GOLD) }]}>
-          📅 From your calendar: {regularLabel(fromCalendar!.regular, true)}. Their days and times below are filled in.
+          From your calendar: {regularLabel(fromCalendar!.regular, true)}. Their days and times below are filled in.
         </Text>
       ) : null}
       {plan ? (
         <Text style={[styles.status, { color: themeText(signed ? "#22C55E" : "#F59E0B") }]}>
           {signed
-            ? `✍️ Agreement signed by ${signed.signed_name} on ${new Date(signed.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
-            : `✍️ ${first} hasn't signed the agreement for these terms yet`}
+            ? `Agreement signed by ${signed.signed_name} on ${new Date(signed.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
+            : `${first} hasn't signed the agreement for these terms yet`}
         </Text>
       ) : null}
 
@@ -266,7 +266,7 @@ export default function SessionPlanEditor({
       <Text style={styles.label}>Their days and times</Text>
       <Text style={styles.meta}>Tick their days and type the time for each. Leave all empty if their times change every week.</Text>
       {filledFromCalendar ? (
-        <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>📅 Filled in from your calendar. Check them and tap Save.</Text>
+        <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>Filled in from your calendar. Check them and tap Save.</Text>
       ) : null}
       {WEEK_ORDER.map((d) => {
         const on = ticked.has(d);

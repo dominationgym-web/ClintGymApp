@@ -58,7 +58,7 @@ export default function MealBuilder() {
         style={styles.search}
         value={search}
         onChangeText={setSearch}
-        placeholder="🔍 Search foods, e.g. snoek or zucchini"
+        placeholder="Search foods, e.g. snoek or zucchini"
         placeholderTextColor="#64748B"
         accessibilityLabel="Search foods"
       />

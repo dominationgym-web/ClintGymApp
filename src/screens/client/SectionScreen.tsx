@@ -141,7 +141,7 @@ function ResetProgramLink() {
         cancelMenuReturn();
         navigation.navigate("ClientTabs", { screen: "Reset" });
       }}>
-      <Text style={styles.toggleTitle}>🌿 Your 12-week Reset program ›</Text>
+      <Text style={styles.toggleTitle}>Your 12-week Reset program ›</Text>
       <Text style={[styles.cardText, { marginBottom: 0 }]}>Week by week plan, daily ticks and Reset Training.</Text>
     </Pressable>
   );

@@ -125,7 +125,7 @@ export default function MySessionsScreen() {
         >
           {needsSign && tab !== "agreement" ? (
             <Pressable style={styles.notice} onPress={() => setTab("agreement")}>
-              <Text style={styles.noticeText}>✍️ Please read and sign your session agreement. Tap here.</Text>
+              <Text style={styles.noticeText}>Please read and sign your session agreement. Tap here.</Text>
             </Pressable>
           ) : null}
           {tab === "sessions" && <SessionsTab sessions={sessions} plan={plan} coach={coach} onChanged={load} />}
@@ -311,7 +311,7 @@ function InvoicesTab({ invoices, paidForYou }: { invoices: SessionInvoice[]; pai
         </View>
         {open.status === "sent" ? (
           <Pressable style={styles.button} onPress={() => navigationRef.navigate("ClientTabs", { screen: "Profile", params: { open: "pay" } })}>
-            <Text style={styles.buttonText}>🧾 Send proof of payment</Text>
+            <Text style={styles.buttonText}>Send proof of payment</Text>
           </Pressable>
         ) : null}
       </>
@@ -406,7 +406,7 @@ function AgreementTab({
         </>
       ) : signed ? (
         <Text style={[styles.helper, { color: themeText("#22C55E") }]}>
-          ✍️ Signed by {signed.signed_name} on {new Date(signed.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} at {clockLabel(signed.signed_at)}.
+          Signed by {signed.signed_name} on {new Date(signed.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} at {clockLabel(signed.signed_at)}.
         </Text>
       ) : null}
     </>

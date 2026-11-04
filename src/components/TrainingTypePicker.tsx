@@ -11,10 +11,10 @@ export type TrainingType = "one" | "evolution" | "both";
 export const TRAINING_TYPES: { key: TrainingType; label: string; detail: string }[] = [
   {
     key: "one",
-    label: "🤝 1 on 1",
+    label: "1 on 1",
     detail: "Live sessions with you. They get nutrition, meal plans, progress and an optional check-in. No programs or habits.",
   },
-  { key: "evolution", label: "🌐 Evolution", detail: "Online coaching: programs, daily check-ins, habits and reminders." },
+  { key: "evolution", label: "Evolution", detail: "Online coaching: programs, daily check-ins, habits and reminders." },
   { key: "both", label: "🤝🌐 Both", detail: "Live sessions with you plus the full online app." },
 ];
 

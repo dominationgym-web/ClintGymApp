@@ -79,7 +79,7 @@ export default function BlockTimeModal({
       <KeyboardSafe>
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>🚫 Block out time</Text>
+            <Text style={styles.title}>Block out time</Text>
             <Text style={styles.helper}>For when you're away or can't train. Booked sessions are cancelled and not charged, each client gets your reason, and their sessions go on your catch-up list (under Today) to book again.</Text>
 
             <Text style={styles.label}>From {dayLabel(`${firstDay}T12:00:00`)}, for</Text>
@@ -221,12 +221,12 @@ export function TimeOffSection({
     <>
       {onDay.map((b) => (
         <View key={b.id} style={styles.blockNote}>
-          <Text style={styles.previewTitle}>🚫 Blocked out · {blockWhen(b)}</Text>
+          <Text style={styles.previewTitle}>Blocked out · {blockWhen(b)}</Text>
           <Text style={styles.meta}>{b.reason}</Text>
         </View>
       ))}
       <Pressable style={styles.outline} onPress={() => setBlocking(true)}>
-        <Text style={styles.outlineText}>🚫 Block out time from {dayLabel(`${day}T12:00:00`)}</Text>
+        <Text style={styles.outlineText}>Block out time from {dayLabel(`${day}T12:00:00`)}</Text>
       </Pressable>
       {coming.length ? <Text style={styles.label}>Your time off</Text> : null}
       {coming.map((b) => (

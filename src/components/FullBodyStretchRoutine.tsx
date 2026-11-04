@@ -16,7 +16,7 @@ export default function FullBodyStretchRoutine({ onFinished, onClose }: { onFini
   if (i < 0) {
     return (
       <View>
-        <Text style={styles.title}>🧘 Full body stretch</Text>
+        <Text style={styles.title}>Full body stretch</Text>
         <Text style={styles.body}>
           {total} easy stretches from your neck down to your calves, about {FULL_BODY_STRETCH_MINUTES} minutes. Do it after training,
           on a rest day or before bed.

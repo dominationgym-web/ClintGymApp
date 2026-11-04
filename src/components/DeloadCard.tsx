@@ -75,7 +75,7 @@ export default function DeloadCard({
     return (
       <View style={[styles.card, styles.planned]}>
         <Text style={styles.plannedText}>
-          🌙 Deload week on the calendar from {new Date(`${check.planned_deload}T12:00:00`).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}.
+          Deload week on the calendar from {new Date(`${check.planned_deload}T12:00:00`).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}.
         </Text>
       </View>
     );
@@ -88,7 +88,7 @@ export default function DeloadCard({
       : " in the next 2 weeks";
     return (
       <View style={[styles.card, styles.planned]}>
-        <Text style={styles.plannedText}>🌙 {firstName}'s program has its own easy week{when}, so no extra deload is needed.</Text>
+        <Text style={styles.plannedText}>{firstName}'s program has its own easy week{when}, so no extra deload is needed.</Text>
       </View>
     );
   }
@@ -98,7 +98,7 @@ export default function DeloadCard({
     <View style={[styles.card, check.due && styles.due]}>
       {check.due ? (
         <>
-          <Text style={styles.title}>🌙 Time for a deload week</Text>
+          <Text style={styles.title}>Time for a deload week</Text>
           <Text style={styles.text}>
             {firstName} has trained {check.weeks} week{check.weeks === 1 ? "" : "s"} in a row
             {check.reasons.length ? `, with ${check.reasons.join(", ")}` : ""}. A lighter week lets their body recover and come back stronger.
@@ -107,7 +107,7 @@ export default function DeloadCard({
       ) : (
         <Pressable onPress={() => setOpen((o) => !o)} hitSlop={6}>
           <Text style={styles.quiet}>
-            🌙 Deload: not needed yet ({check.weeks} week{check.weeks === 1 ? "" : "s"} of steady training
+            Deload: not needed yet ({check.weeks} week{check.weeks === 1 ? "" : "s"} of steady training
             {check.reasons.length ? `; ${check.reasons.join(", ")}` : ""}). {open ? "▲" : "Add one anyway ▼"}
           </Text>
         </Pressable>

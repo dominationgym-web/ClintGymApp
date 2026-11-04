@@ -168,7 +168,7 @@ export function MealDayView({
             ))}
             {onOwnMeal && !isSnack(meal) && (meal.own || meal.items.length > 0) && (
               <Pressable onPress={() => onOwnMeal(m)} hitSlop={8} style={{ marginTop: 8 }}>
-                <Text style={styles.ownLink}>{meal.own ? "✎ Change my meal" : "✎ Put in my own meal instead"}</Text>
+                <Text style={styles.ownLink}>{meal.own ? "Change my meal" : "Put in my own meal instead"}</Text>
               </Pressable>
             )}
           </View>
@@ -191,7 +191,7 @@ export function MealTickButton({ on, onPress }: { on: boolean; onPress: () => vo
       accessibilityState={{ checked: on }}
       accessibilityLabel="I ate this meal"
     >
-      <Text style={[styles.tickText, on && styles.tickTextOn]}>{on ? "✓ Ate it today" : "☐ Tick when you've eaten it"}</Text>
+      <Text style={[styles.tickText, on && styles.tickTextOn]}>{on ? "✓ Ate it today" : "Tick when you've eaten it"}</Text>
     </Pressable>
   );
 }
@@ -362,7 +362,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
   const kcalFor = (g: MealGoal) => (need ? goalKcal(need, g, coachKcal, { sex: body.sex, bmr: base }) : 0);
   const referralBox = referral.length ? (
     <View style={[styles.insulinBox, { borderLeftColor: themeBorder("#F87171") }]}>
-      <Text style={[styles.insulinTitle, { color: themeText("#F87171") }]}>🩺 Check with a doctor or dietitian first</Text>
+      <Text style={[styles.insulinTitle, { color: themeText("#F87171") }]}>Check with a doctor or dietitian first</Text>
       <Text style={styles.insulinText}>
         Because of {referral.join(" and ")}, {REFERRAL_NOTE.charAt(0).toLowerCase() + REFERRAL_NOTE.slice(1)}
       </Text>
@@ -631,7 +631,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             ) : null}
             {referralBox}
             <View style={styles.insulinBox}>
-              <Text style={styles.insulinTitle}>{safeGoal === "lose" ? "📉 How you lose fat" : "⏱️ Carbs timed around training"}</Text>
+              <Text style={styles.insulinTitle}>{safeGoal === "lose" ? "How you lose fat" : "⏱️ Carbs timed around training"}</Text>
               <Text style={styles.insulinText}>{safeGoal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
             </View>
           </View>
@@ -832,7 +832,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
       {explainer}
       {newWeek && (
         <View style={styles.insulinBox}>
-          <Text style={styles.insulinTitle}>🗓️ A new week's plan</Text>
+          <Text style={styles.insulinTitle}>A new week's plan</Text>
           <Text style={styles.insulinText}>
             {coachMode
               ? `This week's plan for ${first} was made around the foods they pick.`
@@ -892,7 +892,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             setEditing(true);
           }}
         >
-          <Text style={styles.secondaryText}>✎ Change details, goal, meals or training time</Text>
+          <Text style={styles.secondaryText}>Change details, goal, meals or training time</Text>
         </Pressable>
       )}
       <MealDayView
@@ -924,7 +924,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
         </View>
       )}
       <View style={styles.insulinBox}>
-        <Text style={styles.insulinTitle}>🧠 {coachMode ? `What ${first} likes` : "Your plan learns what you like"}</Text>
+        <Text style={styles.insulinTitle}>{coachMode ? `What ${first} likes` : "Your plan learns what you like"}</Text>
         <Text style={styles.insulinText}>
           {coachMode
             ? taste.note || `Each food ${first} swaps in, leaves out or puts in their own meal teaches the plan what they like.`
@@ -932,12 +932,12 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
         </Text>
         {coachMode && (
           <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={adaptNow} disabled={adapting || saving}>
-            {adapting ? <ActivityIndicator color={themeText("#fff")} /> : <Text style={styles.secondaryText}>✨ Adapt the plan to {first}'s tastes now</Text>}
+            {adapting ? <ActivityIndicator color={themeText("#fff")} /> : <Text style={styles.secondaryText}>Adapt the plan to {first}'s tastes now</Text>}
           </Pressable>
         )}
       </View>
       <View style={styles.insulinBox}>
-        <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "📉 How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
+        <Text style={styles.insulinTitle}>{plan.settings.goal === "lose" ? "How you lose fat" : "⏱️ Why the carbs are where they are"}</Text>
         <Text style={styles.insulinText}>{plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}</Text>
       </View>
       <Text style={styles.note}>
@@ -963,13 +963,13 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
             {telling ? (
               <ActivityIndicator color={themeText("#0F172A")} />
             ) : (
-              <Text style={told ? styles.secondaryText : styles.primaryText}>{told ? `Sent ✓ ${first} was told` : `📣 Tell ${first} their meal plan is ready`}</Text>
+              <Text style={told ? styles.secondaryText : styles.primaryText}>{told ? `Sent ✓ ${first} was told` : `Tell ${first} their meal plan is ready`}</Text>
             )}
           </Pressable>
         </>
       ) : (
         <View style={styles.shopBox}>
-          <Text style={styles.shopTitle}>🛒 Happy with your plan?</Text>
+          <Text style={styles.shopTitle}>Happy with your plan?</Text>
           <Text style={styles.insulinText}>Would you like a shopping list for the week? The app adds up everything you need to buy, in the packs shops sell.</Text>
           <Pressable style={[styles.button, styles.primary, styles.stacked]} onPress={() => setShopping(true)}>
             <Text style={styles.primaryText}>Yes, make my shopping list</Text>
@@ -1045,7 +1045,7 @@ export default function MealPlanMaker({ forTrainer }: { forTrainer?: MealPlanFor
                   if (meal != null) setTimeout(() => openOwnMeal(meal), 400);
                 }}
               >
-                <Text style={styles.secondaryText}>✎ Put in my own meal instead</Text>
+                <Text style={styles.secondaryText}>Put in my own meal instead</Text>
               </Pressable>
             )}
             <Pressable style={[styles.button, styles.secondary, styles.stacked]} onPress={() => setLeaving(null)}>

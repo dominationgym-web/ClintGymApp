@@ -148,7 +148,7 @@ export default function VideoCheckInScreen() {
     >
       {bookings.map((v) => (
         <View key={v.id} style={[styles.card, v.status === "confirmed" && styles.cardConfirmed]}>
-          <Text style={styles.label}>📹 Your video check-in</Text>
+          <Text style={styles.label}>Your video check-in</Text>
           <Text style={styles.when}>
             {checkinDay(v.starts_at, now)}, {checkinClock(v.starts_at)}
           </Text>
@@ -161,7 +161,7 @@ export default function VideoCheckInScreen() {
           )}
           {whatsapp && (
             <Pressable style={canJoin(v, now) ? styles.button : styles.outline} onPress={() => Linking.openURL(whatsapp)}>
-              <Text style={canJoin(v, now) ? styles.buttonText : styles.outlineText}>💬 WhatsApp your coach</Text>
+              <Text style={canJoin(v, now) ? styles.buttonText : styles.outlineText}>WhatsApp your coach</Text>
             </Pressable>
           )}
           <View style={styles.switchRow}>

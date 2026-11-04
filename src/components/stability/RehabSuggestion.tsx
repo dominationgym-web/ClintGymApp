@@ -16,7 +16,7 @@ export default function RehabSuggestion({ clientName, texts }: { clientName: str
   const areas = stabilityAreasFor(...texts);
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>🛡️ Recovery, mobility and rehab</Text>
+      <Text style={styles.title}>Recovery, mobility and rehab</Text>
       <Text style={styles.flags}>
         First check for red flags: pain at night or at rest, numbness or tingling, swelling, pain after a fall or accident, pain above about 7 out of 10, fever or feeling unwell, or pain that isn't improving after 2 weeks. Any of these, a fresh injury (the last 1-2 weeks) or anything after surgery: {clientName} sees a doctor, physio or biokineticist first.
       </Text>

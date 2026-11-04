@@ -77,7 +77,7 @@ export default function NotificationSettingsScreen() {
       )}
 
       <View style={[styles.card, styles.always]}>
-        <Text style={styles.title}>🔒 Always on</Text>
+        <Text style={styles.title}>Always on</Text>
         <Text style={styles.includes}>{ALWAYS_ON_NOTIFICATIONS}</Text>
       </View>
     </ScrollView>

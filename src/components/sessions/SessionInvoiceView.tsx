@@ -18,7 +18,7 @@ export default function SessionInvoiceView({ invoice, who }: { invoice: SessionI
 
   return (
     <View>
-      <Text style={styles.title}>🧾 {monthLabel(invoice.month)}</Text>
+      <Text style={styles.title}>{monthLabel(invoice.month)}</Text>
       <Text style={styles.meta}>
         {billingLabel(invoice.billing)} · {status}
       </Text>
@@ -68,7 +68,7 @@ export default function SessionInvoiceView({ invoice, who }: { invoice: SessionI
                   {l.note ? <Text style={styles.small}>"{l.note}"</Text> : null}
                   {l.proof ? (
                     <Pressable onPress={() => setProof(l)} hitSlop={8}>
-                      <Text style={styles.proof}>📸 See the message</Text>
+                      <Text style={styles.proof}>See the message</Text>
                     </Pressable>
                   ) : null}
                 </View>

@@ -53,7 +53,7 @@ export default function StabilityDayPlanner({
   };
 
   if (shown.length === 0) {
-    return <Text style={styles.none}>🧘 No stability program running. Start one in the Stability card to put it on days.</Text>;
+    return <Text style={styles.none}>No stability program running. Start one in the Stability card to put it on days.</Text>;
   }
 
   return (
@@ -66,7 +66,7 @@ export default function StabilityDayPlanner({
         return (
           <View key={p.id} style={styles.box}>
             <Text style={styles.name}>
-              🧘 {stabilityShortName(p)} stability · {levelInfo(p.level).label}
+              {stabilityShortName(p)} stability · {levelInfo(p.level).label}
             </Text>
             {logged && <Text style={styles.done}>✓ Logged on this day</Text>}
             {planned ? (

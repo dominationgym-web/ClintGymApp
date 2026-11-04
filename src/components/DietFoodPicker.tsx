@@ -104,7 +104,7 @@ export default function DietFoodPicker({
           <>
             <TextInput
               style={[styles.input, { marginHorizontal: 20 }]}
-              placeholder="🔍 Search foods, e.g. rice or salmon"
+              placeholder="Search foods, e.g. rice or salmon"
               placeholderTextColor="#64748B"
               value={search}
               onChangeText={setSearch}

@@ -141,7 +141,7 @@ export function StopAdvice() {
       <View style={styles.calls}>
         {EMERGENCY_NUMBERS.map((n) => (
           <Pressable key={n.tel} style={styles.call} onPress={() => Linking.openURL(`tel:${n.tel}`)}>
-            <Text style={styles.callText}>📞 {n.label}</Text>
+            <Text style={styles.callText}>{n.label}</Text>
           </Pressable>
         ))}
       </View>

@@ -130,7 +130,7 @@ export default function PreStartCard({
       <View style={[styles.card, { borderColor: themeBorder(BRAND_GOLD) }]}>
         {modal}
         {signModal}
-        <Text style={styles.title}>🌳 Pre-start health & safety form</Text>
+        <Text style={styles.title}>Pre-start health & safety form</Text>
         <Text style={styles.text}>
           {`${clientName} is on a Longevity program but has no form yet.`} Fill it in with them before
           they start: health, medication, falls, pain, blood pressure and 5 quick movement tests. The app checks it for risks.
@@ -158,7 +158,7 @@ export default function PreStartCard({
     <View style={[styles.card, { borderColor: themeBorder(COLOURS[outcome.level]) }]}>
       {modal}
       {signModal}
-      <Text style={styles.title}>🌳 Pre-start form · {shortDay(latest.filled_on)}</Text>
+      <Text style={styles.title}>Pre-start form · {shortDay(latest.filled_on)}</Text>
       <PreStartRiskList outcome={outcome} risks={risks} limit={showAll ? undefined : 3} />
       {risks.length > 3 && (
         <Pressable onPress={() => setShowAll((v) => !v)} hitSlop={6}>

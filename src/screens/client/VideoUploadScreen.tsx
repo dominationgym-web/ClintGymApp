@@ -10,7 +10,7 @@ import { themeText, themedStyles } from "@/lib/theme";
 
 // Form videos (was the Video log tab, app-flow review C2, 2026-10-18): the
 // client's videos and their coach's feedback, opened from Profile. Most videos
-// are filmed straight from the set log ("🎥 Film this set"), which fills in the
+// are filmed straight from the set log ("Film this set"), which fills in the
 // exercise; this page can still send one.
 export default function VideoUploadScreen() {
   const { client } = useAuth();
@@ -103,7 +103,7 @@ export default function VideoUploadScreen() {
             </View>
             {(feedback[item.id] ?? []).map((m) => (
               <View key={m.id} style={styles.feedback}>
-                <Text style={styles.feedbackTitle}>💬 Your coach's feedback</Text>
+                <Text style={styles.feedbackTitle}>Your coach's feedback</Text>
                 <Text style={styles.feedbackText}>{m.body}</Text>
               </View>
             ))}

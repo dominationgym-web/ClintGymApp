@@ -32,7 +32,7 @@ import SafeBottom from "@/components/SafeBottom";
 // client's own id (0134 trainer policy), and each client keeps one colour and
 // letter (src/lib/groupSession.ts) on their card, on the set box and on its
 // Save button. Finish saves each client's day as in person (0138).
-// "⚡ Do a superset" (2026-10-23) ticks 2-4 of the session's exercises; each
+// "Do a superset" (2026-10-23) ticks 2-4 of the session's exercises; each
 // card then logs a whole round of them for that person at once.
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "GroupLive">;
@@ -376,7 +376,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         {superset && supersetSteps.length >= SUPERSET_MIN ? (
           <>
             <View style={[styles.stepRow, { flexDirection: "column", alignItems: "stretch" }]}>
-              <Text style={[styles.stepCount, { textAlign: "center" }]}>⚡ Superset · one set of each, back to back</Text>
+              <Text style={[styles.stepCount, { textAlign: "center" }]}>Superset · one set of each, back to back</Text>
               {supersetSteps.map((s, i) => (
                 <Text key={s.name} style={styles.supersetLine}>
                   {i + 1}. {s.name} <Text style={styles.helper}>({s.sets} × {s.reps})</Text>
@@ -400,7 +400,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                       </Text>
                     </View>
                     {holds[c.id] ? (
-                      <Text style={styles.hold}>🩺 On hold</Text>
+                      <Text style={styles.hold}>On hold</Text>
                     ) : (
                       <>
                         {supersetSteps.map((s, i) => {
@@ -456,7 +456,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                       </Text>
                     </View>
                     {holds[c.id] ? (
-                      <Text style={styles.hold}>🩺 On hold</Text>
+                      <Text style={styles.hold}>On hold</Text>
                     ) : (
                       <>
                         <Text style={styles.cardSets}>
@@ -493,7 +493,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         </Pressable>
         {!superset && (
           <Pressable style={styles.addButton} onPress={() => setChoosing([])}>
-            <Text style={styles.addText}>⚡ Do a superset (2-4 exercises)</Text>
+            <Text style={styles.addText}>Do a superset (2-4 exercises)</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -561,7 +561,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         <View style={styles.sheetWrap}>
           {choosing && (
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>⚡ Pick 2-4 exercises, in the order you'll do them</Text>
+              <Text style={styles.sheetTitle}>Pick 2-4 exercises, in the order you'll do them</Text>
               <ScrollView style={{ maxHeight: 320 }}>
                 {steps.map((s, i) => {
                   const at = choosing.indexOf(i);

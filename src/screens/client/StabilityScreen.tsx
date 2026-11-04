@@ -384,7 +384,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
 
       {finished && (
         <View style={styles.finished}>
-          <Text style={styles.finishedTitle}>🏁 Program finished. Well done!</Text>
+          <Text style={styles.finishedTitle}>Program finished. Well done!</Text>
           <Text style={styles.text}>Take the finish test: {program.finishTest}</Text>
           <Text style={[styles.text, { marginTop: 4 }]}>
             Tell your coach how you did. {nextLevel ? `If you passed, they'll move you up to ${nextLevel.label}; if not, you'll repeat this program.` : "They may keep the advanced program going 2 times a week so you hold onto it."} Until then, keep going with the last phase.
@@ -395,7 +395,7 @@ export default function StabilityScreen({ role = "client", initialArea }: { role
       <View style={styles.modeRow}>
         {(["primer", "full"] as const).map((m) => (
           <Pressable key={m} style={[styles.modeBtn, mode === m && styles.modeOn]} onPress={() => (setOpenEx(null), setMode(m))}>
-            <Text style={[styles.modeText, mode === m && styles.modeTextOn]}>{m === "primer" ? "⚡ Before a workout" : "Full session"}</Text>
+            <Text style={[styles.modeText, mode === m && styles.modeTextOn]}>{m === "primer" ? "Before a workout" : "Full session"}</Text>
           </Pressable>
         ))}
       </View>

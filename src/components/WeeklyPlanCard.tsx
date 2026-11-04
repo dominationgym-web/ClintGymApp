@@ -161,7 +161,7 @@ export default function WeeklyPlanCard({
         const due = plan.left <= 2;
         return (
           <View key={plan.id} style={[styles.card, due && styles.due]}>
-            <Text style={styles.title}>🗓 {program.name}</Text>
+            <Text style={styles.title}>{program.name}</Text>
             <View style={[styles.loaded, justAdded === plan.id && styles.loadedNew]}>
               <Text style={styles.loadedBig}>
                 {justAdded === plan.id ? "✅ " : ""}Week {next.week - 1} of {plan.weeks} loaded

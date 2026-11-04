@@ -196,7 +196,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
         Optional. Take a before set, then a new set every 6 weeks to see how far you've come.
       </Text>
       <Text style={[styles.body, styles.privateNote]}>
-        🔒 These photos are private and for your own use. Your trainer can't see them unless you choose to share them
+        These photos are private and for your own use. Your trainer can't see them unless you choose to share them
         below.
       </Text>
 
@@ -215,7 +215,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
         <>
           {status.kind === "due" && (
             <View style={styles.dueBanner}>
-              <Text style={styles.dueText}>📸 It's time for your 6-week progress set.</Text>
+              <Text style={styles.dueText}>It's time for your 6-week progress set.</Text>
             </View>
           )}
 

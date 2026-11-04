@@ -195,7 +195,7 @@ export default function CalendarImportModal({
       <KeyboardSafe>
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>📥 Bring in your sessions</Text>
+            <Text style={styles.title}>Bring in your sessions</Text>
             {busy ? (
               <View style={{ paddingVertical: 30, alignItems: "center", gap: 12 }}>
                 <ActivityIndicator color={themeText(BRAND_GOLD)} />
@@ -208,12 +208,12 @@ export default function CalendarImportModal({
                   you check them before anything is booked.
                 </Text>
                 <Pressable style={styles.button} onPress={pickScreenshots}>
-                  <Text style={styles.buttonText}>📷 Pick screenshots (up to 6)</Text>
+                  <Text style={styles.buttonText}>Pick screenshots (up to 6)</Text>
                 </Pressable>
                 {Platform.OS !== "web" ? (
                   <>
                     <Pressable style={styles.outline} onPress={fromPhone}>
-                      <Text style={styles.outlineText}>📅 Read my phone's calendar</Text>
+                      <Text style={styles.outlineText}>Read my phone's calendar</Text>
                     </Pressable>
                     <Text style={styles.meta}>
                       {canReadPhoneCalendar()
@@ -279,7 +279,7 @@ export default function CalendarImportModal({
                     <Text style={styles.tick}>{weekly ? "✓" : ""}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.when}>🔁 Same every week from now on</Text>
+                    <Text style={styles.when}>Same every week from now on</Text>
                     <Text style={styles.meta}>
                       {weekly
                         ? "Each session repeats at the same day and time every week. Change or take one off just for that day, or for every week after."

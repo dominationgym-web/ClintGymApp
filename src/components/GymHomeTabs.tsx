@@ -10,7 +10,7 @@ const TABS: { key: ExercisePlace; label: string }[] = [
 
 // Switches a list between Gym and Home: exercises (the whole library or only
 // those needing no gym machine) or, with other labels, programs.
-export const PROGRAM_PLACE_LABELS: Record<ExercisePlace, string> = { gym: "🏋️ Gym programs", home: "🏠 Home programs" };
+export const PROGRAM_PLACE_LABELS: Record<ExercisePlace, string> = { gym: "Gym programs", home: "Home programs" };
 
 export default function GymHomeTabs({
   current,

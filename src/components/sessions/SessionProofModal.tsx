@@ -31,7 +31,7 @@ export default function SessionProofModal({ path, caption, onClose }: { path: st
     <Modal visible={!!path} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 24 }}>
-          <Text style={styles.title}>📸 Cancellation proof</Text>
+          <Text style={styles.title}>Cancellation proof</Text>
           {caption ? <Text style={styles.line}>{caption}</Text> : null}
           {url ? (
             <Image source={{ uri: url }} style={[styles.image, { aspectRatio: ratio }]} resizeMode="contain" />

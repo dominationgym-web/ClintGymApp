@@ -128,7 +128,7 @@ export default function ClientProgramPicker({
 
       {active && (
         <View style={styles.cardioBox}>
-          <Text style={styles.cardioHeading}>🚴 Extra cardio for {clientName}</Text>
+          <Text style={styles.cardioHeading}>Extra cardio for {clientName}</Text>
           <Text style={styles.helper}>Added to every workout in this program, ready-made ones too.</Text>
           {extras.map((extra, i) => (
             <View key={i} style={styles.extraRow}>

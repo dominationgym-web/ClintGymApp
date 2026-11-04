@@ -84,7 +84,7 @@ function TodayCard({ today, full }: { today: CycleToday; full: boolean }) {
       {prepLeft !== null && (
         <View style={styles.prepBox}>
           <Text style={styles.blockTitle}>
-            🛒 Period due in about {prepLeft} day{prepLeft === 1 ? "" : "s"}: check your supplements
+            Period due in about {prepLeft} day{prepLeft === 1 ? "" : "s"}: check your supplements
           </Text>
           {SUPPLEMENT_PREP_LIST.map((l) => (
             <Text key={l} style={styles.line}>
@@ -185,7 +185,7 @@ export default function CycleTracker() {
     <View>
       {irregular ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🌡️ Periods irregular or stopped</Text>
+          <Text style={styles.cardTitle}>Periods irregular or stopped</Text>
           <Text style={styles.body}>
             The phase guide is off, because the phases won't fit when your periods are irregular or have stopped. Go by how you
             feel each day. You can still log any period below, which is handy to show your doctor.

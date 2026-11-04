@@ -39,7 +39,7 @@ export default function ExercisePainList({
   const shown = open ? rows : rows.slice(0, 3);
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>😣 Exercises that hurt {clientName}</Text>
+      <Text style={styles.title}>Exercises that hurt {clientName}</Text>
       {shown.map((r) => (
         <Text key={r.id} style={styles.line}>
           <Text style={styles.name}>{r.exercise_name}</Text> hurt their {painAreaLabel(r.area).toLowerCase()} ({shortDate(r.created_at)})

@@ -138,7 +138,7 @@ export default function MyWeekScreen() {
                 </Text>,
                 <View key="c">
                   <Text style={[styles.small, checkins.includes(d) && { color: themeText(dash.green) }]}>{checkins.includes(d) ? "✓ Check-in" : future ? "" : "No check-in"}</Text>
-                  {steps[d] != null ? <Text style={styles.small}>👟 {grouped(steps[d])} steps</Text> : null}
+                  {steps[d] != null ? <Text style={styles.small}>{grouped(steps[d])} steps</Text> : null}
                 </View>,
               ];
             })}
@@ -148,7 +148,7 @@ export default function MyWeekScreen() {
 
       <Row>
         <Card onPress={() => navigation.navigate("Lifts")}>
-          <CardTitle>🏆 New best this week</CardTitle>
+          <CardTitle>New best this week</CardTitle>
           {best ? (
             <Text style={styles.td}>
               {best.name} <Text style={styles.gold}>{fmt(best.kg)} kg × {best.reps}</Text> (was {fmt(best.was.kg)} kg × {best.was.reps})
@@ -158,7 +158,7 @@ export default function MyWeekScreen() {
           )}
         </Card>
         <Card onPress={() => navigation.navigate("Food")}>
-          <CardTitle>🍽️ Today's food</CardTitle>
+          <CardTitle>Today's food</CardTitle>
           {planned ? (
             <>
               <Text style={styles.td}>
@@ -171,7 +171,7 @@ export default function MyWeekScreen() {
           )}
         </Card>
         <Card>
-          <CardTitle>💬 Your coach's last note</CardTitle>
+          <CardTitle>Your coach's last note</CardTitle>
           {note ? (
             <>
               <Text style={styles.noteText} numberOfLines={3}>"{note.body}"</Text>

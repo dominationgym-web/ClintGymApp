@@ -45,8 +45,8 @@ const PACKAGES: { key: PackageType; label: string; description: string }[] = [
 ];
 
 const TRAINING_PLACES: { key: "gym" | "home"; label: string; description: string }[] = [
-  { key: "gym", label: "🏋️ Gym", description: "Full gym with machines and free weights." },
-  { key: "home", label: "🏠 Home", description: "Dumbbells, kettlebells, bands or just your bodyweight. Your workouts use home exercises." },
+  { key: "gym", label: "Gym", description: "Full gym with machines and free weights." },
+  { key: "home", label: "Home", description: "Dumbbells, kettlebells, bands or just your bodyweight. Your workouts use home exercises." },
 ];
 
 export default function SignupScreen({ navigation }: Props) {

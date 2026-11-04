@@ -86,7 +86,7 @@ export default function OwnerChallenges() {
         onPress: async () => {
           const { error } = await supabase.rpc("share_challenge", { p_id: c.id });
           if (error) Alert.alert("Couldn't share", error.message);
-          else Alert.alert("📣 Shared", "Your trainers have been told.");
+          else Alert.alert("Shared", "Your trainers have been told.");
           load();
         },
       },
@@ -196,12 +196,12 @@ export default function OwnerChallenges() {
               {c.daily_task} · {c.target_days} days
             </Text>
             <Text style={[styles.status, { color: themeText(c.shared_at ? "#22C55E" : "#F59E0B") }]}>
-              {c.shared_at ? `📣 Shared with all trainers, ${problemWhen(c.shared_at)}` : "Not shared yet"}
+              {c.shared_at ? `Shared with all trainers, ${problemWhen(c.shared_at)}` : "Not shared yet"}
             </Text>
             <View style={styles.actions}>
               {!c.shared_at && (
                 <Pressable style={styles.outline} onPress={() => share(c)}>
-                  <Text style={styles.outlineText}>📣 Share with all trainers</Text>
+                  <Text style={styles.outlineText}>Share with all trainers</Text>
                 </Pressable>
               )}
               <Pressable style={[styles.outline, { borderColor: themeBorder("#334155") }]} onPress={() => startEdit(c)}>

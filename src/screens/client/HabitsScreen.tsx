@@ -285,7 +285,7 @@ export default function HabitsScreen() {
             )}
 
             <Pressable style={styles.settingsToggle} onPress={() => setSettingsFor(showSettings ? null : h.id)} hitSlop={6}>
-              <Text style={styles.settingsToggleText}>⚙ Days and reminder {showSettings ? "▲" : "▼"}</Text>
+              <Text style={styles.settingsToggleText}>Days and reminder {showSettings ? "▲" : "▼"}</Text>
             </Pressable>
             {showSettings && (
               <>

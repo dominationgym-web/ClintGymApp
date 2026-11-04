@@ -85,7 +85,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
 
   return (
     <View style={styles.box}>
-      <Text style={styles.title}>💳 Pay by card</Text>
+      <Text style={styles.title}>Pay by card</Text>
       {quote && quote.total <= 0 && quote.referral_credits > 0 ? (
         <>
           {quote.plan_amount > 0 && (

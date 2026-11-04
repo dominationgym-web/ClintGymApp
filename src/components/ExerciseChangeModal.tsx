@@ -275,7 +275,7 @@ export default function ExerciseChangeModal({
           </>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-            {stepLabel ? <Text style={styles.step}>🩹 Injury check · {stepLabel}</Text> : null}
+            {stepLabel ? <Text style={styles.step}>Injury check · {stepLabel}</Text> : null}
             <Text style={styles.helper}>
               In the workout: {original.exercise_name}, {original.sets} x {original.reps}
             </Text>

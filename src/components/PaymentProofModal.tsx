@@ -58,7 +58,7 @@ export default function PaymentProofModal({
         <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 24 }}>
           {proof ? (
             <>
-              <Text style={styles.title}>🧾 Proof of payment</Text>
+              <Text style={styles.title}>Proof of payment</Text>
               <Text style={styles.line}>
                 From {from} · {proofWhen(proof.created_at)}
               </Text>

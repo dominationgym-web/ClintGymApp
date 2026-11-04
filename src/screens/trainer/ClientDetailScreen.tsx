@@ -587,7 +587,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 hitSlop={6}
                 accessibilityRole="link"
               >
-                <Text style={styles.whatsapp}>💬 {client.phone} · WhatsApp</Text>
+                <Text style={styles.whatsapp}>{client.phone} · WhatsApp</Text>
               </Pressable>
             ) : null}
             <Text style={styles.memberSince}>
@@ -605,7 +605,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             </Pressable>
             {/* Group live session (0138): up to 4 clients at once, this one first. */}
             <Pressable style={styles.groupButton} onPress={() => navigation.navigate("GroupLive", { clientId: client.id })}>
-              <Text style={styles.groupButtonText}>👥 Group</Text>
+              <Text style={styles.groupButtonText}>Group</Text>
             </Pressable>
           </View>
         )}
@@ -614,7 +614,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             {client.archived_at && (
               <View style={styles.archivedBanner}>
                 <Text style={styles.archivedText}>
-                  🗄 Archived on {new Date(client.archived_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}. All their data is kept.
+                  Archived on {new Date(client.archived_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}. All their data is kept.
                 </Text>
                 <Pressable style={styles.button} onPress={archiveOrBringBack}>
                   <Text style={styles.buttonText}>Bring back</Text>
@@ -640,7 +640,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             )}
             {/* The one way to message a client (review 2026-10-18): the trainer's own words, shown at the top of their Check-in. */}
             <Pressable style={styles.button} onPress={() => setReplying(true)}>
-              <Text style={styles.buttonText}>💬 Send {client.name.split(" ")[0]} a check-in note</Text>
+              <Text style={styles.buttonText}>Send {client.name.split(" ")[0]} a check-in note</Text>
             </Pressable>
             {trainer && replying && (
               <ReplyToClientModal
@@ -860,7 +860,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               <FoldSection icon="🗄" title="Archive" open={overviewOpen === "archive"} onToggle={() => toggleOverview("archive")}>
                 <Text style={styles.helper}>For a client who has stopped. Nothing is deleted and you can bring them back.</Text>
                 <Pressable style={styles.archiveButton} onPress={archiveOrBringBack}>
-                  <Text style={styles.archiveButtonText}>🗄 Archive this client</Text>
+                  <Text style={styles.archiveButtonText}>Archive this client</Text>
                 </Pressable>
               </FoldSection>
             )}
@@ -1041,19 +1041,19 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               onChanged={() => setStabilityDaysKey((k) => k + 1)}
             />
             {/* GRIZZ, 2026-10-21: abs and cardio for every workout, from one place (0136). */}
-            <TrainingSection title="💪 Abs and cardio" open={trainingOpen === "extras"} onToggle={() => toggleTraining("extras")}>
+            <TrainingSection title="Abs and cardio" open={trainingOpen === "extras"} onToggle={() => toggleTraining("extras")}>
               <ClientExtrasCard client={client} onChanged={(change) => setClient((c) => (c ? { ...c, ...change } : c))} />
             </TrainingSection>
-            <TrainingSection title="🎥 Form videos" open={trainingOpen === "videos"} onToggle={() => toggleTraining("videos")}>
+            <TrainingSection title="Form videos" open={trainingOpen === "videos"} onToggle={() => toggleTraining("videos")}>
               {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
             </TrainingSection>
-            <TrainingSection title="🏃 Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
+            <TrainingSection title="Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
               <OtherActivityCard clientId={client.id} role="trainer" />
             </TrainingSection>
-            <TrainingSection title="📥 History from another app" open={trainingOpen === "history"} onToggle={() => toggleTraining("history")}>
+            <TrainingSection title="History from another app" open={trainingOpen === "history"} onToggle={() => toggleTraining("history")}>
               <HistoryImportCard clientId={client.id} role="trainer" />
             </TrainingSection>
-            <TrainingSection title="🌿 Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
+            <TrainingSection title="Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
               <RecoveryCoachCard
                 clientId={client.id}
                 clientName={client.name}
@@ -1061,7 +1061,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 onProgramChanged={(next) => setClient((c) => (c ? { ...c, recovery_program: next } : c))}
               />
             </TrainingSection>
-            <TrainingSection title="🏠 Where they train" open={trainingOpen === "place"} onToggle={() => toggleTraining("place")}>
+            <TrainingSection title="Where they train" open={trainingOpen === "place"} onToggle={() => toggleTraining("place")}>
               <View style={{ marginTop: 12 }}>
                 <Text style={styles.libraryTitle}>Trains at</Text>
                 <Text style={[styles.helper, { marginBottom: 8 }]}>
@@ -1079,14 +1079,14 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 />
               )}
             </TrainingSection>
-            <TrainingSection title="📊 Progress graphs" open={trainingOpen === "progress"} onToggle={() => toggleTraining("progress")}>
+            <TrainingSection title="Progress graphs" open={trainingOpen === "progress"} onToggle={() => toggleTraining("progress")}>
               <ProgressCard clientId={client.id} role="trainer" />
             </TrainingSection>
-            <TrainingSection title="📈 Training log, last 2 weeks" open={trainingOpen === "log"} onToggle={() => toggleTraining("log")}>
+            <TrainingSection title="Training log, last 2 weeks" open={trainingOpen === "log"} onToggle={() => toggleTraining("log")}>
               <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
               <DropSetRoundsCard clientId={client.id} />
             </TrainingSection>
-            <TrainingSection title="⚙️ More options" open={trainingOpen === "more"} onToggle={() => toggleTraining("more")}>
+            <TrainingSection title="More options" open={trainingOpen === "more"} onToggle={() => toggleTraining("more")}>
               <ClientProgramPicker
                 key={programKey}
                 clientId={client.id}
@@ -1178,14 +1178,14 @@ const LEVEL_LOOK: Record<string, { emoji: string; color: string }> = {
 // Overview so the trainer is reminded every time they open the client
 // (GRIZZ, 2026-10-14).
 // A tap-to-open heading on the Training tab.
-/** "🔔 3 things to check": the client's alerts under one tap-to-open line. Hidden while there's nothing. */
+/** "3 things to check": the client's alerts under one tap-to-open line. Hidden while there's nothing. */
 function ChecksFold({ count, open, onToggle, children }: { count: number; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
     <View style={count > 0 ? [styles.trainingSection, styles.checksFold, open && styles.trainingSectionOpen] : undefined}>
       {count > 0 && (
         <Pressable style={styles.trainingSectionHeader} onPress={onToggle} accessibilityRole="button">
           <Text style={styles.trainingSectionTitle}>
-            🔔 {count} thing{count === 1 ? "" : "s"} to check
+            {count} thing{count === 1 ? "" : "s"} to check
           </Text>
           <Text style={styles.trainingSectionChevron}>{open ? "▴" : "▾"}</Text>
         </Pressable>

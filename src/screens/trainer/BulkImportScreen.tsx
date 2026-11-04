@@ -128,11 +128,11 @@ export default function BulkImportScreen() {
       <View style={styles.buttons}>
         {Platform.OS === "web" && (
           <Pressable style={[styles.addButton, sending && styles.disabled]} onPress={() => pickWebFiles(send)} disabled={sending}>
-            <Text style={styles.addText}>📄 Send the file (CSV, PDF)</Text>
+            <Text style={styles.addText}>Send the file (CSV, PDF)</Text>
           </Pressable>
         )}
         <Pressable style={[styles.button, sending && styles.disabled]} onPress={async () => send(await pickScreenshots())} disabled={sending}>
-          <Text style={styles.buttonText}>📸 Screenshots</Text>
+          <Text style={styles.buttonText}>Screenshots</Text>
         </Pressable>
       </View>
       <Text style={styles.small}>

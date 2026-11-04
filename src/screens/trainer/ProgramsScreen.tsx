@@ -146,12 +146,12 @@ export default function ProgramsScreen({ navigation }: Props) {
                 style={styles.shortcut}
                 onPress={() => navigation.navigate("TrainerGuide", { guideKey: "sportsPerformance" })}
               >
-                <Text style={styles.shortcutText}>🏅 Who each Sports Performance program suits ›</Text>
+                <Text style={styles.shortcutText}>Who each Sports Performance program suits ›</Text>
               </Pressable>
             ),
             functional: (
               <Pressable style={styles.shortcut} onPress={() => navigation.navigate("Stability")}>
-                <Text style={styles.shortcutText}>🛡️ Stability & Rehab programming ›</Text>
+                <Text style={styles.shortcutText}>Stability & Rehab programming ›</Text>
                 <Text style={styles.description}>
                   Ankle to neck, Rehab to Advanced. They run alongside the main program; give one from the client's
                   Training tab.
@@ -183,14 +183,14 @@ export default function ProgramsScreen({ navigation }: Props) {
                       {open === p.id && (
                         <>
                           {p.description && <Text style={styles.description}>{p.description}</Text>}
-                          {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
+                          {p.nutrition ? <Text style={styles.description}>Nutrition: {p.nutrition}</Text> : null}
                           {exercises[p.id] ? (
                             p.trainer_id && p.trainer_id === trainer?.id ? (
                               <ProgramSummary
                                 program={p}
                                 exercises={exercises[p.id]}
                                 onPressExercise={setEditing}
-                                tapHint="✎ Tap an exercise to change it for everyone on this workout, just for now or for good. Tap the green ▶ to watch it."
+                                tapHint="Tap an exercise to change it for everyone on this workout, just for now or for good. Tap the green ▶ to watch it."
                               />
                             ) : (
                               <ProgramSummary program={p} exercises={exercises[p.id]} collapsible />

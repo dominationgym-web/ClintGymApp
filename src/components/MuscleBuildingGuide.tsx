@@ -194,7 +194,7 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
         <View>
           {referral.length ? (
             <View style={[styles.box, { borderLeftColor: themeBorder("#F87171") }]}>
-              <Text style={[styles.boxTitle, { color: themeText("#F87171") }]}>🩺 Check with a doctor or dietitian first</Text>
+              <Text style={[styles.boxTitle, { color: themeText("#F87171") }]}>Check with a doctor or dietitian first</Text>
               <Text style={styles.boxText}>
                 Because of {referral.join(" and ")}, {REFERRAL_NOTE.charAt(0).toLowerCase() + REFERRAL_NOTE.slice(1)} Until then these are
                 your numbers to stay the same.
@@ -223,7 +223,7 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
           </Text>
           {onMakeMealPlan ? (
             <Pressable style={[styles.button, styles.primary]} onPress={onMakeMealPlan}>
-              <Text style={styles.primaryText}>🤖 Make my meal plan from these</Text>
+              <Text style={styles.primaryText}>Make my meal plan from these</Text>
             </Pressable>
           ) : null}
           {onMakeMealPlan ? <Text style={styles.note}>Pick "Build muscle" as your goal: it uses these same numbers.</Text> : null}
@@ -247,7 +247,7 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
               ]}
             >
               <Text style={styles.boxTitle}>
-                {check.kind === "onTrack" ? "✅ On track" : check.kind === "slow" ? "⬆️ Eat a bit more" : check.kind === "fast" ? "⬇️ Eat a bit less" : "⚖️ Your weigh-ins"}
+                {check.kind === "onTrack" ? "✅ On track" : check.kind === "slow" ? "⬆️ Eat a bit more" : check.kind === "fast" ? "⬇️ Eat a bit less" : "Your weigh-ins"}
               </Text>
               <Text style={styles.boxText}>{check.message}</Text>
             </View>
@@ -272,9 +272,9 @@ export default function MuscleBuildingGuide({ onMakeMealPlan }: { onMakeMealPlan
                 </Pressable>
                 {open ? (
                   <View style={{ marginTop: 6 }}>
-                    <Text style={styles.blockLine}>🏋️ {b.training}</Text>
-                    <Text style={styles.blockLine}>😴 {b.recovery}</Text>
-                    <Text style={styles.blockLine}>🍽 {b.food}</Text>
+                    <Text style={styles.blockLine}>{b.training}</Text>
+                    <Text style={styles.blockLine}>{b.recovery}</Text>
+                    <Text style={styles.blockLine}>{b.food}</Text>
                   </View>
                 ) : null}
               </View>

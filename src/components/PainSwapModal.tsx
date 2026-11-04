@@ -48,7 +48,7 @@ export default function PainSwapModal({
       <ModalSafeArea style={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>😣 {exercise?.exercise_name} hurts</Text>
+            <Text style={styles.title}>{exercise?.exercise_name} hurts</Text>
             <Text style={styles.helper}>Tell us where, and try a kinder version instead. Your coach will see it.</Text>
           </View>
           <Pressable onPress={onClose} hitSlop={8}>
@@ -94,7 +94,7 @@ export default function PainSwapModal({
                   {preview === e.id && <ExerciseVideoPreview url={e.external_url} name={e.name} />}
                 </View>
               ))}
-              {result.suggestions.length > 0 && <Text style={styles.tip}>💡 {result.tip}</Text>}
+              {result.suggestions.length > 0 && <Text style={styles.tip}>{result.tip}</Text>}
               <Pressable style={styles.skip} onPress={() => onPick(area!, null)}>
                 <Text style={styles.skipText}>Leave it out today</Text>
               </Pressable>

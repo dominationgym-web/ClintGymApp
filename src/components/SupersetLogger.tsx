@@ -150,7 +150,7 @@ export default function SupersetLogger({
         <KeyboardSafe>
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
-              <Text style={styles.title}>⚡ Superset</Text>
+              <Text style={styles.title}>Superset</Text>
               <Pressable onPress={onClose} accessibilityRole="button" hitSlop={8}>
                 <Text style={styles.close}>{started ? "Done" : "Close"}</Text>
               </Pressable>

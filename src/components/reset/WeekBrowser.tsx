@@ -105,7 +105,7 @@ export default function WeekBrowser({
         </View>
 
         <Text style={styles.training}>{location === "home" ? "🏠" : "🏋️"} {training.summary}{location === "home" ? " at home" : ""}</Text>
-        <Text style={styles.tip}>💡 {plan.tip}</Text>
+        <Text style={styles.tip}>{plan.tip}</Text>
       </View>
 
     </View>
