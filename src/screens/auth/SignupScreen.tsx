@@ -45,8 +45,8 @@ const PACKAGES: { key: PackageType; label: string; description: string }[] = [
 ];
 
 const TRAINING_PLACES: { key: "gym" | "home"; label: string; description: string }[] = [
-  { key: "gym", label: "🏋️ Gym", description: "Full gym with machines and free weights." },
-  { key: "home", label: "🏠 Home", description: "Dumbbells, kettlebells, bands or just your bodyweight. Your workouts use home exercises." },
+  { key: "gym", label: "Gym", description: "Full gym with machines and free weights." },
+  { key: "home", label: "Home", description: "Dumbbells, kettlebells, bands or just your bodyweight. Your workouts use home exercises." },
 ];
 
 export default function SignupScreen({ navigation }: Props) {
@@ -364,7 +364,7 @@ const styles = themedStyles({
   modalTitle: { color: "#fff", fontSize: 20, fontWeight: "700" },
   closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
   button: {
-    backgroundColor: "#22C55E",
+    backgroundColor: "#D4AF37",
     borderRadius: 10,
     padding: 14,
     alignItems: "center",

@@ -32,7 +32,7 @@ describe("billing helpers", () => {
   it("formats money in both currencies", () => {
     expect(money(50, "USD")).toBe("$50");
     expect(money(12.5, "USD")).toBe("$12.50");
-    expect(money(2500, "ZAR")).toBe("R2 500");
+    expect(money(2500, "ZAR")).toBe("R2 500");
     expect(money(1250, "USD")).toBe("$1,250");
   });
 

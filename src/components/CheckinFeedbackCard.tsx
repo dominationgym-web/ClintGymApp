@@ -21,7 +21,7 @@ export default function CheckinFeedbackCard({
   if (feedback.days === 0) return null;
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>{forTrainer ? "📈 What the app suggested this week" : "📈 Your tips for this week"}</Text>
+      <Text style={styles.title}>{forTrainer ? "What the app suggested this week" : "Your tips for this week"}</Text>
       <Text style={styles.sub}>
         Based on {forTrainer ? "their" : "your"} last {feedback.days} check-in{feedback.days === 1 ? "" : "s"}.
         {feedback.tips.length > 0 ? " Tap a tip to see what to do." : ""}
@@ -32,7 +32,7 @@ export default function CheckinFeedbackCard({
           <Text style={styles.text}>{feedback.alcohol.text}</Text>
         </View>
       )}
-      {feedback.win && <Text style={styles.win}>🏆 {feedback.win}</Text>}
+      {feedback.win && <Text style={styles.win}>{feedback.win}</Text>}
       {feedback.tips.length === 0 && (
         <Text style={styles.text}>Everything looks on track. Keep doing what {forTrainer ? "they're" : "you're"} doing.</Text>
       )}

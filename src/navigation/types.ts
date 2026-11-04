@@ -24,6 +24,7 @@ export type ClientTabParamList = {
   Body: undefined;
   Food: undefined;
   CheckIn: undefined;
+  Nutrition: undefined;
   Habits: undefined;
   Reset: undefined;
   Exercises: undefined;

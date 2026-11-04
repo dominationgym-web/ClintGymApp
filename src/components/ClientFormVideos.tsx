@@ -61,7 +61,7 @@ export default function ClientFormVideos({ client, trainerId }: { client: Client
   return (
     <View style={styles.card}>
       <Text style={styles.title}>
-        🎥 Form videos{fresh > 0 ? ` · ${fresh} new` : ""}
+        Form videos{fresh > 0 ? ` · ${fresh} new` : ""}
       </Text>
       {videos.length === 0 ? (
         <Text style={styles.helper}>
@@ -209,7 +209,7 @@ function WatchAndCorrect({
               onPress={() => send()}
               disabled={!message || sending}
             >
-              {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.replyText}>💬 Send to {firstName}</Text>}
+              {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.replyText}>Send to {firstName}</Text>}
             </Pressable>
           </View>
         </ModalSafeArea>

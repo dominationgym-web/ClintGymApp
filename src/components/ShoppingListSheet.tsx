@@ -88,7 +88,7 @@ export default function ShoppingListSheet({
         <View style={styles.sheet}>
           {page === "days" ? (
             <View>
-              <Text style={styles.title}>🛒 Your shopping list</Text>
+              <Text style={styles.title}>Your shopping list</Text>
               <Text style={styles.question}>How many days are you training this week?</Text>
               <Text style={styles.helper}>Training days have more food, so the list adds up the right amount for your week.</Text>
               <View style={styles.chips}>
@@ -117,7 +117,7 @@ export default function ShoppingListSheet({
             </View>
           ) : (
             <View style={{ flexShrink: 1 }}>
-              <Text style={styles.title}>🛒 Your shopping list for the week</Text>
+              <Text style={styles.title}>Your shopping list for the week</Text>
               <Text style={styles.helper}>
                 {week
                   ? "For the 7 days of this week's plan. "
@@ -166,14 +166,14 @@ export default function ShoppingListSheet({
               <Text style={styles.sendLabel}>Send my list</Text>
               <View style={styles.row}>
                 <Pressable style={[styles.sendButton, styles.whatsapp]} onPress={() => openLink(whatsappShareLink(shoppingListText(list)), "WhatsApp")}>
-                  <Text style={styles.sendText}>💬 WhatsApp</Text>
+                  <Text style={styles.sendText}>WhatsApp</Text>
                 </Pressable>
                 <Pressable style={[styles.sendButton, styles.secondary]} onPress={() => openLink(emailShareLink(shoppingListText(list)), "your email")}>
-                  <Text style={styles.sendText}>✉️ Email</Text>
+                  <Text style={styles.sendText}>Email</Text>
                 </Pressable>
                 {canShare && (
                   <Pressable style={[styles.sendButton, styles.secondary]} onPress={send}>
-                    <Text style={styles.sendText}>📤 More</Text>
+                    <Text style={styles.sendText}>More</Text>
                   </Pressable>
                 )}
               </View>

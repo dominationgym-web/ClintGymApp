@@ -12,6 +12,7 @@ import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import { PROGRAM_FAMILIES, programFamily, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import ProgramGroups from "@/components/ProgramGroups";
+import GiveProgramButton from "@/components/GiveProgramButton";
 import ProgramExerciseEditModal from "@/components/ProgramExerciseEditModal";
 import { useAuth } from "@/context/AuthContext";
 import { themeText, themedStyles } from "@/lib/theme";
@@ -118,7 +119,7 @@ export default function ProgramsScreen({ navigation }: Props) {
         <Pressable style={styles.buildButton} onPress={() => navigation.navigate("ProgramBuilder")}>
           <Text style={styles.buildButtonText}>+ Build a program</Text>
         </Pressable>
-        <Text style={styles.helper}>To put a client on a program, open the client and go to their Training tab.</Text>
+        <GiveProgramButton />
         <View style={{ marginTop: 8 }}>
           <GymHomeTabs
             current={place}
@@ -146,12 +147,12 @@ export default function ProgramsScreen({ navigation }: Props) {
                 style={styles.shortcut}
                 onPress={() => navigation.navigate("TrainerGuide", { guideKey: "sportsPerformance" })}
               >
-                <Text style={styles.shortcutText}>🏅 Who each Sports Performance program suits ›</Text>
+                <Text style={styles.shortcutText}>Who each Sports Performance program suits ›</Text>
               </Pressable>
             ),
             functional: (
               <Pressable style={styles.shortcut} onPress={() => navigation.navigate("Stability")}>
-                <Text style={styles.shortcutText}>🛡️ Stability & Rehab programming ›</Text>
+                <Text style={styles.shortcutText}>Stability & Rehab programming ›</Text>
                 <Text style={styles.description}>
                   Ankle to neck, Rehab to Advanced. They run alongside the main program; give one from the client's
                   Training tab.
@@ -183,14 +184,14 @@ export default function ProgramsScreen({ navigation }: Props) {
                       {open === p.id && (
                         <>
                           {p.description && <Text style={styles.description}>{p.description}</Text>}
-                          {p.nutrition ? <Text style={styles.description}>🍽 Nutrition: {p.nutrition}</Text> : null}
+                          {p.nutrition ? <Text style={styles.description}>Nutrition: {p.nutrition}</Text> : null}
                           {exercises[p.id] ? (
                             p.trainer_id && p.trainer_id === trainer?.id ? (
                               <ProgramSummary
                                 program={p}
                                 exercises={exercises[p.id]}
                                 onPressExercise={setEditing}
-                                tapHint="✎ Tap an exercise to change it for everyone on this workout, just for now or for good. Tap the green ▶ to watch it."
+                                tapHint="Tap an exercise to change it for everyone on this workout, just for now or for good. Tap the green ▶ to watch it."
                               />
                             ) : (
                               <ProgramSummary program={p} exercises={exercises[p.id]} collapsible />

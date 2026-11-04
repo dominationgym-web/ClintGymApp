@@ -84,8 +84,8 @@ export default function DiaryPeople({
 
   return (
     <View style={{ marginTop: 18 }}>
-      <Text style={styles.title}>📅 On your calendar, not in the app yet</Text>
-      <Text style={styles.meta}>Worked out from your calendar. Tap a name to set their price per session or mark them away. When they join the app, tap one of their sessions › Link to their app account.</Text>
+      <Text style={styles.title}>On your calendar, not in the app yet</Text>
+      <Text style={styles.meta}>Tap a name to set their price or mark them away.</Text>
       {people.map((p) => {
         const on = open === p.key;
         return (

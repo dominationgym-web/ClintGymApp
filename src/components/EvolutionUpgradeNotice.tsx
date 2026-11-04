@@ -62,7 +62,7 @@ export default function EvolutionUpgradeNotice({
       <Pressable style={styles.backdrop} onPress={onCancel}>
         <Pressable style={styles.box} onPress={() => {}}>
           <ScrollView>
-            <Text style={styles.title}>🌐 Moving up to Evolution</Text>
+            <Text style={styles.title}>Moving up to Evolution</Text>
             <Text style={styles.text}>
               You're on the 🤝 1 on 1 only price. The moment one of your clients uses the Evolution side (an Evolution or Both client),
               you move up to the Evolution price automatically. It covers both sides, so your 1 on 1 clients stay included.
@@ -70,7 +70,7 @@ export default function EvolutionUpgradeNotice({
             {SELLS && settings && evo && one ? (
               <>
                 <View style={styles.card}>
-                  <Text style={styles.cardTitle}>🤝 1 on 1 only (now)</Text>
+                  <Text style={styles.cardTitle}>1 on 1 only (now)</Text>
                   <Text style={styles.line}>{money(one.prices[currency].monthly, currency)} a month</Text>
                   {clientTierLines(one.tiers, currency, 0).map((l) => (
                     <Text key={l} style={styles.line}>
@@ -80,7 +80,7 @@ export default function EvolutionUpgradeNotice({
                   <Text style={styles.line}>Most: {money(monthlyBill(settings, "one_on_one", currency, 1000), currency)} a month</Text>
                 </View>
                 <View style={[styles.card, styles.cardGold]}>
-                  <Text style={styles.cardTitle}>🌐 Evolution (both sides)</Text>
+                  <Text style={styles.cardTitle}>Evolution (both sides)</Text>
                   <Text style={styles.line}>
                     {money(evo.prices[currency].monthly, currency)} a month, first {evo.included} clients included
                   </Text>

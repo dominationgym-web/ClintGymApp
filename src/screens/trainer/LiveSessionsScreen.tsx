@@ -90,7 +90,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const [weekMoney, setWeekMoney] = useState(false);
   // A cancelled session whose catch-up is being booked on the Calendar tab.
   const [makeup, setMakeup] = useState<LiveSession | null>(null);
-  // A ??? gap tapped on Today: open Book a session on the calendar at that time.
+  // An Available gap tapped on Today: open Book a session on the calendar at that time.
   const [bookAt, setBookAt] = useState<string | null>(null);
   // Clients marked away (0184) and whose Away calendar is open.
   const [aways, setAways] = useState<ClientAway[]>([]);
@@ -160,7 +160,6 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     { key: "setup", label: "Setup", icon: "settings", dot: settings ? null : "#F59E0B" },
   ];
 
-  const sessionsLeftToday = sessions.some((s) => dayKey(s.starts_at) === dayKey(now) && sessionKind(s, now) === "booked");
   const moneyCard = settings ? <TodayMoneyCard sessions={sessions} currency={settings.currency} onWeek={() => setWeekMoney(true)} /> : null;
 
   // An app client's name, or the name a diary-only session carries (0174).
@@ -187,13 +186,6 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               <Text style={styles.noticeText}>Start under Setup: your normal fee and cancellation rule. Then set up each client under Clients.</Text>
             </Pressable>
           ) : null}
-          {/* Predicted week and month, counting down with cancellations (GRIZZ, 2026-11-01). */}
-          {tab === "todo" && settings ? <ForecastStrip sessions={sessions} currency={settings.currency} /> : null}
-          {/* What cancellations cost and what catch-ups bring back (GRIZZ, 2026-11-02). */}
-          {tab === "todo" && settings ? <LossesCard sessions={sessions} currency={settings.currency} name={who} onOpen={setOpen} /> : null}
-          {/* What the day (and week) made after cancellations and credits (GRIZZ, 2026-11-01):
-              at the top once the day's sessions are over, under them until then. */}
-          {tab === "todo" && settings && !sessionsLeftToday ? moneyCard : null}
           {tab === "todo" && (
             <ToDo
               todo={todo}
@@ -225,7 +217,17 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               onChanged={load}
             />
           )}
-          {tab === "todo" && settings && sessionsLeftToday ? <View style={{ marginTop: 20 }}>{moneyCard}</View> : null}
+          {/* Money under the day's sessions (critique, 2026-11-04): the trainer opens
+              the app to see who's next. Earnings, then the predicted week and month
+              (GRIZZ, 2026-11-01), then what cancellations cost (2026-11-02). */}
+          {tab === "todo" && settings ? (
+            <View style={{ marginTop: 24 }}>
+              <Text style={styles.sectionTitle}>Money</Text>
+              {moneyCard}
+              <ForecastStrip sessions={sessions} currency={settings.currency} />
+              <LossesCard sessions={sessions} currency={settings.currency} name={who} onOpen={setOpen} />
+            </View>
+          ) : null}
           {tab === "calendar" && (
             <CalendarTab
               month={month}
@@ -407,7 +409,7 @@ function ToDo({
 }: {
   todo: LiveSession[];
   today: LiveSession[];
-  /** Open slots left today, shown as ??? (GRIZZ 2026-11-02). */
+  /** Open slots left today, shown as Available (GRIZZ 2026-11-02). */
   openToday: string[];
   onBookAt: (time: string) => void;
   unsigned: SessionPlan[];
@@ -453,7 +455,7 @@ function ToDo({
             <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />
           ) : (
             <Pressable key={`open-${time}`} style={[styles.row, styles.openRow]} onPress={() => onBookAt(time)}>
-              <Text style={styles.openText}>{time} · ??? · open</Text>
+              <Text style={styles.openText}>{time} · Available</Text>
             </Pressable>
           )
         )}
@@ -466,7 +468,7 @@ function ToDo({
       {drafts ? (
         <Pressable style={styles.notice} onPress={() => onGo("invoices")}>
           <Text style={styles.noticeText}>
-            🧾 {drafts} invoice{drafts === 1 ? " is" : "s are"} ready to check and send. Tap to see.
+            {drafts} invoice{drafts === 1 ? " is" : "s are"} ready to check and send. Tap to see.
           </Text>
         </Pressable>
       ) : null}
@@ -511,7 +513,7 @@ function ToDo({
       {unsigned.length ? <Text style={styles.sectionTitle}>Not signed yet</Text> : null}
       {unsigned.map((p) => (
         <Text key={p.client_id} style={styles.helper}>
-          ✍️ {who({ client_id: p.client_id })} hasn't signed the agreement for their current terms. They see it under Menu › My sessions.
+          {who({ client_id: p.client_id })} hasn't signed the agreement for their current terms. They see it under Menu › My sessions.
         </Text>
       ))}
 
@@ -577,7 +579,7 @@ function GroupCheck({
   return (
     <View style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE.unconfirmed.colour) }]}>
       <Text style={styles.rowTitle}>
-        👥 Group · {dayLabel(sessions[0].starts_at)}, {clockLabel(sessions[0].starts_at)}
+        Group · {dayLabel(sessions[0].starts_at)}, {clockLabel(sessions[0].starts_at)}
       </Text>
       <Text style={styles.rowBody}>Tick who came:</Text>
       {sessions.map((s) => {
@@ -708,7 +710,7 @@ function CalendarTab({
       {makeup ? (
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            🔁 Booking a catch-up for {who(makeup)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. You set its price when you book it.
+            Booking a catch-up for {who(makeup)} (for {dayLabel(makeup.starts_at)}). Tap a day, then ＋ Book. You set its price when you book it.
           </Text>
           <Pressable onPress={onMakeupDone}>
             <Text style={styles.link}>Stop</Text>
@@ -726,7 +728,6 @@ function CalendarTab({
           <Text style={styles.arrow}>›</Text>
         </Pressable>
       </View>
-      <Text style={[styles.meta, { textAlign: "center", marginTop: 0, marginBottom: 6 }]}>Swipe left for the next day, right for the day before</Text>
       {lines.map((l) =>
         l.s && allAway({ s: l.s, with: l.with }) ? (
           <AwayLine key={l.s.id} l={{ s: l.s, with: l.with }} name={jointName({ s: l.s, with: l.with }, who)} onBook={book} onOpen={onOpen} />
@@ -734,14 +735,14 @@ function CalendarTab({
           <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} others={l.with} nameOf={who} onOpen={onOpen} />
         ) : (
           <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
-            <Text style={styles.openText}>{l.time} · ??? · open</Text>
+            <Text style={styles.openText}>{l.time} · Available</Text>
           </Pressable>
         ),
       )}
       {list.length === 0 ? (
         <Text style={styles.helper}>{open.length ? `Nothing booked. The whole day is open (${open[0]} to ${settings?.day_end?.slice(0, 5) ?? "20:00"}).` : "Nothing booked."}</Text>
       ) : null}
-      {list.length && open.length ? <Text style={styles.meta}>??? is an open slot. Tap one to book it.</Text> : null}
+      {list.length && open.length ? <Text style={styles.meta}>Tap an available slot to book it.</Text> : null}
       </View>
       <Pressable style={styles.button} onPress={() => book(null)}>
         <Text style={styles.buttonText}>
@@ -750,7 +751,7 @@ function CalendarTab({
       </Pressable>
       {makeup ? null : (
         <Pressable style={styles.outline} onPress={() => setImporting(true)}>
-          <Text style={styles.outlineText}>📥 Bring in sessions from your calendar</Text>
+          <Text style={styles.outlineText}>Bring in sessions from your calendar</Text>
         </Pressable>
       )}
       {/* Away or can't train: block it out, clients are told and not charged (GRIZZ, 2026-11-01). */}
@@ -985,7 +986,7 @@ function AddSessionModal({
                           style={[styles.chip, on && styles.chipOn]}
                           onPress={() => setPicked((p) => (on ? p.filter((k) => !keys.includes(k)) : [...new Set([...p, ...keys])]))}
                         >
-                          <Text style={[styles.chipText, on && styles.chipTextOn]}>👥 {g.join(" & ")}</Text>
+                          <Text style={[styles.chipText, on && styles.chipTextOn]}>{g.join(" & ")}</Text>
                         </Pressable>
                       );
                     })}
@@ -1000,7 +1001,7 @@ function AddSessionModal({
               {typing ? (
                 <TextInput style={styles.nameInput} value={typed} onChangeText={setTyped} placeholder="As in your calendar, e.g. Jade & Camilla" placeholderTextColor="#64748B" maxLength={120} autoFocus />
               ) : null}
-              {count > 1 ? <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>👥 One joint session: {[...appIds.map((id) => clients.find((c) => c.id === id)?.name.split(" ")[0] ?? ""), ...names].join(" & ")}</Text> : null}
+              {count > 1 ? <Text style={[styles.meta, { color: themeText(BRAND_GOLD) }]}>One joint session: {[...appIds.map((id) => clients.find((c) => c.id === id)?.name.split(" ")[0] ?? ""), ...names].join(" & ")}</Text> : null}
               <Text style={styles.label}>What time?</Text>
               <SessionTimeChips
                 dayStart={settings?.day_start ?? "05:00"}
@@ -1019,7 +1020,7 @@ function AddSessionModal({
                       return (
                         <Pressable key={j.time} style={[styles.chip, on && styles.chipOn]} onPress={() => setTime(j.time)}>
                           <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                            👥 {j.time} with {j.names.join(" & ")}
+                            {j.time} with {j.names.join(" & ")}
                           </Text>
                         </Pressable>
                       );
@@ -1050,7 +1051,7 @@ function AddSessionModal({
                       <Text style={[styles.chipText, !weekly && styles.chipTextOn]}>Just this day</Text>
                     </Pressable>
                     <Pressable style={[styles.chip, weekly && styles.chipOn]} onPress={() => setWeekly(true)}>
-                      <Text style={[styles.chipText, weekly && styles.chipTextOn]}>🔁 Every week from then</Text>
+                      <Text style={[styles.chipText, weekly && styles.chipTextOn]}>Every week from then</Text>
                     </Pressable>
                   </View>
                 </>
@@ -1133,7 +1134,7 @@ function ClientsTab({
         {onOpenPage ? (
           // Says what's there (GRIZZ, 2026-11-02: "you don't know that's where you set up the diets").
           <Pressable style={styles.pageButton} onPress={() => onOpenPage(picked)} accessibilityRole="button">
-            <Text style={styles.pageTitle}>🥗 Diet and meal plan, progress, check-ins ›</Text>
+            <Text style={styles.pageTitle}>Diet and meal plan, progress, check-ins ›</Text>
             <Text style={styles.pageDetail}>Set up {(c?.name ?? "their").trim().split(/\s+/)[0]}'s diet and see how they're doing</Text>
           </Pressable>
         ) : null}
@@ -1158,15 +1159,14 @@ function ClientsTab({
   const currency: BillingCurrency = settings?.currency ?? "ZAR";
   return (
     <>
-      <Text style={styles.helper}>Each client's fee, sessions a week, cancellation rule and regular times. Tap one to change it.</Text>
       {withPlan.length === 0 && notSetUp.length === 0 ? <Text style={styles.helper}>No clients set up for live sessions yet.</Text> : null}
       {notSetUp.map((c) => (
         <Pressable key={c.id} style={[styles.row, { borderLeftColor: themeBg("#F59E0B") }]} onPress={() => setPicked(c.id)}>
           <Text style={styles.rowTitle}>{c.name}</Text>
           <Text style={[styles.meta, { color: themeText("#F59E0B") }]}>
             {regularFromCalendar(sessions, c.id).regular.length
-              ? `Not set up yet. On your calendar: ${regularLabel(regularFromCalendar(sessions, c.id).regular)}. Tap to check and save.`
-              : "Sessions not set up yet. Tap to set their fee and times."}
+              ? `Not set up yet · ${regularLabel(regularFromCalendar(sessions, c.id).regular)}`
+              : "Not set up yet"}
           </Text>
         </Pressable>
       ))}
@@ -1185,10 +1185,10 @@ function ClientsTab({
             <Text style={styles.meta}>
               {p.regular.length || !regularFromCalendar(sessions, c.id).regular.length
                 ? regularLabel(p.regular)
-                : `📅 On your calendar: ${regularLabel(regularFromCalendar(sessions, c.id).regular)}. Tap to save as their regular times.`}
+                : regularLabel(regularFromCalendar(sessions, c.id).regular)}
             </Text>
-            {p.paid_by ? <Text style={styles.meta}>💳 Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
-            <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "✍️ Signed" : "✍️ Not signed yet"}</Text>
+            {p.paid_by ? <Text style={styles.meta}>Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
+            <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "Signed" : "Not signed yet"}</Text>
             {(() => {
               const a = awayOf(aways, { clientId: c.id, name: c.name });
               return a ? <Text style={[styles.meta, { color: themeText("#22C55E") }]}>✈️ Away {awaySpan(a)}</Text> : null;
@@ -1197,9 +1197,19 @@ function ClientsTab({
         );
       })}
       {/* Someone who hasn't signed up to the app (GRIZZ, 2026-11-01). */}
+      {/* One Add button that asks, instead of two look-alike buttons (critique, 2026-11-04). */}
       {oneOnOne ? (
-        <Pressable style={styles.button} onPress={() => setAddingPerson(true)}>
-          <Text style={styles.buttonText}>＋ Add a client who isn't in the app</Text>
+        <Pressable
+          style={styles.button}
+          onPress={() =>
+            Alert.alert("Add a client", "Do they have the app?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Yes, they have it", onPress: () => setShowOthers(true) },
+              { text: "No", onPress: () => setAddingPerson(true) },
+            ])
+          }
+        >
+          <Text style={styles.buttonText}>＋ Add client</Text>
         </Pressable>
       ) : null}
       <AddDiaryPersonModal
@@ -1212,9 +1222,12 @@ function ClientsTab({
           Alert.alert("Added", `${n} is on your calendar every week. You'll find them under "On your calendar, not in the app yet".`);
         }}
       />
-      <Pressable style={styles.outline} onPress={() => setShowOthers(!showOthers)}>
-        <Text style={styles.outlineText}>{showOthers ? "Hide" : "＋ Set up a client who has the app"}</Text>
-      </Pressable>
+      {!oneOnOne || showOthers ? (
+        <Pressable style={styles.outline} onPress={() => setShowOthers(!showOthers)}>
+          <Text style={styles.outlineText}>{showOthers ? "Hide app clients" : "＋ Set up a client who has the app"}</Text>
+        </Pressable>
+      ) : null}
+      {showOthers && others.length ? <Text style={styles.helper}>Tap who to set up:</Text> : null}
       {showOthers
         ? others.map((c) => (
             <Pressable key={c.id} style={styles.row} onPress={() => setPicked(c.id)}>
@@ -1289,9 +1302,7 @@ function InvoicesTab({
 
   return (
     <>
-      <Text style={styles.helper}>
-        On the 1st the app makes every client's invoice by itself (in advance: that month; in arrears: last month) and lets you know. Check it and tap Send.
-      </Text>
+      <Text style={styles.helper}>Invoices are made on the 1st.</Text>
       <CatchUpRows catchUps={owed} name={(s) => (s.client_id ? byId[s.client_id]?.name : s.guest_name) ?? "Client"} onChanged={onChanged} onlyLate />
       {otherDrafts.length ? (
         <>
@@ -1320,7 +1331,9 @@ function InvoicesTab({
       ) : null}
       {notInApp > 0 ? (
         <Text style={styles.helper}>
-          📅 Plus {sessionMoney(notInApp, currency)} from people not in the app yet (no invoice for them). This month in all: {sessionMoney(total + notInApp, currency)}.
+          {rows.length
+            ? `Plus ${sessionMoney(notInApp, currency)} from people not in the app. Total ${sessionMoney(total + notInApp, currency)}.`
+            : `${sessionMoney(notInApp, currency)} from people not in the app (no invoices).`}
         </Text>
       ) : null}
       {rows.map((inv) => (
@@ -1450,10 +1463,10 @@ function InvoiceModal({
             ) : null}
             <View style={styles.actions}>
               <Pressable style={[styles.outline, { flex: 1, marginTop: 0 }]} onPress={whatsapp}>
-                <Text style={styles.outlineText}>💬 WhatsApp</Text>
+                <Text style={styles.outlineText}>WhatsApp</Text>
               </Pressable>
               <Pressable style={[styles.outline, { flex: 1, marginTop: 0 }]} onPress={sendEmail}>
-                <Text style={styles.outlineText}>✉️ Email</Text>
+                <Text style={styles.outlineText}>Email</Text>
               </Pressable>
             </View>
             <Text style={styles.meta}>Sends a neat copy of this invoice, with your bank details, to {clientName.split(" ")[0]}.</Text>

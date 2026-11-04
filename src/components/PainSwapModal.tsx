@@ -48,7 +48,7 @@ export default function PainSwapModal({
       <ModalSafeArea style={styles.container}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>😣 {exercise?.exercise_name} hurts</Text>
+            <Text style={styles.title}>{exercise?.exercise_name} hurts</Text>
             <Text style={styles.helper}>Tell us where, and try a kinder version instead. Your coach will see it.</Text>
           </View>
           <Pressable onPress={onClose} hitSlop={8}>
@@ -94,7 +94,7 @@ export default function PainSwapModal({
                   {preview === e.id && <ExerciseVideoPreview url={e.external_url} name={e.name} />}
                 </View>
               ))}
-              {result.suggestions.length > 0 && <Text style={styles.tip}>💡 {result.tip}</Text>}
+              {result.suggestions.length > 0 && <Text style={styles.tip}>{result.tip}</Text>}
               <Pressable style={styles.skip} onPress={() => onPick(area!, null)}>
                 <Text style={styles.skipText}>Leave it out today</Text>
               </Pressable>
@@ -126,7 +126,7 @@ const styles = themedStyles({
   name: { color: "#fff", fontWeight: "700" },
   why: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
   watch: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
-  use: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
+  use: { backgroundColor: "#D4AF37", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
   useText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   tip: { color: "#CBD5E1", fontSize: 13, marginTop: 4 },
   skip: { borderWidth: 1, borderColor: "#475569", borderRadius: 8, padding: 12, alignItems: "center", marginTop: 14 },

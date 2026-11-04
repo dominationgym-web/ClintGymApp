@@ -59,7 +59,7 @@ export default function ProgramSummary({
     <View>
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
       {onPressExercise ? (
-        <Text style={styles.tapHint}>{tapHint ?? "✎ Tap an exercise to change it, or its sets and reps, for this client. Tap the green ▶ to watch it."}</Text>
+        <Text style={styles.tapHint}>{tapHint ?? "Tap an exercise to change it, or its sets and reps, for this client. Tap the green ▶ to watch it."}</Text>
       ) : collapsible ? (
         <Pressable onPress={() => setShown(!shown)} hitSlop={6} accessibilityRole="button" style={styles.checkButton}>
           <Text style={styles.checkText}>
@@ -109,12 +109,12 @@ export default function ProgramSummary({
                 if (r.kind === "cardio") {
                   return onPressCardio ? (
                     <Pressable key={r.id} onPress={() => onPressCardio(r)} hitSlop={4} accessibilityRole="button" style={styles.cardioRow}>
-                      <Text style={[styles.line, { flex: 1 }]}>🔥 Cardio: {cardioLabel(r)}</Text>
+                      <Text style={[styles.line, { flex: 1 }]}>Cardio: {cardioLabel(r)}</Text>
                       <Text style={styles.cardioOff}>✕</Text>
                     </Pressable>
                   ) : (
                     <Text key={r.id} style={styles.line}>
-                      🔥 Cardio: {cardioLabel(r)}
+                      Cardio: {cardioLabel(r)}
                     </Text>
                   );
                 }

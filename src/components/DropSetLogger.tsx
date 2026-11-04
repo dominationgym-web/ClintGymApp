@@ -264,6 +264,6 @@ const styles = themedStyles({
   input: { flex: 1, backgroundColor: "#1E293B", color: "#F8FAFC", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
   logButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 12 },
   logText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
-  finish: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
+  finish: { backgroundColor: "#D4AF37", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
   finishText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
 });

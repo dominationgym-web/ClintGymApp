@@ -41,8 +41,8 @@ export const POLICIES: { key: SessionPolicy; label: string; short: string }[] = 
 ];
 
 export const BILLINGS: { key: SessionBilling; label: string; detail: string }[] = [
-  { key: "advance", label: "In advance", detail: "Invoice on the 1st for the month's booked sessions. Cancellations in time come off the next one." },
-  { key: "arrears", label: "In arrears", detail: "Invoice on the 1st for last month: sessions done plus late cancellations and no-shows." },
+  { key: "advance", label: "Pays upfront", detail: "Invoice on the 1st for the month's booked sessions. Cancellations in time come off the next one." },
+  { key: "arrears", label: "Pays after", detail: "Invoice on the 1st for last month: sessions done plus late cancellations and no-shows." },
 ];
 
 export const SESSION_LENGTHS = [30, 40, 45, 50, 60, 75, 90];
@@ -434,7 +434,7 @@ export function invoiceText(inv: SessionInvoice, clientName: string, coachName: 
     b(`INVOICE · ${monthLabel(inv.month)}`),
     `From: ${coachName}`,
     `To: ${clientName}`,
-    `Billing: ${billingLabel(inv.billing).toLowerCase()}${inv.status === "paid" ? " · PAID ✅" : ""}`,
+    `Billing: ${inv.billing === "advance" ? "in advance" : "in arrears"}${inv.status === "paid" ? " · PAID ✅" : ""}`,
     "",
     b("Sessions"),
     ...(people.length > 1

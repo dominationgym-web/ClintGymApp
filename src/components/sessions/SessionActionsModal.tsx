@@ -217,10 +217,10 @@ export default function SessionActionsModal({
             {session.status === "done" && !session.client_confirmed_at && !session.client_disputed_at ? (
               <Text style={styles.meta}>Waiting for {first} to confirm.</Text>
             ) : null}
-            {weekly ? <Text style={styles.meta}>🔁 Every week at this time</Text> : null}
+            {weekly ? <Text style={styles.meta}>Every week at this time</Text> : null}
             {partners.length ? (
               <View style={{ marginTop: 6 }}>
-                <Text style={styles.meta}>👥 Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
+                <Text style={styles.meta}>Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
                 {onSwitch ? (
                   <View style={styles.chips}>
                     <Chip label={first} on onPress={() => {}} />
@@ -234,7 +234,7 @@ export default function SessionActionsModal({
             {session.note && !isAway(session) ? <Text style={styles.meta}>"{session.note}"</Text> : null}
             {session.proof_path ? (
               <Pressable onPress={() => setProof(session.proof_path)}>
-                <Text style={styles.link}>📸 See the cancellation message</Text>
+                <Text style={styles.link}>See the cancellation message</Text>
               </Pressable>
             ) : null}
 
@@ -265,7 +265,7 @@ export default function SessionActionsModal({
                   <View style={styles.chips}>
                     <Chip label="🔴 Charge" on={session.charge === "charge"} onPress={() => charge("charge")} />
                     <Chip label="🟢 Credit" on={session.charge === "credit"} onPress={() => charge("credit")} />
-                    {session.client_id ? <Chip label="🔁 Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} /> : null}
+                    {session.client_id ? <Chip label="Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} /> : null}
                   </View>
                 ) : null}
                 {/* Going away for a while: their sessions turn green, free to book (GRIZZ 2026-11-02). */}
@@ -275,7 +275,7 @@ export default function SessionActionsModal({
                 {/* Log this session's own price, e.g. a catch-up for a joint session (GRIZZ 2026-11-03). */}
                 {session.status !== "removed" && !session.invoice_id ? (
                   <Outline
-                    label={`💲 Price for this session: ${sessionMoney(Number(session.fee ?? 0), settings?.currency ?? "ZAR")}`}
+                    label={`Price for this session: ${sessionMoney(Number(session.fee ?? 0), settings?.currency ?? "ZAR")}`}
                     onPress={() => {
                       setPrice(String(Number(session.fee ?? 0)));
                       setStep("price");
@@ -283,14 +283,13 @@ export default function SessionActionsModal({
                   />
                 ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
-                {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="🔁 Repeat every week" onPress={makeWeekly} /> : null}
+                {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="Repeat every week" onPress={makeWeekly} /> : null}
                 {!session.invoice_id && session.status !== "removed" ? (
-                  <Outline label={session.client_id ? "👤 Change who" : "👤 Link to their app account"} onPress={() => setStep("who")} />
+                  <Outline label={session.client_id ? "Change who" : "Link to their app account"} onPress={() => setStep("who")} />
                 ) : null}
                 {!session.client_id ? (
                   <Text style={styles.meta}>
-                    Not in the app yet: cancellations and no-shows count in your earnings, but catch-ups, notifications and invoices start once you link them to
-                    their app account.
+                    Not in the app yet: no invoices or notifications until you link them.
                   </Text>
                 ) : null}
                 {session.status !== "booked" && session.status !== "removed" && new Date(session.starts_at) > now ? (
@@ -299,7 +298,7 @@ export default function SessionActionsModal({
                 {session.status === "done" ? <Outline label="Undo: not marked yet" onPress={() => outcome("booked")} /> : null}
                 {link ? (
                   <Outline
-                    label="💬 WhatsApp"
+                    label="WhatsApp"
                     onPress={() => {
                       if (session.client_id) markClientContact(session.client_id);
                       Linking.openURL(link);
@@ -532,7 +531,7 @@ function CancelForm({
         <>
           <Text style={styles.label}>Screenshot of the message</Text>
           <Pressable style={styles.outline} onPress={pick}>
-            <Text style={styles.outlineText}>{photo ? "✓ Screenshot added · change" : "📸 Add the WhatsApp screenshot"}</Text>
+            <Text style={styles.outlineText}>{photo ? "✓ Screenshot added · change" : "Add the WhatsApp screenshot"}</Text>
           </Pressable>
           <Text style={styles.meta}>Saved as proof.{session.client_id ? ` ${first} can see it on their invoice.` : ""}</Text>
         </>
@@ -557,7 +556,7 @@ function CancelForm({
           <View style={styles.chips}>
             <Chip label="🔴 Charge" on={decided === "charge"} onPress={() => setOverride("charge")} />
             <Chip label="🟢 Credit" on={decided === "credit"} onPress={() => setOverride("credit")} />
-            {by === "client" ? <Chip label="🔁 Catch-up" on={decided === "makeup"} onPress={() => setOverride("makeup")} /> : null}
+            {by === "client" ? <Chip label="Catch-up" on={decided === "makeup"} onPress={() => setOverride("makeup")} /> : null}
           </View>
           {by === "client" && auto !== "charge" ? <Text style={styles.meta}>In time: give a credit, or a catch-up session instead.</Text> : null}
         </View>

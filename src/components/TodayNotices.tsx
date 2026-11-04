@@ -54,7 +54,7 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
       <AppUpdateBanner />
       {count > 1 && (
         <Pressable style={styles.line} onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }}>
-          <Text style={styles.lineText}>📌 {count} things for today</Text>
+          <Text style={styles.lineText}>{count} things for today</Text>
           <Text style={styles.lineOpen}>{open ? "Close ▴" : "Open ›"}</Text>
         </Pressable>
       )}
@@ -92,7 +92,7 @@ function PlanEndingBanner() {
       onPress={() => navigation.navigate("ClientTabs", { screen: "Profile", params: { open: "pay" } })}
       accessibilityRole="button"
     >
-      <Text style={styles.planTitle}>💳 Your plan ends {planEndingWhen(ending)}</Text>
+      <Text style={styles.planTitle}>Your plan ends {planEndingWhen(ending)}</Text>
       <Text style={styles.planText}>Renew with your trainer before then to keep your access. Tap to see how to pay.</Text>
     </Pressable>
   );

@@ -239,7 +239,6 @@ export default function HabitsScreen() {
       <Text style={styles.title}>Habits</Text>
       {/* This month's challenge from their coach (0153), when there is one. */}
       {client?.trainer_id ? <ChallengeCard clientId={client.id} trainerId={client.trainer_id} /> : null}
-      <Text style={styles.helper}>Choose what you want to work on, then pick the days that fit your schedule.</Text>
       <Pressable style={styles.chooseButton} onPress={() => setChoosing(true)}>
         <Text style={styles.chooseButtonText}>+ Choose habits</Text>
       </Pressable>
@@ -285,7 +284,7 @@ export default function HabitsScreen() {
             )}
 
             <Pressable style={styles.settingsToggle} onPress={() => setSettingsFor(showSettings ? null : h.id)} hitSlop={6}>
-              <Text style={styles.settingsToggleText}>⚙ Days and reminder {showSettings ? "▲" : "▼"}</Text>
+              <Text style={styles.settingsToggleText}>Days and reminder {showSettings ? "▲" : "▼"}</Text>
             </Pressable>
             {showSettings && (
               <>
@@ -391,7 +390,7 @@ const styles = themedStyles({
   checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   reminderTimeRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
   timeInput: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, padding: 10, width: 90, fontSize: 14 },
-  saveTimeButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  saveTimeButton: { backgroundColor: "#D4AF37", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   saveTimeButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   savedText: { color: "#22C55E", fontWeight: "700", fontSize: 13 },
   chooseButton: { borderRadius: 12, borderWidth: 1.5, borderColor: BRAND_GOLD, borderStyle: "dashed", padding: 12, alignItems: "center", marginBottom: 14 },

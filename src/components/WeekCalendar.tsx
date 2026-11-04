@@ -107,7 +107,7 @@ export default function WeekCalendar({
               {main && (
                 <View>
                   <Text style={[styles.mainTitle, main.deload && { color: themeText(DELOAD_BLUE) }]} numberOfLines={1}>
-                    {main.deload ? "🌙 Deload · " : "🏋️ "}
+                    {main.deload ? "Deload · " : "🏋️ "}
                     {main.title}
                   </Text>
                   {main.parts ? <Text style={styles.parts}>{main.parts}</Text> : null}
@@ -118,7 +118,7 @@ export default function WeekCalendar({
               {/* A live session with the coach, in the day's slot (GRIZZ, 2026-10-27). */}
               {mark?.live && (
                 <Text style={[styles.tag, { color: themeText("#22C55E") }]} numberOfLines={1}>
-                  {client ? "🤝 Live with your coach · tap to see" : "🤝 Live session with you"}
+                  {client ? "Live with your coach · tap to see" : "Live session with you"}
                 </Text>
               )}
               {client && mark?.done && !mark.live && !main && (
@@ -150,7 +150,7 @@ export default function WeekCalendar({
               {/* What the client logged, one tap away (GRIZZ, 2026-10-29). */}
               {!client && logged?.[date] && !mark?.live && (
                 <Text style={[styles.tag, { color: themeText("#22C55E") }]} numberOfLines={1}>
-                  📋 Workout logged · tap to see
+                  Workout logged · tap to see
                 </Text>
               )}
               {empty && <Text style={styles.rest}>{date < today ? "—" : "Rest"}</Text>}

@@ -48,7 +48,7 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>🧠 {endOfWeek ? "End of week summary" : "Daily summary"}</Text>
+        <Text style={styles.title}>{endOfWeek ? "End of week summary" : "Daily summary"}</Text>
         {result && (
           <View style={[styles.energy, { borderColor: themeBorder(ENERGY_COLOR[result.summary.energy] ?? "#94A3B8") }]}>
             <Text style={[styles.energyText, { color: themeText(ENERGY_COLOR[result.summary.energy] ?? "#94A3B8") }]}>
@@ -95,9 +95,9 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
           <View style={styles.footer}>
             <Text style={styles.source}>
               {writing
-                ? "✨ AI is writing today's summary…"
+                ? "AI is writing today's summary…"
                 : result.byAi
-                  ? `✨ Written by AI${result.at ? ` at ${new Date(result.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. Check it against what you know.`
+                  ? `Written by AI${result.at ? ` at ${new Date(result.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. Check it against what you know.`
                   : result.noKey
                     ? "Worked out by the app's rules (the AI writer isn't switched on yet)."
                     : "Worked out by the app's rules."}

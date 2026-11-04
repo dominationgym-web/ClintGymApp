@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useClientWideScreen } from "@/hooks/useWideScreen";
 import { useNavigation } from "@react-navigation/native";
 import { sectionsFor } from "@/lib/sections";
 import { useAuth } from "@/context/AuthContext";
@@ -30,6 +31,7 @@ const TOP_SECTIONS = ["nutrition", "womensHealthReset", "sleepRecovery"];
 export function useClientMenuItems(recheck: Recheck): MenuItem[] {
   const { client } = useAuth();
   const sections = sectionsFor(client?.sex);
+  const wideScreen = useClientWideScreen();
   const [hasStability, setHasStability] = useState(false);
   const hasMealPlan = useHasMealPlanWith(client?.id, recheck);
   useEffect(() => {
@@ -59,8 +61,10 @@ export function useClientMenuItems(recheck: Recheck): MenuItem[] {
     return recheck(check);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client?.id]);
-  const first = TOP_SECTIONS.flatMap((key) => sections.filter((s) => s.key === key));
-  const rest = sections.filter((s) => !TOP_SECTIONS.includes(s.key));
+  // Nutrition is a tab on the phone for online clients (critique, 2026-11-04).
+  const shown = sections.filter((s) => !(s.key === "nutrition" && !client?.live_only && !wideScreen));
+  const first = TOP_SECTIONS.flatMap((key) => shown.filter((s) => s.key === key));
+  const rest = shown.filter((s) => !TOP_SECTIONS.includes(s.key));
   const item = (section: (typeof sections)[number]): MenuItem => ({
     key: section.key,
     title: section.title,

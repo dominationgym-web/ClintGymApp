@@ -61,7 +61,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
     <View style={[styles.box, due && styles.boxDue]}>
       {freeUse ? (
         <>
-          <Text style={styles.title}>🎁 You're on free use</Text>
+          <Text style={styles.title}>You're on free use</Text>
           <Text style={styles.line}>No monthly subscription.</Text>
           <Text style={styles.line}>
             {SELLS

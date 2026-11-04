@@ -343,7 +343,7 @@ export default function PlanProgramModal({
               <Text style={styles.close}>✕</Text>
             </Pressable>
           </View>
-          {resetNotice ? <Text style={styles.reset}>🌿 {resetNotice}</Text> : null}
+          {resetNotice ? <Text style={styles.reset}>{resetNotice}</Text> : null}
           <ScrollView contentContainerStyle={{ paddingBottom: 4 }}>
             {/* Step 1: what kind of training. */}
             {!type && !program && date && (
@@ -436,7 +436,7 @@ export default function PlanProgramModal({
                     {clientDays.length > 0 && (
                       <Pressable onPress={() => formDays.length > 0 && setOwnDays(formDays)} disabled={sameAsForm || formDays.length === 0}>
                         <Text style={styles.formDays}>
-                          📋 On their form: {daysLabel(clientDays)}
+                          On their form: {daysLabel(clientDays)}
                           {clientDays.includes(7) ? " (Sunday stays a rest day)" : ""}
                           {!sameAsForm && formDays.length > 0 ? "  ·  Tap to use their days" : ""}
                         </Text>
@@ -455,10 +455,10 @@ export default function PlanProgramModal({
                     {ownDays.length > 0 && (
                       <View style={styles.chips}>
                         <Pressable style={[styles.chip, !daysVary && styles.chipOn]} onPress={() => setDaysVary(false)}>
-                          <Text style={[styles.chipText, !daysVary && styles.chipTextOn]}>🔁 Same days every week</Text>
+                          <Text style={[styles.chipText, !daysVary && styles.chipTextOn]}>Same days every week</Text>
                         </Pressable>
                         <Pressable style={[styles.chip, daysVary && styles.chipOn]} onPress={() => setDaysVary(true)}>
-                          <Text style={[styles.chipText, daysVary && styles.chipTextOn]}>🎲 Different days each week</Text>
+                          <Text style={[styles.chipText, daysVary && styles.chipTextOn]}>Different days each week</Text>
                         </Pressable>
                       </View>
                     )}

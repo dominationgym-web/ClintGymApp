@@ -77,7 +77,7 @@ export default function FoundationOfferCard({
 
   return (
     <View style={[styles.card, open && styles.cardOpen]}>
-      <Text style={styles.title}>🌱 Training experience: {levelLabel(client.training_level)}</Text>
+      <Text style={styles.title}>Training experience: {levelLabel(client.training_level)}</Text>
       {!open ? (
         <>
           {client.foundation_status === "approved" && <Text style={styles.helper}>Foundation program approved ✓</Text>}

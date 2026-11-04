@@ -57,7 +57,7 @@ export default function ClientExtrasCard({ client, onChanged }: { client: Client
         deadlifts and rows.
       </Text>
 
-      <Text style={styles.label}>🚴 Cardio</Text>
+      <Text style={styles.label}>Cardio</Text>
       <Text style={styles.helper}>
         Added to every workout on {first}'s calendar. Bodybuilding only takes cardio at the end. Never on Longevity, mobility or flexibility.
       </Text>

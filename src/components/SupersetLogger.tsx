@@ -150,7 +150,7 @@ export default function SupersetLogger({
         <KeyboardSafe>
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
-              <Text style={styles.title}>⚡ Superset</Text>
+              <Text style={styles.title}>Superset</Text>
               <Pressable onPress={onClose} accessibilityRole="button" hitSlop={8}>
                 <Text style={styles.close}>{started ? "Done" : "Close"}</Text>
               </Pressable>
@@ -318,7 +318,7 @@ const styles = themedStyles({
   found: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#1E293B", borderRadius: 8, padding: 10 },
   foundText: { color: "#F8FAFC", fontWeight: "600", flex: 1 },
   foundCat: { color: "#64748B", fontSize: 12 },
-  start: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 8 },
+  start: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 8 },
   startText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   roundRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   round: { color: "#F8FAFC", fontSize: 18, fontWeight: "800" },
@@ -334,6 +334,6 @@ const styles = themedStyles({
   effortText: { color: "#CBD5E1", fontSize: 12, fontWeight: "600" },
   effortTextOn: { color: "#0F172A" },
   hint: { color: "#64748B", fontSize: 12 },
-  log: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 14, alignItems: "center" },
+  log: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 14, alignItems: "center" },
   logText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
 });

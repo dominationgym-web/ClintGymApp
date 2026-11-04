@@ -122,7 +122,7 @@ export default function RecoveryActivityModal({
                     <Text style={styles.duration}>⏱ {info.durationLabel}</Text>
                   </View>
                 </View>
-                {reason ? <Text style={styles.reason}>💡 {reason}</Text> : null}
+                {reason ? <Text style={styles.reason}>{reason}</Text> : null}
                 {!completing && (
                   <>
                     <Text style={styles.body}>{info.what}</Text>
@@ -140,7 +140,7 @@ export default function RecoveryActivityModal({
 
                 {info.key === "stretching" && (
                   <Pressable style={styles.routineButton} onPress={() => setRoutine(true)}>
-                    <Text style={styles.routineTitle}>🧘 Follow the full body stretch routine</Text>
+                    <Text style={styles.routineTitle}>Follow the full body stretch routine</Text>
                     <Text style={styles.routineText}>12 easy stretches with videos, about 12 minutes. Logs itself when you finish.</Text>
                   </Pressable>
                 )}
@@ -175,7 +175,7 @@ export default function RecoveryActivityModal({
                       ))}
                     </View>
                     <Pressable style={styles.planButton} onPress={plan} disabled={saving}>
-                      <Text style={styles.planText}>📅 Plan it</Text>
+                      <Text style={styles.planText}>Plan it</Text>
                     </Pressable>
                   </>
                 )}

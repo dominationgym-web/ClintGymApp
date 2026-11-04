@@ -68,7 +68,7 @@ export default function LiftsScreen() {
     return (
       <DashPage title="Weights lifted" subtitle="Your best set of every exercise" right={tabs}>
         <Card>
-          <CardTitle right={<Pill text={`${all.length} exercises`} tone="grey" />}>🏆 Your records</CardTitle>
+          <CardTitle right={<Pill text={`${all.length} exercises`} tone="grey" />}>Your records</CardTitle>
           <Table
             head={["Exercise", "Best set", "Estimated 1-rep max", "When"]}
             widths={[2.4, 1.2, 1.4, 1.2]}
@@ -155,7 +155,7 @@ export default function LiftsScreen() {
                     s.warm_up ? "Warm-up" : String(++setNo),
                     s.weight_kg ? `${fmt(s.weight_kg)} kg` : "Body",
                     String(s.reps),
-                    top ? <Text key="b" style={styles.gold}>🏆 Best</Text> : "",
+                    top ? <Text key="b" style={styles.gold}>Best</Text> : "",
                   ];
                 })}
               />

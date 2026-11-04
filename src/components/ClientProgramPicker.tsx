@@ -22,7 +22,7 @@ function progressLine(active: ActiveProgram): string | null {
   if (!session) return null;
   const next = `Up next: ${sessionTitle(active.program, session.day)}, due ${weekdayOf(session.dueOn)} ${session.dueOn}`;
   const last = active.assignment.last_completed_at
-    ? ` · last workout completed ${new Date(active.assignment.last_completed_at).toLocaleDateString()}`
+    ? ` · last workout completed ${new Date(active.assignment.last_completed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
     : " · no workouts completed yet";
   return next + last;
 }
@@ -128,7 +128,7 @@ export default function ClientProgramPicker({
 
       {active && (
         <View style={styles.cardioBox}>
-          <Text style={styles.cardioHeading}>🚴 Extra cardio for {clientName}</Text>
+          <Text style={styles.cardioHeading}>Extra cardio for {clientName}</Text>
           <Text style={styles.helper}>Added to every workout in this program, ready-made ones too.</Text>
           {extras.map((extra, i) => (
             <View key={i} style={styles.extraRow}>

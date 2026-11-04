@@ -326,7 +326,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
             <Text style={styles.footerTime}>{formatClock(totalSeconds(s))}</Text>
           </Pressable>
           <Pressable style={styles.footerSave} onPress={openSave} accessibilityLabel={role === "trainer" ? "Save for you or a client" : "Save"}>
-            <Text style={styles.secondaryText}>💾 Save</Text>
+            <Text style={styles.secondaryText}>Save</Text>
           </Pressable>
         </View>
       ) : (

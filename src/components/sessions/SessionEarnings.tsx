@@ -44,7 +44,7 @@ function TakingsLines({ t, currency }: { t: Takings; currency: BillingCurrency }
   if (t.trained) lines.push({ text: `✓ ${t.trained} trained · ${sessionMoney(t.made - t.fromCancellations, currency)}`, colour: "#CBD5E1" });
   if (t.charged) lines.push({ text: `✕ ${t.charged} late cancel / no-show charged · ${sessionMoney(t.fromCancellations, currency)}`, colour: "#EF4444" });
   if (t.creditedCount) lines.push({ text: `↺ ${t.creditedCount} cancelled in time, not charged · ${sessionMoney(t.credited, currency)} lost`, colour: "#22C55E" });
-  if (t.byCoachCount) lines.push({ text: `🔵 ${t.byCoachCount} you cancelled or blocked out · ${sessionMoney(t.byCoach, currency)} lost`, colour: "#3B82F6" });
+  if (t.byCoachCount) lines.push({ text: `${t.byCoachCount} you cancelled or blocked out · ${sessionMoney(t.byCoach, currency)} lost`, colour: "#3B82F6" });
   if (t.undecidedCount) lines.push({ text: `! ${t.undecidedCount} still to decide: charge or credit? · ${sessionMoney(t.undecided, currency)}`, colour: "#F59E0B" });
   if (t.toComeCount) lines.push({ text: `• ${t.toComeCount} still to come · ${sessionMoney(t.toCome, currency)}`, colour: "#94A3B8" });
   if (!lines.length) lines.push({ text: "No sessions.", colour: "#94A3B8" });
@@ -85,12 +85,12 @@ export function ForecastLines({ f, currency, label, small }: { f: Forecast; curr
     return (
       <View style={{ marginTop: small ? 8 : 10 }}>
         <Text style={styles.forecastTitle}>
-          🏁 {label}: {sessionMoney(f.made, currency)} of {sessionMoney(f.predicted, currency)} predicted
+          {label}: {sessionMoney(f.made, currency)} of {sessionMoney(f.predicted, currency)} predicted
         </Text>
         <Bar part={f.made} whole={f.predicted} />
         <Text style={[styles.line, { color: themeText(gap <= 0 ? "#22C55E" : "#F59E0B") }]}>
           {gap <= 0
-            ? `🔥 ${pct}%: you beat the prediction${gap < 0 ? ` by ${sessionMoney(-gap, currency)}` : ""}!`
+            ? `${pct}%: you beat the prediction${gap < 0 ? ` by ${sessionMoney(-gap, currency)}` : ""}!`
             : `${pct}% of predicted. ${sessionMoney(gap, currency)} lost to cancellations and missed sessions.`}
         </Text>
       </View>
@@ -100,7 +100,7 @@ export function ForecastLines({ f, currency, label, small }: { f: Forecast; curr
   return (
     <View style={{ marginTop: small ? 8 : 10 }}>
       <View style={styles.forecastRow}>
-        <Text style={styles.forecastTitle}>🎯 {label}</Text>
+        <Text style={styles.forecastTitle}>{label}</Text>
         <Text style={[styles.forecastBig, small && { fontSize: 18 }]}>{sessionMoney(f.heading, currency)}</Text>
       </View>
       <Bar part={f.heading} whole={f.predicted} />
@@ -191,12 +191,12 @@ export function LossesCard({
         ))}
       </View>
       <View style={styles.forecastRow}>
-        <Text style={styles.forecastTitle}>📉 Lost to cancellations</Text>
+        <Text style={styles.forecastTitle}>Lost to cancellations</Text>
         <Text style={[styles.forecastBig, { color: themeText("#EF4444") }]} numberOfLines={1}>{sessionMoney(t.lost, currency)}</Text>
       </View>
       {t.coachCount ? (
         <Text style={[styles.line, { color: themeText("#3B82F6") }]}>
-          🔵 {t.coachCount} you cancelled or blocked out · {sessionMoney(t.coach, currency)}
+          {t.coachCount} you cancelled or blocked out · {sessionMoney(t.coach, currency)}
         </Text>
       ) : null}
       {t.creditedCount ? (
@@ -210,7 +210,7 @@ export function LossesCard({
         </Text>
       ) : null}
       <View style={[styles.forecastRow, { marginTop: 10 }]}>
-        <Text style={styles.forecastTitle}>🔁 Can come back</Text>
+        <Text style={styles.forecastTitle}>Can come back</Text>
         <Text style={[styles.forecastBig, { color: themeText("#22C55E") }]} numberOfLines={1}>{sessionMoney(t.canComeBack, currency)}</Text>
       </View>
       <Bar part={t.canComeBack} whole={t.lost} />
@@ -222,7 +222,7 @@ export function LossesCard({
       </Text>
       {t.owedCount ? (
         <Text style={styles.line}>
-          🔁 {t.owedCount} catch-up{t.owedCount === 1 ? "" : "s"} owed to clients who cancelled in time (already paid, just the time owed).
+          {t.owedCount} catch-up{t.owedCount === 1 ? "" : "s"} owed
         </Text>
       ) : null}
       {back.length ? (
@@ -246,7 +246,7 @@ export function LossesCard({
   );
 }
 
-// "💰 Today you made R1 400" on the 1 on 1 Today tab, with the week under it.
+// "Today you made R1 400" on the 1 on 1 Today tab, with the week under it.
 export function TodayMoneyCard({ sessions, currency, onWeek }: { sessions: LiveSession[]; currency: BillingCurrency; onWeek: () => void }) {
   const now = new Date();
   const today = dayKey(now);
@@ -256,12 +256,12 @@ export function TodayMoneyCard({ sessions, currency, onWeek }: { sessions: LiveS
   const isSunday = now.getDay() === 0;
   return (
     <View style={styles.card}>
-      <Text style={styles.cardLabel}>💰 {done ? "Today you made" : "Made so far today"}</Text>
+      <Text style={styles.cardLabel}>{done ? "Today you made" : "Made so far today"}</Text>
       <Text style={styles.big}>{sessionMoney(t.made, currency)}</Text>
       <TakingsLines t={t} currency={currency} />
       <Pressable style={styles.weekButton} onPress={onWeek} accessibilityRole="button">
         <Text style={styles.weekText}>
-          📊 {isSunday ? "This week you made" : "This week so far"}: {sessionMoney(week.made, currency)}
+          {isSunday ? "This week you made" : "This week so far"}: {sessionMoney(week.made, currency)}
         </Text>
         <Text style={styles.weekLink}>See the breakdown ›</Text>
       </Pressable>
@@ -305,7 +305,7 @@ export function WeekMoneyModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <ModalSafeArea style={styles.screen}>
         <View style={styles.header}>
-          <Text style={styles.title}>📊 Week's money</Text>
+          <Text style={styles.title}>Week's money</Text>
           <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button">
             <Text style={styles.close}>Close</Text>
           </Pressable>

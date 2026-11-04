@@ -46,7 +46,7 @@ export default function CatchUpRows({
 
   return (
     <>
-      <Text style={styles.title}>{onlyLate ? "⚠️ Decide before you send invoices" : "🔁 Catch-ups to book"}</Text>
+      <Text style={styles.title}>{onlyLate ? "⚠️ Decide before you send invoices" : "Catch-ups to book"}</Text>
       {late ? (
         <Text style={styles.warn}>
           {late === 1 ? "1 catch-up wasn't" : `${late} catch-ups weren't`} done in time. Credit {late === 1 ? "it" : "them"} or move {late === 1 ? "it" : "them"} to next month
@@ -75,7 +75,7 @@ export default function CatchUpRows({
                   {busy === s.id + "credit" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>🟢 Credit</Text>}
                 </Pressable>
                 <Pressable style={styles.outline} onPress={() => decide(s, "next")} disabled={!!busy}>
-                  {busy === s.id + "next" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>➡️ Next month</Text>}
+                  {busy === s.id + "next" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>Next month</Text>}
                 </Pressable>
               </>
             ) : null}

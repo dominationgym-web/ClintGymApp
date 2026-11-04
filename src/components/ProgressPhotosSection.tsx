@@ -196,7 +196,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
         Optional. Take a before set, then a new set every 6 weeks to see how far you've come.
       </Text>
       <Text style={[styles.body, styles.privateNote]}>
-        🔒 These photos are private and for your own use. Your trainer can't see them unless you choose to share them
+        These photos are private and for your own use. Your trainer can't see them unless you choose to share them
         below.
       </Text>
 
@@ -215,14 +215,14 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
         <>
           {status.kind === "due" && (
             <View style={styles.dueBanner}>
-              <Text style={styles.dueText}>📸 It's time for your 6-week progress set.</Text>
+              <Text style={styles.dueText}>It's time for your 6-week progress set.</Text>
             </View>
           )}
 
           {showSlots ? (
             <View style={styles.setCard}>
               <Text style={styles.setTitle}>
-                {isBeforeSet ? "Your before set" : `Progress set · ${parseIsoDate(openSet.takenOn).toLocaleDateString()}`}
+                {isBeforeSet ? "Your before set" : `Progress set · ${parseIsoDate(openSet.takenOn).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
               </Text>
               <Text style={styles.helper}>
                 {doneCount === 3 ? "All 3 done. Tap one to retake it." : `${doneCount} of 3 done. Tap a box to add that photo.`}
@@ -275,8 +275,7 @@ export default function ProgressPhotosSection({ bare = false }: { bare?: boolean
               <Text style={styles.subheading}>Your progress history</Text>
               <ProgressHistory photos={photos} onLongPress={confirmDelete} />
               <Text style={styles.helper}>
-                Tap a photo to see it big. Press and hold to delete it. Every photo stays here for as long as you have
-                an account; deleting your account removes them all.
+                Tap to see it big. Press and hold to delete.
               </Text>
             </View>
           )}

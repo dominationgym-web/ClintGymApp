@@ -21,7 +21,7 @@ export default function WeighInPicker({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => onPick(null)}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>⚖️ How often should {name} weigh and measure?</Text>
+          <Text style={styles.title}>How often should {name} weigh and measure?</Text>
           <Text style={styles.text}>They'll get a reminder on their Today screen until it's done. You can change this any time under Progress graphs, Body.</Text>
           {WEIGH_IN_OPTIONS.map((o) => (
             <Pressable key={o.key} style={styles.option} onPress={() => onPick(o.key)} accessibilityRole="button">

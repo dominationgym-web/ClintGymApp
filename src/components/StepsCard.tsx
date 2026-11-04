@@ -81,7 +81,7 @@ export default function StepsCard() {
     return (
       <>
         <Pressable style={styles.card} onPress={() => setOpen(true)} accessibilityRole="button">
-          <Text style={styles.title}>👟 Set a daily step goal</Text>
+          <Text style={styles.title}>Set a daily step goal</Text>
           <Text style={styles.text}>Pick how many steps a day you're aiming for. At 4pm the app reminds you if you're not there yet.</Text>
           <Text style={styles.link}>Set my goal ›</Text>
         </Pressable>
@@ -105,7 +105,7 @@ export default function StepsCard() {
         accessibilityLabel={`Steps today ${formatSteps(steps)} of ${formatSteps(goal.goal)}`}
       >
         <View style={styles.row}>
-          <Text style={styles.title}>{evening && !hit ? "👟 Where you are today" : hit ? "🎉 Step goal hit" : "👟 Steps today"}</Text>
+          <Text style={styles.title}>{evening && !hit ? "Where you are today" : hit ? "Step goal hit" : "Steps today"}</Text>
           <Text style={styles.count}>
             <Text style={styles.countBig}>{formatSteps(steps)}</Text> / {formatSteps(goal.goal)}
           </Text>
@@ -198,7 +198,7 @@ function StepsModal({
         <View style={styles.backdrop}>
           <View style={styles.sheet}>
             <View style={styles.row}>
-              <Text style={styles.sheetTitle}>👟 Daily steps</Text>
+              <Text style={styles.sheetTitle}>Daily steps</Text>
               <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Close">
                 <Text style={styles.close}>✕</Text>
               </Pressable>

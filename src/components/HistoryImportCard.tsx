@@ -102,11 +102,11 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
       </Text>
       <View style={styles.buttons}>
         <Pressable style={[styles.button, sending && styles.disabled]} onPress={pickShots} disabled={sending}>
-          <Text style={styles.buttonText}>📸 Screenshots</Text>
+          <Text style={styles.buttonText}>Screenshots</Text>
         </Pressable>
         {Platform.OS === "web" && (
           <Pressable style={[styles.button, sending && styles.disabled]} onPress={pickFiles} disabled={sending}>
-            <Text style={styles.buttonText}>📄 A file (CSV, PDF)</Text>
+            <Text style={styles.buttonText}>A file (CSV, PDF)</Text>
           </Pressable>
         )}
       </View>

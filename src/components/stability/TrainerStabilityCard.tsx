@@ -154,7 +154,7 @@ export default function TrainerStabilityCard({
     <View style={styles.card}>
       <Pressable style={styles.header} onPress={() => setOpen((o) => !o)}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>🛡️ Stability programs</Text>
+          <Text style={styles.title}>Stability programs</Text>
           <Text style={styles.sub}>
             {programs.map((p) => `${findArea(p.area).title} ${levelInfo(p.level).label}`).join(" · ")}
           </Text>

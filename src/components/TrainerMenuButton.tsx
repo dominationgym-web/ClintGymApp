@@ -50,16 +50,6 @@ export function useTrainerMenuItems(): MenuItem[] {
   return [
     // Weekly video check-ins (0155): free times, bookings and call setup.
     { ...TRAINER_VIDEO_CHECKINS_MENU_ITEM, route: "VideoCheckIns", onPress: () => navigation.navigate("VideoCheckIns") },
-    // The trainer's own workout, straight from the menu (was Profile → My training).
-    {
-      key: "myWorkout",
-      title: "My workout",
-      icon: "🏋️",
-      summary: "Log your own sets, weights and supersets as you train.",
-      onPress: () => {
-        if (trainer) startMyWorkout(trainer, navigation);
-      },
-    },
     // The stability programs to give clients (GRIZZ, 2026-10-14: trainer side only),
     // with every exercise's video for 1-on-1 coaching (named by GRIZZ, 2026-10-16).
     {
@@ -83,6 +73,17 @@ export function useTrainerMenuItems(): MenuItem[] {
       onPress: () => navigation.navigate("BulkImport"),
     },
     { ...COACHING_GUIDES_MENU_ITEM, route: "CoachingGuides", onPress: () => navigation.navigate("CoachingGuides") },
+    // Client tools first, then the trainer's own workout, then help (critique, 2026-11-04).
+    // The trainer's own workout, straight from the menu (was Profile → My training).
+    {
+      key: "myWorkout",
+      title: "My workout",
+      icon: "🏋️",
+      summary: "Log your own sets, weights and supersets as you train.",
+      onPress: () => {
+        if (trainer) startMyWorkout(trainer, navigation);
+      },
+    },
     { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
     // Problems go to the owner in the app, linked to the trainer (0151).
     problems,

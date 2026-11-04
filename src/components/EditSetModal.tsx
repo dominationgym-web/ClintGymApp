@@ -68,7 +68,7 @@ export default function EditSetModal({
           {set && (
             <View style={styles.sheet}>
               <Text style={styles.title}>
-                ✏️ Fix {set.warm_up ? "warm-up" : `set ${set.set_number}`} · {set.exercise_name}
+                Fix {set.warm_up ? "warm-up" : `set ${set.set_number}`} · {set.exercise_name}
               </Text>
               <View style={styles.inputs}>
                 <View style={{ flex: 1 }}>

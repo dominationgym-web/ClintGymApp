@@ -225,8 +225,7 @@ export default function TrainerProfileScreen() {
               <Text style={styles.label}>Your trainer code</Text>
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
-                New clients type this when they sign up, so they join you.
-                {trainer.is_owner ? "" : " It's also your referral code: a trainer who signs up with it counts as your referral (Plan & refer)."}
+                {trainer.is_owner ? "Clients sign up with this code." : "Clients and trainers sign up with this code."}
               </Text>
               <Pressable style={styles.secondaryButton} onPress={shareCode}>
                 <Text style={styles.secondaryButtonText}>Share my code</Text>
@@ -309,7 +308,7 @@ export default function TrainerProfileScreen() {
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <Text style={styles.switchTitle}>Planning reminders</Text>
                   <Text style={styles.hint}>
-                    A reminder 2 days and 1 day before a client's planned workouts on their training calendar run out, so you can plan their next week.
+                    A reminder 2 days before a client's planned workouts run out.
                   </Text>
                 </View>
                 <Switch
@@ -382,7 +381,7 @@ const styles = themedStyles({
   label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6, marginTop: 6 },
   readOnly: { color: "#E2E8F0", fontSize: 15, marginBottom: 6 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, marginBottom: 6 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   secondaryButton: { borderColor: "#22C55E", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   secondaryButtonText: { color: "#22C55E", fontWeight: "700" },

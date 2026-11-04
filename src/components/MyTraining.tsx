@@ -90,7 +90,7 @@ export default function MyTraining() {
         <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 20 }} />
       ) : started ? (
         <>
-          <Text style={styles.heading}>📅 My last two weeks</Text>
+          <Text style={styles.heading}>My last two weeks</Text>
           <Text style={styles.hint}>Tap a day to see what you lifted.</Text>
           <TrainerTrainingLog logs={logs} sessions={sessions} />
           <View style={{ marginTop: 16 }}>

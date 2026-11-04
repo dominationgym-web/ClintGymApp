@@ -67,7 +67,7 @@ export default function TrainerTrainingLog({
                   {SESSION_LABELS[result.status]}
                   {result.status !== "missed" ? ` · ${result.sets_done}/${result.sets_planned} sets` : ""}
                 </Text>
-                {result.in_person ? <Text style={styles.set}>🤝 In person, live session with {client ? "your coach" : "you"}</Text> : null}
+                {result.in_person ? <Text style={styles.set}>In person, live session with {client ? "your coach" : "you"}</Text> : null}
                 {result.reason ? <Text style={styles.set}>Why: {result.reason}</Text> : null}
               </View>
             )}
@@ -107,7 +107,7 @@ export function LoggedExercises({
           )}
           {exercise.sets.map((s) => (
             <Text key={s.id} style={styles.set}>
-              {s.warm_up ? "Warm-up" : s.gauge ? "🎯 Gauge set" : `Set ${s.set_number}`}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
+              {s.warm_up ? "Warm-up" : s.gauge ? "Gauge set" : `Set ${s.set_number}`}: {s.weight_kg ? `${s.weight_kg}kg x ` : ""}
               {s.reps} reps ·{" "}
               {s.warm_up
                 ? "not a working set"

@@ -1,4 +1,5 @@
 import { registerForCoachMessages } from "@/lib/notifications";
+import { useTrainerBrand } from "@/hooks/useTrainerBrand";
 import React, { useContext, useEffect, useState } from "react";
 import { BackHandler, View } from "react-native";
 import { NavigationContext, StackActions } from "@react-navigation/native";
@@ -122,6 +123,8 @@ function TrainerTabs() {
 }
 
 export default function TrainerNavigator() {
+  // Remembers the trainer's own logo for the log-in screen on this phone.
+  useTrainerBrand();
   // So the trainer's phone gets a notification when a client reports pain,
   // fatigue or mental exhaustion (0055). Installed app only.
   useEffect(() => {

@@ -10,7 +10,7 @@ import { themeText, themedStyles } from "@/lib/theme";
 
 // Form videos (was the Video log tab, app-flow review C2, 2026-10-18): the
 // client's videos and their coach's feedback, opened from Profile. Most videos
-// are filmed straight from the set log ("🎥 Film this set"), which fills in the
+// are filmed straight from the set log ("Film this set"), which fills in the
 // exercise; this page can still send one.
 export default function VideoUploadScreen() {
   const { client } = useAuth();
@@ -65,7 +65,7 @@ export default function VideoUploadScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.helper}>
-        Film a set straight from your workout: tap 🎥 Film this set in the set log. Or send one here. Keep videos to 60 seconds. They're automatically removed 7 days after upload, or when your plan ends - your trainer's notes on them stay.
+        Up to 60 seconds. Videos are removed after 7 days; your trainer's notes stay.
       </Text>
       <Text style={styles.fieldLabel}>Which exercise is it?</Text>
       <TextInput
@@ -95,15 +95,15 @@ export default function VideoUploadScreen() {
               <View style={styles.flex1}>
                 <Text style={styles.label}>{item.exercise_name || "Form video"}</Text>
                 <Text style={styles.expiry}>
-                  {new Date(item.uploaded_at).toLocaleDateString()}
+                  {new Date(item.uploaded_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   {item.viewed_at ? " · Coach watched ✓" : " · Sent to your coach"}
                 </Text>
               </View>
-              <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString()}</Text>
+              <Text style={styles.expiry}>expires {new Date(item.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</Text>
             </View>
             {(feedback[item.id] ?? []).map((m) => (
               <View key={m.id} style={styles.feedback}>
-                <Text style={styles.feedbackTitle}>💬 Your coach's feedback</Text>
+                <Text style={styles.feedbackTitle}>Your coach's feedback</Text>
                 <Text style={styles.feedbackText}>{m.body}</Text>
               </View>
             ))}
@@ -122,7 +122,7 @@ const styles = themedStyles({
   helper: { color: "#94A3B8", fontSize: 13, marginBottom: 16 },
   row: { flexDirection: "row", gap: 10 },
   flex1: { flex: 1 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center" },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center" },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   videoCard: { backgroundColor: "#1E293B", padding: 12, borderRadius: 10, marginBottom: 8 },
   videoRow: { flexDirection: "row", justifyContent: "space-between" },

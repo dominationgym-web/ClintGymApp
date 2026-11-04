@@ -65,7 +65,7 @@ export default function OtherActivityCard({ clientId, role }: { clientId: string
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>🏃 Other exercise</Text>
+      <Text style={styles.title}>Other exercise</Text>
       <Text style={styles.helper}>
         {role === "client"
           ? "Walks, runs, rides, hikes, sport: anything outside your program. It helps your coach plan your training and recovery."

@@ -15,7 +15,7 @@ export default function ThemePicker({ showTitle = true }: { showTitle?: boolean 
   const preference = useThemePreference();
   return (
     <View style={styles.card}>
-      {showTitle ? <Text style={styles.title}>🌗 Light or dark</Text> : null}
+      {showTitle ? <Text style={styles.title}>Light or dark</Text> : null}
       <Text style={styles.hint}>{THEME_PICKER_HINT}</Text>
       <View style={styles.row}>
         {OPTIONS.map((o) => {

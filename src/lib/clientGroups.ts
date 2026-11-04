@@ -9,25 +9,25 @@ export const CLIENT_GROUPS: { key: ClientGroup; label: string; helper: string; e
   {
     key: "active",
     label: "Active",
-    helper: "Clients training now. Orange means their plan ends soon.",
+    helper: "Orange: plan ends soon.",
     empty: "No active clients.",
   },
   {
     key: "approval",
-    label: "Waiting approval",
-    helper: "New sign-ups and returning clients. Check their intake, then tap Activate once they've paid.",
+    label: "New",
+    helper: "Check their intake, then Activate once paid.",
     empty: "Nobody is waiting.",
   },
   {
     key: "payment",
-    label: "Awaiting payment",
-    helper: "Their plan ended in the last 30 days. Tap Activate when they renew.",
+    label: "Unpaid",
+    helper: "Plan ended in the last 30 days.",
     empty: "Nobody owes a renewal.",
   },
   {
     key: "dormant",
     label: "Dormant",
-    helper: "No longer training: archived, or their plan ended over 30 days ago. All their data is kept.",
+    helper: "Archived or ended over 30 days ago. Data is kept.",
     empty: "No dormant clients.",
   },
 ];

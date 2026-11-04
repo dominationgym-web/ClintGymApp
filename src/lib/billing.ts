@@ -26,7 +26,8 @@ const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 export function money(amount: number, currency: BillingCurrency | null | undefined): string {
   const rounded = Math.round(amount * 100) / 100;
   const [whole, cents] = rounded.toFixed(2).split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, currency === "ZAR" ? " " : ",");
+  // A no-break space between thousands, so "R2 840" never splits over two lines (critique, 2026-11-04).
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, currency === "ZAR" ? "\u00a0" : ",");
   const text = cents === "00" ? grouped : `${grouped}.${cents}`;
   return currency === "ZAR" ? `R${text}` : `$${text}`;
 }

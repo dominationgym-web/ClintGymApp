@@ -6,6 +6,8 @@ import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 // Coach messages, the plan-ending banner and one tap-to-open line of reminders (C3).
 import TodayNotices from "@/components/TodayNotices";
 import StepsCard from "@/components/StepsCard";
+import TodayTrainingCard from "@/components/TodayTrainingCard";
+import TrainerBrandBar from "@/components/TrainerBrandBar";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import HighGiInfo from "@/components/HighGiInfo";
@@ -37,6 +39,7 @@ import type { Checkin, ClientSleep } from "@/types/database";
 import { syncHealthOnOpen } from "@/lib/healthLink";
 import { clockTime, sleepLength } from "@/lib/sleepSync";
 import { themeText, themedStyles } from "@/lib/theme";
+import { BRAND_GOLD } from "@/lib/brand";
 import { useStepBack } from "@/hooks/useStepBack";
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
@@ -242,9 +245,10 @@ export default function CheckInScreen() {
     const missing = unansweredSections(formFromCheckin(saved));
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <TrainerBrandBar />
+        {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
         <TodayNotices />
-        <StepsCard />
-        <Text style={styles.title}>You're checked in for today ✅</Text>
+        <Text style={styles.title}>Checked in ✓</Text>
         {saved.symptoms_status === "reported" && <StopAdvice />}
         <CheckinFeedbackCard
           feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso(), client ? intakeDetails(client).weight_kg : null)}
@@ -253,7 +257,7 @@ export default function CheckInScreen() {
         {missing.length > 0 && (
           <View style={styles.notice}>
             <Text style={styles.noticeText}>
-              Still blank: {missing.join(", ")}. Tap "Change my answers" to add them.
+              Still blank: {missing.join(", ")}.
             </Text>
           </View>
         )}
@@ -289,9 +293,7 @@ export default function CheckInScreen() {
         >
           <Text style={styles.buttonText}>Change my answers</Text>
         </Pressable>
-        <Text style={[styles.helper, styles.centerText]}>
-          You can change today's check-in until midnight. Come back tomorrow morning for your next one.
-        </Text>
+        <StepsCard />
       </ScrollView>
     );
   }
@@ -307,14 +309,15 @@ export default function CheckInScreen() {
       >
         {step === 0 && (
           <>
+            <TrainerBrandBar />
+            {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
             <TodayNotices extra={client && !saved ? <RecoverySuggestionCard clientId={client.id} /> : null} />
-            <StepsCard />
           </>
         )}
-        <Text style={styles.title}>{saved ? "Change today's check-in" : "Morning check-in"}</Text>
+        <Text style={styles.title}>{saved ? "Change today's check-in" : "Check-in"}</Text>
         {client?.live_only && !saved && step === 0 ? (
           // A live client checks in only when they want to (GRIZZ, 2026-10-31).
-          <Text style={styles.optional}>Your choice: fill it in when you like. It helps your coach see your energy, sleep and any niggles or injuries before your session.</Text>
+          <Text style={styles.optional}>Optional. Helps your coach plan your session.</Text>
         ) : null}
         <View style={styles.steps}>
           {CHECKIN_STEPS.map((label, i) => (
@@ -326,16 +329,16 @@ export default function CheckInScreen() {
         </View>
         {step === 0 && (
           <>
-            <WellbeingQuestions value={form.wellbeing} onChange={(next) => set("wellbeing", next)} />
+            <WellbeingQuestions value={form.wellbeing} onChange={(next) => set("wellbeing", next)} onAllGood={() => setStep(1)} />
 
           </>
         )}
         {step === 1 && (
           <>
-            <Text style={styles.sectionHeading}>Sleep times (24-hour clock, e.g. 22:30)</Text>
+            <Text style={styles.sectionHeading}>Sleep times (e.g. 22:30)</Text>
             {watchNight && (
               <Text style={styles.watchNote}>
-                ⌚ From your watch: {sleepLength(watchNight.asleep_minutes)} asleep. Change the times if they're wrong.
+                From your watch: {sleepLength(watchNight.asleep_minutes)} asleep.
               </Text>
             )}
             <View style={styles.row}>
@@ -374,8 +377,7 @@ export default function CheckInScreen() {
               ))}
             </View>
 
-            <Text style={styles.sectionHeading}>Wound down without screens before bed?</Text>
-            <Text style={styles.hint}>Last 30-60 minutes before bed: no phone, TV or laptop. Reading, stretching or breathing all count.</Text>
+            <Text style={styles.sectionHeading}>No screens for 30 min before bed?</Text>
             <View style={styles.row}>
               {([true, false] as const).map((answer) => (
                 <Pressable
@@ -463,6 +465,7 @@ export default function CheckInScreen() {
             <Text style={styles.secondaryButtonText}>Cancel</Text>
           </Pressable>
         )}
+        {step === 0 && !saved && <StepsCard />}
       </ScrollView>
     </View>
   );
@@ -526,7 +529,7 @@ const styles = themedStyles({
   summaryValue: { color: "#fff", fontSize: 14, fontWeight: "600" },
   summaryNote: { color: "#E2E8F0", fontSize: 13, marginTop: 6, fontStyle: "italic" },
   button: {
-    backgroundColor: "#22C55E",
+    backgroundColor: BRAND_GOLD,
     borderRadius: 10,
     padding: 14,
     alignItems: "center",
@@ -538,7 +541,7 @@ const styles = themedStyles({
   steps: { flexDirection: "row", gap: 8, marginBottom: 8 },
   stepItem: { flex: 1, alignItems: "center" },
   stepBar: { height: 4, alignSelf: "stretch", borderRadius: 2, backgroundColor: "#334155" },
-  stepBarOn: { backgroundColor: "#22C55E" },
+  stepBarOn: { backgroundColor: BRAND_GOLD },
   stepLabel: { color: "#64748B", fontSize: 12, marginTop: 6 },
   stepLabelOn: { color: "#fff", fontWeight: "700" },
   answersToggle: {

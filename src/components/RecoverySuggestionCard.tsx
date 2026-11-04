@@ -47,7 +47,7 @@ export default function RecoverySuggestionCard({
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.heading}>🌿 Recovery suggested for you</Text>
+      <Text style={styles.heading}>Recovery suggested for you</Text>
       {suggestions.map((s) => {
         const info = findRecoveryActivity(s.activity);
         if (!info) return null;

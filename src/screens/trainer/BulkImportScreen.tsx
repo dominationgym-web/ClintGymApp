@@ -122,17 +122,16 @@ export default function BulkImportScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.helper}>
-        Got one file with all your clients' training from your old app or spreadsheet? Send it here. The app splits it by name and matches
-        each name to your client. You check it, then add everyone in one go.
+        One file with all your clients' past training. The app splits it by name; you check it, then add everyone.
       </Text>
       <View style={styles.buttons}>
         {Platform.OS === "web" && (
           <Pressable style={[styles.addButton, sending && styles.disabled]} onPress={() => pickWebFiles(send)} disabled={sending}>
-            <Text style={styles.addText}>📄 Send the file (CSV, PDF)</Text>
+            <Text style={styles.addText}>Send the file (CSV, PDF)</Text>
           </Pressable>
         )}
         <Pressable style={[styles.button, sending && styles.disabled]} onPress={async () => send(await pickScreenshots())} disabled={sending}>
-          <Text style={styles.buttonText}>📸 Screenshots</Text>
+          <Text style={styles.buttonText}>Screenshots</Text>
         </Pressable>
       </View>
       <Text style={styles.small}>

@@ -85,7 +85,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
 
   return (
     <View style={styles.box}>
-      <Text style={styles.title}>💳 Pay by card</Text>
+      <Text style={styles.title}>Pay by card</Text>
       {quote && quote.total <= 0 && quote.referral_credits > 0 ? (
         <>
           {quote.plan_amount > 0 && (
@@ -206,7 +206,7 @@ const styles = themedStyles({
   box18: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: "#64748B" },
   box18On: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   checkText: { color: "#E2E8F0", fontSize: 13, flex: 1, lineHeight: 18 },
-  pay: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  pay: { backgroundColor: "#D4AF37", borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 12 },
   payText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
   row: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
   secondary: { borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 9, paddingHorizontal: 12, alignItems: "center" },

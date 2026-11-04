@@ -169,7 +169,7 @@ export default function LogSetModal({
           {technique && (
             <View style={styles.box}>
               <Pressable onPress={() => setShowGuide((o) => !o)} hitSlop={6}>
-                <Text style={styles.boxTitle}>📋 How to do it properly {showGuide ? "▲" : "▼"}</Text>
+                <Text style={styles.boxTitle}>How to do it properly {showGuide ? "▲" : "▼"}</Text>
               </Pressable>
               {showGuide && (
                 <View style={{ marginTop: 8 }}>
@@ -185,7 +185,7 @@ export default function LogSetModal({
           )}
           {suggestion && (
             <View style={styles.box}>
-              <Text style={styles.boxTitle}>📈 {suggestion.last}</Text>
+              <Text style={styles.boxTitle}>{suggestion.last}</Text>
               <Text style={styles.boxText}>{suggestion.advice}</Text>
             </View>
           )}

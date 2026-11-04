@@ -195,7 +195,7 @@ export default function CalendarImportModal({
       <KeyboardSafe>
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>📥 Bring in your sessions</Text>
+            <Text style={styles.title}>Bring in your sessions</Text>
             {busy ? (
               <View style={{ paddingVertical: 30, alignItems: "center", gap: 12 }}>
                 <ActivityIndicator color={themeText(BRAND_GOLD)} />
@@ -204,16 +204,15 @@ export default function CalendarImportModal({
             ) : !rows ? (
               <>
                 <Text style={styles.helper}>
-                  Take screenshots of your calendar (Google, Samsung, Apple or any app, week or list view works best). The app reads the names and times, and
-                  you check them before anything is booked.
+                  Screenshot your calendar (week or list view). You check every session before it's booked.
                 </Text>
                 <Pressable style={styles.button} onPress={pickScreenshots}>
-                  <Text style={styles.buttonText}>📷 Pick screenshots (up to 6)</Text>
+                  <Text style={styles.buttonText}>Pick screenshots (up to 6)</Text>
                 </Pressable>
                 {Platform.OS !== "web" ? (
                   <>
                     <Pressable style={styles.outline} onPress={fromPhone}>
-                      <Text style={styles.outlineText}>📅 Read my phone's calendar</Text>
+                      <Text style={styles.outlineText}>Read my phone's calendar</Text>
                     </Pressable>
                     <Text style={styles.meta}>
                       {canReadPhoneCalendar()
@@ -227,7 +226,7 @@ export default function CalendarImportModal({
             ) : (
               <>
                 <Text style={styles.helper}>
-                  Tick the ones to put in your diary. Tap a name to change who it is. People not in the app yet go in by name; link them to their account later.
+                  Tick the ones to add. Tap a name to change who it is.
                 </Text>
                 {note ? <Text style={styles.meta}>Note: {note}</Text> : null}
                 {rows.map((r) => (
@@ -279,7 +278,7 @@ export default function CalendarImportModal({
                     <Text style={styles.tick}>{weekly ? "✓" : ""}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.when}>🔁 Same every week from now on</Text>
+                    <Text style={styles.when}>Same every week from now on</Text>
                     <Text style={styles.meta}>
                       {weekly
                         ? "Each session repeats at the same day and time every week. Change or take one off just for that day, or for every week after."

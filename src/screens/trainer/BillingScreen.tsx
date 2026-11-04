@@ -291,7 +291,7 @@ export default function BillingScreen() {
       ) : null}
 
       {proofs.length > 0
-        ? section("proofs", "🧾 Proof of payment", String(proofs.length), () =>
+        ? section("proofs", "Proof of payment", String(proofs.length), () =>
             proofs.map((p) => {
               const t = byId[p.trainer_id];
               return (
@@ -452,7 +452,7 @@ export default function BillingScreen() {
       )}
 
       {/* Money in one place (review 2026-10-18): the tracker moved here from Profile. */}
-      {section("tracker", "📊 Tracker: all trainers' clients and income", null, () => <OwnerTracker />)}
+      {section("tracker", "Tracker: all trainers' clients and income", null, () => <OwnerTracker />)}
 
       {section("prices", "Prices and lockout", null, () =>
         settings ? (
@@ -462,7 +462,7 @@ export default function BillingScreen() {
               return (
                 <View key={c} style={styles.line}>
                   <Text style={styles.lineName}>{CURRENCY_LABEL[c]}</Text>
-                  <Text style={styles.lineDetail}>🌐 Evolution (covers both sides)</Text>
+                  <Text style={styles.lineDetail}>Evolution (covers both sides)</Text>
                   {PLANS.map((p) => (
                     <Text key={p} style={styles.lineDetail}>
                       {PLAN_LABEL[p]}: {money(planPrice(settings.prices, c, p), c)}
@@ -474,7 +474,7 @@ export default function BillingScreen() {
                       {line}
                     </Text>
                   ))}
-                  <Text style={[styles.lineDetail, { marginTop: 8 }]}>🤝 1 on 1 only (no Evolution clients)</Text>
+                  <Text style={[styles.lineDetail, { marginTop: 8 }]}>1 on 1 only (no Evolution clients)</Text>
                   {PLANS.map((p) => (
                     <Text key={p} style={styles.lineDetail}>
                       {PLAN_LABEL[p]}: {money(planPrice(one.prices, c, p), c)}

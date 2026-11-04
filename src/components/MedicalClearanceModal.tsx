@@ -105,7 +105,7 @@ const styles = themedStyles({
   optionOn: { borderColor: "#22C55E" },
   optionText: { color: "#E2E8F0", fontSize: 15 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, fontSize: 16 },
-  save: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 20 },
+  save: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 20 },
   saveText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   cancel: { alignItems: "center", paddingVertical: 14 },
   cancelText: { color: "#94A3B8", fontWeight: "700" },
