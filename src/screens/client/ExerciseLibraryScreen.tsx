@@ -990,20 +990,6 @@ export default function ExerciseLibraryScreen() {
             {client && !live && atHome && equipmentList(client.home_equipment).length === 0 && (
               <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
             )}
-            {client && !live && (
-              <ClientCalendarView
-                clientId={client.id}
-                exercises={exercises}
-                atHome={atHome}
-                fit={fit}
-                onSwapsChanged={(date) => {
-                  if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
-                }}
-                catchUpDates={!todaySession ? catchUpChoices(today, missed).map((m) => m.workout_date) : []}
-                onCatchUp={setChosenDay}
-                refreshKey={refresh}
-              />
-            )}
             {client && (
               <View style={styles.todayCard}>
                 <Text style={styles.todayHeading}>Today</Text>
@@ -1064,8 +1050,7 @@ export default function ExerciseLibraryScreen() {
                 )}
                 {!hold && (
                   <Pressable style={styles.supersetButton} onPress={() => setSupersetOpen(true)} accessibilityRole="button">
-                    <Text style={styles.supersetButtonText}>⚡ Do a superset (2-4 exercises)</Text>
-                    <Text style={styles.supersetButtonSub}>Pick the exercises, start, then log the whole round after each set.</Text>
+                    <Text style={styles.supersetButtonText}>Do a superset</Text>
                   </Pressable>
                 )}
               </View>
@@ -1376,6 +1361,21 @@ export default function ExerciseLibraryScreen() {
                   ))}
               </View>
             ))}
+            {/* The week sits under today's workout, so Start is the first thing seen (critique 2026-11-04). */}
+            {client && !live && (
+              <ClientCalendarView
+                clientId={client.id}
+                exercises={exercises}
+                atHome={atHome}
+                fit={fit}
+                onSwapsChanged={(date) => {
+                  if (date === todayIso()) getExerciseSwaps(date).then(setSwaps);
+                }}
+                catchUpDates={!todaySession ? catchUpChoices(today, missed).map((m) => m.workout_date) : []}
+                onCatchUp={setChosenDay}
+                refreshKey={refresh}
+              />
+            )}
             {client && !live && (
               <FoldSection icon="🏃" title="Other exercise" hint="Log a walk, run, ride or hike" open={part === "other"} onToggle={() => togglePart("other")}>
                 <OtherActivityCard clientId={client.id} role="client" />

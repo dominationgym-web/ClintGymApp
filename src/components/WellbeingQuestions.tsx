@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
 import { EMERGENCY_NUMBERS } from "@/components/MedicalHoldNotice";
 import TextInput from "@/components/TextInput";
@@ -9,20 +9,71 @@ import { themedStyles } from "@/lib/theme";
 // "I'm okay", or "Something's up" with what it is and a short note. Dizziness
 // and serious symptoms were added in 0133; serious symptoms show the stop
 // advice straight away.
+//
+// One tap first (critique, 2026-11-04): "All good" answers every question as
+// okay; "Something's up" opens the questions with all of them set to okay, so
+// the client only taps what is wrong.
 export default function WellbeingQuestions({
   value,
   onChange,
+  onAllGood,
 }: {
   value: WellbeingForm;
   onChange: (next: WellbeingForm) => void;
+  /** Called after "All good", e.g. to go on to the next page. */
+  onAllGood?: () => void;
 }) {
   const update = (key: WellbeingKey, change: Partial<WellbeingAnswer>) =>
     onChange({ ...value, [key]: { ...value[key], ...change } });
+  const anyReported = WELLBEING_TOPICS.some((t) => value[t.key].status === "reported");
+  const allOk = WELLBEING_TOPICS.every((t) => value[t.key].status === "ok");
+  const [open, setOpen] = useState(anyReported);
+  useEffect(() => {
+    if (anyReported) setOpen(true);
+  }, [anyReported]);
+  const allSetTo = (form: WellbeingForm, onlyBlank: boolean) => {
+    const next = { ...form };
+    for (const t of WELLBEING_TOPICS) {
+      if (!onlyBlank || next[t.key].status === null) next[t.key] = { status: "ok", kind: "", notes: "" };
+    }
+    return next;
+  };
+
+  if (!open) {
+    return (
+      <View>
+        <Text style={styles.heading}>How's your body today?</Text>
+        <View style={styles.row}>
+          <Pressable
+            style={[styles.bigChoice, allOk && styles.okOn]}
+            onPress={() => {
+              onChange(allSetTo(value, false));
+              onAllGood?.();
+            }}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.bigChoiceText, allOk && styles.choiceTextOn]}>All good</Text>
+          </Pressable>
+          <Pressable
+            style={styles.bigChoice}
+            onPress={() => {
+              onChange(allSetTo(value, true));
+              setOpen(true);
+            }}
+            accessibilityRole="button"
+          >
+            <Text style={styles.bigChoiceText}>Something's up</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.hint}>Pain, tiredness, stress, dizziness or anything worrying.</Text>
+      </View>
+    );
+  }
 
   return (
     <View>
-      <Text style={styles.heading}>Body and mind</Text>
-      <Text style={styles.hint}>Your trainer uses this to adjust your program. Answer each one.</Text>
+      <Text style={styles.heading}>What's up?</Text>
+      <Text style={styles.hint}>Tap "Something's up" on each one that fits.</Text>
       {WELLBEING_TOPICS.map((t) => {
         const a = value[t.key];
         return (
@@ -36,13 +87,13 @@ export default function WellbeingQuestions({
                 style={[styles.choice, a.status === "ok" && styles.okOn]}
                 onPress={() => update(t.key, { status: "ok" })}
               >
-                <Text style={[styles.choiceText, a.status === "ok" && styles.choiceTextOn]}>✅ I'm okay</Text>
+                <Text style={[styles.choiceText, a.status === "ok" && styles.choiceTextOn]}>I'm okay</Text>
               </Pressable>
               <Pressable
                 style={[styles.choice, a.status === "reported" && styles.reportOn]}
                 onPress={() => update(t.key, { status: "reported" })}
               >
-                <Text style={[styles.choiceText, a.status === "reported" && styles.choiceTextOn]}>⚠️ Something's up</Text>
+                <Text style={[styles.choiceText, a.status === "reported" && styles.choiceTextOn]}>Something's up</Text>
               </Pressable>
             </View>
             {a.status === "reported" && (
@@ -106,7 +157,7 @@ const styles = themedStyles({
   call: { backgroundColor: "#EF4444", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
   callText: { color: "#fff", fontWeight: "700" },
   heading: { color: "#fff", fontSize: 16, fontWeight: "700", marginTop: 20, marginBottom: 4 },
-  hint: { color: "#64748B", fontSize: 13, marginBottom: 8 },
+  hint: { color: "#64748B", fontSize: 13, marginTop: 8, marginBottom: 8 },
   card: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1.5, borderColor: "transparent" },
   cardReported: { borderColor: "#F59E0B" },
   title: { color: "#fff", fontWeight: "700", fontSize: 15 },
@@ -114,6 +165,8 @@ const styles = themedStyles({
   row: { flexDirection: "row", gap: 8 },
   choice: { flex: 1, backgroundColor: "#0F172A", borderRadius: 10, paddingVertical: 10, alignItems: "center" },
   okOn: { backgroundColor: "#22C55E" },
+  bigChoice: { flex: 1, backgroundColor: "#1E293B", borderRadius: 12, paddingVertical: 18, alignItems: "center", borderWidth: 1, borderColor: "#334155" },
+  bigChoiceText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   reportOn: { backgroundColor: "#F59E0B" },
   choiceText: { color: "#CBD5E1", fontWeight: "700", fontSize: 14 },
   choiceTextOn: { color: "#0F172A" },

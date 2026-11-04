@@ -95,7 +95,7 @@ function ClientTabs() {
         </>
       )}
       {/* A live client may check in when they choose (GRIZZ, 2026-10-31): no reminders, but the trainer sees their energy and injuries. */}
-      <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Check-in", tabBarIcon: tabIcon("checkmark-circle") }} />
+      <Tab.Screen name="CheckIn" component={CheckInScreen} options={{ title: "Today", tabBarIcon: tabIcon("today") }} />
       {!live && (
         <>
           <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
