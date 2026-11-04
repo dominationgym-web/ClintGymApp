@@ -75,6 +75,13 @@ function useWelcomeOnce(show: boolean) {
   }, [show, navigation]);
 }
 
+// Nutrition as its own tab (critique, 2026-11-04: it was buried in the ☰ menu).
+// The same page the menu opened, with all its headings.
+function NutritionTab(props: object) {
+  const p = props as React.ComponentProps<typeof SectionScreen>;
+  return <SectionScreen {...p} route={{ ...p.route, params: { sectionKey: "nutrition" } }} />;
+}
+
 function ClientTabs() {
   const { client } = useAuth();
   useWelcomeOnce(!!client && !client.live_only);
@@ -121,6 +128,7 @@ function ClientTabs() {
       {!live && (
         <>
           <Tab.Screen name="Exercises" component={ExerciseLibraryScreen} options={{ title: "Training", tabBarIcon: tabIcon("barbell") }} />
+          {!wide && <Tab.Screen name="Nutrition" component={NutritionTab} options={{ title: "Nutrition", tabBarIcon: tabIcon("restaurant") }} />}
           <Tab.Screen name="Habits" component={HabitsScreen} options={{ title: "Habits", tabBarIcon: tabIcon("flame") }} />
         </>
       )}
