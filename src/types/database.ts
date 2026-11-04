@@ -1169,6 +1169,10 @@ export type SessionPlan = {
   minutes: number;
   regular: RegularTime[];
   active: boolean;
+  // Not signed yet (0191): when the trainer last reminded them, and the terms
+  // the trainer cleared them for (no signature needed).
+  agreement_sent_at?: string | null;
+  agreement_cleared?: Pick<SessionPlan, "fee" | "per_week" | "group_size" | "billing" | "policy" | "regular"> | null;
   created_at: string;
   updated_at: string;
 };
@@ -1695,6 +1699,8 @@ export interface Database {
         Returns: SessionPlan;
       };
       sign_session_agreement: { Args: { p_name: string; p_agreement: string }; Returns: SessionAgreement };
+      send_session_agreement: { Args: { p_client: string }; Returns: string };
+      clear_session_agreement: { Args: { p_client: string; p_clear?: boolean }; Returns: undefined };
       add_live_session: {
         Args: { p_client: string; p_starts_at: string; p_minutes?: number | null; p_makeup_for?: string | null };
         Returns: LiveSession;
