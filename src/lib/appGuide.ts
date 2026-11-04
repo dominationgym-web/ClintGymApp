@@ -265,7 +265,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Search 🔍 and Menu ☰",
       points: [
         "Menu ☰ shows every topic as one short line, so you see them all at once. Tap a topic to open it.",
-        "❓ Help & settings (bottom of Menu ☰) holds How to use the app, Light or dark (Dark, Light or Match phone), Notifications (which reminders you get) and your coach's Welcome.",
+        "❓ Help & settings (bottom of Menu ☰) holds How to use the app, Light or dark (Dark, Light or Match phone; you pick one the first time you open the app after signing up), Notifications (which reminders you get) and your coach's Welcome.",
         "Search finds any exercise, guide or tip in the app. Exercises go by different names in different gyms, so search knows the other names too: pec deck, butterfly or chest fly machine all find Machine Pec Fly.",
         "Exercise lists are grouped by muscle: Chest, Back, Legs, Biceps, Triceps, Shoulders and Calves come first, then Abs and the rest. Tap one to see every exercise for that muscle.",
         "Every exercise with a video shows a small picture of the move beside its name, so you can spot it without knowing its name. For YouTube ones, tap ▶ Watch how to do it on YouTube to see a good-form demo in the YouTube app.",
@@ -486,7 +486,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "Profile tab",
       points: [
         "Add your logo. Your clients see it in their app.",
-        "Your trainer code, your EFT details and your plan all live here. Settings holds four tap-to-open headings: 👤 Your details (business name, phone, planning reminders), 💳 How your clients pay you (EFT details and proof-of-payment WhatsApp), 🌗 Light or dark (Dark, Light or Match phone) and ⚙️ Account (log out). Your trainer code is also your referral code: clients type it to join you, and a trainer who signs up with it counts as your referral.",
+        "Your trainer code, your EFT details and your plan all live here. Settings holds four tap-to-open headings: 👤 Your details (business name, phone, planning reminders), 💳 How your clients pay you (EFT details and proof-of-payment WhatsApp), 🌗 Light or dark (Dark, Light or Match phone, first picked straight after signing up) and ⚙️ Account (log out). Your trainer code is also your referral code: clients type it to join you, and a trainer who signs up with it counts as your referral.",
         "Your plan's prices depend on the country you applied from: rand in South Africa, dollars elsewhere. That's why location must be on when you apply.",
         "💲 Two prices: Evolution covers both sides (online and 1 on 1) in one price. If all your clients are 1 on 1 only, you pay the cheaper 1 on 1 only price instead: clients are counted from your calendar each month and don't need the app (they can use it for meal plans and check-ins if they like). You move to Evolution as soon as you activate an online client, and the app tells you before that happens. On Evolution, people only in your 1 on 1 diary count as clients in the months they have a session.",
         "🎁 On free use? You pay no monthly subscription. Six months in, a per-client fee starts for each active client. Your plan card shows the date, and the app reminds you 30 days and 7 days before.",

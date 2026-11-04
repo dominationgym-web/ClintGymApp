@@ -16,10 +16,14 @@ export type ThemeMode = "dark" | "light";
 export type ThemePreference = ThemeMode | "system";
 
 const STORAGE_KEY = "theme-preference";
+// Set once the person has picked light or dark on the first-time screen
+// (GRIZZ, 2026-11-04: some people don't like a dark app).
+const CHOSEN_KEY = "theme-chosen";
 
 let preference: ThemePreference = "dark";
 let mode: ThemeMode = "dark";
 let ready = false;
+let chosen = false;
 const listeners = new Set<() => void>();
 
 function systemMode(): ThemeMode {
@@ -45,6 +49,7 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (isPreference(saved)) apply(saved);
+    chosen = localStorage.getItem(CHOSEN_KEY) != null || isPreference(saved);
     ready = true;
   } catch {
     // Private windows can refuse storage; dark it is.
@@ -56,8 +61,10 @@ if (Platform.OS === "web" && typeof localStorage !== "undefined") {
 export async function loadThemePreference() {
   if (ready) return;
   try {
-    const saved = await AsyncStorage.getItem(STORAGE_KEY);
+    const [saved, picked] = await Promise.all([AsyncStorage.getItem(STORAGE_KEY), AsyncStorage.getItem(CHOSEN_KEY)]);
     if (isPreference(saved)) apply(saved);
+    // Someone who already set it in Settings has chosen too.
+    chosen = picked != null || isPreference(saved);
   } catch {
     // Keep dark.
   }
@@ -71,6 +78,18 @@ export async function setThemePreference(next: ThemePreference) {
     await AsyncStorage.setItem(STORAGE_KEY, next);
   } catch {
     // The choice still holds until the app closes.
+  }
+}
+
+/** Called from the first-time Light or dark screen's Continue button. */
+export async function markThemeChosen() {
+  chosen = true;
+  listeners.forEach((l) => l());
+  try {
+    await AsyncStorage.setItem(CHOSEN_KEY, "1");
+    await AsyncStorage.setItem(STORAGE_KEY, preference);
+  } catch {
+    // Asked again next time the app opens; no harm.
   }
 }
 
@@ -95,6 +114,11 @@ export function useThemeMode(): ThemeMode {
 
 export function useThemePreference(): ThemePreference {
   return useSyncExternalStore(subscribe, getThemePreference, getThemePreference);
+}
+
+/** Whether this person has picked light or dark yet (on this phone or laptop). */
+export function useThemeChosen(): boolean {
+  return useSyncExternalStore(subscribe, () => chosen, () => chosen);
 }
 
 export function useThemeReady(): boolean {
