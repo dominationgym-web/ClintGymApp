@@ -429,7 +429,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       where: "The 🤝 1 on 1 side (switch at the top)",
       points: [
         "Two sides: tap 🤝 1 on 1 or 🌐 Evolution at the top of the app. 1 on 1 is for the people you train in person: Today, Calendar, Clients and Invoices. Evolution is your online coaching: Dashboard, Clients, Programs and Profile. The app opens on the side you used last.",
-        "Today: today's sessions first, with the free gaps in green marked Available (tap one to book it), then anything to sort out (sessions not marked yet, catch-ups to book, agreements not signed). Tap ✓ Came, or Cancelled / No-show. Money sits underneath.",
+        "Today: today's sessions first, with the free gaps in green marked Available (tap one to book it), then anything to sort out (sessions not marked yet, catch-ups to book). Tap ✓ Came, or Cancelled / No-show. Money sits underneath. Right at the bottom, Not signed yet lists clients who haven't signed the session agreement for their current terms: tap Send to remind them on their phone, or Clear if they don't need to sign (they come back if you change their fee, rule or times).",
         "Clients: tap ＋ Add client. It asks if they have the app: No adds someone who only lives in your calendar, Yes lists your app clients to set up.",
         "Setup sits in the ☰ menu on the 1 on 1 side (Session setup).",
         "💰 Money: under today's sessions, the Today tab shows what you made today after cancellations and credits (trained sessions, plus late cancellations and no-shows you charge; in-time cancellations and sessions you cancel earn nothing). Tap 📊 This week for the week by day or by client, and ‹ › for earlier weeks. Each client's own price is under Clients › tap the client › Fee per session.",

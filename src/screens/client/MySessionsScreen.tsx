@@ -102,12 +102,14 @@ export default function MySessionsScreen() {
   };
 
   const needsSign = !!plan && plan.active && !agreementCurrent(signed, plan);
+  // The coach cleared it (0191): they can still sign, but aren't nagged to.
+  const nag = needsSign && !agreementCurrent(plan?.agreement_cleared, plan);
   const unpaid = invoices.filter((i) => i.status === "sent");
   const tabs: ScreenTab<Tab>[] = [
     { key: "sessions", label: "Sessions", icon: "people" },
     { key: "month", label: "Month", icon: "calendar" },
     { key: "invoices", label: "Invoices", icon: "receipt", dot: unpaid.length ? "#F59E0B" : null },
-    { key: "agreement", label: "Agreement", icon: "document-text", dot: needsSign ? "#F59E0B" : null },
+    { key: "agreement", label: "Agreement", icon: "document-text", dot: nag ? "#F59E0B" : null },
   ];
 
   return (
@@ -123,7 +125,7 @@ export default function MySessionsScreen() {
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeText(BRAND_GOLD)} />}
         >
-          {needsSign && tab !== "agreement" ? (
+          {nag && tab !== "agreement" ? (
             <Pressable style={styles.notice} onPress={() => setTab("agreement")}>
               <Text style={styles.noticeText}>Please read and sign your session agreement. Tap here.</Text>
             </Pressable>
