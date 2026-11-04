@@ -222,7 +222,7 @@ export function LossesCard({
       </Text>
       {t.owedCount ? (
         <Text style={styles.line}>
-          🔁 {t.owedCount} catch-up{t.owedCount === 1 ? "" : "s"} owed to clients who cancelled in time (already paid, just the time owed).
+          {t.owedCount} catch-up{t.owedCount === 1 ? "" : "s"} owed
         </Text>
       ) : null}
       {back.length ? (

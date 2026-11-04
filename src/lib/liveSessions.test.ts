@@ -179,7 +179,7 @@ describe("invoiceText", () => {
       ["Sarah Botha", 500, 2],
     ]);
     const rows = invoiceText(pair, "Mike Botha", "GRIZZ").split("\n");
-    expect(rows).toContain("*Mike Botha · R1 200*");
+    expect(rows).toContain("*Mike Botha · R1 200*");
     expect(rows).toContain("*Sarah Botha · R500*");
     expect(rows.indexOf("*Sarah Botha · R500*")).toBeGreaterThan(rows.indexOf("✅ Wed 7 Oct, 06:00 · Trained · R700"));
   });
@@ -258,7 +258,7 @@ describe("special rate", () => {
     { id: "a", came: true, fee: 500, soloFee: 700 },
     { id: "b", came: false, fee: 500, soloFee: 700 },
   ];
-  it("charges the solo rate when one comes and the other is credited (GRIZZ's R1 000 / R700 example)", () => {
+  it("charges the solo rate when one comes and the other is credited (GRIZZ's R1 000 / R700 example)", () => {
     expect(groupFees(pair, "credit")).toEqual({ a: 700, b: 500 });
   });
   it("keeps normal shares when the one who missed forfeits, or both came", () => {
@@ -267,7 +267,7 @@ describe("special rate", () => {
   });
   it("names the special rate in the agreement", () => {
     expect(feeText({ fee: 500, group_size: 2, group_total: 1000, solo_fee: 700 }, "ZAR")).toBe(
-      "R500 (my share of R1 000 for 2 people, or R700 when I train alone and the others are credited)"
+      "R500 (my share of R1 000 for 2 people, or R700 when I train alone and the others are credited)"
     );
   });
 });
