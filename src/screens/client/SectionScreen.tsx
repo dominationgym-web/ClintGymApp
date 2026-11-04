@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import LineIcon from "@/components/LineIcon";
 import { useStepBack } from "@/hooks/useStepBack";
 import { View, Text, Switch, Pressable } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
@@ -78,14 +79,8 @@ export default function SectionScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <View style={[styles.hero, { borderColor: themeBorder(section.accent) }]}>
-        <View style={[styles.heroIcon, { backgroundColor: themeBg(section.accent + "26") }]}>
-          <Text style={styles.heroIconText}>{section.icon}</Text>
-        </View>
-        <Text style={styles.heroTitle}>{section.title}</Text>
-        <Text style={styles.summary}>{section.summary}</Text>
-        {parts.length > 0 ? <Text style={[styles.heroHint, { color: themeText(section.accent) }]}>Tap a topic to open it</Text> : null}
-      </View>
+      {/* One short line instead of a big title card (critique, 2026-11-04): the header already says where you are. */}
+      <Text style={styles.lead}>{section.summary}</Text>
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
       {section.key === "womensHealthReset" && <ResetProgramLink />}
       {parts.length > 0 ? (
@@ -101,7 +96,7 @@ export default function SectionScreen({ route }: Props) {
               >
                 {part.icon ? (
                   <View style={[styles.partIcon, { backgroundColor: themeBg(section.accent + "1F") }]}>
-                    <Text style={styles.partIconText}>{part.icon}</Text>
+                    <LineIcon icon={part.icon} size={20} color={section.accent} />
                   </View>
                 ) : null}
                 <Text style={styles.partTitle}>{part.title}</Text>
@@ -178,6 +173,7 @@ function SleepReminderToggle() {
 }
 
 const styles = themedStyles({
+  lead: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 14 },
   partHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
