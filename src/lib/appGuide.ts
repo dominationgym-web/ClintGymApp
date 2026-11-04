@@ -303,7 +303,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
       title: "Clients and payments",
       where: "Clients tab",
       points: [
-        "Four tabs sort your clients: Active (training now), Waiting approval (new signups and returning clients), Awaiting payment (plan ended in the last 30 days) and Dormant (archived, or plan ended over 30 days ago).",
+        "Four tabs sort your clients: Active (training now), New (new signups and returning clients), Unpaid (plan ended in the last 30 days) and Dormant (archived, or plan ended over 30 days ago).",
         "Activate a client once they've paid. Only an expired plan locks the app. Paid early? Tap Renew on an Active or Expiring soon client: the new plan starts when the current one ends, so they lose no days. To close someone's access, open them, tap 💳 Plan & payment on the Overview and tap Mark expired.",
         "🧾 When a client sends proof of payment in the app, you get a notification and their row on the Clients tab shows Proof of payment sent. Tap View to see the slip, check it is in your account, then tap Paid, activate them (or Paid, renew their plan for a client who is still active). Not in my account yet lets them know to check it.",
         "Dots show who needs attention. Tap a client to open everything about them.",

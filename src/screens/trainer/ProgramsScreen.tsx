@@ -12,6 +12,7 @@ import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
 import type { ExercisePlace } from "@/lib/exerciseFilter";
 import { PROGRAM_FAMILIES, programFamily, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import ProgramGroups from "@/components/ProgramGroups";
+import GiveProgramButton from "@/components/GiveProgramButton";
 import ProgramExerciseEditModal from "@/components/ProgramExerciseEditModal";
 import { useAuth } from "@/context/AuthContext";
 import { themeText, themedStyles } from "@/lib/theme";
@@ -118,7 +119,7 @@ export default function ProgramsScreen({ navigation }: Props) {
         <Pressable style={styles.buildButton} onPress={() => navigation.navigate("ProgramBuilder")}>
           <Text style={styles.buildButtonText}>+ Build a program</Text>
         </Pressable>
-        <Text style={styles.helper}>To put a client on a program, open the client and go to their Training tab.</Text>
+        <GiveProgramButton />
         <View style={{ marginTop: 8 }}>
           <GymHomeTabs
             current={place}

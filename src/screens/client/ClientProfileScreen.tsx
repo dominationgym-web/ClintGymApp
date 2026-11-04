@@ -18,7 +18,6 @@ import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
-import { DailyQuoteCard } from "@/components/DailyQuote";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import WatchLink from "@/components/WatchLink";
@@ -184,7 +183,6 @@ export default function ClientProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-      <DailyQuoteCard />
       <View style={styles.headerRow}>
         <Pressable style={styles.photoBlock} onPress={changePhoto} disabled={uploadingPhoto}>
           <ClientAvatar name={client.name} path={client.avatar_path} size={72} />

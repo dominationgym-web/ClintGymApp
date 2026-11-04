@@ -219,7 +219,7 @@ export default function ClientListPanel({
           return (
             <Pressable key={g.key} style={[styles.tab, on && styles.tabOn]} onPress={() => setGroup(g.key)}>
               <Text style={[styles.tabText, on && styles.tabTextOn]}>
-                {g.label} ({count})
+                {count ? `${g.label} ${count}` : g.label}
               </Text>
             </Pressable>
           );
@@ -227,7 +227,7 @@ export default function ClientListPanel({
       </View>
       <Text style={styles.helper}>{current.helper}</Text>
       <Pressable style={styles.bulkButton} onPress={() => setBulkWeighIn(true)} accessibilityRole="button">
-        <Text style={styles.bulkText}>Set weigh-ins for several clients</Text>
+        <Text style={styles.bulkText}>Set weigh-ins for several ›</Text>
       </Pressable>
       <FlatList
         data={clients}
@@ -334,14 +334,14 @@ const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff" },
-  tabs: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12, marginBottom: 10 },
-  tab: { width: "48%", flexGrow: 1, backgroundColor: "#1E293B", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 8, alignItems: "center" },
+  tabs: { flexDirection: "row", gap: 6, marginTop: 12, marginBottom: 8 },
+  tab: { flexGrow: 1, backgroundColor: "#1E293B", borderRadius: 999, paddingVertical: 7, paddingHorizontal: 8, alignItems: "center" },
   tabOn: { backgroundColor: "#D4AF37" },
-  tabText: { color: "#CBD5E1", fontWeight: "700", fontSize: 13, textAlign: "center" },
+  tabText: { color: "#CBD5E1", fontWeight: "700", fontSize: 12, textAlign: "center" },
   tabTextOn: { color: "#0F172A" },
   helper: { color: "#64748B", fontSize: 12, marginBottom: 16 },
-  bulkButton: { borderWidth: 1, borderColor: "#D4AF37", borderRadius: 10, paddingVertical: 10, alignItems: "center", marginBottom: 12 },
-  bulkText: { color: "#D4AF37", fontWeight: "700", fontSize: 14 },
+  bulkButton: { alignSelf: "flex-start", marginBottom: 12 },
+  bulkText: { color: "#D4AF37", fontWeight: "700", fontSize: 13 },
   row: {
     flexDirection: "row",
     alignItems: "center",

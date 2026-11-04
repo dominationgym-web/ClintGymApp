@@ -425,7 +425,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today's compliance</Text>
+      <Text style={styles.title}>Today</Text>
       <NotificationsPrompt who="trainer" />
       <FlatList
         data={rows}

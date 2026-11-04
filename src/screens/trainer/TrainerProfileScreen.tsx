@@ -225,8 +225,7 @@ export default function TrainerProfileScreen() {
               <Text style={styles.label}>Your trainer code</Text>
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
-                New clients type this when they sign up, so they join you.
-                {trainer.is_owner ? "" : " It's also your referral code: a trainer who signs up with it counts as your referral (Plan & refer)."}
+                {trainer.is_owner ? "Clients sign up with this code." : "Clients and trainers sign up with this code."}
               </Text>
               <Pressable style={styles.secondaryButton} onPress={shareCode}>
                 <Text style={styles.secondaryButtonText}>Share my code</Text>
