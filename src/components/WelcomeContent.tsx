@@ -27,10 +27,12 @@ type Props = {
   onOpenSuggestionBox?: () => void;
   // The first-launch screen has no header, so it needs room for the status bar.
   padTop?: boolean;
+  // Shows a Skip link under the buttons (critique, 2026-11-04: the welcome is optional).
+  onSkip?: () => void;
 };
 
 // The coach's introduction, laid out as pages the reader taps through.
-export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionBox, padTop }: Props) {
+export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionBox, padTop, onSkip }: Props) {
   const insets = useSafeAreaInsets();
   const fade = useRef(new Animated.Value(0)).current;
   const [page, setPage] = useState(0);
@@ -135,6 +137,11 @@ export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionB
             <Text style={styles.buttonText}>{last ? buttonLabel : "Next"}</Text>
           </Pressable>
         </View>
+        {onSkip && !last ? (
+          <Pressable onPress={onSkip} hitSlop={10} accessibilityRole="button">
+            <Text style={styles.skip}>Skip</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -211,6 +218,7 @@ const styles = themedStyles({
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#334155" },
   dotActive: { width: 20, backgroundColor: BRAND_GOLD },
   buttonRow: { flexDirection: "row", gap: 10 },
+  skip: { color: "#94A3B8", textAlign: "center", marginTop: 12, fontWeight: "600" },
   backButton: {
     borderWidth: 1,
     borderColor: "#334155",

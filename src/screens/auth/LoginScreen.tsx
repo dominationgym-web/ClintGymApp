@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, Alert, Platform } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, Alert, Image, Platform } from "react-native";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import PasswordInput from "@/components/PasswordInput";
-import SelfTrainingComingSoon from "@/components/SelfTrainingComingSoon";
 import { themeText, themedStyles } from "@/lib/theme";
+import { BRAND_GOLD } from "@/lib/brand";
+import { ScrollView } from "@/components/ScrollView";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
@@ -49,18 +50,18 @@ export default function LoginScreen({ navigation, route }: Props) {
         await supabase.auth.signOut();
         Alert.alert(
           "Finish signing up",
-          "Your sign-up didn't finish last time. Clients: tap \"New client? Sign up\". Trainers: tap \"Are you a trainer? Apply to coach here\". Use the same email and password to complete it."
+          "Your sign-up didn't finish last time. Clients: tap \"Sign up\". Trainers: tap \"Trainer log in\", then \"New trainer? Apply\". Use the same email and password."
         );
       }
     }
     setLoading(false);
   };
 
+  // Logo, one gold Log in button and a clear Sign up button (critique, 2026-11-04).
   return (
-    <View style={styles.container}>
-      <Text style={styles.brand}>Daily Evolution</Text>
-      <Text style={styles.tagline}>Building a better you</Text>
-      <Text style={styles.title}>{coach ? "Coach login" : "Welcome back"}</Text>
+    <ScrollView style={styles.screen} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <Image source={require("../../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" accessibilityLabel="Daily Evolution" />
+      <Text style={styles.title}>{coach ? "Trainer log in" : "Log in"}</Text>
       <Text style={styles.label}>Email</Text>
       <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}
@@ -72,45 +73,38 @@ export default function LoginScreen({ navigation, route }: Props) {
       />
       <Text style={styles.label}>Password</Text>
       <PasswordInput placeholder="Your password" value={password} onChangeText={setPassword} />
-      <Pressable style={styles.button} onPress={handleLogin} disabled={loading}>
-        {loading ? <ActivityIndicator color={themeText("#fff")} /> : <Text style={styles.buttonText}>Log in</Text>}
+      <Pressable style={styles.button} onPress={handleLogin} disabled={loading} accessibilityRole="button">
+        {loading ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Log in</Text>}
       </Pressable>
       {coach ? (
         <>
-          <Pressable onPress={() => navigation.navigate("TrainerSignup")}>
-            <Text style={styles.link}>New coach? Apply to coach here</Text>
+          <Pressable style={styles.outline} onPress={() => navigation.navigate("TrainerSignup")} accessibilityRole="button">
+            <Text style={styles.outlineText}>New trainer? Apply</Text>
           </Pressable>
-          <Pressable onPress={() => navigation.goBack()}>
-            <Text style={styles.link}>Back to client login</Text>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+            <Text style={styles.link}>Back to client log in</Text>
           </Pressable>
         </>
       ) : (
         <>
-          <Pressable onPress={() => navigation.navigate("Welcome")}>
-            <Text style={styles.link}>New client? Sign up</Text>
+          <Pressable style={styles.outline} onPress={() => navigation.navigate("Signup")} accessibilityRole="button">
+            <Text style={styles.outlineText}>New client? Sign up</Text>
           </Pressable>
-          <Pressable onPress={() => navigation.push("Login", { coach: true })}>
-            <Text style={styles.link}>Coach Login</Text>
+          <Pressable onPress={() => navigation.push("Login", { coach: true })} hitSlop={8}>
+            <Text style={styles.link}>Trainer log in</Text>
           </Pressable>
-          <SelfTrainingComingSoon />
         </>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = themedStyles({
+  screen: { flex: 1, backgroundColor: "#0F172A" },
+  container: { flexGrow: 1, justifyContent: "center", padding: 24, maxWidth: 440, width: "100%", alignSelf: "center" },
+  logo: { width: 150, height: 150, alignSelf: "center", marginBottom: 20 },
   label: { color: "#CBD5E1", fontWeight: "600", marginBottom: 6 },
-  container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
-  brand: { fontSize: 32, fontWeight: "800", color: "#fff", textAlign: "center" },
-  tagline: {
-    fontSize: 13,
-    color: "#94A3B8",
-    textAlign: "center",
-    marginTop: 4,
-    marginBottom: 36,
-  },
-  title: { fontSize: 22, fontWeight: "700", color: "#fff", marginBottom: 24 },
+  title: { fontSize: 22, fontWeight: "700", color: "#fff", marginBottom: 20 },
   input: {
     backgroundColor: "#1E293B",
     color: "#fff",
@@ -119,12 +113,14 @@ const styles = themedStyles({
     marginBottom: 12,
   },
   button: {
-    backgroundColor: "#22C55E",
+    backgroundColor: BRAND_GOLD,
     borderRadius: 10,
     padding: 14,
     alignItems: "center",
     marginTop: 8,
   },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
-  link: { color: "#94A3B8", textAlign: "center", marginTop: 20 },
+  outline: { borderWidth: 1.5, borderColor: BRAND_GOLD, borderRadius: 10, padding: 13, alignItems: "center", marginTop: 12 },
+  outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 16 },
+  link: { color: "#94A3B8", textAlign: "center", marginTop: 20, fontWeight: "600" },
 });

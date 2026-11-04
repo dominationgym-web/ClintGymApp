@@ -1,5 +1,9 @@
 import React, { useEffect } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { WELCOME_SEEN_KEY } from "@/lib/welcome";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { tabIcon } from "@/navigation/tabIcon";
@@ -54,8 +58,26 @@ function PhoneColumn({ children }: { children: React.ReactNode }) {
 const phoneColumn = ({ children }: { children: React.ReactNode }) => <PhoneColumn>{children}</PhoneColumn>;
 const fullWidth = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
+// The coach's welcome opens once, the first time a new client is in the app
+// (it used to come before sign-up; critique, 2026-11-04). Not on the laptop
+// website, and not for 1 on 1 clients, who only use the app for sessions.
+function useWelcomeOnce(show: boolean) {
+  const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
+  useEffect(() => {
+    if (!show || Platform.OS === "web") return;
+    AsyncStorage.getItem(WELCOME_SEEN_KEY)
+      .then((seen) => {
+        if (seen != null) return;
+        AsyncStorage.setItem(WELCOME_SEEN_KEY, "1").catch(() => {});
+        navigation.navigate("Welcome");
+      })
+      .catch(() => undefined);
+  }, [show, navigation]);
+}
+
 function ClientTabs() {
   const { client } = useAuth();
+  useWelcomeOnce(!!client && !client.live_only);
   // Laptop view (GRIZZ, 2026-10-27): the sidebar replaces the bottom tabs and
   // the ☰ menu, and four fuller pages come first.
   const wide = useClientWideScreen();
