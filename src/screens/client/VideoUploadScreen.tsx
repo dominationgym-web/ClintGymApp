@@ -122,7 +122,7 @@ const styles = themedStyles({
   helper: { color: "#94A3B8", fontSize: 13, marginBottom: 16 },
   row: { flexDirection: "row", gap: 10 },
   flex1: { flex: 1 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center" },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center" },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   videoCard: { backgroundColor: "#1E293B", padding: 12, borderRadius: 10, marginBottom: 8 },
   videoRow: { flexDirection: "row", justifyContent: "space-between" },

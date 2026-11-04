@@ -571,7 +571,7 @@ const styles = themedStyles({
   pillSelected: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   pillText: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
   pillTextSelected: { color: "#0F172A" },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 24, marginBottom: 6 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 24, marginBottom: 6 },
   backButton: { padding: 14, alignItems: "center", marginBottom: 40 },
   backText: { color: "#94A3B8", fontWeight: "600", fontSize: 15 },
   dots: { flexDirection: "row", gap: 6, marginTop: 8 },

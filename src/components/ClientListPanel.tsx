@@ -360,7 +360,7 @@ const styles = themedStyles({
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, alignSelf: "flex-start" },
   statusLabel: { color: "#0F172A", fontWeight: "700", fontSize: 11 },
   expiry: { color: "#64748B", fontSize: 12 },
-  actionButton: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 12 },
+  actionButton: { backgroundColor: "#D4AF37", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 12 },
   actionButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
   proofChip: { alignSelf: "flex-start", backgroundColor: "#3A2F0B", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6 },
   proofChipText: { color: "#D4AF37", fontWeight: "700", fontSize: 12 },

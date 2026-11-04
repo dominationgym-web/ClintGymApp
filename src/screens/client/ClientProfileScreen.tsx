@@ -378,7 +378,7 @@ const styles = themedStyles({
     textAlignVertical: "top",
     marginTop: 14,
   },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 14 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 14 },
   logoutButton: {
     backgroundColor: "#334155",
     borderRadius: 10,

@@ -196,7 +196,7 @@ const styles = themedStyles({
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 12 },
   body: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 20 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 14, marginBottom: 12 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 8 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 8 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   link: { color: "#94A3B8", textAlign: "center", marginTop: 20, marginBottom: 20 },
 });

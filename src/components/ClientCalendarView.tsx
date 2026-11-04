@@ -426,7 +426,7 @@ const styles = themedStyles({
   stabilityRow: { borderWidth: 1, borderColor: "#6B21A8", backgroundColor: "#1A1029", borderRadius: 10, padding: 10, marginTop: 10 },
   stabilityTitle: { color: STABILITY_PURPLE, fontWeight: "800", fontSize: 15 },
   stabilityOpen: { color: "#E9D5FF", fontSize: 13, fontWeight: "700", marginTop: 4 },
-  catchUpButton: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 10 },
+  catchUpButton: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 10 },
   catchUpText: { color: "#0F172A", fontWeight: "800" },
   doneTitle: { color: "#22C55E", fontWeight: "800", fontSize: 15 },
   doneBox: { backgroundColor: "#1E293B", borderRadius: 10, paddingTop: 10, marginTop: 6 },

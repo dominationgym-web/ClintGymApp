@@ -364,7 +364,7 @@ const styles = themedStyles({
   modalTitle: { color: "#fff", fontSize: 20, fontWeight: "700" },
   closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
   button: {
-    backgroundColor: "#22C55E",
+    backgroundColor: "#D4AF37",
     borderRadius: 10,
     padding: 14,
     alignItems: "center",

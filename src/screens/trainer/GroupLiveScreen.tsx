@@ -768,7 +768,7 @@ const styles = themedStyles({
   addText: { color: BRAND_GOLD, fontWeight: "800" },
   footer: { padding: 12, borderTopWidth: 1, borderTopColor: "#1E293B", backgroundColor: "#0F172A" },
   footerCounts: { color: "#94A3B8", textAlign: "center", marginBottom: 8, fontSize: 13 },
-  finishButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  finishButton: { backgroundColor: "#D4AF37", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   off: { backgroundColor: "#334155" },
   finishText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   toast: { position: "absolute", top: 12, left: 16, right: 16, backgroundColor: "#14532D", borderRadius: 10, padding: 12 },

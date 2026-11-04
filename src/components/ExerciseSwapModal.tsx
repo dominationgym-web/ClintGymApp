@@ -115,6 +115,6 @@ const styles = themedStyles({
   swapRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
   swapRowTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   swapWatch: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
-  swapUse: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
+  swapUse: { backgroundColor: "#D4AF37", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
   swapUseText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
 });

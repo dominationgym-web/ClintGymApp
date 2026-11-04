@@ -213,6 +213,6 @@ const styles = themedStyles({
   symbol: { color: "#334155", fontWeight: "700" },
   input: { flex: 1, color: "#fff", paddingVertical: 8, paddingHorizontal: 6, fontSize: 15 },
   hint: { color: "#64748B", fontSize: 12, marginTop: 8 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 12, alignItems: "center", marginTop: 14 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 12, alignItems: "center", marginTop: 14 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 15 },
 });

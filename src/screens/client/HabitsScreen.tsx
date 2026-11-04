@@ -391,7 +391,7 @@ const styles = themedStyles({
   checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   reminderTimeRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
   timeInput: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, padding: 10, width: 90, fontSize: 14 },
-  saveTimeButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  saveTimeButton: { backgroundColor: "#D4AF37", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   saveTimeButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   savedText: { color: "#22C55E", fontWeight: "700", fontSize: 13 },
   chooseButton: { borderRadius: 12, borderWidth: 1.5, borderColor: BRAND_GOLD, borderStyle: "dashed", padding: 12, alignItems: "center", marginBottom: 14 },

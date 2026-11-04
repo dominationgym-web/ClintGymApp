@@ -67,7 +67,7 @@ const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   title: { color: "#fff", fontSize: 24, fontWeight: "700", marginBottom: 8 },
   intro: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 20 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 12 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 12 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   logout: { alignItems: "center", marginTop: 20 },
   logoutText: { color: "#64748B", fontSize: 14, fontWeight: "600" },

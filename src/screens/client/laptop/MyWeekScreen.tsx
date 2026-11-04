@@ -187,8 +187,8 @@ export default function MyWeekScreen() {
 }
 
 const styles = themedStyles({
-  start: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 11, paddingHorizontal: 18 },
-  startText: { color: "#06210F", fontWeight: "800", fontSize: 14 },
+  start: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 11, paddingHorizontal: 18 },
+  startText: { color: "#0F172A", fontWeight: "800", fontSize: 14 },
   td: { color: dash.text, fontSize: 14 },
   today: { color: BRAND_GOLD, fontWeight: "800" },
   bold: { fontWeight: "700" },

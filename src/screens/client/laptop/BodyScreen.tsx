@@ -143,8 +143,8 @@ export default function BodyScreen() {
 
 const styles = themedStyles({
   topRight: { flexDirection: "row", gap: 8, alignItems: "center", flexWrap: "wrap" },
-  add: { backgroundColor: "#22C55E", borderRadius: 9, paddingVertical: 9, paddingHorizontal: 14 },
-  addText: { color: "#06210F", fontWeight: "800", fontSize: 14 },
+  add: { backgroundColor: "#D4AF37", borderRadius: 9, paddingVertical: 9, paddingHorizontal: 14 },
+  addText: { color: "#0F172A", fontWeight: "800", fontSize: 14 },
   photos: { maxWidth: 720, width: "100%", alignSelf: "center" },
   link: { color: BRAND_GOLD, fontSize: 14, fontWeight: "600" },
   change: { color: dash.muted, fontSize: 14, fontWeight: "700" },

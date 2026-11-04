@@ -288,7 +288,7 @@ const styles = themedStyles({
   body: { color: "#CBD5E1", fontSize: 13, lineHeight: 18, marginTop: 4 },
   link: { color: BRAND_GOLD, fontWeight: "800" },
   go: {
-    backgroundColor: "#22C55E",
+    backgroundColor: "#D4AF37",
     borderRadius: 8,
     paddingVertical: 11,
     alignItems: "center",

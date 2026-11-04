@@ -126,7 +126,7 @@ const styles = themedStyles({
   name: { color: "#fff", fontWeight: "700" },
   why: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
   watch: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13 },
-  use: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
+  use: { backgroundColor: "#D4AF37", borderRadius: 6, paddingVertical: 6, paddingHorizontal: 12 },
   useText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   tip: { color: "#CBD5E1", fontSize: 13, marginTop: 4 },
   skip: { borderWidth: 1, borderColor: "#475569", borderRadius: 8, padding: 12, alignItems: "center", marginTop: 14 },

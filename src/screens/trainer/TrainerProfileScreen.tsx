@@ -382,7 +382,7 @@ const styles = themedStyles({
   label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6, marginTop: 6 },
   readOnly: { color: "#E2E8F0", fontSize: 15, marginBottom: 6 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, marginBottom: 6 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   secondaryButton: { borderColor: "#22C55E", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   secondaryButtonText: { color: "#22C55E", fontWeight: "700" },
