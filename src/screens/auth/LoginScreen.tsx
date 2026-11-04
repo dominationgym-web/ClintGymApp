@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import PasswordInput from "@/components/PasswordInput";
 import { themeText, themedStyles } from "@/lib/theme";
 import { BRAND_GOLD } from "@/lib/brand";
+import { loadLoginBrand, type TrainerBrand } from "@/hooks/useTrainerBrand";
 import { ScrollView } from "@/components/ScrollView";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
@@ -16,6 +17,11 @@ export default function LoginScreen({ navigation, route }: Props) {
   const [emailText, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  // The trainer's logo from the last log-in on this phone (GRIZZ, 2026-11-04); the DE logo until then.
+  const [brand, setBrand] = useState<TrainerBrand | null>(null);
+  useEffect(() => {
+    loadLoginBrand().then(setBrand);
+  }, []);
 
   // The website's "Start your free trial" button opens /app/?signup=trainer,
   // which goes straight to the trainer application (For Personal Trainers page).
@@ -60,7 +66,14 @@ export default function LoginScreen({ navigation, route }: Props) {
   // Logo, one gold Log in button and a clear Sign up button (critique, 2026-11-04).
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Image source={require("../../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" accessibilityLabel="Daily Evolution" />
+      {brand?.logoUrl ? (
+        <>
+          <Image source={{ uri: brand.logoUrl }} style={[styles.logo, styles.trainerLogo]} resizeMode="cover" accessibilityLabel={brand.name} />
+          <Text style={styles.brandName}>{brand.name}</Text>
+        </>
+      ) : (
+        <Image source={require("../../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" accessibilityLabel="Daily Evolution" />
+      )}
       <Text style={styles.title}>{coach ? "Trainer log in" : "Log in"}</Text>
       <Text style={styles.label}>Email</Text>
       <TextInput placeholderTextColor="#94A3B8"
@@ -103,6 +116,8 @@ const styles = themedStyles({
   screen: { flex: 1, backgroundColor: "#0F172A" },
   container: { flexGrow: 1, justifyContent: "center", padding: 24, maxWidth: 440, width: "100%", alignSelf: "center" },
   logo: { width: 150, height: 150, alignSelf: "center", marginBottom: 20 },
+  trainerLogo: { width: 120, height: 120, borderRadius: 60, marginBottom: 10 },
+  brandName: { color: "#fff", fontSize: 18, fontWeight: "800", textAlign: "center", marginBottom: 20 },
   label: { color: "#CBD5E1", fontWeight: "600", marginBottom: 6 },
   title: { fontSize: 22, fontWeight: "700", color: "#fff", marginBottom: 20 },
   input: {

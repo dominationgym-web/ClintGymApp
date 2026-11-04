@@ -7,6 +7,7 @@ import RecoverySuggestionCard from "@/components/RecoverySuggestionCard";
 import TodayNotices from "@/components/TodayNotices";
 import StepsCard from "@/components/StepsCard";
 import TodayTrainingCard from "@/components/TodayTrainingCard";
+import TrainerBrandBar from "@/components/TrainerBrandBar";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import HighGiInfo from "@/components/HighGiInfo";
@@ -244,6 +245,7 @@ export default function CheckInScreen() {
     const missing = unansweredSections(formFromCheckin(saved));
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <TrainerBrandBar />
         {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
         <TodayNotices />
         <Text style={styles.title}>Checked in ✓</Text>
@@ -307,6 +309,7 @@ export default function CheckInScreen() {
       >
         {step === 0 && (
           <>
+            <TrainerBrandBar />
             {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
             <TodayNotices extra={client && !saved ? <RecoverySuggestionCard clientId={client.id} /> : null} />
           </>
