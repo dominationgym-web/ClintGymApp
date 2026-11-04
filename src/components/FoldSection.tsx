@@ -1,4 +1,5 @@
 import React from "react";
+import LineIcon from "@/components/LineIcon";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themedStyles } from "@/lib/theme";
@@ -27,7 +28,7 @@ export default function FoldSection({
   return (
     <View style={[styles.fold, open && styles.foldOpen]}>
       <Pressable style={styles.header} onPress={onToggle}>
-        <Text style={styles.icon}>{icon}</Text>
+        <LineIcon icon={icon} size={22} />
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{title}</Text>
           {hint ? <Text style={styles.hint}>{hint}</Text> : null}
