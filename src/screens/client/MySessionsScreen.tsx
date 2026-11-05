@@ -35,6 +35,7 @@ import {
 import type { ClientStackParamList } from "@/navigation/types";
 import type { LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
 import SafeBottom from "@/components/SafeBottom";
 
@@ -196,6 +197,8 @@ function SessionsTab({ sessions, plan, coach, onChanged }: { sessions: LiveSessi
         <View key={s.id} style={styles.row}>
           <Text style={styles.rowTitle}>
             {dayLabel(s.starts_at)} · {clockLabel(s.starts_at)}
+            {s.makeup_for ? "  " : ""}
+            <CatchUpTag show={s.makeup_for} />
           </Text>
           <Text style={styles.meta}>{s.minutes} min with {coach}</Text>
           <Pressable style={styles.outlineSmall} onPress={() => setCancelling(s)}>
@@ -212,6 +215,8 @@ function SessionsTab({ sessions, plan, coach, onChanged }: { sessions: LiveSessi
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
             <Text style={styles.rowTitle}>
               {dayLabel(s.starts_at)} · {clockLabel(s.starts_at)}
+              {s.makeup_for ? "  " : ""}
+              <CatchUpTag show={s.makeup_for} />
             </Text>
             <Text style={[styles.kind, { color: themeText(KIND_STYLE[kind].colour) }]}>
               {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
@@ -286,7 +291,11 @@ function MonthTab({ month, onMonth, sessions }: { month: string; onMonth: (m: st
         const kind = sessionKind(s);
         return (
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
-            <Text style={styles.rowTitle}>{clockLabel(s.starts_at)}</Text>
+            <Text style={styles.rowTitle}>
+              {clockLabel(s.starts_at)}
+              {s.makeup_for ? "  " : ""}
+              <CatchUpTag show={s.makeup_for} />
+            </Text>
             <Text style={[styles.kind, { color: themeText(KIND_STYLE[kind].colour) }]}>
               {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
             </Text>
