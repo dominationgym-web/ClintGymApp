@@ -60,6 +60,7 @@ import {
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { BillingCurrency, ClientAway, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
 import SafeBottom from "@/components/SafeBottom";
 
@@ -343,6 +344,8 @@ function SessionLine({
         {clockLabel(s.starts_at)} · {name}
         {showDay ? ` · ${dayLabel(s.starts_at)}` : ""}
         {s.repeat_id ? " 🔁" : ""}
+        {[s, ...others].some((x) => x.makeup_for) ? "  " : ""}
+        <CatchUpTag show={[s, ...others].some((x) => x.makeup_for)} />
       </Text>
       {each ? (
         each.map((x) => (
@@ -484,6 +487,8 @@ function ToDo({
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
             <Text style={styles.rowTitle}>
               {who(s)} · {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)}
+              {s.makeup_for ? "  " : ""}
+              <CatchUpTag show={s.makeup_for} />
             </Text>
             <Text style={[styles.rowKind, { color: themeText(KIND_STYLE[kind].colour) }]}>
               {s.client_disputed_at ? "They say it didn't happen. Check and fix it." : kind === "decide" ? "Cancelled: charge or credit?" : "Not marked yet"}
