@@ -68,12 +68,22 @@ export function clientTierLines(tiers: ClientTier[], currency: BillingCurrency, 
   return lines;
 }
 
+/** "People only on your 1 on 1 side: $1 each, up to 10 (then free)" on Evolution (0193), or null with no such fee. */
+export function diaryTierLine(settings: SideSettings, currency: BillingCurrency): string | null {
+  const tier = (settings.diary_client_tiers ?? [])[0];
+  if (!tier) return null;
+  const each = money(Number(tier[currency] ?? 0), currency);
+  return tier.upto >= NO_LIMIT ? `People only on your 1 on 1 side: ${each} each` : `People only on your 1 on 1 side: ${each} each, up to ${tier.upto} (then free)`;
+}
+
 /** The most a month can come to on a side, or null when there's no cap (1 on 1, 0192). */
 export function monthlyCap(settings: SideSettings, side: PriceSide, currency: BillingCurrency): number | null {
   const p = sidePricing(settings, side);
-  const top = p.tiers.length ? p.tiers[p.tiers.length - 1].upto : 0;
-  if (top >= NO_LIMIT) return null;
-  return monthlyBill(settings, side, currency, top);
+  const topOf = (tiers: ClientTier[]) => (tiers.length ? tiers[tiers.length - 1].upto : 0);
+  const top = topOf(p.tiers);
+  const diaryTop = side === "evolution" ? topOf(settings.diary_client_tiers ?? []) : 0;
+  if (top >= NO_LIMIT || diaryTop >= NO_LIMIT) return null;
+  return monthlyBill(settings, side, currency, top, diaryTop);
 }
 
 // The Evolution switch (0192): switching it on gives 30 free days, once.
@@ -110,7 +120,7 @@ export const PRICE_SIDE_LABEL: Record<PriceSide, string> = {
 };
 
 type SideSettings = Pick<BillingSettings, "prices" | "free_clients" | "client_tiers"> &
-  Partial<Pick<BillingSettings, "one_on_one_prices" | "one_on_one_tiers">>;
+  Partial<Pick<BillingSettings, "one_on_one_prices" | "one_on_one_tiers" | "diary_client_tiers">>;
 
 /**
  * Pricing for one side (0179, 0192): Evolution gets both sides; 1 on 1 is
@@ -143,10 +153,15 @@ export function discountedPrices(prices: BillingPrices, share: number): BillingP
   return out;
 }
 
-/** A whole month's bill on one side: monthly plan plus client fees. */
-export function monthlyBill(settings: SideSettings, side: PriceSide, currency: BillingCurrency, clients: number): number {
+/**
+ * A whole month's bill on one side: monthly plan plus client fees. On
+ * Evolution, `clients` are app clients and `diaryClients` people only in the
+ * 1 on 1 diary, who have their own fee and limit (0193).
+ */
+export function monthlyBill(settings: SideSettings, side: PriceSide, currency: BillingCurrency, clients: number, diaryClients = 0): number {
   const p = sidePricing(settings, side);
-  return planPrice(p.prices, currency, "monthly") + clientFeeTotal(p.tiers, currency, clients, p.included);
+  const diaryFees = side === "evolution" ? clientFeeTotal(settings.diary_client_tiers ?? [], currency, diaryClients, 0) : 0;
+  return planPrice(p.prices, currency, "monthly") + clientFeeTotal(p.tiers, currency, clients, p.included) + diaryFees;
 }
 
 /** Each unused referral is 50% off one month of the trainer's plan (0192). */

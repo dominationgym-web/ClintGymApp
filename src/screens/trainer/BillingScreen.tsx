@@ -20,7 +20,7 @@ import { addDays } from "@/lib/programSchedule";
 import { countedReferrals, REFERRAL_DISCOUNT_PERCENT, referralRewards, trainerDisplayName } from "@/lib/trainers";
 import {
   amountsLabel,
-  clientTierLines,
+  clientTierLines, diaryTierLine,
   creditsUsable,
   CURRENCIES,
   feeCreditsUsable,
@@ -517,6 +517,7 @@ export default function BillingScreen() {
                       {line}
                     </Text>
                   ))}
+                  {diaryTierLine(settings, c) ? <Text style={styles.lineDetail}>{diaryTierLine(settings, c)}</Text> : null}
                   <Text style={[styles.lineDetail, { marginTop: 8 }]}>1 on 1 only (no Evolution clients)</Text>
                   {PLANS.map((p) => (
                     <Text key={p} style={styles.lineDetail}>
@@ -531,7 +532,7 @@ export default function BillingScreen() {
                 </View>
               );
             })}
-            <Text style={styles.muted}>Clients counted: on Evolution, everyone active in the app plus people only in a 1 on 1 diary who had a session that month. On 1 on 1 only, everyone on the calendar that month.</Text>
+            <Text style={styles.muted}>Clients counted: on Evolution, everyone active in the app, plus (at their own fee) people only in a 1 on 1 diary who had a session that month. Someone on both sides counts once. On 1 on 1 only, everyone on the calendar that month.</Text>
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lineName}>Lock out unpaid trainers</Text>

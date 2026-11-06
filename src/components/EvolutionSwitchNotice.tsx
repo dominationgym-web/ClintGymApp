@@ -4,7 +4,7 @@ import { ScrollView } from "@/components/ScrollView";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
-import { EVOLUTION_FREE_DAYS, clientTierLines, evolutionFreeUntil, money, monthlyCap, shortDate, sidePricing, trainerCurrency } from "@/lib/billing";
+import { EVOLUTION_FREE_DAYS, clientTierLines, diaryTierLine, evolutionFreeUntil, money, monthlyCap, shortDate, sidePricing, trainerCurrency } from "@/lib/billing";
 import { todayIso } from "@/lib/dates";
 import { themeText, themedStyles } from "@/lib/theme";
 import type { BillingSettings } from "@/types/database";
@@ -18,7 +18,7 @@ import type { BillingSettings } from "@/types/database";
 // rules), so there the notice says the same without amounts.
 const SELLS = Platform.OS === "web";
 
-type Settings = Pick<BillingSettings, "prices" | "free_clients" | "client_tiers" | "one_on_one_prices" | "one_on_one_tiers">;
+type Settings = Pick<BillingSettings, "prices" | "free_clients" | "client_tiers" | "one_on_one_prices" | "one_on_one_tiers" | "diary_client_tiers">;
 
 export default function EvolutionSwitchNotice({
   visible,
@@ -37,7 +37,7 @@ export default function EvolutionSwitchNotice({
     if (!visible || !SELLS || settings) return;
     supabase
       .from("billing_settings")
-      .select("prices, free_clients, client_tiers, one_on_one_prices, one_on_one_tiers")
+      .select("prices, free_clients, client_tiers, one_on_one_prices, one_on_one_tiers, diary_client_tiers")
       .eq("id", 1)
       .maybeSingle()
       .then(({ data }) => setSettings((data as Settings | null) ?? null));
@@ -80,6 +80,7 @@ export default function EvolutionSwitchNotice({
                     </Text>
                   ))
                 : null}
+              {SELLS && settings && diaryTierLine(settings, currency) ? <Text style={styles.line}>{diaryTierLine(settings, currency)}</Text> : null}
               {SELLS && cap !== null ? <Text style={styles.line}>The most you pay: {money(cap, currency)} a month, 1 on 1 included.</Text> : null}
               <Text style={styles.point}>⏹ To stop, just switch Evolution off again: ☰ Menu › Evolution side.</Text>
             </View>
