@@ -64,6 +64,9 @@ import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
 import SafeBottom from "@/components/SafeBottom";
 
+// Setup opened by itself once this app start (see load).
+let setupOpened = false;
+
 export type LiveTab = "todo" | "calendar" | "clients" | "invoices" | "setup";
 type Tab = LiveTab;
 type ClientInfo = { id: string; name: string; phone: string | null; email: string | null; live_only?: boolean; one_on_one?: boolean };
@@ -123,6 +126,12 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       supabase.from("client_away").select("*").eq("trainer_id", trainer.id).is("ended_at", null).gt("until_at", new Date().toISOString()),
     ]);
     setSettings(s.data ?? null);
+    // A new trainer lands on 1 on 1 with Setup open, so they never have to
+    // look for it (GRIZZ, 2026-11-06). Once per app start until it's saved.
+    if (only === "todo" && !s.data && !setupOpened) {
+      setupOpened = true;
+      setTab("setup");
+    }
     setPlans(p.data ?? []);
     const latest: Record<string, SessionAgreement> = {};
     for (const row of a.data ?? []) if (!latest[row.client_id]) latest[row.client_id] = row;
@@ -132,7 +141,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     setDrafts(d.data ?? []);
     setAways((aw.data ?? []) as ClientAway[]);
     setLoading(false);
-  }, [trainer, month]);
+  }, [trainer, month, only]);
 
   useFocusEffect(
     useCallback(() => {

@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { money, shortDate } from "@/lib/billing";
+import { REFERRAL_DISCOUNT_PERCENT } from "@/lib/trainers";
 import {
   cancelCard,
   cardExpired,
@@ -94,7 +95,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
             </Text>
           )}
           <Text style={styles.line}>
-            Referral credit ({quote.referral_credits} × 25%): -{money(quote.credit_amount, quote.currency)}
+            Referral credit ({quote.referral_credits} × {REFERRAL_DISCOUNT_PERCENT}%): -{money(quote.credit_amount, quote.currency)}
           </Text>
           <Pressable style={styles.pay} onPress={() => go(() => startCardCheckout(autopay))} disabled={busy}>
             {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.payText}>Use my referral credit</Text>}
@@ -110,7 +111,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
           {quote.fees_amount > 0 && <Text style={styles.line}>Client fees: {money(quote.fees_amount, quote.currency)}</Text>}
           {quote.referral_credits > 0 && (
             <Text style={styles.line}>
-              Referral credit ({quote.referral_credits} × 25%): -{money(quote.credit_amount, quote.currency)}
+              Referral credit ({quote.referral_credits} × {REFERRAL_DISCOUNT_PERCENT}%): -{money(quote.credit_amount, quote.currency)}
             </Text>
           )}
           <Pressable style={styles.check} onPress={() => setAutopay((v) => !v)}>
