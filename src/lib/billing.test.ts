@@ -183,36 +183,36 @@ describe("pricing by side (0179)", () => {
       ZAR: { monthly: 200, six_months: 1000, yearly: 1800, client: 50 },
     },
     free_clients: 5,
-    client_tiers: [{ upto: 20, ZAR: 20, USD: 2 }],
+    client_tiers: [{ upto: 15, ZAR: 10, USD: 1 }],
     one_on_one_prices: {
       USD: { monthly: 10, six_months: 50, yearly: 90 },
       ZAR: { monthly: 100, six_months: 500, yearly: 900 },
     },
-    one_on_one_tiers: [{ upto: 100000, ZAR: 10, USD: 1 }],
+    one_on_one_tiers: [{ upto: 20, ZAR: 10, USD: 1 }],
   };
 
-  it("bills Evolution with 5 free, $2 each to 20, then free (0192)", () => {
+  it("bills Evolution with 5 free, $1 each to 15, then free (0193)", () => {
     expect(monthlyBill(settings, "evolution", "USD", 3)).toBe(20);
-    expect(monthlyBill(settings, "evolution", "USD", 10)).toBe(30);
-    expect(monthlyBill(settings, "evolution", "USD", 20)).toBe(50);
-    expect(monthlyBill(settings, "evolution", "USD", 70)).toBe(50);
-    expect(monthlyBill(settings, "evolution", "ZAR", 200)).toBe(500);
-    expect(monthlyCap(settings, "evolution", "ZAR")).toBe(500);
+    expect(monthlyBill(settings, "evolution", "USD", 10)).toBe(25);
+    expect(monthlyBill(settings, "evolution", "USD", 15)).toBe(30);
+    expect(monthlyBill(settings, "evolution", "USD", 70)).toBe(30);
+    expect(monthlyBill(settings, "evolution", "ZAR", 200)).toBe(300);
+    expect(monthlyCap(settings, "evolution", "ZAR")).toBe(300);
   });
 
-  it("bills 1 on 1 at $10 plus $1 for every client, no cap (0192)", () => {
+  it("bills 1 on 1 at $10 plus $1 a client for the first 20 (0193)", () => {
     expect(monthlyBill(settings, "one_on_one", "USD", 0)).toBe(10);
     expect(monthlyBill(settings, "one_on_one", "USD", 10)).toBe(20);
-    expect(monthlyBill(settings, "one_on_one", "ZAR", 30)).toBe(400);
-    expect(monthlyBill(settings, "one_on_one", "USD", 100)).toBe(110);
-    expect(monthlyCap(settings, "one_on_one", "USD")).toBeNull();
+    expect(monthlyBill(settings, "one_on_one", "ZAR", 30)).toBe(300);
+    expect(monthlyBill(settings, "one_on_one", "USD", 100)).toBe(30);
+    expect(monthlyCap(settings, "one_on_one", "USD")).toBe(30);
     expect(planPrice(sidePricing(settings, "one_on_one").prices, "ZAR", "yearly")).toBe(900);
     expect(referralCreditValue(sidePricing(settings, "one_on_one").prices, "USD", 1)).toBe(5);
   });
 
   it("lists the tiers per side", () => {
-    expect(clientTierLines(settings.client_tiers, "ZAR", 5)).toEqual(["Clients 6-20: R20 each", "Clients 21+: free"]);
-    expect(clientTierLines(settings.one_on_one_tiers, "USD", 0)).toEqual(["Every client: $1 each"]);
+    expect(clientTierLines(settings.client_tiers, "ZAR", 5)).toEqual(["Clients 6-15: R10 each", "Clients 16+: free"]);
+    expect(clientTierLines(settings.one_on_one_tiers, "USD", 0)).toEqual(["Clients 1-20: $1 each", "Clients 21+: free"]);
   });
 });
 

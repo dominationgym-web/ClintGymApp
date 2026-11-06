@@ -324,15 +324,16 @@ ${slides}
 <h2 class="section">Simple pricing</h2>
 <p class="section">Everyone starts on 1 on 1, free for 30 days. Switch on Evolution when you want to coach online: it gets its own 30 days free.</p>
 ${[
-  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 20, per: 10, evoMax: "500", six: ["1 000", 500], year: ["1 800", 900] },
-  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 2, per: 1, evoMax: "50", six: ["100", 50], year: ["180", 90] },
+  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 10, per: 10, max: "300", six: ["1 000", 500], year: ["1 800", 900] },
+  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 1, per: 1, max: "30", six: ["100", 50], year: ["180", 90] },
 ].map((r) => `<h3 class="region">${r.flag} ${r.title}</h3>
 <div class="prices">
   <div class="price">
     <div class="where">🤝 1 on 1 <em>In-person</em></div>
     <div class="amount">${r.c}${r.one}<span>/month</span></div>
     <ul>
-      <li>Plus ${r.c}${r.per} per client a month</li>
+      <li>Plus ${r.c}${r.per} per client a month, for up to 20 clients</li>
+      <li><b>Max ${r.c}${r.max} a month</b>, however many clients</li>
       <li>Clients counted from your calendar: they don't need the app</li>
       <li>6 months: ${r.c}${r.six[1]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[1]} upfront <span class="save">3 months free</span></li>
@@ -346,8 +347,8 @@ ${[
       <li>Online coaching and 1 on 1 sessions in one price</li>
       <li>30 days free from the day you switch it on</li>
       <li>First 5 clients free</li>
-      <li>Clients 6-20: ${r.c}${r.t1} each, clients 21+ free</li>
-      <li><b>Max ${r.c}${r.evoMax} a month</b>, however many clients</li>
+      <li>Clients 6-15: ${r.c}${r.t1} each, clients 16+ free</li>
+      <li><b>Max ${r.c}${r.max} a month</b>, however many clients</li>
       <li>6 months: ${r.c}${r.six[0]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[0]} upfront <span class="save">3 months free</span></li>
     </ul>
