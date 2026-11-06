@@ -50,29 +50,70 @@ export function clientFeeTotal(tiers: ClientTier[], currency: BillingCurrency, a
   return total;
 }
 
-/** "Clients 6-15: R50 each", one line per tier, then "66+ free". */
+// A tier going this high has no limit: every client from there on pays (0192).
+export const NO_LIMIT = 10000;
+
+/** "Clients 6-20: R20 each", one line per tier, then "Clients 21+: free" (or "Every client: R10" with no limit). */
 export function clientTierLines(tiers: ClientTier[], currency: BillingCurrency, included: number): string[] {
   const lines: string[] = [];
   let prev = 0;
   for (const tier of tiers) {
     const from = Math.max(prev, included) + 1;
-    if (from <= tier.upto) lines.push(`Clients ${from}-${tier.upto}: ${money(Number(tier[currency] ?? 0), currency)} each`);
+    const each = `${money(Number(tier[currency] ?? 0), currency)} each`;
+    if (tier.upto >= NO_LIMIT) lines.push(from === 1 ? `Every client: ${each}` : `Clients ${from}+: ${each}`);
+    else if (from <= tier.upto) lines.push(`Clients ${from}-${tier.upto}: ${each}`);
     prev = tier.upto;
   }
-  if (tiers.length > 0) lines.push(`Clients ${prev + 1}+: free`);
+  if (tiers.length > 0 && prev < NO_LIMIT) lines.push(`Clients ${prev + 1}+: free`);
   return lines;
+}
+
+/** The most a month can come to on a side, or null when there's no cap (1 on 1, 0192). */
+export function monthlyCap(settings: SideSettings, side: PriceSide, currency: BillingCurrency): number | null {
+  const p = sidePricing(settings, side);
+  const top = p.tiers.length ? p.tiers[p.tiers.length - 1].upto : 0;
+  if (top >= NO_LIMIT) return null;
+  return monthlyBill(settings, side, currency, top);
+}
+
+// The Evolution switch (0192): switching it on gives 30 free days, once.
+export const EVOLUTION_FREE_DAYS = 30;
+
+/** The last free day of the trainer's Evolution side, or null if it was never switched on. */
+export function evolutionFreeUntil(startedOn: string | null | undefined): string | null {
+  if (!startedOn) return null;
+  const d = new Date(Date.UTC(+startedOn.slice(0, 4), +startedOn.slice(5, 7) - 1, +startedOn.slice(8, 10) + EVOLUTION_FREE_DAYS - 1));
+  return d.toISOString().slice(0, 10);
+}
+
+/** Unused referrals as free months when a trainer cancels (0192): each is worth 50% of a month. */
+export function referralFreeMonths(credits: number): number {
+  return (credits * REFERRAL_DISCOUNT_PERCENT) / 100;
+}
+
+/** A date moved on by whole months, with half a month as 15 days: 2026-11-30 + 1.5 -> 2027-01-14. */
+export function addFreeMonths(fromIso: string, months: number): string {
+  const whole = Math.floor(months);
+  const y = +fromIso.slice(0, 4);
+  const m = +fromIso.slice(5, 7) - 1 + whole;
+  const day = +fromIso.slice(8, 10);
+  // Keep the day of the month, or the month's last day if it's shorter (31 Jan + 1 -> 28 Feb).
+  const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  const d = new Date(Date.UTC(y, m, Math.min(day, last)));
+  if (months - whole >= 0.5) d.setUTCDate(d.getUTCDate() + 15);
+  return d.toISOString().slice(0, 10);
 }
 
 export const PRICE_SIDE_LABEL: Record<PriceSide, string> = {
   evolution: "Evolution (both sides)",
-  one_on_one: "1 on 1 only",
+  one_on_one: "1 on 1",
 };
 
 type SideSettings = Pick<BillingSettings, "prices" | "free_clients" | "client_tiers"> &
   Partial<Pick<BillingSettings, "one_on_one_prices" | "one_on_one_tiers">>;
 
 /**
- * Pricing for one side (0179): Evolution gets both sides; 1 on 1 only is
+ * Pricing for one side (0179, 0192): Evolution gets both sides; 1 on 1 is
  * cheaper with no free clients. Plan prices come back shaped like
  * BillingPrices so planPrice and the referral helpers work unchanged.
  */
@@ -85,13 +126,30 @@ export function sidePricing(settings: SideSettings, side: PriceSide): { prices: 
   return { prices: settings.prices, tiers: settings.client_tiers ?? [], included: settings.free_clients };
 }
 
+/** The share off a trainer's bill on a day from the owner's discount (0192): 0.5 for 50%, 0 with none. */
+export function discountShare(t: { discount_percent?: number | null; discount_until?: string | null }, dayIso: string): number {
+  if (!t.discount_percent || !t.discount_until || t.discount_until < dayIso) return 0;
+  return t.discount_percent / 100;
+}
+
+/** Plan prices with a discount share taken off, rounded to cents. */
+export function discountedPrices(prices: BillingPrices, share: number): BillingPrices {
+  if (share <= 0) return prices;
+  const out = {} as BillingPrices;
+  for (const c of CURRENCIES) {
+    out[c] = { ...prices[c] };
+    for (const plan of PLANS) out[c][plan] = Math.round(Number(prices[c]?.[plan] ?? 0) * (1 - share) * 100) / 100;
+  }
+  return out;
+}
+
 /** A whole month's bill on one side: monthly plan plus client fees. */
 export function monthlyBill(settings: SideSettings, side: PriceSide, currency: BillingCurrency, clients: number): number {
   const p = sidePricing(settings, side);
   return planPrice(p.prices, currency, "monthly") + clientFeeTotal(p.tiers, currency, clients, p.included);
 }
 
-/** Each unused referral is 25% off one month of the trainer's plan. */
+/** Each unused referral is 50% off one month of the trainer's plan (0192). */
 export function referralCreditValue(prices: BillingPrices, currency: BillingCurrency, credits: number): number {
   return (credits * REFERRAL_DISCOUNT_PERCENT * planPrice(prices, currency, "monthly")) / 100;
 }
@@ -110,7 +168,7 @@ export function creditsUsable(prices: BillingPrices, currency: BillingCurrency, 
 
 /**
  * Referral credits that can come off client fees (free-use trainers pay no
- * plan, GRIZZ 2026-10-14): whole credits, each worth 25% of a month's plan,
+ * plan, GRIZZ 2026-10-14): whole credits, each worth 50% of a month's plan,
  * never more than what's owed.
  */
 export function feeCreditsUsable(prices: BillingPrices, currency: BillingCurrency, owed: number, unused: number): number {

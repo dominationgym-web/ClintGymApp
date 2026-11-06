@@ -38,7 +38,7 @@ export default function ClientListPanel({
   reloadKey?: number;
 }) {
   const { trainer } = useAuth();
-  const { guardEvolution, reloadPriceSide } = useTrainerSide();
+  const { guardEvolution } = useTrainerSide();
   const [allClients, setClients] = useState<Client[]>([]);
   // Four tabs: Active / Waiting approval / Awaiting payment / Dormant (archived
   // clients from 0097 land under Dormant).
@@ -297,8 +297,7 @@ export default function ClientListPanel({
           if (!who) return;
           if (t === "one") {
             activateNow(who, t);
-            reloadPriceSide();
-          } else guardEvolution(() => activateNow(who, t), `Yes, activate ${who.name.split(" ")[0]}`);
+          } else guardEvolution(() => activateNow(who, t));
         }}
       />
       <PaymentProofModal

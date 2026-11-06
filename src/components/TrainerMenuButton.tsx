@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { TIMER_MENU_ITEM } from "@/lib/timerWorkouts";
 import { TRAINER_VIDEO_CHECKINS_MENU_ITEM } from "@/lib/videoCheckins";
 import { useTrainerSide } from "@/context/TrainerSideContext";
+import { takeMenuReturn } from "@/lib/menuReturn";
 import { COACHING_GUIDES_MENU_ITEM } from "@/screens/trainer/CoachingGuidesScreen";
 
 // The trainer app's menu (top right of every trainer tab). The things used
@@ -25,12 +26,30 @@ export default function TrainerMenuButton() {
 export function useTrainerMenuItems(): MenuItem[] {
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const { trainer } = useAuth();
-  const { side } = useTrainerSide();
+  const { side, evolutionOn, toggleEvolution } = useTrainerSide();
   const problems = {
     ...(trainer?.is_owner ? OWNER_PROBLEMS_MENU_ITEM : TRAINER_PROBLEMS_MENU_ITEM),
     route: "TrainerProblems",
     onPress: () => navigation.navigate("TrainerProblems"),
   };
+  // The Evolution switch (GRIZZ, 2026-11-06): on both sides, not for the owner.
+  const evolutionSwitch: MenuItem[] = trainer?.is_owner
+    ? []
+    : [
+        {
+          key: "evolutionSwitch",
+          title: evolutionOn ? "Evolution side: on" : "Evolution side: off",
+          icon: "🌐",
+          summary: evolutionOn
+            ? "Your online coaching side is on. Tap to switch it off and stop its subscription."
+            : "Switch on your online coaching side: 30 days free, first 5 clients free.",
+          onPress: () => {
+            // Not a page: don't reopen the menu when the other side's tabs appear.
+            takeMenuReturn();
+            toggleEvolution();
+          },
+        },
+      ];
   // The 1 on 1 side keeps the menu short (GRIZZ, 2026-11-01: "minimalistic").
   if (side === "one")
     return [
@@ -42,6 +61,28 @@ export function useTrainerMenuItems(): MenuItem[] {
         route: "LiveSessions",
         onPress: () => navigation.navigate("LiveSessions", { tab: "setup" }),
       },
+      // With Evolution off its Profile and Clients tabs are hidden, so they're here (0192).
+      ...(evolutionOn
+        ? []
+        : [
+            {
+              key: "myProfile",
+              title: "Profile, code & plan",
+              icon: "👤",
+              summary: "Your logo, the code clients sign up with, your plan, referrals and settings.",
+              route: "MyProfile",
+              onPress: () => navigation.navigate("MyProfile"),
+            },
+            {
+              key: "signUps",
+              title: "Client sign-ups",
+              icon: "📝",
+              summary: "Clients who signed up with your code and are waiting for you to activate them.",
+              route: "SignUps",
+              onPress: () => navigation.navigate("SignUps"),
+            },
+          ]),
+      ...evolutionSwitch,
       { ...TIMER_MENU_ITEM, route: "Timers", onPress: () => navigation.navigate("Timers") },
       { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
       problems,
@@ -84,6 +125,7 @@ export function useTrainerMenuItems(): MenuItem[] {
         if (trainer) startMyWorkout(trainer, navigation);
       },
     },
+    ...evolutionSwitch,
     { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
     // Problems go to the owner in the app, linked to the trainer (0151).
     problems,

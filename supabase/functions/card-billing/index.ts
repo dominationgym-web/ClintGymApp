@@ -15,8 +15,8 @@
 //   cancel    stop automatic payments and remove the saved card
 //   verify    record a payment when the trainer comes back from Paystack
 //   daily     (pg_cron, x-cron-secret) charge saved cards for anything owed
-// Banked referral credit (each counted referral = 25% of a month's plan,
-// 0166) comes off automatically: off the plan payment, or off client fees for
+// Banked referral credit (each counted referral = 50% of a month's plan,
+// 0166, 0192) comes off automatically: off the plan payment, or off client fees for
 // free-use trainers, the same way the owner's Record payment uses it.
 // Paystack's webhook (x-paystack-signature) records charges too.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -30,7 +30,7 @@ const CARD_CHECK_CENTS = 500;
 // A saved card that failed isn't tried again for this many days.
 const RETRY_DAYS = 3;
 // Each counted referral is this much of a month's plan (src/lib/trainers.ts).
-const REFERRAL_DISCOUNT_PERCENT = 25;
+const REFERRAL_DISCOUNT_PERCENT = 50;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -98,7 +98,7 @@ async function quote(admin: Admin, trainerId: string, planWindow: number): Promi
     admin.from("billing_settings").select("*").eq("id", 1).single(),
     admin
       .from("trainers")
-      .select("billing_plan, billing_currency, billing_started_on, paid_until, free_use_from, is_owner, signup_country, referral_credits_used")
+      .select("billing_plan, billing_currency, billing_started_on, paid_until, free_use_from, is_owner, signup_country, referral_credits_used, discount_percent, discount_until")
       .eq("id", trainerId)
       .maybeSingle(),
     admin.rpc("billing_status_for", { p_trainer: trainerId }),
@@ -119,12 +119,16 @@ async function quote(admin: Admin, trainerId: string, planWindow: number): Promi
     trainer.billing_started_on <= addDays(today, planWindow) &&
     !!paidThrough &&
     paidThrough < addDays(today, planWindow);
-  const plan_amount = planDue ? Number(planPrices?.[currency]?.[trainer.billing_plan] ?? 0) : 0;
+  // Less the owner's discount for this trainer, while it lasts (0192). Client
+  // fees owed already have it taken off (billing_month_rows).
+  const discount = trainer.discount_percent && trainer.discount_until && trainer.discount_until >= today ? trainer.discount_percent / 100 : 0;
+  const plan_amount = planDue ? Math.round(Number(planPrices?.[currency]?.[trainer.billing_plan] ?? 0) * (1 - discount) * 100) / 100 : 0;
   const fees_amount = Math.max(0, Number(status?.[0]?.client_fees_owed ?? 0));
   // Referral credit: enough whole credits to cover the plan (as creditsUsable
   // in src/lib/billing.ts), or for free use whole credits within the fees.
   const unused = Math.max(0, (counted ?? 0) - Number(trainer.referral_credits_used ?? 0));
-  const perCredit = (REFERRAL_DISCOUNT_PERCENT * Number(planPrices?.[currency]?.monthly ?? 0)) / 100;
+  // Each credit is 50% of what a month costs them, after any discount (as in the app).
+  const perCredit = (REFERRAL_DISCOUNT_PERCENT * Number(planPrices?.[currency]?.monthly ?? 0) * (1 - discount)) / 100;
   let referral_credits = 0;
   let credit_amount = 0;
   if (unused > 0 && perCredit > 0) {

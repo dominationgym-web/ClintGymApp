@@ -99,6 +99,10 @@ export type TrainerStackParamList = {
   GroupLive: { clientId?: string } | undefined;
   ProgramBuilder: undefined;
   Billing: undefined;
+  // The trainer's profile and client sign-ups, reached from the 1 on 1 menu
+  // while the Evolution side (where their tabs live) is switched off (0192).
+  MyProfile: undefined;
+  SignUps: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
   // Every coaching guide, on one menu line (2026-10-27).
   CoachingGuides: undefined;

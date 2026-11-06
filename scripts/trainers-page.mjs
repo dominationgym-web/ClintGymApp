@@ -322,42 +322,40 @@ ${slides}
 <div class="modes">${modes}</div>
 
 <h2 class="section">Simple pricing</h2>
-<p class="section">Free for 30 days, then pay only for what you use. Pick the side you need: one price covers everything, or just run your in-person sessions for less.</p>
+<p class="section">Everyone starts on 1 on 1, free for 30 days. Switch on Evolution when you want to coach online: it gets its own 30 days free.</p>
 ${[
-  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 20, t2: 10, per: 10, evoMax: "1 100", oneMax: 200, six: ["1 000", 500], year: ["1 800", 900] },
-  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 2, t2: 1, per: 1, evoMax: "110", oneMax: 20, six: ["100", 50], year: ["180", 90] },
+  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 20, per: 10, evoMax: "500", six: ["1 000", 500], year: ["1 800", 900] },
+  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 2, per: 1, evoMax: "50", six: ["100", 50], year: ["180", 90] },
 ].map((r) => `<h3 class="region">${r.flag} ${r.title}</h3>
 <div class="prices">
+  <div class="price">
+    <div class="where">🤝 1 on 1 <em>In-person</em></div>
+    <div class="amount">${r.c}${r.one}<span>/month</span></div>
+    <ul>
+      <li>Plus ${r.c}${r.per} per client a month</li>
+      <li>Clients counted from your calendar: they don't need the app</li>
+      <li>6 months: ${r.c}${r.six[1]} upfront <span class="save">1 month free</span></li>
+      <li>12 months: ${r.c}${r.year[1]} upfront <span class="save">3 months free</span></li>
+    </ul>
+    <button type="button" class="get-btn" data-open="get-one">What you get ›</button>
+  </div>
   <div class="price">
     <div class="where">🌐 Evolution <em>Both sides</em></div>
     <div class="amount">${r.c}${r.evo}<span>/month</span></div>
     <ul>
       <li>Online coaching and 1 on 1 sessions in one price</li>
-      <li>First 5 clients included</li>
-      <li>Clients 6-35: ${r.c}${r.t1} each</li>
-      <li>Clients 36-65: ${r.c}${r.t2} each</li>
-      <li>Clients 66+: free</li>
+      <li>30 days free from the day you switch it on</li>
+      <li>First 5 clients free</li>
+      <li>Clients 6-20: ${r.c}${r.t1} each, clients 21+ free</li>
       <li><b>Max ${r.c}${r.evoMax} a month</b>, however many clients</li>
       <li>6 months: ${r.c}${r.six[0]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[0]} upfront <span class="save">3 months free</span></li>
     </ul>
     <button type="button" class="get-btn" data-open="get-evo">What you get ›</button>
-  </div>
-  <div class="price">
-    <div class="where">🤝 1 on 1 only <em>In-person</em></div>
-    <div class="amount">${r.c}${r.one}<span>/month</span></div>
-    <ul>
-      <li>${r.c}${r.per} per client a month, first 10 clients only</li>
-      <li>Clients counted from your calendar: they don't need the app</li>
-      <li><b>Max ${r.c}${r.oneMax} a month</b>, however many clients</li>
-      <li>6 months: ${r.c}${r.six[1]} upfront <span class="save">1 month free</span></li>
-      <li>12 months: ${r.c}${r.year[1]} upfront <span class="save">3 months free</span></li>
-    </ul>
-    <button type="button" class="get-btn" data-open="get-one">What you get ›</button>
-    <p class="note">Add an online client any time and you move to Evolution, which covers both. The app tells you first.</p>
+    <p class="note">Switch it off any time to stop paying for it.</p>
   </div>
 </div>`).join("\n")}
-<p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1 only, everyone on your calendar that month. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
+<p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1, everyone on your calendar that month. Refer another trainer and get 50% off a month for each one who stays. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
 
 <dialog id="get-one" class="get" tabindex="-1" autofocus>
   <h3>🤝 What you get with 1 on 1</h3>

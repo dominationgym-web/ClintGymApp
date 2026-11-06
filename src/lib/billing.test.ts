@@ -18,6 +18,12 @@ import {
   planStateLabel,
   referralCreditUseLine,
   referralCreditValue,
+  monthlyCap,
+  evolutionFreeUntil,
+  discountShare,
+  discountedPrices,
+  referralFreeMonths,
+  addFreeMonths,
   referralPopupDue,
   trainerCurrency,
 } from "@/lib/billing";
@@ -36,16 +42,16 @@ describe("billing helpers", () => {
     expect(money(1250, "USD")).toBe("$1,250");
   });
 
-  it("values referral credit at 25% of a month", () => {
-    expect(referralCreditValue(prices, "USD", 1)).toBe(12.5);
-    expect(referralCreditValue(prices, "ZAR", 4)).toBe(500);
+  it("values referral credit at 50% of a month", () => {
+    expect(referralCreditValue(prices, "USD", 1)).toBe(25);
+    expect(referralCreditValue(prices, "ZAR", 4)).toBe(1000);
   });
 
   it("takes referral credit off a plan payment without going below zero", () => {
-    expect(planAmountDue(prices, "USD", "monthly", 2)).toBe(25);
+    expect(planAmountDue(prices, "USD", "monthly", 1)).toBe(25);
     expect(planAmountDue(prices, "USD", "monthly", 6)).toBe(0);
-    expect(planAmountDue(prices, "ZAR", "six_months", 2)).toBe(2250);
-    expect(creditsUsable(prices, "USD", "monthly", 6)).toBe(4);
+    expect(planAmountDue(prices, "ZAR", "six_months", 2)).toBe(2000);
+    expect(creditsUsable(prices, "USD", "monthly", 6)).toBe(2);
     expect(creditsUsable(prices, "USD", "yearly", 3)).toBe(3);
   });
 
@@ -108,8 +114,8 @@ describe("free use (0096)", () => {
 
 describe("referral credit off client fees", () => {
   const prices = { USD: { monthly: 50, six_months: 250, yearly: 400, client: 10 }, ZAR: { monthly: 500, six_months: 2500, yearly: 4000, client: 100 } };
-  it("uses whole R125 credits, never more than is owed", () => {
-    expect(feeCreditsUsable(prices, "ZAR", 300, 5)).toBe(2);
+  it("uses whole R250 credits, never more than is owed", () => {
+    expect(feeCreditsUsable(prices, "ZAR", 300, 5)).toBe(1);
     expect(feeCreditsUsable(prices, "ZAR", 1000, 3)).toBe(3);
     expect(feeCreditsUsable(prices, "ZAR", 100, 3)).toBe(0);
     expect(feeCreditsUsable(prices, "ZAR", 0, 3)).toBe(0);
@@ -177,37 +183,55 @@ describe("pricing by side (0179)", () => {
       ZAR: { monthly: 200, six_months: 1000, yearly: 1800, client: 50 },
     },
     free_clients: 5,
-    client_tiers: [
-      { upto: 35, ZAR: 20, USD: 2 },
-      { upto: 65, ZAR: 10, USD: 1 },
-    ],
+    client_tiers: [{ upto: 20, ZAR: 20, USD: 2 }],
     one_on_one_prices: {
       USD: { monthly: 10, six_months: 50, yearly: 90 },
       ZAR: { monthly: 100, six_months: 500, yearly: 900 },
     },
-    one_on_one_tiers: [{ upto: 10, ZAR: 10, USD: 1 }],
+    one_on_one_tiers: [{ upto: 100000, ZAR: 10, USD: 1 }],
   };
 
-  it("bills Evolution with 5 free, $2 to 35, $1 to 65, then free", () => {
+  it("bills Evolution with 5 free, $2 each to 20, then free (0192)", () => {
+    expect(monthlyBill(settings, "evolution", "USD", 3)).toBe(20);
     expect(monthlyBill(settings, "evolution", "USD", 10)).toBe(30);
-    expect(monthlyBill(settings, "evolution", "USD", 30)).toBe(70);
-    expect(monthlyBill(settings, "evolution", "USD", 70)).toBe(110);
-    expect(monthlyBill(settings, "evolution", "ZAR", 30)).toBe(700);
-    expect(monthlyBill(settings, "evolution", "ZAR", 200)).toBe(1100);
+    expect(monthlyBill(settings, "evolution", "USD", 20)).toBe(50);
+    expect(monthlyBill(settings, "evolution", "USD", 70)).toBe(50);
+    expect(monthlyBill(settings, "evolution", "ZAR", 200)).toBe(500);
+    expect(monthlyCap(settings, "evolution", "ZAR")).toBe(500);
   });
 
-  it("bills 1 on 1 only at $10 plus $1 a client, capped at 10 clients", () => {
+  it("bills 1 on 1 at $10 plus $1 for every client, no cap (0192)", () => {
     expect(monthlyBill(settings, "one_on_one", "USD", 0)).toBe(10);
     expect(monthlyBill(settings, "one_on_one", "USD", 10)).toBe(20);
-    expect(monthlyBill(settings, "one_on_one", "ZAR", 7)).toBe(170);
-    expect(monthlyBill(settings, "one_on_one", "ZAR", 30)).toBe(200);
-    expect(monthlyBill(settings, "one_on_one", "USD", 100)).toBe(20);
+    expect(monthlyBill(settings, "one_on_one", "ZAR", 30)).toBe(400);
+    expect(monthlyBill(settings, "one_on_one", "USD", 100)).toBe(110);
+    expect(monthlyCap(settings, "one_on_one", "USD")).toBeNull();
     expect(planPrice(sidePricing(settings, "one_on_one").prices, "ZAR", "yearly")).toBe(900);
-    expect(referralCreditValue(sidePricing(settings, "one_on_one").prices, "USD", 1)).toBe(2.5);
+    expect(referralCreditValue(sidePricing(settings, "one_on_one").prices, "USD", 1)).toBe(5);
   });
 
   it("lists the tiers per side", () => {
-    expect(clientTierLines(settings.client_tiers, "ZAR", 5)).toEqual(["Clients 6-35: R20 each", "Clients 36-65: R10 each", "Clients 66+: free"]);
-    expect(clientTierLines(settings.one_on_one_tiers, "USD", 0)).toEqual(["Clients 1-10: $1 each", "Clients 11+: free"]);
+    expect(clientTierLines(settings.client_tiers, "ZAR", 5)).toEqual(["Clients 6-20: R20 each", "Clients 21+: free"]);
+    expect(clientTierLines(settings.one_on_one_tiers, "USD", 0)).toEqual(["Every client: $1 each"]);
+  });
+});
+
+describe("Evolution switch, discounts and free months (0192)", () => {
+  it("gives 30 free days from the day it's switched on", () => {
+    expect(evolutionFreeUntil("2026-11-06")).toBe("2026-12-05");
+    expect(evolutionFreeUntil(null)).toBeNull();
+  });
+
+  it("takes a discount off while it lasts", () => {
+    expect(discountShare({ discount_percent: 50, discount_until: "2027-06-30" }, "2027-06-30")).toBe(0.5);
+    expect(discountShare({ discount_percent: 50, discount_until: "2027-06-30" }, "2027-07-01")).toBe(0);
+    expect(discountShare({}, "2027-01-01")).toBe(0);
+    expect(discountedPrices(prices, 0.5).ZAR.monthly).toBe(250);
+  });
+
+  it("turns unused referrals into free months, half a month each", () => {
+    expect(referralFreeMonths(3)).toBe(1.5);
+    expect(addFreeMonths("2026-11-30", 1.5)).toBe("2027-01-14");
+    expect(addFreeMonths("2027-01-31", 1)).toBe("2027-02-28");
   });
 });

@@ -186,6 +186,10 @@ export default function TrainerNavigator() {
             <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />
             <Stack.Screen name="LiveSessions" component={LiveSessionsScreen} options={{ title: "Live sessions", headerBackTitle: "Back" }} />
             <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
+            <Stack.Screen name="MyProfile" component={TrainerProfileScreen} options={{ title: "Profile", headerBackTitle: "Back" }} />
+            <Stack.Screen name="SignUps" options={{ title: "Clients and sign-ups", headerBackTitle: "Back" }}>
+              {({ navigation }) => <ClientListPanel onOpen={(clientId) => navigation.navigate("ClientDetail", { clientId })} />}
+            </Stack.Screen>
             <Stack.Screen
               name="ProgramBuilder"
               component={ProgramBuilderScreen}

@@ -72,6 +72,13 @@ export type Trainer = {
   // 0189: Metric (kg, cm) or Imperial (lb, inches). History imports read
   // numbers with no unit shown in these units. Stored values stay kg and cm.
   units?: Units;
+  // 0192: the Evolution side is switched on, and the day it was first
+  // switched on (its 30 free days start then, once).
+  evolution_on?: boolean;
+  evolution_started_on?: string | null;
+  // 0192: a discount the owner gave (e.g. 50% until a date), off plan and client fees.
+  discount_percent?: number | null;
+  discount_until?: string | null;
 }
 
 export type Units = "metric" | "imperial";
@@ -148,6 +155,8 @@ export type ReferralPayout = {
   currency: BillingCurrency;
   paid_on: string;
   created_at: string;
+  // 0192: given as free extra months instead of cash (amount 0).
+  free_months?: number | null;
 };
 
 export type TrainerBillingStatus = {

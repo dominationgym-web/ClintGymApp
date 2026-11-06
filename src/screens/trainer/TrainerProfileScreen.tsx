@@ -17,10 +17,12 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { myPlanPrices } from "@/lib/myPlanPrices";
+import CopyCodeButton from "@/components/CopyCodeButton";
 import { avatarContentType } from "@/lib/avatars";
 import {
   EFT_FIELDS,
   REFERRAL_DISCOUNT_PERCENT,
+  REFERRALS_PER_FREE_MONTH,
   REFERRAL_WAIT_MONTHS,
   TRAINER_LOGO_BUCKET,
   type ReferralProgress,
@@ -227,9 +229,12 @@ export default function TrainerProfileScreen() {
               <Text style={[styles.hint, { textAlign: "center" }]}>
                 {trainer.is_owner ? "Clients sign up with this code." : "Clients and trainers sign up with this code."}
               </Text>
-              <Pressable style={styles.secondaryButton} onPress={shareCode}>
-                <Text style={styles.secondaryButtonText}>Share my code</Text>
-              </Pressable>
+              <View style={styles.codeButtons}>
+                <CopyCodeButton code={trainer.join_code} />
+                <Pressable style={[styles.secondaryButton, styles.codeButton]} onPress={shareCode}>
+                  <Text style={styles.secondaryButtonText}>Share my code</Text>
+                </Pressable>
+              </View>
             </View>
           </>
         )}
@@ -253,13 +258,16 @@ export default function TrainerProfileScreen() {
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
                 Another trainer enters this when they sign up. For each one who's still with Daily Evolution{" "}
-                {REFERRAL_WAIT_MONTHS} months after their free trial, you get {REFERRAL_DISCOUNT_PERCENT}% off a month. 4 referrals = a
+                {REFERRAL_WAIT_MONTHS} months after their free trial, you get {REFERRAL_DISCOUNT_PERCENT}% off a month. {REFERRALS_PER_FREE_MONTH} referrals = a
                 free month. {referralCreditUseLine(!!trainer.free_use_from)} If you cancel, unused
-                referrals are paid out to you.
+                referrals become free extra months (no cash refunds).
               </Text>
-              <Pressable style={styles.secondaryButton} onPress={shareReferral}>
-                <Text style={styles.secondaryButtonText}>Share with a trainer</Text>
-              </Pressable>
+              <View style={styles.codeButtons}>
+                <CopyCodeButton code={trainer.join_code} />
+                <Pressable style={[styles.secondaryButton, styles.codeButton]} onPress={shareReferral}>
+                  <Text style={styles.secondaryButtonText}>Share with a trainer</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.rewardRow}>
@@ -385,6 +393,8 @@ const styles = themedStyles({
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   secondaryButton: { borderColor: "#22C55E", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   secondaryButtonText: { color: "#22C55E", fontWeight: "700" },
+  codeButtons: { flexDirection: "row", gap: 10, flexWrap: "wrap", justifyContent: "center" },
+  codeButton: { paddingHorizontal: 16 },
   trialBox: { backgroundColor: "#1E293B", borderRadius: 12, borderWidth: 1, borderColor: "#22C55E", padding: 14, marginBottom: 14 },
   trialTitle: { color: "#fff", fontSize: 17, fontWeight: "800" },
   rewardRow: { flexDirection: "row", gap: 10, marginTop: 6 },
