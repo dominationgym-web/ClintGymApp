@@ -106,6 +106,8 @@ export type BillingSettings = {
   // 1 on 1 only pricing (0179): plan prices and per-client tiers (no free clients).
   one_on_one_prices: Record<BillingCurrency, Record<BillingPlan, number>>;
   one_on_one_tiers: ClientTier[];
+  // Evolution (0193): people only in the 1 on 1 diary have their own fee and limit.
+  diary_client_tiers: ClientTier[];
   client_fees_due_day: number;
   lockout_enabled: boolean;
   // Card payments on the website (0136), off until the store launch.

@@ -324,8 +324,8 @@ ${slides}
 <h2 class="section">Simple pricing</h2>
 <p class="section">Everyone starts on 1 on 1, free for 30 days. Switch on Evolution when you want to coach online: it gets its own 30 days free.</p>
 ${[
-  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 10, per: 10, max: "300", six: ["1 000", 500], year: ["1 800", 900] },
-  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 1, per: 1, max: "30", six: ["100", 50], year: ["180", 90] },
+  { flag: "🇿🇦", title: "South Africa", c: "R", evo: 200, one: 100, t1: 10, per: 10, max: "300", evoMax: "400", six: ["1 000", 500], year: ["1 800", 900] },
+  { flag: "🌍", title: "International", c: "$", evo: 20, one: 10, t1: 1, per: 1, max: "30", evoMax: "40", six: ["100", 50], year: ["180", 90] },
 ].map((r) => `<h3 class="region">${r.flag} ${r.title}</h3>
 <div class="prices">
   <div class="price">
@@ -347,8 +347,10 @@ ${[
       <li>Online coaching and 1 on 1 sessions in one price</li>
       <li>30 days free from the day you switch it on</li>
       <li>First 5 clients free</li>
-      <li>Clients 6-15: ${r.c}${r.t1} each, clients 16+ free</li>
-      <li><b>Max ${r.c}${r.max} a month</b>, however many clients</li>
+      <li>App clients 6-15: ${r.c}${r.t1} each, 16+ free</li>
+      <li>1 on 1 clients not on the app: ${r.c}${r.per} each for up to 10, then free</li>
+      <li>Someone on both sides counts once</li>
+      <li><b>Max ${r.c}${r.evoMax} a month</b>, however many clients</li>
       <li>6 months: ${r.c}${r.six[0]} upfront <span class="save">1 month free</span></li>
       <li>12 months: ${r.c}${r.year[0]} upfront <span class="save">3 months free</span></li>
     </ul>

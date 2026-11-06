@@ -3,6 +3,7 @@ import {
   amountsLabel,
   clientFeeTotal,
   clientTierLines,
+  diaryTierLine,
   creditsUsable,
   feeCreditsUsable,
   freeUseFeesStart,
@@ -189,6 +190,7 @@ describe("pricing by side (0179)", () => {
       ZAR: { monthly: 100, six_months: 500, yearly: 900 },
     },
     one_on_one_tiers: [{ upto: 20, ZAR: 10, USD: 1 }],
+    diary_client_tiers: [{ upto: 10, ZAR: 10, USD: 1 }],
   };
 
   it("bills Evolution with 5 free, $1 each to 15, then free (0193)", () => {
@@ -197,7 +199,16 @@ describe("pricing by side (0179)", () => {
     expect(monthlyBill(settings, "evolution", "USD", 15)).toBe(30);
     expect(monthlyBill(settings, "evolution", "USD", 70)).toBe(30);
     expect(monthlyBill(settings, "evolution", "ZAR", 200)).toBe(300);
-    expect(monthlyCap(settings, "evolution", "ZAR")).toBe(300);
+  });
+
+  it("bills Evolution people only in the 1 on 1 diary $1 each up to 10 (0193)", () => {
+    expect(monthlyBill(settings, "evolution", "USD", 3, 4)).toBe(24);
+    expect(monthlyBill(settings, "evolution", "USD", 15, 10)).toBe(40);
+    expect(monthlyBill(settings, "evolution", "USD", 40, 40)).toBe(40);
+    expect(monthlyBill(settings, "one_on_one", "USD", 10, 5)).toBe(20);
+    expect(monthlyCap(settings, "evolution", "ZAR")).toBe(400);
+    expect(monthlyCap(settings, "evolution", "USD")).toBe(40);
+    expect(diaryTierLine(settings, "ZAR")).toBe("People only on your 1 on 1 side: R10 each, up to 10 (then free)");
   });
 
   it("bills 1 on 1 at $10 plus $1 a client for the first 20 (0193)", () => {
