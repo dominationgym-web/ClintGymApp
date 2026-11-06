@@ -61,18 +61,10 @@ export function useTrainerMenuItems(): MenuItem[] {
         route: "LiveSessions",
         onPress: () => navigation.navigate("LiveSessions", { tab: "setup" }),
       },
-      // With Evolution off its Profile and Clients tabs are hidden, so they're here (0192).
+      // With Evolution off its Clients tab (where sign-ups wait) is hidden, so it's here (0192).
       ...(evolutionOn
         ? []
         : [
-            {
-              key: "myProfile",
-              title: "Profile, code & plan",
-              icon: "👤",
-              summary: "Your logo, the code clients sign up with, your plan, referrals and settings.",
-              route: "MyProfile",
-              onPress: () => navigation.navigate("MyProfile"),
-            },
             {
               key: "signUps",
               title: "Client sign-ups",

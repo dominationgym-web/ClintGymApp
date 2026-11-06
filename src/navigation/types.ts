@@ -65,6 +65,8 @@ export type TrainerTabParamList = {
   OneClients: undefined;
   OneNutrition: undefined;
   OneInvoices: undefined;
+  // The same Profile page as on Evolution (GRIZZ, 2026-11-06).
+  OneProfile: undefined;
   // The Evolution side: online clients.
   Dashboard: undefined;
   Clients: undefined;
@@ -99,9 +101,8 @@ export type TrainerStackParamList = {
   GroupLive: { clientId?: string } | undefined;
   ProgramBuilder: undefined;
   Billing: undefined;
-  // The trainer's profile and client sign-ups, reached from the 1 on 1 menu
-  // while the Evolution side (where their tabs live) is switched off (0192).
-  MyProfile: undefined;
+  // Client sign-ups, reached from the 1 on 1 menu while the Evolution side
+  // (where the Clients tab lives) is switched off (0192).
   SignUps: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
   // Every coaching guide, on one menu line (2026-10-27).

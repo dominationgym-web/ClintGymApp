@@ -104,6 +104,7 @@ function TrainerTabs() {
           <Tab.Screen name="OneClients" component={OneClients} options={{ title: "Clients", tabBarIcon: tabIcon("people") }} />
           <Tab.Screen name="OneNutrition" component={OneNutritionScreen} options={{ title: "Nutrition", tabBarIcon: tabIcon("nutrition") }} />
           <Tab.Screen name="OneInvoices" component={OneInvoices} options={{ title: "Invoices", tabBarIcon: tabIcon("receipt") }} />
+          <Tab.Screen name="OneProfile" component={TrainerProfileScreen} options={{ title: "Profile", tabBarIcon: tabIcon("person-circle") }} />
         </>
       ) : (
         <>
@@ -186,7 +187,6 @@ export default function TrainerNavigator() {
             <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />
             <Stack.Screen name="LiveSessions" component={LiveSessionsScreen} options={{ title: "Live sessions", headerBackTitle: "Back" }} />
             <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
-            <Stack.Screen name="MyProfile" component={TrainerProfileScreen} options={{ title: "Profile", headerBackTitle: "Back" }} />
             <Stack.Screen name="SignUps" options={{ title: "Clients and sign-ups", headerBackTitle: "Back" }}>
               {({ navigation }) => <ClientListPanel onOpen={(clientId) => navigation.navigate("ClientDetail", { clientId })} />}
             </Stack.Screen>
