@@ -190,7 +190,7 @@ begin
       r.referred_by,
       'You earned 50% off 🎉',
       coalesce(r.display, 'Your referral') || ' has been with Daily Evolution for 3 months. That''s ' || earned || ' referral'
-        || case when earned = 1 then '' else 's' end || ' so far. 4 referrals = a free month.',
+        || case when earned = 1 then '' else 's' end || ' so far. 2 referrals = a free month.',
       jsonb_build_object('type', 'referral_approved', 'trainerId', r.id)
     );
     for owner_id in select t.id from public.trainers t where t.is_owner and t.id <> r.referred_by loop
