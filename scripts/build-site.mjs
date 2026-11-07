@@ -61,7 +61,7 @@ ${body}
 </html>
 `;
 
-const ANDROID_APK = "https://expo.dev/artifacts/eas/hBewg4fM7bzmhja47GHXL14yLFNnKZ5l-YLHMTaPzy8.apk";
+const ANDROID_APK = "https://expo.dev/artifacts/eas/9cS442MYZZfYRdis0BJVeKRb88d48YqsAL2UsxdzU00.apk";
 
 const pages = {
   "index.html": page(
