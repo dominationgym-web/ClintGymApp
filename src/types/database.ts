@@ -796,6 +796,9 @@ export type ClientMealPlan = {
     likes?: string[];
     weekly?: boolean;
     trainDays?: number[];
+    snacks?: string[];
+    // The trainer's own calories over (+) or under (-) what the body uses.
+    kcalAdjust?: number | null;
   };
   targets: { kcal: number; protein: number; carbs: number; fat: number };
   training_day: DietDay;

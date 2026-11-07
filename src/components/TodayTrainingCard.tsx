@@ -74,6 +74,17 @@ export default function TodayTrainingCard({ clientId }: { clientId: string }) {
           <Text style={styles.link}>Open ›</Text>
         </Pressable>
       )}
+      {/* The week's shopping list in one tap (GRIZZ, 2026-11-07). */}
+      {hasMealPlan && (
+        <Pressable
+          style={styles.row}
+          onPress={() => navigation.navigate("Section", { sectionKey: "nutrition", open: COACH_MEAL_PLAN_TITLE, shop: true })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowText}>My shopping list</Text>
+          <Text style={styles.link}>Open ›</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
