@@ -45,7 +45,7 @@ export default function SectionScreen({ route }: Props) {
 
   const parts: { title: string; body: React.ReactNode; icon?: string; tag?: SupplementLevel }[] = [];
   if (section.key === "nutrition") {
-    parts.push({ title: COACH_MEAL_PLAN_TITLE, icon: "🥗", body: <ClientDietPlanView /> });
+    parts.push({ title: COACH_MEAL_PLAN_TITLE, icon: "🥗", body: <ClientDietPlanView shop={route.params.shop} /> });
     // Muscle Year (GRIZZ, 2026-10-24): BMR, macros and the 2-weekly weight check.
     // The meal plan itself is the coach's (GRIZZ, 2026-11-02): it opens under
     // the heading above, where the client swaps foods and puts in their own meals.

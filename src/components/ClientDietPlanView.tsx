@@ -10,12 +10,18 @@ import { useMealTicks } from "@/hooks/useMealTicks";
 import MealPlanMaker, { MealTickButton } from "@/components/MealPlanMaker";
 import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import { themeText, themedStyles } from "@/lib/theme";
+import ShoppingListSheet from "@/components/ShoppingListSheet";
+import { intakeTrainingDays } from "@/lib/intakePages";
+import { todayIso } from "@/lib/dates";
+import { weekStart } from "@/lib/mealWeek";
 
 // The client's meal plan from their trainer, in the Nutrition section: the
 // diet planner week (0071), read-only, opening on today one day at a time, or
 // else the plan the trainer worked out with the meal plan maker (0077).
-function MealPlan() {
+function MealPlan({ shop }: { shop?: boolean }) {
   const { client } = useAuth();
+  // The coach's own week has a shopping list too (GRIZZ, 2026-11-07).
+  const [shopping, setShopping] = useState(!!shop);
   const userId = client?.id;
   const [plan, setPlan] = useState<ClientDietPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +62,7 @@ function MealPlan() {
   if (!plan || days.every((d) => d.meals.every((m) => m.items.length === 0))) {
     // No week from the diet planner: the plan the coach worked out with the
     // meal plan maker, where the client can swap foods (GRIZZ, 2026-11-02).
-    return <MealPlanMaker />;
+    return <MealPlanMaker openShopping={shop} />;
   }
 
   const target = dailyTarget({ ...plan, activity: Number(plan.activity) });
@@ -65,6 +71,20 @@ function MealPlan() {
 
   return (
     <View>
+      <Pressable style={styles.shopButton} onPress={() => setShopping(true)}>
+        <Text style={styles.shopText}>🛒 My shopping list for the week</Text>
+      </Pressable>
+      <ShoppingListSheet
+        visible={shopping}
+        trainingDay={days[0]}
+        restDay={days[0]}
+        trains={false}
+        days={intakeTrainingDays(client?.intake_responses as Record<string, string> | null).length}
+        onDays={() => {}}
+        onClose={() => setShopping(false)}
+        week={days}
+        saveKey={userId ? `${userId}:${weekStart(todayIso())}:coach` : undefined}
+      />
       <View style={styles.dayTabs}>
         {DIET_WEEKDAYS.map((d, i) => (
           <Pressable key={d} style={[styles.dayTab, i === day && styles.dayTabOn]} onPress={() => setDay(i)}>
@@ -111,7 +131,7 @@ function MealPlan() {
 // The client's meal plan, with a short form above it for clients who did
 // their intake before it asked height, weight and activity (GRIZZ,
 // 2026-10-12), so their coach's diet planner can work out their BMR.
-export default function ClientDietPlanView() {
+export default function ClientDietPlanView({ shop }: { shop?: boolean } = {}) {
   const { client, refreshProfile } = useAuth();
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
@@ -162,12 +182,14 @@ export default function ClientDietPlanView() {
           </Pressable>
         </View>
       )}
-      <MealPlan />
+      <MealPlan shop={shop} />
     </View>
   );
 }
 
 const styles = themedStyles({
+  shopButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 12, alignItems: "center", marginBottom: 10 },
+  shopText: { color: "#0F172A", fontWeight: "800" },
   ask: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: BRAND_GOLD },
   askTitle: { color: "#fff", fontWeight: "800", marginBottom: 4 },
   askRow: { flexDirection: "row", gap: 8, marginTop: 10 },
