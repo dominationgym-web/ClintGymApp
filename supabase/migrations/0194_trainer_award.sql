@@ -37,7 +37,7 @@ create table if not exists public.award_settings (
     {"trainers": 250, "places": [500]},
     {"trainers": 500, "places": [1000]},
     {"trainers": 1000, "places": [1500, 500]},
-    {"trainers": 2000, "places": [2000, 500, 500]},
+    {"trainers": 2000, "places": [2000, 1000, 500]},
     {"trainers": 3000, "places": [2500, 1000, 800, 500, 300]}
   ]'::jsonb,
   prize_text text,
