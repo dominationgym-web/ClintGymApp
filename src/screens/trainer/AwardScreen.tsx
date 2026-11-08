@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, RefreshControl, Text, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useRoute, type RouteProp } from "@react-navigation/native";
+import type { TrainerStackParamList } from "@/navigation/types";
 import { ScrollView } from "@/components/ScrollView";
 import FoldSection from "@/components/FoldSection";
 import TrainerLogo from "@/components/TrainerLogo";
@@ -13,15 +14,27 @@ import { themeText, themedStyles } from "@/lib/theme";
 // The trainer's Trainer of the Half-Year page (0194). Only the top-25%
 // yes/no and one tip, never a score or rank; the cooldown badge for a recent
 // winner; the published rules; and the live reveal at the end of a period.
+// With preview (owner only, from Trainer award > Scores) it shows the page a
+// trainer will see once the award is on, even while it is off, as a South
+// African or an overseas trainer, with or without a sample winner reveal.
 export default function AwardScreen() {
+  const route = useRoute<RouteProp<TrainerStackParamList, "Award">>();
+  const preview = !!route.params?.preview;
   const [status, setStatus] = useState<AwardTrainerStatus | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [asSa, setAsSa] = useState(true);
+  const [showReveal, setShowReveal] = useState(false);
 
   const load = useCallback(async () => {
+    if (preview) {
+      const { data } = await supabase.rpc("award_preview_status", { p_sa: asSa });
+      setStatus((data as AwardTrainerStatus | null) ?? { enabled: false });
+      return;
+    }
     const { data } = await supabase.rpc("my_award_status");
     setStatus((data as AwardTrainerStatus | null) ?? { enabled: false });
-  }, []);
+  }, [preview, asSa]);
   useFocusEffect(
     useCallback(() => {
       load();
@@ -36,7 +49,7 @@ export default function AwardScreen() {
       </View>
     );
 
-  const reveal = status.reveal;
+  const reveal = preview ? (showReveal ? sampleReveal(status) : null) : status.reveal;
   const message = status.message;
   return (
     <View style={styles.container}>
@@ -54,6 +67,21 @@ export default function AwardScreen() {
           />
         }
       >
+        {preview && (
+          <View style={styles.previewBox}>
+            <Text style={styles.previewTitle}>Preview: what trainers see once the award is on</Text>
+            <View style={styles.chips}>
+              <Chip label="South African trainer" on={asSa} onPress={() => setAsSa(true)} />
+              <Chip label="Overseas trainer" on={!asSa} onPress={() => setAsSa(false)} />
+            </View>
+            <View style={styles.chips}>
+              <Chip label="Normal month" on={!showReveal} onPress={() => setShowReveal(false)} />
+              <Chip label="Winner reveal" on={showReveal} onPress={() => setShowReveal(true)} />
+            </View>
+            {status.rules_published === false ? <Text style={styles.hint}>The rules aren't published yet, so trainers won't see them.</Text> : null}
+          </View>
+        )}
+
         {reveal && (
           <View style={styles.reveal}>
             <Text style={styles.revealLabel}>
@@ -112,12 +140,44 @@ export default function AwardScreen() {
           </FoldSection>
         ) : null}
       </ScrollView>
-      <Confetti fire={reveal?.is_me ? 1 : false} />
+      <Confetti fire={reveal?.is_me && !preview ? 1 : false} />
     </View>
   );
 }
 
+function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={[styles.chip, on && styles.chipOn]} onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: on }}>
+      <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+// A made-up reveal so the owner can see the winner layout before a real one.
+function sampleReveal(status: AwardTrainerStatus): NonNullable<AwardTrainerStatus["reveal"]> {
+  const places = status.sample_places?.length ? status.sample_places : [{ place: 1, prize: "" }];
+  const names = ["Sample Trainer A", "Sample Trainer B", "Sample Trainer C", "Sample Trainer D", "Sample Trainer E"];
+  return {
+    period_ends: status.period_ends ?? `${new Date().getFullYear()}-12-31`,
+    revealed_at: new Date().toISOString(),
+    winner: names[0],
+    logo_path: null,
+    is_me: false,
+    my_place: null,
+    places: places.map((p) => ({ place: p.place, name: names[p.place - 1] ?? `Sample Trainer ${p.place}`, logo_path: null, prize: null })),
+    prize_text: places.map((p) => `${placeWord(p.place)} ${p.prize}`).join(", "),
+    stream_url: status.stream_url ?? null,
+  };
+}
+
 const styles = themedStyles({
+  previewBox: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 12, marginBottom: 14, gap: 8 },
+  previewTitle: { color: BRAND_GOLD, fontWeight: "700" },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { borderWidth: 1, borderColor: "#475569", borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12 },
+  chipOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
+  chipText: { color: "#E2E8F0", fontSize: 13 },
+  chipTextOn: { color: "#0F172A", fontWeight: "700" },
   container: { flex: 1, backgroundColor: "#0F172A" },
   card: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 14, gap: 6 },
   title: { color: "#fff", fontWeight: "700", fontSize: 16 },

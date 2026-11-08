@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl, Switch, Text, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { TrainerStackParamList } from "@/navigation/types";
 import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
@@ -134,6 +137,7 @@ async function rpc<T>(name: string, args?: Record<string, unknown>): Promise<T> 
 }
 
 function Scores() {
+  const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const { data, load, refresh } = useLoad(() => rpc<ScoreRow[]>("award_leaderboard", { p_period: null }));
   const [running, setRunning] = useState(false);
   const runNow = async () => {
@@ -152,6 +156,9 @@ function Scores() {
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={refresh}>
       <TrainerCounter />
+      <Pressable style={styles.previewButton} onPress={() => navigation.navigate("Award", { preview: true })} accessibilityRole="button">
+        <Text style={styles.previewText}>Preview what trainers see</Text>
+      </Pressable>
       <Text style={styles.hint}>
         {data[0] ? `Scores from ${longDate(data[0].score_date)}. ` : "No scores yet. "}
         Worked out every night. Only you see this; trainers only hear "top 25%" or "not yet".
@@ -450,6 +457,8 @@ function Settings() {
 const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   page: { padding: 16, paddingBottom: 40 },
+  previewButton: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 10, alignItems: "center", marginBottom: 12 },
+  previewText: { color: BRAND_GOLD, fontWeight: "700" },
   card: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 12, gap: 4 },
   heading: { color: "#94A3B8", fontWeight: "700", marginTop: 8, marginBottom: 8 },
   title: { color: "#fff", fontWeight: "700", fontSize: 15 },

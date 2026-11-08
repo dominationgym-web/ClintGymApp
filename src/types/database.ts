@@ -1808,6 +1808,7 @@ export interface Database {
       award_periods_list: { Args: Record<string, never>; Returns: unknown };
       award_reveal: { Args: { p_period: string }; Returns: undefined };
       award_trainer_counter: { Args: Record<string, never>; Returns: unknown };
+      award_preview_status: { Args: { p_sa: boolean }; Returns: unknown };
     };
   };
 }
