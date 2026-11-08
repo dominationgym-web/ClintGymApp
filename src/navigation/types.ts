@@ -112,7 +112,8 @@ export type TrainerStackParamList = {
   Stability: { area?: StabilityArea } | undefined;
   Timers: undefined;
   // Trainer of the Half-Year (0194): the trainer's page, and the owner's admin page.
-  Award: undefined;
+  // preview: the owner sees what trainers will see, even while the award is off.
+  Award: { preview?: boolean } | undefined;
   AwardAdmin: undefined;
 };
 

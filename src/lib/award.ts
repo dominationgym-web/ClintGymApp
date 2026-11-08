@@ -74,6 +74,10 @@ export interface AwardTrainerStatus {
   first_start?: string | null;
   cooldown_until?: string | null;
   message?: { sent_on: string; kind: "top" | "not_top" | "cooldown"; body: string; tip: string | null } | null;
+  // Owner preview only (award_preview_status, 0198).
+  rules_published?: boolean;
+  stream_url?: string | null;
+  sample_places?: { place: number; prize: string }[] | null;
   reveal?: {
     period_ends: string;
     revealed_at: string;
