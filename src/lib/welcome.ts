@@ -17,6 +17,9 @@ export const WELCOME_OPENING_QUESTION = "If you could be all that you could be, 
 export const WELCOME_OPENING_FOLLOW_UP =
   "What would your habits, mindsets, mannerisms, physiques, hobbies, business & routines be?";
 
+// The line under the opening question (GRIZZ, 2026-11-04: the welcome is one page now).
+export const WELCOME_CLOSING_LINE = "Change your habits and you'll change your destiny!!";
+
 export const WELCOME_BECOME = "To be what you want to be, you need to act like the person you are gonna become.";
 
 export const WELCOME_GOALS = [

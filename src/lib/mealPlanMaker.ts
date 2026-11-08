@@ -63,6 +63,12 @@ export type MealPlanSettings = {
    * snack in the longest gap between meals.
    */
   snacks?: string[];
+  /**
+   * The trainer's own calories over (+) or under (-) what the body uses
+   * (GRIZZ, 2026-11-07: "adjust the calorie deficit or increase to whatever
+   * he feels is good"). Not set means the goal's usual amount.
+   */
+  kcalAdjust?: number | null;
 };
 
 export const MAX_SNACKS = 2;
@@ -154,6 +160,53 @@ export function goalKcal(
   if (goal !== "lose") return need;
   const cut = Math.round((need * (1 - LOSE_SHARE)) / 10) * 10;
   return Math.min(need, Math.max(kcalFloor(body.sex, body.bmr), cut));
+}
+
+/** How far the trainer can move the calories from what the body uses, either way. */
+export const MAX_KCAL_ADJUST = 1000;
+
+/**
+ * The day's calories with the trainer's own adjustment: what the body uses
+ * plus or minus their amount. Under never goes below the safe floor.
+ */
+export function adjustedKcal(
+  need: number,
+  adjust: number,
+  body: { sex?: "male" | "female" | null; bmr?: number | null } = {},
+): number {
+  const step = Math.max(-MAX_KCAL_ADJUST, Math.min(MAX_KCAL_ADJUST, Math.round(adjust)));
+  const kcal = need + step;
+  return step < 0 ? Math.max(Math.min(need, kcalFloor(body.sex, body.bmr)), kcal) : kcal;
+}
+
+/** The usual adjustment for a goal, as a number over or under what the body uses. */
+export function goalAdjust(need: number, goal: MealGoal, body: { sex?: "male" | "female" | null; bmr?: number | null } = {}): number {
+  return goalKcal(need, goal === "coach" ? "maintain" : goal, null, body) - need;
+}
+
+/** The goal from the client's sign-up form (Lose fat / Gain muscle), or null. */
+export function intakeGoal(responses: Record<string, unknown> | null | undefined): Exclude<MealGoal, "coach"> | null {
+  const text = String(responses?.training_goals ?? "");
+  if (text.includes("Lose fat")) return "lose";
+  if (text.includes("Gain muscle")) return "gain";
+  return text ? "maintain" : null;
+}
+
+/** When they train, from the sign-up form, as "HH:MM"; undefined when the form doesn't say. */
+export function intakeTrainingTime(responses: Record<string, unknown> | null | undefined): string | null | undefined {
+  if (responses?.currently_training === "No") return undefined;
+  const time = cleanTime(String(responses?.training_time_of_day ?? ""));
+  return time ?? undefined;
+}
+
+/** Every half hour from 05:00 to 23:00, for the time pop-ups (GRIZZ, 2026-11-07). */
+export function halfHourSlots(from = "05:00", to = "23:00"): string[] {
+  const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const out: string[] = [];
+  for (let m = mins(from); m <= mins(to); m += 30) {
+    out.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+  }
+  return out;
 }
 
 export type MacroTargets = { kcal: number; protein: number; carbs: number; fat: number };

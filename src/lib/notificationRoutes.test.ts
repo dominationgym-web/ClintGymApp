@@ -66,3 +66,12 @@ describe("notificationRoute", () => {
     expect(notificationRoute(undefined, "client")).toBeNull();
   });
 });
+
+describe("Trainer of the Half-Year pushes (0195)", () => {
+  it("opens the right page", () => {
+    expect(notificationRoute({ type: "award_proof" }, "client")).toEqual({ stack: "client", screen: "CheckIn" });
+    expect(notificationRoute({ type: "award_monthly" }, "trainer")).toEqual({ stack: "trainer", screen: "Award" });
+    expect(notificationRoute({ type: "award_reveal" }, "trainer")).toEqual({ stack: "trainer", screen: "Award" });
+    expect(notificationRoute({ type: "award_admin" }, "trainer")).toEqual({ stack: "trainer", screen: "AwardAdmin" });
+  });
+});

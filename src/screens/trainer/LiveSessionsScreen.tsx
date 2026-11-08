@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AwardTrainerCard from "@/components/award/AwardTrainerCard";
 import { ActivityIndicator, Alert, Linking, Modal, PanResponder, Pressable, RefreshControl, Share, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
@@ -8,6 +9,7 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionActionsModal from "@/components/sessions/SessionActionsModal";
+import ClientContractFold from "@/components/sessions/ClientContractFold";
 import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
@@ -60,8 +62,12 @@ import {
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { BillingCurrency, ClientAway, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
 import SafeBottom from "@/components/SafeBottom";
+
+// Setup opened by itself once this app start (see load).
+let setupOpened = false;
 
 export type LiveTab = "todo" | "calendar" | "clients" | "invoices" | "setup";
 type Tab = LiveTab;
@@ -122,6 +128,12 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       supabase.from("client_away").select("*").eq("trainer_id", trainer.id).is("ended_at", null).gt("until_at", new Date().toISOString()),
     ]);
     setSettings(s.data ?? null);
+    // A new trainer lands on 1 on 1 with Setup open, so they never have to
+    // look for it (GRIZZ, 2026-11-06). Once per app start until it's saved.
+    if (only === "todo" && !s.data && !setupOpened) {
+      setupOpened = true;
+      setTab("setup");
+    }
     setPlans(p.data ?? []);
     const latest: Record<string, SessionAgreement> = {};
     for (const row of a.data ?? []) if (!latest[row.client_id]) latest[row.client_id] = row;
@@ -131,7 +143,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     setDrafts(d.data ?? []);
     setAways((aw.data ?? []) as ClientAway[]);
     setLoading(false);
-  }, [trainer, month]);
+  }, [trainer, month, only]);
 
   useFocusEffect(
     useCallback(() => {
@@ -149,11 +161,12 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const planOf = useMemo(() => Object.fromEntries(plans.map((p) => [p.client_id, p])), [plans]);
   const now = new Date();
   const todo = sessions.filter((s) => ["unconfirmed", "decide"].includes(sessionKind(s, now)) || (s.status === "done" && s.client_disputed_at));
-  const unsigned = plans.filter((p) => p.active && !agreementCurrent(signed[p.client_id], p));
+  // Cleared by the trainer for these terms: no signature needed (0191, GRIZZ 2026-11-04).
+  const unsigned = plans.filter((p) => p.active && !agreementCurrent(signed[p.client_id], p) && !agreementCurrent(p.agreement_cleared, p));
   const catchUps = sessions.filter((s) => s.charge === "makeup" && !s.makeup_session_id && (s.status === "cancelled" || s.status === "no_show"));
 
   const tabs: ScreenTab<Tab>[] = [
-    { key: "todo", label: only ? "Today" : "To do", icon: "checkbox", dot: todo.length || unsigned.length || catchUps.length ? "#F59E0B" : null },
+    { key: "todo", label: only ? "Today" : "To do", icon: "checkbox", dot: todo.length || catchUps.length ? "#F59E0B" : null },
     { key: "calendar", label: "Calendar", icon: "calendar" },
     { key: "clients", label: "Clients", icon: "people" },
     { key: "invoices", label: "Invoices", icon: "receipt", dot: drafts.length ? "#F59E0B" : null },
@@ -186,6 +199,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               <Text style={styles.noticeText}>Start under Setup: your normal fee and cancellation rule. Then set up each client under Clients.</Text>
             </Pressable>
           ) : null}
+          {tab === "todo" && only === "todo" && <AwardTrainerCard />}
           {tab === "todo" && (
             <ToDo
               todo={todo}
@@ -202,7 +216,6 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
                 setBookAt(t);
                 setTab("calendar");
               }}
-              unsigned={unsigned}
               catchUps={catchUps}
               planOf={planOf}
               currency={settings?.currency ?? "ZAR"}
@@ -228,6 +241,9 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               <LossesCard sessions={sessions} currency={settings.currency} name={who} onOpen={setOpen} />
             </View>
           ) : null}
+          {/* Last on Today: any client can be booked and tracked without signing
+              (GRIZZ, 2026-11-04). One line each, with Send and Clear. */}
+          {tab === "todo" ? <NotSigned unsigned={unsigned} name={who} onChanged={load} /> : null}
           {tab === "calendar" && (
             <CalendarTab
               month={month}
@@ -340,6 +356,8 @@ function SessionLine({
         {clockLabel(s.starts_at)} · {name}
         {showDay ? ` · ${dayLabel(s.starts_at)}` : ""}
         {s.repeat_id ? " 🔁" : ""}
+        {[s, ...others].some((x) => x.makeup_for) ? "  " : ""}
+        <CatchUpTag show={[s, ...others].some((x) => x.makeup_for)} />
       </Text>
       {each ? (
         each.map((x) => (
@@ -396,7 +414,6 @@ function ToDo({
   today,
   openToday,
   onBookAt,
-  unsigned,
   catchUps,
   onCatchUp,
   planOf,
@@ -412,7 +429,6 @@ function ToDo({
   /** Open slots left today, shown as Available (GRIZZ 2026-11-02). */
   openToday: string[];
   onBookAt: (time: string) => void;
-  unsigned: SessionPlan[];
   catchUps: LiveSession[];
   onCatchUp: (s: LiveSession) => void;
   planOf: Record<string, SessionPlan>;
@@ -438,7 +454,7 @@ function ToDo({
   const groups = [...byTime.values()].filter((g) => g.length > 1);
   const inGroup = new Set(groups.flat().map((s) => s.id));
   const singles = todo.filter((s) => !inGroup.has(s.id));
-  const clear = !todo.length && !unsigned.length && !drafts && !catchUps.length;
+  const clear = !todo.length && !drafts && !catchUps.length;
   return (
     <>
       {/* Today's sessions first: the 1 on 1 side is about the day (GRIZZ, 2026-11-01). */}
@@ -483,6 +499,8 @@ function ToDo({
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
             <Text style={styles.rowTitle}>
               {who(s)} · {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)}
+              {s.makeup_for ? "  " : ""}
+              <CatchUpTag show={s.makeup_for} />
             </Text>
             <Text style={[styles.rowKind, { color: themeText(KIND_STYLE[kind].colour) }]}>
               {s.client_disputed_at ? "They say it didn't happen. Check and fix it." : kind === "decide" ? "Cancelled: charge or credit?" : "Not marked yet"}
@@ -510,14 +528,80 @@ function ToDo({
       {/* Book by the end of the month, or credit / move to next month before invoicing (GRIZZ, 2026-11-02). */}
       <CatchUpRows catchUps={catchUps} name={who} onCatchUp={onCatchUp} onChanged={onChanged} />
 
-      {unsigned.length ? <Text style={styles.sectionTitle}>Not signed yet</Text> : null}
-      {unsigned.map((p) => (
-        <Text key={p.client_id} style={styles.helper}>
-          {who({ client_id: p.client_id })} hasn't signed the agreement for their current terms. They see it under Menu › My sessions.
-        </Text>
-      ))}
-
     </>
+  );
+}
+
+// Clients who haven't signed the agreement for their current terms. Send
+// pushes them a reminder to sign under Menu › My sessions; Clear takes them
+// off the list until their terms change (0191, GRIZZ 2026-11-04).
+function NotSigned({
+  unsigned,
+  name: who,
+  onChanged,
+}: {
+  unsigned: SessionPlan[];
+  name: (s: Pick<LiveSession, "client_id" | "guest_name">) => string;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!unsigned.length) return null;
+  const send = async (p: SessionPlan) => {
+    const first = who({ client_id: p.client_id }).split(" ")[0];
+    setBusy(p.client_id);
+    const { error } = await supabase.rpc("send_session_agreement", { p_client: p.client_id });
+    setBusy(null);
+    if (error) return Alert.alert("Couldn't send", error.message);
+    Alert.alert("Sent ✅", `${first} got a notification to sign the agreement under Menu › My sessions.`);
+    onChanged();
+  };
+  const clear = (p: SessionPlan) => {
+    const first = who({ client_id: p.client_id }).split(" ")[0];
+    Alert.alert(`Clear ${first}?`, `${first} comes off this list and doesn't need to sign. If you change their fee, rule or times, they come back.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Clear",
+        onPress: async () => {
+          setBusy(p.client_id);
+          const { error } = await supabase.rpc("clear_session_agreement", { p_client: p.client_id, p_clear: true });
+          setBusy(null);
+          if (error) return Alert.alert("Couldn't clear", error.message);
+          onChanged();
+        },
+      },
+    ]);
+  };
+  return (
+    <View style={{ marginTop: 24 }}>
+      <Text style={styles.sectionTitle}>Not signed yet</Text>
+      <Text style={styles.meta}>The session agreement for their current terms.</Text>
+      {unsigned.map((p) => (
+        <View key={p.client_id} style={[styles.row, styles.signRow]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowTitle} numberOfLines={1}>
+              {who({ client_id: p.client_id }).trim()}
+            </Text>
+            {p.agreement_sent_at ? (
+              <Text style={styles.meta}>
+                Sent {new Date(p.agreement_sent_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+              </Text>
+            ) : null}
+          </View>
+          {busy === p.client_id ? (
+            <ActivityIndicator color={themeText(BRAND_GOLD)} />
+          ) : (
+            <>
+              <Pressable style={styles.signButton} onPress={() => send(p)} accessibilityLabel="Send the agreement">
+                <Text style={styles.smallButtonText}>{p.agreement_sent_at ? "Resend" : "Send"}</Text>
+              </Pressable>
+              <Pressable style={styles.signClear} onPress={() => clear(p)} accessibilityLabel="Clear, no signature needed">
+                <Text style={styles.outlineText}>Clear</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -1100,8 +1184,11 @@ function ClientsTab({
   const [picked, setPicked] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
   const [addingPerson, setAddingPerson] = useState(false);
+  const [contractOpen, setContractOpen] = useState(false);
   // Phone Back goes from a client back to the list, one step at a time.
   useStepBack(picked !== null, () => setPicked(null));
+  // Each client's contract starts closed.
+  useEffect(() => setContractOpen(false), [picked]);
   useStepBack(showOthers, () => setShowOthers(false));
   const withPlan = clients.filter((c) => planOf[c.id]);
   // 1 on 1 clients, and anyone already on the calendar (an import), not set up yet.
@@ -1138,6 +1225,16 @@ function ClientsTab({
             <Text style={styles.pageDetail}>Set up {(c?.name ?? "their").trim().split(/\s+/)[0]}'s diet and see how they're doing</Text>
           </Pressable>
         ) : null}
+        {/* Their signed contract, always one tap away (GRIZZ, 2026-11-05). */}
+        <ClientContractFold
+          clientId={picked}
+          clientName={c?.name ?? "Client"}
+          always
+          open={contractOpen}
+          onToggle={() => setContractOpen((o) => !o)}
+          refreshKey={`${plan?.updated_at ?? ""}|${signed[picked]?.id ?? ""}`}
+        />
+        <View style={{ height: 12 }} />
         <SessionPlanEditor
           clientId={picked}
           clientName={c?.name ?? "Client"}
@@ -1173,6 +1270,7 @@ function ClientsTab({
       {withPlan.map((c) => {
         const p = planOf[c.id];
         const ok = agreementCurrent(signed[c.id], p);
+        const cleared = !ok && agreementCurrent(p.agreement_cleared, p);
         return (
           <Pressable key={c.id} style={styles.row} onPress={() => setPicked(c.id)}>
             <Text style={styles.rowTitle}>
@@ -1188,7 +1286,7 @@ function ClientsTab({
                 : regularLabel(regularFromCalendar(sessions, c.id).regular)}
             </Text>
             {p.paid_by ? <Text style={styles.meta}>Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
-            <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : "#F59E0B") }]}>{ok ? "Signed" : "Not signed yet"}</Text>
+            <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : cleared ? "#94A3B8" : "#F59E0B") }]}>{ok ? "Signed" : cleared ? "No signature needed" : "Not signed yet"}</Text>
             {(() => {
               const a = awayOf(aways, { clientId: c.id, name: c.name });
               return a ? <Text style={[styles.meta, { color: themeText("#22C55E") }]}>✈️ Away {awaySpan(a)}</Text> : null;
@@ -1703,6 +1801,9 @@ const styles = themedStyles({
   actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 8 },
   smallButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9, minWidth: 90, alignItems: "center" },
   smallButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 14 },
+  signRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8 },
+  signButton: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, alignItems: "center" },
+  signClear: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, alignItems: "center" },
   nameInput: { backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15, marginTop: 10 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 14, alignItems: "center", marginTop: 16 },
   buttonText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },

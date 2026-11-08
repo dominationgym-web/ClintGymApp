@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { myPlanPrices } from "@/lib/myPlanPrices";
+import CopyCodeButton from "@/components/CopyCodeButton";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { REFERRAL_DISCOUNT_PERCENT, REFERRALS_PER_FREE_MONTH, REFERRAL_WAIT_MONTHS, referralRewards } from "@/lib/trainers";
@@ -88,7 +89,7 @@ export default function ReferralPopup() {
                 {REFERRAL_DISCOUNT_PERCENT}% off a month. {REFERRALS_PER_FREE_MONTH} referrals = a free month.
               </Text>
               <Text style={styles.step}>4. {referralCreditUseLine(freeUse)}</Text>
-              <Text style={styles.step}>5. If you cancel, any unused referrals are paid out to you.</Text>
+              <Text style={styles.step}>5. If you cancel, any unused referrals become free extra months (no cash refunds).</Text>
             </>
           ) : null}
 
@@ -116,6 +117,7 @@ export default function ReferralPopup() {
           <View style={styles.codeBox}>
             <Text style={styles.statLabel}>Your referral code</Text>
             <Text style={styles.code}>{trainer.join_code}</Text>
+            <CopyCodeButton code={trainer.join_code} />
           </View>
           <Pressable style={styles.button} onPress={share}>
             <Text style={styles.buttonText}>Share with a trainer</Text>

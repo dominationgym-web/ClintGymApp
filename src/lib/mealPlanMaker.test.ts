@@ -1,3 +1,4 @@
+import { adjustedKcal, goalAdjust, intakeGoal, intakeTrainingTime, halfHourSlots } from "./mealPlanMaker";
 import { describe, expect, it } from "vitest";
 import { dayTotals } from "./dietPlan";
 import { FOODS } from "./foods";
@@ -352,5 +353,38 @@ describe("snacks the trainer sets (GRIZZ, 2026-11-02)", () => {
   it("two-meal eaters get a real meal before training, and no snack during it", () => {
     expect(mealTimesFor(2, "17:30")).toEqual(["10:00", "18:45"]);
     expect(snackTimesFor(["16:00", "18:45"], 1, "17:30")).not.toContain("17:30");
+  });
+});
+
+describe("trainer's own calories (GRIZZ, 2026-11-07)", () => {
+  it("adds or takes off the trainer's amount", () => {
+    expect(adjustedKcal(2400, 300, { sex: "male", bmr: 1700 })).toBe(2700);
+    expect(adjustedKcal(2400, -500, { sex: "male", bmr: 1700 })).toBe(1900);
+  });
+  it("never goes under the safe floor", () => {
+    expect(adjustedKcal(1800, -1000, { sex: "female", bmr: 1350 })).toBe(1350);
+    expect(adjustedKcal(1300, -400, { sex: "female", bmr: 1100 })).toBe(1200);
+  });
+  it("caps the amount at 1000 either way", () => {
+    expect(adjustedKcal(2000, 5000)).toBe(3000);
+  });
+  it("starts from the goal's usual amount", () => {
+    expect(goalAdjust(2400, "gain")).toBe(300);
+    expect(goalAdjust(2400, "maintain")).toBe(0);
+    expect(goalAdjust(2400, "lose", { sex: "male", bmr: 1700 })).toBeLessThan(0);
+  });
+  it("reads the goal and training time from the sign-up form", () => {
+    expect(intakeGoal({ training_goals: "Get stronger, Lose fat" })).toBe("lose");
+    expect(intakeGoal({ training_goals: "Gain muscle" })).toBe("gain");
+    expect(intakeGoal({ training_goals: "Get stronger" })).toBe("maintain");
+    expect(intakeGoal({})).toBeNull();
+    expect(intakeTrainingTime({ training_time_of_day: "17:30" })).toBe("17:30");
+    expect(intakeTrainingTime({ training_time_of_day: "Not answered" })).toBeUndefined();
+  });
+  it("offers every half hour", () => {
+    const slots = halfHourSlots();
+    expect(slots[0]).toBe("05:00");
+    expect(slots[1]).toBe("05:30");
+    expect(slots[slots.length - 1]).toBe("23:00");
   });
 });
