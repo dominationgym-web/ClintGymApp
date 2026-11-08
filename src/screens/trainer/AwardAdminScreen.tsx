@@ -176,7 +176,7 @@ function Scores() {
           </Text>
           <Text style={[styles.hint, { color: r.eligible ? "#22C55E" : "#F59E0B" }]}>
             {r.verified_clients} verified clients ·{" "}
-            {r.in_cooldown ? "Sitting out (won recently)" : r.eligible ? "Can win" : "Can't win yet (needs more verified clients)"}
+            {r.in_cooldown ? "Sitting out (won recently)" : r.eligible ? "Can win" : "Can't win this period (needs more verified clients, or joined part-way through)"}
             {r.flagged ? " · Under review" : ""}
           </Text>
         </View>

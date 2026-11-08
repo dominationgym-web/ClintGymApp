@@ -1,10 +1,11 @@
--- Fairer for trainers who join part-way through a period (GRIZZ, 2026-11-08):
--- * Sign-ups are a rate per month since a trainer's sign-ups could first
---   count, not a raw six-month total, so a late joiner isn't behind.
--- * A trainer with no clients from before the period has no retention to
---   measure, so they're scored on sign-ups and progress instead of getting 0.
+-- New trainers (GRIZZ, 2026-11-08): a trainer who joins part-way through a
+-- period can't win that one and competes from the next period, when every
+-- trainer has had the same six months. They're still scored, so the owner
+-- can see how they're doing. A trainer with no clients from before the
+-- period (e.g. joined the day before) has no retention to measure, so
+-- they're scored on sign-ups and progress instead of getting 0 for it.
 alter table public.award_scores
-  add column if not exists signup_rate numeric not null default 0,
+  add column if not exists joined_late boolean not null default false,
   add column if not exists has_retention boolean not null default true;
 
 create or replace function public.award_score_period(p_period uuid, p_as_of date, p_kind text)
@@ -24,9 +25,7 @@ declare
   v_progress numeric;
   v_cooldown boolean;
   v_joined date;
-  v_window integer;
-  v_rate numeric;
-  max_rate numeric;
+  max_signups integer;
 begin
   select * into s from public.award_settings where id = 1;
   select * into p from public.award_periods where id = p_period;
@@ -39,12 +38,7 @@ begin
     from public.trainers tr where tr.approved and not tr.is_owner
   loop
     -- Verified clients today.
-    -- Sign-ups per month (0200): a client counts once they have stayed
-    -- signup_stay_days, so a trainer's window starts at the later of the
-    -- period start and the day their first sign-up could count. At least a
-    -- month, so one early sign-up can't look like a huge rate.
     v_joined := t.joined;
-    v_window := greatest(30, p_as_of - greatest(p.starts_on, coalesce(v_joined, p.starts_on) + s.signup_stay_days));
 
     select count(*) into v_verified
     from public.clients c
@@ -84,30 +78,28 @@ begin
         and (w.ends_on + make_interval(months => s.cooldown_months))::date >= p.ends_on
     ) into v_cooldown;
 
-    v_rate := round(30.0 * v_signups / v_window, 3);
-
-    insert into public.award_scores (period_id, trainer_id, score_date, kind, signups, signup_rate, has_retention, retention, progress, verified_clients, eligible, in_cooldown)
-    values (p.id, t.id, p_as_of, p_kind, v_signups, v_rate, v_base > 0,
+    insert into public.award_scores (period_id, trainer_id, score_date, kind, signups, joined_late, has_retention, retention, progress, verified_clients, eligible, in_cooldown)
+    values (p.id, t.id, p_as_of, p_kind, v_signups, coalesce(v_joined > p.starts_on, false), v_base > 0,
             case when v_base > 0 then round(100.0 * v_kept / v_base, 1) else 0 end,
             round(v_progress, 1), v_verified,
-            v_verified >= s.min_verified_clients and not v_cooldown, v_cooldown)
+            v_verified >= s.min_verified_clients and not v_cooldown and not coalesce(v_joined > p.starts_on, false), v_cooldown)
     on conflict (period_id, trainer_id, kind, score_date) do update
-      set signups = excluded.signups, signup_rate = excluded.signup_rate, has_retention = excluded.has_retention, retention = excluded.retention, progress = excluded.progress,
+      set signups = excluded.signups, joined_late = excluded.joined_late, has_retention = excluded.has_retention, retention = excluded.retention, progress = excluded.progress,
           verified_clients = excluded.verified_clients, eligible = excluded.eligible,
           in_cooldown = excluded.in_cooldown, created_at = now();
   end loop;
 
   -- Sign-ups are scaled 0-100 against the highest trainer, then the total and rank.
-  select max(signup_rate) into max_rate from public.award_scores
-  where period_id = p.id and score_date = p_as_of and kind = p_kind;
+  select max(signups) into max_signups from public.award_scores
+  where period_id = p.id and score_date = p_as_of and kind = p_kind and not joined_late;
 
   update public.award_scores sc
-  set signup_score = case when coalesce(max_rate, 0) > 0 then round(100.0 * sc.signup_rate / max_rate, 1) else 0 end
+  set signup_score = case when coalesce(max_signups, 0) > 0 then least(100, round(100.0 * sc.signups / max_signups, 1)) else 0 end
   where sc.period_id = p.id and sc.score_date = p_as_of and sc.kind = p_kind;
 
   update public.award_scores sc
-  -- A trainer with no clients from before the period (new to the app) has
-  -- no retention to measure, so they're scored on the other parts (0200).
+  -- A trainer with no clients from before the period has no retention to
+  -- measure, so they're scored on the other parts (0200).
   set total = coalesce(round(
         (s.signup_weight * sc.signup_score + case when sc.has_retention then s.retention_weight * sc.retention else 0 end + s.progress_weight * sc.progress)
         / nullif(s.signup_weight + s.progress_weight + case when sc.has_retention then s.retention_weight else 0 end, 0), 1), 0)
@@ -127,9 +119,9 @@ $$;
 -- The rules say so too (only changes the untouched default sentence).
 update public.award_settings
   set rules_text = replace(rules_text, '20% client retention, ',
-                           '20% client retention (trainers new to the app are scored on the other parts until they have clients from the start of a period), ')
+                           '20% client retention (a trainer with no clients from the start of the period is scored on the other parts), ')
   where id = 1 and position('20% client retention, ' in rules_text) > 0;
 update public.award_settings
-  set rules_text = replace(rules_text, '30% new sign-ups who are still with you 90 days after joining, ',
-                           '30% new sign-ups who are still with you 90 days after joining (counted per month, so trainers who join part-way through aren''t behind), ')
-  where id = 1 and position('30% new sign-ups who are still with you 90 days after joining, ' in rules_text) > 0;
+  set rules_text = replace(rules_text, 'Two award periods a year. ',
+                           'Two award periods a year. A trainer who joins part-way through a period competes from the next one, so everyone has the same six months. ')
+  where id = 1 and position('Two award periods a year. ' in rules_text) > 0;
