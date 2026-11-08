@@ -145,6 +145,13 @@ export const AWARD_SETTING_FIELDS: AwardSettingField[] = [
     hint: "One line each: trainers: 1st, 2nd, 3rd… e.g. 1000: 1500, 500",
   },
   { key: "prize_currency", label: "Prize currency (USD or ZAR)", kind: "text", group: "basics" },
+  {
+    key: "prize_zar_per_usd",
+    label: "South African prize: rand per $1",
+    kind: "number",
+    group: "basics",
+    hint: "Same ratio as the subscription fees (R100 for $10 = 10), so $500 is R5 000",
+  },
   { key: "prize_text", label: "Prize note (optional)", kind: "text", group: "basics", hint: "e.g. Paid by EFT within 30 days" },
   { key: "start_at_trainers", label: "Starts once this many trainers are on the app", kind: "number", group: "basics" },
   {
