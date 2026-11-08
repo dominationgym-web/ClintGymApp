@@ -2,6 +2,7 @@ import NotificationsPrompt from "@/components/NotificationsPrompt";
 import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications";
 import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
 import React, { useEffect, useRef, useState } from "react";
+import { recordAppOpen } from "@/lib/awardUploads";
 import { View, ActivityIndicator, Text, Pressable, Platform } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { NavigationContainer, type NavigationState } from "@react-navigation/native";
@@ -61,7 +62,8 @@ function openRoute(route: NotificationRoute) {
   else if (route.stack === "client") navigationRef.navigate("ClientTabs", { screen: route.screen });
   else if (route.screen === "ClientDetail")
     navigationRef.navigate("ClientDetail", { clientId: route.clientId, tab: route.tab, open: route.open });
-  else if (route.screen === "Billing" || route.screen === "Challenges") navigationRef.navigate(route.screen);
+  else if (route.screen === "Billing" || route.screen === "Challenges" || route.screen === "Award" || route.screen === "AwardAdmin")
+    navigationRef.navigate(route.screen);
   else if (route.screen === "TrainerProblems") navigationRef.navigate("TrainerProblems", { problemId: route.problemId });
   else navigationRef.navigate("TrainerTabs", { screen: route.screen });
 }
@@ -72,6 +74,11 @@ let savedNavState: NavigationState | undefined;
 export default function RootNavigator() {
   const { role, loading, client, trainer } = useAuth();
   const locked = useLockedOut(role, role === "trainer" ? trainer : client);
+  // Trainer of the Half-Year (0194): which phone opened the app today, for the
+  // fake-account check. The database ignores it while the award is off.
+  useEffect(() => {
+    if (role) recordAppOpen();
+  }, [role]);
   // A tap that arrives before the screens are ready waits here.
   const pendingRoute = useRef<NotificationRoute | null>(null);
   useEffect(() => {

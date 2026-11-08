@@ -111,6 +111,9 @@ export type TrainerStackParamList = {
   // area opens that body area straight away (from an injury a client reported).
   Stability: { area?: StabilityArea } | undefined;
   Timers: undefined;
+  // Trainer of the Half-Year (0194): the trainer's page, and the owner's admin page.
+  Award: undefined;
+  AwardAdmin: undefined;
 };
 
 export type TrainerTabScreenProps<T extends keyof TrainerTabParamList> = CompositeScreenProps<

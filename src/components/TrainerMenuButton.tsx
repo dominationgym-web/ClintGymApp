@@ -32,6 +32,19 @@ export function useTrainerMenuItems(): MenuItem[] {
     route: "TrainerProblems",
     onPress: () => navigation.navigate("TrainerProblems"),
   };
+  // Trainer of the Half-Year (0194): the owner's admin page, on both sides, even while switched off.
+  const award: MenuItem[] = trainer?.is_owner
+    ? [
+        {
+          key: "awardAdmin",
+          title: "Trainer award",
+          icon: "🏆",
+          summary: "Trainer of the Half-Year: switch it on, settings, scores, flags, proof videos and winners.",
+          route: "AwardAdmin",
+          onPress: () => navigation.navigate("AwardAdmin"),
+        },
+      ]
+    : [];
   // The Evolution switch (GRIZZ, 2026-11-06): on both sides, not for the owner.
   const evolutionSwitch: MenuItem[] = trainer?.is_owner
     ? []
@@ -75,6 +88,7 @@ export function useTrainerMenuItems(): MenuItem[] {
             },
           ]),
       ...evolutionSwitch,
+      ...award,
       { ...TIMER_MENU_ITEM, route: "Timers", onPress: () => navigation.navigate("Timers") },
       { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
       problems,
@@ -118,6 +132,7 @@ export function useTrainerMenuItems(): MenuItem[] {
       },
     },
     ...evolutionSwitch,
+    ...award,
     { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
     // Problems go to the owner in the app, linked to the trainer (0151).
     problems,

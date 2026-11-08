@@ -1337,6 +1337,13 @@ export interface Database {
     Tables: {
       trainers: { Row: Trainer; Insert: Partial<Trainer>; Update: Partial<Trainer>; Relationships: [] };
       clients: { Row: Client; Insert: Partial<Client>; Update: Partial<Client>; Relationships: [] };
+      // Trainer of the Half-Year settings (0194): one row, owner edits.
+      award_settings: {
+        Row: Record<string, unknown> & { id: number; enabled: boolean };
+        Insert: never;
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
       client_status_flag_events: {
         Row: ClientStatusFlagEvent;
         Insert: Partial<ClientStatusFlagEvent>;
@@ -1784,6 +1791,23 @@ export interface Database {
         Args: Record<string, never>;
         Returns: string;
       };
+      // Trainer of the Half-Year (0194/0195).
+      award_signup_needs: { Args: Record<string, never>; Returns: boolean };
+      record_app_open: { Args: { p_device: string; p_platform: string }; Returns: undefined };
+      set_award_profile: { Args: { p_face_path: string | null; p_goal: string | null; p_consent: boolean }; Returns: undefined };
+      submit_award_proof: { Args: { p_proof: string; p_path: string }; Returns: undefined };
+      my_award_needs: { Args: Record<string, never>; Returns: unknown };
+      my_award_status: { Args: Record<string, never>; Returns: unknown };
+      award_run_now: { Args: Record<string, never>; Returns: string };
+      award_leaderboard: { Args: { p_period: string | null }; Returns: unknown };
+      award_flag_list: { Args: Record<string, never>; Returns: unknown };
+      award_review_client: { Args: { p_client: string; p_approve: boolean }; Returns: undefined };
+      award_clear_trainer: { Args: { p_trainer: string }; Returns: undefined };
+      award_proof_queue: { Args: Record<string, never>; Returns: unknown };
+      award_review_proof: { Args: { p_proof: string; p_approve: boolean }; Returns: undefined };
+      award_periods_list: { Args: Record<string, never>; Returns: unknown };
+      award_reveal: { Args: { p_period: string }; Returns: undefined };
+      award_trainer_counter: { Args: Record<string, never>; Returns: unknown };
     };
   };
 }
