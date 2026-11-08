@@ -71,6 +71,7 @@ import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 import TrainingTypePicker, { TrainingTypeRows, trainingTypeFields, trainingTypeLabel, trainingTypeOf, type TrainingType } from "@/components/TrainingTypePicker";
+import { hasOpenStep } from "@/hooks/useStepBack";
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ClientDetail">;
 
@@ -215,13 +216,16 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       navigation.addListener("beforeRemove", (e) => {
         if (leaving.current) return;
         e.preventDefault();
+        // Back only closes what's open (a fold, a setup step), never the page.
+        const type = e.data.action.type;
+        if ((type === "GO_BACK" || type === "POP") && hasOpenStep(route.key)) return;
         const leave = () => {
           leaving.current = true;
           navigation.dispatch(e.data.action);
         };
         confirmLeaveDiet(() => confirmLeaveWorkouts(leave));
       }),
-    [navigation, client, trainer]
+    [navigation, client, trainer, route.key]
   );
   // Problems not yet fixed (0075): red dot while one is open, orange while
   // they're all being fixed.

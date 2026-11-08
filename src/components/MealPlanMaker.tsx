@@ -323,6 +323,8 @@ export type MealPlanForTrainer = {
   client: Client;
   trainerId: string;
   onDetailsSaved?: () => void;
+  /** Kept on the page but folded away: Back doesn't step through it. */
+  hidden?: boolean;
 };
 
 export default function MealPlanMaker({
@@ -361,7 +363,7 @@ export default function MealPlanMaker({
   // Which explainer on the plan is open (tap-to-open, so the plan stays short).
   const [info, setInfo] = useState<string | null>(null);
   // Phone Back closes what is open first, one step at a time.
-  useStepBack(step > 0, () => setStep((s) => Math.max(0, s - 1)));
+  useStepBack(step > 0 && !forTrainer?.hidden, () => setStep((s) => Math.max(0, s - 1)));
   // The trainer told the client this version of the plan is ready.
   const [told, setTold] = useState(false);
   const [telling, setTelling] = useState(false);
