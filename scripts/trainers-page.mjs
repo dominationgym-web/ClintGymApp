@@ -187,6 +187,10 @@ export function trainersPage(escape) {
   .pts div { background: rgba(15,23,42,.6); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
   .pts b { display: block; color: #fff; margin-bottom: 2px; }
   .pts span { color: var(--muted); font-size: 14px; }
+  .award { background: linear-gradient(180deg, #1A2338, var(--card)); border: 2px solid var(--gold); border-radius: 18px; padding: 24px; margin: 28px 0; }
+  .award h2 { color: var(--gold); font-size: clamp(22px, 4.5vw, 30px); margin: 0 0 10px; }
+  .award p { margin: 0 0 10px; }
+  .award .strong { color: #fff; font-weight: 800; margin: 12px 0 0; }
   .control .strong { color: #fff; font-weight: 800; font-size: 18px; margin: 12px 0 0; }
   .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
   .price { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
@@ -359,6 +363,15 @@ ${[
   </div>
 </div>`).join("\n")}
 <p class="section" style="font-size: 13px">Clients counted each month: on Evolution, everyone in the app plus anyone only in your session diary who trained with you that month; on 1 on 1, everyone on your calendar that month. Refer another trainer and get 50% off a month for each one who stays. US dollar prices are proposed until the payment provider and currency arrangements are confirmed.</p>
+
+<!-- Trainer of the Half-Year (GRIZZ, 2026-11-08). Same words as AWARD_PITCH in src/lib/award.ts: change both together. -->
+<div class="award">
+  <h2>🏆 Trainer of the Half-Year</h2>
+  <p>We built Daily Evolution to help you get your clients the best results in less time. Now we're adding some friendly competition.</p>
+  <p>Every six months, the trainer with the best client results wins cash. It's judged on results only: new clients who stay, the clients you keep, and the progress they make. There's no draw and no luck involved, so any trainer can win.</p>
+  <p>The more trainers join, the bigger the prize. It starts at $500 (R5 000 in South Africa) and grows to five prize places at 3 000 trainers.</p>
+  <p class="strong">The competition starts once 250 trainers are on the app.</p>
+</div>
 
 <dialog id="get-one" class="get" tabindex="-1" autofocus>
   <h3>🤝 What you get with 1 on 1</h3>
