@@ -25,6 +25,8 @@ import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
+import AwardScreen from "@/screens/trainer/AwardScreen";
+import AwardAdminScreen from "@/screens/trainer/AwardAdminScreen";
 import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
 import BulkImportScreen from "@/screens/trainer/BulkImportScreen";
 import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
@@ -182,6 +184,8 @@ export default function TrainerNavigator() {
             <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
             <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
             <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Award" component={AwardScreen} options={{ title: "Trainer of the Half-Year", headerBackTitle: "Back" }} />
+            <Stack.Screen name="AwardAdmin" component={AwardAdminScreen} options={{ title: "Trainer award", headerBackTitle: "Back" }} />
             <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ title: "Monthly challenges", headerBackTitle: "Back" }} />
             <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: "Client history from a file", headerBackTitle: "Back" }} />
             <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />

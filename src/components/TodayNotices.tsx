@@ -17,6 +17,7 @@ import WeighInDueBanner from "@/components/WeighInDueBanner";
 import AppUpdateBanner from "@/components/AppUpdateBanner";
 import { CycleTodayBanner } from "@/components/CycleTracker";
 import { CoachMessageCard } from "@/components/CoachMessages";
+import AwardClientCard from "@/components/award/AwardClientCard";
 import { themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -50,6 +51,7 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
   return (
     <>
       <CoachMessageCard />
+      <AwardClientCard />
       <PlanEndingBanner />
       <AppUpdateBanner />
       {count > 1 && (

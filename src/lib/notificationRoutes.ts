@@ -11,7 +11,7 @@ export type NotificationRoute =
   | { stack: "trainer"; screen: "LiveSessions"; tab?: "todo" | "invoices" }
   | { stack: "trainer"; screen: "VideoCheckIns" }
   | { stack: "trainer"; screen: "Dashboard" | "Clients" | "Trainers" }
-  | { stack: "trainer"; screen: "Billing" | "Challenges" }
+  | { stack: "trainer"; screen: "Billing" | "Challenges" | "Award" | "AwardAdmin" }
   | { stack: "trainer"; screen: "TrainerProblems"; problemId?: string }
   | { stack: "trainer"; screen: "ClientDetail"; clientId: string; tab?: "training"; open?: "videos" | "history" };
 
@@ -54,6 +54,8 @@ export function notificationRoute(
   if (type === "session_invoice" || type === "session_invoices")
     return role === "client" ? { stack: "client", screen: "MySessions", tab: "invoices" } : { stack: "trainer", screen: "LiveSessions", tab: "invoices" };
   if (role === "client") {
+    // Trainer of the Half-Year proof videos (0195) are asked for on the Today tab.
+    if (type === "award_proof") return { stack: "client", screen: "CheckIn" };
     if (type === "timer_workout") return { stack: "client", screen: "Timers" };
     const screen = CLIENT_SCREENS[type];
     return screen ? { stack: "client", screen } : null;
@@ -71,6 +73,8 @@ export function notificationRoute(
     const problemId = typeof data?.problemId === "string" && data.problemId ? data.problemId : undefined;
     return { stack: "trainer", screen: "TrainerProblems", problemId };
   }
+  if (type === "award_monthly" || type === "award_reveal") return { stack: "trainer", screen: "Award" };
+  if (type === "award_admin") return { stack: "trainer", screen: "AwardAdmin" };
   if (type === "challenge_done" || type === "challenge_shared") return { stack: "trainer", screen: "Challenges" };
   if (type === "trainer_signup" || type === "referral_signup") return { stack: "trainer", screen: "Trainers" };
   return null;

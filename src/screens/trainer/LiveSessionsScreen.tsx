@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AwardTrainerCard from "@/components/award/AwardTrainerCard";
 import { ActivityIndicator, Alert, Linking, Modal, PanResponder, Pressable, RefreshControl, Share, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
@@ -197,6 +198,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               <Text style={styles.noticeText}>Start under Setup: your normal fee and cancellation rule. Then set up each client under Clients.</Text>
             </Pressable>
           ) : null}
+          {tab === "todo" && only === "todo" && <AwardTrainerCard />}
           {tab === "todo" && (
             <ToDo
               todo={todo}
