@@ -279,3 +279,19 @@ export function videoExtension(uri: string, mimeType?: string | null): string {
   if (mimeType?.startsWith("video/")) return mimeType.slice(6) || "mp4";
   return "mp4";
 }
+
+// The pitch new trainers see (GRIZZ's wording, 2026-11-08): on the "Thanks for
+// applying" screen after sign-up and on the website's /trainers page
+// (scripts/trainers-page.mjs keeps its own copy: change both together).
+// Shown while the award is off too, as it only says what is coming.
+export const AWARD_PITCH = {
+  title: "Trainer of the Half-Year",
+  paragraphs: [
+    "We built Daily Evolution to help you get your clients the best results in less time. Now we're adding some friendly competition.",
+    "Every six months, the trainer with the best client results wins cash. It's judged on results only: new clients who stay, the clients you keep, and the progress they make. There's no draw and no luck involved, so any trainer can win.",
+    "The more trainers join, the bigger the prize. It starts at $500 (R5 000 in South Africa) and grows to five prize places at 3 000 trainers.",
+    "The competition starts once 250 trainers are on the app.",
+  ],
+  // Apple asks that in-app competitions say Apple isn't a sponsor.
+  storeNote: "Apple and Google are not sponsors of, or involved in, this competition.",
+};

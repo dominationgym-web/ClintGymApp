@@ -13,6 +13,7 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import ClientNavigator from "@/navigation/ClientNavigator";
 import TrainerNavigator from "@/navigation/TrainerNavigator";
 import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
+import AwardPitchCard from "@/components/award/AwardPitchCard";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
@@ -236,19 +237,20 @@ function PendingTrainerScreen() {
   // it but no approval has been blocked, not newly applied.
   const blocked = !!trainer?.approved_at;
   return (
-    <View style={styles.centered}>
-      <Text style={styles.title}>{blocked ? "Your account has been paused" : "Thanks for applying"}</Text>
+    <ScrollView style={{ backgroundColor: themeBg("#0F172A") }} contentContainerStyle={styles.pendingContainer}>
+      <Text style={[styles.title, { textAlign: "center" }]}>{blocked ? "Your account has been paused" : "Thanks for applying"}</Text>
       <Text style={styles.body}>
         {blocked
           ? "The app owner has paused your trainer account. Your clients and their data are safe. Please contact the app owner to switch it back on."
           : "Your trainer account is waiting for approval. Once it's approved, open the app again and you'll be able to set up your profile and invite your clients."}
       </Text>
+      {blocked ? null : <AwardPitchCard />}
       {trainer ? <Text style={[styles.body, { marginTop: 12 }]}>Signed in as {trainer.email}</Text> : null}
       <Pressable style={styles.logoutButton} onPress={signOut}>
         <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
       <DeleteAccountButton />
-    </View>
+    </ScrollView>
   );
 }
 
