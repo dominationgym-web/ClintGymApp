@@ -74,7 +74,9 @@ export default function PlanProgramModal({
   resetNotice: string | null;
   startWith?: Program | null;
   onSingleWorkout?: (date: string) => void;
-  onDone: (what: "calendar" | "stability") => void;
+  // The dates week 1 went on, so the calendar can walk the trainer through
+  // them one day at a time (GRIZZ, 2026-11-08).
+  onDone: (what: "calendar" | "stability", dates?: string[]) => void;
   onClose: () => void;
 }) {
   const [type, setType] = useState<GoalChoice | null>(null);
@@ -208,7 +210,7 @@ export default function PlanProgramModal({
     const finish = (error: { message: string } | null | undefined) => {
       setBusy(false);
       if (error) return Alert.alert("Couldn't save the plan", error.message);
-      onDone("calendar");
+      onDone("calendar", week1.map((p) => p.date).sort());
     };
 
     // The new plan takes over those weeks: what was on them is replaced.
@@ -260,7 +262,7 @@ export default function PlanProgramModal({
         `Activate ${program.name}?`,
         `${summary}` +
           (currentName ? ` ${clientName} comes off ${currentName}, so only the calendar shows.` : "") +
-          " You can still change any single day after.",
+          " Next you check each day one by one and change anything you want.",
         [
           { text: "Cancel", style: "cancel" },
           { text: "Activate", onPress: replace },
@@ -272,7 +274,7 @@ export default function PlanProgramModal({
       `Add ${program.name}?`,
       `${summary} ${clientName} already has ${taken.length} workout${taken.length === 1 ? "" : "s"} planned in those weeks. ` +
         `Add it alongside keeps them and puts this session under the workout on days they share. ` +
-        `Replace takes them off the calendar.`,
+        `Replace takes them off the calendar. Next you check each day one by one.`,
       [
         { text: "Cancel", style: "cancel" },
         { text: "Replace", style: "destructive", onPress: replace },
@@ -326,6 +328,18 @@ export default function PlanProgramModal({
           ? (PROGRAM_GOALS.find((g) => g.key === type)?.title ?? "Pick a program")
           : `Start on ${dayHeading(date)}`;
 
+  // Where the trainer is, so there's no guessing what comes next (GRIZZ, 2026-11-08).
+  const stepLine =
+    type === "rehab"
+      ? null
+      : program
+        ? startWith
+          ? "Tap the days, then Activate"
+          : "Step 3 of 3 · Tap the days, then Activate"
+        : type
+          ? "Step 2 of 3 · Tap a program"
+          : "Step 1 of 3 · Tap the goal";
+
   return (
     <Modal visible={!!date} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
@@ -343,12 +357,18 @@ export default function PlanProgramModal({
               <Text style={styles.close}>✕</Text>
             </Pressable>
           </View>
+          {stepLine ? <Text style={styles.stepLine}>{stepLine}</Text> : null}
           {resetNotice ? <Text style={styles.reset}>{resetNotice}</Text> : null}
           <ScrollView contentContainerStyle={{ paddingBottom: 4 }}>
             {/* Step 1: what kind of training. */}
             {!type && !program && date && (
               <>
-                <Text style={styles.step}>What's {clientName}'s goal?</Text>
+                {onSingleWorkout && (
+                  <Pressable style={styles.singleTop} onPress={() => onSingleWorkout(date)}>
+                    <Text style={styles.singleTopText}>Just one workout for this day ›</Text>
+                  </Pressable>
+                )}
+                <Text style={styles.step}>Or a whole program: what's {clientName}'s goal?</Text>
                 {goals.map((g) => (
                   <Pressable key={g.key} style={styles.typeRow} onPress={() => setType(g.key)}>
                     <Text style={styles.typeIcon}>{g.icon}</Text>
@@ -359,11 +379,6 @@ export default function PlanProgramModal({
                     <Text style={styles.chevron}>›</Text>
                   </Pressable>
                 ))}
-                {onSingleWorkout && (
-                  <Pressable style={styles.single} onPress={() => onSingleWorkout(date)}>
-                    <Text style={styles.singleText}>Or just one workout for this day</Text>
-                  </Pressable>
-                )}
               </>
             )}
 
@@ -429,6 +444,7 @@ export default function PlanProgramModal({
                         <Text style={styles.description}>Pick a later block when {clientName} is ready to progress, or the same block again to repeat it.</Text>
                       </>
                     )}
+                    <Text style={styles.picked}>✓ Program picked</Text>
                     <Text style={styles.step}>Which days will {clientName} train?</Text>
                     <Text style={styles.description}>
                       Tap their days. {sessionsPerWeek(slots)} sessions a week as written. Sunday is always a rest day.
@@ -477,8 +493,8 @@ export default function PlanProgramModal({
                         {plan.length} workouts over {weeks} week{weeks === 1 ? "" : "s"}, first one {dayHeading(plan[0].date)}.
                       </Text>
                     )}
-                    <Pressable style={styles.activate} onPress={activate} disabled={busy || plan.length === 0}>
-                      {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.activateText}>Activate program</Text>}
+                    <Pressable style={[styles.activate, plan.length === 0 && styles.activateOff]} onPress={activate} disabled={busy || plan.length === 0}>
+                      {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.activateText}>{plan.length === 0 ? "Tap at least one day" : "Activate program"}</Text>}
                     </Pressable>
                   </>
                 )}
@@ -570,5 +586,10 @@ const styles = themedStyles({
   summary: { color: "#CBD5E1", fontSize: 13, marginTop: 12 },
   splitNote: { color: "#FDE68A", fontSize: 13, lineHeight: 18, marginTop: 12 },
   activate: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 12 },
+  activateOff: { opacity: 0.45 },
+  stepLine: { color: BRAND_GOLD, fontSize: 13, fontWeight: "800", marginTop: -4, marginBottom: 8 },
+  picked: { color: "#22C55E", fontSize: 14, fontWeight: "800", marginTop: 4 },
+  singleTop: { borderWidth: 1.5, borderColor: BRAND_GOLD, borderRadius: 12, paddingVertical: 13, alignItems: "center", marginBottom: 6 },
+  singleTopText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15 },
   activateText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
 });
