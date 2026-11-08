@@ -69,6 +69,13 @@ function afterPopup(open: () => void) {
   setTimeout(open, 250);
 }
 
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// "Tue 10 Nov", short enough for a button.
+function shortDay(date: string): string {
+  const d = parseIsoDate(date);
+  return `${WEEKDAY_NAMES[(d.getDay() + 6) % 7].slice(0, 3)} ${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
+}
+
 function dayHeading(date: string): string {
   const d = parseIsoDate(date);
   return `${WEEKDAY_NAMES[(d.getDay() + 6) % 7]} ${d.getDate()} ${monthLabel(monthOf(date))}`;
@@ -149,6 +156,13 @@ export default function ClientCalendarCard({
   // right on the calendar (GRIZZ, 2026-10-29: no hunting in the training log).
   const [weekLogs, setWeekLogs] = useState<WorkoutLog[]>([]);
   const [showLogged, setShowLogged] = useState(false);
+  // Step by step (GRIZZ, 2026-11-08: "once confirmed take me to the next day").
+  // After a whole program goes on, the trainer checks its days one at a time;
+  // after one workout, a Next day button opens the next training day's picker.
+  const [walk, setWalk] = useState<{ kind: "program"; dates: string[] } | { kind: "single" } | null>(null);
+  // The day whose picker opens once its week has loaded.
+  const [pendingPick, setPendingPick] = useState<string | null>(null);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   // Phone Back closes what is open first, one step at a time.
   useStepBack(selected !== null, () => setSelected(null));
   useStepBack(showLogged, () => setShowLogged(false));
@@ -159,6 +173,7 @@ export default function ClientCalendarCard({
     const [entries, blocks] = await Promise.all([loadCalendarWorkouts(clientId, from, to), loadCalendarBlocks(clientId, from, to)]);
     setMonthEntries(entries);
     setMonthBlocks(blocks);
+    setLoadedFor(from);
   }, [clientId, monday]);
 
   const loadUsed = useCallback(async () => {
@@ -276,17 +291,62 @@ export default function ClientCalendarCard({
   const loggedOn = (date: string) => weekLogs.filter((l) => l.log_date === date);
   const selectedLogged = selected ? groupTrainingLog(loggedOn(selected), selected, 1)[0] : null;
 
+  const isEmpty = (date: string) =>
+    !entryOn(date) && !sessions[date] && blocksOn(date).length === 0 && !stability.map[date] && loggedOn(date).length === 0;
+
   const pressDay = (date: string) => {
+    // Tapping a day outside the step-by-step ends it.
+    if (!(walk?.kind === "program" && walk.dates.includes(date))) setWalk(null);
     setSelected(date);
     setShowLogged(false);
-    // A day the client already trained shows how it went instead of the picker.
-    if (entryOn(date) || sessions[date] || blocksOn(date).length > 0 || stability.map[date] || loggedOn(date).length > 0) return;
-    // A past day gets one workout. From today on the day box offers one
-    // workout or a whole program (GRIZZ, 2026-10-19). It used to ask in a pop-up
-    // that opened the planner straight from its button, which on Android could
-    // leave the screen frozen until Back (GRIZZ, 2026-10-22).
+    // A day with something on it shows it instead of the picker.
+    if (!isEmpty(date)) return;
+    // An empty day goes straight to the programs (GRIZZ, 2026-11-08): a past
+    // day gets one workout, from today on the planner opens on the goals with
+    // "Just one workout" at the top. The planner is opened from the tap
+    // itself, never from a pop-up's button (Android froze, 2026-10-22).
     if (date < today) openPicker(date);
+    else openPlanner(date);
   };
+
+  // Moves the calendar to a day (its week too) and opens it.
+  const goTo = (date: string) => {
+    if (mondayOf(date) !== monday) setMonday(mondayOf(date));
+    setSelected(date);
+    setShowLogged(false);
+  };
+
+  // The next day the client trains: their intake days when known, never Sunday.
+  const nextTrainingDay = (from: string): string => {
+    for (let i = 1; i <= 14; i++) {
+      const d = addDays(from, i);
+      const weekday = ((parseIsoDate(d).getDay() + 6) % 7) + 1;
+      if (weekday === 7) continue;
+      if (clientDays.length > 0 && clientDays.some((c) => c <= 6) && !clientDays.includes(weekday)) continue;
+      return d;
+    }
+    return addDays(from, 1);
+  };
+
+  const finishWalk = () => {
+    setWalk(null);
+    setSelected(null);
+  };
+
+  // One workout at a time: the next day opens, and if it's empty its picker too.
+  const nextSingle = () => {
+    if (!selected) return;
+    const next = nextTrainingDay(selected);
+    goTo(next);
+    setPendingPick(next);
+  };
+
+  useEffect(() => {
+    if (!pendingPick || loadedFor !== mondayOf(pendingPick) || loadedFor !== monday) return;
+    const date = pendingPick;
+    setPendingPick(null);
+    if (isEmpty(date)) afterPopup(() => openPicker(date));
+  }, [pendingPick, loadedFor, monday, monthEntries, monthBlocks]);
 
   const openPlanner = (date: string) => {
     if (resetNotice && !resetWarned.current) {
@@ -341,6 +401,9 @@ export default function ClientCalendarCard({
     }
     setSelected(picking);
     setPicking(null);
+    // A saved workout shows a clear ✓ and a Next day button, unless the
+    // trainer is already checking a whole program's days.
+    if (pickMode === "main" && walk?.kind !== "program") setWalk({ kind: "single" });
     await Promise.all([loadMonth(), loadUsed()]);
     onPlanChanged?.();
   };
@@ -483,12 +546,156 @@ export default function ClientCalendarCard({
     ]);
   };
 
+  // The guide at the top of the open day while going step by step.
+  const walkIndex = walk?.kind === "program" && selected ? walk.dates.indexOf(selected) : -1;
+  const walkBanner =
+    !selected ? null : walk?.kind === "program" && walkIndex >= 0 ? (
+      <View style={styles.walk}>
+        <Text style={styles.walkStep}>
+          Day {walkIndex + 1} of {walk.dates.length} · {shortDay(selected)}
+        </Text>
+        <Text style={styles.walkHint}>Check it. Tap any exercise to change it.</Text>
+        {walkIndex < walk.dates.length - 1 ? (
+          <Pressable style={styles.walkNext} onPress={() => goTo(walk.dates[walkIndex + 1])}>
+            <Text style={styles.walkNextText}>Looks good · next: {shortDay(walk.dates[walkIndex + 1])} ›</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.walkNext} onPress={finishWalk}>
+            <Text style={styles.walkNextText}>✓ All days checked, done</Text>
+          </Pressable>
+        )}
+        <Pressable onPress={finishWalk} hitSlop={8}>
+          <Text style={styles.walkStop}>Stop checking</Text>
+        </Pressable>
+      </View>
+    ) : walk?.kind === "single" ? (
+      <View style={styles.walk}>
+        {selectedEntry && selectedProgram ? (
+          <>
+            <Text style={styles.walkStep}>✓ Saved on {shortDay(selected)}</Text>
+            <Text style={styles.walkHint}>Tap any exercise to change it.</Text>
+          </>
+        ) : (
+          <Text style={styles.walkStep}>Nothing on {shortDay(selected)} yet</Text>
+        )}
+        <Pressable style={styles.walkNext} onPress={nextSingle}>
+          <Text style={styles.walkNextText}>
+            {selectedEntry ? "Next day" : "Skip to"}: {shortDay(nextTrainingDay(selected))} ›
+          </Text>
+        </Pressable>
+        <Pressable onPress={finishWalk} hitSlop={8}>
+          <Text style={styles.walkStop}>Done for now</Text>
+        </Pressable>
+      </View>
+    ) : null;
+
+  // The open day sits right under the day tapped (GRIZZ, 2026-11-08), so the
+  // workout, its changes and what to do next are where the trainer is looking.
+  const dayBox = !selected ? null : (
+    <View style={styles.dayBox}>
+      {walkBanner}
+      <Text style={styles.dayTitle}>{dayHeading(selected)}</Text>
+      {selectedEntry && selectedProgram ? (
+        <>
+          <Text style={[styles.dayWorkout, isFunctionalProgram(selectedProgram) && { color: themeText(FUNCTIONAL_TEAL) }]}>{selectedProgram.name}</Text>
+          {selectedEntry.day_slot != null && (
+            <Text style={styles.daySlot}>{slotLabel(selectedProgram, selectedEntry.day_slot)}</Text>
+          )}
+          {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
+          {workoutAddOns(selectedProgram, extras) ? <Text style={styles.addOns}>{workoutAddOns(selectedProgram, extras)}</Text> : null}
+          <ProgramSummary
+            program={selectedProgram}
+            exercises={withoutSkippedCardio(selectedExercises, skips, selected)}
+            onPressExercise={setChanging}
+            onPressCardio={takeOffCardio}
+            onlySlot={selectedEntry.day_slot}
+          />
+          {selectedExercises
+            .filter((r) => cardioSkipped(r, skips, selected))
+            .map((r) => (
+              <Pressable key={`off-${r.id}`} onPress={() => putBackCardio(r)} hitSlop={6}>
+                <Text style={styles.cardioOffLine}>Taken off: 🔥 {cardioLabel(r)}  ↩ Put back</Text>
+              </Pressable>
+            ))}
+          <View style={styles.dayButtons}>
+            <Pressable style={styles.changeButton} onPress={() => openPicker(selectedEntry.workout_date)}>
+              <Text style={styles.changeText}>Change workout</Text>
+            </Pressable>
+            <Pressable style={styles.clearButton} onPress={() => clearDay(selectedEntry)}>
+              <Text style={styles.clearText}>Take it off</Text>
+            </Pressable>
+          </View>
+        </>
+      ) : (
+        <>
+          {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
+          <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPicker(selected)}>
+            <Text style={styles.changeText}>＋ One workout</Text>
+          </Pressable>
+          {selected >= today && selectedBlocks.length === 0 && (
+            <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPlanner(selected)}>
+              <Text style={styles.changeText}>A whole program from this day</Text>
+            </Pressable>
+          )}
+        </>
+      )}
+      {selectedBlocks.map((b) => {
+        const p = byId.get(b.program_id);
+        if (!p) return null;
+        return (
+          <View key={b.id} style={styles.block}>
+            <Text style={[styles.blockName, isFunctionalProgram(p) && { color: themeText(FUNCTIONAL_TEAL) }]}>{p.name}</Text>
+            {b.day_slot != null && <Text style={styles.daySlot}>{slotLabel(p, b.day_slot)}</Text>}
+            {/* The client's tick on an extra block (0123). */}
+            {b.result && (
+              <Text style={[styles.daySlot, { color: themeText(b.result === "done" ? "#22C55E" : "#F59E0B") }]}>
+                {b.result === "done" ? "✅ Done" : "⚠️ Couldn't do it"}
+              </Text>
+            )}
+            <ProgramSummary
+              program={p}
+              exercises={withoutSkippedCardio(blockExercises[b.id] ?? [], skips, b.workout_date)}
+              onPressExercise={setChanging}
+              onPressCardio={takeOffCardio}
+              onlySlot={b.day_slot}
+            />
+            {(blockExercises[b.id] ?? [])
+              .filter((r) => cardioSkipped(r, skips, b.workout_date))
+              .map((r) => (
+                <Pressable key={`off-${r.id}`} onPress={() => putBackCardio(r)} hitSlop={6}>
+                  <Text style={styles.cardioOffLine}>Taken off: 🔥 {cardioLabel(r)}  ↩ Put back</Text>
+                </Pressable>
+              ))}
+            <Pressable style={[styles.clearButton, styles.blockOff]} onPress={() => takeOffBlock(b, p.name)}>
+              <Text style={styles.clearText}>Take it off</Text>
+            </Pressable>
+          </View>
+        );
+      })}
+      <StabilityDayPlanner
+        date={selected}
+        clientId={clientId}
+        programs={stability.programs}
+        days={stability.days}
+        items={stability.map[selected] ?? []}
+        onChanged={() => setStabilityReload((k) => k + 1)}
+      />
+      <Pressable style={styles.addBlock} onPress={() => openPicker(selected, "block")}>
+        <Text style={styles.addBlockText}>＋ Add a block (mobility, flexibility, fight…)</Text>
+      </Pressable>
+      {selected >= today && (selectedEntry || selectedBlocks.length > 0) && (
+        <Pressable style={styles.addBlock} onPress={() => openPlanner(selected)}>
+          <Text style={styles.addBlockText}>Start a new program from this day</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Training calendar</Text>
       <Text style={styles.helper}>
-        Tap the day {clientName} starts, pick the type, the program and the days they train, and the calendar fills itself.
-        Tap any day after to change it.
+        Tap the day {clientName} starts and the programs open. Pick one, tap the days they train, then check each day one by one.
       </Text>
       <WeeklyPlanCard
         clientId={clientId}
@@ -529,8 +736,9 @@ export default function ClientCalendarCard({
           onPressDay={pressDay}
           marks={marks}
           logged={Object.fromEntries(weekLogs.map((l) => [l.log_date, true]))}
-          belowDay={(date) =>
-            selectedLogged && selectedLogged.setCount > 0 ? (
+          belowDay={(date) => (
+            <>
+            {selectedLogged && selectedLogged.setCount > 0 ? (
               <View style={styles.loggedWrap}>
                 <Pressable
                   style={[styles.seeWorkout, showLogged && styles.seeWorkoutOpen]}
@@ -553,107 +761,11 @@ export default function ClientCalendarCard({
                   </View>
                 )}
               </View>
-            ) : null
-          }
+            ) : null}
+            {dayBox}
+            </>
+          )}
         />
-      )}
-      {selected && (
-        <View style={styles.dayBox}>
-          <Text style={styles.dayTitle}>{dayHeading(selected)}</Text>
-          {selectedEntry && selectedProgram ? (
-            <>
-              <Text style={[styles.dayWorkout, isFunctionalProgram(selectedProgram) && { color: themeText(FUNCTIONAL_TEAL) }]}>{selectedProgram.name}</Text>
-              {selectedEntry.day_slot != null && (
-                <Text style={styles.daySlot}>{slotLabel(selectedProgram, selectedEntry.day_slot)}</Text>
-              )}
-              {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
-              {workoutAddOns(selectedProgram, extras) ? <Text style={styles.addOns}>{workoutAddOns(selectedProgram, extras)}</Text> : null}
-              <ProgramSummary
-                program={selectedProgram}
-                exercises={withoutSkippedCardio(selectedExercises, skips, selected)}
-                onPressExercise={setChanging}
-                onPressCardio={takeOffCardio}
-                onlySlot={selectedEntry.day_slot}
-              />
-              {selectedExercises
-                .filter((r) => cardioSkipped(r, skips, selected))
-                .map((r) => (
-                  <Pressable key={`off-${r.id}`} onPress={() => putBackCardio(r)} hitSlop={6}>
-                    <Text style={styles.cardioOffLine}>Taken off: 🔥 {cardioLabel(r)}  ↩ Put back</Text>
-                  </Pressable>
-                ))}
-              <View style={styles.dayButtons}>
-                <Pressable style={styles.changeButton} onPress={() => openPicker(selectedEntry.workout_date)}>
-                  <Text style={styles.changeText}>Change workout</Text>
-                </Pressable>
-                <Pressable style={styles.clearButton} onPress={() => clearDay(selectedEntry)}>
-                  <Text style={styles.clearText}>Take it off</Text>
-                </Pressable>
-              </View>
-            </>
-          ) : (
-            <>
-              {sessions[selected] && <WorkoutSessionResult session={sessions[selected]} />}
-              <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPicker(selected)}>
-                <Text style={styles.changeText}>＋ One workout</Text>
-              </Pressable>
-              {selected >= today && selectedBlocks.length === 0 && (
-                <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPlanner(selected)}>
-                  <Text style={styles.changeText}>A whole program from this day</Text>
-                </Pressable>
-              )}
-            </>
-          )}
-          {selectedBlocks.map((b) => {
-            const p = byId.get(b.program_id);
-            if (!p) return null;
-            return (
-              <View key={b.id} style={styles.block}>
-                <Text style={[styles.blockName, isFunctionalProgram(p) && { color: themeText(FUNCTIONAL_TEAL) }]}>{p.name}</Text>
-                {b.day_slot != null && <Text style={styles.daySlot}>{slotLabel(p, b.day_slot)}</Text>}
-                {/* The client's tick on an extra block (0123). */}
-                {b.result && (
-                  <Text style={[styles.daySlot, { color: themeText(b.result === "done" ? "#22C55E" : "#F59E0B") }]}>
-                    {b.result === "done" ? "✅ Done" : "⚠️ Couldn't do it"}
-                  </Text>
-                )}
-                <ProgramSummary
-                  program={p}
-                  exercises={withoutSkippedCardio(blockExercises[b.id] ?? [], skips, b.workout_date)}
-                  onPressExercise={setChanging}
-                  onPressCardio={takeOffCardio}
-                  onlySlot={b.day_slot}
-                />
-                {(blockExercises[b.id] ?? [])
-                  .filter((r) => cardioSkipped(r, skips, b.workout_date))
-                  .map((r) => (
-                    <Pressable key={`off-${r.id}`} onPress={() => putBackCardio(r)} hitSlop={6}>
-                      <Text style={styles.cardioOffLine}>Taken off: 🔥 {cardioLabel(r)}  ↩ Put back</Text>
-                    </Pressable>
-                  ))}
-                <Pressable style={[styles.clearButton, styles.blockOff]} onPress={() => takeOffBlock(b, p.name)}>
-                  <Text style={styles.clearText}>Take it off</Text>
-                </Pressable>
-              </View>
-            );
-          })}
-          <StabilityDayPlanner
-            date={selected}
-            clientId={clientId}
-            programs={stability.programs}
-            days={stability.days}
-            items={stability.map[selected] ?? []}
-            onChanged={() => setStabilityReload((k) => k + 1)}
-          />
-          <Pressable style={styles.addBlock} onPress={() => openPicker(selected, "block")}>
-            <Text style={styles.addBlockText}>＋ Add a block (mobility, flexibility, fight…)</Text>
-          </Pressable>
-          {selected >= today && (selectedEntry || selectedBlocks.length > 0) && (
-            <Pressable style={styles.addBlock} onPress={() => openPlanner(selected)}>
-              <Text style={styles.addBlockText}>Start a new program from this day</Text>
-            </Pressable>
-          )}
-        </View>
       )}
       <View style={styles.legend}>
         <Text style={styles.legendText}>🟢 done · 🟠 partly · 🔴 couldn't train · ⭐ weights up</Text>
@@ -678,13 +790,18 @@ export default function ClientCalendarCard({
             setPicking(date);
           });
         }}
-        onDone={async (what) => {
+        onDone={async (what, dates) => {
           setPlanning(null);
           if (what === "stability") {
             onStabilityStarted?.();
             setStabilityReload((k) => k + 1);
           }
           else {
+            // Straight into checking the new days, one at a time.
+            if (dates && dates.length > 0) {
+              setWalk({ kind: "program", dates });
+              goTo(dates[0]);
+            }
             await Promise.all([loadMonth(), loadUsed()]);
             setPlanKey((k) => k + 1);
             onPlanChanged?.();
@@ -772,10 +889,12 @@ function WorkoutPicker({
     if (date) {
       setPlace(trainingPlace);
       setOpen(null);
-      setOpenGroup(null);
+      // Opens on the group most likely wanted, one tap less (GRIZZ, 2026-11-08):
+      // training for the day's workout, mobility and flexibility for a block.
+      setOpenGroup(mode === "block" ? "functional" : "gym");
       setOpenProgram(null);
     }
-  }, [date, trainingPlace]);
+  }, [date, trainingPlace, mode]);
 
   const toggleProgram = async (p: Program) => {
     if (openProgram === p.id) {
@@ -881,7 +1000,7 @@ function WorkoutPicker({
                               <Pressable onPress={() => toggleProgram(p)} disabled={busy}>
                                 <View style={styles.choiceTop}>
                                   <Text style={styles.name}>{p.name}</Text>
-                                  {p.id === currentId && <Text style={styles.currentTag}>On this day</Text>}
+                                  {p.id === currentId && <Text style={styles.currentTag}>✓ On this day</Text>}
                                   <Text style={styles.chevron}>{shut ? "▾" : "▴"}</Text>
                                 </View>
                                 <Text style={styles.description}>Tap to choose one of its days</Text>
@@ -898,7 +1017,7 @@ function WorkoutPicker({
                                       disabled={busy || current}
                                     >
                                       <Text style={styles.sessionText}>{slotLabel(p, slot)}</Text>
-                                      {current && <Text style={styles.currentTag}>On this day</Text>}
+                                      {current && <Text style={styles.currentTag}>✓ On this day</Text>}
                                     </Pressable>
                                   );
                                 })}
@@ -918,7 +1037,7 @@ function WorkoutPicker({
                             <View style={styles.choiceTop}>
                               <Text style={[styles.name, isUsed && { color: themeText("#94A3B8") }]}>{p.name}</Text>
                               {isUsed && <Text style={styles.usedTag}>Used</Text>}
-                              {current && <Text style={styles.currentTag}>On this day</Text>}
+                              {current && <Text style={styles.currentTag}>✓ On this day</Text>}
                             </View>
                             {p.description ? (
                               <Text style={styles.description} numberOfLines={2}>
@@ -950,7 +1069,13 @@ const styles = themedStyles({
   helper: { color: "#94A3B8", fontSize: 13, lineHeight: 18, marginBottom: 10 },
   legend: { marginTop: 8 },
   legendText: { color: "#64748B", fontSize: 11 },
-  dayBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: 10 },
+  dayBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: -2, marginBottom: 10, borderWidth: 1, borderColor: BRAND_GOLD },
+  walk: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 10 },
+  walkStep: { color: "#fff", fontSize: 15, fontWeight: "800" },
+  walkHint: { color: "#94A3B8", fontSize: 13, marginTop: 2 },
+  walkNext: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 13, alignItems: "center", marginTop: 10 },
+  walkNextText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
+  walkStop: { color: "#94A3B8", fontSize: 13, fontWeight: "700", textAlign: "center", marginTop: 10 },
   dayTitle: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },
   dayWorkout: { color: BRAND_GOLD, fontSize: 16, fontWeight: "800", marginTop: 2 },
   daySlot: { color: "#CBD5E1", fontSize: 13, fontWeight: "700", marginTop: 2 },

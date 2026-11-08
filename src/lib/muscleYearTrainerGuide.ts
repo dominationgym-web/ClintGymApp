@@ -25,7 +25,7 @@ export const MUSCLE_YEAR_TRAINER_GUIDE: TrainerGuide = {
             "3 days (Mon, Wed, Fri): full body every session. Best for busy clients and beginners who have finished a Foundation program.",
             "4 days (Mon, Tue, Thu, Fri): upper and lower body twice each. The best fit for most intermediate clients.",
             "5 days (Mon-Fri): upper, lower, push, pull and legs. For experienced clients who recover well and can train 60-75 minutes.",
-            "Put it on from the client's calendar: tap a day > A whole program > Build muscle > Muscle Year. Keep the program's own days ticked.",
+            "Put it on from the client's calendar: tap an empty day > Build muscle > Muscle Year. Keep the program's own days ticked.",
             "Fewer days than the program has makes it run longer than a year and the plan stops at 52 weeks. Pick the version that matches their days instead.",
           ],
         },
