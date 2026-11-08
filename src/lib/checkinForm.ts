@@ -18,6 +18,9 @@ export type CheckinForm = {
   mealsTotal: string;
   highGiCount: string;
   woundDown: boolean | null;
+  // Coffee yesterday (0203): cups, and the time of the last cup.
+  coffeeCups: string;
+  coffeeLastTime: string;
   // Pain, fatigue and mental exhaustion (0055); these replace the old
   // "flag distress or pain" switch and set distress_flag themselves.
   wellbeing: WellbeingForm;
@@ -33,6 +36,8 @@ export type CheckinValues = Pick<
   | "meals_total"
   | "high_gi_count"
   | "wound_down"
+  | "coffee_cups"
+  | "coffee_last_time"
 > &
   WellbeingValues;
 
@@ -45,6 +50,8 @@ export const EMPTY_CHECKIN_FORM: CheckinForm = {
   mealsTotal: "",
   highGiCount: "",
   woundDown: null,
+  coffeeCups: "",
+  coffeeLastTime: "",
   wellbeing: EMPTY_WELLBEING,
 };
 
@@ -97,6 +104,8 @@ export function formFromCheckin(row: Checkin): CheckinForm {
     mealsTotal: amountToText(row.meals_total),
     highGiCount: amountToText(row.high_gi_count),
     woundDown: row.wound_down,
+    coffeeCups: row.coffee_cups === null || row.coffee_cups === undefined ? "" : String(row.coffee_cups),
+    coffeeLastTime: timeToText(row.coffee_last_time ?? null),
     wellbeing: wellbeingFromCheckin(row),
   };
 }
@@ -135,6 +144,19 @@ export function validateCheckinForm(form: CheckinForm): CheckinValidation {
   }
   const [bed, wake] = times.map((field) => field.value as string);
 
+  // Coffee: blank means not answered (null), so 0 cups is a real answer.
+  let coffeeCups: number | null = null;
+  if (form.coffeeCups.trim() !== "") {
+    const cups = parseAmount(form.coffeeCups);
+    if (cups === null || !Number.isInteger(cups)) return fail("Check Coffee", "Type the number of cups as a whole number, like 2.");
+    if (cups > 30) return fail("Check Coffee", `${cups} cups looks too high. Is there a typo?`);
+    coffeeCups = cups;
+  }
+  const lastCup = parseTime(form.coffeeLastTime);
+  if (lastCup === null) {
+    return fail("Check Last cup", `"${form.coffeeLastTime}" isn't a time we can read. Use the 24-hour clock, like 15:30.`);
+  }
+
   if (highGi > meals && form.mealsTotal.trim() !== "") {
     return fail("Check your meals", "You've logged more high-GI meals than meals in total.");
   }
@@ -152,6 +174,9 @@ export function validateCheckinForm(form: CheckinForm): CheckinValidation {
       meals_total: meals,
       high_gi_count: highGi,
       wound_down: form.woundDown,
+      coffee_cups: coffeeCups,
+      // No coffee means no last cup.
+      coffee_last_time: coffeeCups ? lastCup || null : null,
       ...wellbeing.values,
     },
   };
@@ -165,6 +190,7 @@ export function unansweredSections(form: CheckinForm): string[] {
   if (!form.waterLitres.trim()) missing.push("water");
   if (!form.mealsTotal.trim()) missing.push("meals");
   if (form.woundDown === null) missing.push("wind-down");
+  if (!form.coffeeCups.trim()) missing.push("coffee");
   if (Object.values(form.wellbeing).some((a) => a.status === null)) missing.push("body and mind");
   return missing;
 }

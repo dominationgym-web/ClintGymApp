@@ -67,6 +67,7 @@ export default function ClientDailySummaryCard({ clientId, clientName }: { clien
             {facts.workoutsPlanned ? `/${facts.workoutsPlanned}` : ""}
             {facts.otherActivities.length ? ` · Other exercise ${facts.otherActivities.length}` : ""}
             {facts.sleepHours !== null ? ` · Sleep ${facts.sleepHours}h` : ""}
+            {facts.coffee ? ` · Coffee ${facts.coffee.averageCups}/day${facts.coffee.lateDays ? ` (${facts.coffee.lateDays} late)` : ""}` : ""}
           </Text>
           {facts.watchSleep.length > 0 && (
             <Pressable onPress={() => setShowSleep((v) => !v)} hitSlop={6}>

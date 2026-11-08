@@ -18,10 +18,8 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
-  Platform,
 } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
-import TextInput from "@/components/TextInput";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -41,6 +39,9 @@ import { clockTime, sleepLength } from "@/lib/sleepSync";
 import { themeText, themedStyles } from "@/lib/theme";
 import { BRAND_GOLD } from "@/lib/brand";
 import { useStepBack } from "@/hooks/useStepBack";
+import { coffeeText, isLateCoffee } from "@/lib/coffee";
+import TimeSlotButton from "@/components/TimeSlotButton";
+import { halfHourSlots } from "@/lib/mealPlanMaker";
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -53,6 +54,36 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 // The check-in's three pages, in order.
 const CHECKIN_STEPS = ["How you feel", "Sleep", "Food & drink"] as const;
+
+// Half-hour buttons for the times, so nothing is typed (GRIZZ, 2026-11-08).
+const BED_SLOTS = [...halfHourSlots("19:00", "23:30"), ...halfHourSlots("00:00", "03:00")];
+const WAKE_SLOTS = halfHourSlots("03:30", "11:00");
+const COFFEE_SLOTS = halfHourSlots("05:00", "22:00");
+const CUP_CHOICES = [0, 1, 2, 3, 4, 5, 6] as const;
+// Number buttons for the Food & drink page: [saved value, button label].
+type Choice = readonly [string, string];
+const WATER_CHOICES: Choice[] = [["0.5", "½"], ["1", "1"], ["1.5", "1½"], ["2", "2"], ["2.5", "2½"], ["3", "3"], ["3.5", "3½"], ["4", "4+"]];
+const MEAL_CHOICES: Choice[] = [["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"], ["6", "6+"]];
+const HIGH_GI_CHOICES: Choice[] = [["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4+"]];
+const ALCOHOL_CHOICES: Choice[] = [["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["6", "6"], ["8", "8"], ["10", "10+"]];
+
+/** A row of number buttons; tap again to clear. A saved odd value (like 2,7 L) still shows as its own button. */
+function Choices({ options, value, onChange }: { options: Choice[]; value: string; onChange: (v: string) => void }) {
+  const same = (a: string, b: string) => a !== "" && b !== "" && Number(a.replace(",", ".")) === Number(b.replace(",", "."));
+  const shown = value && !options.some(([v]) => same(v, value)) ? [...options, [value, value] as Choice] : options;
+  return (
+    <View style={styles.choiceGrid}>
+      {shown.map(([v, label]) => {
+        const on = same(v, value);
+        return (
+          <Pressable key={v} style={[styles.numChip, shown.length > 6 && styles.numChipQuarter, on && styles.scoreBubbleSelected]} onPress={() => onChange(on ? "" : v)} accessibilityRole="button" accessibilityLabel={label}>
+            <Text style={[styles.scoreText, on && styles.choiceTextSelected]}>{label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 const yesNo = (value: boolean | null) => (value === null ? "-" : value ? "Yes" : "No");
 const orDash = (value: string | null) => (value ? value.slice(0, 5) : "-");
@@ -154,11 +185,6 @@ export default function CheckInScreen() {
     });
     return () => subscription.remove();
   }, [reloadIfNewDay]);
-
-  const tidyTime = (key: "bedTime" | "wakeTime") => {
-    const parsed = parseTime(form[key]);
-    if (parsed) set(key, parsed);
-  };
 
   const save = async (values: CheckinValues) => {
     if (!client) return;
@@ -274,6 +300,7 @@ export default function CheckInScreen() {
           <SummaryRow label="Meals yesterday" value={String(saved.meals_total)} />
           <SummaryRow label="High-GI meals" value={String(saved.high_gi_count)} />
           <SummaryRow label="Wound down without screens" value={yesNo(saved.wound_down)} />
+          <SummaryRow label="Coffee yesterday" value={coffeeText(saved) ?? "-"} />
           {WELLBEING_TOPICS.map((t) => (
             <SummaryRow
               key={t.key}
@@ -335,33 +362,20 @@ export default function CheckInScreen() {
         )}
         {step === 1 && (
           <>
-            <Text style={styles.sectionHeading}>Sleep times (e.g. 22:30)</Text>
+            {/* Tap a time, no typing (GRIZZ, 2026-11-08: "Typing out times is a pain"). */}
+            <Text style={styles.sectionHeading}>Sleep times</Text>
             {watchNight && (
               <Text style={styles.watchNote}>
                 From your watch: {sleepLength(watchNight.asleep_minutes)} asleep.
               </Text>
             )}
             <View style={styles.row}>
-              {(
-                [
-                  { key: "bedTime", label: "Bed", placeholder: "22:30" },
-                  { key: "wakeTime", label: "Wake", placeholder: "06:00" },
-                ] as const
-              ).map((field) => (
-                <View key={field.key} style={styles.flex1}>
-                  <Text style={styles.inputLabel}>{field.label}</Text>
-                  <TextInput
-                    style={styles.input}
-                    keyboardType={Platform.OS === "ios" ? "numbers-and-punctuation" : "default"}
-                    placeholder={field.placeholder}
-                    placeholderTextColor="#64748B"
-                    value={form[field.key]}
-                    onChangeText={(v) => set(field.key, v)}
-                    onBlur={() => tidyTime(field.key)}
-                    maxLength={5}
-                  />
-                </View>
-              ))}
+              <View style={styles.flex1}>
+                <TimeSlotButton label="Bed" value={form.bedTime || null} onChange={(t) => set("bedTime", t ?? "")} slots={BED_SLOTS} style={styles.timeButton} />
+              </View>
+              <View style={styles.flex1}>
+                <TimeSlotButton label="Wake" value={form.wakeTime || null} onChange={(t) => set("wakeTime", t ?? "")} slots={WAKE_SLOTS} style={styles.timeButton} />
+              </View>
             </View>
 
             <Text style={styles.sectionHeading}>Sleep quality (1 = poor, 5 = great)</Text>
@@ -392,50 +406,56 @@ export default function CheckInScreen() {
               ))}
             </View>
 
+            {/* Coffee (0203): late caffeine is a common cause of poor sleep and tiredness. */}
+            <Text style={styles.sectionHeading}>Cups of coffee yesterday</Text>
+            <View style={[styles.row, { gap: 6 }]}>
+              {CUP_CHOICES.map((n) => {
+                const on = form.coffeeCups === String(n);
+                return (
+                  <Pressable
+                    key={n}
+                    style={[styles.cupChip, on && styles.scoreBubbleSelected]}
+                    onPress={() => set("coffeeCups", on ? "" : String(n))}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${n} cups`}
+                  >
+                    <Text style={[styles.scoreText, on && styles.choiceTextSelected]}>{n === 6 ? "6+" : n}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {form.coffeeCups !== "" && form.coffeeCups !== "0" && (
+              <View style={{ marginTop: 10 }}>
+                <TimeSlotButton
+                  label="Last cup at"
+                  value={form.coffeeLastTime || null}
+                  onChange={(t) => set("coffeeLastTime", t ?? "")}
+                  slots={COFFEE_SLOTS}
+                  style={styles.timeButton}
+                />
+              </View>
+            )}
+            {isLateCoffee({ coffee_cups: Number(form.coffeeCups) || 0, coffee_last_time: parseTime(form.coffeeLastTime) || null }) && (
+              <Text style={styles.coffeeNote}>Coffee after 2pm can still keep you awake at bedtime.</Text>
+            )}
+
           </>
         )}
         {step === 2 && (
           <>
-            <Text style={styles.sectionHeading}>Water (litres)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="e.g. 2,5"
-              placeholderTextColor="#64748B"
-              value={form.waterLitres}
-              onChangeText={(v) => set("waterLitres", v)}
-            />
+            {/* Buttons only, no typing (GRIZZ, 2026-11-08). The last button means "or more". */}
+            <Text style={styles.sectionHeading}>Water yesterday (litres)</Text>
+            <Choices options={WATER_CHOICES} value={form.waterLitres} onChange={(v) => set("waterLitres", v)} />
 
-            <Text style={styles.sectionHeading}>Meals yesterday (total)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor="#64748B"
-              value={form.mealsTotal}
-              onChangeText={(v) => set("mealsTotal", v)}
-            />
+            <Text style={styles.sectionHeading}>Meals yesterday</Text>
+            <Choices options={MEAL_CHOICES} value={form.mealsTotal} onChange={(v) => set("mealsTotal", v)} />
 
-            <Text style={styles.sectionHeading}>High-GI meals (count)</Text>
+            <Text style={styles.sectionHeading}>High-GI meals yesterday</Text>
             <HighGiInfo />
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor="#64748B"
-              value={form.highGiCount}
-              onChangeText={(v) => set("highGiCount", v)}
-            />
+            <Choices options={HIGH_GI_CHOICES} value={form.highGiCount} onChange={(v) => set("highGiCount", v)} />
 
-            <Text style={styles.sectionHeading}>Alcohol (units last night)</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor="#64748B"
-              value={form.alcoholUnits}
-              onChangeText={(v) => set("alcoholUnits", v)}
-            />
+            <Text style={styles.sectionHeading}>Alcohol last night (units)</Text>
+            <Choices options={ALCOHOL_CHOICES} value={form.alcoholUnits} onChange={(v) => set("alcoholUnits", v)} />
 
           </>
         )}
@@ -495,6 +515,12 @@ const styles = themedStyles({
   choiceTextSelected: { color: "#0F172A" },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 10 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12 },
+  choiceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  numChip: { flexGrow: 1, flexBasis: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: "#334155", alignItems: "center", justifyContent: "center" },
+  numChipQuarter: { flexBasis: "22%" },
+  cupChip: { flex: 1, height: 40, borderRadius: 20, borderWidth: 1, borderColor: "#334155", alignItems: "center", justifyContent: "center" },
+  timeButton: { backgroundColor: "#1E293B", marginBottom: 0, paddingVertical: 13 },
+  coffeeNote: { color: "#F59E0B", fontSize: 12, marginTop: 6 },
   multiline: { minHeight: 80, textAlignVertical: "top", marginTop: 8 },
   row: { flexDirection: "row", gap: 10 },
   flex1: { flex: 1 },

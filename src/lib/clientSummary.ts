@@ -12,6 +12,7 @@
 import { addDays } from "@/lib/programSchedule";
 import { sleepHours } from "@/lib/checkinFeedback";
 import { formatSteps } from "@/lib/steps";
+import { isLateCoffee } from "@/lib/coffee";
 import { activityTitle, isBigActivity } from "@/lib/otherActivities";
 import type { Checkin, ClientActivity, ClientStatusFlag, SetEffort, WorkoutSessionStatus } from "@/types/database";
 
@@ -30,6 +31,8 @@ export type SummaryInputs = {
     | "fatigue_cause"
     | "mental_status"
     | "mental_cause"
+    | "coffee_cups"
+    | "coffee_last_time"
   >[];
   /** The client's own "How are you doing?" answers (client_status_flag_events). */
   flags: { date: string; flag: ClientStatusFlag; note: string | null }[];
@@ -73,6 +76,8 @@ export type WeekFacts = {
   /** Average steps on the days logged, and how many of the days with a goal hit it. */
   steps: { average: number; days: number; goalDays: number; hitDays: number } | null;
   alcoholUnits: number;
+  /** Coffee (0203): average cups on the days answered, days the last cup was 14:00 or later, and the latest cup. */
+  coffee: { days: number; averageCups: number; lateDays: number; latestCup: string | null } | null;
   waterLitres: number | null;
   painDays: number;
   painAreas: string[];
@@ -169,6 +174,9 @@ export function weekFacts(input: SummaryInputs, today: string): WeekFacts {
   const counted = sets.filter((s) => !s.gauge);
   const share = (e: SetEffort) => (counted.length ? counted.filter((s) => s.effort === e).length / counted.length : null);
 
+  const coffeeDays = checkins.filter((c) => c.coffee_cups !== null && c.coffee_cups !== undefined);
+  const cupTimes = coffeeDays.flatMap((c) => (c.coffee_cups && c.coffee_last_time ? [c.coffee_last_time.slice(0, 5)] : [])).sort();
+
   const pain = checkins.filter((c) => c.pain_status === "reported");
   const fatigue = checkins.filter((c) => c.fatigue_status === "reported");
   const mental = checkins.filter((c) => c.mental_status === "reported");
@@ -206,6 +214,14 @@ export function weekFacts(input: SummaryInputs, today: string): WeekFacts {
         }
       : null,
     alcoholUnits: checkins.reduce((t, c) => t + (Number(c.alcohol_units) || 0), 0),
+    coffee: coffeeDays.length
+      ? {
+          days: coffeeDays.length,
+          averageCups: half(coffeeDays.reduce((t, c) => t + (c.coffee_cups ?? 0), 0) / coffeeDays.length),
+          lateDays: coffeeDays.filter((c) => isLateCoffee({ coffee_cups: c.coffee_cups ?? null, coffee_last_time: c.coffee_last_time ?? null })).length,
+          latestCup: cupTimes.length ? cupTimes[cupTimes.length - 1] : null,
+        }
+      : null,
     waterLitres: (() => {
       const w = avg(checkins.map((c) => Number(c.water_litres) || 0));
       return w === null ? null : Math.round(w * 10) / 10;
@@ -297,6 +313,13 @@ export function ruleSummary(f: WeekFacts): DailySummary {
       `Steps: about ${formatSteps(f.steps.average)} a day` + (f.steps.goalDays ? `, goal hit ${f.steps.hitDays} of ${plural(f.steps.goalDays, "day")}` : "") + ".",
     );
   }
+  if (f.coffee && f.coffee.averageCups > 0) {
+    lines.push(
+      `Coffee: about ${f.coffee.averageCups} cup${f.coffee.averageCups === 1 ? "" : "s"} a day` +
+        (f.coffee.lateDays ? `, last cup after 2pm on ${plural(f.coffee.lateDays, "day")} (latest ${f.coffee.latestCup})` : "") +
+        ".",
+    );
+  }
   if (f.otherActivities.length) {
     lines.push(`Also did ${plural(f.otherActivities.length, "other session")} (${uniq(f.otherActivities.map((a) => a.what)).join(", ")}), ${f.otherMinutes} min in total.`);
   }
@@ -322,6 +345,14 @@ export function ruleSummary(f: WeekFacts): DailySummary {
     );
   }
   if (f.sleepHours !== null && f.sleepHours < 6.5) tips.push("Sleep is short: an earlier bedtime will help their energy more than more training.");
+  // A late cup matters most when sleep or energy is already down.
+  const sleepOrEnergyDown =
+    (f.sleepHours !== null && f.sleepHours < 7) || (f.sleepQuality !== null && f.sleepQuality <= 3) || f.fatigueDays > 0 || energy === "Low" || energy === "Very low";
+  if (f.coffee && f.coffee.lateDays >= 2 && sleepOrEnergyDown) {
+    tips.push(`Late coffee on ${plural(f.coffee.lateDays, "day")} may be hurting their sleep: talk to them about having the last cup before 2pm.`);
+  } else if (f.coffee && f.coffee.averageCups >= 5) {
+    tips.push(`About ${f.coffee.averageCups} cups of coffee a day: ask them how they're sleeping and if they rely on it for energy.`);
+  }
   if (f.mentalDays >= 2 || f.mentalCauses.length) tips.push("Life stress is up: keep sessions short and doable, and check in with them personally.");
   if (f.failureShare !== null && f.workingSets >= 10 && f.failureShare >= 0.4) {
     tips.push(`${Math.round(f.failureShare * 100)}% of sets went to failure: they may be pushing too hard. Keep weights steady.`);
