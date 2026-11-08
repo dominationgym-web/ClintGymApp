@@ -36,7 +36,7 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       where: "Today tab",
       points: [
         "The Today tab opens with today's workout: tap Start to go straight to it. Your meal plan sits just under it.",
-        "Do your check-in every morning. Tap All good if your body is fine, or Something's up to say what's wrong. Then three short pages: How you feel, Sleep (tap Bed and Wake and pick the times, no typing), then Food & drink. Tap Next to move on, or tap a page name at the top to jump to it.",
+        "Do your check-in every morning. Tap All good if your body is fine, or Something's up to say what's wrong. Then three short pages: How you feel, Sleep, then Food & drink. Every answer is a tap button, no typing: tap Bed and Wake to pick the times, and tap the number for water, meals and alcohol. Tap Next to move on, or tap a page name at the top to jump to it.",
         "☕ On the Sleep page, tap how many cups of coffee you had yesterday (0 if none), then tap Last cup at and pick the time. Coffee after 2pm can still keep you awake at bedtime, so your coach uses this to help with poor sleep and tiredness.",
         "Be honest. A bad day logged truthfully helps your coach far more than a perfect day that didn't happen.",
         "Not sure what counts as a high-GI meal? On the Food & drink page, tap What's a high-GI meal? under that question for examples (white bread, pap, white rice, chips, sweets, cakes, fizzy drinks and juice).",
