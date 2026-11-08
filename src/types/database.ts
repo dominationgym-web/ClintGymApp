@@ -1807,6 +1807,7 @@ export interface Database {
       award_review_proof: { Args: { p_proof: string; p_approve: boolean }; Returns: undefined };
       award_periods_list: { Args: Record<string, never>; Returns: unknown };
       award_reveal: { Args: { p_period: string }; Returns: undefined };
+      award_trainer_counter: { Args: Record<string, never>; Returns: unknown };
     };
   };
 }

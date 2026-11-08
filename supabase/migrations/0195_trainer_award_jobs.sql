@@ -3,6 +3,88 @@
 -- app's calls. Nothing runs or shows while award_settings.enabled is off.
 
 -- ---------------------------------------------------------------------------
+-- Trainer count and prize tiers (GRIZZ, 2026-11-08)
+-- ---------------------------------------------------------------------------
+
+-- Approved trainers on the app, not counting the owner.
+create or replace function public.award_trainer_count()
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select count(*)::integer from public.trainers where approved and not is_owner;
+$$;
+revoke execute on function public.award_trainer_count() from public, anon;
+
+-- The prize places for a number of trainers: the highest tier reached.
+create or replace function public.award_prize_places(p_trainers integer)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((
+    select t -> 'places' from public.award_settings s, jsonb_array_elements(s.prize_tiers) t
+    where s.id = 1 and (t ->> 'trainers')::integer <= p_trainers
+    order by (t ->> 'trainers')::integer desc limit 1
+  ), '[]'::jsonb);
+$$;
+
+-- "1st $1 500, 2nd $500".
+create or replace function public.award_prize_words(p_places jsonb)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select string_agg(
+    case o when 1 then '1st' when 2 then '2nd' when 3 then '3rd' else o || 'th' end
+      || ' ' || case s.prize_currency when 'USD' then '$' when 'ZAR' then 'R' else s.prize_currency || ' ' end
+      || replace(trim(to_char(v::numeric, 'FM999G999G990')), ',', ' '),
+    ', ' order by o)
+  from jsonb_array_elements_text(p_places) with ordinality as x(v, o), public.award_settings s
+  where s.id = 1;
+$$;
+
+-- Owner: the trainer counter.
+create or replace function public.award_trainer_counter()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  s public.award_settings;
+  n integer := public.award_trainer_count();
+begin
+  if not public.is_app_owner() then
+    raise exception 'Only the app owner can do this.';
+  end if;
+  select * into s from public.award_settings where id = 1;
+  return jsonb_build_object(
+    'count', n,
+    'goals', to_jsonb(s.trainer_goals),
+    'start_at', s.start_at_trainers,
+    'first_start', s.first_period_start,
+    'enabled', s.enabled,
+    'prize_now', public.award_prize_words(public.award_prize_places(n)),
+    'next_tier', (
+      select jsonb_build_object('trainers', (t ->> 'trainers')::integer, 'prize', public.award_prize_words(t -> 'places'))
+      from jsonb_array_elements(s.prize_tiers) t
+      where (t ->> 'trainers')::integer > n
+      order by (t ->> 'trainers')::integer limit 1
+    )
+  );
+end;
+$$;
+grant execute on function public.award_trainer_counter() to authenticated;
+
+-- ---------------------------------------------------------------------------
 -- Red flags: unusual progress needs a proof video from the client
 -- ---------------------------------------------------------------------------
 create or replace function public.award_add_proof(
@@ -237,8 +319,10 @@ security definer
 set search_path = public
 as $$
   select max((w.ends_on + make_interval(months => s.cooldown_months))::date)
-  from public.award_periods w cross join public.award_settings s
-  where s.id = 1 and w.winner_id = p_trainer and w.revealed_at is not null
+  from public.award_winners aw
+  join public.award_periods w on w.id = aw.period_id
+  cross join public.award_settings s
+  where s.id = 1 and aw.trainer_id = p_trainer and w.revealed_at is not null
     and (w.ends_on + make_interval(months => s.cooldown_months))::date >= public.sa_today();
 $$;
 
@@ -270,7 +354,7 @@ begin
     until_d := public.award_cooldown_until(r.trainer_id);
     if until_d is not null then
       v_kind := 'cooldown';
-      v_body := 'You won Trainer of the Half-Year. Sitting out until ' || to_char(until_d, 'FMDD FMMonth YYYY') || '.';
+      v_body := 'You placed in Trainer of the Half-Year. Sitting out until ' || to_char(until_d, 'FMDD FMMonth YYYY') || '.';
       v_tip := null;
     else
       v_kind := case when r.rank <= cutoff then 'top' else 'not_top' end;
@@ -305,7 +389,9 @@ set search_path = public
 as $$
 declare
   p public.award_periods;
+  places jsonb;
   win record;
+  v_place integer := 0;
   owner_id uuid;
 begin
   select * into p from public.award_periods where id = p_period;
@@ -313,18 +399,33 @@ begin
     return;
   end if;
   perform public.award_score_period(p.id, p.ends_on, 'final');
-  -- Highest-scoring trainer who can win (ties: retention, then progress).
-  select trainer_id, total into win from public.award_scores
-  where period_id = p.id and score_date = p.ends_on and kind = 'final' and eligible
-  order by total desc, retention desc, progress desc limit 1;
+  -- The prize tier the app has reached now, then the highest-scoring
+  -- trainers who can win, one per place (ties: retention, then progress).
+  places := public.award_prize_places(public.award_trainer_count());
+  if jsonb_array_length(places) = 0 then
+    places := '[0]'::jsonb;
+  end if;
+  for win in
+    select trainer_id, total from public.award_scores
+    where period_id = p.id and score_date = p.ends_on and kind = 'final' and eligible
+    order by total desc, retention desc, progress desc
+    limit jsonb_array_length(places)
+  loop
+    v_place := v_place + 1;
+    insert into public.award_winners (period_id, place, trainer_id, score, prize)
+    values (p.id, v_place, win.trainer_id, win.total, (places ->> (v_place - 1))::numeric)
+    on conflict (period_id, place) do nothing;
+  end loop;
   update public.award_periods
-  set closed_at = now(), winner_id = win.trainer_id, winner_score = win.total,
-      prize_text = coalesce(prize_text, (select prize_text from public.award_settings where id = 1))
+  set closed_at = now(),
+      winner_id = (select trainer_id from public.award_winners where period_id = p.id and place = 1),
+      winner_score = (select score from public.award_winners where period_id = p.id and place = 1),
+      prize_text = public.award_prize_words(places)
   where id = p.id;
   for owner_id in select t.id from public.trainers t where t.is_owner loop
     perform public.push_to_user(owner_id, 'Trainer of the Half-Year: period ended',
-      case when win.trainer_id is null then 'No trainer qualified this time. See Menu > Trainer award.'
-           else 'The winner is ready. Open Menu > Trainer award > Winners to reveal it live.' end,
+      case when v_place = 0 then 'No trainer qualified this time. See Menu > Trainer award.'
+           else 'The winners are ready. Open Menu > Trainer award > Winners to reveal them live.' end,
       jsonb_build_object('type', 'award_admin'));
   end loop;
 end;
@@ -353,12 +454,36 @@ begin
   if not s.enabled and not p_force then
     return 'The award is switched off.';
   end if;
+  -- No start date: start on the 1st of the month after the app reaches
+  -- start_at_trainers trainers (GRIZZ: 250).
   if s.first_period_start is null then
-    return 'Set the first period start date first.';
+    if s.enabled and public.award_trainer_count() >= s.start_at_trainers then
+      update public.award_settings
+      set first_period_start = (date_trunc('month', today) + interval '1 month')::date
+      where id = 1
+      returning * into s;
+      for old_p in select t.id from public.trainers t where t.is_owner loop
+        perform public.push_to_user(old_p.id, s.start_at_trainers || ' trainers reached! 🎉',
+          'Trainer of the Half-Year starts on ' || to_char(s.first_period_start, 'FMDD FMMonth YYYY') || '.',
+          jsonb_build_object('type', 'award_admin'));
+      end loop;
+      return 'The first period starts on ' || to_char(s.first_period_start, 'FMDD FMMonth YYYY') || '.';
+    end if;
+    return 'Waiting for ' || s.start_at_trainers || ' trainers (' || public.award_trainer_count() || ' now).';
   end if;
 
-  -- Close any period that has ended (also catches up if a day was missed).
-  for old_p in select id from public.award_periods where ends_on < today and closed_at is null loop
+  -- Every period from the first start up to today exists (catches up on missed days).
+  if today >= s.first_period_start then
+    for n in 0 .. floor(((extract(year from age(today, s.first_period_start)) * 12) + extract(month from age(today, s.first_period_start))) / s.period_months)::integer loop
+      v_start := (s.first_period_start + make_interval(months => n * s.period_months))::date;
+      insert into public.award_periods (starts_on, ends_on)
+      values (v_start, (v_start + make_interval(months => s.period_months))::date - 1)
+      on conflict (starts_on) do nothing;
+    end loop;
+  end if;
+
+  -- Close any period that has ended.
+  for old_p in select id from public.award_periods where ends_on < today and closed_at is null order by starts_on loop
     perform public.award_close_period(old_p.id);
   end loop;
 
@@ -370,8 +495,8 @@ begin
   n := floor(((extract(year from age(today, s.first_period_start)) * 12) + extract(month from age(today, s.first_period_start))) / s.period_months);
   v_start := (s.first_period_start + make_interval(months => n * s.period_months))::date;
   v_end := (v_start + make_interval(months => s.period_months))::date - 1;
-  insert into public.award_periods (starts_on, ends_on, prize_text)
-  values (v_start, v_end, s.prize_text)
+  insert into public.award_periods (starts_on, ends_on)
+  values (v_start, v_end)
   on conflict (starts_on) do nothing;
   select * into cur from public.award_periods where starts_on = v_start;
 
@@ -591,7 +716,12 @@ begin
     select jsonb_agg(jsonb_build_object(
       'id', p.id, 'starts_on', p.starts_on, 'ends_on', p.ends_on, 'prize_text', p.prize_text,
       'winner_id', p.winner_id, 'winner', coalesce(t.business_name, t.name), 'winner_score', p.winner_score,
-      'closed_at', p.closed_at, 'revealed_at', p.revealed_at
+      'closed_at', p.closed_at, 'revealed_at', p.revealed_at,
+      'winners', coalesce((
+        select jsonb_agg(jsonb_build_object('place', aw.place, 'name', coalesce(x.business_name, x.name), 'score', aw.score, 'prize', aw.prize) order by aw.place)
+        from public.award_winners aw join public.trainers x on x.id = aw.trainer_id
+        where aw.period_id = p.id
+      ), '[]'::jsonb)
     ) order by p.starts_on desc)
     from public.award_periods p left join public.trainers t on t.id = p.winner_id
   ), '[]'::jsonb);
@@ -614,7 +744,7 @@ begin
   end if;
   select * into p from public.award_periods where id = p_period;
   if p.closed_at is null or p.winner_id is null then
-    raise exception 'This period has no winner yet.';
+    raise exception 'This period has no winners yet.';
   end if;
   if p.revealed_at is not null then
     return;
@@ -622,7 +752,7 @@ begin
   update public.award_periods set revealed_at = now() where id = p.id;
   for r in select t.id from public.trainers t where t.approved loop
     perform public.push_to_user(r.id, 'Trainer of the Half-Year 🏆',
-      'The winner is being revealed live now. Open the app to watch.',
+      'The winners are being revealed live now. Open the app to watch.',
       jsonb_build_object('type', 'award_reveal'));
   end loop;
 end;
@@ -650,7 +780,7 @@ begin
   end if;
   select * into cur from public.award_periods
     where starts_on <= public.sa_today() and ends_on >= public.sa_today() order by starts_on desc limit 1;
-  select p.ends_on, p.revealed_at, p.prize_text, p.winner_id, coalesce(t.business_name, t.name) as winner, t.logo_path
+  select p.id, p.ends_on, p.revealed_at, p.prize_text, p.winner_id, coalesce(t.business_name, t.name) as winner, t.logo_path
     into last_rev
     from public.award_periods p join public.trainers t on t.id = p.winner_id
     where p.revealed_at is not null and p.revealed_at > now() - interval '14 days'
@@ -659,7 +789,14 @@ begin
     where m.trainer_id = me order by m.sent_on desc limit 1;
   return jsonb_build_object(
     'enabled', true,
-    'prize_text', s.prize_text,
+    'prize_text', coalesce(public.award_prize_words(public.award_prize_places(public.award_trainer_count())), '')
+                  || coalesce(chr(10) || s.prize_text, ''),
+    'prize_tiers', (
+      select jsonb_agg(jsonb_build_object('trainers', (t ->> 'trainers')::integer, 'prize', public.award_prize_words(t -> 'places'))
+                       order by (t ->> 'trainers')::integer)
+      from jsonb_array_elements(s.prize_tiers) t
+    ),
+    'start_at', s.start_at_trainers,
     'rules_text', case when s.rules_published then s.rules_text end,
     'period_starts', cur.starts_on,
     'period_ends', coalesce(cur.ends_on, null),
@@ -668,7 +805,14 @@ begin
     'message', case when msg.sent_on is not null then jsonb_build_object('sent_on', msg.sent_on, 'kind', msg.kind, 'body', msg.body, 'tip', msg.tip) end,
     'reveal', case when last_rev.revealed_at is not null then jsonb_build_object(
       'period_ends', last_rev.ends_on, 'revealed_at', last_rev.revealed_at, 'winner', last_rev.winner,
-      'logo_path', last_rev.logo_path, 'is_me', last_rev.winner_id = me, 'prize_text', last_rev.prize_text,
+      'logo_path', last_rev.logo_path, 'prize_text', last_rev.prize_text,
+      'is_me', exists (select 1 from public.award_winners aw where aw.period_id = last_rev.id and aw.trainer_id = me),
+      'my_place', (select aw.place from public.award_winners aw where aw.period_id = last_rev.id and aw.trainer_id = me),
+      'places', (
+        select jsonb_agg(jsonb_build_object('place', aw.place, 'name', coalesce(x.business_name, x.name), 'logo_path', x.logo_path, 'prize', aw.prize) order by aw.place)
+        from public.award_winners aw join public.trainers x on x.id = aw.trainer_id
+        where aw.period_id = last_rev.id
+      ),
       'stream_url', s.stream_url) end
   );
 end;

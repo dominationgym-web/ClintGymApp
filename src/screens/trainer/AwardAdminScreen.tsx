@@ -14,13 +14,17 @@ import {
   AWARD_SETTING_GROUPS,
   PROOF_KIND_LABEL,
   PROOF_STATUS_LABEL,
+  formatPrizeTiers,
   longDate,
   parseAwardSetting,
+  placeWord,
+  type AwardPrizeTier,
   weightsWarning,
   type AwardProofKind,
   type AwardProofStatus,
 } from "@/lib/award";
 import { awardFileUrl } from "@/lib/awardUploads";
+import TrainerCounter from "@/components/award/TrainerCounter";
 import { themeText, themedStyles } from "@/lib/theme";
 
 type Tab = "scores" | "flags" | "proofs" | "winners" | "settings";
@@ -73,6 +77,7 @@ interface PeriodRow {
   winner_score: number | null;
   closed_at: string | null;
   revealed_at: string | null;
+  winners: { place: number; name: string; score: number | null; prize: number | null }[];
 }
 
 // The owner's Trainer of the Half-Year page (0194-0196): the switch and
@@ -146,6 +151,7 @@ function Scores() {
   if (!data) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 24 }} />;
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={refresh}>
+      <TrainerCounter />
       <Text style={styles.hint}>
         {data[0] ? `Scores from ${longDate(data[0].score_date)}. ` : "No scores yet. "}
         Worked out every night. Only you see this; trainers only hear "top 25%" or "not yet".
@@ -293,7 +299,7 @@ function Proofs() {
 function Winners() {
   const { data, load, refresh } = useLoad(() => rpc<PeriodRow[]>("award_periods_list"));
   const reveal = (p: PeriodRow) =>
-    Alert.alert("Reveal the winner?", `Every trainer gets a notification that ${p.winner} won, and it shows in their app. Do this when the live stream starts.`, [
+    Alert.alert("Reveal the winners?", `Every trainer gets a notification and sees ${p.winners.map((w) => `${placeWord(w.place)} ${w.name}`).join(", ")} in their app. Do this when the live stream starts.`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Reveal now",
@@ -306,7 +312,7 @@ function Winners() {
   if (!data) return <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 24 }} />;
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={refresh}>
-      {data.length === 0 && <Text style={styles.hint}>No periods yet. Set the first start date under Settings and switch the award on.</Text>}
+      {data.length === 0 && <Text style={styles.hint}>No periods yet. While switched on, the first one starts by itself once enough trainers are on the app (or on the start date you set under Settings).</Text>}
       {data.map((p) => (
         <View key={p.id} style={styles.card}>
           <Text style={styles.title}>
@@ -315,14 +321,14 @@ function Winners() {
           <Text style={styles.text}>
             {!p.closed_at
               ? "Running now."
-              : p.winner
-                ? `Winner: ${p.winner} (${Math.round(p.winner_score ?? 0)})`
+              : p.winners.length
+                ? p.winners.map((w) => `${placeWord(w.place)}: ${w.name} (${Math.round(w.score ?? 0)})`).join("\n")
                 : "No trainer qualified."}
           </Text>
           {p.prize_text ? <Text style={styles.hint}>Prize: {p.prize_text}</Text> : null}
           {p.closed_at && p.winner && !p.revealed_at && (
             <Pressable style={[styles.primary, { marginTop: 10 }]} onPress={() => reveal(p)}>
-              <Text style={styles.primaryText}>Reveal the winner live</Text>
+              <Text style={styles.primaryText}>Reveal the winners live</Text>
             </Pressable>
           )}
           {p.revealed_at ? <Text style={styles.hint}>Revealed {longDate(p.revealed_at.slice(0, 10))}</Text> : null}
@@ -343,7 +349,12 @@ function Settings() {
     if (error) return Alert.alert("Couldn't load settings", error.message);
     setValues(data);
     const d: Record<string, string> = {};
-    for (const f of AWARD_SETTING_FIELDS) if (f.kind !== "switch") d[f.key] = data[f.key] == null ? "" : String(data[f.key]);
+    for (const f of AWARD_SETTING_FIELDS) {
+      if (f.kind === "switch") continue;
+      const v = data[f.key];
+      d[f.key] =
+        f.kind === "tiers" ? formatPrizeTiers(v as AwardPrizeTier[]) : f.kind === "goals" ? ((v as number[]) ?? []).join(", ") : v == null ? "" : String(v);
+    }
     setDraft(d);
   }, []);
   useEffect(() => {
@@ -379,13 +390,9 @@ function Settings() {
       update({ enabled: false });
       return;
     }
-    if (!values?.first_period_start) {
-      Alert.alert("Set a start date first", "Fill in 'First period starts' under Prize, dates and who can win, and save.");
-      return;
-    }
     Alert.alert(
       `Switch on ${AWARD_NAME}?`,
-      "Trainers see the award and the rules, new clients are asked for a face photo and goal at sign-up, existing clients are asked on their Today tab, and the nightly scoring and red flags start. Have the rules and the privacy wording checked by an attorney first.",
+      `${values?.first_period_start ? `It starts on ${longDate(String(values.first_period_start))}.` : `It starts by itself once ${values?.start_at_trainers} trainers are on the app.`} Trainers see the award and the rules, new clients are asked for a face photo and goal at sign-up, existing clients are asked on their Today tab, and the nightly scoring and red flags start. Have the rules and the privacy wording checked by an attorney first.`,
       [
         { text: "Cancel", style: "cancel" },
         { text: "Switch on", onPress: () => update({ enabled: true }) },
@@ -417,14 +424,15 @@ function Settings() {
               <View key={f.key} style={{ marginBottom: 12 }}>
                 <Text style={styles.label}>{f.label}</Text>
                 <TextInput
-                  style={[styles.input, f.kind === "longtext" && styles.longInput]}
+                  style={[styles.input, (f.kind === "longtext" || f.kind === "tiers") && styles.longInput]}
                   value={draft[f.key] ?? ""}
                   onChangeText={(t) => setDraft((d) => ({ ...d, [f.key]: t }))}
                   keyboardType={f.kind === "number" ? "decimal-pad" : "default"}
-                  multiline={f.kind === "longtext"}
+                  multiline={f.kind === "longtext" || f.kind === "tiers"}
                   placeholder={f.hint}
                   placeholderTextColor="#94A3B8"
                   autoCapitalize={f.kind === "text" || f.kind === "longtext" ? "sentences" : "none"}
+                  autoCorrect={f.kind === "text" || f.kind === "longtext"}
                 />
                 {f.hint && f.kind !== "text" ? <Text style={styles.hint}>{f.hint}</Text> : null}
               </View>
@@ -462,5 +470,5 @@ const styles = themedStyles({
   secondary: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 8 },
   secondaryText: { color: BRAND_GOLD, fontWeight: "700" },
   input: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, padding: 12 },
-  longInput: { minHeight: 90, textAlignVertical: "top" },
+  longInput: { minHeight: 130, textAlignVertical: "top" },
 });

@@ -11,6 +11,9 @@ alter table public.award_trainer_flags
   add constraint award_trainer_flags_trainer_fk foreign key (trainer_id) references public.trainers (id) on delete cascade;
 alter table public.award_trainer_messages
   add constraint award_trainer_messages_trainer_fk foreign key (trainer_id) references public.trainers (id) on delete cascade;
+alter table public.award_winners
+  add constraint award_winners_period_fk foreign key (period_id) references public.award_periods (id) on delete cascade,
+  add constraint award_winners_trainer_fk foreign key (trainer_id) references public.trainers (id) on delete cascade;
 alter table public.award_periods
   add constraint award_periods_winner_fk foreign key (winner_id) references public.trainers (id) on delete set null;
 alter table public.app_opens

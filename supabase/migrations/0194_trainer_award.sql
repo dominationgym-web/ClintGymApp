@@ -29,7 +29,23 @@ create table if not exists public.award_settings (
   id integer primary key default 1 check (id = 1),
   enabled boolean not null default false,
   enabled_at timestamptz,
-  prize_text text not null default 'A cash prize (amount to be announced)',
+  -- Prizes grow with the number of trainers on the app (GRIZZ, 2026-11-08):
+  -- each tier is {"trainers": N, "places": [1st, 2nd, ...]}, in prize_currency.
+  -- The tier for a period is the highest one reached when the period ends.
+  prize_currency text not null default 'USD',
+  prize_tiers jsonb not null default '[
+    {"trainers": 250, "places": [500]},
+    {"trainers": 500, "places": [1000]},
+    {"trainers": 1000, "places": [1500, 500]},
+    {"trainers": 2000, "places": [2000, 500, 500]},
+    {"trainers": 3000, "places": [2500, 1000, 800, 500, 300]}
+  ]'::jsonb,
+  prize_text text,
+  -- With no start date, the first period starts on the 1st of the month after
+  -- the app reaches this many trainers (GRIZZ: 250).
+  start_at_trainers integer not null default 250 check (start_at_trainers >= 0),
+  -- The owner's trainer counter goals.
+  trainer_goals integer[] not null default array[1000, 5000],
   first_period_start date,
   period_months integer not null default 6 check (period_months between 1 and 24),
   cooldown_months integer not null default 12 check (cooldown_months between 0 and 60),
@@ -63,8 +79,9 @@ create table if not exists public.award_settings (
   rules_text text not null default
     'Trainer of the Half-Year is a cash award for the trainer who grows and keeps the most real clients and gets them the best results. '
     || 'The winner is chosen by the scoring below, never by a draw.' || chr(10) || chr(10)
-    || 'Two award periods a year, one winner each. To win you need at least 10 verified clients on the last day of the period, '
-    || 'and you can''t win again for 12 months after a win (the award then goes to the highest-scoring trainer who can win).' || chr(10) || chr(10)
+    || 'The award starts once 250 trainers are on the app. The prize grows as more trainers join, and from 1 000 trainers more places win a prize. '
+    || 'Two award periods a year. To win you need at least 10 verified clients on the last day of the period, '
+    || 'and you can''t win again for 12 months after winning any prize place (the award then goes to the highest-scoring trainer who can win).' || chr(10) || chr(10)
     || 'Your score out of 100: 30% new sign-ups who are still with you 90 days after joining, 20% client retention, '
     || '50% the average progress of your verified clients (strength 40%, body weight 30%, measurements 30%, in the direction of each client''s goal). '
     || 'Ties go to higher retention, then higher average progress.' || chr(10) || chr(10)
@@ -245,6 +262,19 @@ create table if not exists public.award_periods (
 );
 alter table public.award_periods enable row level security;
 create policy "owner reads award periods" on public.award_periods
+  for select to authenticated using ((select public.is_app_owner()));
+
+-- Everyone who placed in a period (1st, 2nd, ...) and their prize.
+create table if not exists public.award_winners (
+  period_id uuid not null,
+  place integer not null check (place >= 1),
+  trainer_id uuid not null,
+  score numeric,
+  prize numeric,
+  primary key (period_id, place)
+);
+alter table public.award_winners enable row level security;
+create policy "owner reads award winners" on public.award_winners
   for select to authenticated using ((select public.is_app_owner()));
 
 create table if not exists public.award_scores (
@@ -674,9 +704,10 @@ begin
       and public.award_client_verified(c.id, p_as_of);
 
     -- A winner sits out until 12 months after the end of the period they won.
+    -- (every prize place counts as a win).
     select exists (
-      select 1 from public.award_periods w
-      where w.winner_id = t.id and w.id <> p.id and w.ends_on < p.ends_on
+      select 1 from public.award_winners aw join public.award_periods w on w.id = aw.period_id
+      where aw.trainer_id = t.id and w.id <> p.id and w.ends_on < p.ends_on
         and (w.ends_on + make_interval(months => s.cooldown_months))::date >= p.ends_on
     ) into v_cooldown;
 

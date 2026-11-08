@@ -58,9 +58,16 @@ export interface AwardClientNeeds {
   proofs?: AwardClientProof[];
 }
 
+export interface AwardPrizeTier {
+  trainers: number;
+  places: number[];
+}
+
 export interface AwardTrainerStatus {
   enabled: boolean;
   prize_text?: string;
+  prize_tiers?: { trainers: number; prize: string }[] | null;
+  start_at?: number;
   rules_text?: string | null;
   period_starts?: string | null;
   period_ends?: string | null;
@@ -73,6 +80,8 @@ export interface AwardTrainerStatus {
     winner: string;
     logo_path: string | null;
     is_me: boolean;
+    my_place: number | null;
+    places: { place: number; name: string; logo_path: string | null; prize: number | null }[] | null;
     prize_text: string | null;
     stream_url: string | null;
   } | null;
@@ -101,6 +110,7 @@ export function trainerAwardHeadline(status: AwardTrainerStatus): string {
   if (status.cooldown_until) return `Sitting out until ${longDate(status.cooldown_until)}`;
   if (status.message && status.message.kind !== "cooldown") return status.message.body;
   if (!status.period_starts && status.first_start) return `Starts on ${longDate(status.first_start)}`;
+  if (!status.period_starts && status.start_at) return `Starts once ${status.start_at.toLocaleString("en-ZA")} trainers are on the app`;
   return "Your first update comes on the 1st of the month.";
 }
 
@@ -108,7 +118,7 @@ export function trainerAwardHeadline(status: AwardTrainerStatus): string {
 // Owner settings form: every number and message, editable without a rebuild.
 // ---------------------------------------------------------------------------
 
-export type AwardSettingKind = "number" | "text" | "longtext" | "date" | "switch";
+export type AwardSettingKind = "number" | "text" | "longtext" | "date" | "switch" | "tiers" | "goals";
 
 export interface AwardSettingField {
   key: string;
@@ -127,8 +137,24 @@ export const AWARD_SETTING_GROUPS: { key: AwardSettingField["group"]; title: str
 ];
 
 export const AWARD_SETTING_FIELDS: AwardSettingField[] = [
-  { key: "prize_text", label: "Prize", kind: "text", group: "basics", hint: "e.g. R10 000 cash" },
-  { key: "first_period_start", label: "First period starts (YYYY-MM-DD)", kind: "date", group: "basics" },
+  {
+    key: "prize_tiers",
+    label: "Prizes by number of trainers",
+    kind: "tiers",
+    group: "basics",
+    hint: "One line each: trainers: 1st, 2nd, 3rd… e.g. 1000: 1500, 500",
+  },
+  { key: "prize_currency", label: "Prize currency (USD or ZAR)", kind: "text", group: "basics" },
+  { key: "prize_text", label: "Prize note (optional)", kind: "text", group: "basics", hint: "e.g. Paid by EFT within 30 days" },
+  { key: "start_at_trainers", label: "Starts once this many trainers are on the app", kind: "number", group: "basics" },
+  {
+    key: "first_period_start",
+    label: "First period starts (YYYY-MM-DD)",
+    kind: "date",
+    group: "basics",
+    hint: "Leave empty: it starts by itself on the 1st of the month after the trainer number above is reached.",
+  },
+  { key: "trainer_goals", label: "Trainer counter goals", kind: "goals", group: "basics", hint: "e.g. 1000, 5000" },
   { key: "period_months", label: "Months in a period", kind: "number", group: "basics" },
   { key: "cooldown_months", label: "Months a winner sits out", kind: "number", group: "basics" },
   { key: "min_verified_clients", label: "Verified clients needed to win", kind: "number", group: "basics" },
@@ -161,12 +187,54 @@ export const AWARD_SETTING_FIELDS: AwardSettingField[] = [
   { key: "tip_progress", label: "Tip when client progress is weakest", kind: "longtext", group: "words" },
 ];
 
+const PLACE_WORDS = ["1st", "2nd", "3rd"];
+export const placeWord = (place: number) => PLACE_WORDS[place - 1] ?? `${place}th`;
+
+/** Prize tiers as the owner edits them: one line per tier, "1000: 1500, 500". */
+export function formatPrizeTiers(tiers: AwardPrizeTier[] | null | undefined): string {
+  return (tiers ?? []).map((t) => `${t.trainers}: ${t.places.join(", ")}`).join("\n");
+}
+
+export function parsePrizeTiers(text: string): { ok: true; value: AwardPrizeTier[] } | { ok: false; error: string } {
+  const tiers: AwardPrizeTier[] = [];
+  for (const line of text.split(/\n/).map((l) => l.trim()).filter(Boolean)) {
+    const m = /^(\d[\d ]*)\s*:\s*(.+)$/.exec(line);
+    const places = m?.[2].split(",").map((p) => Number(p.replace(/[\s$R]/g, "")));
+    if (!m || !places || places.some((p) => !Number.isFinite(p) || p < 0))
+      return { ok: false, error: `Prizes: "${line}" should look like 1000: 1500, 500` };
+    tiers.push({ trainers: Number(m[1].replace(/\s/g, "")), places });
+  }
+  if (tiers.length === 0) return { ok: false, error: "Prizes: add at least one line." };
+  return { ok: true, value: tiers.sort((a, b) => a.trainers - b.trainers) };
+}
+
+/** The prize places for a number of trainers: the highest tier reached. */
+export function prizePlacesFor(tiers: AwardPrizeTier[], trainers: number): number[] {
+  return [...tiers].sort((a, b) => b.trainers - a.trainers).find((t) => t.trainers <= trainers)?.places ?? [];
+}
+
+/** The next counter goal above a number, or null when all are passed. */
+export function nextGoal(goals: number[], count: number): number | null {
+  return [...goals].sort((a, b) => a - b).find((g) => g > count) ?? null;
+}
+
 /** Turns what the owner typed into the value to save, or an error to show. */
 export function parseAwardSetting(
   field: AwardSettingField,
   raw: string
-): { ok: true; value: string | number | null } | { ok: false; error: string } {
+): { ok: true; value: string | number | number[] | AwardPrizeTier[] | null } | { ok: false; error: string } {
   const text = raw.trim();
+  if (field.kind === "tiers") return parsePrizeTiers(text);
+  if (field.kind === "goals") {
+    const goals = text.split(",").map((g) => Number(g.replace(/\s/g, "")));
+    if (!text || goals.some((g) => !Number.isInteger(g) || g <= 0)) return { ok: false, error: `${field.label}: e.g. 1000, 5000` };
+    return { ok: true, value: goals };
+  }
+  if (field.key === "prize_currency") {
+    const c = text.toUpperCase();
+    if (!/^[A-Z]{3}$/.test(c)) return { ok: false, error: "Prize currency: USD or ZAR." };
+    return { ok: true, value: c };
+  }
   if (field.kind === "number") {
     const n = Number(text.replace(",", "."));
     if (!text || !Number.isFinite(n) || n < 0) return { ok: false, error: `${field.label}: type a number.` };
@@ -178,7 +246,7 @@ export function parseAwardSetting(
       return { ok: false, error: `${field.label}: use the form 2027-01-01.` };
     return { ok: true, value: text };
   }
-  if (field.key === "stream_url") return { ok: true, value: text || null };
+  if (field.key === "stream_url" || field.key === "prize_text") return { ok: true, value: text || null };
   if (!text) return { ok: false, error: `${field.label} can't be empty.` };
   return { ok: true, value: text };
 }

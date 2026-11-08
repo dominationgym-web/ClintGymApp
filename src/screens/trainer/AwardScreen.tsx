@@ -7,7 +7,7 @@ import TrainerLogo from "@/components/TrainerLogo";
 import Confetti from "@/components/Confetti";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
-import { AWARD_NAME, longDate, trainerAwardHeadline, type AwardTrainerStatus } from "@/lib/award";
+import { AWARD_NAME, longDate, placeWord, trainerAwardHeadline, type AwardTrainerStatus } from "@/lib/award";
 import { themeText, themedStyles } from "@/lib/theme";
 
 // The trainer's Trainer of the Half-Year page (0194). Only the top-25%
@@ -60,8 +60,15 @@ export default function AwardScreen() {
               {AWARD_NAME}, to {longDate(reveal.period_ends)}
             </Text>
             <TrainerLogo name={reveal.winner} path={reveal.logo_path} size={84} />
-            <Text style={styles.winner}>{reveal.is_me ? "You won! 🏆" : reveal.winner}</Text>
-            {reveal.prize_text ? <Text style={styles.text}>{reveal.prize_text}</Text> : null}
+            <Text style={styles.winner}>
+              {reveal.my_place === 1 ? "You won! 🏆" : reveal.my_place ? `You came ${placeWord(reveal.my_place)}! 🏆` : reveal.winner}
+            </Text>
+            {(reveal.places ?? []).map((w) => (
+              <Text key={w.place} style={[styles.text, w.place === 1 && { fontWeight: "700" }]}>
+                {placeWord(w.place)}: {w.name}
+              </Text>
+            ))}
+            {reveal.prize_text ? <Text style={styles.hint}>{reveal.prize_text}</Text> : null}
             {reveal.stream_url ? (
               <Pressable style={styles.button} onPress={() => Linking.openURL(reveal.stream_url!)} accessibilityRole="link">
                 <Text style={styles.buttonText}>Watch the live reveal</Text>
@@ -85,6 +92,17 @@ export default function AwardScreen() {
           <View style={styles.card}>
             <Text style={styles.title}>The prize</Text>
             <Text style={styles.text}>{status.prize_text}</Text>
+          </View>
+        ) : null}
+
+        {status.prize_tiers?.length ? (
+          <View style={styles.card}>
+            <Text style={styles.title}>The prize grows as more trainers join</Text>
+            {status.prize_tiers.map((t) => (
+              <Text key={t.trainers} style={styles.text}>
+                {t.trainers.toLocaleString("en-ZA")} trainers: {t.prize}
+              </Text>
+            ))}
           </View>
         ) : null}
 

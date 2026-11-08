@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import TrainerCounter from "@/components/award/TrainerCounter";
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { countryName } from "@/lib/phoneCountry";
@@ -161,6 +162,7 @@ export default function TrainersScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={
         <>
+          <TrainerCounter />
           <Pressable style={styles.billingButton} onPress={() => navigation.navigate("Billing")} accessibilityRole="button">
             <Text style={styles.billingTitle}>Billing</Text>
             <Text style={styles.detail}>Plans, client fees, payments owed, monthly and 6-month totals</Text>
