@@ -23,7 +23,7 @@ export default function MedicalHoldNotice({ live = false }: { live?: boolean }) 
         <View style={styles.row}>
           {EMERGENCY_NUMBERS.map((n) => (
             <Pressable key={n.tel} style={styles.call} onPress={() => Linking.openURL(`tel:${n.tel}`)}>
-              <Text style={styles.callText}>📞 {n.label}</Text>
+              <Text style={styles.callText}>{n.label}</Text>
             </Pressable>
           ))}
         </View>

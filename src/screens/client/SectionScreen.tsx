@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import LineIcon from "@/components/LineIcon";
 import { useStepBack } from "@/hooks/useStepBack";
 import { View, Text, Switch, Pressable } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
@@ -44,7 +45,7 @@ export default function SectionScreen({ route }: Props) {
 
   const parts: { title: string; body: React.ReactNode; icon?: string; tag?: SupplementLevel }[] = [];
   if (section.key === "nutrition") {
-    parts.push({ title: COACH_MEAL_PLAN_TITLE, icon: "🥗", body: <ClientDietPlanView /> });
+    parts.push({ title: COACH_MEAL_PLAN_TITLE, icon: "🥗", body: <ClientDietPlanView shop={route.params.shop} /> });
     // Muscle Year (GRIZZ, 2026-10-24): BMR, macros and the 2-weekly weight check.
     // The meal plan itself is the coach's (GRIZZ, 2026-11-02): it opens under
     // the heading above, where the client swaps foods and puts in their own meals.
@@ -78,14 +79,8 @@ export default function SectionScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <View style={[styles.hero, { borderColor: themeBorder(section.accent) }]}>
-        <View style={[styles.heroIcon, { backgroundColor: themeBg(section.accent + "26") }]}>
-          <Text style={styles.heroIconText}>{section.icon}</Text>
-        </View>
-        <Text style={styles.heroTitle}>{section.title}</Text>
-        <Text style={styles.summary}>{section.summary}</Text>
-        {parts.length > 0 ? <Text style={[styles.heroHint, { color: themeText(section.accent) }]}>Tap a topic to open it</Text> : null}
-      </View>
+      {/* One short line instead of a big title card (critique, 2026-11-04): the header already says where you are. */}
+      <Text style={styles.lead}>{section.summary}</Text>
       {section.key === "sleepRecovery" && <SleepReminderToggle />}
       {section.key === "womensHealthReset" && <ResetProgramLink />}
       {parts.length > 0 ? (
@@ -101,7 +96,7 @@ export default function SectionScreen({ route }: Props) {
               >
                 {part.icon ? (
                   <View style={[styles.partIcon, { backgroundColor: themeBg(section.accent + "1F") }]}>
-                    <Text style={styles.partIconText}>{part.icon}</Text>
+                    <LineIcon icon={part.icon} size={20} color={section.accent} />
                   </View>
                 ) : null}
                 <Text style={styles.partTitle}>{part.title}</Text>
@@ -141,7 +136,7 @@ function ResetProgramLink() {
         cancelMenuReturn();
         navigation.navigate("ClientTabs", { screen: "Reset" });
       }}>
-      <Text style={styles.toggleTitle}>🌿 Your 12-week Reset program ›</Text>
+      <Text style={styles.toggleTitle}>Your 12-week Reset program ›</Text>
       <Text style={[styles.cardText, { marginBottom: 0 }]}>Week by week plan, daily ticks and Reset Training.</Text>
     </Pressable>
   );
@@ -178,6 +173,7 @@ function SleepReminderToggle() {
 }
 
 const styles = themedStyles({
+  lead: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 14 },
   partHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

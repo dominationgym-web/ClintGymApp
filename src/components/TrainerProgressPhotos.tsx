@@ -23,7 +23,7 @@ export default function TrainerProgressPhotos({ clientId, clientName, shared }: 
   }, [clientId, shared]);
 
   if (!shared) {
-    return <Text style={styles.helper}>🔒 Private. {clientName} hasn't shared their progress photos with you.</Text>;
+    return <Text style={styles.helper}>Private. {clientName} hasn't shared their progress photos with you.</Text>;
   }
   if (photos === null) return <ActivityIndicator color={themeText("#22C55E")} />;
   if (photos.length === 0) return <Text style={styles.helper}>Shared, but no photos yet.</Text>;

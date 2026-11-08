@@ -96,7 +96,7 @@ export default function ProgressHistory({ photos, onLongPress }: Props) {
 }
 
 function formatDate(iso: string) {
-  return parseIsoDate(iso).toLocaleDateString();
+  return parseIsoDate(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 const styles = themedStyles({

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import TrainerCounter from "@/components/award/TrainerCounter";
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { countryName } from "@/lib/phoneCountry";
@@ -161,13 +162,14 @@ export default function TrainersScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={
         <>
+          <TrainerCounter />
           <Pressable style={styles.billingButton} onPress={() => navigation.navigate("Billing")} accessibilityRole="button">
-            <Text style={styles.billingTitle}>💰 Billing</Text>
+            <Text style={styles.billingTitle}>Billing</Text>
             <Text style={styles.detail}>Plans, client fees, payments owed, monthly and 6-month totals</Text>
           </Pressable>
           <Pressable style={styles.billingButton} onPress={() => navigation.navigate("TrainerProblems")} accessibilityRole="button">
             <Text style={styles.billingTitle}>
-              🛠 Trainer problems{problems.length ? ` (${problems.length} open)` : ""}
+              Trainer problems{problems.length ? ` (${problems.length} open)` : ""}
             </Text>
             <Text style={styles.detail}>What your trainers reported. Reply, mark Busy fixing or Fixed.</Text>
           </Pressable>
@@ -231,11 +233,11 @@ export default function TrainersScreen() {
               <Text style={styles.detail}>{item.email}</Text>
               {item.phone ? <Text style={styles.detail}>{item.phone}</Text> : null}
               <Text style={styles.detail}>
-                📍 {item.signup_country ? `Applied from ${countryName(item.signup_country)}` : "Country not checked"}
+                {item.signup_country ? `Applied from ${countryName(item.signup_country)}` : "Country not checked"}
                 </Text>
                 <Text style={styles.detail}>
                 {item.agreement_accepted_at
-                  ? `Signed the agreement as "${item.agreement_signed_name}" on ${new Date(item.agreement_accepted_at).toLocaleDateString()}`
+                  ? `Signed the agreement as "${item.agreement_signed_name}" on ${new Date(item.agreement_accepted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
                   : "Hasn't signed the trainer agreement yet"}
               </Text>
               <Text style={[styles.status, { color: themeText(item.approved ? "#22C55E" : "#F59E0B") }]}>
@@ -275,7 +277,7 @@ export default function TrainersScreen() {
               ) : null}
               {openProblems ? (
                 <Pressable onPress={() => navigation.navigate("TrainerProblems")} hitSlop={6}>
-                  <Text style={[styles.extraLink, { color: themeText("#F59E0B") }]}>🛠 {openProblems} open problem{openProblems === 1 ? "" : "s"} ›</Text>
+                  <Text style={[styles.extraLink, { color: themeText("#F59E0B") }]}>{openProblems} open problem{openProblems === 1 ? "" : "s"} ›</Text>
                 </Pressable>
               ) : null}
               {trial ? (

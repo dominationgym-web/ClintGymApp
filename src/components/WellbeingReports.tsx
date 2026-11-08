@@ -124,7 +124,7 @@ export default function WellbeingReports({ clientId, clientName }: { clientId: s
                         setWriting(t.key);
                       }}
                     >
-                      <Text style={styles.noteButtonText}>💬 Send {firstName} a check-in note</Text>
+                      <Text style={styles.noteButtonText}>Send {firstName} a check-in note</Text>
                     </Pressable>
                   )}
                   {sentFor === t.key && (

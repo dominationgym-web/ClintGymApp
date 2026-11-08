@@ -15,6 +15,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { alertSummary, cleanMessage, MAX_MESSAGE_LENGTH } from "@/lib/coachMessages";
 import type { Client } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // The trainer's reply to a client, opened from the Reply button on an alert.
 // The client sees it in the app straight away, and as a phone notification in
@@ -116,6 +117,7 @@ export default function ReplyToClientModal({
               {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Send</Text>}
             </Pressable>
           </View>
+          <SafeBottom />
         </View>
       </KeyboardAvoidingView>
     </Modal>

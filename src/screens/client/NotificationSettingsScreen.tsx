@@ -51,7 +51,7 @@ export default function NotificationSettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <NotificationsPrompt who="client" />
       <Text style={styles.intro}>
-        Choose which reminders you get on your phone. Anything you switch off still shows in the app when you open it.
+        Switched-off reminders still show in the app.
       </Text>
 
       {!prefs ? (
@@ -77,7 +77,7 @@ export default function NotificationSettingsScreen() {
       )}
 
       <View style={[styles.card, styles.always]}>
-        <Text style={styles.title}>🔒 Always on</Text>
+        <Text style={styles.title}>Always on</Text>
         <Text style={styles.includes}>{ALWAYS_ON_NOTIFICATIONS}</Text>
       </View>
     </ScrollView>

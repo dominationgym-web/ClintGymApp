@@ -13,7 +13,7 @@ export default function EveryRepTips() {
   return (
     <View style={styles.box}>
       <Pressable onPress={() => setOpen((o) => !o)} hitSlop={6}>
-        <Text style={styles.title}>💪 Get the most from every rep {open ? "▲" : "▼"}</Text>
+        <Text style={styles.title}>Get the most from every rep {open ? "▲" : "▼"}</Text>
       </Pressable>
       {open &&
         EVERY_REP_TIPS.map((tip, i) => (

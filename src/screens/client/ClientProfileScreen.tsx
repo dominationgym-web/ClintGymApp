@@ -18,7 +18,6 @@ import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import TrainerLogo from "@/components/TrainerLogo";
-import { DailyQuoteCard } from "@/components/DailyQuote";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import WatchLink from "@/components/WatchLink";
@@ -184,7 +183,6 @@ export default function ClientProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-      <DailyQuoteCard />
       <View style={styles.headerRow}>
         <Pressable style={styles.photoBlock} onPress={changePhoto} disabled={uploadingPhoto}>
           <ClientAvatar name={client.name} path={client.avatar_path} size={72} />
@@ -204,7 +202,7 @@ export default function ClientProfileScreen() {
       </View>
 
       {client.plan_expires_at && (
-        <Text style={styles.helper}>Plan renews/expires {new Date(client.plan_expires_at).toLocaleDateString()}</Text>
+        <Text style={styles.helper}>Plan ends {new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</Text>
       )}
 
       {trainer ? (
@@ -378,7 +376,7 @@ const styles = themedStyles({
     textAlignVertical: "top",
     marginTop: 14,
   },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 14 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 14 },
   logoutButton: {
     backgroundColor: "#334155",
     borderRadius: 10,

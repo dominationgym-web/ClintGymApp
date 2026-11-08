@@ -20,9 +20,9 @@ export default function StabilityHowTo({ exercise, videoUrl }: { exercise: Stabi
           {i + 1}. {step}
         </Text>
       ))}
-      <Text style={styles.label}>⛔ Stop {exercise.measure === "hold" ? "the clock" : "counting"} when</Text>
+      <Text style={styles.label}>Stop {exercise.measure === "hold" ? "the clock" : "counting"} when</Text>
       <Text style={styles.text}>{exercise.lossOfControl}</Text>
-      <Text style={styles.label}>🏋️ Resistance</Text>
+      <Text style={styles.label}>Resistance</Text>
       <Text style={styles.text}>{exercise.resistance}</Text>
       <Text style={styles.label}>⬇ Easier</Text>
       <Text style={styles.text}>{exercise.easier}</Text>

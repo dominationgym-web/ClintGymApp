@@ -4,8 +4,8 @@ import type { BillingPrices, BillingSettings } from "@/types/database";
 
 /**
  * The signed-in trainer's plan prices (0179): Evolution, or the cheaper
- * 1 on 1 only prices when none of their clients is an Evolution client.
- * Referral credit is 25% of these.
+ * 1 on 1 prices while the Evolution switch is off or in its 30 free days
+ * (0192). Referral credit is 50% of these.
  */
 export async function myPlanPrices(trainerId: string): Promise<BillingPrices | null> {
   const [settings, sides] = await Promise.all([

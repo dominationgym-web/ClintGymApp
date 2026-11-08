@@ -92,7 +92,7 @@ export default function VideoCheckInDayPopup({ who }: { who: "client" | "trainer
           accessibilityRole="button"
         >
           <Text style={styles.title}>
-            📹 {live ? "Video check-in now" : `Video check-in today at ${time}`}
+            {live ? "Video check-in now" : `Video check-in today at ${time}`}
           </Text>
           <Text style={styles.body}>
             {who === "client"

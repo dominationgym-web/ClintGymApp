@@ -28,13 +28,13 @@ export function ExerciseGuideContent({ technique }: { technique: ExerciseTechniq
       <Text style={styles.heading}>Get the most from it</Text>
       {technique.tips.map((tip, i) => (
         <Text key={i} style={styles.bullet}>
-          💪 {tip}
+          {tip}
         </Text>
       ))}
       <Text style={styles.heading}>Make it work for you</Text>
       {technique.adapt.map((line, i) => (
         <Text key={i} style={styles.bullet}>
-          🩹 {line}
+          {line}
         </Text>
       ))}
       <Text style={styles.safety}>{SAFETY_NOTE}</Text>
@@ -46,7 +46,7 @@ export function ExerciseGuideContent({ technique }: { technique: ExerciseTechniq
 export function MuscleNotWeight() {
   return (
     <View style={styles.rule}>
-      <Text style={styles.ruleText}>🎯 {MUSCLE_NOT_WEIGHT}</Text>
+      <Text style={styles.ruleText}>{MUSCLE_NOT_WEIGHT}</Text>
     </View>
   );
 }
@@ -88,7 +88,7 @@ export default function ExerciseGuideButton({
           accessibilityRole="button"
           accessibilityLabel={`How to do ${name}`}
         >
-          <Text style={styles.barTitle}>📖 How to do it ›</Text>
+          <Text style={styles.barTitle}>How to do it ›</Text>
           <Text style={styles.barWorks}>
             <Text style={styles.barWorksLabel}>Works: </Text>
             {technique.feel}

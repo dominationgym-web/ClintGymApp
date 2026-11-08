@@ -56,6 +56,7 @@ import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { ClientCalendarBlock, ClientCalendarWorkout, ClientWorkoutReset, Program, ProgramExercise, WorkoutLog } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 // What the picker is choosing: the day's main workout, or an extra block (0098).
 type PickMode = "main" | "block";
@@ -484,7 +485,7 @@ export default function ClientCalendarCard({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>📅 Training calendar</Text>
+      <Text style={styles.title}>Training calendar</Text>
       <Text style={styles.helper}>
         Tap the day {clientName} starts, pick the type, the program and the days they train, and the calendar fills itself.
         Tap any day after to change it.
@@ -598,7 +599,7 @@ export default function ClientCalendarCard({
               </Pressable>
               {selected >= today && selectedBlocks.length === 0 && (
                 <Pressable style={[styles.changeButton, styles.addWorkout]} onPress={() => openPlanner(selected)}>
-                  <Text style={styles.changeText}>📋 A whole program from this day</Text>
+                  <Text style={styles.changeText}>A whole program from this day</Text>
                 </Pressable>
               )}
             </>
@@ -649,7 +650,7 @@ export default function ClientCalendarCard({
           </Pressable>
           {selected >= today && (selectedEntry || selectedBlocks.length > 0) && (
             <Pressable style={styles.addBlock} onPress={() => openPlanner(selected)}>
-              <Text style={styles.addBlockText}>📋 Start a new program from this day</Text>
+              <Text style={styles.addBlockText}>Start a new program from this day</Text>
             </Pressable>
           )}
         </View>
@@ -822,7 +823,7 @@ function WorkoutPicker({
           />
           {resetNotice ? (
             <View style={styles.resetBanner}>
-              <Text style={styles.resetBannerText}>🌿 {resetNotice}</Text>
+              <Text style={styles.resetBannerText}>{resetNotice}</Text>
             </View>
           ) : null}
           {place !== trainingPlace && (
@@ -842,7 +843,7 @@ function WorkoutPicker({
               extra={{
                 functional: (
                   <Text style={styles.stabilityNote}>
-                    🛡️ Stability & Rehab programs run alongside the main program, not on calendar days. Give one from the
+                    Stability & Rehab programs run alongside the main program, not on calendar days. Give one from the
                     Stability card under the program on this Training tab.
                   </Text>
                 ),
@@ -933,6 +934,7 @@ function WorkoutPicker({
             />
             {families.length === 0 && <Text style={styles.description}>No {place} workouts yet.</Text>}
           </ScrollView>
+          <SafeBottom />
         </View>
       </View>
     </Modal>

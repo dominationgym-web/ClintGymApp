@@ -111,7 +111,7 @@ export default function SuggestionBoxScreen() {
               <View style={styles.actions}>
                 {s.status !== "good_idea" && (
                   <Pressable style={[styles.action, styles.actionGood]} onPress={() => setStatus(s, "good_idea")}>
-                    <Text style={styles.actionGoodText}>👍 Good idea</Text>
+                    <Text style={styles.actionGoodText}>Good idea</Text>
                   </Pressable>
                 )}
                 {s.status !== "not_now" && (

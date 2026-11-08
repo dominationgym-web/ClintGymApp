@@ -235,10 +235,10 @@ export default function DietPlanner({
 
   return (
     <View>
-      {!hideHeading && <Text style={styles.heading}>🥗 Diet plan for {client.name}</Text>}
+      {!hideHeading && <Text style={styles.heading}>Diet plan for {client.name}</Text>}
       {referral.length > 0 && (
         <View style={styles.warnBox}>
-          <Text style={styles.warnTitle}>🩺 Refer before a calorie deficit</Text>
+          <Text style={styles.warnTitle}>Refer before a calorie deficit</Text>
           <Text style={styles.warnText}>
             {client.name}'s intake shows {referral.join(" and ")}. Don't set a calorie deficit: ask them to check with their doctor or a
             registered dietitian (adsa.org.za) first, and keep them at what their body uses until then.
@@ -313,7 +313,7 @@ export default function DietPlanner({
       <View style={styles.card}>
         <Pressable style={styles.cardHeader} onPress={() => setLayoutDraft(layoutDraft ? null : layout)}>
           <Text style={styles.cardTitle}>
-            🍽 {layout.meals.length} meals{layout.snacks.length ? ` and ${layout.snacks.length} snack${layout.snacks.length === 1 ? "" : "s"}` : ", no snacks"} a day
+            {layout.meals.length} meals{layout.snacks.length ? ` and ${layout.snacks.length} snack${layout.snacks.length === 1 ? "" : "s"}` : ", no snacks"} a day
           </Text>
           <Text style={styles.chevron}>{layoutDraft ? "▲" : "▼"}</Text>
         </Pressable>

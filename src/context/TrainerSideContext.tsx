@@ -1,14 +1,20 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themedStyles } from "@/lib/theme";
-import EvolutionUpgradeNotice, { useMyPriceSide } from "@/components/EvolutionUpgradeNotice";
+import EvolutionSwitchNotice from "@/components/EvolutionSwitchNotice";
 
 // The trainer app's two sides (GRIZZ, 2026-11-01): "1 on 1" for in-person
 // session tracking, "Evolution" for online clients. The app remembers the
 // side the trainer was on last.
+//
+// GRIZZ, 2026-11-06: every new trainer starts on 1 on 1 with the Evolution
+// side switched off (trainers.evolution_on, 0192). Going to Evolution, or
+// putting a client on it, first shows what switching it on means (30 days
+// free, first 5 clients free, switch off to stop).
 export type TrainerSide = "one" | "evolution";
 
 const SideContext = createContext<{
@@ -17,37 +23,46 @@ const SideContext = createContext<{
   // The side the trainer switched from, so the phone's Back button can go back to it.
   cameFrom: TrainerSide | null;
   backToCameFrom: () => void;
-  // Before anything that puts a client on the Evolution side (0179 pricing):
-  // a trainer on the 1 on 1 only price sees what moving up costs first.
-  // `go` runs straight away for everyone else.
-  guardEvolution: (go: () => void, continueLabel: string) => void;
-  // After a client's type changes, so the price side is worked out again.
-  reloadPriceSide: () => void;
+  // Before anything that puts a client on the Evolution side: with Evolution
+  // off, the trainer is asked to switch it on first. `go` runs straight away
+  // when it's already on.
+  guardEvolution: (go: () => void) => void;
+  // Whether the Evolution side is switched on (always for the owner).
+  evolutionOn: boolean;
+  // ☰ Menu › Evolution side: asks to switch it on, or to switch it off.
+  toggleEvolution: () => void;
 }>({
-  side: "evolution",
+  side: "one",
   setSide: () => {},
   cameFrom: null,
   backToCameFrom: () => {},
   guardEvolution: (go) => go(),
-  reloadPriceSide: () => {},
+  evolutionOn: false,
+  toggleEvolution: () => {},
 });
 
 const key = (trainerId: string) => `trainer-side:${trainerId}`;
-// The Evolution side was opened after the price notice (shown once for the side switch).
-const noticeKey = (trainerId: string) => `evolution-price-notice:${trainerId}`;
 
 export function TrainerSideProvider({ children }: { children: React.ReactNode }) {
-  const { trainer } = useAuth();
-  const [side, setSideState] = useState<TrainerSide>("evolution");
+  const { trainer, refreshProfile } = useAuth();
+  const evolutionOn = !!trainer && (trainer.is_owner || !!trainer.evolution_on);
+  const [side, setSideState] = useState<TrainerSide>("one");
   const [cameFrom, setCameFrom] = useState<TrainerSide | null>(null);
   useEffect(() => {
     if (!trainer) return;
+    if (!evolutionOn) {
+      setSideState("one");
+      return;
+    }
     AsyncStorage.getItem(key(trainer.id))
       .then((v) => {
+        // Nothing saved yet: trainers who already had Evolution before the
+        // switch (0192) carry on there; everyone else starts on 1 on 1.
         if (v === "one" || v === "evolution") setSideState(v);
+        else setSideState(trainer.is_owner || trainer.evolution_started_on ? "evolution" : "one");
       })
       .catch(() => {});
-  }, [trainer]);
+  }, [trainer, evolutionOn]);
   const save = useCallback(
     (s: TrainerSide) => {
       setSideState(s);
@@ -67,65 +82,90 @@ export function TrainerSideProvider({ children }: { children: React.ReactNode })
     setCameFrom(null);
     save(cameFrom);
   }, [cameFrom, save]);
-  const pricing = useMyPriceSide();
-  const [notice, setNotice] = useState<{ go: () => void; label: string } | null>(null);
-  const { reload } = pricing;
-  const reloadPriceSide = useCallback(() => {
-    // After the client's change has saved.
-    setTimeout(() => reload().catch(() => {}), 2500);
-  }, [reload]);
+
+  // What runs once Evolution is switched on from the notice.
+  const [pending, setPending] = useState<{ then: () => void } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const askToSwitchOn = useCallback((then: () => void) => {
+    // Wait for a closing picker or menu first: iPhone can't open a Modal while another is closing.
+    setTimeout(() => setPending({ then }), 400);
+  }, []);
+  const switchOn = async () => {
+    if (!trainer || !pending) return;
+    setSaving(true);
+    const { error } = await supabase.from("trainers").update({ evolution_on: true }).eq("id", trainer.id);
+    setSaving(false);
+    if (error) {
+      Alert.alert("Couldn't switch Evolution on", error.message);
+      return;
+    }
+    const then = pending.then;
+    setPending(null);
+    await refreshProfile();
+    then();
+  };
+  const switchOff = useCallback(() => {
+    if (!trainer) return;
+    Alert.alert(
+      "Switch Evolution off?",
+      "The Evolution side closes and its subscription stops. Your 1 on 1 side stays as it is. You can switch it back on any time, but the 30 free days only happen once.",
+      [
+        { text: "Keep it on", style: "cancel" },
+        {
+          text: "Switch off",
+          style: "destructive",
+          onPress: async () => {
+            const { error } = await supabase.from("trainers").update({ evolution_on: false }).eq("id", trainer.id);
+            if (error) {
+              Alert.alert(
+                "Couldn't switch Evolution off",
+                /Evolution clients/.test(error.message)
+                  ? "Some of your clients are still on Evolution. Move them to 1 on 1 first (open the client › How you train them), or archive them."
+                  : error.message
+              );
+              return;
+            }
+            save("one");
+            setCameFrom(null);
+            await refreshProfile();
+          },
+        },
+      ]
+    );
+  }, [trainer, save, refreshProfile]);
+
   const guardEvolution = useCallback(
-    (go: () => void, continueLabel: string) => {
-      const run = () => {
-        go();
-        reloadPriceSide();
-      };
-      // Wait for a closing picker first: iPhone can't open a Modal while another is closing.
-      if (pricing.side === "one_on_one") setTimeout(() => setNotice({ go: run, label: continueLabel }), 400);
-      else run();
+    (go: () => void) => {
+      if (evolutionOn) go();
+      else askToSwitchOn(go);
     },
-    [pricing.side, reloadPriceSide]
+    [evolutionOn, askToSwitchOn]
   );
-  // Going to the Evolution side: the notice once, while on the 1 on 1 only price.
+  // Going to the Evolution side while it's off: ask to switch it on first.
   const setSideChecked = useCallback(
     (s: TrainerSide) => {
-      if (s !== "evolution" || pricing.side !== "one_on_one" || !trainer) return setSide(s);
-      AsyncStorage.getItem(noticeKey(trainer.id))
-        .catch(() => null)
-        .then((seen) => {
-          if (seen) return setSide(s);
-          setNotice({
-            label: "Open the Evolution side",
-            go: () => {
-              AsyncStorage.setItem(noticeKey(trainer.id), "1").catch(() => {});
-              setSide(s);
-            },
-          });
-        });
+      if (s === "evolution" && !evolutionOn) setPending({ then: () => setSide("evolution") });
+      else setSide(s);
     },
-    [pricing.side, setSide, trainer]
+    [evolutionOn, setSide]
   );
+  const toggleEvolution = useCallback(() => {
+    if (trainer?.is_owner) return;
+    if (evolutionOn) switchOff();
+    else askToSwitchOn(() => setSide("evolution"));
+  }, [trainer?.is_owner, evolutionOn, switchOff, askToSwitchOn, setSide]);
+
   return (
-    <SideContext.Provider value={{ side, setSide: setSideChecked, cameFrom, backToCameFrom, guardEvolution, reloadPriceSide }}>
+    <SideContext.Provider value={{ side, setSide: setSideChecked, cameFrom, backToCameFrom, guardEvolution, evolutionOn, toggleEvolution }}>
       {children}
-      <EvolutionUpgradeNotice
-        visible={!!notice}
-        settings={pricing.settings}
-        continueLabel={notice?.label ?? "Continue"}
-        onContinue={() => {
-          const go = notice?.go;
-          setNotice(null);
-          go?.();
-        }}
-        onCancel={() => setNotice(null)}
-      />
+      <EvolutionSwitchNotice visible={!!pending} saving={saving} onSwitchOn={switchOn} onCancel={() => setPending(null)} />
     </SideContext.Provider>
   );
 }
 
 export const useTrainerSide = () => useContext(SideContext);
 
-export const SIDE_LABEL: Record<TrainerSide, string> = { one: "🤝 1 on 1", evolution: "🌐 Evolution" };
+export const SIDE_LABEL: Record<TrainerSide, string> = { one: "1 on 1", evolution: "Evolution" };
 
 // The pill at the top of every trainer tab (and the laptop sidebar).
 export function TrainerSideSwitch({ compact }: { compact?: boolean }) {

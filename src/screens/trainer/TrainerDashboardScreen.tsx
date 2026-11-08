@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import AwardTrainerCard from "@/components/award/AwardTrainerCard";
 import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -359,7 +360,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     },
     proofCount > 0 && {
       key: "proofs",
-      text: `🧾 ${proofCount} proof${proofCount === 1 ? "" : "s"} of payment to check`,
+      text: `${proofCount} proof${proofCount === 1 ? "" : "s"} of payment to check`,
       link: "Open",
       onPress: () => navigation.navigate("Clients"),
     },
@@ -371,7 +372,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     },
     trainerProofCount > 0 && {
       key: "trainerProofs",
-      text: `🧾 ${trainerProofCount} trainer payment${trainerProofCount === 1 ? "" : "s"} to record`,
+      text: `${trainerProofCount} trainer payment${trainerProofCount === 1 ? "" : "s"} to record`,
       link: "Open",
       onPress: () => navigation.navigate("Billing"),
     },
@@ -384,19 +385,19 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
     })),
     ...videosByClient(newVideos).map((v) => ({
       key: `videos-${v.clientId}`,
-      text: `🎥 ${v.count} new form video${v.count === 1 ? "" : "s"} from ${v.name.split(" ")[0]}`,
+      text: `${v.count} new form video${v.count === 1 ? "" : "s"} from ${v.name.split(" ")[0]}`,
       link: "Watch",
       onPress: () => navigation.navigate("ClientDetail", { clientId: v.clientId, tab: "training", open: "videos" }),
     })),
     ...foundationWaiting.map((c) => ({
       key: `foundation-${c.id}`,
-      text: `🌱 Approve a foundation program for ${c.name.split(" ")[0]}`,
+      text: `Approve a foundation program for ${c.name.split(" ")[0]}`,
       link: "Open",
       onPress: () => navigation.navigate("ClientDetail", { clientId: c.id, tab: "training" }),
     })),
     noChallenge && {
       key: "challenge",
-      text: `🏆 Pick ${monthName(todayIso())}'s challenge for your clients`,
+      text: `Pick ${monthName(todayIso())}'s challenge for your clients`,
       link: "Pick",
       onPress: () => navigation.navigate("Challenges"),
     },
@@ -404,20 +405,20 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
       key: `video-${v.id}`,
       text:
         v.status === "requested"
-          ? `📹 Confirm ${v.name.split(" ")[0]}'s video check-in · ${checkinDay(v.starts_at)} ${checkinClock(v.starts_at)}`
-          : `📹 Video check-in with ${v.name.split(" ")[0]} today at ${checkinClock(v.starts_at)}`,
+          ? `Confirm ${v.name.split(" ")[0]}'s video check-in · ${checkinDay(v.starts_at)} ${checkinClock(v.starts_at)}`
+          : `Video check-in with ${v.name.split(" ")[0]} today at ${checkinClock(v.starts_at)}`,
       link: "Open",
       onPress: () => navigation.navigate("VideoCheckIns"),
     })),
     newProblems > 0 && {
       key: "problems",
-      text: `🛠 ${newProblems} new problem${newProblems === 1 ? "" : "s"} from trainers`,
+      text: `${newProblems} new problem${newProblems === 1 ? "" : "s"} from trainers`,
       link: "Open",
       onPress: () => navigation.navigate("TrainerProblems"),
     },
     newSuggestions > 0 && {
       key: "suggestions",
-      text: `💡 ${newSuggestions} new suggestion${newSuggestions === 1 ? "" : "s"}`,
+      text: `${newSuggestions} new suggestion${newSuggestions === 1 ? "" : "s"}`,
       link: "Read",
       onPress: () => navigation.navigate("SuggestionBox"),
     },
@@ -425,7 +426,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Today's compliance</Text>
+      <Text style={styles.title}>Today</Text>
       <NotificationsPrompt who="trainer" />
       <FlatList
         data={rows}
@@ -444,6 +445,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                 ))}
               </View>
             )}
+            <AwardTrainerCard />
             <CheckInNudgeCard />
             {trainer && <HabitWinsCard trainerId={trainer.id} />}
           </>
@@ -474,13 +476,13 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                 ))}
                 {item.problems.some((p) => p.client_reply) && (
                   <Text style={styles.replyNote} numberOfLines={2}>
-                    💬 They replied: {item.problems.find((p) => p.client_reply)?.client_reply}
+                    They replied: {item.problems.find((p) => p.client_reply)?.client_reply}
                   </Text>
                 )}
                 {item.problems.length > 0 && (
                   <View style={styles.actions}>
                     <Pressable style={styles.replyButton} onPress={() => setReplyingTo(item)} hitSlop={6}>
-                      <Text style={styles.replyText}>💬 Reply</Text>
+                      <Text style={styles.replyText}>Reply</Text>
                     </Pressable>
                     {item.level === "red" && (
                       <Pressable
@@ -507,14 +509,14 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
               <View style={styles.statusCol}>
                 {item.client.live_only && !item.todaysCheckin ? (
                   // A live client checks in only when they choose to (0169).
-                  <Text style={styles.statusText}>🤝 Live client</Text>
+                  <Text style={styles.statusText}>Live client</Text>
                 ) : (
                   <View style={styles.statusLine}>
                     <View style={[styles.statusDot, item.todaysCheckin ? styles.dotGreen : styles.dotRed]} />
                     <Text style={styles.statusText}>{item.todaysCheckin ? "Checked in" : "No check-in yet"}</Text>
                   </View>
                 )}
-                {item.trainedToday && <Text style={styles.trainedText}>🏋️ Trained today</Text>}
+                {item.trainedToday && <Text style={styles.trainedText}>Trained today</Text>}
               </View>
             </Pressable>
           );

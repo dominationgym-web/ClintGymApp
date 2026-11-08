@@ -19,6 +19,7 @@ import {
 import { planRecovery } from "@/lib/recoveryPlanQueries";
 import type { RecoveryActivityRow } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 export const RECOVERY_GREEN = "#4ADE80";
 
@@ -121,7 +122,7 @@ export default function RecoveryActivityModal({
                     <Text style={styles.duration}>⏱ {info.durationLabel}</Text>
                   </View>
                 </View>
-                {reason ? <Text style={styles.reason}>💡 {reason}</Text> : null}
+                {reason ? <Text style={styles.reason}>{reason}</Text> : null}
                 {!completing && (
                   <>
                     <Text style={styles.body}>{info.what}</Text>
@@ -139,7 +140,7 @@ export default function RecoveryActivityModal({
 
                 {info.key === "stretching" && (
                   <Pressable style={styles.routineButton} onPress={() => setRoutine(true)}>
-                    <Text style={styles.routineTitle}>🧘 Follow the full body stretch routine</Text>
+                    <Text style={styles.routineTitle}>Follow the full body stretch routine</Text>
                     <Text style={styles.routineText}>12 easy stretches with videos, about 12 minutes. Logs itself when you finish.</Text>
                   </Pressable>
                 )}
@@ -174,7 +175,7 @@ export default function RecoveryActivityModal({
                       ))}
                     </View>
                     <Pressable style={styles.planButton} onPress={plan} disabled={saving}>
-                      <Text style={styles.planText}>📅 Plan it</Text>
+                      <Text style={styles.planText}>Plan it</Text>
                     </Pressable>
                   </>
                 )}
@@ -183,6 +184,7 @@ export default function RecoveryActivityModal({
             <Pressable style={styles.close} onPress={activity || completing || !info ? onClose : () => setPicked(null)}>
               <Text style={styles.closeText}>{activity || completing || !info ? "Close" : "‹ Back to activities"}</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

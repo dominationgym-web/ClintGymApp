@@ -6,14 +6,21 @@
 //   ("ready", or "failed" with a reason). The trainer gets a push.
 // action "add": the trainer adds a ready import to workout_logs and
 //   client_body_stats. Days and exercises the client already has are skipped,
-//   so adding twice never doubles anything.
+//   so adding twice never doubles anything. Workouts with no date go into
+//   client_undated_sets as "before the app" sessions (0189).
+//
+// Numbers with no unit shown are read in the trainer's units (trainers.units,
+// 0189) and stored in kg and cm.
 // action "dismiss": the trainer throws a ready or failed import away.
+// actions "read_bulk", "add_bulk", "dismiss_bulk" (0190): one file with many
+//   clients. See trainer_bulk_imports and bulk.ts.
 //
 // Deployed with verify_jwt on. Needs the ANTHROPIC_API_KEY secret; without
 // it "read" answers "no_key" and nothing is saved.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { BODY_FIELDS, cleanResult, importCounts, nameKey, type ImportResult } from "./shape.ts";
+import { cleanResult, importCounts, nameKey, undatedSessions, type ImportResult, type Units } from "./shape.ts";
+import { applyColumnMap, cleanColumnMap, matchClient, mergePeople, parseCsv, sampleForMapping, type RawPerson } from "./bulk.ts";
 
 const MODEL = "claude-opus-5-5";
 const MAX_FILES = 10;
@@ -26,17 +33,61 @@ const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 const SYSTEM = `You read a fitness client's history exported from another training or fitness app
-(screenshots, PDFs, CSV or text files) so it can be moved into a new coaching app.
+(screenshots, PDFs, CSV or text files, including spreadsheet logs) so it can be moved into a new coaching app.
 Pull out:
-- workouts: each exercise done on a date, with its sets (weight in kg and reps). One entry per exercise per date.
-  Convert pounds to kg (1 lb = 0.4536 kg). Leave weight_kg null for body-weight exercises.
-  Skip sets with no reps (timed or distance work), warm-up rows marked as such are fine to include.
-- body: body weight and measurements by date (kg, %, cm). Convert inches to cm (1 in = 2.54 cm).
-Dates are yyyy-mm-dd. Today is given. If a date has no year, use the most recent such date that is not after today.
-Never invent numbers: only what the files clearly show. If something can't be read, leave it out and say so in note.
+- workouts: each exercise done, with its sets (weight and reps). One entry per exercise per date or per session.
+  Give numbers exactly as shown: do not convert units. Put the unit in "unit" ("kg" or "lb") only if the files
+  show it for that exercise (or set weight_unit once for the whole file); otherwise leave it null and the app uses
+  the trainer's units. Half values like 22.5 or 7,5 are real weights: keep them.
+  Leave weight null for body-weight exercises. Skip empty boxes and sets with no reps (timed or distance work).
+  Leave out exercises with nothing filled in. Warm-up rows are fine to include.
+- Dates: yyyy-mm-dd. Today is given. If a date has no year, use the most recent such date that is not after today.
+  If the files show no date, still save the workouts: set date to null and set session to the label the files
+  give (like "Week 1" or "Day A"), keeping sessions in the order shown, oldest first. Never make up a date.
+- body: body weight and measurements by date (weight, body_fat_pct, waist, hips, chest, arm, thigh) as shown,
+  with weight_unit ("kg"/"lb") and length_unit ("cm"/"in") only when the files show them. Only entries with a date.
+Never invent numbers: only what the files clearly show. If something can't be read (cut off, blurry), leave it out.
+note: one or two short plain sentences for the trainer on anything left out. Don't list the numbers you saved.
 Give app_name if you can tell which app it came from.
 Call the save_history tool once with everything you found.`;
 
+const MASS_UNIT = { type: ["string", "null"], description: "kg or lb, or null when not shown." };
+const LENGTH_UNIT = { type: ["string", "null"], description: "cm or in, or null when not shown." };
+const WORKOUT_ITEM = {
+  type: "object",
+  properties: {
+    date: { type: ["string", "null"], description: "yyyy-mm-dd, or null when the files show no date." },
+    session: { type: ["string", "null"], description: "The files' label for the session, like Week 1, when there is no date." },
+    exercise: { type: "string" },
+    unit: MASS_UNIT,
+    sets: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { weight: { type: ["number", "null"] }, reps: { type: "number" } },
+        required: ["reps"],
+      },
+    },
+  },
+  required: ["date", "exercise", "sets"],
+};
+const BODY_ITEM = {
+  type: "object",
+  properties: {
+    date: { type: "string" },
+    weight_unit: MASS_UNIT,
+    length_unit: LENGTH_UNIT,
+    weight: { type: "number" },
+    body_fat_pct: { type: "number" },
+    waist: { type: "number" },
+    hips: { type: "number" },
+    chest: { type: "number" },
+    arm: { type: "number" },
+    thigh: { type: "number" },
+  },
+  required: ["date"],
+};
+const NOTE = { type: ["string", "null"], description: "One or two short plain sentences for the trainer on anything left out or unclear." };
 const TOOL = {
   name: "save_history",
   description: "Save the client's workouts and body stats read from the files.",
@@ -44,39 +95,78 @@ const TOOL = {
     type: "object",
     properties: {
       app_name: { type: ["string", "null"] },
-      workouts: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            date: { type: "string" },
-            exercise: { type: "string" },
-            sets: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: { weight_kg: { type: ["number", "null"] }, reps: { type: "number" } },
-                required: ["reps"],
-              },
-            },
-          },
-          required: ["date", "exercise", "sets"],
-        },
-      },
-      body: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            date: { type: "string" },
-            ...Object.fromEntries(BODY_FIELDS.map((f) => [f, { type: "number" }])),
-          },
-          required: ["date"],
-        },
-      },
-      note: { type: ["string", "null"], description: "Short plain note for the trainer on anything left out or unclear." },
+      weight_unit: { ...MASS_UNIT, description: "Weight unit for the whole file, only if the files show it." },
+      workouts: { type: "array", items: WORKOUT_ITEM },
+      body: { type: "array", items: BODY_ITEM },
+      note: NOTE,
     },
     required: ["workouts", "body"],
+  },
+};
+
+// One file with many clients (0190).
+const PEOPLE_SYSTEM = `${SYSTEM.replace("Call the save_history tool once with everything you found.", "")}
+These files hold MANY clients of one trainer. Split everything by person: one entry in people per client,
+named exactly as the files name them. Call the save_people tool once with everything you found.`;
+const PEOPLE_TOOL = {
+  name: "save_people",
+  description: "Save each client's workouts and body stats read from the files.",
+  input_schema: {
+    type: "object",
+    properties: {
+      weight_unit: { ...MASS_UNIT, description: "Weight unit for the whole file, only if the files show it." },
+      people: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { name: { type: "string" }, workouts: { type: "array", items: WORKOUT_ITEM }, body: { type: "array", items: BODY_ITEM } },
+          required: ["name", "workouts", "body"],
+        },
+      },
+      note: NOTE,
+    },
+    required: ["people"],
+  },
+};
+
+const MAP_SYSTEM = `You look at the first rows of a spreadsheet (CSV) export from a training app or a trainer's own log,
+holding the workouts of MANY clients, and say which column holds what so a program can read every row.
+Columns are numbered from 0 as shown. Call map_columns once.
+- tabular: true only if each row is one set or one exercise of one person, with the person's name in a column.
+  Layouts like one block per exercise, one sheet per client, or names only in titles are not tabular: say false.
+- header_rows: how many rows at the top are headings, not data.
+- name: the column(s) with the person's name (two if first name and surname are separate).
+- date and date_format ("ymd", "dmy" or "mdy"; for dates like 03/04/2024 decide from the rows, SA files are usually dmy).
+- session: a workout or week label column, if any. exercise: the exercise name column.
+- set_number: the set number column when each row is one set.
+- weights and reps: matching lists. One row per set: one weight and one reps column. One row per exercise with
+  sets across: the weight and reps column of set 1, set 2 and so on, in the same order.
+- unit_column (a column saying kg or lb) or unit (if the headings say kg or lb for all weights), else null.
+- body_weight and body_fat: columns with body weight or body fat %, if any.`;
+const COL = { type: ["integer", "null"] };
+const COLS = { type: "array", items: { type: "integer" } };
+const MAP_TOOL = {
+  name: "map_columns",
+  description: "Say which column holds what.",
+  input_schema: {
+    type: "object",
+    properties: {
+      tabular: { type: "boolean" },
+      header_rows: { type: "integer" },
+      name: COLS,
+      date: COL,
+      date_format: { type: ["string", "null"] },
+      session: COL,
+      exercise: COL,
+      set_number: COL,
+      weights: COLS,
+      reps: COLS,
+      unit_column: COL,
+      unit: { type: ["string", "null"] },
+      body_weight: COL,
+      body_fat: COL,
+    },
+    required: ["tabular"],
   },
 };
 
@@ -104,17 +194,16 @@ function contentFor(f: InFile): Record<string, unknown> | null {
   return null;
 }
 
-async function readWithClaude(key: string, today: string, files: InFile[]): Promise<ImportResult> {
-  const content = files.map(contentFor).filter(Boolean) as Record<string, unknown>[];
-  content.push({ type: "text", text: `Today is ${today}. Read everything above and call save_history.` });
+/** One Claude call that must answer with the named tool; gives the tool's input. */
+async function callClaude(key: string, system: string, tool: { name: string }, content: Record<string, unknown>[], maxTokens: number): Promise<unknown> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 32000,
-      system: SYSTEM,
-      tools: [TOOL],
+      max_tokens: maxTokens,
+      system,
+      tools: [tool],
       // claude-opus-5-5 refuses a forced tool_choice (400), so let it choose
       // and say in the prompt to call the tool.
       tool_choice: { type: "auto" },
@@ -127,10 +216,19 @@ async function readWithClaude(key: string, today: string, files: InFile[]): Prom
     throw new Error(res.status === 413 || /too large|too long/i.test(text) ? "too_big" : "ai_failed");
   }
   const out = await res.json();
-  const call = (out.content ?? []).find((c: { type: string }) => c.type === "tool_use");
+  const call = (out.content ?? []).find((c: { type: string; name?: string }) => c.type === "tool_use" && c.name === tool.name);
   if (!call) throw new Error("ai_failed");
   if (out.stop_reason === "max_tokens") throw new Error("too_big");
-  return cleanResult(call.input, today);
+  return call.input;
+}
+
+async function readWithClaude(key: string, today: string, units: Units, files: InFile[]): Promise<ImportResult> {
+  const content = files.map(contentFor).filter(Boolean) as Record<string, unknown>[];
+  content.push({
+    type: "text",
+    text: `Today is ${today}. The trainer works in ${units === "imperial" ? "pounds and inches" : "kg and cm"}. Read everything above and call save_history.`,
+  });
+  return cleanResult(await callClaude(key, SYSTEM, TOOL, content, 32000), today, units);
 }
 
 async function push(admin: SupabaseClient, userId: string, title: string, body: string, clientId: string) {
@@ -156,12 +254,13 @@ async function runRead(
   files: InFile[],
   client: { id: string; name: string; trainer_id: string },
   byClient: boolean,
+  units: Units,
 ) {
   let status = "failed";
   let result: ImportResult | null = null;
   let error: string | null = null;
   try {
-    result = await readWithClaude(key, today, files);
+    result = await readWithClaude(key, today, units, files);
     if (!result.workouts.length && !result.body.length) error = result.note ?? "No workouts or body stats were found in these files.";
     else status = "ready";
   } catch (e) {
@@ -174,7 +273,7 @@ async function runRead(
       admin,
       client.trainer_id,
       `${client.name} sent their history`,
-      `${c.days} training days and ${c.body} body stats from another app. Open their Training tab to check and add them.`,
+      `${c.days + c.undated} workouts and ${c.body} body stats from another app. Open their Training tab to check and add them.`,
       client.id,
     );
   }
@@ -191,13 +290,22 @@ async function allRows<T>(page: (from: number, to: number) => PromiseLike<{ data
   }
 }
 
-async function addImport(admin: SupabaseClient, imp: { id: string; client_id: string; result: ImportResult }, trainerId: string) {
+async function exerciseIds(admin: SupabaseClient): Promise<Map<string, string>> {
+  const exercises = await allRows<{ id: string; name: string }>((a, b) => admin.from("exercises").select("id, name").order("id").range(a, b));
+  return new Map(exercises.map((e) => [nameKey(e.name), e.id]));
+}
+
+async function addImport(
+  admin: SupabaseClient,
+  imp: { id: string; client_id: string; result: ImportResult },
+  trainerId: string,
+  byNameIn?: Map<string, string>,
+) {
   const r = imp.result;
   const clientId = imp.client_id;
   const c = importCounts(r);
 
-  const exercises = await allRows<{ id: string; name: string }>((a, b) => admin.from("exercises").select("id, name").order("id").range(a, b));
-  const byName = new Map(exercises.map((e) => [nameKey(e.name), e.id]));
+  const byName = byNameIn ?? (await exerciseIds(admin));
 
   const have = new Set<string>();
   if (c.from && c.to) {
@@ -218,6 +326,7 @@ async function addImport(admin: SupabaseClient, imp: { id: string; client_id: st
   let workouts = 0;
   let skipped = 0;
   for (const w of r.workouts) {
+    if (!w.date) continue;
     const k = `${w.date}|${nameKey(w.exercise)}`;
     if (have.has(k)) {
       skipped++;
@@ -260,7 +369,239 @@ async function addImport(admin: SupabaseClient, imp: { id: string; client_id: st
     const { error } = await admin.from("client_body_stats").insert(bodyRows);
     if (error) throw error;
   }
-  return { workouts, sets: logRows.length, body: bodyRows.length, skipped, skipped_body: r.body.length - bodyRows.length };
+
+  // No date (0189): "before the app" sessions. The same session sent twice
+  // (same label, exercise and sets) is only kept once.
+  const setsKey = (label: string | null, exercise: string, sets: { weight_kg: number | null; reps: number }[]) =>
+    `${label ?? ""}|${nameKey(exercise)}|${sets.map((x) => `${x.weight_kg === null ? "" : Number(x.weight_kg)}x${x.reps}`).join(",")}`;
+  const sessions = undatedSessions(r);
+  const undatedRows: Record<string, unknown>[] = [];
+  let undated = 0;
+  if (sessions.length) {
+    const old = await allRows<{ session_label: string | null; exercise_name: string; set_number: number; weight_kg: number | null; reps: number; import_id: string | null; session_order: number }>(
+      (a, b) =>
+        admin
+          .from("client_undated_sets")
+          .select("session_label, exercise_name, set_number, weight_kg, reps, import_id, session_order")
+          .eq("client_id", clientId)
+          .order("id")
+          .range(a, b),
+    );
+    const grouped = new Map<string, { label: string | null; exercise: string; sets: { set_number: number; weight_kg: number | null; reps: number }[] }>();
+    for (const x of old) {
+      const g = `${x.import_id}|${x.session_order}|${nameKey(x.exercise_name)}`;
+      if (!grouped.has(g)) grouped.set(g, { label: x.session_label, exercise: x.exercise_name, sets: [] });
+      grouped.get(g)!.sets.push(x);
+    }
+    const haveUndated = new Set(
+      [...grouped.values()].map((g) => setsKey(g.label, g.exercise, g.sets.sort((a, b) => a.set_number - b.set_number))),
+    );
+    sessions.forEach((session, order) => {
+      for (const w of session.workouts) {
+        const k = setsKey(session.label, w.exercise, w.sets);
+        if (haveUndated.has(k)) {
+          skipped++;
+          continue;
+        }
+        haveUndated.add(k);
+        undated++;
+        w.sets.forEach((s, i) =>
+          undatedRows.push({
+            client_id: clientId,
+            import_id: imp.id,
+            session_label: session.label,
+            session_order: order,
+            exercise_id: byName.get(nameKey(w.exercise)) ?? null,
+            exercise_name: w.exercise,
+            set_number: i + 1,
+            weight_kg: s.weight_kg,
+            reps: s.reps,
+          }),
+        );
+      }
+    });
+    for (let i = 0; i < undatedRows.length; i += 500) {
+      const { error } = await admin.from("client_undated_sets").insert(undatedRows.slice(i, i + 500));
+      if (error) throw error;
+    }
+  }
+  return {
+    workouts: workouts + undated,
+    sets: logRows.length + undatedRows.length,
+    body: bodyRows.length,
+    skipped,
+    skipped_body: r.body.length - bodyRows.length,
+    undated,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// One file with many clients (0190).
+
+const BULK_READS_PER_DAY = 5;
+const MAX_PEOPLE = 500;
+const MAX_BULK_TEXT = 20_000_000;
+
+type BulkPerson = {
+  name: string;
+  client_id: string | null;
+  result: ImportResult;
+  added_import_id?: string | null;
+  added_counts?: Record<string, number> | null;
+};
+
+/** A CSV-like file read in code with Claude's column map; null when it isn't tabular. */
+async function readTabular(key: string, f: InFile, units: Units): Promise<RawPerson[] | null> {
+  const bin = atob(f.data!);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const text = new TextDecoder().decode(bytes).slice(0, MAX_BULK_TEXT);
+  const rows = parseCsv(text);
+  if (rows.length < 2) return null;
+  const raw = await callClaude(
+    key,
+    MAP_SYSTEM,
+    MAP_TOOL,
+    [{ type: "text", text: `File "${f.name ?? "file"}", ${rows.length} rows. The first rows:\n${sampleForMapping(rows)}` }],
+    2000,
+  );
+  const map = cleanColumnMap(raw);
+  return map ? applyColumnMap(rows, map, units) : null;
+}
+
+async function runBulkRead(admin: SupabaseClient, key: string, bulkId: string, today: string, files: InFile[], trainerId: string, units: Units) {
+  let status = "failed";
+  let people: BulkPerson[] = [];
+  let note: string | null = null;
+  let error: string | null = null;
+  try {
+    const lists: RawPerson[][] = [];
+    const forClaude: InFile[] = [];
+    for (const f of files) {
+      const tab = isText(f) ? await readTabular(key, f, units) : null;
+      if (tab) lists.push(tab);
+      else forClaude.push(f);
+    }
+    if (forClaude.length) {
+      const content = forClaude.map(contentFor).filter(Boolean) as Record<string, unknown>[];
+      content.push({
+        type: "text",
+        text: `Today is ${today}. The trainer works in ${units === "imperial" ? "pounds and inches" : "kg and cm"}. Read everything above and call save_people.`,
+      });
+      const out = (await callClaude(key, PEOPLE_SYSTEM, PEOPLE_TOOL, content, 32000)) as { people?: unknown; weight_unit?: unknown; note?: unknown };
+      const fileUnit = out?.weight_unit;
+      if (Array.isArray(out?.people))
+        lists.push(
+          (out.people as RawPerson[])
+            .filter((p) => p && typeof p.name === "string")
+            .map((p) => ({
+              name: p.name,
+              workouts: (Array.isArray(p.workouts) ? p.workouts : []).map((w) => ({ ...w, unit: w?.unit ?? fileUnit ?? null })),
+              body: Array.isArray(p.body) ? p.body : [],
+            })),
+        );
+      if (typeof out?.note === "string" && out.note.trim()) note = out.note.trim().slice(0, 600);
+    }
+    const { data: clients } = await admin.from("clients").select("id, name").eq("trainer_id", trainerId);
+    people = mergePeople(lists)
+      .slice(0, MAX_PEOPLE)
+      .map((p) => ({ name: p.name.trim().slice(0, 80), client_id: matchClient(p.name, clients ?? []), result: cleanResult(p, today, units) }))
+      .filter((p) => p.result.workouts.length || p.result.body.length);
+    if (people.length) status = "ready";
+    else error = note ?? "No clients' workouts or body stats were found in these files.";
+  } catch (e) {
+    error = FAIL_TEXT[(e as Error).message] ?? FAIL_TEXT.ai_failed;
+  }
+  await admin.from("trainer_bulk_imports").update({ status, people, note, error }).eq("id", bulkId);
+}
+
+/** Adds each linked person's history to their client (a normal client_imports row each). */
+async function addBulk(admin: SupabaseClient, bulk: { id: string; trainer_id: string; file_names: string[]; people: BulkPerson[] }, links: Record<string, unknown>, me: string) {
+  const { data: clients } = await admin.from("clients").select("id").eq("trainer_id", me);
+  const mine = new Set((clients ?? []).map((c) => c.id));
+  const byName = await exerciseIds(admin);
+  const people = bulk.people;
+  let added = 0;
+  for (let i = 0; i < people.length; i++) {
+    const p = people[i];
+    if (p.added_import_id) continue;
+    const link = Object.prototype.hasOwnProperty.call(links, String(i)) ? links[String(i)] : p.client_id;
+    if (typeof link !== "string" || !mine.has(link)) {
+      p.client_id = null;
+      continue;
+    }
+    p.client_id = link;
+    const { data: imp, error } = await admin
+      .from("client_imports")
+      .insert({
+        client_id: link,
+        trainer_id: me,
+        uploaded_by: me,
+        uploaded_role: "trainer",
+        file_names: bulk.file_names,
+        status: "added",
+        result: p.result,
+        added_at: new Date().toISOString(),
+        added_by: me,
+      })
+      .select("id")
+      .single();
+    if (error || !imp) throw error ?? new Error("insert failed");
+    p.added_import_id = imp.id;
+    // Saved straight away, so a second tap can't add this person twice.
+    await admin.from("trainer_bulk_imports").update({ people }).eq("id", bulk.id);
+    const counts = await addImport(admin, { id: imp.id, client_id: link, result: p.result }, me, byName);
+    p.added_counts = counts;
+    await admin.from("client_imports").update({ added_counts: counts }).eq("id", imp.id);
+    added++;
+  }
+  await admin.from("trainer_bulk_imports").update({ people }).eq("id", bulk.id);
+  return { added, waiting: people.filter((p) => !p.added_import_id).length };
+}
+
+async function handleBulk(admin: SupabaseClient, me: string, body: Record<string, unknown>): Promise<Response> {
+  const { data: trainer } = await admin.from("trainers").select("id, units").eq("id", me).maybeSingle();
+  if (!trainer) return json(403, { error: "Trainers only" });
+
+  if (body.action === "add_bulk" || body.action === "dismiss_bulk") {
+    if (typeof body.bulk_id !== "string") return json(400, { error: "Bad request" });
+    const { data: bulk } = await admin.from("trainer_bulk_imports").select("*").eq("id", body.bulk_id).maybeSingle();
+    if (!bulk || bulk.trainer_id !== me) return json(404, { error: "Not found" });
+    if (body.action === "dismiss_bulk") {
+      await admin.from("trainer_bulk_imports").update({ status: "dismissed" }).eq("id", bulk.id);
+      return json(200, { ok: true });
+    }
+    if (bulk.status !== "ready") return json(409, { error: "Not ready" });
+    const links = body.links && typeof body.links === "object" ? (body.links as Record<string, unknown>) : {};
+    try {
+      return json(200, await addBulk(admin, bulk, links, me));
+    } catch (e) {
+      console.error("add_bulk", e);
+      return json(500, { error: "add_failed" });
+    }
+  }
+
+  // read_bulk
+  const { today, files } = body as { today?: string; files?: InFile[] };
+  if (!today || !/^\d{4}-\d{2}-\d{2}$/.test(today) || !Array.isArray(files) || !files.length) return json(400, { error: "Bad request" });
+  if (files.length > MAX_FILES) return json(400, { error: "too_many" });
+  if (files.some((f) => typeof f?.data !== "string" || !f.data)) return json(400, { error: "Bad request" });
+  if (files.reduce((n, f) => n + f.data!.length, 0) > MAX_TOTAL_BASE64) return json(400, { error: "too_big" });
+  if (files.some((f) => !contentFor({ ...f, data: "" }))) return json(400, { error: "bad_type" });
+  const key = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!key) return json(503, { error: "no_key" });
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const { count } = await admin.from("trainer_bulk_imports").select("id", { count: "exact", head: true }).eq("trainer_id", me).gte("created_at", since);
+  if ((count ?? 0) >= BULK_READS_PER_DAY) return json(429, { error: "too_many_bulk_today" });
+  const { data: row, error } = await admin
+    .from("trainer_bulk_imports")
+    .insert({ trainer_id: me, file_names: files.map((f) => String(f.name ?? "file").slice(0, 120)) })
+    .select("*")
+    .single();
+  if (error) return json(500, { error: error.message });
+  const units: Units = trainer.units === "imperial" ? "imperial" : "metric";
+  EdgeRuntime.waitUntil(runBulkRead(admin, key, row.id, today, files, me, units));
+  return json(200, { bulk: row });
 }
 
 Deno.serve(async (req) => {
@@ -275,12 +616,13 @@ Deno.serve(async (req) => {
   if (userError || !userData.user) return json(401, { error: "Not signed in" });
   const me = userData.user.id;
 
-  let body: { action?: string; client_id?: string; import_id?: string; today?: string; files?: InFile[] };
+  let body: { action?: string; client_id?: string; import_id?: string; today?: string; files?: InFile[]; bulk_id?: string; links?: unknown };
   try {
     body = await req.json();
   } catch {
     return json(400, { error: "Bad request" });
   }
+  if (body.action === "read_bulk" || body.action === "add_bulk" || body.action === "dismiss_bulk") return handleBulk(admin, me, body);
 
   if (body.action === "add" || body.action === "dismiss") {
     if (!body.import_id) return json(400, { error: "Bad request" });
@@ -354,6 +696,10 @@ Deno.serve(async (req) => {
     .single();
   if (error) return json(500, { error: error.message });
 
-  EdgeRuntime.waitUntil(runRead(admin, key, row.id, today, files, client, byClient));
+  // Numbers with no unit shown are read in the trainer's units (0189).
+  const { data: trainer } = await admin.from("trainers").select("units").eq("id", client.trainer_id).maybeSingle();
+  const units: Units = trainer?.units === "imperial" ? "imperial" : "metric";
+
+  EdgeRuntime.waitUntil(runRead(admin, key, row.id, today, files, client, byClient, units));
   return json(200, { import: row });
 });

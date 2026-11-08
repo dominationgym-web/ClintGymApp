@@ -56,7 +56,7 @@ export default function RecoveryCoachCard({
     <View style={styles.card}>
       <Pressable style={styles.header} onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>🌿 Recovery</Text>
+          <Text style={styles.title}>Recovery</Text>
           <Text style={styles.summary}>
             {done.length} done in 2 weeks · {ahead.length} planned{skipped.length ? ` · ${skipped.length} skipped` : ""}
           </Text>

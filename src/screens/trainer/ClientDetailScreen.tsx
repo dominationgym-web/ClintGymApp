@@ -65,6 +65,7 @@ import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 import FoldSection from "@/components/FoldSection";
+import ClientContractFold from "@/components/sessions/ClientContractFold";
 import { whatsappLink } from "@/lib/videoCheckins";
 import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
@@ -119,7 +120,7 @@ function formatIntakeLabel(key: string) {
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
-  const { guardEvolution, reloadPriceSide } = useTrainerSide();
+  const { guardEvolution } = useTrainerSide();
   const [askWeighIn, setAskWeighIn] = useState(false);
   // The activate pop-up's "1 on 1, Evolution or both" step.
   const [activating, setActivating] = useState<{ message: string; save: (t: TrainingType) => void } | null>(null);
@@ -399,7 +400,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       // No weigh-in schedule yet: ask how often they weigh and measure (not for a live client).
       if (!client.weigh_in_every && !changes.live_only && !client.live_only && client.id !== trainer?.id) setAskWeighIn(true);
     };
-    const message = `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString()}.`;
+    const message = `Confirm payment received for ${client.name}. ${renewing ? "The new plan starts when the current one ends" : "Their access opens now"} and runs to ${parseIsoDate(next.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.`;
     // Activating asks 1 on 1, Evolution or both (GRIZZ, 2026-11-01).
     if (!renewing) return setActivating({ message, save: (t) => save({ ...next, ...trainingTypeFields(t) }) });
     Alert.alert("Renew plan?", message, [
@@ -568,8 +569,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
           if (!go) return;
           if (t === "one") {
             go(t);
-            reloadPriceSide();
-          } else guardEvolution(() => go(t), `Yes, activate ${client.name.split(" ")[0]}`);
+          } else guardEvolution(() => go(t));
         }}
       />
       {/* On a laptop the tabs run along the top (GRIZZ, 2026-10-27). */}
@@ -591,12 +591,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 hitSlop={6}
                 accessibilityRole="link"
               >
-                <Text style={styles.whatsapp}>💬 {client.phone} · WhatsApp</Text>
+                <Text style={styles.whatsapp}>{client.phone} · WhatsApp</Text>
               </Pressable>
             ) : null}
             <Text style={styles.memberSince}>
               {timeWithYou === "Joined today" ? timeWithYou : `With you ${timeWithYou}`} · since{" "}
-              {new Date(client.created_at).toLocaleDateString()}
+              {new Date(client.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
             </Text>
           </View>
         </View>
@@ -609,7 +609,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             </Pressable>
             {/* Group live session (0138): up to 4 clients at once, this one first. */}
             <Pressable style={styles.groupButton} onPress={() => navigation.navigate("GroupLive", { clientId: client.id })}>
-              <Text style={styles.groupButtonText}>👥 Group</Text>
+              <Text style={styles.groupButtonText}>Group</Text>
             </Pressable>
           </View>
         )}
@@ -618,7 +618,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             {client.archived_at && (
               <View style={styles.archivedBanner}>
                 <Text style={styles.archivedText}>
-                  🗄 Archived on {new Date(client.archived_at).toLocaleDateString()}. All their data is kept.
+                  Archived on {new Date(client.archived_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}. All their data is kept.
                 </Text>
                 <Pressable style={styles.button} onPress={archiveOrBringBack}>
                   <Text style={styles.buttonText}>Bring back</Text>
@@ -644,7 +644,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             )}
             {/* The one way to message a client (review 2026-10-18): the trainer's own words, shown at the top of their Check-in. */}
             <Pressable style={styles.button} onPress={() => setReplying(true)}>
-              <Text style={styles.buttonText}>💬 Send {client.name.split(" ")[0]} a check-in note</Text>
+              <Text style={styles.buttonText}>Send {client.name.split(" ")[0]} a check-in note</Text>
             </Pressable>
             {trainer && replying && (
               <ReplyToClientModal
@@ -665,7 +665,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               title="Plan & payment"
               hint={
                 (client.plan_type
-                  ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString()}` : ""}`
+                  ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""}`
                   : "No plan picked") + ` · ${trainingTypeLabel(trainingTypeOf(client))}`
               }
               open={overviewOpen === "plan"}
@@ -678,12 +678,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   if (t === trainingTypeOf(client)) return;
                   if (t === "one") {
                     pickTrainingType(t);
-                    reloadPriceSide();
-                  } else guardEvolution(() => pickTrainingType(t), "Yes, change it");
+                  } else guardEvolution(() => pickTrainingType(t));
                 }}
               />
               <Text style={styles.helper}>
-                1 on 1 clients show on your 🤝 1 on 1 side, Evolution clients on your 🌐 Evolution side, and Both on each. A 1 on 1 client can still get a Training tab: switch on their workout video library.
+                Decides which side of your app they show on.
               </Text>
               <ClientPricePicker
                 clientId={client.id}
@@ -700,12 +699,12 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   <Text style={styles.planLabel}>{PLAN_LABEL[client.plan_type] ?? "12 Month"} Plan</Text>
                   {client.plan_started_at && (
                     <Text style={styles.planDate}>
-                      Started: {new Date(client.plan_started_at).toLocaleDateString()}
+                      Started: {new Date(client.plan_started_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </Text>
                   )}
                   {client.plan_expires_at && (
                     <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
-                      Expires: {new Date(client.plan_expires_at).toLocaleDateString()}
+                      Expires: {new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </Text>
                   )}
                   {!client.archived_at && (
@@ -723,6 +722,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 </View>
               )}
             </FoldSection>
+
+            {/* The session contract they signed, always one tap away (GRIZZ, 2026-11-05). */}
+            <ClientContractFold
+              clientId={client.id}
+              clientName={client.name}
+              always={!!(client.one_on_one || client.live_only)}
+              open={overviewOpen === "contract"}
+              onToggle={() => toggleOverview("contract")}
+            />
 
             <FoldSection
               icon="🌿"
@@ -864,7 +872,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               <FoldSection icon="🗄" title="Archive" open={overviewOpen === "archive"} onToggle={() => toggleOverview("archive")}>
                 <Text style={styles.helper}>For a client who has stopped. Nothing is deleted and you can bring them back.</Text>
                 <Pressable style={styles.archiveButton} onPress={archiveOrBringBack}>
-                  <Text style={styles.archiveButtonText}>🗄 Archive this client</Text>
+                  <Text style={styles.archiveButtonText}>Archive this client</Text>
                 </Pressable>
               </FoldSection>
             )}
@@ -899,8 +907,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
           <>
             <Text style={styles.sectionHeading}>Habits</Text>
             <Text style={styles.helper}>
-              Habits you set stay until you remove them. Clients can also choose their own habits from a list
-              (marked "Chosen by client") and stop those themselves.
+              Clients can add their own too (marked "Chosen by client").
             </Text>
             {habits.length === 0 && <Text style={styles.helper}>No habits set up yet.</Text>}
             {habits.map((h) => {
@@ -1045,19 +1052,19 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               onChanged={() => setStabilityDaysKey((k) => k + 1)}
             />
             {/* GRIZZ, 2026-10-21: abs and cardio for every workout, from one place (0136). */}
-            <TrainingSection title="💪 Abs and cardio" open={trainingOpen === "extras"} onToggle={() => toggleTraining("extras")}>
+            <TrainingSection title="Abs and cardio" open={trainingOpen === "extras"} onToggle={() => toggleTraining("extras")}>
               <ClientExtrasCard client={client} onChanged={(change) => setClient((c) => (c ? { ...c, ...change } : c))} />
             </TrainingSection>
-            <TrainingSection title="🎥 Form videos" open={trainingOpen === "videos"} onToggle={() => toggleTraining("videos")}>
+            <TrainingSection title="Form videos" open={trainingOpen === "videos"} onToggle={() => toggleTraining("videos")}>
               {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
             </TrainingSection>
-            <TrainingSection title="🏃 Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
+            <TrainingSection title="Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
               <OtherActivityCard clientId={client.id} role="trainer" />
             </TrainingSection>
-            <TrainingSection title="📥 History from another app" open={trainingOpen === "history"} onToggle={() => toggleTraining("history")}>
+            <TrainingSection title="History from another app" open={trainingOpen === "history"} onToggle={() => toggleTraining("history")}>
               <HistoryImportCard clientId={client.id} role="trainer" />
             </TrainingSection>
-            <TrainingSection title="🌿 Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
+            <TrainingSection title="Recovery" open={trainingOpen === "recovery"} onToggle={() => toggleTraining("recovery")}>
               <RecoveryCoachCard
                 clientId={client.id}
                 clientName={client.name}
@@ -1065,7 +1072,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 onProgramChanged={(next) => setClient((c) => (c ? { ...c, recovery_program: next } : c))}
               />
             </TrainingSection>
-            <TrainingSection title="🏠 Where they train" open={trainingOpen === "place"} onToggle={() => toggleTraining("place")}>
+            <TrainingSection title="Where they train" open={trainingOpen === "place"} onToggle={() => toggleTraining("place")}>
               <View style={{ marginTop: 12 }}>
                 <Text style={styles.libraryTitle}>Trains at</Text>
                 <Text style={[styles.helper, { marginBottom: 8 }]}>
@@ -1083,14 +1090,14 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 />
               )}
             </TrainingSection>
-            <TrainingSection title="📊 Progress graphs" open={trainingOpen === "progress"} onToggle={() => toggleTraining("progress")}>
+            <TrainingSection title="Progress graphs" open={trainingOpen === "progress"} onToggle={() => toggleTraining("progress")}>
               <ProgressCard clientId={client.id} role="trainer" />
             </TrainingSection>
-            <TrainingSection title="📈 Training log, last 2 weeks" open={trainingOpen === "log"} onToggle={() => toggleTraining("log")}>
+            <TrainingSection title="Training log, last 2 weeks" open={trainingOpen === "log"} onToggle={() => toggleTraining("log")}>
               <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
               <DropSetRoundsCard clientId={client.id} />
             </TrainingSection>
-            <TrainingSection title="⚙️ More options" open={trainingOpen === "more"} onToggle={() => toggleTraining("more")}>
+            <TrainingSection title="More options" open={trainingOpen === "more"} onToggle={() => toggleTraining("more")}>
               <ClientProgramPicker
                 key={programKey}
                 clientId={client.id}
@@ -1182,14 +1189,14 @@ const LEVEL_LOOK: Record<string, { emoji: string; color: string }> = {
 // Overview so the trainer is reminded every time they open the client
 // (GRIZZ, 2026-10-14).
 // A tap-to-open heading on the Training tab.
-/** "🔔 3 things to check": the client's alerts under one tap-to-open line. Hidden while there's nothing. */
+/** "3 things to check": the client's alerts under one tap-to-open line. Hidden while there's nothing. */
 function ChecksFold({ count, open, onToggle, children }: { count: number; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
     <View style={count > 0 ? [styles.trainingSection, styles.checksFold, open && styles.trainingSectionOpen] : undefined}>
       {count > 0 && (
         <Pressable style={styles.trainingSectionHeader} onPress={onToggle} accessibilityRole="button">
           <Text style={styles.trainingSectionTitle}>
-            🔔 {count} thing{count === 1 ? "" : "s"} to check
+            {count} thing{count === 1 ? "" : "s"} to check
           </Text>
           <Text style={styles.trainingSectionChevron}>{open ? "▴" : "▾"}</Text>
         </Pressable>
@@ -1234,7 +1241,7 @@ const styles = themedStyles({
   whatsapp: { color: BRAND_GOLD, fontSize: 14, fontWeight: "600", marginTop: 2 },
   checksFold: { borderColor: "#F59E0B" },
   liveRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 4 },
-  liveButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  liveButton: { backgroundColor: "#D4AF37", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   groupButton: { borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", borderWidth: 2, borderColor: "#22C55E" },
   groupButtonText: { color: "#22C55E", fontWeight: "800", fontSize: 16 },
   liveButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
@@ -1277,7 +1284,7 @@ const styles = themedStyles({
   planLabel: { color: "#fff", fontWeight: "700", fontSize: 14 },
   planDate: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   planButtons: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 10, marginTop: 10 },
-  planButton: { backgroundColor: "#22C55E", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 12 },
+  planButton: { backgroundColor: "#D4AF37", borderRadius: 6, paddingVertical: 8, paddingHorizontal: 12 },
   planButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 12 },
   planButtonDanger: { borderWidth: 1, borderColor: "#EF4444", borderRadius: 6, paddingVertical: 7, paddingHorizontal: 12 },
   planButtonDangerText: { color: "#EF4444", fontWeight: "700", fontSize: 12 },
@@ -1293,7 +1300,7 @@ const styles = themedStyles({
   },
   resetTitle: { color: "#fff", fontWeight: "600", fontSize: 14 },
   resetNotes: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8 },
-  resetButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  resetButton: { backgroundColor: "#D4AF37", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   resetButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
@@ -1319,7 +1326,7 @@ const styles = themedStyles({
     minHeight: 80,
     textAlignVertical: "top",
   },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 12, alignItems: "center", marginTop: 10 },
   buttonText: { color: "#0F172A", fontWeight: "700" },
   checkinRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
   checkinDistress: { borderWidth: 1.5, borderColor: "#EF4444" },

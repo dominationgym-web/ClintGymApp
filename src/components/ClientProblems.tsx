@@ -76,7 +76,7 @@ export default function ClientProblems({
             {fixing && (
               <Text style={styles.meta}>
                 {p.followup_sent_at
-                  ? `The app checked in with them on ${new Date(p.followup_sent_at).toLocaleDateString()}`
+                  ? `The app checked in with them on ${new Date(p.followup_sent_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
                   : "The app will check in with them tomorrow morning"}
               </Text>
             )}
@@ -89,7 +89,7 @@ export default function ClientProblems({
             <View style={styles.buttons}>
               {onReply && (
                 <Pressable style={[styles.button, styles.replyButton]} onPress={onReply} disabled={!!busy}>
-                  <Text style={styles.buttonText}>💬 Reply</Text>
+                  <Text style={styles.buttonText}>Reply</Text>
                 </Pressable>
               )}
               {!fixing && !medical && (
@@ -99,7 +99,7 @@ export default function ClientProblems({
               )}
               {medical ? (
                 <Pressable style={[styles.button, styles.fixed]} onPress={() => setClearing(p)} disabled={!!busy}>
-                  <Text style={styles.buttonText}>🩺 Clear the hold</Text>
+                  <Text style={styles.buttonText}>Clear the hold</Text>
                 </Pressable>
               ) : (
                 <Pressable style={[styles.button, styles.fixed]} onPress={() => setStatus(p, "fixed")} disabled={!!busy}>

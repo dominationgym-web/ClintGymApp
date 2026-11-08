@@ -231,7 +231,7 @@ export default function InjuryCheckCard({
       ) : (
         <>
           <Text style={[styles.title, { color: themeText(AMBER) }]}>
-            🩹 Injury check: {flagged.length} exercise{flagged.length === 1 ? "" : "s"} to check for {clientName}'s {names}
+            Injury check: {flagged.length} exercise{flagged.length === 1 ? "" : "s"} to check for {clientName}'s {names}
           </Text>
           {shown.map((f) => (
             <View key={f.row.id} style={styles.row}>

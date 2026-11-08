@@ -283,7 +283,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
       <View style={styles.draftBar}>
         <Text style={styles.draftText}>
-          {restored ? "📝 Carrying on where you left off." : "📝 Your work is kept if you go back."}
+          {restored ? "Carrying on where you left off." : "Your work is kept if you go back."}
         </Text>
         <Pressable onPress={startOver} hitSlop={8}>
           <Text style={styles.startOver}>Start over</Text>
@@ -576,7 +576,7 @@ function CardioSlot({
   return (
     <View style={[styles.slot, styles.cardioSlot]}>
       <View style={styles.cardioHeader}>
-        <Text style={styles.slotNumber}>🔥 Cardio</Text>
+        <Text style={styles.slotNumber}>Cardio</Text>
         <Pressable onPress={onRemove} hitSlop={8}>
           <Text style={styles.removeText}>Remove</Text>
         </Pressable>

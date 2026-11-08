@@ -38,7 +38,7 @@ export default function NotificationsPrompt({ who }: { who: "client" | "trainer"
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>🔔 Turn on notifications</Text>
+      <Text style={styles.title}>Turn on notifications</Text>
       <Text style={styles.body}>{WHY[who]}</Text>
       <Pressable style={styles.button} onPress={onPress}>
         <Text style={styles.buttonText}>{permission === "blocked" ? "Open settings" : "Turn on"}</Text>

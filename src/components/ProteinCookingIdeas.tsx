@@ -12,6 +12,7 @@ import {
 } from "@/lib/proteinCooking";
 import { themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 // Protein cooking ideas and low-calorie sauces (GRIZZ, 2026-10-27). Everything
 // is a tap-to-open line, one open at a time, so the client sees a short list
@@ -47,7 +48,7 @@ export function CookingSet({ set }: { set: ProteinCooking }) {
   return (
     <View>
       <View style={styles.tip}>
-        <Text style={styles.tipText}>💡 {set.tip}</Text>
+        <Text style={styles.tipText}>{set.tip}</Text>
       </View>
       {set.ideas.map((idea, i) => (
         <Idea key={idea.name} idea={idea} number={i + 1} open={open === i} onToggle={() => setOpen(open === i ? null : i)} />
@@ -63,7 +64,7 @@ export default function ProteinCookingIdeas() {
   useStepBack(open !== null, () => setOpen(null));
   return (
     <View style={styles.card}>
-      <Text style={styles.intro}>Five simple ways to cook each protein, with flavour and without many extra calories. Tap a food, then an idea for the steps.</Text>
+      <Text style={styles.intro}>Tap a food, then an idea for the steps.</Text>
       {PROTEIN_COOKING.map((set) => {
         const isOpen = open === set.key;
         return (
@@ -145,7 +146,7 @@ export function CookingIdeasLink({ food }: { food: string }) {
   return (
     <>
       <Pressable onPress={() => setVisible(true)} hitSlop={8} accessibilityLabel={`Cooking ideas for ${food}`}>
-        <Text style={styles.link}>🍳 Ideas</Text>
+        <Text style={styles.link}>Ideas</Text>
       </Pressable>
       <Modal visible={visible} animationType="slide" transparent onRequestClose={() => setVisible(false)}>
         <View style={styles.backdrop}>
@@ -167,6 +168,7 @@ export function CookingIdeasLink({ food }: { food: string }) {
             <Pressable style={styles.close} onPress={() => setVisible(false)}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
+            <SafeBottom />
           </View>
         </View>
       </Modal>

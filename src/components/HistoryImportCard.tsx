@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import { pickScreenshots, pickWebFiles } from "@/lib/pickImportFiles";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -8,12 +8,17 @@ import {
   addImport,
   addedSummary,
   dismissImport,
+  groupUndated,
   importSample,
   importSummary,
   sendForReading,
+  setsLine,
+  unitsLine,
   type ClientImport,
   type ImportFile,
+  type UndatedSet,
 } from "@/lib/historyImport";
+import { useAuth } from "@/context/AuthContext";
 import { themeText, themedStyles } from "@/lib/theme";
 
 // Bring a client's history in from another app (0142, GRIZZ 2026-10-22). The
@@ -24,17 +29,27 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
   const [rows, setRows] = useState<ClientImport[] | null>(null);
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const { trainer } = useAuth();
+  // Workouts that came in with no date (0189), shown as "Before the app".
+  const [undated, setUndated] = useState<UndatedSet[]>([]);
+  const [showUndated, setShowUndated] = useState(false);
+  const [openSession, setOpenSession] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from("client_imports")
-      .select("*")
-      .eq("client_id", clientId)
-      .neq("status", "dismissed")
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const [{ data }, { data: before }] = await Promise.all([
+      supabase
+        .from("client_imports")
+        .select("*")
+        .eq("client_id", clientId)
+        .neq("status", "dismissed")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase.from("client_undated_sets").select("*").eq("client_id", clientId).order("created_at").limit(1000),
+    ]);
     setRows((data as ClientImport[] | null) ?? []);
+    setUndated((before as UndatedSet[] | null) ?? []);
   }, [clientId]);
+  const sessions = groupUndated(undated);
 
   useEffect(() => {
     load();
@@ -57,50 +72,8 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
     load();
   };
 
-  const pickScreenshots = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission needed", "Allow photo access to choose the screenshots.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-      quality: 0.6,
-      base64: true,
-    });
-    if (result.canceled) return;
-    send(
-      result.assets
-        .filter((a) => a.base64)
-        .map((a, i) => ({ name: a.fileName ?? `screenshot-${i + 1}.jpg`, type: a.mimeType ?? "image/jpeg", data: a.base64! })),
-    );
-  };
-
-  // The laptop app can take any export file: CSV, PDF or pictures.
-  const pickFiles = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.accept = ".csv,.tsv,.txt,.json,.pdf,image/*";
-    input.onchange = async () => {
-      const picked = Array.from(input.files ?? []).slice(0, 10);
-      const files = await Promise.all(
-        picked.map(
-          (f) =>
-            new Promise<ImportFile>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve({ name: f.name, type: f.type, data: String(reader.result).split(",")[1] ?? "" });
-              reader.onerror = () => reject(reader.error);
-              reader.readAsDataURL(f);
-            }),
-        ),
-      );
-      send(files.filter((f) => f.data));
-    };
-    input.click();
-  };
+  const pickShots = async () => send(await pickScreenshots());
+  const pickFiles = () => pickWebFiles(send);
 
   const act = async (row: ClientImport, action: "add" | "dismiss") => {
     setBusy(row.id);
@@ -111,10 +84,14 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
   };
 
   const confirmAdd = (row: ClientImport) =>
-    Alert.alert("Add this history?", "It goes into their training log and progress. Days already in the app are left out.", [
+    Alert.alert(
+      "Add this history?",
+      "Dated workouts go into their training log and progress. Ones with no date go under Before the app, and their weights are used as a starting point. Anything already in the app is left out.",
+      [
       { text: "Not yet", style: "cancel" },
-      { text: "Add", onPress: () => act(row, "add") },
-    ]);
+        { text: "Add", onPress: () => act(row, "add") },
+      ],
+    );
 
   return (
     <View>
@@ -124,17 +101,54 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
           : "Send screenshots or the export file from their old app. The app reads it, you check what it found, then add it to their history."}
       </Text>
       <View style={styles.buttons}>
-        <Pressable style={[styles.button, sending && styles.disabled]} onPress={pickScreenshots} disabled={sending}>
-          <Text style={styles.buttonText}>📸 Screenshots</Text>
+        <Pressable style={[styles.button, sending && styles.disabled]} onPress={pickShots} disabled={sending}>
+          <Text style={styles.buttonText}>Screenshots</Text>
         </Pressable>
         {Platform.OS === "web" && (
           <Pressable style={[styles.button, sending && styles.disabled]} onPress={pickFiles} disabled={sending}>
-            <Text style={styles.buttonText}>📄 A file (CSV, PDF)</Text>
+            <Text style={styles.buttonText}>A file (CSV, PDF)</Text>
           </Pressable>
         )}
       </View>
       {Platform.OS !== "web" && <Text style={styles.small}>Got a CSV or PDF file? Send it from the laptop app.</Text>}
+      {role === "trainer" && (
+        <Text style={styles.small}>
+          Numbers with no kg or lb are read as {trainer?.units === "imperial" ? "pounds" : "kg"}. Change it in Settings › Metric or Imperial.
+        </Text>
+      )}
       {sending && <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 10 }} />}
+
+      {sessions.length > 0 && (
+        <View style={styles.row}>
+          <Pressable onPress={() => setShowUndated((v) => !v)} accessibilityRole="button">
+            <Text style={styles.rowTitle}>
+              {showUndated ? "▾" : "▸"} 📜 Before the app · {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
+            </Text>
+          </Pressable>
+          {showUndated && (
+            <>
+              <Text style={styles.small}>
+                Brought in with no dates, oldest first. Dates start once {role === "client" ? "you train" : "they train"} in the app. Until then these weights are the starting point.
+              </Text>
+              {sessions.map((s) => (
+                <View key={s.key}>
+                  <Pressable onPress={() => setOpenSession((k) => (k === s.key ? null : s.key))} accessibilityRole="button">
+                    <Text style={styles.session}>
+                      {openSession === s.key ? "▾" : "▸"} {s.label} · {s.exercises.length} {s.exercises.length === 1 ? "exercise" : "exercises"}
+                    </Text>
+                  </Pressable>
+                  {openSession === s.key &&
+                    s.exercises.map((e) => (
+                      <Text key={e.name} style={styles.sample}>
+                        {e.name}: {setsLine(e.sets)}
+                      </Text>
+                    ))}
+                </View>
+              ))}
+            </>
+          )}
+        </View>
+      )}
 
       {rows?.map((row) => (
         <View key={row.id} style={styles.row}>
@@ -149,6 +163,7 @@ export default function HistoryImportCard({ clientId, role }: { clientId: string
             <>
               <Text style={styles.text}>Found {importSummary(row.result)}.</Text>
               {role === "trainer" && importSample(row.result).map((l) => <Text key={l} style={styles.sample}>{l}</Text>)}
+              {role === "trainer" && unitsLine(row.result) ? <Text style={styles.small}>{unitsLine(row.result)}</Text> : null}
               {row.result.note ? <Text style={styles.small}>{row.result.note}</Text> : null}
               {role === "client" && <Text style={styles.small}>Sent to your coach to check and add.</Text>}
             </>
@@ -185,6 +200,7 @@ const styles = themedStyles({
   rowTitle: { color: "#fff", fontWeight: "700" },
   text: { color: "#CBD5E1", marginTop: 4 },
   sample: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
+  session: { color: "#CBD5E1", fontWeight: "600", marginTop: 8 },
   warn: { color: "#F59E0B", marginTop: 4 },
   done: { color: "#22C55E", marginTop: 4 },
 });

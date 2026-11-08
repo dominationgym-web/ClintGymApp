@@ -48,7 +48,7 @@ export default function WeighInDueBanner() {
       onPress={() => navigation.navigate("ClientTabs", { screen: "Profile", params: { open: "progress" } })}
       accessibilityRole="button"
     >
-      <Text style={styles.title}>⚖️ Weigh-in day</Text>
+      <Text style={styles.title}>Weigh-in day</Text>
       <Text style={styles.body}>Tap to add your weight and measurements.</Text>
     </Pressable>
   );

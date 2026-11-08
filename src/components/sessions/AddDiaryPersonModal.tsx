@@ -9,6 +9,7 @@ import { LONG_DAYS, WEEK_ORDER, cleanTime, regularLabel, sessionMoney } from "@/
 import { firstStarts } from "@/lib/calendarRegular";
 import type { BillingCurrency, RegularTime, SessionSettings } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 const LENGTHS = [30, 40, 45, 60, 90];
 
@@ -137,7 +138,7 @@ export default function AddDiaryPersonModal({
                 {priceOk ? ` · ${sessionMoney(price, currency)} a session` : ""}
               </Text>
             ) : (
-              <Text style={styles.meta}>No set days? Book them one session at a time on the Calendar tab: tap a day › Book a session › type their name.</Text>
+              <Text style={styles.meta}>No set days? Book them from the Calendar tab instead.</Text>
             )}
 
             <Pressable style={[styles.button, !ready && { opacity: 0.5 }]} onPress={save} disabled={!ready || saving}>
@@ -146,6 +147,7 @@ export default function AddDiaryPersonModal({
             <Pressable style={styles.closeRow} onPress={onClose}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>

@@ -45,7 +45,7 @@ export default function CheckInNudgeCard() {
 
   if (rows.length === 0) return null;
   const first = firstName(rows[0].name);
-  const title = rows.length === 1 ? `💬 Check in on ${first}` : `💬 Check in on ${first} and ${rows.length - 1} more`;
+  const title = rows.length === 1 ? `Check in on ${first}` : `Check in on ${first} and ${rows.length - 1} more`;
 
   return (
     <View style={styles.card}>
@@ -81,7 +81,7 @@ export default function CheckInNudgeCard() {
                       }}
                       style={styles.primary}
                     >
-                      <Text style={styles.primaryText}>💬 WhatsApp</Text>
+                      <Text style={styles.primaryText}>WhatsApp</Text>
                     </Pressable>
                   ) : null}
                 </View>

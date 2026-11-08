@@ -124,7 +124,7 @@ export function Pill({ text, tone = "green" }: { text: string; tone?: "green" | 
 export function Tip({ text }: { text: string }) {
   return (
     <View style={styles.tip}>
-      <Text style={styles.tipText}>💡 {text}</Text>
+      <Text style={styles.tipText}>{text}</Text>
     </View>
   );
 }

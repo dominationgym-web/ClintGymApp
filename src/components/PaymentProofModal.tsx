@@ -6,6 +6,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { PAYMENT_PROOF_BUCKET, proofWhen } from "@/lib/paymentProofs";
 import type { PaymentProof } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // The receiver's side of proof of payment (0117): the slip or screenshot, who
 // sent it and when, and one tap to act on it (Activate for a trainer, Record
@@ -57,7 +58,7 @@ export default function PaymentProofModal({
         <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 24 }}>
           {proof ? (
             <>
-              <Text style={styles.title}>🧾 Proof of payment</Text>
+              <Text style={styles.title}>Proof of payment</Text>
               <Text style={styles.line}>
                 From {from} · {proofWhen(proof.created_at)}
               </Text>
@@ -93,6 +94,7 @@ export default function PaymentProofModal({
               </Pressable>
             </>
           ) : null}
+          <SafeBottom />
         </ScrollView>
       </View>
     </Modal>
@@ -107,7 +109,7 @@ const styles = themedStyles({
   amount: { color: BRAND_GOLD, fontSize: 15, fontWeight: "700", marginTop: 6 },
   image: { width: "100%", borderRadius: 10, marginTop: 12, backgroundColor: "#0F172A" },
   helper: { color: "#94A3B8", fontSize: 12, marginTop: 10 },
-  confirm: { backgroundColor: "#22C55E", borderRadius: 10, paddingVertical: 13, alignItems: "center", marginTop: 12 },
+  confirm: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 13, alignItems: "center", marginTop: 12 },
   confirmText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
   secondary: { alignItems: "center", paddingVertical: 12 },
   secondaryText: { color: "#F59E0B", fontWeight: "700", fontSize: 14 },

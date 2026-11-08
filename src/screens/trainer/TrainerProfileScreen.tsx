@@ -17,10 +17,12 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { myPlanPrices } from "@/lib/myPlanPrices";
+import CopyCodeButton from "@/components/CopyCodeButton";
 import { avatarContentType } from "@/lib/avatars";
 import {
   EFT_FIELDS,
   REFERRAL_DISCOUNT_PERCENT,
+  REFERRALS_PER_FREE_MONTH,
   REFERRAL_WAIT_MONTHS,
   TRAINER_LOGO_BUCKET,
   type ReferralProgress,
@@ -41,9 +43,10 @@ import MyTraining from "@/components/MyTraining";
 import OwnerChallenges from "@/components/OwnerChallenges";
 import FoldSection from "@/components/FoldSection";
 import ThemePicker from "@/components/ThemePicker";
+import UnitsPicker, { UNITS_HINT } from "@/components/UnitsPicker";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
-import type { BillingPrices, EftDetails } from "@/types/database";
+import type { BillingPrices, EftDetails, Units } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
 type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "settings";
@@ -61,7 +64,7 @@ const TABS: ScreenTab<TabKey>[] = [
 
 // A trainer's own setup (0029): the code their clients sign up with, the logo
 // their clients see, and the payment details shown after a client signs up.
-type SettingKey = "details" | "payments" | "theme" | "account";
+type SettingKey = "details" | "payments" | "units" | "theme" | "account";
 let lastOpenSetting: SettingKey | null = null;
 
 export default function TrainerProfileScreen() {
@@ -181,6 +184,16 @@ export default function TrainerProfileScreen() {
     Alert.alert("Saved", "Your profile is up to date.");
   };
 
+  const saveUnits = async (units: Units) => {
+    if (units === (trainer.units ?? "metric")) return;
+    const { error } = await supabase.from("trainers").update({ units }).eq("id", trainer.id);
+    if (error) {
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    await refreshProfile();
+  };
+
   const togglePlanningReminders = async (on: boolean) => {
     const { error } = await supabase.from("trainers").update({ planning_reminders: on }).eq("id", trainer.id);
     if (error) {
@@ -214,12 +227,14 @@ export default function TrainerProfileScreen() {
               <Text style={styles.label}>Your trainer code</Text>
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
-                New clients type this when they sign up, so they join you.
-                {trainer.is_owner ? "" : " It's also your referral code: a trainer who signs up with it counts as your referral (Plan & refer)."}
+                {trainer.is_owner ? "Clients sign up with this code." : "Clients and trainers sign up with this code."}
               </Text>
-              <Pressable style={styles.secondaryButton} onPress={shareCode}>
-                <Text style={styles.secondaryButtonText}>Share my code</Text>
-              </Pressable>
+              <View style={styles.codeButtons}>
+                <CopyCodeButton code={trainer.join_code} />
+                <Pressable style={[styles.secondaryButton, styles.codeButton]} onPress={shareCode}>
+                  <Text style={styles.secondaryButtonText}>Share my code</Text>
+                </Pressable>
+              </View>
             </View>
           </>
         )}
@@ -243,13 +258,16 @@ export default function TrainerProfileScreen() {
               <Text style={styles.code}>{trainer.join_code}</Text>
               <Text style={[styles.hint, { textAlign: "center" }]}>
                 Another trainer enters this when they sign up. For each one who's still with Daily Evolution{" "}
-                {REFERRAL_WAIT_MONTHS} months after their free trial, you get {REFERRAL_DISCOUNT_PERCENT}% off a month. 4 referrals = a
+                {REFERRAL_WAIT_MONTHS} months after their free trial, you get {REFERRAL_DISCOUNT_PERCENT}% off a month. {REFERRALS_PER_FREE_MONTH} referrals = a
                 free month. {referralCreditUseLine(!!trainer.free_use_from)} If you cancel, unused
-                referrals are paid out to you.
+                referrals become free extra months (no cash refunds).
               </Text>
-              <Pressable style={styles.secondaryButton} onPress={shareReferral}>
-                <Text style={styles.secondaryButtonText}>Share with a trainer</Text>
-              </Pressable>
+              <View style={styles.codeButtons}>
+                <CopyCodeButton code={trainer.join_code} />
+                <Pressable style={[styles.secondaryButton, styles.codeButton]} onPress={shareReferral}>
+                  <Text style={styles.secondaryButtonText}>Share with a trainer</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.rewardRow}>
@@ -298,7 +316,7 @@ export default function TrainerProfileScreen() {
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <Text style={styles.switchTitle}>Planning reminders</Text>
                   <Text style={styles.hint}>
-                    A reminder 2 days and 1 day before a client's planned workouts on their training calendar run out, so you can plan their next week.
+                    A reminder 2 days before a client's planned workouts run out.
                   </Text>
                 </View>
                 <Switch
@@ -328,6 +346,16 @@ export default function TrainerProfileScreen() {
               <Pressable style={styles.button} onPress={save} disabled={saving}>
                 {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save</Text>}
               </Pressable>
+            </FoldSection>
+            <FoldSection
+              icon="📏"
+              title="Metric or Imperial"
+              hint={trainer.units === "imperial" ? "Imperial: lb and inches" : "Metric: kg and cm"}
+              open={openSetting === "units"}
+              onToggle={() => toggleSetting("units")}
+            >
+              <Text style={styles.hint}>{UNITS_HINT}</Text>
+              <UnitsPicker value={trainer.units === "imperial" ? "imperial" : "metric"} onChange={saveUnits} />
             </FoldSection>
             <FoldSection icon="🌗" title="Light or dark" hint="Dark, Light or Match phone" open={openSetting === "theme"} onToggle={() => toggleSetting("theme")}>
               <ThemePicker showTitle={false} />
@@ -361,10 +389,12 @@ const styles = themedStyles({
   label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6, marginTop: 6 },
   readOnly: { color: "#E2E8F0", fontSize: 15, marginBottom: 6 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12, marginBottom: 6 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   secondaryButton: { borderColor: "#22C55E", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20, marginTop: 8 },
   secondaryButtonText: { color: "#22C55E", fontWeight: "700" },
+  codeButtons: { flexDirection: "row", gap: 10, flexWrap: "wrap", justifyContent: "center" },
+  codeButton: { paddingHorizontal: 16 },
   trialBox: { backgroundColor: "#1E293B", borderRadius: 12, borderWidth: 1, borderColor: "#22C55E", padding: 14, marginBottom: 14 },
   trialTitle: { color: "#fff", fontSize: 17, fontWeight: "800" },
   rewardRow: { flexDirection: "row", gap: 10, marginTop: 6 },

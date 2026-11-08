@@ -59,7 +59,7 @@ export default function ResetReminderBanner() {
   if (!text) return null;
   return (
     <Pressable style={styles.banner} onPress={() => navigation.navigate("ClientTabs", { screen: "Reset" })}>
-      <Text style={styles.title}>🌿 Your Reset today</Text>
+      <Text style={styles.title}>Your Reset today</Text>
       <Text style={styles.text}>{text}</Text>
     </Pressable>
   );

@@ -81,7 +81,7 @@ export default function InjuryList({
       {open.map((r) => (
         <View key={r.id} style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.area}>🩹 {r.area}</Text>
+            <Text style={styles.area}>{r.area}</Text>
             {r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
             <Text style={styles.since}>Since {r.created_at.slice(0, 10)}</Text>
           </View>

@@ -50,7 +50,7 @@ export default function WeighInReminder() {
   const label = WEIGH_IN_OPTIONS.find((o) => o.key === every)!.label.toLowerCase();
   return (
     <Pressable style={styles.banner} onPress={() => navigation.navigate("ClientTabs", { screen: "Profile", params: { open: "progress" } })} accessibilityRole="button">
-      <Text style={styles.title}>⚖️ Weigh-in due</Text>
+      <Text style={styles.title}>Weigh-in due</Text>
       <Text style={styles.text}>Your coach asks you to weigh and measure {label}. Add your weight and measurements to clear this.</Text>
       <Text style={styles.link}>Add them now ›</Text>
     </Pressable>

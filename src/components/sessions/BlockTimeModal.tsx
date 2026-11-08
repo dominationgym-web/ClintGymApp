@@ -10,6 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 import { blockRanges, sessionsInBlock } from "@/lib/timeOff";
 import type { BillingCurrency, LiveSession, TrainerTimeOff } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 const LENGTHS = [1, 2, 3, 5, 7, 14];
 
@@ -78,8 +79,8 @@ export default function BlockTimeModal({
       <KeyboardSafe>
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>🚫 Block out time</Text>
-            <Text style={styles.helper}>For when you're away or can't train. Booked sessions are cancelled and not charged, each client gets your reason, and their sessions go on your catch-up list (under Today) to book again.</Text>
+            <Text style={styles.title}>Block out time</Text>
+            <Text style={styles.helper}>Sessions are cancelled free, clients get your reason, and catch-ups go on Today.</Text>
 
             <Text style={styles.label}>From {dayLabel(`${firstDay}T12:00:00`)}, for</Text>
             <View style={styles.chips}>
@@ -145,6 +146,7 @@ export default function BlockTimeModal({
             <Pressable style={styles.outline} onPress={onClose}>
               <Text style={styles.outlineText}>Cancel</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>
@@ -219,12 +221,12 @@ export function TimeOffSection({
     <>
       {onDay.map((b) => (
         <View key={b.id} style={styles.blockNote}>
-          <Text style={styles.previewTitle}>🚫 Blocked out · {blockWhen(b)}</Text>
+          <Text style={styles.previewTitle}>Blocked out · {blockWhen(b)}</Text>
           <Text style={styles.meta}>{b.reason}</Text>
         </View>
       ))}
       <Pressable style={styles.outline} onPress={() => setBlocking(true)}>
-        <Text style={styles.outlineText}>🚫 Block out time from {dayLabel(`${day}T12:00:00`)}</Text>
+        <Text style={styles.outlineText}>Block out time from {dayLabel(`${day}T12:00:00`)}</Text>
       </Pressable>
       {coming.length ? <Text style={styles.label}>Your time off</Text> : null}
       {coming.map((b) => (

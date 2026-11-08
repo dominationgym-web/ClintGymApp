@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
-import { clientTierLines, freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, PRICE_SIDE_LABEL, shortDate, sidePricing } from "@/lib/billing";
+import { clientTierLines, diaryTierLine, freeUseFeesStart, money, PLAN_LABEL, planPrice, planState, planStateLabel, PRICE_SIDE_LABEL, shortDate, sidePricing } from "@/lib/billing";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
 import CardPayment from "@/components/CardPayment";
@@ -61,7 +61,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
     <View style={[styles.box, due && styles.boxDue]}>
       {freeUse ? (
         <>
-          <Text style={styles.title}>🎁 You're on free use</Text>
+          <Text style={styles.title}>You're on free use</Text>
           <Text style={styles.line}>No monthly subscription.</Text>
           <Text style={styles.line}>
             {SELLS
@@ -90,7 +90,7 @@ export default function TrainerPlanCard({ trainer, showPayment = false }: { trai
       {SELLS && status.client_fees_from && !freeUse ? (
         <Text style={styles.line}>
           Client fees from {shortDate(status.client_fees_from)}, a month per active client:{" "}
-          {clientTierLines(pricing.tiers, currency, pricing.included).join(", ")}.{side === "one_on_one" ? " Clients are everyone on your calendar that month." : " People only in your 1 on 1 diary count in the months they have a session."}
+          {clientTierLines(pricing.tiers, currency, pricing.included).join(", ")}.{side === "one_on_one" ? " Clients are everyone on your calendar that month." : ` ${diaryTierLine(settings, currency) ?? "People only in your 1 on 1 diary count"}, in the months they have a session. Someone on both sides counts once.`}
         </Text>
       ) : null}
       {owed > 0 ? (

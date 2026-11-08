@@ -5,6 +5,8 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { emailShareLink, shoppingList, shoppingListText, weekShoppingList, whatsappShareLink } from "@/lib/shoppingList";
 import type { DietDay } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // The week's shopping list from the client's meal plan (GRIZZ, 2026-10-27).
 // When they train, it first asks how many days this week, as training days
@@ -19,6 +21,7 @@ export default function ShoppingListSheet({
   onDays,
   onClose,
   week,
+  saveKey,
 }: {
   visible: boolean;
   trainingDay: DietDay;
@@ -32,9 +35,13 @@ export default function ShoppingListSheet({
   onClose: () => void;
   /** A weekly plan (GRIZZ, 2026-11-02): the list adds up its seven days, so there's no days question. */
   week?: DietDay[] | null;
+  /** Where the ticks are kept, so they're still there when the list opens again. */
+  saveKey?: string;
 }) {
   const asks = trains && !week;
-  const [page, setPage] = useState<"days" | "list">(asks ? "days" : "list");
+  // Straight to the list (GRIZZ, 2026-11-07): the days come from the plan or
+  // their sign-up form, and "Change my training days" is under the list.
+  const [page, setPage] = useState<"days" | "list">("list");
   const [picked, setPicked] = useState(days);
   const [open, setOpen] = useState(0);
   const [ticked, setTicked] = useState<Set<string>>(new Set());
@@ -49,9 +56,15 @@ export default function ShoppingListSheet({
 
   useEffect(() => {
     if (!visible) return;
-    setPage(asks ? "days" : "list");
+    setPage("list");
     setPicked(days);
     setOpen(0);
+    if (!saveKey) return;
+    AsyncStorage.getItem(`shopping-ticks:${saveKey}`)
+      .then((text) => {
+        if (text) setTicked(new Set(JSON.parse(text) as string[]));
+      })
+      .catch(() => {});
   }, [visible]);
 
   const list = week ? weekShoppingList(week, days) : shoppingList(trainingDay, restDay, trains ? picked : 0);
@@ -61,6 +74,7 @@ export default function ShoppingListSheet({
     if (next.has(name)) next.delete(name);
     else next.add(name);
     setTicked(next);
+    if (saveKey) AsyncStorage.setItem(`shopping-ticks:${saveKey}`, JSON.stringify([...next])).catch(() => {});
   };
   // WhatsApp and email work on phones and the laptop; More opens the phone's
   // share menu (SMS, Notes and so on), which some laptop browsers don't have.
@@ -87,7 +101,7 @@ export default function ShoppingListSheet({
         <View style={styles.sheet}>
           {page === "days" ? (
             <View>
-              <Text style={styles.title}>🛒 Your shopping list</Text>
+              <Text style={styles.title}>Your shopping list</Text>
               <Text style={styles.question}>How many days are you training this week?</Text>
               <Text style={styles.helper}>Training days have more food, so the list adds up the right amount for your week.</Text>
               <View style={styles.chips}>
@@ -104,19 +118,18 @@ export default function ShoppingListSheet({
                 style={[styles.button, styles.primary]}
                 onPress={() => {
                   onDays(picked);
-                  setTicked(new Set());
                   setPage("list");
                 }}
               >
-                <Text style={styles.primaryText}>Make my list</Text>
+                <Text style={styles.primaryText}>Update my list</Text>
               </Pressable>
-              <Pressable style={[styles.button, styles.secondary]} onPress={onClose}>
-                <Text style={styles.secondaryText}>Not now</Text>
+              <Pressable style={[styles.button, styles.secondary]} onPress={() => setPage("list")}>
+                <Text style={styles.secondaryText}>Back to my list</Text>
               </Pressable>
             </View>
           ) : (
             <View style={{ flexShrink: 1 }}>
-              <Text style={styles.title}>🛒 Your shopping list for the week</Text>
+              <Text style={styles.title}>Your shopping list for the week</Text>
               <Text style={styles.helper}>
                 {week
                   ? "For the 7 days of this week's plan. "
@@ -165,14 +178,14 @@ export default function ShoppingListSheet({
               <Text style={styles.sendLabel}>Send my list</Text>
               <View style={styles.row}>
                 <Pressable style={[styles.sendButton, styles.whatsapp]} onPress={() => openLink(whatsappShareLink(shoppingListText(list)), "WhatsApp")}>
-                  <Text style={styles.sendText}>💬 WhatsApp</Text>
+                  <Text style={styles.sendText}>WhatsApp</Text>
                 </Pressable>
                 <Pressable style={[styles.sendButton, styles.secondary]} onPress={() => openLink(emailShareLink(shoppingListText(list)), "your email")}>
-                  <Text style={styles.sendText}>✉️ Email</Text>
+                  <Text style={styles.sendText}>Email</Text>
                 </Pressable>
                 {canShare && (
                   <Pressable style={[styles.sendButton, styles.secondary]} onPress={send}>
-                    <Text style={styles.sendText}>📤 More</Text>
+                    <Text style={styles.sendText}>More</Text>
                   </Pressable>
                 )}
               </View>
@@ -186,6 +199,7 @@ export default function ShoppingListSheet({
               )}
             </View>
           )}
+          <SafeBottom />
         </View>
       </View>
     </Modal>

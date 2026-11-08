@@ -16,13 +16,15 @@ import { sessionTitle } from "@/lib/programSchedule";
 import { EFFORT_OPTIONS } from "@/lib/progression";
 import { parseWeight } from "@/lib/weightInput";
 import { findImprovements } from "@/lib/workoutSessions";
-import { exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import { categoryLabel, exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
+import { ExerciseThumb } from "@/components/YouTubeCard";
 import { MAX_GROUP, clientSets, nextSetNumber, setsByClient, slotFor, startWeight } from "@/lib/groupSession";
 import { SUPERSET_MAX, SUPERSET_MIN, roundProblem, type RoundEntry } from "@/lib/superset";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { Client, Exercise, SetEffort, WorkoutLog } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // Group live session (GRIZZ, 2026-10-21): "a trainer might be training up to
 // 4 people ... the same session ... when the session is done it logs it all
@@ -30,7 +32,7 @@ import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 // client's own id (0134 trainer policy), and each client keeps one colour and
 // letter (src/lib/groupSession.ts) on their card, on the set box and on its
 // Save button. Finish saves each client's day as in person (0138).
-// "⚡ Do a superset" (2026-10-23) ticks 2-4 of the session's exercises; each
+// "Do a superset" (2026-10-23) ticks 2-4 of the session's exercises; each
 // card then logs a whole round of them for that person at once.
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "GroupLive">;
@@ -374,7 +376,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         {superset && supersetSteps.length >= SUPERSET_MIN ? (
           <>
             <View style={[styles.stepRow, { flexDirection: "column", alignItems: "stretch" }]}>
-              <Text style={[styles.stepCount, { textAlign: "center" }]}>⚡ Superset · one set of each, back to back</Text>
+              <Text style={[styles.stepCount, { textAlign: "center" }]}>Superset · one set of each, back to back</Text>
               {supersetSteps.map((s, i) => (
                 <Text key={s.name} style={styles.supersetLine}>
                   {i + 1}. {s.name} <Text style={styles.helper}>({s.sets} × {s.reps})</Text>
@@ -398,7 +400,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                       </Text>
                     </View>
                     {holds[c.id] ? (
-                      <Text style={styles.hold}>🩺 On hold</Text>
+                      <Text style={styles.hold}>On hold</Text>
                     ) : (
                       <>
                         {supersetSteps.map((s, i) => {
@@ -454,7 +456,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                       </Text>
                     </View>
                     {holds[c.id] ? (
-                      <Text style={styles.hold}>🩺 On hold</Text>
+                      <Text style={styles.hold}>On hold</Text>
                     ) : (
                       <>
                         <Text style={styles.cardSets}>
@@ -491,7 +493,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         </Pressable>
         {!superset && (
           <Pressable style={styles.addButton} onPress={() => setChoosing([])}>
-            <Text style={styles.addText}>⚡ Do a superset (2-4 exercises)</Text>
+            <Text style={styles.addText}>Do a superset (2-4 exercises)</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -548,6 +550,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 <Pressable style={styles.cancel} onPress={() => setEntryFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
+                <SafeBottom />
               </View>
             )}
           </View>
@@ -558,7 +561,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         <View style={styles.sheetWrap}>
           {choosing && (
             <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>⚡ Pick 2-4 exercises, in the order you'll do them</Text>
+              <Text style={styles.sheetTitle}>Pick 2-4 exercises, in the order you'll do them</Text>
               <ScrollView style={{ maxHeight: 320 }}>
                 {steps.map((s, i) => {
                   const at = choosing.indexOf(i);
@@ -586,6 +589,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               <Pressable style={styles.cancel} onPress={() => setChoosing(null)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
+              <SafeBottom />
             </View>
           )}
         </View>
@@ -639,6 +643,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 <Pressable style={styles.cancel} onPress={() => setRoundFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
+                <SafeBottom />
               </View>
             )}
           </View>
@@ -672,6 +677,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               <Pressable style={styles.cancel} onPress={() => setMoving(null)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
+              <SafeBottom />
             </View>
           )}
         </View>
@@ -705,9 +711,12 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
             </ScrollView>
             <ScrollView keyboardShouldPersistTaps="handled">
               {filterExercises(shown, search, category).map((e) => (
-                <Pressable key={e.id} style={styles.libRow} onPress={() => addExercise(e)}>
-                  <Text style={styles.pickName}>{e.name}</Text>
-                  {e.category && <Text style={styles.helper}>{e.category}</Text>}
+                <Pressable key={e.id} style={[styles.libRow, styles.libRowWithPic]} onPress={() => addExercise(e)}>
+                  <ExerciseThumb url={e.external_url} />
+                  <View style={styles.libRowText}>
+                    <Text style={styles.pickName}>{e.name}</Text>
+                    {e.category && <Text style={styles.helper}>{categoryLabel(e.category)}</Text>}
+                  </View>
                 </Pressable>
               ))}
             </ScrollView>
@@ -759,7 +768,7 @@ const styles = themedStyles({
   addText: { color: BRAND_GOLD, fontWeight: "800" },
   footer: { padding: 12, borderTopWidth: 1, borderTopColor: "#1E293B", backgroundColor: "#0F172A" },
   footerCounts: { color: "#94A3B8", textAlign: "center", marginBottom: 8, fontSize: 13 },
-  finishButton: { backgroundColor: "#22C55E", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
+  finishButton: { backgroundColor: "#D4AF37", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
   off: { backgroundColor: "#334155" },
   finishText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
   toast: { position: "absolute", top: 12, left: 16, right: 16, backgroundColor: "#14532D", borderRadius: 10, padding: 12 },
@@ -780,4 +789,6 @@ const styles = themedStyles({
   supersetLine: { color: "#fff", fontSize: 15, fontWeight: "700", marginTop: 4 },
   roundBox: { borderBottomWidth: 1, borderBottomColor: "#334155", paddingBottom: 10, marginBottom: 10 },
   libRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 6 },
+  libRowWithPic: { flexDirection: "row", alignItems: "center" },
+  libRowText: { flex: 1 },
 });

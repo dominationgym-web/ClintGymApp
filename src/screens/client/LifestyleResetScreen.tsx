@@ -45,6 +45,7 @@ import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import WeekBrowser from "@/components/reset/WeekBrowser";
 import ResetTraining from "@/components/reset/ResetTraining";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 type HabitKey = ResetHabitKey;
 type TabKey = "plan" | "training" | "guide";
@@ -315,7 +316,7 @@ export default function LifestyleResetScreen() {
 
             {finished && (
               <View style={styles.finishedCard}>
-                <Text style={styles.finishedTitle}>🎉 You finished the 12 weeks!</Text>
+                <Text style={styles.finishedTitle}>You finished the 12 weeks!</Text>
                 <Text style={styles.heroText}>Keep the habits that helped most. Chat to your coach about what's next.</Text>
                 <Pressable style={styles.secondaryButton} onPress={restart}>
                   <Text style={styles.secondaryButtonText}>Start again from week 1</Text>
@@ -368,7 +369,7 @@ export default function LifestyleResetScreen() {
                 style={styles.cycleLink}
                 onPress={() => navigation.navigate("Section", { sectionKey: "womensHealthReset", open: "Cycle tracker" })}
               >
-                <Text style={styles.cycleLinkText}>🌸 Your cycle: log your period and see your phase ›</Text>
+                <Text style={styles.cycleLinkText}>Your cycle: log your period and see your phase ›</Text>
               </Pressable>
             )}
             <LifestyleResetContent sex={client?.sex} />
@@ -546,6 +547,7 @@ function HabitGuideSheet({
               {done ? "✓ Done today" : "Mark as done today"}
             </Text>
           </Pressable>
+          <SafeBottom />
         </View>
       )}
     </Modal>

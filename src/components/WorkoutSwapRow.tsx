@@ -119,7 +119,7 @@ export default function WorkoutSwapRow({
     return (
       <View style={styles.note}>
         <Text style={styles.noteText}>
-          🔄 Swapped: today's planned workout moved to {weekdayOf(mine.later_date)}. Your coach knows.
+          Swapped: today's planned workout moved to {weekdayOf(mine.later_date)}. Your coach knows.
         </Text>
         {!startedToday &&
           (busy ? (
@@ -135,7 +135,7 @@ export default function WorkoutSwapRow({
   if (swappedIn) {
     return (
       <View style={styles.note}>
-        <Text style={styles.noteText}>🔄 Swapped here from {weekdayOf(swappedIn.swapped_on)}, so this one stays today.</Text>
+        <Text style={styles.noteText}>Swapped here from {weekdayOf(swappedIn.swapped_on)}, so this one stays today.</Text>
       </View>
     );
   }
@@ -146,7 +146,7 @@ export default function WorkoutSwapRow({
         <ActivityIndicator color={themeText("#fff")} />
       ) : (
         <Text style={styles.chipText}>
-          🔄 Not feeling it? Swap with {swapDayName(today, next.date)} {next.name}
+          Not feeling it? Swap with {swapDayName(today, next.date)} {next.name}
         </Text>
       )}
     </Pressable>

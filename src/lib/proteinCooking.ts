@@ -1352,6 +1352,33 @@ export const LIGHT_SAUCES: LightSauce[] = [
     ingredients: ["2 tbsp low-sodium soy sauce", "1 tbsp lemon juice or rice vinegar", "1 tsp grated ginger", "1 small garlic clove, crushed", "Half a tsp honey and a pinch of chilli"],
     steps: ["Mix everything together.", "Leave 5 minutes for the ginger to flavour it.", "Keeps a week in the fridge."],
   },
+  {
+    name: "Lemon garlic sauce",
+    icon: "🍋",
+    kcal: 25,
+    serves: 4,
+    goesWith: "Fish, prawns, chicken, veg and salads.",
+    ingredients: ["150 g fat-free Greek yoghurt", "Juice and grated peel of 1 lemon", "2 garlic cloves, crushed", "1 tsp olive oil", "Fresh parsley, salt and black pepper"],
+    steps: ["Mix the yoghurt, lemon juice, peel, garlic and oil.", "Stir in the chopped parsley and season with salt and pepper.", "Leave 10 minutes so the garlic softens. Keeps 3 days in the fridge."],
+  },
+  {
+    name: "Honey mustard sauce",
+    icon: "🟡",
+    kcal: 30,
+    serves: 4,
+    goesWith: "Chicken, pork, gammon, salmon and roast veg.",
+    ingredients: ["2 tbsp Dijon mustard", "1 tbsp wholegrain mustard", "1 tbsp honey", "2 tbsp fat-free Greek yoghurt", "1 tbsp lemon juice or apple cider vinegar", "A pinch of salt"],
+    steps: ["Whisk the mustards, honey and lemon juice together.", "Stir in the yoghurt until smooth.", "Use as a dip or brush on chicken in the last 5 minutes of cooking. Keeps 5 days in the fridge."],
+  },
+  {
+    name: "Light sweet chilli sauce",
+    icon: "🔥",
+    kcal: 20,
+    serves: 6,
+    goesWith: "Chicken, prawns, fish cakes, stir-fries and tofu.",
+    ingredients: ["100 ml water", "3 tbsp rice vinegar or white vinegar", "1 tbsp honey", "1 to 2 red chillies, chopped small", "1 garlic clove, crushed", "1 tsp cornflour mixed with 1 tbsp water", "A pinch of salt"],
+    steps: ["Simmer the water, vinegar, honey, chilli, garlic and salt for 3 minutes.", "Stir in the cornflour mix and cook 1 minute until it thickens.", "Let it cool. Keeps a week in the fridge (shop ones have about 4 times the sugar)."],
+  },
 ];
 
 /** The cooking ideas for a food from the food list, if it is a protein we have ideas for. */

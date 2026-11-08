@@ -290,7 +290,7 @@ function WhatsAppButton({ clientId, phone, strong }: { clientId: string; phone: 
         Linking.openURL(link);
       }}
     >
-      <Text style={strong ? styles.smallButtonText : styles.outlineText}>💬 WhatsApp</Text>
+      <Text style={strong ? styles.smallButtonText : styles.outlineText}>WhatsApp</Text>
     </Pressable>
   );
 }
@@ -349,7 +349,7 @@ function Times({
   return (
     <>
       <Text style={styles.helper}>
-        Tap a day, then tap the times you're free for a video check-in. Clients book from these times, up to two weeks ahead, and you confirm each one.
+        Tap a day, then the times you're free. Clients book up to two weeks ahead.
         {settings ? ` Calls are ${settings.minutes} minutes (change it under Call setup).` : ""}
       </Text>
       <View style={styles.chips}>
@@ -431,7 +431,7 @@ function Setup({ settings, onSaved }: { settings: VideoCheckinSettings | null; o
   return (
     <>
       <Text style={styles.helper}>
-        Calls happen on WhatsApp. At the booked time, tap WhatsApp on the Bookings tab: it opens the chat with your client, then tap the video button to call them.
+        At the booked time, tap WhatsApp on Bookings and video call them.
       </Text>
       <Text style={styles.label}>Your WhatsApp number</Text>
       <TextInput style={styles.input} value={whatsapp} onChangeText={setWhatsapp} keyboardType="phone-pad" placeholder="082 123 4567" placeholderTextColor="#64748B" />

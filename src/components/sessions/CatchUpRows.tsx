@@ -46,7 +46,7 @@ export default function CatchUpRows({
 
   return (
     <>
-      <Text style={styles.title}>{onlyLate ? "⚠️ Decide before you send invoices" : "🔁 Catch-ups to book"}</Text>
+      <Text style={styles.title}>{onlyLate ? "⚠️ Decide before you send invoices" : "Catch-ups to book"}</Text>
       {late ? (
         <Text style={styles.warn}>
           {late === 1 ? "1 catch-up wasn't" : `${late} catch-ups weren't`} done in time. Credit {late === 1 ? "it" : "them"} or move {late === 1 ? "it" : "them"} to next month
@@ -64,8 +64,9 @@ export default function CatchUpRows({
           </Text>
           <View style={styles.actions}>
             {onCatchUp ? (
-              <Pressable style={styles.button} onPress={() => onCatchUp(s)}>
-                <Text style={styles.buttonText}>Find a gap</Text>
+              // Green like the open slots, to get catch-ups booked (GRIZZ, 2026-11-03).
+              <Pressable style={styles.gapButton} onPress={() => onCatchUp(s)}>
+                <Text style={styles.gapButtonText}>Find a gap ›</Text>
               </Pressable>
             ) : null}
             {due === "late" ? (
@@ -74,7 +75,7 @@ export default function CatchUpRows({
                   {busy === s.id + "credit" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>🟢 Credit</Text>}
                 </Pressable>
                 <Pressable style={styles.outline} onPress={() => decide(s, "next")} disabled={!!busy}>
-                  {busy === s.id + "next" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>➡️ Next month</Text>}
+                  {busy === s.id + "next" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>Next month</Text>}
                 </Pressable>
               </>
             ) : null}
@@ -95,6 +96,8 @@ const styles = themedStyles({
   actions: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 8 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9, minWidth: 90, alignItems: "center" },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 14 },
+  gapButton: { backgroundColor: "#22C55E", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9, minWidth: 90, alignItems: "center" },
+  gapButtonText: { color: "#052E16", fontWeight: "800", fontSize: 14 },
   outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, minWidth: 90, alignItems: "center" },
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
 });

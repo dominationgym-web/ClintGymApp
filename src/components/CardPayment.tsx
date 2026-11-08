@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { money, shortDate } from "@/lib/billing";
+import { REFERRAL_DISCOUNT_PERCENT } from "@/lib/trainers";
 import {
   cancelCard,
   cardExpired,
@@ -85,7 +86,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
 
   return (
     <View style={styles.box}>
-      <Text style={styles.title}>💳 Pay by card</Text>
+      <Text style={styles.title}>Pay by card</Text>
       {quote && quote.total <= 0 && quote.referral_credits > 0 ? (
         <>
           {quote.plan_amount > 0 && (
@@ -94,7 +95,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
             </Text>
           )}
           <Text style={styles.line}>
-            Referral credit ({quote.referral_credits} × 25%): -{money(quote.credit_amount, quote.currency)}
+            Referral credit ({quote.referral_credits} × {REFERRAL_DISCOUNT_PERCENT}%): -{money(quote.credit_amount, quote.currency)}
           </Text>
           <Pressable style={styles.pay} onPress={() => go(() => startCardCheckout(autopay))} disabled={busy}>
             {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.payText}>Use my referral credit</Text>}
@@ -110,7 +111,7 @@ export default function CardPayment({ trainerId }: { trainerId: string }) {
           {quote.fees_amount > 0 && <Text style={styles.line}>Client fees: {money(quote.fees_amount, quote.currency)}</Text>}
           {quote.referral_credits > 0 && (
             <Text style={styles.line}>
-              Referral credit ({quote.referral_credits} × 25%): -{money(quote.credit_amount, quote.currency)}
+              Referral credit ({quote.referral_credits} × {REFERRAL_DISCOUNT_PERCENT}%): -{money(quote.credit_amount, quote.currency)}
             </Text>
           )}
           <Pressable style={styles.check} onPress={() => setAutopay((v) => !v)}>
@@ -206,7 +207,7 @@ const styles = themedStyles({
   box18: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: "#64748B" },
   box18On: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   checkText: { color: "#E2E8F0", fontSize: 13, flex: 1, lineHeight: 18 },
-  pay: { backgroundColor: "#22C55E", borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  pay: { backgroundColor: "#D4AF37", borderRadius: 8, paddingVertical: 12, alignItems: "center", marginTop: 12 },
   payText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
   row: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
   secondary: { borderWidth: 1, borderColor: "#475569", borderRadius: 8, paddingVertical: 9, paddingHorizontal: 12, alignItems: "center" },

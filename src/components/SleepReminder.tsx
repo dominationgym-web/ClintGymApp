@@ -36,7 +36,7 @@ export default function SleepReminder() {
   if (!tip) return null;
   return (
     <Pressable style={styles.banner} onPress={() => navigation.navigate("Section", { sectionKey: "sleepRecovery" })}>
-      <Text style={styles.title}>🌙 Time to start winding down</Text>
+      <Text style={styles.title}>Time to start winding down</Text>
       <Text style={styles.text}>{tip}</Text>
       <Text style={styles.link}>More sleep tips</Text>
     </Pressable>

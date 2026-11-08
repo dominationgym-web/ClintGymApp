@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,10 @@ import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
 import PrivacyPolicyContent, { PRIVACY_POLICY_VERSION } from "@/screens/auth/PrivacyPolicyContent";
 import { themeText, themedStyles } from "@/lib/theme";
+import type * as ImagePicker from "expo-image-picker";
+import AwardProfileFields from "@/components/award/AwardProfileFields";
+import type { GoalDirection } from "@/lib/award";
+import { saveAwardProfile } from "@/lib/awardUploads";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Signup">;
 
@@ -45,8 +49,8 @@ const PACKAGES: { key: PackageType; label: string; description: string }[] = [
 ];
 
 const TRAINING_PLACES: { key: "gym" | "home"; label: string; description: string }[] = [
-  { key: "gym", label: "🏋️ Gym", description: "Full gym with machines and free weights." },
-  { key: "home", label: "🏠 Home", description: "Dumbbells, kettlebells, bands or just your bodyweight. Your workouts use home exercises." },
+  { key: "gym", label: "Gym", description: "Full gym with machines and free weights." },
+  { key: "home", label: "Home", description: "Dumbbells, kettlebells, bands or just your bodyweight. Your workouts use home exercises." },
 ];
 
 export default function SignupScreen({ navigation }: Props) {
@@ -64,6 +68,14 @@ export default function SignupScreen({ navigation }: Props) {
   const [trainerCode, setTrainerCode] = useState("");
   const [trainer, setTrainer] = useState<JoinableTrainer | null>(null);
   const [checkingCode, setCheckingCode] = useState(false);
+  // Trainer of the Half-Year (0194): a face photo and goal, only while it's switched on.
+  const [awardOn, setAwardOn] = useState(false);
+  const [facePhoto, setFacePhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [faceConsent, setFaceConsent] = useState(false);
+  const [goal, setGoal] = useState<GoalDirection | null>(null);
+  useEffect(() => {
+    supabase.rpc("award_signup_needs").then(({ data }) => setAwardOn(data === true));
+  }, []);
 
   // Leaving the code box and tapping "Continue" can both look the code up at
   // once; they share one request so the client sees at most one alert.
@@ -125,6 +137,21 @@ export default function SignupScreen({ navigation }: Props) {
         "You need to accept the privacy policy and consent to data processing before creating an account."
       );
       return;
+    }
+
+    if (awardOn) {
+      if (!goal) {
+        Alert.alert("Pick your main goal", "Lose fat, Build muscle or Maintain.");
+        return;
+      }
+      if (!facePhoto) {
+        Alert.alert("Face photo needed", "Add a clear photo of your face.");
+        return;
+      }
+      if (!faceConsent) {
+        Alert.alert("Consent needed", "Tick the box to agree to how your face photo is used.");
+        return;
+      }
     }
 
     const joined = await lookUpTrainer();
@@ -209,6 +236,11 @@ export default function SignupScreen({ navigation }: Props) {
       return;
     }
 
+    // The face photo and goal. If this fails (no signal) the Today tab asks again.
+    if (awardOn && facePhoto) {
+      await saveAwardProfile(userId, facePhoto, goal).catch(() => undefined);
+    }
+
     // Now that the client row exists, this swaps signup for the payment
     // screen (PendingAccessScreen in RootNavigator), which shows this
     // trainer's payment details until they activate the client.
@@ -291,6 +323,17 @@ export default function SignupScreen({ navigation }: Props) {
         </Pressable>
       ))}
 
+      {awardOn && (
+        <AwardProfileFields
+          photo={facePhoto}
+          onPhoto={setFacePhoto}
+          consented={faceConsent}
+          onConsent={setFaceConsent}
+          goal={goal}
+          onGoal={setGoal}
+        />
+      )}
+
       <Pressable onPress={() => setPolicyVisible(true)}>
         <Text style={styles.policyLink}>Read the full privacy policy</Text>
       </Pressable>
@@ -364,7 +407,7 @@ const styles = themedStyles({
   modalTitle: { color: "#fff", fontSize: 20, fontWeight: "700" },
   closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
   button: {
-    backgroundColor: "#22C55E",
+    backgroundColor: "#D4AF37",
     borderRadius: 10,
     padding: 14,
     alignItems: "center",

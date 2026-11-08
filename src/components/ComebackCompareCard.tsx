@@ -76,7 +76,7 @@ export default function ComebackCompareCard({ client }: { client: Client }) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>🔁 Then vs now</Text>
+      <Text style={styles.title}>Then vs now</Text>
       <Text style={styles.helper}>
         Their first time with you ({thenFrom} to {thenTo}) against since they came back ({nowFrom}).
       </Text>

@@ -19,6 +19,8 @@ on:
       - "app.json"
       - "package.json"
       - "package-lock.json"
+      - "scripts/exercise-thumbs.sh"
+      - "scripts/exercise-clips.txt"
   workflow_dispatch:
 
 concurrency:
@@ -51,6 +53,24 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://vrasgqqubyurzoknsbgm.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyYXNncXF1Ynl1cnpva25zYmdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1MTU2MjEsImV4cCI6MjEwNTA5MTYyMX0.Kqp6vk5JrKN4Hzwz0juXMf-xNdqwHrOYkZRZa4LpdeM
+
+      # A still picture of every uploaded exercise clip, shown beside the
+      # exercise in the app's lists. Kept between runs so only new clips
+      # are done each time.
+      - uses: actions/cache@v4
+        with:
+          path: exercise-thumbs
+          key: exercise-thumbs-${{ github.run_id }}
+          restore-keys: exercise-thumbs-
+
+      - name: Make exercise pictures
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          scripts/exercise-thumbs.sh exercise-thumbs
+          mkdir -p site-dist/exercise-thumbs
+          cp exercise-thumbs/*.jpg site-dist/exercise-thumbs/ 2>/dev/null || true
+        env:
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyYXNncXF1Ynl1cnpva25zYmdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1MTU2MjEsImV4cCI6MjEwNTA5MTYyMX0.Kqp6vk5JrKN4Hzwz0juXMf-xNdqwHrOYkZRZa4LpdeM
 
       - uses: expo/expo-github-action@v8
         with:

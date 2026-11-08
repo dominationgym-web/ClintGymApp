@@ -11,7 +11,7 @@ import { useStepBack } from "@/hooks/useStepBack";
 
 const SIDES: { currency: BillingCurrency; label: string }[] = [
   { currency: "ZAR", label: "🇿🇦 South Africa" },
-  { currency: "USD", label: "🌍 International" },
+  { currency: "USD", label: "International" },
 ];
 
 // The owner's tracker (0105): every trainer's clients, the monthly client
@@ -49,7 +49,7 @@ export default function OwnerTracker() {
       <View style={styles.row}>
         <Stat value={String(t.clients.active)} label="Active" />
         <Stat value={String(t.clients.sa)} label="🇿🇦 SA" />
-        <Stat value={String(t.clients.international)} label="🌍 International" />
+        <Stat value={String(t.clients.international)} label="International" />
       </View>
       <Text style={styles.hint}>
         Includes your own {t.clients.ownActive}. {t.trainers} trainer{t.trainers === 1 ? "" : "s"}

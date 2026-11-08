@@ -37,7 +37,7 @@ export default function AppUpdateBanner() {
       onPress={() => Updates.reloadAsync().catch(() => undefined)}
       accessibilityRole="button"
     >
-      <Text style={styles.title}>✨ New app update ready</Text>
+      <Text style={styles.title}>New app update ready</Text>
       <Text style={styles.body}>Tap to load this week's improvements. It takes a few seconds.</Text>
     </Pressable>
   );

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { STORAGE_BUCKET } from "@/lib/liveSessions";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 // The screenshot of a cancellation message, saved as proof (0168).
 export default function SessionProofModal({ path, caption, onClose }: { path: string | null; caption?: string; onClose: () => void }) {
@@ -30,7 +31,7 @@ export default function SessionProofModal({ path, caption, onClose }: { path: st
     <Modal visible={!!path} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 24 }}>
-          <Text style={styles.title}>📸 Cancellation proof</Text>
+          <Text style={styles.title}>Cancellation proof</Text>
           {caption ? <Text style={styles.line}>{caption}</Text> : null}
           {url ? (
             <Image source={{ uri: url }} style={[styles.image, { aspectRatio: ratio }]} resizeMode="contain" />
@@ -42,6 +43,7 @@ export default function SessionProofModal({ path, caption, onClose }: { path: st
           <Pressable style={styles.close} onPress={onClose}>
             <Text style={styles.closeText}>Close</Text>
           </Pressable>
+          <SafeBottom />
         </ScrollView>
       </View>
     </Modal>

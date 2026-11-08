@@ -1,20 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { Animated, Image, Pressable, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
-import {
-  WELCOME_BECOME,
-  WELCOME_CARDS,
-  WELCOME_DISCIPLINE,
-  WELCOME_GOALS,
-  WELCOME_GROWING,
-  WELCOME_OPENING_FOLLOW_UP,
-  WELCOME_OPENING_QUESTION,
-  WELCOME_SIGN_OFF,
-} from "@/lib/welcome";
+import { WELCOME_CLOSING_LINE, WELCOME_OPENING_FOLLOW_UP, WELCOME_OPENING_QUESTION } from "@/lib/welcome";
 import { themedStyles } from "@/lib/theme";
-import { useStepBack } from "@/hooks/useStepBack";
 
 const NAVY = "#0F172A";
 const CARD = "#1E293B";
@@ -27,114 +17,43 @@ type Props = {
   onOpenSuggestionBox?: () => void;
   // The first-launch screen has no header, so it needs room for the status bar.
   padTop?: boolean;
+  // Shows a Skip link under the buttons (critique, 2026-11-04: the welcome is optional).
+  onSkip?: () => void;
 };
 
 // The coach's introduction, laid out as pages the reader taps through.
-export default function WelcomeContent({ buttonLabel, onPress, onOpenSuggestionBox, padTop }: Props) {
+// The coach's welcome: one page (GRIZZ, 2026-11-04: "Just leave the 1st page"),
+// the opening question with his closing line under it, and one button.
+export default function WelcomeContent({ buttonLabel, onPress, padTop }: Props) {
   const insets = useSafeAreaInsets();
   const fade = useRef(new Animated.Value(0)).current;
-  const [page, setPage] = useState(0);
-  // Phone Back closes what is open first, one step at a time.
-  useStepBack(page > 0, () => setPage((p) => Math.max(0, p - 1)));
 
   useEffect(() => {
-    fade.setValue(0);
     Animated.timing(fade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-  }, [fade, page]);
+  }, [fade]);
 
   const rise = fade.interpolate({ inputRange: [0, 1], outputRange: [24, 0] });
 
-  const pages: React.ReactNode[] = [
-    <View key="opening" style={styles.centred}>
-      <Image source={require("../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.kicker}>WELCOME</Text>
-      <Text style={styles.heroQuestion}>{WELCOME_OPENING_QUESTION}</Text>
-      <Text style={styles.heroFollowUp}>{WELCOME_OPENING_FOLLOW_UP}</Text>
-    </View>,
-    <View key="become" style={styles.centred}>
-      <View style={styles.becomeBox}>
-        <View style={styles.becomeBar} />
-        <Text style={styles.becomeText}>{WELCOME_BECOME}</Text>
-      </View>
-      <Text style={styles.sectionLabel}>WHATEVER YOUR GOAL</Text>
-      <View style={styles.chips}>
-        {WELCOME_GOALS.map((goal) => (
-          <View key={goal} style={styles.chip}>
-            <Text style={styles.chipText}>{goal}</Text>
-          </View>
-        ))}
-      </View>
-    </View>,
-    ...WELCOME_CARDS.map((card, index) => (
-      <View key={card.kicker} style={styles.centred}>
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardNumber}>{String(index + 1).padStart(2, "0")}</Text>
-            <Text style={styles.cardKicker}>{card.kicker}</Text>
-          </View>
-          <Text style={styles.cardTitle}>{card.title}</Text>
-          {card.paragraphs.map((p) => (
-            <Text key={p} style={styles.cardBody}>
-              {p}
-            </Text>
-          ))}
-        </View>
-      </View>
-    )),
-    <View key="discipline" style={styles.centred}>
-      <View style={styles.discipline}>
-        <Text style={styles.quoteMark}>“</Text>
-        <Text style={styles.disciplineText}>{WELCOME_DISCIPLINE}</Text>
-      </View>
-    </View>,
-    <View key="growing" style={styles.centred}>
-      <Text style={styles.sectionLabel}>ALWAYS GROWING</Text>
-      {WELCOME_GROWING.map((p) => (
-        <Text key={p} style={styles.body}>
-          {p}
-        </Text>
-      ))}
-      {onOpenSuggestionBox ? (
-        <Pressable style={styles.linkButton} onPress={onOpenSuggestionBox} accessibilityRole="button">
-          <Text style={styles.linkButtonText}>Open the Suggestion box</Text>
-        </Pressable>
-      ) : null}
-      <View style={styles.divider} />
-      <Text style={styles.signOff}>{WELCOME_SIGN_OFF}</Text>
-    </View>,
-  ];
-
-  const last = page === pages.length - 1;
-
   return (
     <View style={styles.screen}>
-      <ScrollView
-        key={page}
-        contentContainerStyle={[styles.content, padTop && { paddingTop: insets.top + 24 }]}
-      >
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }] }}>{pages[page]}</Animated.View>
+      <ScrollView contentContainerStyle={[styles.content, padTop && { paddingTop: insets.top + 24 }]}>
+        <Animated.View style={[styles.centred, { opacity: fade, transform: [{ translateY: rise }] }]}>
+          <Image source={require("../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.kicker}>WELCOME</Text>
+          <Text style={styles.heroQuestion}>{WELCOME_OPENING_QUESTION}</Text>
+          <Text style={styles.heroFollowUp}>{WELCOME_OPENING_FOLLOW_UP}</Text>
+          <Text style={styles.closing}>{WELCOME_CLOSING_LINE}</Text>
+        </Animated.View>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={styles.dots}>
-          {pages.map((_, i) => (
-            <View key={i} style={[styles.dot, i === page && styles.dotActive]} />
-          ))}
-        </View>
-        <View style={styles.buttonRow}>
-          {page > 0 ? (
-            <Pressable style={styles.backButton} onPress={() => setPage(page - 1)} accessibilityRole="button">
-              <Text style={styles.backButtonText}>Back</Text>
-            </Pressable>
-          ) : null}
-          <Pressable
-            style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
-            onPress={last ? onPress : () => setPage(page + 1)}
-            accessibilityRole="button"
-          >
-            <Text style={styles.buttonText}>{last ? buttonLabel : "Next"}</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
+          onPress={onPress}
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>{buttonLabel}</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -144,9 +63,10 @@ const styles = themedStyles({
   screen: { flex: 1, backgroundColor: NAVY },
   content: { flexGrow: 1, padding: 24, paddingBottom: 32 },
   centred: { flexGrow: 1, justifyContent: "center" },
-  logo: { width: 190, height: 190, alignSelf: "center", marginBottom: 8 },
+  logo: { width: 140, height: 140, alignSelf: "center", marginBottom: 8 },
   kicker: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", letterSpacing: 4, textAlign: "center", marginBottom: 14 },
-  heroQuestion: { color: "#fff", fontSize: 28, fontWeight: "800", lineHeight: 36, textAlign: "center" },
+  heroQuestion: { color: "#fff", fontSize: 25, fontWeight: "800", lineHeight: 32, textAlign: "center" },
+  closing: { color: BRAND_GOLD, fontSize: 20, fontWeight: "800", lineHeight: 28, textAlign: "center", marginTop: 20, fontStyle: "italic" },
   heroFollowUp: { color: "#CBD5E1", fontSize: 16, lineHeight: 24, textAlign: "center", marginTop: 16 },
   becomeBox: { flexDirection: "row", marginTop: 28, marginBottom: 32 },
   becomeBar: { width: 4, borderRadius: 2, backgroundColor: BRAND_GOLD, marginRight: 14 },
@@ -211,6 +131,7 @@ const styles = themedStyles({
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#334155" },
   dotActive: { width: 20, backgroundColor: BRAND_GOLD },
   buttonRow: { flexDirection: "row", gap: 10 },
+  skip: { color: "#94A3B8", textAlign: "center", marginTop: 12, fontWeight: "600" },
   backButton: {
     borderWidth: 1,
     borderColor: "#334155",

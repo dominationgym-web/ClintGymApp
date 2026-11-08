@@ -19,6 +19,7 @@ import {
 import KeyboardSafe from "@/components/KeyboardSafe";
 import type { Exercise } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import SafeBottom from "@/components/SafeBottom";
 
 export const EQUIPMENT_BUCKET = "equipment-photos";
 
@@ -350,7 +351,7 @@ function EquipmentForm({
                       ) : preview ? (
                         <Image source={{ uri: preview }} style={styles.preview} />
                       ) : (
-                        <Text style={styles.link}>{draft.photo ? "📷 Photo saved. Tap to change it" : "📷 Add a photo"}</Text>
+                        <Text style={styles.link}>{draft.photo ? "Photo saved. Tap to change it" : "Add a photo"}</Text>
                       )}
                     </Pressable>
                   </>
@@ -395,6 +396,7 @@ function EquipmentForm({
                 </Pressable>
               </ScrollView>
             )}
+            <SafeBottom />
           </View>
         </View>
       </KeyboardSafe>

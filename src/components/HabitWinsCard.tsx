@@ -16,6 +16,7 @@ import { todayIso } from "@/lib/dates";
 import { isPersonalMessage, winsShownFrom, winWeekLabel, type HabitWin } from "@/lib/habitWins";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 type Row = HabitWin & { clientName: string };
 
@@ -86,7 +87,7 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
     <View style={styles.card}>
       <Pressable style={styles.header} onPress={() => setExpanded(!expanded)} accessibilityRole="button" accessibilityState={{ expanded }}>
         <Text style={styles.title}>
-          🏆 {rows.length} habit win{rows.length === 1 ? "" : "s"} to celebrate
+          {rows.length} habit win{rows.length === 1 ? "" : "s"} to celebrate
         </Text>
         <Text style={styles.week}>{expanded ? "▲" : "▼"}</Text>
       </Pressable>
@@ -103,7 +104,7 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
             </Text>
           ))}
           <Pressable style={styles.button} onPress={() => open(row)} accessibilityRole="button">
-            <Text style={styles.buttonText}>✍️ Write to {row.clientName.split(" ")[0]}</Text>
+            <Text style={styles.buttonText}>Write to {row.clientName.split(" ")[0]}</Text>
           </Pressable>
         </View>
       ))}
@@ -140,6 +141,7 @@ export default function HabitWinsCard({ trainerId }: { trainerId: string }) {
                 {sending ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.sendText}>Send</Text>}
               </Pressable>
             </View>
+            <SafeBottom />
           </View>
         </KeyboardAvoidingView>
       </Modal>

@@ -13,6 +13,8 @@ import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementConten
 import { isValidSignature } from "@/lib/trainers";
 import { countryCheckMessage, phoneCountry } from "@/lib/phoneCountry";
 import { themeText, themedStyles } from "@/lib/theme";
+import UnitsPicker from "@/components/UnitsPicker";
+import type { Units } from "@/types/database";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "TrainerSignup">;
 
@@ -31,6 +33,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [signedName, setSignedName] = useState("");
   const [agreed, setAgreed] = useState(false);
+  // Metric or Imperial (0189), so history imports know kg from lb.
+  const [units, setUnits] = useState<Units>("metric");
 
   const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -107,6 +111,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         agreement_signed_name: signedName.trim(),
         referred_by_code: referralCode.trim() || null,
         signup_country: check.ok ? check.country : null,
+        units,
       })
     );
     if (error) {
@@ -127,7 +132,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         clients can join you, and then you get a free 30-day trial.
       </Text>
       <Text style={styles.body}>
-        📍 Please have your location on. We check your country once so you're charged the right prices. Only your
+        Please have your location on. We check your country once so you're charged the right prices. Only your
         country is saved.
       </Text>
       <Text style={styles.label}>Name and surname</Text>
@@ -167,6 +172,8 @@ export default function TrainerSignupScreen({ navigation }: Props) {
         value={referralCode}
         onChangeText={setReferralCode}
       />
+      <Text style={styles.label}>Do you work in kg or pounds?</Text>
+      <UnitsPicker value={units} onChange={setUnits} />
       <AgreementSignFields
         signedName={signedName}
         onChangeSignedName={setSignedName}
@@ -189,7 +196,7 @@ const styles = themedStyles({
   title: { fontSize: 26, fontWeight: "700", color: "#fff", marginBottom: 12 },
   body: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginBottom: 20 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 14, marginBottom: 12 },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 8 },
+  button: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 8 },
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 16 },
   link: { color: "#94A3B8", textAlign: "center", marginTop: 20, marginBottom: 20 },
 });

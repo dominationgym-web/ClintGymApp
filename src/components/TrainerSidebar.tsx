@@ -77,7 +77,9 @@ const ONE_ON_ONE: MainItem[] = [
   { tab: "OneToday", label: "Today", icon: "today" },
   { tab: "OneCalendar", label: "Calendar", icon: "calendar" },
   { tab: "OneClients", label: "Clients", icon: "people", also: ["ClientDetail"] },
+  { tab: "OneNutrition", label: "Nutrition", icon: "nutrition" },
   { tab: "OneInvoices", label: "Invoices", icon: "receipt" },
+  { tab: "OneProfile", label: "Profile & settings", icon: "person-circle", also: ["Billing"] },
 ];
 
 const MAIN: MainItem[] = [

@@ -117,7 +117,7 @@ export default function TrainerProblemsScreen() {
         <View style={styles.card}>
           <Text style={styles.heading}>Something not working? 🛠</Text>
           <Text style={styles.helper}>
-            Tell the app owner here. It goes straight to them with your name on it, and their answer comes back on this page.
+            It goes straight to the app owner; their answer shows here.
           </Text>
           <Text style={styles.label}>What is it about?</Text>
           <View style={styles.chips}>
@@ -282,22 +282,22 @@ function ProblemPage({
               <Text style={styles.body}>{trainerDisplayName(sender)}</Text>
               {sender.business_name ? <Text style={styles.helper}>{sender.name}</Text> : null}
               <Pressable onPress={() => Linking.openURL(`mailto:${sender.email}`)} hitSlop={6}>
-                <Text style={styles.link}>✉️ {sender.email}</Text>
+                <Text style={styles.link}>{sender.email}</Text>
               </Pressable>
               {phone ? (
                 <View style={styles.actions}>
                   <Pressable onPress={() => Linking.openURL(`tel:${phone}`)} hitSlop={6}>
-                    <Text style={styles.link}>📞 {phone}</Text>
+                    <Text style={styles.link}>{phone}</Text>
                   </Pressable>
                   {whatsapp ? (
                     <Pressable onPress={() => Linking.openURL(`https://wa.me/${whatsapp}`)} hitSlop={6}>
-                      <Text style={styles.link}>💬 WhatsApp</Text>
+                      <Text style={styles.link}>WhatsApp</Text>
                     </Pressable>
                   ) : null}
                 </View>
               ) : null}
               <Pressable style={styles.outline} onPress={() => onSeeClients(problem.trainer_id)} accessibilityRole="button">
-                <Text style={styles.outlineText}>👥 See {trainerDisplayName(sender)}'s clients</Text>
+                <Text style={styles.outlineText}>See {trainerDisplayName(sender)}'s clients</Text>
               </Pressable>
             </>
           ) : (
@@ -310,7 +310,7 @@ function ProblemPage({
         <View style={styles.actions}>
           {problem.status !== "fixing" && (
             <Pressable style={styles.outline} onPress={() => setStatus("fixing")} disabled={busy}>
-              <Text style={styles.outlineText}>🛠 Busy fixing</Text>
+              <Text style={styles.outlineText}>Busy fixing</Text>
             </Pressable>
           )}
           {problem.status !== "fixed" && (

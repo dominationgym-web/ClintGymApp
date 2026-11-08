@@ -289,8 +289,7 @@ export default function ChallengesScreen() {
             ) : null}
             <Text style={styles.heading}>Pick {monthName(month)}'s challenge 🏆</Text>
             <Text style={styles.helper}>
-              One challenge for all your clients. They tick it off each day they do it on their Habits tab, and win by reaching
-              the target days. Tap one to see how it works.
+              One challenge a month for all your clients, ticked off on their Habits tab.
             </Text>
             <View style={styles.chips}>
               {filters.map((f) => (

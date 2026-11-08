@@ -35,7 +35,9 @@ import {
 import type { ClientStackParamList } from "@/navigation/types";
 import type { LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
+import SafeBottom from "@/components/SafeBottom";
 
 type Tab = "sessions" | "month" | "invoices" | "agreement";
 
@@ -101,12 +103,14 @@ export default function MySessionsScreen() {
   };
 
   const needsSign = !!plan && plan.active && !agreementCurrent(signed, plan);
+  // The coach cleared it (0191): they can still sign, but aren't nagged to.
+  const nag = needsSign && !agreementCurrent(plan?.agreement_cleared, plan);
   const unpaid = invoices.filter((i) => i.status === "sent");
   const tabs: ScreenTab<Tab>[] = [
     { key: "sessions", label: "Sessions", icon: "people" },
     { key: "month", label: "Month", icon: "calendar" },
     { key: "invoices", label: "Invoices", icon: "receipt", dot: unpaid.length ? "#F59E0B" : null },
-    { key: "agreement", label: "Agreement", icon: "document-text", dot: needsSign ? "#F59E0B" : null },
+    { key: "agreement", label: "Agreement", icon: "document-text", dot: nag ? "#F59E0B" : null },
   ];
 
   return (
@@ -122,9 +126,9 @@ export default function MySessionsScreen() {
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeText(BRAND_GOLD)} />}
         >
-          {needsSign && tab !== "agreement" ? (
+          {nag && tab !== "agreement" ? (
             <Pressable style={styles.notice} onPress={() => setTab("agreement")}>
-              <Text style={styles.noticeText}>✍️ Please read and sign your session agreement. Tap here.</Text>
+              <Text style={styles.noticeText}>Please read and sign your session agreement. Tap here.</Text>
             </Pressable>
           ) : null}
           {tab === "sessions" && <SessionsTab sessions={sessions} plan={plan} coach={coach} onChanged={load} />}
@@ -193,6 +197,8 @@ function SessionsTab({ sessions, plan, coach, onChanged }: { sessions: LiveSessi
         <View key={s.id} style={styles.row}>
           <Text style={styles.rowTitle}>
             {dayLabel(s.starts_at)} · {clockLabel(s.starts_at)}
+            {s.makeup_for ? "  " : ""}
+            <CatchUpTag show={s.makeup_for} />
           </Text>
           <Text style={styles.meta}>{s.minutes} min with {coach}</Text>
           <Pressable style={styles.outlineSmall} onPress={() => setCancelling(s)}>
@@ -209,6 +215,8 @@ function SessionsTab({ sessions, plan, coach, onChanged }: { sessions: LiveSessi
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
             <Text style={styles.rowTitle}>
               {dayLabel(s.starts_at)} · {clockLabel(s.starts_at)}
+              {s.makeup_for ? "  " : ""}
+              <CatchUpTag show={s.makeup_for} />
             </Text>
             <Text style={[styles.kind, { color: themeText(KIND_STYLE[kind].colour) }]}>
               {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { clientOk: !!s.client_confirmed_at, catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
@@ -263,6 +271,7 @@ function CancelModal({ session, plan, coach, onClose, onDone }: { session: LiveS
             <Pressable style={styles.closeRow} onPress={onClose}>
               <Text style={styles.closeText}>Keep it</Text>
             </Pressable>
+            <SafeBottom />
           </View>
         </View>
       </KeyboardSafe>
@@ -282,7 +291,11 @@ function MonthTab({ month, onMonth, sessions }: { month: string; onMonth: (m: st
         const kind = sessionKind(s);
         return (
           <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(KIND_STYLE[kind].colour) }]}>
-            <Text style={styles.rowTitle}>{clockLabel(s.starts_at)}</Text>
+            <Text style={styles.rowTitle}>
+              {clockLabel(s.starts_at)}
+              {s.makeup_for ? "  " : ""}
+              <CatchUpTag show={s.makeup_for} />
+            </Text>
             <Text style={[styles.kind, { color: themeText(KIND_STYLE[kind].colour) }]}>
               {KIND_STYLE[kind].icon} {kindDetail(kind, s.cancelled_at ? noticeHours(s.starts_at, s.cancelled_at) : null, { catchUp: !!s.makeup_for, catchUpBooked: !!s.makeup_session_id })}
             </Text>
@@ -309,7 +322,7 @@ function InvoicesTab({ invoices, paidForYou }: { invoices: SessionInvoice[]; pai
         </View>
         {open.status === "sent" ? (
           <Pressable style={styles.button} onPress={() => navigationRef.navigate("ClientTabs", { screen: "Profile", params: { open: "pay" } })}>
-            <Text style={styles.buttonText}>🧾 Send proof of payment</Text>
+            <Text style={styles.buttonText}>Send proof of payment</Text>
           </Pressable>
         ) : null}
       </>
@@ -404,7 +417,7 @@ function AgreementTab({
         </>
       ) : signed ? (
         <Text style={[styles.helper, { color: themeText("#22C55E") }]}>
-          ✍️ Signed by {signed.signed_name} on {new Date(signed.signed_at).toLocaleDateString()} at {clockLabel(signed.signed_at)}.
+          Signed by {signed.signed_name} on {new Date(signed.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} at {clockLabel(signed.signed_at)}.
         </Text>
       ) : null}
     </>

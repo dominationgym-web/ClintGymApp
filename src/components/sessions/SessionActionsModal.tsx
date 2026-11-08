@@ -30,11 +30,14 @@ import {
   policyHours,
   proofPath,
   sessionKind,
+  sessionMoney,
 } from "@/lib/liveSessions";
 import type { LiveSession, SessionPolicy, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { CatchUpTag } from "@/components/sessions/CatchUpTag";
+import SafeBottom from "@/components/SafeBottom";
 
-type Step = "menu" | "cancel" | "move" | "who";
+type Step = "menu" | "cancel" | "move" | "who" | "price";
 
 // Everything a trainer does to one session (0168): mark it done or a no-show,
 // log a cancellation (with the WhatsApp screenshot), charge or credit it,
@@ -76,6 +79,7 @@ export default function SessionActionsModal({
   const [step, setStep] = useState<Step>("menu");
   const [busy, setBusy] = useState(false);
   const [proof, setProof] = useState<string | null>(null);
+  const [price, setPrice] = useState("");
 
   useEffect(() => {
     setStep("menu");
@@ -197,7 +201,11 @@ export default function SessionActionsModal({
       <KeyboardSafe>
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>{clientName}</Text>
+            <Text style={styles.title}>
+              {clientName}
+              {session.makeup_for ? "  " : ""}
+              <CatchUpTag show={session.makeup_for} />
+            </Text>
             <Text style={styles.when}>
               {dayLabel(session.starts_at)} · {clockLabel(session.starts_at)} · {session.minutes} min
             </Text>
@@ -214,10 +222,10 @@ export default function SessionActionsModal({
             {session.status === "done" && !session.client_confirmed_at && !session.client_disputed_at ? (
               <Text style={styles.meta}>Waiting for {first} to confirm.</Text>
             ) : null}
-            {weekly ? <Text style={styles.meta}>🔁 Every week at this time</Text> : null}
+            {weekly ? <Text style={styles.meta}>Every week at this time</Text> : null}
             {partners.length ? (
               <View style={{ marginTop: 6 }}>
-                <Text style={styles.meta}>👥 Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
+                <Text style={styles.meta}>Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
                 {onSwitch ? (
                   <View style={styles.chips}>
                     <Chip label={first} on onPress={() => {}} />
@@ -231,7 +239,7 @@ export default function SessionActionsModal({
             {session.note && !isAway(session) ? <Text style={styles.meta}>"{session.note}"</Text> : null}
             {session.proof_path ? (
               <Pressable onPress={() => setProof(session.proof_path)}>
-                <Text style={styles.link}>📸 See the cancellation message</Text>
+                <Text style={styles.link}>See the cancellation message</Text>
               </Pressable>
             ) : null}
 
@@ -262,22 +270,31 @@ export default function SessionActionsModal({
                   <View style={styles.chips}>
                     <Chip label="🔴 Charge" on={session.charge === "charge"} onPress={() => charge("charge")} />
                     <Chip label="🟢 Credit" on={session.charge === "credit"} onPress={() => charge("credit")} />
-                    {session.client_id ? <Chip label="🔁 Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} /> : null}
+                    {session.client_id ? <Chip label="Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} /> : null}
                   </View>
                 ) : null}
                 {/* Going away for a while: their sessions turn green, free to book (GRIZZ 2026-11-02). */}
                 {onAway && session.status !== "removed" && new Date(session.starts_at) > now ? (
                   <Outline label={session.away_id && session.status === "cancelled" ? "✈️ Away: back early or change the date" : "✈️ Away (going away for a while)"} onPress={onAway} />
                 ) : null}
+                {/* Log this session's own price, e.g. a catch-up for a joint session (GRIZZ 2026-11-03). */}
+                {session.status !== "removed" && !session.invoice_id ? (
+                  <Outline
+                    label={`Price for this session: ${sessionMoney(Number(session.fee ?? 0), settings?.currency ?? "ZAR")}`}
+                    onPress={() => {
+                      setPrice(String(Number(session.fee ?? 0)));
+                      setStep("price");
+                    }}
+                  />
+                ) : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
-                {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="🔁 Repeat every week" onPress={makeWeekly} /> : null}
+                {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="Repeat every week" onPress={makeWeekly} /> : null}
                 {!session.invoice_id && session.status !== "removed" ? (
-                  <Outline label={session.client_id ? "👤 Change who" : "👤 Link to their app account"} onPress={() => setStep("who")} />
+                  <Outline label={session.client_id ? "Change who" : "Link to their app account"} onPress={() => setStep("who")} />
                 ) : null}
                 {!session.client_id ? (
                   <Text style={styles.meta}>
-                    Not in the app yet: cancellations and no-shows count in your earnings, but catch-ups, notifications and invoices start once you link them to
-                    their app account.
+                    Not in the app yet: no invoices or notifications until you link them.
                   </Text>
                 ) : null}
                 {session.status !== "booked" && session.status !== "removed" && new Date(session.starts_at) > now ? (
@@ -286,7 +303,7 @@ export default function SessionActionsModal({
                 {session.status === "done" ? <Outline label="Undo: not marked yet" onPress={() => outcome("booked")} /> : null}
                 {link ? (
                   <Outline
-                    label="💬 WhatsApp"
+                    label="WhatsApp"
                     onPress={() => {
                       if (session.client_id) markClientContact(session.client_id);
                       Linking.openURL(link);
@@ -298,6 +315,23 @@ export default function SessionActionsModal({
             )}
 
             {step === "cancel" && <CancelForm session={session} policy={policy} first={first} onDone={() => (onChanged(), onClose())} onBack={() => setStep("menu")} />}
+
+            {step === "price" && (
+              <View style={{ marginTop: 12, gap: 8 }}>
+                <Text style={styles.meta}>The price for just this session. Their other sessions keep their usual price.</Text>
+                <TextInput style={styles.priceInput} value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="e.g. 350, or 0 if free" />
+                <Big
+                  label="Save the price"
+                  busy={busy}
+                  onPress={() => {
+                    const fee = Number(price.replace(",", ".").replace(/[^\d.]/g, ""));
+                    if (!price.trim() || !Number.isFinite(fee) || fee < 0) return Alert.alert("Type a price", "e.g. 350, or 0 if it's free.");
+                    run(() => supabase.rpc("set_session_fee", { p_id: session.id, p_fee: fee }));
+                  }}
+                />
+                <Outline label="‹ Back" onPress={() => setStep("menu")} />
+              </View>
+            )}
 
             {step === "move" && <MoveForm session={session} sessions={sessions} settings={settings} onSave={move} onBack={() => setStep("menu")} />}
 
@@ -318,6 +352,7 @@ export default function SessionActionsModal({
             <Pressable style={styles.close} onPress={onClose}>
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
+            <SafeBottom />
           </ScrollView>
         </View>
       </KeyboardSafe>
@@ -501,7 +536,7 @@ function CancelForm({
         <>
           <Text style={styles.label}>Screenshot of the message</Text>
           <Pressable style={styles.outline} onPress={pick}>
-            <Text style={styles.outlineText}>{photo ? "✓ Screenshot added · change" : "📸 Add the WhatsApp screenshot"}</Text>
+            <Text style={styles.outlineText}>{photo ? "✓ Screenshot added · change" : "Add the WhatsApp screenshot"}</Text>
           </Pressable>
           <Text style={styles.meta}>Saved as proof.{session.client_id ? ` ${first} can see it on their invoice.` : ""}</Text>
         </>
@@ -526,7 +561,7 @@ function CancelForm({
           <View style={styles.chips}>
             <Chip label="🔴 Charge" on={decided === "charge"} onPress={() => setOverride("charge")} />
             <Chip label="🟢 Credit" on={decided === "credit"} onPress={() => setOverride("credit")} />
-            {by === "client" ? <Chip label="🔁 Catch-up" on={decided === "makeup"} onPress={() => setOverride("makeup")} /> : null}
+            {by === "client" ? <Chip label="Catch-up" on={decided === "makeup"} onPress={() => setOverride("makeup")} /> : null}
           </View>
           {by === "client" && auto !== "charge" ? <Text style={styles.meta}>In time: give a credit, or a catch-up session instead.</Text> : null}
         </View>
@@ -631,4 +666,5 @@ const styles = themedStyles({
   dangerText: { color: "#EF4444" },
   close: { padding: 12, alignItems: "center", marginTop: 8 },
   closeText: { color: "#94A3B8", fontWeight: "700", fontSize: 15 },
+  priceInput: { backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15 },
 });

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import LineIcon from "@/components/LineIcon";
 import { useNavigation } from "@react-navigation/native";
 import { View, Text, Pressable, Modal, useWindowDimensions } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
@@ -72,7 +73,7 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
                 >
                   {item.icon ? (
                     <View style={styles.itemIcon}>
-                      <Text style={styles.itemIconText}>{item.icon}</Text>
+                      <LineIcon icon={item.icon} size={20} />
                     </View>
                   ) : null}
                   <Text style={styles.itemTitle} numberOfLines={1}>
