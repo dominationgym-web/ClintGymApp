@@ -5,6 +5,11 @@
 -- rebuilt after a cancellation simply dropped the session, so nothing came
 -- off next month even though the client had paid for it.
 --
+-- From December 2026 on: session tracking started part-way through
+-- November and clients already took their missed November sessions off
+-- what they paid (GRIZZ, 2026-11-08: "Don't take anything off now"), so
+-- November stays as it was and nothing from it is credited in December.
+--
 -- Also: a session charged on an earlier month's invoice is credited even if
 -- that invoice was never sent or marked paid in the app (many trainers send
 -- the WhatsApp text and never tap Send).
@@ -100,7 +105,7 @@ begin
         role := 'charge';
       elsif kind = 'booked' and bill = 'advance' and r.in_month then
         role := 'charge';
-      elsif kind in ('notice', 'excused', 'trainer') and bill = 'advance' and r.in_month
+      elsif kind in ('notice', 'excused', 'trainer') and bill = 'advance' and r.in_month and m >= date '2026-12-01'
             and (r.cancelled_at is null or r.cancelled_at >= m_start) then
         -- Paid upfront and cancelled during the month: still on this month,
         -- credited on the next one.

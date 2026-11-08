@@ -118,7 +118,7 @@ export default function AwayModal({
     onDone();
     Alert.alert(
       `✈️ ${first} is away ${span}`,
-      `Their sessions in that time are green on your calendar: free to book. Their name stays on each one.${who.clientId ? ` ${first} gets a message and isn't charged for them.` : ""}`
+      `Their sessions in that time are green on your calendar: free to book. Their name stays on each one, and they go on your catch-up list. Before the month ends you pick catch-up next month or credit.${who.clientId ? ` ${first} gets a message.` : ""}`
     );
   };
 
@@ -221,7 +221,7 @@ export default function AwayModal({
                       ? `${hit.length} session${hit.length === 1 ? "" : "s"} turn${hit.length === 1 ? "s" : ""} green, free to book: ${hit
                           .slice(0, 6)
                           .map((s) => `${dayLabel(s.starts_at)} ${clockLabel(s.starts_at)}`)
-                          .join(", ")}${hit.length > 6 ? " ..." : ""}. Not charged.`
+                          .join(", ")}${hit.length > 6 ? " ..." : ""}. They go on your catch-up list.`
                       : "No sessions of theirs on your calendar in those days. Weekly sessions that fill in later turn green too."}
                   </Text>
                 </View>
