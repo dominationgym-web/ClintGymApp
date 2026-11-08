@@ -17,6 +17,7 @@ import { CookingIdeasLink } from "@/components/ProteinCookingIdeas";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ShoppingListSheet from "@/components/ShoppingListSheet";
 import MealTimesPicker from "@/components/MealTimesPicker";
+import TimeSlotButton from "@/components/TimeSlotButton";
 import { trainingDaysGuess } from "@/lib/shoppingList";
 import { useMealTicks } from "@/hooks/useMealTicks";
 import { tickedSource } from "@/lib/mealTicks";
@@ -40,13 +41,17 @@ import {
   type DietSex,
 } from "@/lib/dietPlan";
 import {
+  adjustedKcal,
   cleanTime,
+  goalAdjust,
   goalKcal,
+  intakeGoal,
+  intakeTrainingTime,
+  MAX_KCAL_ADJUST,
   macroTargets,
   MEAL_DIETS,
   MEAL_GOALS,
   mealTimesFor,
-  TRAINING_TIMES,
   type MealDiet,
   type MealGoal,
   makeDay,
@@ -290,9 +295,28 @@ const ownRow = (item: DietItem): OwnRow => {
 
 const ownGrams = (row: OwnRow) => Math.round(num(row.amount) * row.unit.grams);
 
-const STEPS = ["details", "goal", "meals", "diet"] as const;
+// Two pages (GRIZZ, 2026-11-07: "the data input ... seems very tedious"):
+// who they are, their goal and what they eat, then training and meal times.
+const STEPS = ["goal", "meals"] as const;
 
 const num = (text: string) => Number(text.replace(",", "."));
+
+/** Height, weight, age, sex and activity all filled in sensibly. */
+function detailsComplete(d: Details): boolean {
+  const h = num(d.height);
+  const w = num(d.weight);
+  const a = num(d.age);
+  return (
+    h >= 100 &&
+    h <= 250 &&
+    w >= 25 &&
+    w <= 400 &&
+    a >= 12 &&
+    a <= 100 &&
+    !!d.sex &&
+    INTAKE_ACTIVITY_LEVELS.some((x) => x.label === d.activity)
+  );
+}
 
 /** The trainer making the plan for one of their clients (Diet tab). */
 export type MealPlanForTrainer = {
@@ -303,7 +327,12 @@ export type MealPlanForTrainer = {
 
 export default function MealPlanMaker({
   forTrainer,
-}: { forTrainer?: MealPlanForTrainer } = {}) {
+  openShopping,
+}: {
+  forTrainer?: MealPlanForTrainer;
+  /** Open the shopping list straight away (the Today screen's Shopping list row). */
+  openShopping?: boolean;
+} = {}) {
   const auth = useAuth();
   const coachMode = !!forTrainer;
   const client = forTrainer?.client ?? auth.client;
@@ -325,6 +354,12 @@ export default function MealPlanMaker({
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [step, setStep] = useState(0);
+  // The trainer's own calories over or under what the body uses (null: the goal's usual amount).
+  const [adjust, setAdjust] = useState<number | null>(null);
+  // Their height, weight and age: one line when the form already has them.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  // Which explainer on the plan is open (tap-to-open, so the plan stays short).
+  const [info, setInfo] = useState<string | null>(null);
   // Phone Back closes what is open first, one step at a time.
   useStepBack(step > 0, () => setStep((s) => Math.max(0, s - 1)));
   // The trainer told the client this version of the plan is ready.
@@ -364,7 +399,7 @@ export default function MealPlanMaker({
   } | null>(null);
   const [ownDraft, setOwnDraft] = useState<OwnRow[]>([]);
   const [ownSearch, setOwnSearch] = useState("");
-  const [shopping, setShopping] = useState(false);
+  const [shopping, setShopping] = useState(!!openShopping);
   // A week at a time (GRIZZ, 2026-11-02): a different plan each day, and the days they train.
   const [weekly, setWeekly] = useState(false);
   const [trainDays, setTrainDays] = useState<number[]>([]);
@@ -409,7 +444,7 @@ export default function MealPlanMaker({
         (coachDetails?.activity && coachDetails.activity !== 1
           ? coachDetails.activity
           : null);
-      setDetails({
+      const known: Details = {
         height: pickNum(intake.height_cm, coachDetails?.height_cm),
         weight: pickNum(intake.weight_kg, coachDetails?.weight_kg),
         age: pickNum(intake.age, coachDetails?.age),
@@ -417,8 +452,16 @@ export default function MealPlanMaker({
         activity:
           INTAKE_ACTIVITY_LEVELS.find((a) => a.factor === activity)?.label ??
           "",
-      });
+      };
+      setDetails(known);
+      setDetailsOpen(!detailsComplete(known));
+      const responses = client.intake_responses as Record<string, unknown> | null;
+      // Their goal from the sign-up form, so the trainer doesn't pick it again.
       if (coachTarget) setGoal("coach");
+      else {
+        const fromForm = intakeGoal(responses);
+        if (fromForm) setGoal(fromForm);
+      }
       if (mine?.settings?.meals?.length) {
         setPlan(mine);
         setCount(mine.settings.meals.length);
@@ -428,6 +471,7 @@ export default function MealPlanMaker({
         if (mine.settings.goal) setGoal(mine.settings.goal);
         if (mine.settings.diet) setDiet(mine.settings.diet);
         if (mine.settings.dairyFree) setDairyFree(true);
+        setAdjust(mine.settings.kcalAdjust ?? null);
         if (!mine.settings.training) setDayKind("rest");
         setWeekly(!!mine.settings.weekly);
         setTrainDays(
@@ -439,6 +483,14 @@ export default function MealPlanMaker({
             ),
         );
       } else if (coachMode) {
+        // Their training time from the sign-up form, and meal times around it.
+        const trainAt = intakeTrainingTime(responses);
+        if (trainAt) {
+          const at = mealTimesFor(4, trainAt);
+          setTraining(trainAt);
+          setTimes(at);
+          setSnacks(snackTimesFor(at, 1, trainAt));
+        }
         setTrainDays(
           defaultTrainDays(
             intakeTrainingDays(
@@ -517,8 +569,14 @@ export default function MealPlanMaker({
     : MEAL_GOALS;
   const safeGoal: MealGoal =
     referral.length && goal !== "coach" ? "maintain" : goal;
+  // A doctor or dietitian first: no deficit or surplus of the trainer's own either.
+  const safeAdjust = referral.length ? null : adjust;
   const kcalFor = (g: MealGoal) =>
-    need ? goalKcal(need, g, coachKcal, { sex: body.sex, bmr: base }) : 0;
+    !need
+      ? 0
+      : g !== "coach" && safeAdjust !== null
+        ? adjustedKcal(need, safeAdjust, { sex: body.sex, bmr: base })
+        : goalKcal(need, g, coachKcal, { sex: body.sex, bmr: base });
   const referralBox = referral.length ? (
     <View
       style={[styles.insulinBox, { borderLeftColor: themeBorder("#F87171") }]}
@@ -642,6 +700,7 @@ export default function MealPlanMaker({
     setSaving(false);
     if (error) Alert.alert("Couldn't save the plan", error.message);
     else setTold(false);
+    return !error;
   };
 
   // Tells the client their plan is ready, as a coach message: a phone
@@ -701,7 +760,7 @@ export default function MealPlanMaker({
     return true;
   };
 
-  const build = (variety: number) => {
+  const build = async (variety: number, tellToo = false) => {
     if (!client || !need) return;
     const cleaned = times.slice(0, count).map(cleanTime);
     if (cleaned.some((t) => !t))
@@ -728,6 +787,7 @@ export default function MealPlanMaker({
       weekly,
       trainDays: [...trainDays].sort(),
       snacks: snackAt as string[],
+      kcalAdjust: safeGoal === "coach" ? null : safeAdjust,
     };
     const targets = macroTargets(
       kcalFor(safeGoal),
@@ -735,7 +795,7 @@ export default function MealPlanMaker({
       safeGoal,
       body.height_cm,
     );
-    save({
+    const saved = await save({
       client_id: client.id,
       settings,
       targets,
@@ -750,6 +810,8 @@ export default function MealPlanMaker({
     });
     setDayKind(training ? "training" : "rest");
     setEditing(false);
+    // Made and sent in one tap (GRIZZ, 2026-11-07).
+    if (saved && tellToo) await tell();
   };
 
   const chooseMeals = (n: number, trainAt: string | null) => {
@@ -786,12 +848,25 @@ export default function MealPlanMaker({
   if (editing || !plan) {
     const page = STEPS[step];
     const next = async () => {
-      if (page === "details" && !(await saveDetails())) return;
-      if (page === "diet") return build(plan ? plan.variety + 1 : 0);
-      setStep(step + 1);
+      if (page === "goal") {
+        if (!(await saveDetails())) return;
+        return setStep(1);
+      }
     };
+    const make = (tellToo: boolean) => build(plan ? plan.variety + 1 : 0, tellToo);
     const back = () =>
       step > 0 ? setStep(step - 1) : plan ? setEditing(false) : null;
+    // The calories, moved 50 at a time from the goal's usual amount.
+    const usual = need ? goalAdjust(need, safeGoal, { sex: body.sex, bmr: base }) : 0;
+    const shown = safeAdjust ?? usual;
+    const kcal = kcalFor(safeGoal);
+    const diff = need ? kcal - need : 0;
+    const nudge = (by: number) =>
+      setAdjust(Math.max(-MAX_KCAL_ADJUST, Math.min(MAX_KCAL_ADJUST, shown + by)));
+    const atFloor = need ? shown < 0 && kcal > need + shown : false;
+    const activityLabel = details.activity
+      ? details.activity.toLowerCase()
+      : "";
 
     return (
       <View>
@@ -801,73 +876,68 @@ export default function MealPlanMaker({
           Step {step + 1} of {STEPS.length}
         </Text>
 
-        {page === "details" && (
-          <View>
-            <Text style={styles.label}>About {first}</Text>
-            <View style={styles.detailRow}>
-              {(
-                [
-                  ["height", "Height (cm)", "165"],
-                  ["weight", "Weight (kg)", "68"],
-                  ["age", "Age", "34"],
-                ] as const
-              ).map(([key, label, hint]) => (
-                <View key={key} style={styles.detailBox}>
-                  <Text style={styles.detailLabel}>{label}</Text>
-                  <TextInput
-                    style={styles.detailInput}
-                    value={details[key]}
-                    onChangeText={(v) => setDetails({ ...details, [key]: v })}
-                    placeholder={hint}
-                    placeholderTextColor="#64748B"
-                    keyboardType="decimal-pad"
-                    maxLength={5}
-                  />
-                </View>
-              ))}
-            </View>
-            {!client?.sex && (
-              <View style={styles.chips}>
-                {chip(details.sex === "female", "Female", () =>
-                  setDetails({ ...details, sex: "female" }),
-                )}
-                {chip(details.sex === "male", "Male", () =>
-                  setDetails({ ...details, sex: "male" }),
-                )}
-              </View>
-            )}
-            <Text style={styles.label}>How active is {first}?</Text>
-            <View style={styles.chips}>
-              {INTAKE_ACTIVITY_LEVELS.map((a) =>
-                chip(details.activity === a.label, a.label, () =>
-                  setDetails({ ...details, activity: a.label }),
-                ),
-              )}
-            </View>
-            {details.activity ? (
-              <Text style={styles.note}>
-                {
-                  INTAKE_ACTIVITY_LEVELS.find(
-                    (a) => a.label === details.activity,
-                  )?.detail
-                }
-              </Text>
-            ) : null}
-            {base && need ? (
-              <Text style={[styles.helper, { marginTop: 8 }]}>
-                {first}'s BMR is {base.toLocaleString()} kcal. With their
-                activity their body uses about {need.toLocaleString()} kcal a
-                day.
-              </Text>
-            ) : null}
-          </View>
-        )}
-
         {page === "goal" && (
           <View>
-            <Text style={styles.label}>
-              Does {first} want to lose fat, build muscle or stay the same?
-            </Text>
+            {!detailsOpen ? (
+              <Pressable
+                style={styles.summaryRow}
+                onPress={() => setDetailsOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Change ${first}'s height, weight, age or activity`}
+              >
+                <Text style={styles.summaryText}>
+                  {details.height} cm · {details.weight} kg · {details.age} years
+                  {activityLabel ? ` · ${activityLabel}` : ""}
+                </Text>
+                <Text style={styles.summaryEdit}>✎ Change</Text>
+              </Pressable>
+            ) : (
+              <View>
+                <Text style={styles.label}>About {first}</Text>
+                <View style={styles.detailRow}>
+                  {(
+                    [
+                      ["height", "Height (cm)", "165"],
+                      ["weight", "Weight (kg)", "68"],
+                      ["age", "Age", "34"],
+                    ] as const
+                  ).map(([key, label, hint]) => (
+                    <View key={key} style={styles.detailBox}>
+                      <Text style={styles.detailLabel}>{label}</Text>
+                      <TextInput
+                        style={styles.detailInput}
+                        value={details[key]}
+                        onChangeText={(v) => setDetails({ ...details, [key]: v })}
+                        placeholder={hint}
+                        placeholderTextColor="#64748B"
+                        keyboardType="decimal-pad"
+                        maxLength={5}
+                      />
+                    </View>
+                  ))}
+                </View>
+                {!client?.sex && (
+                  <View style={styles.chips}>
+                    {chip(details.sex === "female", "Female", () =>
+                      setDetails({ ...details, sex: "female" }),
+                    )}
+                    {chip(details.sex === "male", "Male", () =>
+                      setDetails({ ...details, sex: "male" }),
+                    )}
+                  </View>
+                )}
+                <Text style={styles.label}>How active is {first}?</Text>
+                <View style={styles.chips}>
+                  {INTAKE_ACTIVITY_LEVELS.map((a) =>
+                    chip(details.activity === a.label, a.label, () =>
+                      setDetails({ ...details, activity: a.label }),
+                    ),
+                  )}
+                </View>
+              </View>
+            )}
+
+            <Text style={styles.label}>{first}'s goal</Text>
             <View style={styles.chips}>
               {coachKcal
                 ? chip(goal === "coach", "Your diet planner target", () =>
@@ -875,30 +945,91 @@ export default function MealPlanMaker({
                   )
                 : null}
               {goals.map((g) =>
-                chip(safeGoal === g.key, g.label, () => setGoal(g.key), g.key),
+                chip(
+                  safeGoal === g.key,
+                  g.label,
+                  () => {
+                    setGoal(g.key);
+                    setAdjust(null);
+                  },
+                  g.key,
+                ),
               )}
             </View>
-            {need ? (
+            {need && safeGoal === "coach" ? (
               <Text style={styles.note}>
-                {safeGoal === "coach"
-                  ? `${coachKcal?.toLocaleString()} kcal a day, as you set it in the diet planner.`
-                  : `${MEAL_GOALS.find((g) => g.key === safeGoal)?.detail}: ${kcalFor(safeGoal).toLocaleString()} kcal a day.`}
-                {safeGoal === "lose" && need && kcalFor("lose") >= need
-                  ? " That's already the lowest safe amount for you, so the plan keeps you here."
-                  : ""}
+                {coachKcal?.toLocaleString()} kcal a day, as you set it in the
+                diet planner.
               </Text>
             ) : null}
+            {/* The trainer sets the deficit or surplus they want (GRIZZ, 2026-11-07). */}
+            {need && safeGoal !== "coach" ? (
+              <View style={styles.kcalBox}>
+                <View style={styles.kcalRow}>
+                  {referral.length ? null : (
+                    <Pressable
+                      style={styles.kcalStep}
+                      onPress={() => nudge(-50)}
+                      accessibilityLabel="50 kcal less"
+                      hitSlop={6}
+                    >
+                      <Text style={styles.kcalStepText}>−</Text>
+                    </Pressable>
+                  )}
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={styles.kcalBig}>
+                      {kcal.toLocaleString()} kcal a day
+                    </Text>
+                    <Text style={styles.kcalSmall}>
+                      {diff === 0
+                        ? `What ${first}'s body uses`
+                        : `${Math.abs(diff).toLocaleString()} ${diff < 0 ? "under" : "over"} what ${first}'s body uses (${need.toLocaleString()})`}
+                    </Text>
+                  </View>
+                  {referral.length ? null : (
+                    <Pressable
+                      style={styles.kcalStep}
+                      onPress={() => nudge(50)}
+                      accessibilityLabel="50 kcal more"
+                      hitSlop={6}
+                    >
+                      <Text style={styles.kcalStepText}>+</Text>
+                    </Pressable>
+                  )}
+                </View>
+                {atFloor ? (
+                  <Text style={styles.note}>
+                    That's the lowest safe amount for {first}, so the plan
+                    stays here.
+                  </Text>
+                ) : null}
+                {safeAdjust !== null && safeAdjust !== usual ? (
+                  <Pressable onPress={() => setAdjust(null)} hitSlop={6}>
+                    <Text style={styles.kcalReset}>Back to the usual amount</Text>
+                  </Pressable>
+                ) : !referral.length ? (
+                  <Text style={styles.note}>Tap − or + to change it by 50 kcal.</Text>
+                ) : null}
+              </View>
+            ) : null}
             {referralBox}
-            <View style={styles.insulinBox}>
-              <Text style={styles.insulinTitle}>
-                {safeGoal === "lose"
-                  ? "How you lose fat"
-                  : "⏱️ Carbs timed around training"}
-              </Text>
-              <Text style={styles.insulinText}>
-                {safeGoal === "lose" ? LOSE_CARBS : TIMED_CARBS}
-              </Text>
+
+            <Text style={styles.label}>What does {first} eat?</Text>
+            <View style={styles.chips}>
+              {MEAL_DIETS.map((d) =>
+                chip(
+                  diet === d.key,
+                  d.key === "everything" ? "Everything" : d.label,
+                  () => setDiet(d.key),
+                  d.key,
+                ),
+              )}
+              {chip(dairyFree, "No dairy", () => setDairyFree(!dairyFree), "dairy")}
             </View>
+            <Text style={styles.note}>
+              {MEAL_DIETS.find((d) => d.key === diet)?.detail}
+              {dairyFree ? ". No milk, yoghurt or cheese." : "."}
+            </Text>
           </View>
         )}
 
@@ -906,32 +1037,21 @@ export default function MealPlanMaker({
           <View>
             <Text style={styles.label}>Plan for</Text>
             <View style={styles.chips}>
-              {chip(!weekly, "A training and a rest day", () =>
-                setWeekly(false),
-              )}
-              {chip(weekly, "A whole week, different each day", () =>
-                setWeekly(true),
-              )}
+              {chip(!weekly, "Training and rest day", () => setWeekly(false))}
+              {chip(weekly, "Whole week", () => setWeekly(true))}
             </View>
             <Text style={styles.note}>
               {weekly
-                ? `A different plan for each day, Monday to Sunday. Each new week is made again around the foods ${first} picks.`
+                ? `A different plan each day, Monday to Sunday, made again each week around the foods ${first} picks.`
                 : "The same training-day and rest-day plan every week."}
             </Text>
-            <Text style={styles.label}>When does {first} train?</Text>
-            <View style={styles.chips}>
-              {TRAINING_TIMES.map((t) =>
-                chip(
-                  training === t.time,
-                  t.label,
-                  () => chooseMeals(count, t.time),
-                  t.key,
-                ),
-              )}
-              {chip(training === null, "Doesn't train", () =>
-                chooseMeals(count, null),
-              )}
-            </View>
+            <Text style={styles.label}>Training</Text>
+            <TimeSlotButton
+              label={`${first} trains at`}
+              value={training}
+              extra="Doesn't train"
+              onChange={(t) => chooseMeals(count, t)}
+            />
             {training && weekly && (
               <>
                 <Text style={styles.label}>Which days does {first} train?</Text>
@@ -950,9 +1070,6 @@ export default function MealPlanMaker({
                     ),
                   )}
                 </View>
-                <Text style={styles.note}>
-                  Training days get more carbs around the session.
-                </Text>
               </>
             )}
             <MealTimesPicker
@@ -966,77 +1083,59 @@ export default function MealPlanMaker({
                 setSnacks(sn);
               }}
             />
-            <Text style={styles.note}>
-              {snacks.length === 0
-                ? "No snacks: the meals carry all the protein and calories."
-                : snacks.length === 1
-                  ? "The snack is a protein snack with a piece of fruit."
-                  : "A protein snack with fruit, and a fruit and nut snack."}
-            </Text>
           </View>
         )}
 
-        {page === "diet" && (
-          <View>
-            <Text style={styles.label}>What does {first} eat?</Text>
-            {MEAL_DIETS.map((d) => (
-              <Pressable
-                key={d.key}
-                style={[
-                  styles.dietOption,
-                  diet === d.key && styles.dietOptionOn,
-                ]}
-                onPress={() => setDiet(d.key)}
-              >
-                <Text
-                  style={[
-                    styles.dietLabel,
-                    diet === d.key && styles.chipTextOn,
-                  ]}
-                >
-                  {d.label}
+        {page === "meals" && coachMode ? (
+          <>
+            <Pressable
+              style={[styles.stackButton, styles.primary]}
+              onPress={() => make(true)}
+              disabled={saving || telling}
+            >
+              {saving || telling ? (
+                <ActivityIndicator color={themeText("#0F172A")} />
+              ) : (
+                <Text style={styles.primaryText}>
+                  Make the plan and tell {first}
                 </Text>
-                <Text
-                  style={[
-                    styles.note,
-                    { marginTop: 2 },
-                    diet === d.key && styles.chipTextOn,
-                  ]}
-                >
-                  {d.detail}
-                </Text>
-              </Pressable>
-            ))}
-            <Text style={styles.label}>Milk, yoghurt and cheese?</Text>
-            <View style={styles.chips}>
-              {chip(!dairyFree, "Has dairy", () => setDairyFree(false))}
-              {chip(dairyFree, "No dairy (lactose or allergy)", () =>
-                setDairyFree(true),
               )}
+            </Pressable>
+            <View style={styles.buttons}>
+              <Pressable style={[styles.button, styles.secondary]} onPress={back}>
+                <Text style={styles.secondaryText}>Back</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.button, styles.secondary]}
+                onPress={() => make(false)}
+                disabled={saving || telling}
+              >
+                <Text style={styles.secondaryText}>Make, tell later</Text>
+              </Pressable>
             </View>
+          </>
+        ) : (
+          <View style={styles.buttons}>
+            {(step > 0 || plan) && (
+              <Pressable style={[styles.button, styles.secondary]} onPress={back}>
+                <Text style={styles.secondaryText}>Back</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[styles.button, styles.primary]}
+              onPress={page === "meals" ? () => make(false) : next}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color={themeText("#0F172A")} />
+              ) : (
+                <Text style={styles.primaryText}>
+                  {page === "meals" ? "Make the plan" : "Next"}
+                </Text>
+              )}
+            </Pressable>
           </View>
         )}
-
-        <View style={styles.buttons}>
-          {(step > 0 || plan) && (
-            <Pressable style={[styles.button, styles.secondary]} onPress={back}>
-              <Text style={styles.secondaryText}>Back</Text>
-            </Pressable>
-          )}
-          <Pressable
-            style={[styles.button, styles.primary]}
-            onPress={next}
-            disabled={saving}
-          >
-            {saving ? (
-              <ActivityIndicator color={themeText("#0F172A")} />
-            ) : (
-              <Text style={styles.primaryText}>
-                {page === "diet" ? "Make the plan" : "Next"}
-              </Text>
-            )}
-          </Pressable>
-        </View>
       </View>
     );
   }
@@ -1209,6 +1308,21 @@ export default function MealPlanMaker({
     }
   };
 
+  const fold = (key: string, title: string, body: React.ReactNode) => (
+    <View style={styles.foldBox} key={key}>
+      <Pressable
+        style={styles.foldHead}
+        onPress={() => setInfo(info === key ? null : key)}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: info === key }}
+      >
+        <Text style={styles.foldTitle}>{title}</Text>
+        <Text style={styles.foldChevron}>{info === key ? "▴" : "▾"}</Text>
+      </Pressable>
+      {info === key ? <View style={{ marginTop: 6 }}>{body}</View> : null}
+    </View>
+  );
+
   return (
     <View>
       {header}
@@ -1314,8 +1428,17 @@ export default function MealPlanMaker({
           }}
         >
           <Text style={styles.secondaryText}>
-            Change details, goal, meals or training time
+            Change goal, calories, meals or training time
           </Text>
+        </Pressable>
+      )}
+      {/* The shopping list right at the top, not under the whole plan (GRIZZ, 2026-11-07). */}
+      {!coachMode && (
+        <Pressable
+          style={[styles.stackButton, styles.primary, { marginTop: 0, marginBottom: 10 }]}
+          onPress={() => setShopping(true)}
+        >
+          <Text style={styles.primaryText}>🛒 My shopping list for the week</Text>
         </Pressable>
       )}
       <MealDayView
@@ -1359,67 +1482,64 @@ export default function MealPlanMaker({
           </Text>
         </View>
       )}
-      <View style={styles.insulinBox}>
-        <Text style={styles.insulinTitle}>
-          {coachMode ? `What ${first} likes` : "Your plan learns what you like"}
-        </Text>
-        <Text style={styles.insulinText}>
-          {coachMode
-            ? taste.note ||
-              `Each food ${first} swaps in, leaves out or puts in their own meal teaches the plan what they like.`
-            : `Each food you swap in, leave out or put in your own meal teaches your plan what you like.${week ? " Each new week uses more of the foods you pick." : ""}`}
-        </Text>
-        {coachMode && (
-          <Pressable
-            style={[styles.stackButton, styles.secondary]}
-            onPress={adaptNow}
-            disabled={adapting || saving}
-          >
-            {adapting ? (
-              <ActivityIndicator color={themeText("#fff")} />
-            ) : (
-              <Text style={styles.secondaryText}>
-                Adapt the plan to {first}'s tastes now
-              </Text>
-            )}
-          </Pressable>
-        )}
-      </View>
-      <View style={styles.insulinBox}>
-        <Text style={styles.insulinTitle}>
-          {plan.settings.goal === "lose"
-            ? "How you lose fat"
-            : "⏱️ Why the carbs are where they are"}
-        </Text>
+      {/* Explainers as one-line headings that open, so the plan stays short (GRIZZ, 2026-11-07). */}
+      {fold(
+        "likes",
+        coachMode ? `What ${first} likes` : "Your plan learns what you like",
+        <>
+          <Text style={styles.insulinText}>
+            {coachMode
+              ? taste.note ||
+                `Each food ${first} swaps in, leaves out or puts in their own meal teaches the plan what they like.`
+              : `Each food you swap in, leave out or put in your own meal teaches your plan what you like.${week ? " Each new week uses more of the foods you pick." : ""}`}
+          </Text>
+          {coachMode && (
+            <Pressable
+              style={[styles.stackButton, styles.secondary]}
+              onPress={adaptNow}
+              disabled={adapting || saving}
+            >
+              {adapting ? (
+                <ActivityIndicator color={themeText("#fff")} />
+              ) : (
+                <Text style={styles.secondaryText}>
+                  Adapt the plan to {first}'s tastes now
+                </Text>
+              )}
+            </Pressable>
+          )}
+        </>,
+      )}
+      {fold(
+        "carbs",
+        plan.settings.goal === "lose"
+          ? "How you lose fat"
+          : "Why the carbs are where they are",
         <Text style={styles.insulinText}>
           {plan.settings.goal === "lose" ? LOSE_CARBS : TIMED_CARBS}
-        </Text>
-      </View>
-      <Text style={styles.note}>
-        Weights are for the food as listed, for example cooked rice. Swap keeps
-        the same protein, carbs or fat. Tap ✕ to leave a food out. {SNACK_SALT}
-      </Text>
+        </Text>,
+      )}
+      {fold(
+        "weights",
+        "About the weights",
+        <Text style={styles.insulinText}>
+          Weights are for the food as listed, for example cooked rice. Swap
+          keeps the same protein, carbs or fat. Tap ✕ to leave a food out.{" "}
+          {SNACK_SALT}
+        </Text>,
+      )}
       {coachMode ? (
         <>
           <View style={styles.buttons}>
             <Pressable
               style={[styles.button, styles.secondary]}
-              onPress={() => {
-                setStep(0);
-                setEditing(true);
-              }}
-            >
-              <Text style={styles.secondaryText}>Change meals</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.button, styles.primary]}
               onPress={() => build(plan.variety + 1)}
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator color={themeText("#0F172A")} />
+                <ActivityIndicator color={themeText("#fff")} />
               ) : (
-                <Text style={styles.primaryText}>New ideas</Text>
+                <Text style={styles.secondaryText}>New ideas</Text>
               )}
             </Pressable>
           </View>
@@ -1442,21 +1562,7 @@ export default function MealPlanMaker({
             )}
           </Pressable>
         </>
-      ) : (
-        <View style={styles.shopBox}>
-          <Text style={styles.shopTitle}>Happy with your plan?</Text>
-          <Text style={styles.insulinText}>
-            Would you like a shopping list for the week? The app adds up
-            everything you need to buy, in the packs shops sell.
-          </Text>
-          <Pressable
-            style={[styles.stackButton, styles.primary]}
-            onPress={() => setShopping(true)}
-          >
-            <Text style={styles.primaryText}>Yes, make my shopping list</Text>
-          </Pressable>
-        </View>
-      )}
+      ) : null}
       <ShoppingListSheet
         visible={shopping}
         trainingDay={plan.training_day}
@@ -1466,7 +1572,10 @@ export default function MealPlanMaker({
           week
             ? (plan.settings.trainDays ?? []).length
             : (plan.settings.trainingDays ??
-              trainingDaysGuess(details.activity))
+              (intakeTrainingDays(
+                client?.intake_responses as Record<string, string> | null,
+              ).length ||
+                trainingDaysGuess(details.activity)))
         }
         onDays={(trainingDays) => {
           if (trainingDays !== plan.settings.trainingDays)
@@ -1474,6 +1583,7 @@ export default function MealPlanMaker({
         }}
         onClose={() => setShopping(false)}
         week={week?.days ?? null}
+        saveKey={client ? `${client.id}:${weekStart(todayIso())}` : undefined}
       />
 
       <Modal
@@ -1939,6 +2049,36 @@ const styles = themedStyles({
     marginTop: 10,
   },
   insulinTitle: { color: BRAND_GOLD, fontWeight: "800", marginBottom: 4 },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    backgroundColor: "#0F172A",
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 4,
+  },
+  summaryText: { color: "#E2E8F0", fontWeight: "700", flex: 1 },
+  summaryEdit: { color: BRAND_GOLD, fontWeight: "800" },
+  kcalBox: { backgroundColor: "#0F172A", borderRadius: 10, padding: 12, marginTop: 8 },
+  kcalRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  kcalStep: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#334155",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  kcalStepText: { color: "#fff", fontSize: 24, fontWeight: "800", lineHeight: 28 },
+  kcalBig: { color: BRAND_GOLD, fontSize: 18, fontWeight: "800" },
+  kcalSmall: { color: "#94A3B8", fontSize: 12, marginTop: 2, textAlign: "center" },
+  kcalReset: { color: "#38BDF8", fontWeight: "700", fontSize: 13, textAlign: "center", marginTop: 8 },
+  foldBox: { backgroundColor: "#0F172A", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: 8 },
+  foldHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  foldTitle: { color: BRAND_GOLD, fontWeight: "800", flex: 1 },
+  foldChevron: { color: BRAND_GOLD, fontSize: 14 },
   insulinText: { color: "#E2E8F0", fontSize: 13, lineHeight: 19 },
   dietOption: {
     backgroundColor: "#0F172A",

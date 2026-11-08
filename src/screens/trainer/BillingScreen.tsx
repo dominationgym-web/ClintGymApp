@@ -17,10 +17,10 @@ import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { addDays } from "@/lib/programSchedule";
-import { countedReferrals, referralRewards, trainerDisplayName } from "@/lib/trainers";
+import { countedReferrals, REFERRAL_DISCOUNT_PERCENT, referralRewards, trainerDisplayName } from "@/lib/trainers";
 import {
   amountsLabel,
-  clientTierLines,
+  clientTierLines, diaryTierLine,
   creditsUsable,
   CURRENCIES,
   feeCreditsUsable,
@@ -40,6 +40,10 @@ import {
   planState,
   planStateLabel,
   referralCreditValue,
+  referralFreeMonths,
+  discountShare,
+  discountedPrices,
+  addFreeMonths,
   shortDate,
 } from "@/lib/billing";
 import type {
@@ -84,6 +88,7 @@ export default function BillingScreen() {
   const [planFor, setPlanFor] = useState<Trainer | null>(null);
   const [payFor, setPayFor] = useState<Trainer | null>(null);
   const [freeUseFor, setFreeUseFor] = useState<Trainer | null>(null);
+  const [discountFor, setDiscountFor] = useState<Trainer | null>(null);
   // Trainers' proofs of payment sent through the app, not checked yet (0117).
   const [proofs, setProofs] = useState<PaymentProof[]>([]);
   const [viewing, setViewing] = useState<PaymentProof | null>(null);
@@ -161,6 +166,20 @@ export default function BillingScreen() {
 
   const monthKeys = [...new Set(months.map((m) => m.month))];
 
+  const endDiscount = (t: Trainer) =>
+    Alert.alert(`End ${trainerDisplayName(t)}'s discount?`, `${t.discount_percent}% off stops today. They pay full price from now on.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "End discount",
+        style: "destructive",
+        onPress: async () => {
+          const { error } = await supabase.from("trainers").update({ discount_until: addDays(today, -1) }).eq("id", t.id);
+          if (error) Alert.alert("Couldn't save", error.message);
+          await load();
+        },
+      },
+    ]);
+
   const endFreeUse = (t: Trainer) =>
     Alert.alert(
       `End ${trainerDisplayName(t)}'s free use?`,
@@ -214,22 +233,36 @@ export default function BillingScreen() {
     );
   };
 
+  // A trainer who cancels gets unused referrals as free extra months, never
+  // cash (GRIZZ, 2026-11-06): each is 50% of a month, added to paid until.
   const payOutReferrals = (t: Trainer) => {
     const unused = unusedCredits(t);
     const currency = t.billing_currency ?? "USD";
-    if (!settings || unused === 0) return;
-    const amount = referralCreditValue(settings.prices, currency, unused);
+    if (unused === 0) return;
+    const months = referralFreeMonths(unused);
+    const today = todayIso();
+    const from = t.paid_until && t.paid_until > today ? t.paid_until : today;
+    const until = addFreeMonths(from, months);
+    const monthsText = `${months} free month${months === 1 ? "" : "s"}`;
     Alert.alert(
-      `Pay out ${trainerDisplayName(t)}'s referrals?`,
-      `For a trainer who's cancelling: ${unused} unused referral${unused === 1 ? "" : "s"} = ${money(amount, currency)}. Tap once you've paid them.`,
+      `Give ${trainerDisplayName(t)} free months?`,
+      `For a trainer who's cancelling: ${unused} unused referral${unused === 1 ? "" : "s"} = ${monthsText}. Their access runs until ${shortDate(until)}. No cash refunds.`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Mark as paid out",
+          text: `Give ${monthsText}`,
           onPress: async () => {
+            const moved = await supabase
+              .from("trainers")
+              .update({ paid_until: until, referral_credits_used: t.referral_credits_used + unused })
+              .eq("id", t.id);
+            if (moved.error) {
+              Alert.alert("Couldn't save", moved.error.message);
+              return;
+            }
             const { error } = await supabase
               .from("referral_payouts")
-              .insert({ trainer_id: t.id, credits: unused, amount, currency, paid_on: todayIso() });
+              .insert({ trainer_id: t.id, credits: unused, amount: 0, currency, paid_on: today, free_months: months });
             if (error) Alert.alert("Couldn't save", error.message);
             await load();
           },
@@ -407,7 +440,12 @@ export default function BillingScreen() {
                 ) : null}
                 {unused > 0 && settings ? (
                   <Text style={styles.lineDetail}>
-                    Referral credit: {unused} × 25% = {money(referralCreditValue(sidePricing(settings, sides[t.id]?.side ?? "evolution").prices, t.billing_currency ?? "USD", unused), t.billing_currency ?? "USD")}
+                    Referral credit: {unused} × {REFERRAL_DISCOUNT_PERCENT}% = {money(referralCreditValue(sidePricing(settings, sides[t.id]?.side ?? "evolution").prices, t.billing_currency ?? "USD", unused), t.billing_currency ?? "USD")}
+                  </Text>
+                ) : null}
+                {t.discount_percent && t.discount_until ? (
+                  <Text style={styles.lineDetail}>
+                    🏷 {t.discount_percent}% off {t.discount_until < today ? `ended ${shortDate(t.discount_until)}` : `until ${shortDate(t.discount_until)}`}
                   </Text>
                 ) : null}
                 {t.free_use_from ? (
@@ -424,6 +462,11 @@ export default function BillingScreen() {
                   <Pressable onPress={() => (t.free_use_from ? endFreeUse(t) : setFreeUseFor(t))} hitSlop={8}>
                     <Text style={styles.link}>{t.free_use_from ? "End free use" : "Give free use"}</Text>
                   </Pressable>
+                  {t.free_use_from ? null : (
+                    <Pressable onPress={() => (t.discount_until && t.discount_until >= today ? endDiscount(t) : setDiscountFor(t))} hitSlop={8}>
+                      <Text style={styles.link}>{t.discount_until && t.discount_until >= today ? "End discount" : "Give discount"}</Text>
+                    </Pressable>
+                  )}
                   {t.billing_plan || t.free_use_from ? (
                     <Pressable onPress={() => setPayFor(t)} hitSlop={8}>
                       <Text style={styles.link}>Record payment</Text>
@@ -431,7 +474,7 @@ export default function BillingScreen() {
                   ) : null}
                   {unused > 0 ? (
                     <Pressable onPress={() => payOutReferrals(t)} hitSlop={8}>
-                      <Text style={styles.link}>Pay out referrals</Text>
+                      <Text style={styles.link}>Referrals as free months</Text>
                     </Pressable>
                   ) : null}
                 </View>
@@ -474,6 +517,7 @@ export default function BillingScreen() {
                       {line}
                     </Text>
                   ))}
+                  {diaryTierLine(settings, c) ? <Text style={styles.lineDetail}>{diaryTierLine(settings, c)}</Text> : null}
                   <Text style={[styles.lineDetail, { marginTop: 8 }]}>1 on 1 only (no Evolution clients)</Text>
                   {PLANS.map((p) => (
                     <Text key={p} style={styles.lineDetail}>
@@ -488,7 +532,7 @@ export default function BillingScreen() {
                 </View>
               );
             })}
-            <Text style={styles.muted}>Clients counted: on Evolution, everyone active in the app plus people only in a 1 on 1 diary who had a session that month. On 1 on 1 only, everyone on the calendar that month.</Text>
+            <Text style={styles.muted}>Clients counted: on Evolution, everyone active in the app, plus (at their own fee) people only in a 1 on 1 diary who had a session that month. Someone on both sides counts once. On 1 on 1 only, everyone on the calendar that month.</Text>
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lineName}>Lock out unpaid trainers</Text>
@@ -535,6 +579,7 @@ export default function BillingScreen() {
         onClose={() => setViewing(null)}
       />
       {planFor ? <SetPlanModal trainer={planFor} onClose={() => setPlanFor(null)} onSaved={load} /> : null}
+      {discountFor ? <DiscountModal trainer={discountFor} onClose={() => setDiscountFor(null)} onSaved={load} /> : null}
       {freeUseFor && settings ? (
         <FreeUseModal trainer={freeUseFor} settings={settings} side={sides[freeUseFor.id]?.side ?? "evolution"} onClose={() => setFreeUseFor(null)} onSaved={load} />
       ) : null}
@@ -628,6 +673,79 @@ function SetPlanModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose
 // Free use (0096): only the owner gives it. No subscription; per-client fees
 // on every active client start 6 months on (the next 1st), and the trainer
 // and owner are reminded before then.
+// A discount for one trainer (GRIZZ, 2026-11-06), e.g. 50% for 6 months for
+// helping test the app. It comes off their plan and client fees until the
+// last day, and can start the day they start paying (after their trial).
+const DISCOUNT_PERCENTS = ["10", "20", "25", "50", "75", "100"] as const;
+const DISCOUNT_MONTHS = ["1", "3", "6", "12"] as const;
+
+function DiscountModal({ trainer, onClose, onSaved }: { trainer: Trainer; onClose: () => void; onSaved: () => Promise<void> }) {
+  const today = todayIso();
+  // The day they start paying: the plan start, or the day after their trial.
+  const payStart =
+    trainer.billing_started_on && trainer.billing_started_on > today
+      ? trainer.billing_started_on
+      : trainer.trial_ends_at && trainer.trial_ends_at >= today
+        ? addDays(trainer.trial_ends_at, 1)
+        : null;
+  const [percent, setPercent] = useState<(typeof DISCOUNT_PERCENTS)[number]>("50");
+  const [months, setMonths] = useState<(typeof DISCOUNT_MONTHS)[number]>("6");
+  const [start, setStart] = useState<"paying" | "today">(payStart ? "paying" : "today");
+  const [saving, setSaving] = useState(false);
+  const from = start === "paying" && payStart ? payStart : today;
+  const until = addDays(addFreeMonths(from, Number(months)), -1);
+
+  const save = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("trainers")
+      .update({ discount_percent: Number(percent), discount_until: until })
+      .eq("id", trainer.id);
+    setSaving(false);
+    if (error) {
+      Alert.alert("Couldn't save", error.message);
+      return;
+    }
+    await onSaved();
+    onClose();
+  };
+
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose}>
+      <ModalSafeArea style={styles.modal}>
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
+          <Text style={styles.modalTitle}>Discount for {trainerDisplayName(trainer)}</Text>
+          <Text style={styles.muted}>Comes off their monthly subscription and client fees.</Text>
+          <Text style={styles.fieldLabel}>How much off</Text>
+          <Choice options={[...DISCOUNT_PERCENTS]} value={percent} onChange={setPercent} label={(p) => `${p}%`} />
+          <Text style={styles.fieldLabel}>For how long</Text>
+          <Choice options={[...DISCOUNT_MONTHS]} value={months} onChange={setMonths} label={(m) => `${m} month${m === "1" ? "" : "s"}`} />
+          {payStart ? (
+            <>
+              <Text style={styles.fieldLabel}>Starting</Text>
+              <Choice
+                options={["paying", "today"] as ("paying" | "today")[]}
+                value={start}
+                onChange={setStart}
+                label={(v) => (v === "paying" ? `When they start paying (${shortDate(payStart)})` : "Today")}
+              />
+            </>
+          ) : null}
+          <Text style={styles.lineDetail}>
+            {percent}% off from {shortDate(from)} until {shortDate(until)}.
+          </Text>
+          <Pressable style={styles.primary} onPress={save} disabled={saving}>
+            {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.primaryText}>Give {percent}% off</Text>}
+          </Pressable>
+          <Pressable style={styles.secondary} onPress={onClose}>
+            <Text style={styles.secondaryText}>Cancel</Text>
+          </Pressable>
+        </ScrollView>
+      </ModalSafeArea>
+    </Modal>
+  );
+}
+
 function FreeUseModal({
   trainer,
   settings,
@@ -707,8 +825,8 @@ function RecordPaymentModal({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
-  // Plan prices and referral credit follow the trainer's price side (0179).
-  const settings = { ...billingSettings, prices: sidePricing(billingSettings, side).prices };
+  // Plan prices and referral credit follow the trainer's price side (0179), less any discount (0192).
+  const settings = { ...billingSettings, prices: discountedPrices(sidePricing(billingSettings, side).prices, discountShare(trainer, todayIso())) };
   const currency = trainer.billing_currency ?? "USD";
   const owed = Number(status?.client_fees_owed ?? 0);
   const [kind, setKind] = useState<"subscription" | "client_fees">(
@@ -747,7 +865,7 @@ function RecordPaymentModal({
         currency,
         months: null,
         paid_on: todayIso(),
-        note: `Referral credit: ${feeCredits} × 25%`,
+        note: `Referral credit: ${feeCredits} × ${REFERRAL_DISCOUNT_PERCENT}%`,
       });
       if (!credit.error) {
         const used = await supabase
@@ -826,7 +944,7 @@ function RecordPaymentModal({
               {usable > 0 ? (
                 <View style={styles.switchRow}>
                   <Text style={[styles.lineDetail, { flex: 1 }]}>
-                    Use referral credit ({usable} × 25% = {money(referralCreditValue(settings.prices, currency, usable), currency)} off)
+                    Use referral credit ({usable} × {REFERRAL_DISCOUNT_PERCENT}% = {money(referralCreditValue(settings.prices, currency, usable), currency)} off)
                   </Text>
                   <Switch
                     value={useCredit}
@@ -850,7 +968,7 @@ function RecordPaymentModal({
               {feeCredits > 0 ? (
                 <View style={styles.switchRow}>
                   <Text style={[styles.lineDetail, { flex: 1 }]}>
-                    Use referral credit ({feeCredits} × 25% = {money(feeCreditValue, currency)} off)
+                    Use referral credit ({feeCredits} × {REFERRAL_DISCOUNT_PERCENT}% = {money(feeCreditValue, currency)} off)
                   </Text>
                   <Switch
                     value={useFeeCredit}

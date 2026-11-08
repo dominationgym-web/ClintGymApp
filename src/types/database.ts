@@ -72,6 +72,13 @@ export type Trainer = {
   // 0189: Metric (kg, cm) or Imperial (lb, inches). History imports read
   // numbers with no unit shown in these units. Stored values stay kg and cm.
   units?: Units;
+  // 0192: the Evolution side is switched on, and the day it was first
+  // switched on (its 30 free days start then, once).
+  evolution_on?: boolean;
+  evolution_started_on?: string | null;
+  // 0192: a discount the owner gave (e.g. 50% until a date), off plan and client fees.
+  discount_percent?: number | null;
+  discount_until?: string | null;
 }
 
 export type Units = "metric" | "imperial";
@@ -99,6 +106,8 @@ export type BillingSettings = {
   // 1 on 1 only pricing (0179): plan prices and per-client tiers (no free clients).
   one_on_one_prices: Record<BillingCurrency, Record<BillingPlan, number>>;
   one_on_one_tiers: ClientTier[];
+  // Evolution (0193): people only in the 1 on 1 diary have their own fee and limit.
+  diary_client_tiers: ClientTier[];
   client_fees_due_day: number;
   lockout_enabled: boolean;
   // Card payments on the website (0136), off until the store launch.
@@ -148,6 +157,8 @@ export type ReferralPayout = {
   currency: BillingCurrency;
   paid_on: string;
   created_at: string;
+  // 0192: given as free extra months instead of cash (amount 0).
+  free_months?: number | null;
 };
 
 export type TrainerBillingStatus = {
@@ -785,6 +796,9 @@ export type ClientMealPlan = {
     likes?: string[];
     weekly?: boolean;
     trainDays?: number[];
+    snacks?: string[];
+    // The trainer's own calories over (+) or under (-) what the body uses.
+    kcalAdjust?: number | null;
   };
   targets: { kcal: number; protein: number; carbs: number; fat: number };
   training_day: DietDay;
@@ -1323,6 +1337,13 @@ export interface Database {
     Tables: {
       trainers: { Row: Trainer; Insert: Partial<Trainer>; Update: Partial<Trainer>; Relationships: [] };
       clients: { Row: Client; Insert: Partial<Client>; Update: Partial<Client>; Relationships: [] };
+      // Trainer of the Half-Year settings (0194): one row, owner edits.
+      award_settings: {
+        Row: Record<string, unknown> & { id: number; enabled: boolean };
+        Insert: never;
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
       client_status_flag_events: {
         Row: ClientStatusFlagEvent;
         Insert: Partial<ClientStatusFlagEvent>;
@@ -1770,6 +1791,24 @@ export interface Database {
         Args: Record<string, never>;
         Returns: string;
       };
+      // Trainer of the Half-Year (0194/0195).
+      award_signup_needs: { Args: Record<string, never>; Returns: boolean };
+      record_app_open: { Args: { p_device: string; p_platform: string }; Returns: undefined };
+      set_award_profile: { Args: { p_face_path: string | null; p_goal: string | null; p_consent: boolean }; Returns: undefined };
+      submit_award_proof: { Args: { p_proof: string; p_path: string }; Returns: undefined };
+      my_award_needs: { Args: Record<string, never>; Returns: unknown };
+      my_award_status: { Args: Record<string, never>; Returns: unknown };
+      award_run_now: { Args: Record<string, never>; Returns: string };
+      award_leaderboard: { Args: { p_period: string | null }; Returns: unknown };
+      award_flag_list: { Args: Record<string, never>; Returns: unknown };
+      award_review_client: { Args: { p_client: string; p_approve: boolean }; Returns: undefined };
+      award_clear_trainer: { Args: { p_trainer: string }; Returns: undefined };
+      award_proof_queue: { Args: Record<string, never>; Returns: unknown };
+      award_review_proof: { Args: { p_proof: string; p_approve: boolean }; Returns: undefined };
+      award_periods_list: { Args: Record<string, never>; Returns: unknown };
+      award_reveal: { Args: { p_period: string }; Returns: undefined };
+      award_trainer_counter: { Args: Record<string, never>; Returns: unknown };
+      award_preview_status: { Args: { p_sa: boolean }; Returns: unknown };
     };
   };
 }

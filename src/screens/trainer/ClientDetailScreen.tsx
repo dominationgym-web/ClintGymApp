@@ -119,7 +119,7 @@ function formatIntakeLabel(key: string) {
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const { trainer } = useAuth();
-  const { guardEvolution, reloadPriceSide } = useTrainerSide();
+  const { guardEvolution } = useTrainerSide();
   const [askWeighIn, setAskWeighIn] = useState(false);
   // The activate pop-up's "1 on 1, Evolution or both" step.
   const [activating, setActivating] = useState<{ message: string; save: (t: TrainingType) => void } | null>(null);
@@ -565,8 +565,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
           if (!go) return;
           if (t === "one") {
             go(t);
-            reloadPriceSide();
-          } else guardEvolution(() => go(t), `Yes, activate ${client.name.split(" ")[0]}`);
+          } else guardEvolution(() => go(t));
         }}
       />
       {/* On a laptop the tabs run along the top (GRIZZ, 2026-10-27). */}
@@ -675,8 +674,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   if (t === trainingTypeOf(client)) return;
                   if (t === "one") {
                     pickTrainingType(t);
-                    reloadPriceSide();
-                  } else guardEvolution(() => pickTrainingType(t), "Yes, change it");
+                  } else guardEvolution(() => pickTrainingType(t));
                 }}
               />
               <Text style={styles.helper}>

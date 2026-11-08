@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
-import TextInput from "@/components/TextInput";
+import TimeSlotButton from "@/components/TimeSlotButton";
 import { BRAND_GOLD } from "@/lib/brand";
 import { MAX_MEALS, MAX_SNACKS, MIN_MEALS, mealTimesFor, snackTimesFor } from "@/lib/mealPlanMaker";
 import { themedStyles } from "@/lib/theme";
@@ -30,18 +30,16 @@ export default function MealTimesPicker({
     const next = mealTimesFor(n, training);
     onChange(next, snackTimesFor(next, snacks.length, training));
   };
-  const times = (list: string[], set: (next: string[]) => void, placeholder: string) => (
-    <View style={styles.times}>
+  // One button per meal and snack: tap it and pick a half hour (GRIZZ, 2026-11-07).
+  const times = (list: string[], set: (next: string[]) => void, name: string) => (
+    <View>
       {list.map((t, i) => (
-        <TextInput
+        <TimeSlotButton
           key={i}
-          style={styles.timeInput}
-          value={t}
-          onChangeText={(v) => set(list.map((x, j) => (j === i ? v : x)))}
-          placeholder={placeholder}
-          placeholderTextColor="#64748B"
-          keyboardType="numbers-and-punctuation"
-          maxLength={5}
+          label={name === "Snack" && list.length === 1 ? "Snack" : `${name} ${i + 1}`}
+          value={t || null}
+          after={name === "Meal" && i > 0 ? list[i - 1] : null}
+          onChange={(v) => v && set(list.map((x, j) => (j === i ? v : x)))}
         />
       ))}
     </View>
@@ -62,12 +60,12 @@ export default function MealTimesPicker({
         )}
       </View>
       <Text style={styles.label}>{first}'s meal times</Text>
-      <Text style={styles.note}>Tap a time to change it.</Text>
-      {times(meals, (next) => onChange(next, snacks), "07:00")}
+      <Text style={styles.note}>Tap a meal to change its time.</Text>
+      {times(meals, (next) => onChange(next, snacks), "Meal")}
       {snacks.length > 0 && (
         <>
           <Text style={styles.label}>{first}'s snack times</Text>
-          {times(snacks, (next) => onChange(meals, next), "10:30")}
+          {times(snacks, (next) => onChange(meals, next), "Snack")}
         </>
       )}
     </View>
@@ -82,6 +80,4 @@ const styles = themedStyles({
   chipOn: { backgroundColor: BRAND_GOLD },
   chipText: { color: "#CBD5E1", fontWeight: "700" },
   chipTextOn: { color: "#0F172A" },
-  times: { flexDirection: "row", flexWrap: "wrap", gap: 6, alignItems: "center" },
-  timeInput: { backgroundColor: "#0F172A", color: "#fff", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, width: 72, textAlign: "center" },
 });

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import AwardTrainerCard from "@/components/award/AwardTrainerCard";
 import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
@@ -444,6 +445,7 @@ export default function TrainerDashboardScreen({ navigation }: Props) {
                 ))}
               </View>
             )}
+            <AwardTrainerCard />
             <CheckInNudgeCard />
             {trainer && <HabitWinsCard trainerId={trainer.id} />}
           </>
