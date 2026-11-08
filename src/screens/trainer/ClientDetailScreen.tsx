@@ -65,6 +65,7 @@ import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 import FoldSection from "@/components/FoldSection";
+import ClientContractFold from "@/components/sessions/ClientContractFold";
 import { whatsappLink } from "@/lib/videoCheckins";
 import { markClientContact } from "@/lib/checkinNudges";
 import { HABIT_LENGTHS, habitEndDate, habitLengthLabel, habitStartChoices } from "@/lib/habitDates";
@@ -717,6 +718,15 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 </View>
               )}
             </FoldSection>
+
+            {/* The session contract they signed, always one tap away (GRIZZ, 2026-11-05). */}
+            <ClientContractFold
+              clientId={client.id}
+              clientName={client.name}
+              always={!!(client.one_on_one || client.live_only)}
+              open={overviewOpen === "contract"}
+              onToggle={() => toggleOverview("contract")}
+            />
 
             <FoldSection
               icon="🌿"

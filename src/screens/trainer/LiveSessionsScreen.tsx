@@ -9,6 +9,7 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionActionsModal from "@/components/sessions/SessionActionsModal";
+import ClientContractFold from "@/components/sessions/ClientContractFold";
 import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
@@ -1183,8 +1184,11 @@ function ClientsTab({
   const [picked, setPicked] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
   const [addingPerson, setAddingPerson] = useState(false);
+  const [contractOpen, setContractOpen] = useState(false);
   // Phone Back goes from a client back to the list, one step at a time.
   useStepBack(picked !== null, () => setPicked(null));
+  // Each client's contract starts closed.
+  useEffect(() => setContractOpen(false), [picked]);
   useStepBack(showOthers, () => setShowOthers(false));
   const withPlan = clients.filter((c) => planOf[c.id]);
   // 1 on 1 clients, and anyone already on the calendar (an import), not set up yet.
@@ -1221,6 +1225,16 @@ function ClientsTab({
             <Text style={styles.pageDetail}>Set up {(c?.name ?? "their").trim().split(/\s+/)[0]}'s diet and see how they're doing</Text>
           </Pressable>
         ) : null}
+        {/* Their signed contract, always one tap away (GRIZZ, 2026-11-05). */}
+        <ClientContractFold
+          clientId={picked}
+          clientName={c?.name ?? "Client"}
+          always
+          open={contractOpen}
+          onToggle={() => setContractOpen((o) => !o)}
+          refreshKey={`${plan?.updated_at ?? ""}|${signed[picked]?.id ?? ""}`}
+        />
+        <View style={{ height: 12 }} />
         <SessionPlanEditor
           clientId={picked}
           clientName={c?.name ?? "Client"}
