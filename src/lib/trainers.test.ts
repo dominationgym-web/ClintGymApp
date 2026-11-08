@@ -80,16 +80,16 @@ describe("referral counting", () => {
   it("labels each referral row", () => {
     expect(referralStatusLabel({ approved: false, counts_from: null, counted: false })).toBe("Waiting for approval");
     expect(referralStatusLabel({ approved: true, counts_from: "2027-04-30", counted: false })).toBe("Counts from 30 Apr 2027");
-    expect(referralStatusLabel({ approved: true, counts_from: "2027-04-30", counted: true })).toBe("+25%");
+    expect(referralStatusLabel({ approved: true, counts_from: "2027-04-30", counted: true })).toBe("+50%");
   });
 });
 
 describe("referralRewards", () => {
-  it("gives 25% per approved referral and a free month per 4", () => {
-    expect(referralRewards(0, 0)).toEqual({ earned: 0, unused: 0, unusedPercent: 0, freeMonths: 0, toNextFreeMonth: 4 });
-    expect(referralRewards(3, 0)).toMatchObject({ unusedPercent: 75, freeMonths: 0, toNextFreeMonth: 1 });
-    expect(referralRewards(4, 0)).toMatchObject({ unusedPercent: 100, freeMonths: 1, toNextFreeMonth: 4 });
-    expect(referralRewards(5, 2)).toMatchObject({ unused: 3, unusedPercent: 75, freeMonths: 0 });
+  it("gives 50% per approved referral and a free month per 2", () => {
+    expect(referralRewards(0, 0)).toEqual({ earned: 0, unused: 0, unusedPercent: 0, freeMonths: 0, toNextFreeMonth: 2 });
+    expect(referralRewards(1, 0)).toMatchObject({ unusedPercent: 50, freeMonths: 0, toNextFreeMonth: 1 });
+    expect(referralRewards(2, 0)).toMatchObject({ unusedPercent: 100, freeMonths: 1, toNextFreeMonth: 2 });
+    expect(referralRewards(5, 2)).toMatchObject({ unused: 3, unusedPercent: 150, freeMonths: 1 });
     expect(referralRewards(1, 3)).toMatchObject({ unused: 0 });
   });
 });

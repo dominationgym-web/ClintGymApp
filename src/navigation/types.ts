@@ -37,7 +37,7 @@ export type ClientTabParamList = {
 export type ClientStackParamList = {
   ClientTabs: NavigatorScreenParams<ClientTabParamList> | undefined;
   // open: the heading to show opened on arrival, e.g. "Cycle tracker".
-  Section: { sectionKey: SectionKey; open?: string };
+  Section: { sectionKey: SectionKey; open?: string; shop?: boolean };
   Search: undefined;
   SuggestionBox: undefined;
   Welcome: undefined;
@@ -63,7 +63,10 @@ export type TrainerTabParamList = {
   OneToday: undefined;
   OneCalendar: undefined;
   OneClients: undefined;
+  OneNutrition: undefined;
   OneInvoices: undefined;
+  // The same Profile page as on Evolution (GRIZZ, 2026-11-06).
+  OneProfile: undefined;
   // The Evolution side: online clients.
   Dashboard: undefined;
   Clients: undefined;
@@ -90,7 +93,7 @@ export type TrainerStackParamList = {
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   // With no `tab` it opens on the tab the trainer used last (2026-10-27).
-  ClientDetail: { clientId: string; tab?: "training" | "overview"; open?: "videos" | "history" };
+  ClientDetail: { clientId: string; tab?: "training" | "overview" | "diet"; open?: "videos" | "history" };
   // Live 1-on-1: the client's own workout screen, run by their trainer (0134).
   // `self`: the trainer training themselves (0146).
   LiveWorkout: { clientId: string; name: string; self?: boolean };
@@ -98,6 +101,9 @@ export type TrainerStackParamList = {
   GroupLive: { clientId?: string } | undefined;
   ProgramBuilder: undefined;
   Billing: undefined;
+  // Client sign-ups, reached from the 1 on 1 menu while the Evolution side
+  // (where the Clients tab lives) is switched off (0192).
+  SignUps: undefined;
   TrainerGuide: { guideKey: TrainerGuideKey };
   // Every coaching guide, on one menu line (2026-10-27).
   CoachingGuides: undefined;
@@ -105,6 +111,10 @@ export type TrainerStackParamList = {
   // area opens that body area straight away (from an injury a client reported).
   Stability: { area?: StabilityArea } | undefined;
   Timers: undefined;
+  // Trainer of the Half-Year (0194): the trainer's page, and the owner's admin page.
+  // preview: the owner sees what trainers will see, even while the award is off.
+  Award: { preview?: boolean } | undefined;
+  AwardAdmin: undefined;
 };
 
 export type TrainerTabScreenProps<T extends keyof TrainerTabParamList> = CompositeScreenProps<

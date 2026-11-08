@@ -34,6 +34,7 @@ import {
 } from "@/lib/liveSessions";
 import type { LiveSession, SessionPolicy, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import SafeBottom from "@/components/SafeBottom";
 
 type Step = "menu" | "cancel" | "move" | "who" | "price";
@@ -200,7 +201,11 @@ export default function SessionActionsModal({
       <KeyboardSafe>
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>{clientName}</Text>
+            <Text style={styles.title}>
+              {clientName}
+              {session.makeup_for ? "  " : ""}
+              <CatchUpTag show={session.makeup_for} />
+            </Text>
             <Text style={styles.when}>
               {dayLabel(session.starts_at)} · {clockLabel(session.starts_at)} · {session.minutes} min
             </Text>

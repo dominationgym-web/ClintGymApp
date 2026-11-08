@@ -5,9 +5,15 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "@/context/AuthContext";
 import { useClientWideScreen, useWideScreen } from "@/hooks/useWideScreen";
 import RootNavigator from "@/navigation/RootNavigator";
+import FirstOpenUpdate from "@/components/FirstOpenUpdate";
 import { setUpNotifications } from "@/lib/notifications";
 import { setUpWebAlert } from "@/lib/webAlert";
-import { loadThemePreference, themedStyles, useThemeMode, useThemeReady } from "@/lib/theme";
+import {
+  loadThemePreference,
+  themedStyles,
+  useThemeMode,
+  useThemeReady,
+} from "@/lib/theme";
 
 setUpNotifications();
 setUpWebAlert();
@@ -20,14 +26,16 @@ export default function App() {
   const ready = useThemeReady();
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <StatusBar style={mode === "light" ? "dark" : "light"} />
-        {!ready ? null : Platform.OS === "web" ? (
-          <WebFrame key={mode} />
-        ) : (
-          <RootNavigator key={mode} />
-        )}
-      </AuthProvider>
+      <FirstOpenUpdate>
+        <AuthProvider>
+          <StatusBar style={mode === "light" ? "dark" : "light"} />
+          {!ready ? null : Platform.OS === "web" ? (
+            <WebFrame key={mode} />
+          ) : (
+            <RootNavigator key={mode} />
+          )}
+        </AuthProvider>
+      </FirstOpenUpdate>
     </SafeAreaProvider>
   );
 }
@@ -50,6 +58,11 @@ function WebFrame() {
 
 const styles = themedStyles({
   webPage: { flex: 1, backgroundColor: "#020617", alignItems: "center" },
-  webColumn: { flex: 1, width: "100%", maxWidth: 560, backgroundColor: "#0F172A" },
+  webColumn: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 560,
+    backgroundColor: "#0F172A",
+  },
   webFull: { maxWidth: "100%" },
 });
