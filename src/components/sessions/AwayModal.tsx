@@ -118,7 +118,7 @@ export default function AwayModal({
     onDone();
     Alert.alert(
       `✈️ ${first} is away ${span}`,
-      `Their sessions in that time are green on your calendar: free to book. Their name stays on each one, and they go on your catch-up list. Before the month ends you pick catch-up next month or credit.${who.clientId ? ` ${first} gets a message.` : ""}`
+      `Their sessions in that time are green on your calendar: free to book. Their name stays on each one, and they go on your catch-up list. Can't fit one in? Tap Can't do one: Credit there. Not caught up by month end? You pick Credit or Next month.${who.clientId ? ` ${first} gets a message.` : ""}`
     );
   };
 
