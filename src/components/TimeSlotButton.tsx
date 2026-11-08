@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import SafeBottom from "@/components/SafeBottom";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -15,6 +15,8 @@ export default function TimeSlotButton({
   onChange,
   after,
   extra,
+  slots: own,
+  style,
 }: {
   label: string;
   value: string | null;
@@ -23,12 +25,18 @@ export default function TimeSlotButton({
   after?: string | null;
   /** One more choice above the times, such as "Doesn't train" (picks null). */
   extra?: string;
+  /** The times to offer, in order, when not the usual 05:00 to 23:00 (bed times run past midnight). */
+  slots?: string[];
+  style?: StyleProp<ViewStyle>;
 }) {
   const [open, setOpen] = useState(false);
-  const all = halfHourSlots();
+  const all = own ?? halfHourSlots();
   const later = after ? all.filter((t) => t > after) : all;
-  // A time typed in before (like 18:45) still shows as a choice.
-  const slots = value && !later.includes(value) ? [...later, value].sort() : later;
+  // A time typed in before (like 18:45, or from a watch) still shows as a choice, in its place.
+  const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  const start = later.length ? mins(later[0]) : 0;
+  const order = (t: string) => (mins(t) - start + 1440) % 1440;
+  const slots = value && !later.includes(value) ? [...later, value].sort((a, b) => order(a) - order(b)) : later;
   const pick = (time: string | null) => {
     setOpen(false);
     onChange(time);
@@ -36,7 +44,7 @@ export default function TimeSlotButton({
 
   return (
     <>
-      <Pressable style={styles.button} onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={`${label}: ${value ?? extra ?? "pick a time"}`}>
+      <Pressable style={[styles.button, style]} onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel={`${label}: ${value ?? extra ?? "pick a time"}`}>
         <Text style={styles.buttonLabel}>{label}</Text>
         <Text style={styles.buttonTime}>{value ?? extra ?? "Pick"} ›</Text>
       </Pressable>
