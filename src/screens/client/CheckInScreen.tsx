@@ -41,6 +41,7 @@ import { clockTime, sleepLength } from "@/lib/sleepSync";
 import { themeText, themedStyles } from "@/lib/theme";
 import { BRAND_GOLD } from "@/lib/brand";
 import { useStepBack } from "@/hooks/useStepBack";
+import { coffeeText, isLateCoffee } from "@/lib/coffee";
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -155,7 +156,7 @@ export default function CheckInScreen() {
     return () => subscription.remove();
   }, [reloadIfNewDay]);
 
-  const tidyTime = (key: "bedTime" | "wakeTime") => {
+  const tidyTime = (key: "bedTime" | "wakeTime" | "coffeeLastTime") => {
     const parsed = parseTime(form[key]);
     if (parsed) set(key, parsed);
   };
@@ -274,6 +275,7 @@ export default function CheckInScreen() {
           <SummaryRow label="Meals yesterday" value={String(saved.meals_total)} />
           <SummaryRow label="High-GI meals" value={String(saved.high_gi_count)} />
           <SummaryRow label="Wound down without screens" value={yesNo(saved.wound_down)} />
+          <SummaryRow label="Coffee yesterday" value={coffeeText(saved) ?? "-"} />
           {WELLBEING_TOPICS.map((t) => (
             <SummaryRow
               key={t.key}
@@ -392,6 +394,40 @@ export default function CheckInScreen() {
               ))}
             </View>
 
+            {/* Coffee (0203): late caffeine is a common cause of poor sleep and tiredness. */}
+            <Text style={styles.sectionHeading}>Coffee yesterday</Text>
+            <View style={styles.row}>
+              <View style={styles.flex1}>
+                <Text style={styles.inputLabel}>Cups</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  placeholderTextColor="#64748B"
+                  value={form.coffeeCups}
+                  onChangeText={(v) => set("coffeeCups", v)}
+                  maxLength={2}
+                />
+              </View>
+              <View style={styles.flex1}>
+                <Text style={styles.inputLabel}>Last cup at</Text>
+                <TextInput
+                  style={[styles.input, form.coffeeCups.trim() === "0" && styles.inputOff]}
+                  keyboardType={Platform.OS === "ios" ? "numbers-and-punctuation" : "default"}
+                  placeholder="14:00"
+                  placeholderTextColor="#64748B"
+                  value={form.coffeeCups.trim() === "0" ? "" : form.coffeeLastTime}
+                  onChangeText={(v) => set("coffeeLastTime", v)}
+                  onBlur={() => tidyTime("coffeeLastTime")}
+                  editable={form.coffeeCups.trim() !== "0"}
+                  maxLength={5}
+                />
+              </View>
+            </View>
+            {isLateCoffee({ coffee_cups: Number(form.coffeeCups) || 0, coffee_last_time: parseTime(form.coffeeLastTime) || null }) && (
+              <Text style={styles.coffeeNote}>Coffee after 2pm can still keep you awake at bedtime.</Text>
+            )}
+
           </>
         )}
         {step === 2 && (
@@ -495,6 +531,8 @@ const styles = themedStyles({
   choiceTextSelected: { color: "#0F172A" },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 10 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 12 },
+  inputOff: { opacity: 0.4 },
+  coffeeNote: { color: "#F59E0B", fontSize: 12, marginTop: 6 },
   multiline: { minHeight: 80, textAlignVertical: "top", marginTop: 8 },
   row: { flexDirection: "row", gap: 10 },
   flex1: { flex: 1 },

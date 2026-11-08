@@ -1,4 +1,5 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
+import { coffeeText, isLateCoffee } from "@/lib/coffee";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
 import { intakeTrainingDays } from "@/lib/intakePages";
@@ -894,6 +895,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                   {c.high_gi_count}
                   {c.wound_down !== null && ` · Wind-down ${c.wound_down ? "yes" : "no"}`}
                   {c.sleep_bed_time && c.sleep_wake_time ? ` · Bed ${c.sleep_bed_time.slice(0, 5)}, up ${c.sleep_wake_time.slice(0, 5)}` : ""}
+                  {c.coffee_cups === 0 ? " · No coffee" : coffeeText(c) ? ` · Coffee ${coffeeText(c)}${isLateCoffee(c) ? " (late)" : ""}` : ""}
                   {` · Meals ${c.meals_total}`}
                   {c.pain_status === "reported" ? " · 🩹 Pain" : ""}
                   {c.fatigue_status === "reported" ? " · 😴 Tired" : ""}

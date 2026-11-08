@@ -623,6 +623,9 @@ export type Checkin = {
   balance_notes: string | null;
   symptoms_status: "ok" | "reported" | null;
   symptoms: string | null;
+  // Coffee yesterday (0203): cups and the time of the last cup. Null when not answered.
+  coffee_cups: number | null;
+  coffee_last_time: string | null;
   created_at: string;
 }
 

@@ -77,6 +77,8 @@ const savedCheckin: Checkin = {
   balance_notes: null,
   symptoms_status: "ok",
   symptoms: null,
+  coffee_cups: 2,
+  coffee_last_time: "15:30:00",
   created_at: "2026-10-08T05:00:00Z",
 };
 
@@ -102,6 +104,8 @@ describe("formFromCheckin", () => {
       meals_total: 3,
       high_gi_count: 1,
       wound_down: true,
+      coffee_cups: 2,
+      coffee_last_time: "15:30",
       pain_status: "ok",
       pain_area: null,
       pain_notes: null,
@@ -155,6 +159,8 @@ describe("validateCheckinForm", () => {
       "alcohol_units",
       "balance_notes",
       "balance_status",
+      "coffee_cups",
+      "coffee_last_time",
       "distress_flag",
       "distress_notes",
       "fatigue_cause",
@@ -186,9 +192,32 @@ describe("validateCheckinForm", () => {
 
 describe("unansweredSections", () => {
   it("lists what is still blank", () => {
-    expect(unansweredSections(EMPTY_CHECKIN_FORM)).toEqual(["sleep times", "sleep quality", "water", "meals", "wind-down", "body and mind"]);
+    expect(unansweredSections(EMPTY_CHECKIN_FORM)).toEqual(["sleep times", "sleep quality", "water", "meals", "wind-down", "coffee", "body and mind"]);
     expect(unansweredSections(formFromCheckin(savedCheckin))).toEqual(["sleep times"]);
     // A check-in from before the new questions asks for them.
     expect(unansweredSections(formFromCheckin({ ...savedCheckin, symptoms_status: null }))).toEqual(["sleep times", "body and mind"]);
+  });
+});
+
+describe("coffee", () => {
+  const filled = (coffeeCups: string, coffeeLastTime: string) => validateCheckinForm({ ...formFromCheckin(savedCheckin), coffeeCups, coffeeLastTime });
+  it("saves cups and the last cup", () => {
+    const r = filled("3", "1530");
+    expect(r.ok && [r.values.coffee_cups, r.values.coffee_last_time]).toEqual([3, "15:30"]);
+  });
+  it("keeps blank as not answered and 0 as none, with no last cup", () => {
+    const blank = filled("", "");
+    expect(blank.ok && blank.values.coffee_cups).toBeNull();
+    const none = filled("0", "15:00");
+    expect(none.ok && [none.values.coffee_cups, none.values.coffee_last_time]).toEqual([0, null]);
+  });
+  it("rejects bad answers", () => {
+    expect(filled("1,5", "").ok).toBe(false);
+    expect(filled("40", "").ok).toBe(false);
+    expect(filled("2", "3pm").ok).toBe(false);
+  });
+  it("fills the form back from a saved check-in", () => {
+    const form = formFromCheckin(savedCheckin);
+    expect([form.coffeeCups, form.coffeeLastTime]).toEqual(["2", "15:30"]);
   });
 });

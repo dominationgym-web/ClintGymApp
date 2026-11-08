@@ -16,7 +16,7 @@ export async function loadWeekFacts(clientId: string, today: string): Promise<We
     supabase
       .from("checkins")
       .select(
-        "checkin_date, sleep_bed_time, sleep_wake_time, sleep_quality, alcohol_units, water_litres, pain_status, pain_area, fatigue_status, fatigue_cause, mental_status, mental_cause",
+        "checkin_date, sleep_bed_time, sleep_wake_time, sleep_quality, alcohol_units, water_litres, pain_status, pain_area, fatigue_status, fatigue_cause, mental_status, mental_cause, coffee_cups, coffee_last_time",
       )
       .eq("client_id", clientId)
       .gte("checkin_date", from)

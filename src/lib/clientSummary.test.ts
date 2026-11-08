@@ -16,6 +16,8 @@ const checkin = (date: string, over: Partial<SummaryInputs["checkins"][number]> 
   fatigue_cause: null,
   mental_status: "ok",
   mental_cause: null,
+  coffee_cups: null,
+  coffee_last_time: null,
   ...over,
 });
 
@@ -199,5 +201,40 @@ describe("habitDays", () => {
     expect(r.summary).toContain("Steps: about 7 000 a day, goal hit 1 of 3 days.");
     expect(r.suggestions.join(" ")).toMatch(/step goal/);
     expect(weekFacts(base(), TODAY).steps).toBeNull();
+  });
+});
+
+describe("coffee", () => {
+  const empty = { flags: [], planned: [], sessions: [], sets: [], activities: [], habits: { due: 0, done: 0 }, openProblems: [], injuries: [] };
+  it("counts cups and late last cups", () => {
+    const f = weekFacts(
+      {
+        ...empty,
+        checkins: [
+          checkin("2026-10-18", { coffee_cups: 3, coffee_last_time: "16:30:00" }),
+          checkin("2026-10-17", { coffee_cups: 2, coffee_last_time: "10:00:00" }),
+          checkin("2026-10-16", { coffee_cups: 0 }),
+          checkin("2026-10-15"),
+        ],
+      },
+      TODAY,
+    );
+    expect(f.coffee).toEqual({ days: 3, averageCups: 1.5, lateDays: 1, latestCup: "16:30" });
+  });
+  it("mentions late coffee when sleep is poor", () => {
+    const days = ["2026-10-18", "2026-10-17", "2026-10-16"];
+    const s = ruleSummary(
+      weekFacts(
+        { ...empty, checkins: days.map((d) => checkin(d, { sleep_quality: 2, sleep_bed_time: "23:30", sleep_wake_time: "05:30", coffee_cups: 4, coffee_last_time: "17:00" })) },
+        TODAY,
+      ),
+    );
+    expect(s.summary).toContain("Coffee: about 4 cups a day, last cup after 2pm on 3 days (latest 17:00).");
+    expect(s.suggestions.some((t) => t.startsWith("Late coffee on 3 days"))).toBe(true);
+  });
+  it("says nothing without coffee answers", () => {
+    const s = ruleSummary(weekFacts({ ...empty, checkins: [checkin("2026-10-18")] }, TODAY));
+    expect(s.summary).not.toContain("Coffee");
+    expect(weekFacts({ ...empty, checkins: [checkin("2026-10-18")] }, TODAY).coffee).toBeNull();
   });
 });
