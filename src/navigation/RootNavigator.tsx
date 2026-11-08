@@ -24,7 +24,8 @@ import { needsAgreement, trainerDisplayName } from "@/lib/trainers";
 import TrainerAgreementScreen from "@/screens/trainer/TrainerAgreementScreen";
 import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
 import type { Trainer } from "@/types/database";
-import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { themeBg, themeText, themedStyles, useThemeChosen } from "@/lib/theme";
+import ThemeChoiceScreen from "@/screens/ThemeChoiceScreen";
 
 // A client's access is open unless their plan has actually expired.
 // `expiring_soon` is a client who is still paid up, inside the renewal window
@@ -73,6 +74,7 @@ let savedNavState: NavigationState | undefined;
 
 export default function RootNavigator() {
   const { role, loading, client, trainer } = useAuth();
+  const themeChosen = useThemeChosen();
   const locked = useLockedOut(role, role === "trainer" ? trainer : client);
   // Trainer of the Half-Year (0194): which phone opened the app today, for the
   // fake-account check. The database ignores it while the award is off.
@@ -98,6 +100,9 @@ export default function RootNavigator() {
       </View>
     );
   }
+
+  // Light or dark first, straight after signing up (GRIZZ, 2026-11-04).
+  if (role && !themeChosen) return <ThemeChoiceScreen />;
 
   return (
     <KeyboardSafe>
