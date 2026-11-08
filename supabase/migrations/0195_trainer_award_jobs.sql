@@ -33,8 +33,47 @@ as $$
   ), '[]'::jsonb);
 $$;
 
--- "1st $1 500, 2nd $500".
-create or replace function public.award_prize_words(p_places jsonb)
+-- South African trainers get their prize in rand (GRIZZ, 2026-11-08): the
+-- dollar amount at billing_settings.usd_zar_rate, rounded to the nearest R100.
+create or replace function public.award_is_sa(p_trainer uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((select t.billing_currency = 'ZAR' or t.signup_country = 'ZA' from public.trainers t where t.id = p_trainer), false);
+$$;
+
+create or replace function public.award_local_prize(p_amount numeric, p_zar boolean)
+returns numeric
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case
+    when p_amount is null then null
+    when p_zar and s.prize_currency = 'USD' then round(p_amount * coalesce((select b.usd_zar_rate from public.billing_settings b where b.id = 1), 18) / 100) * 100
+    else p_amount
+  end
+  from public.award_settings s where s.id = 1;
+$$;
+
+create or replace function public.award_money(p_amount numeric, p_zar boolean)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select case when p_zar or s.prize_currency = 'ZAR' then 'R' when s.prize_currency = 'USD' then '$' else s.prize_currency || ' ' end
+    || replace(trim(to_char(public.award_local_prize(p_amount, p_zar), 'FM999G999G990')), ',', ' ')
+  from public.award_settings s where s.id = 1;
+$$;
+
+-- "1st $1 500, 2nd $500" (or in rand for South Africans).
+create or replace function public.award_prize_words(p_places jsonb, p_zar boolean default false)
 returns text
 language sql
 stable
@@ -42,12 +81,9 @@ security definer
 set search_path = public
 as $$
   select string_agg(
-    case o when 1 then '1st' when 2 then '2nd' when 3 then '3rd' else o || 'th' end
-      || ' ' || case s.prize_currency when 'USD' then '$' when 'ZAR' then 'R' else s.prize_currency || ' ' end
-      || replace(trim(to_char(v::numeric, 'FM999G999G990')), ',', ' '),
+    case o when 1 then '1st' when 2 then '2nd' when 3 then '3rd' else o || 'th' end || ' ' || public.award_money(v::numeric, p_zar),
     ', ' order by o)
-  from jsonb_array_elements_text(p_places) with ordinality as x(v, o), public.award_settings s
-  where s.id = 1;
+  from jsonb_array_elements_text(p_places) with ordinality as x(v, o);
 $$;
 
 -- Owner: the trainer counter.
@@ -412,8 +448,9 @@ begin
     limit jsonb_array_length(places)
   loop
     v_place := v_place + 1;
-    insert into public.award_winners (period_id, place, trainer_id, score, prize)
-    values (p.id, v_place, win.trainer_id, win.total, (places ->> (v_place - 1))::numeric)
+    insert into public.award_winners (period_id, place, trainer_id, score, prize, prize_paid)
+    values (p.id, v_place, win.trainer_id, win.total, (places ->> (v_place - 1))::numeric,
+            public.award_money((places ->> (v_place - 1))::numeric, public.award_is_sa(win.trainer_id)))
     on conflict (period_id, place) do nothing;
   end loop;
   update public.award_periods
@@ -718,7 +755,7 @@ begin
       'winner_id', p.winner_id, 'winner', coalesce(t.business_name, t.name), 'winner_score', p.winner_score,
       'closed_at', p.closed_at, 'revealed_at', p.revealed_at,
       'winners', coalesce((
-        select jsonb_agg(jsonb_build_object('place', aw.place, 'name', coalesce(x.business_name, x.name), 'score', aw.score, 'prize', aw.prize) order by aw.place)
+        select jsonb_agg(jsonb_build_object('place', aw.place, 'name', coalesce(x.business_name, x.name), 'score', aw.score, 'prize', aw.prize, 'prize_paid', aw.prize_paid) order by aw.place)
         from public.award_winners aw join public.trainers x on x.id = aw.trainer_id
         where aw.period_id = p.id
       ), '[]'::jsonb)
@@ -789,10 +826,10 @@ begin
     where m.trainer_id = me order by m.sent_on desc limit 1;
   return jsonb_build_object(
     'enabled', true,
-    'prize_text', coalesce(public.award_prize_words(public.award_prize_places(public.award_trainer_count())), '')
+    'prize_text', coalesce(public.award_prize_words(public.award_prize_places(public.award_trainer_count()), public.award_is_sa(me)), '')
                   || coalesce(chr(10) || s.prize_text, ''),
     'prize_tiers', (
-      select jsonb_agg(jsonb_build_object('trainers', (t ->> 'trainers')::integer, 'prize', public.award_prize_words(t -> 'places'))
+      select jsonb_agg(jsonb_build_object('trainers', (t ->> 'trainers')::integer, 'prize', public.award_prize_words(t -> 'places', public.award_is_sa(me)))
                        order by (t ->> 'trainers')::integer)
       from jsonb_array_elements(s.prize_tiers) t
     ),
@@ -805,7 +842,10 @@ begin
     'message', case when msg.sent_on is not null then jsonb_build_object('sent_on', msg.sent_on, 'kind', msg.kind, 'body', msg.body, 'tip', msg.tip) end,
     'reveal', case when last_rev.revealed_at is not null then jsonb_build_object(
       'period_ends', last_rev.ends_on, 'revealed_at', last_rev.revealed_at, 'winner', last_rev.winner,
-      'logo_path', last_rev.logo_path, 'prize_text', last_rev.prize_text,
+      'logo_path', last_rev.logo_path,
+      'prize_text', (select string_agg(case aw.place when 1 then '1st' when 2 then '2nd' when 3 then '3rd' else aw.place || 'th' end
+                                       || ' ' || public.award_money(aw.prize, public.award_is_sa(me)), ', ' order by aw.place)
+                     from public.award_winners aw where aw.period_id = last_rev.id),
       'is_me', exists (select 1 from public.award_winners aw where aw.period_id = last_rev.id and aw.trainer_id = me),
       'my_place', (select aw.place from public.award_winners aw where aw.period_id = last_rev.id and aw.trainer_id = me),
       'places', (

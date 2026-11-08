@@ -77,7 +77,7 @@ interface PeriodRow {
   winner_score: number | null;
   closed_at: string | null;
   revealed_at: string | null;
-  winners: { place: number; name: string; score: number | null; prize: number | null }[];
+  winners: { place: number; name: string; score: number | null; prize: number | null; prize_paid: string | null }[];
 }
 
 // The owner's Trainer of the Half-Year page (0194-0196): the switch and
@@ -322,7 +322,7 @@ function Winners() {
             {!p.closed_at
               ? "Running now."
               : p.winners.length
-                ? p.winners.map((w) => `${placeWord(w.place)}: ${w.name} (${Math.round(w.score ?? 0)})`).join("\n")
+                ? p.winners.map((w) => `${placeWord(w.place)}: ${w.name} (${Math.round(w.score ?? 0)})${w.prize_paid ? `, pay ${w.prize_paid}` : ""}`).join("\n")
                 : "No trainer qualified."}
           </Text>
           {p.prize_text ? <Text style={styles.hint}>Prize: {p.prize_text}</Text> : null}

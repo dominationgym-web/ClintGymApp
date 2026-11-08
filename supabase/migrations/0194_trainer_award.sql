@@ -79,7 +79,7 @@ create table if not exists public.award_settings (
   rules_text text not null default
     'Trainer of the Half-Year is a cash award for the trainer who grows and keeps the most real clients and gets them the best results. '
     || 'The winner is chosen by the scoring below, never by a draw.' || chr(10) || chr(10)
-    || 'The award starts once 250 trainers are on the app. The prize grows as more trainers join, and from 1 000 trainers more places win a prize. '
+    || 'The award starts once 250 trainers are on the app. The prize grows as more trainers join, and from 1 000 trainers more places win a prize. Trainers in South Africa are paid the same prize in rand. '
     || 'Two award periods a year. To win you need at least 10 verified clients on the last day of the period, '
     || 'and you can''t win again for 12 months after winning any prize place (the award then goes to the highest-scoring trainer who can win).' || chr(10) || chr(10)
     || 'Your score out of 100: 30% new sign-ups who are still with you 90 days after joining, 20% client retention, '
@@ -271,6 +271,8 @@ create table if not exists public.award_winners (
   trainer_id uuid not null,
   score numeric,
   prize numeric,
+  -- What they're paid: in rand for South African trainers.
+  prize_paid text,
   primary key (period_id, place)
 );
 alter table public.award_winners enable row level security;
