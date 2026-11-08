@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AwardTrainerCard from "@/components/award/AwardTrainerCard";
-import { ActivityIndicator, Alert, Linking, Modal, PanResponder, Pressable, RefreshControl, Share, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Modal, PanResponder, Pressable, RefreshControl, Share, Switch, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -1388,6 +1388,23 @@ function InvoicesTab({
     if (failed) Alert.alert("Some didn't work", `${failed} invoice${failed === 1 ? "" : "s"} couldn't be made. Pull down to try again.`);
   };
 
+  // Paid / Not paid straight from the list, as the money comes in (GRIZZ,
+  // 2026-11-08: some clients are slow payers). A draft is brought up to date
+  // first so what's marked paid is the month as it stands.
+  const [paying, setPaying] = useState<string | null>(null);
+  const togglePaid = async (inv: SessionInvoice) => {
+    setPaying(inv.id);
+    const toPaid = inv.status !== "paid";
+    let error: { message: string } | null = null;
+    if (toPaid && inv.status === "draft") {
+      ({ error } = await supabase.rpc("build_session_invoice", { p_client: inv.client_id, p_month: inv.month }));
+    }
+    if (!error) ({ error } = await supabase.rpc("set_session_invoice_paid", { p_id: inv.id, p_paid: toPaid }));
+    setPaying(null);
+    if (error) Alert.alert("Couldn't save", error.message);
+    refresh();
+  };
+
   const currency = rows[0]?.currency ?? "ZAR";
   const total = rows.reduce((t, r) => t + Number(r.total), 0);
   const paid = rows.filter((r) => r.status === "paid").reduce((t, r) => t + Number(r.total), 0);
@@ -1406,7 +1423,14 @@ function InvoicesTab({
         <>
           <Text style={styles.sectionTitle}>Ready to send</Text>
           {otherDrafts.map((inv) => (
-            <InvoiceRow key={inv.id} inv={inv} name={`${name(inv.client_id)} · ${monthLabel(inv.month)}`} onPress={() => setOpen(inv)} />
+            <InvoiceRow
+              key={inv.id}
+              inv={inv}
+              name={`${name(inv.client_id)} · ${monthLabel(inv.month)}`}
+              onPress={() => setOpen(inv)}
+              onPaid={() => togglePaid(inv)}
+              paying={paying === inv.id}
+            />
           ))}
         </>
       ) : null}
@@ -1435,7 +1459,14 @@ function InvoicesTab({
         </Text>
       ) : null}
       {rows.map((inv) => (
-        <InvoiceRow key={inv.id} inv={inv} name={name(inv.client_id)} onPress={() => setOpen(inv)} />
+        <InvoiceRow
+          key={inv.id}
+          inv={inv}
+          name={name(inv.client_id)}
+          onPress={() => setOpen(inv)}
+          onPaid={() => togglePaid(inv)}
+          paying={paying === inv.id}
+        />
       ))}
       {plans.length ? (
         <Pressable style={styles.outline} onPress={makeAll} disabled={busy}>
@@ -1464,7 +1495,19 @@ function InvoicesTab({
   );
 }
 
-function InvoiceRow({ inv, name, onPress }: { inv: SessionInvoice; name: string; onPress: () => void }) {
+function InvoiceRow({
+  inv,
+  name,
+  onPress,
+  onPaid,
+  paying,
+}: {
+  inv: SessionInvoice;
+  name: string;
+  onPress: () => void;
+  onPaid: () => void;
+  paying: boolean;
+}) {
   const colour = inv.status === "paid" ? "#22C55E" : inv.status === "sent" ? "#F59E0B" : "#94A3B8";
   const status = inv.status === "paid" ? "Paid" : inv.status === "sent" ? "Sent · not paid" : "Draft";
   const red = inv.lines.filter((l) => l.kind === "late" || l.kind === "no_show").length;
@@ -1481,6 +1524,19 @@ function InvoiceRow({ inv, name, onPress }: { inv: SessionInvoice; name: string;
         {green ? ` · 🟢 ${green}` : ""}
         {inv.undecided || inv.unconfirmed ? " · ⚠ needs checking" : ""}
       </Text>
+      <View style={styles.paidRow}>
+        <Text style={styles.meta}>{inv.status === "paid" ? `Paid${inv.paid_at ? ` ${dayLabel(inv.paid_at)}` : ""}` : "Not paid yet"}</Text>
+        {paying ? (
+          <ActivityIndicator color={themeText("#22C55E")} />
+        ) : (
+          <Switch
+            value={inv.status === "paid"}
+            onValueChange={onPaid}
+            trackColor={{ false: themeBg("#334155"), true: themeBg("#22C55E") }}
+            accessibilityLabel={`${name} paid`}
+          />
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -1773,6 +1829,7 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
 }
 
 const styles = themedStyles({
+  paidRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 },
   container: { flex: 1, backgroundColor: "#0F172A" },
   helper: { color: "#94A3B8", fontSize: 14, lineHeight: 20, marginTop: 4, marginBottom: 6 },
   label: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 16, marginBottom: 4 },

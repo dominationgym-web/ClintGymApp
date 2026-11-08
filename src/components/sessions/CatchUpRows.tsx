@@ -42,6 +42,11 @@ export default function CatchUpRows({
     if (error) return Alert.alert("Couldn't save", error.message);
     onChanged();
   };
+  const credit = (s: LiveSession) =>
+    Alert.alert(`Credit ${name(s)}?`, "No catch-up for this session. It comes off their next invoice instead.", [
+      { text: "Back", style: "cancel" },
+      { text: "Credit", onPress: () => decide(s, "credit") },
+    ]);
   const dueLabel = (s: LiveSession) => dayLabel(`${catchUpDeadline(s)}T12:00:00`);
 
   return (
@@ -57,7 +62,7 @@ export default function CatchUpRows({
         <View key={s.id} style={[styles.row, { borderLeftColor: themeBg(due === "late" ? "#F59E0B" : KIND_STYLE.makeup.colour) }]}>
           <Text style={styles.rowTitle}>{name(s)}</Text>
           <Text style={styles.rowBody}>
-            For {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)} ({s.cancelled_by === "trainer" ? "you were away: the catch-up is charged" : "cancelled in time"})
+            For {dayLabel(s.starts_at)}, {clockLabel(s.starts_at)} ({s.cancelled_by === "trainer" ? "you were away: the catch-up is charged" : s.away_id ? "they were away" : "cancelled in time"})
           </Text>
           <Text style={[styles.due, { color: themeText(due === "ok" ? "#94A3B8" : "#F59E0B") }]}>
             {due === "late" ? `⚠️ Not done by ${dueLabel(s)}: credit it or move it to next month` : `Book by ${dueLabel(s)}${due === "soon" ? " ⏳" : ""}`}
@@ -67,6 +72,13 @@ export default function CatchUpRows({
               // Green like the open slots, to get catch-ups booked (GRIZZ, 2026-11-03).
               <Pressable style={styles.gapButton} onPress={() => onCatchUp(s)}>
                 <Text style={styles.gapButtonText}>Find a gap ›</Text>
+              </Pressable>
+            ) : null}
+            {due !== "late" && !onlyLate ? (
+              // Some clients can't do catch-ups because of when they train:
+              // credit them straight away (GRIZZ, 2026-11-08).
+              <Pressable style={styles.outline} onPress={() => credit(s)} disabled={!!busy}>
+                {busy === s.id + "credit" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>Can't do one: 🟢 Credit</Text>}
               </Pressable>
             ) : null}
             {due === "late" ? (
