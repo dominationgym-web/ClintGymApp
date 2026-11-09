@@ -101,7 +101,7 @@ describe("losses", () => {
         l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup" }), // you cancelled, catch-up owed: can come back
         l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup", makeup_session_id: "m1" }), // catch-up booked
         l({ status: "cancelled", cancelled_by: "trainer", charge: "credit", client_id: null }), // name only: lost
-        l({ status: "cancelled", cancelled_by: "client", charge: "credit" }), // credited, not invoiced: can come back
+        l({ status: "cancelled", cancelled_by: "client", charge: "credit" }), // credited: decided, not won back
         l({ status: "cancelled", cancelled_by: "client", charge: "credit", credit_invoice_id: "i1" }), // credited on an invoice: lost
         l({ status: "cancelled", cancelled_by: "client", charge: null }), // decide
         l({ status: "cancelled", cancelled_by: "client", charge: "makeup" }), // already paid, time owed
@@ -113,7 +113,7 @@ describe("losses", () => {
     expect(t.coach).toBe(700);
     expect(t.credited).toBe(700);
     expect(t.undecided).toBe(350);
-    expect(t.canComeBack).toBe(350 * 2);
+    expect(t.canComeBack).toBe(350);
     expect(t.bookedBack).toBe(350);
     expect(t.owedCount).toBe(1);
   });
