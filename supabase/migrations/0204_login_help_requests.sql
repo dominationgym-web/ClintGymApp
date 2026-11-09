@@ -60,7 +60,7 @@ begin
 
   if uid is not null and not is_trainer and coach is not null then
     push_title := coalesce(who, 'A client') || ' can''t log in';
-    push_body := 'They tapped Forgot password. Open their page, tap Log-in help, make a new password and WhatsApp it to them.';
+    push_body := 'They tapped Forgot password. Open their page, tap Log-in help, then Send on WhatsApp.';
     push_data := jsonb_build_object('type', 'login_help', 'clientId', uid);
   elsif is_trainer then
     coach := owner_id;

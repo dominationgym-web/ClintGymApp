@@ -282,7 +282,7 @@ export default function TrainersScreen() {
               <Pressable style={styles.clientsToggle} onPress={() => setLoginOpen(loginOpen === item.id ? null : item.id)} accessibilityRole="button">
                 <Text style={styles.extraLink}>{loginOpen === item.id ? "▾" : "▸"} 🔑 Log-in help</Text>
               </Pressable>
-              {loginOpen === item.id ? <LoginHelp userId={item.id} name={item.name} /> : null}
+              {loginOpen === item.id ? <LoginHelp userId={item.id} name={item.name} phone={item.phone} /> : null}
               {openProblems ? (
                 <Pressable onPress={() => navigation.navigate("TrainerProblems")} hitSlop={6}>
                   <Text style={[styles.extraLink, { color: themeText("#F59E0B") }]}>{openProblems} open problem{openProblems === 1 ? "" : "s"} ›</Text>

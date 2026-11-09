@@ -873,7 +873,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             {/* Can't log in: their log-in email, fix a typo, or a new password (GRIZZ, 2026-11-09). */}
             {client.id !== trainer?.id && (
               <FoldSection icon="🔑" title="Log-in help" hint="Forgot password or wrong email" open={overviewOpen === "login"} onToggle={() => toggleOverview("login")}>
-                <LoginHelp userId={client.id} name={client.name} />
+                <LoginHelp userId={client.id} name={client.name} phone={client.phone} />
               </FoldSection>
             )}
 
