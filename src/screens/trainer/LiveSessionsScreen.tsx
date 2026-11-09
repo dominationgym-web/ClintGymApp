@@ -299,6 +299,12 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
         partners={open ? sessions.filter((x) => x.id !== open.id && x.starts_at === open.starts_at && x.status !== "removed") : []}
         nameOf={who}
         onSwitch={setOpen}
+        onStartLive={(group) => {
+          const first = group[0];
+          setOpen(null);
+          if (group.length === 1) navigation.navigate("LiveWorkout", { clientId: first.client_id!, name: who(first), sessionId: first.id });
+          else navigation.navigate("GroupLive", { clientIds: group.map((s) => s.client_id!), sessionIds: group.map((s) => s.id) });
+        }}
         onAway={() => {
           if (!open) return;
           setAwayFor({ clientId: open.client_id, name: who(open) });

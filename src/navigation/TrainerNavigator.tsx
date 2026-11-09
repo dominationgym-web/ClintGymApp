@@ -175,7 +175,7 @@ export default function TrainerNavigator() {
               })}
             >
               {({ route }) => (
-                <LiveClientProvider clientId={route.params.clientId}>
+                <LiveClientProvider clientId={route.params.clientId} sessionId={route.params.sessionId}>
                   <ExerciseLibraryScreen />
                 </LiveClientProvider>
               )}

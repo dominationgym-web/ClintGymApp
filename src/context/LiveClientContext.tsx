@@ -9,11 +9,11 @@ import type { Client } from "@/types/database";
 // says so (setLiveClient), which the database only accepts from the client's
 // own trainer (acting_client(), 0134).
 
-type Live = { client: Client | null; refreshProfile: () => Promise<void> };
+type Live = { client: Client | null; refreshProfile: () => Promise<void>; calendarSessionId?: string };
 
 const LiveClientContext = createContext<Live | null>(null);
 
-export function LiveClientProvider({ clientId, children }: { clientId: string; children: React.ReactNode }) {
+export function LiveClientProvider({ clientId, sessionId, children }: { clientId: string; sessionId?: string; children: React.ReactNode }) {
   const [client, setClient] = useState<Client | null>(null);
   const load = useCallback(async () => {
     const { data } = await supabase.from("clients").select("*").eq("id", clientId).single();
@@ -24,7 +24,7 @@ export function LiveClientProvider({ clientId, children }: { clientId: string; c
     load();
     return () => setLiveClient(null);
   }, [clientId, load]);
-  return <LiveClientContext.Provider value={{ client, refreshProfile: load }}>{children}</LiveClientContext.Provider>;
+  return <LiveClientContext.Provider value={{ client, refreshProfile: load, calendarSessionId: sessionId }}>{children}</LiveClientContext.Provider>;
 }
 
 /** The client whose workout this is, and whether their trainer is running it live. */

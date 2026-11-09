@@ -571,3 +571,15 @@ export function catchUpDue(s: Pick<LiveSession, "starts_at"> & { catchup_until?:
   const soon = dayKey(new Date(y, m - 1, d - 3));
   return today >= soon ? "soon" : "ok";
 }
+
+/**
+ * Whether a 1 on 1 calendar session can open a live workout (GRIZZ 2026-11-09):
+ * an app client (diary names have no profile to save weights to), booked or
+ * already marked done, on today's date (sets are saved to today).
+ */
+export function canStartLive(s: Pick<LiveSession, "client_id" | "status" | "starts_at" | "away_id">, now: Date = new Date()): boolean {
+  if (!s.client_id) return false;
+  if (s.status !== "booked" && s.status !== "done") return false;
+  if (isAway(s)) return false;
+  return dayKey(s.starts_at) === dayKey(now);
+}

@@ -34,6 +34,7 @@ import ExerciseGuideButton, { DoSetButton, MuscleNotWeight } from "@/components/
 import GymHomeTabs from "@/components/GymHomeTabs";
 import { todayIso, toIsoDate } from "@/lib/dates";
 import { parseWeight, isBodyweight } from "@/lib/weightInput";
+import { markCalendarSessionsTrained } from "@/lib/liveFromCalendar";
 import { useWorkoutClient } from "@/context/LiveClientContext";
 import MedicalHoldNotice from "@/components/MedicalHoldNotice";
 import type { Exercise, ProgramExercise, SetEffort, WorkoutLog, WorkoutSession } from "@/types/database";
@@ -115,7 +116,7 @@ import { useStepBack } from "@/hooks/useStepBack";
 
 export default function ExerciseLibraryScreen() {
   // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
-  const { client, refreshProfile, live } = useWorkoutClient();
+  const { client, refreshProfile, live, calendarSessionId } = useWorkoutClient();
   // The trainer training themselves (0146): their own row, so "my" wording.
   const self = live && !!client && client.id === client.trainer_id;
   // Trainer's laptop layout (useWideScreen is never true for clients).
@@ -655,7 +656,9 @@ export default function ExerciseLibraryScreen() {
           const saved = await recordSession("complete", null);
           if (!saved) return;
           if (session && sessionDue) await saveProgress(sessionAfterComplete(session, days, today), true);
-          const savedTo = `Saved to ${where}.`;
+          // Opened from the 1 on 1 calendar: tick that session as trained too (GRIZZ 2026-11-09).
+          const ticked = calendarSessionId ? await markCalendarSessionsTrained([calendarSessionId]) : 0;
+          const savedTo = `Saved to ${where}.${ticked ? " Marked as trained on your calendar." : ""}`;
           if (saved.improvements.length) setStarred(goldStar(saved, savedTo));
           else Alert.alert(self ? "Saved 💪" : "Saved 🤝", savedTo);
         },

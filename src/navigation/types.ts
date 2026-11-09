@@ -98,9 +98,9 @@ export type TrainerStackParamList = {
   ClientDetail: { clientId: string; tab?: "training" | "overview" | "diet"; open?: "videos" | "history" };
   // Live 1-on-1: the client's own workout screen, run by their trainer (0134).
   // `self`: the trainer training themselves (0146).
-  LiveWorkout: { clientId: string; name: string; self?: boolean };
+  LiveWorkout: { clientId: string; name: string; self?: boolean; /** Opened from a 1 on 1 calendar session: Finish marks it trained. */ sessionId?: string };
   // Group live session (0138): up to 4 clients at once, starting with this one.
-  GroupLive: { clientId?: string } | undefined;
+  GroupLive: { clientId?: string; /** A joint 1 on 1 session: everyone in it, and their calendar sessions. */ clientIds?: string[]; sessionIds?: string[] } | undefined;
   ProgramBuilder: undefined;
   Billing: undefined;
   // Client sign-ups, reached from the 1 on 1 menu while the Evolution side

@@ -20,6 +20,7 @@ import {
   autoCharge,
   awayLabel,
   awayTag,
+  canStartLive,
   isOnHold,
   isAway,
   clockLabel,
@@ -56,9 +57,12 @@ export default function SessionActionsModal({
   nameOf,
   onSwitch,
   onAway,
+  onStartLive,
   onClose,
   onChanged,
 }: {
+  /** Open a live workout for this person (and a joint session's app clients) to log their weights (GRIZZ 2026-11-09). */
+  onStartLive?: (who: LiveSession[]) => void;
   /** Mark this person away until a day (GRIZZ 2026-11-02). */
   onAway?: () => void;
   session: LiveSession | null;
@@ -197,6 +201,8 @@ export default function SessionActionsModal({
   };
 
   const link = whatsappLink(clientPhone);
+  // A joint session's app clients who can train live together (group live holds up to 4).
+  const liveGroup = [session, ...partners.filter((p) => canStartLive(p, now))].slice(0, 4);
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
@@ -247,6 +253,22 @@ export default function SessionActionsModal({
 
             {step === "menu" && (
               <View style={{ marginTop: 12, gap: 8 }}>
+                {/* Train them right here: log their weights and sets live, saved to their progress (GRIZZ 2026-11-09). */}
+                {onStartLive && canStartLive(session, now) ? (
+                  <>
+                    <Pressable style={styles.liveButton} onPress={() => onStartLive([session])}>
+                      <Text style={styles.liveButtonText}>▶ Start live session with {first}</Text>
+                    </Pressable>
+                    {liveGroup.length > 1 ? (
+                      <Pressable style={styles.liveOutline} onPress={() => onStartLive(liveGroup)}>
+                        <Text style={styles.liveOutlineText}>👥 Live session for {liveGroup.map((p) => (p.id === session.id ? first : (nameOf ? nameOf(p) : "").split(" ")[0])).join(" & ")}</Text>
+                      </Pressable>
+                    ) : null}
+                  </>
+                ) : null}
+                {onStartLive && !session.client_id && session.status === "booked" && dayKey(session.starts_at) === dayKey(now) ? (
+                  <Text style={styles.meta}>To track {first}'s weights in a live session, tap Link to their app account below. {first} needs the app for that.</Text>
+                ) : null}
                 {(session.status === "booked" || session.status === "no_show" || session.status === "cancelled") && started ? (
                   <Big
                     label="✓ Done, we trained"
@@ -642,6 +664,10 @@ function Outline({ label, onPress, danger }: { label: string; onPress: () => voi
 }
 
 const styles = themedStyles({
+  liveButton: { backgroundColor: "#16A34A", borderRadius: 12, paddingVertical: 15, alignItems: "center" },
+  liveButtonText: { color: "#fff", fontSize: 17, fontWeight: "800" },
+  liveOutline: { borderWidth: 2, borderColor: "#22C55E", borderRadius: 12, paddingVertical: 13, alignItems: "center" },
+  liveOutlineText: { color: "#22C55E", fontSize: 15, fontWeight: "700" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   sheet: { backgroundColor: "#0F172A", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, maxHeight: "92%" },
   title: { color: "#fff", fontSize: 20, fontWeight: "800" },
