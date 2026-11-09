@@ -37,6 +37,10 @@ import { useStabilityCalendar } from "@/components/useStabilityCalendar";
 import { loadStabilityDays, STABILITY_PURPLE } from "@/lib/stabilityCalendar";
 import type { ClientCalendarBlock, ClientCalendarWorkout, Exercise, Program, ProgramExercise, WorkoutLog } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { useAuth } from "@/context/AuthContext";
+import { useCoachHolidays } from "@/hooks/useCoachHolidays";
+import { holidayOn } from "@/lib/holidays";
+import CoachHolidayBanner from "@/components/CoachHolidayBanner";
 
 // The client's own training calendar (0069), always open at the top of their
 // workout screen (GRIZZ, 2026-10-18: "already open. So they dont need to
@@ -73,6 +77,9 @@ export default function ClientCalendarView({
   refreshKey?: number;
 }) {
   const today = todayIso();
+  // The coach's holidays (0205) on the week and above it.
+  const { client: me } = useAuth();
+  const { holidays } = useCoachHolidays(me?.trainer_id);
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
   const [monday, setMonday] = useState(mondayOf(today));
   const [entries, setEntries] = useState<ClientCalendarWorkout[]>([]);
@@ -247,6 +254,7 @@ export default function ClientCalendarView({
         <Text style={styles.title}>Your training calendar</Text>
       </View>
       <View style={{ marginTop: 10 }}>
+          <CoachHolidayBanner holidays={holidays} />
           <WeekCalendar
             monday={monday}
             onChangeWeek={(direction) => {
@@ -274,6 +282,7 @@ export default function ClientCalendarView({
               setSelected(date);
             }}
             marks={marks}
+            coachAway={Object.fromEntries(weekDates(monday).map((d) => [d, !!holidayOn(holidays, d)]))}
             client
           />
           {!selected && (

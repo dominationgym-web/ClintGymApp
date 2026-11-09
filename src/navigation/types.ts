@@ -90,6 +90,8 @@ export type TrainerStackParamList = {
   BulkImport: undefined;
   // Weekly video check-ins (0155): bookings, free times and call setup.
   VideoCheckIns: undefined;
+  // The coach's holidays (0205), shown on the clients' apps.
+  Holidays: undefined;
   // In-person session booking, cancellations and invoices (0168).
   LiveSessions: { tab?: "todo" | "calendar" | "clients" | "invoices" | "setup" } | undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;

@@ -30,6 +30,7 @@ import AwardAdminScreen from "@/screens/trainer/AwardAdminScreen";
 import ChallengesScreen from "@/screens/trainer/ChallengesScreen";
 import BulkImportScreen from "@/screens/trainer/BulkImportScreen";
 import VideoCheckInsScreen from "@/screens/trainer/VideoCheckInsScreen";
+import HolidaysScreen from "@/screens/trainer/HolidaysScreen";
 import LiveSessionsScreen from "@/screens/trainer/LiveSessionsScreen";
 import OneNutritionScreen from "@/screens/trainer/OneNutritionScreen";
 import { TrainerSideProvider, TrainerSideSwitch, useTrainerSide } from "@/context/TrainerSideContext";
@@ -189,6 +190,7 @@ export default function TrainerNavigator() {
             <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ title: "Monthly challenges", headerBackTitle: "Back" }} />
             <Stack.Screen name="BulkImport" component={BulkImportScreen} options={{ title: "Client history from a file", headerBackTitle: "Back" }} />
             <Stack.Screen name="VideoCheckIns" component={VideoCheckInsScreen} options={{ title: "Video check-ins", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Holidays" component={HolidaysScreen} options={{ title: "My holidays", headerBackTitle: "Back" }} />
             <Stack.Screen name="LiveSessions" component={LiveSessionsScreen} options={{ title: "Live sessions", headerBackTitle: "Back" }} />
             <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing", headerBackTitle: "Back" }} />
             <Stack.Screen name="SignUps" options={{ title: "Clients and sign-ups", headerBackTitle: "Back" }}>

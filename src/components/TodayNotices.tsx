@@ -18,6 +18,7 @@ import AppUpdateBanner from "@/components/AppUpdateBanner";
 import { CycleTodayBanner } from "@/components/CycleTracker";
 import { CoachMessageCard } from "@/components/CoachMessages";
 import AwardClientCard from "@/components/award/AwardClientCard";
+import CoachHolidayBanner from "@/components/CoachHolidayBanner";
 import { themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -51,6 +52,8 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
   return (
     <>
       <CoachMessageCard />
+      {/* The coach's holiday dates, never folded away (0205). */}
+      <CoachHolidayBanner />
       <AwardClientCard />
       <PlanEndingBanner />
       <AppUpdateBanner />
