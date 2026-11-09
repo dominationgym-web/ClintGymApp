@@ -13,7 +13,7 @@ export type AuthStackParamList = {
   Signup: undefined;
   TrainerSignup: undefined;
   // How to get a new password (GRIZZ, 2026-11-09); coach = the trainer wording.
-  ForgotPassword: { coach?: boolean } | undefined;
+  ForgotPassword: { coach?: boolean; email?: string } | undefined;
 };
 
 // "Exercises" is the tab called Training (app-flow review C1, 2026-10-18); the

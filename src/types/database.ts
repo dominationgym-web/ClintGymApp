@@ -1698,6 +1698,8 @@ export interface Database {
       owner_tracker: { Args: Record<string, never>; Returns: OwnerTrackerRow[] };
       trainer_price_sides: { Args: Record<string, never>; Returns: TrainerPriceSide[] };
       owner_trainer_clients: { Args: { p_trainer: string }; Returns: OwnerTrainerClientRow[] };
+      // Forgot password (0204): logged out, alerts their trainer (or the owner).
+      request_login_help: { Args: { p_email: string }; Returns: undefined };
       quiet_clients: { Args: Record<string, never>; Returns: QuietClientRow[] };
       mark_client_contact: { Args: { p_client: string }; Returns: undefined };
       open_video_slots: { Args: Record<string, never>; Returns: OpenVideoSlot[] };

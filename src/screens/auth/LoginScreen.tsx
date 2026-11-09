@@ -89,7 +89,7 @@ export default function LoginScreen({ navigation, route }: Props) {
       />
       <Text style={styles.label}>Password</Text>
       <PasswordInput placeholder="Your password" value={password} onChangeText={setPassword} />
-      <Pressable onPress={() => navigation.navigate("ForgotPassword", { coach })} hitSlop={8} style={styles.forgot} accessibilityRole="button">
+      <Pressable onPress={() => navigation.navigate("ForgotPassword", { coach, email: emailText.trim() })} hitSlop={8} style={styles.forgot} accessibilityRole="button">
         <Text style={styles.forgotText}>Forgot your password?</Text>
       </Pressable>
       <Pressable style={styles.button} onPress={handleLogin} disabled={loading} accessibilityRole="button">
