@@ -70,6 +70,13 @@ export default function LoginHelp({ userId, name, phone }: { userId: string; nam
 
   return (
     <View>
+      {/* What to do, in plain words (GRIZZ, 2026-11-09). */}
+      <View style={styles.explain}>
+        <Text style={styles.explainTitle}>{first} forgot their password?</Text>
+        <Text style={styles.explainText}>1. Tap the gold button below. The app makes a new random password for {first}.</Text>
+        <Text style={styles.explainText}>2. Tap Send on WhatsApp to send it to {first}, with their email.</Text>
+        <Text style={styles.explainText}>3. {first} logs in with it, then changes it to their own under Profile › Account › Change my password.</Text>
+      </View>
       <Text style={styles.label}>Logs in with</Text>
       {draft === null ? (
         <>
@@ -149,6 +156,9 @@ export default function LoginHelp({ userId, name, phone }: { userId: string; nam
 }
 
 const styles = themedStyles({
+  explain: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 14 },
+  explainTitle: { color: "#fff", fontWeight: "800", fontSize: 15, marginBottom: 6 },
+  explainText: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 4 },
   label: { color: "#94A3B8", fontSize: 13, fontWeight: "600", marginBottom: 2 },
   email: { color: "#fff", fontSize: 16, fontWeight: "700" },
   link: { color: BRAND_GOLD, fontWeight: "700", marginTop: 6 },
