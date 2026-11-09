@@ -4,6 +4,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { KIND_STYLE, dayKey, monthGrid, monthLabel, sessionKind, shiftMonth } from "@/lib/liveSessions";
 import type { LiveSession } from "@/types/database";
 import { themeBg, themedStyles } from "@/lib/theme";
+import { holidayOn, type Holiday } from "@/lib/holidays";
 
 const HEAD = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -15,12 +16,15 @@ export default function SessionMonthCalendar({
   sessions,
   selected,
   onSelect,
+  holidays = [],
 }: {
   month: string;
   onMonth: (month: string) => void;
   sessions: LiveSession[];
   selected: string | null;
   onSelect: (day: string) => void;
+  /** The coach's holidays (0205): those days are blue with a 🌴. */
+  holidays?: Pick<Holiday, "holiday_from" | "holiday_until">[];
 }) {
   const now = new Date();
   const today = dayKey(now);
@@ -57,10 +61,11 @@ export default function SessionMonthCalendar({
             return (
               <Pressable
                 key={di}
-                style={[styles.cell, styles.day, day === today && styles.today, day === selected && styles.selected]}
+                style={[styles.cell, styles.day, holidayOn(holidays, day) && styles.holiday, day === today && styles.today, day === selected && styles.selected]}
                 onPress={() => onSelect(day)}
               >
                 <Text style={[styles.num, day === selected && styles.numSelected]}>{Number(day.slice(8))}</Text>
+                {holidayOn(holidays, day) && !list.length ? <Text style={styles.palm}>🌴</Text> : null}
                 <View style={styles.dots}>
                   {list.slice(0, 4).map((s) => (
                     <View key={s.id} style={[styles.dot, { backgroundColor: themeBg(KIND_STYLE[sessionKind(s, now)].colour) }]} />
@@ -86,6 +91,8 @@ const styles = themedStyles({
   cell: { flex: 1, aspectRatio: 1, margin: 2 },
   day: { backgroundColor: "#1E293B", borderRadius: 8, alignItems: "center", paddingTop: 4, borderWidth: 1, borderColor: "#1E293B" },
   today: { borderColor: "#64748B" },
+  holiday: { backgroundColor: "#0C2A3D", borderColor: "#0369A1" },
+  palm: { fontSize: 11, marginTop: 1 },
   selected: { borderColor: BRAND_GOLD, borderWidth: 2 },
   num: { color: "#CBD5E1", fontSize: 13, fontWeight: "600" },
   numSelected: { color: BRAND_GOLD },

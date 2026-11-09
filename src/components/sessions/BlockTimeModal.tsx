@@ -11,6 +11,8 @@ import { blockRanges, sessionsInBlock } from "@/lib/timeOff";
 import type { BillingCurrency, LiveSession, TrainerTimeOff } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 import SafeBottom from "@/components/SafeBottom";
+import HolidayModal from "@/components/sessions/HolidayModal";
+import { holidaySpan } from "@/lib/holidays";
 
 const LENGTHS = [1, 2, 3, 5, 7, 14];
 
@@ -182,6 +184,7 @@ export function TimeOffSection({
   const { trainer } = useAuth();
   const [blocks, setBlocks] = useState<TrainerTimeOff[]>([]);
   const [blocking, setBlocking] = useState(false);
+  const [holiday, setHoliday] = useState(false);
   const load = useCallback(async () => {
     if (!trainer) return;
     const { data } = await supabase
@@ -221,17 +224,22 @@ export function TimeOffSection({
     <>
       {onDay.map((b) => (
         <View key={b.id} style={styles.blockNote}>
-          <Text style={styles.previewTitle}>Blocked out · {blockWhen(b)}</Text>
+          <Text style={styles.previewTitle}>{b.holiday_from && b.holiday_until ? `🌴 Holiday ${holidaySpan({ holiday_from: b.holiday_from, holiday_until: b.holiday_until })}` : `Blocked out · ${blockWhen(b)}`}</Text>
           <Text style={styles.meta}>{b.reason}</Text>
         </View>
       ))}
+      {/* Away for days: a holiday, which the clients see on their app (0205). */}
+      <Pressable style={styles.outline} onPress={() => setHoliday(true)}>
+        <Text style={styles.outlineText}>🌴 Holiday from {dayLabel(`${day}T12:00:00`)}</Text>
+      </Pressable>
       <Pressable style={styles.outline} onPress={() => setBlocking(true)}>
         <Text style={styles.outlineText}>Block out time from {dayLabel(`${day}T12:00:00`)}</Text>
       </Pressable>
       {coming.length ? <Text style={styles.label}>Your time off</Text> : null}
       {coming.map((b) => (
         <View key={b.id} style={styles.blockRow}>
-          <Text style={styles.previewTitle}>{blockWhen(b)}</Text>
+          <Text style={styles.previewTitle}>{b.holiday_from ? "🌴 " : ""}{blockWhen(b)}</Text>
+          {b.holiday_from ? <Text style={styles.meta}>Holiday: on your clients' apps</Text> : null}
           <Text style={styles.meta}>{b.reason}</Text>
           <Text style={styles.meta}>
             {b.missed ? `${b.missed} session${b.missed === 1 ? "" : "s"} missed · ${sessionMoney(Number(b.missed_fees), currency)} not earned` : "No sessions were booked"}
@@ -241,6 +249,16 @@ export function TimeOffSection({
           </Pressable>
         </View>
       ))}
+      <HolidayModal
+        visible={holiday}
+        firstDay={day}
+        onClose={() => setHoliday(false)}
+        onDone={() => {
+          setHoliday(false);
+          load();
+          onChanged();
+        }}
+      />
       <BlockTimeModal
         visible={blocking}
         firstDay={day}

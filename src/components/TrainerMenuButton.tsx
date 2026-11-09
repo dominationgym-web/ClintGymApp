@@ -15,6 +15,7 @@ import { TRAINER_VIDEO_CHECKINS_MENU_ITEM } from "@/lib/videoCheckins";
 import { useTrainerSide } from "@/context/TrainerSideContext";
 import { takeMenuReturn } from "@/lib/menuReturn";
 import { COACHING_GUIDES_MENU_ITEM } from "@/screens/trainer/CoachingGuidesScreen";
+import { HOLIDAYS_MENU_ITEM } from "@/screens/trainer/HolidaysScreen";
 
 // The trainer app's menu (top right of every trainer tab). The things used
 // every week first; the guides share one line (GRIZZ, 2026-10-27).
@@ -63,6 +64,8 @@ export function useTrainerMenuItems(): MenuItem[] {
           },
         },
       ];
+  // Holidays (0205): on both sides, the clients see them on their app.
+  const holidays: MenuItem = { ...HOLIDAYS_MENU_ITEM, route: "Holidays", onPress: () => navigation.navigate("Holidays") };
   // The 1 on 1 side keeps the menu short (GRIZZ, 2026-11-01: "minimalistic").
   if (side === "one")
     return [
@@ -74,6 +77,7 @@ export function useTrainerMenuItems(): MenuItem[] {
         route: "LiveSessions",
         onPress: () => navigation.navigate("LiveSessions", { tab: "setup" }),
       },
+      holidays,
       // With Evolution off its Clients tab (where sign-ups wait) is hidden, so it's here (0192).
       ...(evolutionOn
         ? []
@@ -97,6 +101,7 @@ export function useTrainerMenuItems(): MenuItem[] {
   return [
     // Weekly video check-ins (0155): free times, bookings and call setup.
     { ...TRAINER_VIDEO_CHECKINS_MENU_ITEM, route: "VideoCheckIns", onPress: () => navigation.navigate("VideoCheckIns") },
+    holidays,
     // The stability programs to give clients (GRIZZ, 2026-10-14: trainer side only),
     // with every exercise's video for 1-on-1 coaching (named by GRIZZ, 2026-10-16).
     {

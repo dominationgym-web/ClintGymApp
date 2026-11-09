@@ -35,6 +35,7 @@ export default function WeekCalendar({
   client = false,
   logged,
   belowDay,
+  coachAway,
 }: {
   monday: string;
   onChangeWeek: (direction: -1 | 1) => void;
@@ -54,6 +55,8 @@ export default function WeekCalendar({
   logged?: Record<string, boolean>;
   /** Shown right under the selected day, so it opens where the trainer tapped. */
   belowDay?: (date: string) => React.ReactNode;
+  /** Days the coach is on holiday (0205), shown in the day's slot. */
+  coachAway?: Record<string, boolean>;
 }) {
   const days = weekDates(monday);
   const thisWeek = days.includes(today);
@@ -78,7 +81,8 @@ export default function WeekCalendar({
         const mark = marks?.[date];
         const rec = recovery?.[date] ?? [];
         const stab = stability?.[date] ?? [];
-        const empty = !main && !mark?.live && !(client && mark?.done) && !(!client && logged?.[date]) && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
+        const away = !!coachAway?.[date];
+        const empty = !away && !main && !mark?.live && !(client && mark?.done) && !(!client && logged?.[date]) && plan.extras.length === 0 && rec.length === 0 && stab.length === 0;
         return (
           <React.Fragment key={date}>
           <Pressable
@@ -115,6 +119,11 @@ export default function WeekCalendar({
                   {main.addOns ? <Text style={styles.addOns}>{main.addOns}</Text> : null}
                 </View>
               )}
+              {away ? (
+                <Text style={[styles.tag, { color: themeText("#38BDF8") }]} numberOfLines={1}>
+                  {client ? "🌴 Your coach is away" : "🌴 You're on holiday"}
+                </Text>
+              ) : null}
               {/* A live session with the coach, in the day's slot (GRIZZ, 2026-10-27). */}
               {mark?.live && (
                 <Text style={[styles.tag, { color: themeText("#22C55E") }]} numberOfLines={1}>

@@ -38,6 +38,9 @@ import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
 import SafeBottom from "@/components/SafeBottom";
+import CoachHolidayBanner from "@/components/CoachHolidayBanner";
+import { useCoachHolidays } from "@/hooks/useCoachHolidays";
+import { holidayOn, type Holiday } from "@/lib/holidays";
 
 type Tab = "sessions" | "month" | "invoices" | "agreement";
 
@@ -58,6 +61,8 @@ export default function MySessionsScreen() {
   const [month, setMonth] = useState(monthStart(new Date()));
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // The coach's holidays (0205), on Sessions and the Month.
+  const { holidays, reload: reloadHolidays } = useCoachHolidays(client?.trainer_id);
 
   useEffect(() => {
     if (route.params?.tab) setTab(route.params.tab);
@@ -98,6 +103,7 @@ export default function MySessionsScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    reloadHolidays();
     await load();
     setRefreshing(false);
   };
@@ -131,8 +137,9 @@ export default function MySessionsScreen() {
               <Text style={styles.noticeText}>Please read and sign your session agreement. Tap here.</Text>
             </Pressable>
           ) : null}
+          {tab === "sessions" || tab === "month" ? <CoachHolidayBanner holidays={holidays} /> : null}
           {tab === "sessions" && <SessionsTab sessions={sessions} plan={plan} coach={coach} onChanged={load} />}
-          {tab === "month" && <MonthTab month={month} onMonth={setMonth} sessions={sessions} />}
+          {tab === "month" && <MonthTab month={month} onMonth={setMonth} sessions={sessions} holidays={holidays} />}
           {tab === "invoices" && <InvoicesTab invoices={invoices} paidForYou={!!plan.paid_by} />}
           {tab === "agreement" && (
             <AgreementTab plan={plan} settings={settings} signed={signed} coach={coach} coachPhone={coachPhone} clientName={client?.name ?? ""} needsSign={needsSign} onSigned={load} />
@@ -279,14 +286,16 @@ function CancelModal({ session, plan, coach, onClose, onDone }: { session: LiveS
   );
 }
 
-function MonthTab({ month, onMonth, sessions }: { month: string; onMonth: (m: string) => void; sessions: LiveSession[] }) {
+function MonthTab({ month, onMonth, sessions, holidays }: { month: string; onMonth: (m: string) => void; sessions: LiveSession[]; holidays: Holiday[] }) {
   const [day, setDay] = useState(dayKey(new Date()));
   const list = sessions.filter((s) => dayKey(s.starts_at) === day);
+  const away = holidayOn(holidays, day);
   return (
     <>
-      <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} />
+      <SessionMonthCalendar month={month} onMonth={onMonth} sessions={sessions} selected={day} onSelect={setDay} holidays={holidays} />
       <Text style={styles.sectionTitle}>{dayLabel(day)}</Text>
-      {list.length === 0 ? <Text style={styles.helper}>No session.</Text> : null}
+      {away ? <Text style={styles.rowTitle}>🌴 Your coach is away{away.reason ? `: ${away.reason}` : ""}</Text> : null}
+      {list.length === 0 && !away ? <Text style={styles.helper}>No session.</Text> : null}
       {list.map((s) => {
         const kind = sessionKind(s);
         return (
@@ -302,7 +311,7 @@ function MonthTab({ month, onMonth, sessions }: { month: string; onMonth: (m: st
           </View>
         );
       })}
-      <Text style={styles.meta}>🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up · 🔵 coach cancelled · ⚪ booked</Text>
+      <Text style={styles.meta}>🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · 🔁 catch-up · 🔵 coach cancelled · ⚪ booked · 🌴 blue day: coach away</Text>
     </>
   );
 }
