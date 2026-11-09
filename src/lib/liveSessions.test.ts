@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   agreementCurrent,
   awayLabel,
+  canStartLive,
   isAway,
   catchUpDeadline,
   catchUpDue,
@@ -288,7 +289,7 @@ describe("catch-up deadline", () => {
 
 describe("away (0184)", () => {
   it("is away only while cancelled with an away", () => {
-    expect(isAway({ status: "cancelled", away_id: "a1" })).toBe(true);
+    expect(isAway({ status: "cancelled" as const, away_id: "a1" })).toBe(true);
     expect(isAway({ status: "booked", away_id: "a1" })).toBe(false);
     expect(isAway({ status: "cancelled", away_id: null })).toBe(false);
   });
@@ -296,5 +297,21 @@ describe("away (0184)", () => {
     expect(awayLabel({ note: "Away until 14 November" })).toBe("Away till 14 Nov");
     expect(awayLabel({ note: null })).toBe("Away");
     expect(awayLabel({ note: "Away from 9 November until 13 November" })).toBe("Away 9 Nov to 13 Nov");
+  });
+});
+
+describe("canStartLive", () => {
+  const now = new Date(2026, 10, 9, 9, 0);
+  const at = (h: number, day = 9) => new Date(2026, 10, day, h, 0).toISOString();
+  const base = { client_id: "c1" as string | null, status: "booked" as const, starts_at: at(10), away_id: null as string | null };
+  it("an app client's session today, booked or done", () => {
+    expect(canStartLive(base, now)).toBe(true);
+    expect(canStartLive({ ...base, status: "done" as const, starts_at: at(6) }, now)).toBe(true);
+  });
+  it("not for diary names, other days, cancellations or away", () => {
+    expect(canStartLive({ ...base, client_id: null }, now)).toBe(false);
+    expect(canStartLive({ ...base, starts_at: at(10, 10) }, now)).toBe(false);
+    expect(canStartLive({ ...base, status: "cancelled" as const }, now)).toBe(false);
+    expect(canStartLive({ ...base, status: "cancelled" as const, away_id: "a1" }, now)).toBe(false);
   });
 });

@@ -6,6 +6,7 @@ import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import GymHomeTabs from "@/components/GymHomeTabs";
 import EditSetModal from "@/components/EditSetModal";
+import { markCalendarSessionsTrained } from "@/lib/liveFromCalendar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { toIsoDate, todayIso } from "@/lib/dates";
@@ -52,7 +53,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const { trainer } = useAuth();
   const [stage, setStage] = useState<"pick" | "loading" | "train">("pick");
   const [clients, setClients] = useState<Client[]>([]);
-  const [picked, setPicked] = useState<string[]>(route.params?.clientId ? [route.params.clientId] : []);
+  const [picked, setPicked] = useState<string[]>(
+    route.params?.clientIds?.length ? route.params.clientIds.slice(0, MAX_GROUP) : route.params?.clientId ? [route.params.clientId] : [],
+  );
   const [holds, setHolds] = useState<Record<string, boolean>>({});
   const [plans, setPlans] = useState<Record<string, CalendarDayWorkout | null>>({});
   const [planFrom, setPlanFrom] = useState<string | null>(null);
@@ -307,8 +310,14 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
           if (failed.length) {
             return Alert.alert("Some didn't save", failed.map((r) => `${r.c.name}: ${r.error?.message}`).join("\n") + "\n\nTheir sets are kept. Tap Finish again.");
           }
+          // Opened from a joint 1 on 1 calendar session: tick each person's session as trained (GRIZZ 2026-11-09).
+          const ids = route.params?.clientIds ?? [];
+          const fromCalendar = withSets
+            .map((c) => route.params?.sessionIds?.[ids.indexOf(c.id)])
+            .filter((id): id is string => !!id);
+          const ticked = await markCalendarSessionsTrained(fromCalendar);
           setFinished(true);
-          Alert.alert("Saved 🤝", withSets.map((c) => `✓ ${c.name}`).join("\n"), [{ text: "OK", onPress: () => navigation.goBack() }]);
+          Alert.alert("Saved 🤝", withSets.map((c) => `✓ ${c.name}`).join("\n") + (ticked ? "\n\nMarked as trained on your calendar." : ""), [{ text: "OK", onPress: () => navigation.goBack() }]);
         },
       },
     ]);
