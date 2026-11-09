@@ -237,8 +237,9 @@ export function lostRow(s: LostFields, now: Date = new Date()): LostRow | null {
     return { kind: "coach", fee, back: "no" };
   }
   if (kind === "notice" || kind === "excused") {
-    // Not on an invoice yet: switching the credit to a catch-up wins it back.
-    return { kind: "credited", fee, back: app && !s.invoice_id && !s.credit_invoice_id ? "can" : "no" };
+    // Credited is the coach's decision (e.g. the client can't do catch-ups):
+    // it isn't something to win back (GRIZZ, 2026-11-09).
+    return { kind: "credited", fee, back: "no" };
   }
   if (kind === "decide") return { kind: "decide", fee, back: app ? "can" : "no" };
   return null;
