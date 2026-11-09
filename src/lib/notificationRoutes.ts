@@ -38,6 +38,7 @@ const TRAINER_CLIENT_TYPES = new Set([
   "workout_star",
   "achievement",
   "habit_win",
+  "login_help",
 ]);
 const TRAINER_TRAINING_TYPES = new Set(["training_level", "deload_due", "plan_next_week", "workout_swap"]);
 
@@ -77,5 +78,7 @@ export function notificationRoute(
   if (type === "award_admin") return { stack: "trainer", screen: "AwardAdmin" };
   if (type === "challenge_done" || type === "challenge_shared") return { stack: "trainer", screen: "Challenges" };
   if (type === "trainer_signup" || type === "referral_signup") return { stack: "trainer", screen: "Trainers" };
+  // Forgot password (0204): a trainer who can't log in, or an email the app doesn't know.
+  if (type === "login_help") return { stack: "trainer", screen: data?.trainerId ? "Trainers" : "Dashboard" };
   return null;
 }

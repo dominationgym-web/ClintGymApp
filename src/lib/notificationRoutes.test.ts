@@ -44,6 +44,9 @@ describe("notificationRoute", () => {
     });
     expect(notificationRoute({ type: "problem_reply", clientId: "c2" }, "trainer")).toEqual({ stack: "trainer", screen: "ClientDetail", clientId: "c2" });
     expect(notificationRoute({ type: "client_signup", clientId: "c3" }, "trainer")).toEqual({ stack: "trainer", screen: "Clients" });
+    expect(notificationRoute({ type: "login_help", clientId: "c4" }, "trainer")).toEqual({ stack: "trainer", screen: "ClientDetail", clientId: "c4" });
+    expect(notificationRoute({ type: "login_help", trainerId: "t1" }, "trainer")).toEqual({ stack: "trainer", screen: "Trainers" });
+    expect(notificationRoute({ type: "login_help" }, "trainer")).toEqual({ stack: "trainer", screen: "Dashboard" });
   });
 
   it("sends a trainer's proof of payment to the owner's Billing", () => {

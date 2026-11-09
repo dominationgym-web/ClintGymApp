@@ -41,7 +41,10 @@ export default function LoginScreen({ navigation, route }: Props) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
-      Alert.alert("Couldn't sign in", error.message);
+      // Supabase says "Invalid login credentials": say it plainly and point to help.
+      if (/invalid login credentials/i.test(error.message)) {
+        Alert.alert("Couldn't log in", "The email or password is wrong. Check the spelling, or tap \"Forgot your password?\" for help.");
+      } else Alert.alert("Couldn't sign in", error.message);
       return;
     }
     // A login with no client or trainer details means sign-up was cut off
@@ -86,6 +89,9 @@ export default function LoginScreen({ navigation, route }: Props) {
       />
       <Text style={styles.label}>Password</Text>
       <PasswordInput placeholder="Your password" value={password} onChangeText={setPassword} />
+      <Pressable onPress={() => navigation.navigate("ForgotPassword", { coach, email: emailText.trim() })} hitSlop={8} style={styles.forgot} accessibilityRole="button">
+        <Text style={styles.forgotText}>Forgot your password?</Text>
+      </Pressable>
       <Pressable style={styles.button} onPress={handleLogin} disabled={loading} accessibilityRole="button">
         {loading ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Log in</Text>}
       </Pressable>
@@ -138,4 +144,6 @@ const styles = themedStyles({
   outline: { borderWidth: 1.5, borderColor: BRAND_GOLD, borderRadius: 10, padding: 13, alignItems: "center", marginTop: 12 },
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 16 },
   link: { color: "#94A3B8", textAlign: "center", marginTop: 20, fontWeight: "600" },
+  forgot: { alignSelf: "flex-end", marginTop: 8 },
+  forgotText: { color: BRAND_GOLD, fontWeight: "600" },
 });
