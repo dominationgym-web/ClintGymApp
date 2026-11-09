@@ -45,6 +45,7 @@ const LINE: Record<string, keyof typeof Ionicons.glyphMap> = {
   "🗓️": "calendar-outline",
   "📅": "calendar-outline",
   "🗄": "archive-outline",
+  "🔑": "key-outline",
   "🔬": "flask-outline",
   "📸": "camera-outline",
   "📝": "create-outline",

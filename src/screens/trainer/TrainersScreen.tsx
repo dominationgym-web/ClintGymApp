@@ -8,6 +8,7 @@ import { REFERRAL_DISCOUNT_PERCENT, countedReferrals, referralRewards, trainerDi
 import { addDays } from "@/lib/programSchedule";
 import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
+import LoginHelp from "@/components/LoginHelp";
 import { clientCounts, openProblemsByTrainer, ownerClientLine } from "@/lib/trainerProblems";
 import type { OwnerTrainerClientRow, Trainer, TrainerProblem } from "@/types/database";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
@@ -40,9 +41,11 @@ export default function TrainersScreen() {
   const [problems, setProblems] = useState<Pick<TrainerProblem, "trainer_id" | "status">[]>([]);
   // The client list of the opened trainer, loaded when it's opened.
   const [clientsOpen, setClientsOpen] = useState<string | null>(null);
+  const [loginOpen, setLoginOpen] = useState<string | null>(null);
   // Phone Back closes what is open first, one step at a time.
   useStepBack(openId !== null, () => setOpenId(null));
   useStepBack(clientsOpen !== null, () => setClientsOpen(null));
+  useStepBack(loginOpen !== null, () => setLoginOpen(null));
   const [clientRows, setClientRows] = useState<Record<string, OwnerTrainerClientRow[]>>({});
 
   // Opened from a problem's "See their clients".
@@ -275,6 +278,11 @@ export default function TrainersScreen() {
                   </>
                 )
               ) : null}
+              {/* The owner helps a trainer who can't log in (GRIZZ, 2026-11-09). */}
+              <Pressable style={styles.clientsToggle} onPress={() => setLoginOpen(loginOpen === item.id ? null : item.id)} accessibilityRole="button">
+                <Text style={styles.extraLink}>{loginOpen === item.id ? "▾" : "▸"} 🔑 Log-in help</Text>
+              </Pressable>
+              {loginOpen === item.id ? <LoginHelp userId={item.id} name={item.name} /> : null}
               {openProblems ? (
                 <Pressable onPress={() => navigation.navigate("TrainerProblems")} hitSlop={6}>
                   <Text style={[styles.extraLink, { color: themeText("#F59E0B") }]}>{openProblems} open problem{openProblems === 1 ? "" : "s"} ›</Text>

@@ -37,6 +37,7 @@ import { todayIso } from "@/lib/dates";
 import TrainerLogo from "@/components/TrainerLogo";
 import ClientAvatar from "@/components/ClientAvatar";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
+import ChangePasswordButton from "@/components/ChangePasswordButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
 import TrainerIncome from "@/components/TrainerIncome";
 import MyTraining from "@/components/MyTraining";
@@ -363,6 +364,7 @@ export default function TrainerProfileScreen() {
             <FoldSection icon="⚙️" title="Account" hint={trainer.email} open={openSetting === "account"} onToggle={() => toggleSetting("account")}>
               <Text style={styles.label}>Signed in as</Text>
               <Text style={styles.readOnly}>{trainer.email}</Text>
+              <ChangePasswordButton />
               <Pressable style={styles.logout} onPress={signOut}>
                 <Text style={styles.logoutText}>Log out</Text>
               </Pressable>

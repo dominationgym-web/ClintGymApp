@@ -17,6 +17,7 @@ import { CoachMessageHistory } from "@/components/CoachMessages";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
+import ChangePasswordButton from "@/components/ChangePasswordButton";
 import TrainerLogo from "@/components/TrainerLogo";
 import TrainerPaymentDetails from "@/components/TrainerPaymentDetails";
 import SendProofOfPayment from "@/components/SendProofOfPayment";
@@ -325,6 +326,7 @@ export default function ClientProfileScreen() {
       ) : null}
 
       <FoldSection icon="⚙️" title="Account" open={openFold === "account"} onToggle={() => fold("account")}>
+        <ChangePasswordButton />
         <Pressable style={styles.logoutButton} onPress={signOut}>
           <Text style={styles.logoutText}>Log out</Text>
         </Pressable>

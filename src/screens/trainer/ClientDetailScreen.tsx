@@ -66,6 +66,7 @@ import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 import FoldSection from "@/components/FoldSection";
+import LoginHelp from "@/components/LoginHelp";
 import ClientContractFold from "@/components/sessions/ClientContractFold";
 import { whatsappLink } from "@/lib/videoCheckins";
 import { markClientContact } from "@/lib/checkinNudges";
@@ -868,6 +869,13 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                 </View>
               )}
             </FoldSection>
+
+            {/* Can't log in: their log-in email, fix a typo, or a new password (GRIZZ, 2026-11-09). */}
+            {client.id !== trainer?.id && (
+              <FoldSection icon="🔑" title="Log-in help" hint="Forgot password or wrong email" open={overviewOpen === "login"} onToggle={() => toggleOverview("login")}>
+                <LoginHelp userId={client.id} name={client.name} />
+              </FoldSection>
+            )}
 
             {!client.archived_at && (
               <FoldSection icon="🗄" title="Archive" open={overviewOpen === "archive"} onToggle={() => toggleOverview("archive")}>
