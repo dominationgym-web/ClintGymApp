@@ -27,10 +27,20 @@ export function awayOf(aways: ClientAway[], who: AwayWho): ClientAway | null {
       .filter(
         (a) =>
           !a.ended_at &&
+          !a.unpaid &&
           new Date(a.until_at).getTime() > now &&
           (who.clientId ? a.client_id === who.clientId : !a.client_id && a.guest_key === diaryKey(who.name))
       )
       .sort((a, b) => a.until_on.localeCompare(b.until_on))[0] ?? null
+  );
+}
+
+/** Their hold for not paying (0203), if any. */
+export function holdOf(aways: ClientAway[], who: AwayWho): ClientAway | null {
+  return (
+    aways.find(
+      (a) => !a.ended_at && !!a.unpaid && (who.clientId ? a.client_id === who.clientId : !a.client_id && a.guest_key === diaryKey(who.name))
+    ) ?? null
   );
 }
 

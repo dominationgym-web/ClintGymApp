@@ -7,7 +7,8 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { regularLabel, sessionMoney } from "@/lib/liveSessions";
 import { diaryKey, regularFromCalendar } from "@/lib/calendarRegular";
 import type { BillingCurrency, ClientAway, LiveSession } from "@/types/database";
-import { awayOf, awaySpan, type AwayWho } from "@/components/sessions/AwayModal";
+import { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
+import HoldButton from "@/components/sessions/HoldButton";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -101,6 +102,7 @@ export default function DiaryPeople({
               </Text>
               <Text style={styles.meta}>{p.cal.regular.length ? `${regularLabel(p.cal.regular)}${p.cal.minutes ? ` · ${p.cal.minutes} min` : ""}` : "No regular times yet"}</Text>
               {away(p.name) ? <Text style={styles.away}>✈️ Away {awaySpan(away(p.name)!)}</Text> : null}
+              {holdOf(aways, { clientId: null, name: p.name }) ? <Text style={[styles.away, { color: themeText("#EF4444") }]}>🚫 On hold: not paid</Text> : null}
             </Pressable>
             {on ? (
               <View style={styles.edit}>
@@ -116,6 +118,11 @@ export default function DiaryPeople({
               <Pressable style={styles.outline} onPress={() => onAway({ clientId: null, name: p.name })}>
                 <Text style={styles.outlineText}>{away(p.name) ? "✈️ Away: back early or change the date" : "✈️ Away: going away for a while"}</Text>
               </Pressable>
+            ) : null}
+            {on ? (
+              <View style={{ marginTop: 8 }}>
+                <HoldButton who={{ clientId: null, name: p.name }} aways={aways} onChanged={onChanged} />
+              </View>
             ) : null}
           </View>
         );
