@@ -67,3 +67,89 @@ export function roundProblem(picks: SupersetPick[], entries: RoundEntry[]): stri
   }
   return null;
 }
+
+// Superset heads-up (GRIZZ, 2026-11-09): before a client starts a workout
+// with supersets, tell them it's a superset session, how many stations each
+// superset has and what to set up, so they can get it ready first.
+
+type SessionRow = Pick<ProgramExercise, "id" | "exercise_name" | "sets" | "reps" | "rest_seconds" | "kind">;
+
+export type SupersetGroup<R extends SessionRow = SessionRow> = {
+  /** The stations, in the order they're done (2 = superset, 3+ = tri-set or more). */
+  rows: R[];
+  /** Rounds: the most sets of any station. */
+  rounds: number;
+  /** Rest after the last station of each round, in seconds. */
+  restAfter: number;
+};
+
+/**
+ * The supersets in a session: runs of exercises where each one but the last
+ * has rest 0 (straight into the next). Cardio blocks break a run.
+ */
+export function supersetGroups<R extends SessionRow>(session: R[]): SupersetGroup<R>[] {
+  const groups: SupersetGroup<R>[] = [];
+  let run: R[] = [];
+  const close = () => {
+    if (run.length >= 2) {
+      const last = run[run.length - 1];
+      groups.push({ rows: run, rounds: Math.max(...run.map((r) => r.sets)), restAfter: last.rest_seconds });
+    }
+    run = [];
+  };
+  for (const row of session) {
+    if (row.kind === "cardio") {
+      close();
+      continue;
+    }
+    run.push(row);
+    if (row.rest_seconds !== 0) close();
+  }
+  close();
+  return groups;
+}
+
+/** "2 stations" for one superset; "2 and 3 stations" style when there are more. */
+export function stationsSummary(groups: Pick<SupersetGroup, "rows">[]): string {
+  const counts = [...new Set(groups.map((g) => g.rows.length))].sort((a, b) => a - b);
+  if (counts.length === 0) return "";
+  const words = counts.length === 1 ? `${counts[0]}` : `${counts.slice(0, -1).join(", ")} and ${counts[counts.length - 1]}`;
+  return `${words} stations`;
+}
+
+// What to put out for an exercise, read from its name. Order matters: the
+// first match for the main kit wins, then a bench or bar is added.
+const KIT: [RegExp, string][] = [
+  [/smith/i, "Smith machine"],
+  [/trap bar|hex bar/i, "Trap bar"],
+  [/\bez[- ]?bar\b/i, "EZ bar"],
+  [/\bband(ed|s)?\b/i, "Band"],
+  [/kettlebell|\bkb\b/i, "Kettlebell"],
+  [/cable|pulldown|pull-down|pushdown|push-down|face pull|crossover|straight[- ]arm/i, "Cable machine"],
+  [/leg press|hack squat|leg extension|leg curl|hamstring curl|pec deck|machine|calf raise machine|hip abduct|hip adduct|lat pull/i, "Machine"],
+  [/dumbbell|\bdb\b/i, "Dumbbells"],
+  [/goblet/i, "Dumbbell or kettlebell"],
+  [/barbell|\bbb\b|deadlift|back squat|front squat|bench press|hip thrust|good morning|bent[- ]over row|pendlay|landmine/i, "Barbell"],
+  [/medicine ball|med ball|slam ball|wall ball/i, "Medicine ball"],
+  [/stability ball|swiss ball/i, "Stability ball"],
+  [/box jump|step-up|step up/i, "Box or step"],
+  [/inverted row/i, "Low bar or Smith machine"],
+  [/battle rope/i, "Battle ropes"],
+  [/\btrx\b|suspension/i, "Suspension straps"],
+  [/sled/i, "Sled"],
+];
+
+/** The kit to set up for one exercise, e.g. ["Dumbbells", "Incline bench"]. Empty for bodyweight. */
+export function setupFor(name: string): string[] {
+  const n = name.toLowerCase();
+  const out: string[] = [];
+  const main = KIT.find(([re]) => re.test(n));
+  if (main) out.push(main[1]);
+  if (/incline|decline/.test(n) && !/push-up|push up|pushup|plank/.test(n) && !/machine|cable|smith/.test(n)) out.push(n.includes("decline") ? "Decline bench" : "Incline bench");
+  else if (/bench|seated|preacher|chest-supported|seal row|skull crusher|tate press|chest fly|flat .*press|lying/.test(n) && !/bench dip|machine|cable|leg|calf/.test(n))
+    out.push("Bench");
+  if (/pull-up|pullup|chin-up|chinup|hanging|toes-to-bar|dead hang/.test(n)) out.push("Pull-up bar");
+  if (/\bdips?\b/.test(n) && !n.includes("bench dip")) out.push("Dip bars");
+  if (/bench dip/.test(n)) out.push("Bench");
+  return [...new Set(out)];
+}

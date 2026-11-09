@@ -71,21 +71,31 @@ export function contrastRest(row: Pick<ProgramExercise, "reps">): number {
 }
 
 /**
- * What happens after a set of `row` is logged in a superset: go to the
- * partner after the first half (straight away, or after the contrast rest),
- * or back to the first half (after resting) after the second half, while the
- * partner still has sets left. Null when the row isn't in a superset or the
- * partner is finished.
+ * What happens after a set of `row` is logged in a superset (2 stations) or a
+ * tri-set (3 or more, GRIZZ 2026-11-09): go on to the next station that still
+ * has sets left (straight away, or after the contrast rest), or after the last
+ * station back to the first one with sets left, after the round's rest. Null
+ * when the row isn't in a superset or every other station is finished.
  */
 export function supersetStep(
   row: ProgramExercise,
   session: ProgramExercise[],
   setsDone: (row: ProgramExercise) => number,
 ): { go: ProgramExercise; restSeconds: number } | null {
-  const next = supersetNext(row, session);
-  if (next && next.kind !== "cardio" && setsDone(next) < next.sets) return { go: next, restSeconds: contrastRest(row) };
-  const prev = supersetPrev(row, session);
-  if (prev && setsDone(prev) < prev.sets) return { go: prev, restSeconds: row.rest_seconds };
+  const i = session.findIndex((e) => e.id === row.id);
+  if (i < 0 || row.kind === "cardio") return null;
+  let start = i;
+  while (start > 0 && session[start - 1].kind !== "cardio" && session[start - 1].rest_seconds === 0) start--;
+  let end = i;
+  while (end < session.length - 1 && session[end].rest_seconds === 0 && session[end + 1].kind !== "cardio") end++;
+  if (end === start) return null;
+  const chain = session.slice(start, end + 1);
+  const at = i - start;
+  const left = (e: ProgramExercise) => setsDone(e) < e.sets;
+  const ahead = chain.slice(at + 1).find(left);
+  if (ahead) return { go: ahead, restSeconds: ahead === chain[at + 1] ? contrastRest(row) : 0 };
+  const back = chain.slice(0, at).find(left);
+  if (back) return { go: back, restSeconds: chain[chain.length - 1].rest_seconds };
   return null;
 }
 

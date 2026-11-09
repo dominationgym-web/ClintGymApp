@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastWeightOf, roundProblem, supersetRest, supersetRounds, workingSetsOf, type SupersetPick } from "@/lib/superset";
+import { lastWeightOf, roundProblem, setupFor, stationsSummary, supersetGroups, supersetRest, supersetRounds, workingSetsOf, type SupersetPick } from "@/lib/superset";
 
 const bench: SupersetPick = { exercise_id: "b", exercise_name: "Bench Press", row: { sets: 4, reps: "8", rest_seconds: 0 } };
 const row: SupersetPick = { exercise_id: "r", exercise_name: "Chest-Supported Row", row: { sets: 3, reps: "10", rest_seconds: 120 } };
@@ -38,5 +38,43 @@ describe("superset", () => {
     expect(roundProblem([bench, row], [{ weight: "60", reps: "8", effort: null }, { weight: "", reps: "", effort: null }])).toMatch(/Bench Press/);
     expect(roundProblem([bench, row], [{ weight: "60", reps: "x", effort: "comfortable" }, { weight: "", reps: "", effort: null }])).toMatch(/reps/);
     expect(roundProblem([bench, row], [{ weight: "60", reps: "8", effort: "comfortable" }, { weight: "", reps: "", effort: null }])).toBeNull();
+  });
+});
+
+describe("superset heads-up", () => {
+  const r = (id: string, exercise_name: string, rest_seconds: number, sets = 3, kind: "exercise" | "cardio" = "exercise") => ({
+    id,
+    exercise_name,
+    sets,
+    reps: "10",
+    rest_seconds,
+    kind,
+  });
+  it("finds 2- and 3-station supersets and skips plain exercises", () => {
+    const groups = supersetGroups([
+      r("a", "Barbell Bench Press", 0, 4),
+      r("b", "Dumbbell Row", 120),
+      r("c", "Leg Press", 90),
+      r("d", "Cable Fly", 0),
+      r("e", "Push-Up", 0),
+      r("f", "Dip", 60),
+    ]);
+    expect(groups.map((g) => g.rows.map((x) => x.id))).toEqual([["a", "b"], ["d", "e", "f"]]);
+    expect(groups[0].rounds).toBe(4);
+    expect(groups[1].restAfter).toBe(60);
+    expect(stationsSummary(groups)).toBe("2 and 3 stations");
+    expect(stationsSummary([groups[0]])).toBe("2 stations");
+  });
+  it("lets cardio break a run", () => {
+    expect(supersetGroups([r("a", "Squat", 0), r("x", "Bike", 0, 1, "cardio"), r("b", "Lunge", 90)])).toEqual([]);
+  });
+  it("says what to set up", () => {
+    expect(setupFor("Incline Dumbbell Press")).toEqual(["Dumbbells", "Incline bench"]);
+    expect(setupFor("Barbell Bench Press")).toEqual(["Barbell", "Bench"]);
+    expect(setupFor("Cable Tricep Pushdown")).toEqual(["Cable machine"]);
+    expect(setupFor("Goblet Squat")).toEqual(["Dumbbell or kettlebell"]);
+    expect(setupFor("Dumbbell Goblet Reverse Lunge")).toEqual(["Dumbbells"]);
+    expect(setupFor("Pull-Up")).toEqual(["Pull-up bar"]);
+    expect(setupFor("Push-Up")).toEqual([]);
   });
 });

@@ -41,6 +41,8 @@ import WorkoutReasonModal from "@/components/WorkoutReasonModal";
 import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_GOLD } from "@/lib/workoutSessions";
 import RestTimer from "@/components/RestTimer";
 import SupersetLogger from "@/components/SupersetLogger";
+import SupersetHeadsUp, { headsUpSeen, markHeadsUpSeen } from "@/components/SupersetHeadsUp";
+import { stationsSummary, supersetGroups, type SupersetGroup } from "@/lib/superset";
 import EditSetModal from "@/components/EditSetModal";
 import AchievementBadge from "@/components/AchievementBadge";
 import Celebration, { type CelebrationInfo } from "@/components/Celebration";
@@ -178,6 +180,8 @@ export default function ExerciseLibraryScreen() {
   const [starred, setStarred] = useState<CelebrationInfo | null>(null);
   // Superset logger (GRIZZ, 2026-10-23): 2-4 exercises logged a round at a time.
   const [supersetOpen, setSupersetOpen] = useState(false);
+  // Superset heads-up (GRIZZ, 2026-11-09): what to set up before a superset workout.
+  const [headsUp, setHeadsUp] = useState<{ title: string; groups: SupersetGroup[] } | null>(null);
   // A badge earned in the superset logger shows once it closes (two pop-ups can't open at once).
   const supersetBadge = useRef<ClientAchievement | null>(null);
   const [absDue, setAbsDue] = useState<{ rest: number; count: number } | null>(null);
@@ -413,6 +417,19 @@ export default function ExerciseLibraryScreen() {
   // What's open on the Today view (GRIZZ, 2026-10-18: "they must click on the program for it to open").
   const part = hold ? null : (openPart ?? null);
   const togglePart = (key: string) => setOpenPart(part === key ? null : key);
+  const mainSupersets = supersetGroups(todaysWorkout);
+  const extraSupersets = (block: CalendarDayWorkout) => supersetGroups([...block.exercises].sort((a, b) => a.sort_order - b.sort_order));
+  // Opening a workout with supersets: the heads-up opens by itself the first time today.
+  const startPart = (key: string, title: string, groups: SupersetGroup[]) => {
+    const opening = part !== key;
+    togglePart(key);
+    if (!opening || groups.length === 0 || live) return;
+    headsUpSeen(today, title).then((seen) => {
+      if (seen) return;
+      markHeadsUpSeen(today, title);
+      setHeadsUp({ title, groups });
+    });
+  };
   const choosePlace = (next: ExercisePlace) => {
     setPlace(next);
     setCategory(null);
@@ -997,13 +1014,14 @@ export default function ExerciseLibraryScreen() {
                   {new Date().toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
                 </Text>
                 {!hold && program && todaysWorkout.length > 0 && (
-                  <Pressable style={[styles.todayRow, part === "main" && styles.todayRowOpen]} onPress={() => togglePart("main")}>
+                  <Pressable style={[styles.todayRow, part === "main" && styles.todayRowOpen]} onPress={() => startPart("main", todayTitle, mainSupersets)}>
                     <Text style={styles.todayIcon}>{deloadToday && calendarToday ? "🌙" : catchUpFor ? "🔁" : "🏋️"}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.todayTitle}>{todayTitle}</Text>
                       <Text style={styles.todayHint}>
                         {catchUpFor ? `Catching up ${weekdayOf(catchUpFor)}'s workout · ` : ""}
                         {todaysWorkout.length} exercise{todaysWorkout.length === 1 ? "" : "s"}
+                        {mainSupersets.length > 0 ? " · ⚡ Supersets" : ""}
                         {todaySession ? ` · ${SESSION_LABELS[todaySession.status]}` : allTodaysSets.length > 0 ? " · In progress" : ""}
                       </Text>
                     </View>
@@ -1018,7 +1036,7 @@ export default function ExerciseLibraryScreen() {
                   <Pressable
                     key={`row-${block.program.id}-${i}`}
                     style={[styles.todayRow, part === `extra-${i}` && styles.todayRowOpen]}
-                    onPress={() => togglePart(`extra-${i}`)}
+                    onPress={() => startPart(`extra-${i}`, displayProgramName(block.program), extraSupersets(block))}
                   >
                     <Text style={styles.todayIcon}>🤸</Text>
                     <View style={{ flex: 1 }}>
@@ -1026,6 +1044,7 @@ export default function ExerciseLibraryScreen() {
                       <Text style={styles.todayHint}>
                         {block.daySlot != null ? `${sessionTitle(block.program, block.daySlot)} · ` : ""}
                         {block.exercises.length} exercise{block.exercises.length === 1 ? "" : "s"}
+                        {extraSupersets(block).length > 0 ? " · ⚡ Supersets" : ""}
                         {resultOf(block) === "done" ? " · Done ✓" : resultOf(block) === "skipped" ? " · Couldn't do it" : ""}
                       </Text>
                     </View>
@@ -1078,6 +1097,12 @@ export default function ExerciseLibraryScreen() {
                 ) : (
                   <>
                     {calendarToday && <Text style={styles.fromCalendar}>Today's workout from your training calendar</Text>}
+                    {mainSupersets.length > 0 && (
+                      <Pressable style={styles.headsUpChip} onPress={() => setHeadsUp({ title: todayTitle, groups: mainSupersets })} accessibilityRole="button">
+                        <Text style={styles.headsUpChipText}>⚡ Superset session · {stationsSummary(mainSupersets)}</Text>
+                        <Text style={styles.headsUpChipSub}>Tap to see what to set up</Text>
+                      </Pressable>
+                    )}
                     {calendarToday && client && !live && (
                       <WorkoutSwapRow
                         clientId={client.id}
@@ -1299,6 +1324,16 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.fromCalendar}>Extra block from your coach for today</Text>
                 <Text style={styles.programTitle}>{displayProgramName(block.program)}</Text>
                 {block.daySlot != null && <Text style={styles.category}>{sessionTitle(block.program, block.daySlot)}</Text>}
+                {extraSupersets(block).length > 0 && (
+                  <Pressable
+                    style={styles.headsUpChip}
+                    onPress={() => setHeadsUp({ title: displayProgramName(block.program), groups: extraSupersets(block) })}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.headsUpChipText}>⚡ Superset session · {stationsSummary(extraSupersets(block))}</Text>
+                    <Text style={styles.headsUpChipSub}>Tap to see what to set up</Text>
+                  </Pressable>
+                )}
                 {block.program.warm_up ? (
                   <View style={styles.sessionWarmUp}>
                     <Text style={styles.sessionWarmUpTitle}>Warm up first</Text>
@@ -1459,6 +1494,7 @@ export default function ExerciseLibraryScreen() {
           onClose={() => setTimerOpen(false)}
         />
       )}
+      <SupersetHeadsUp visible={!!headsUp} title={headsUp?.title ?? ""} groups={headsUp?.groups ?? []} onDone={() => setHeadsUp(null)} />
       {client && (
         <SupersetLogger
           visible={supersetOpen}
@@ -1830,6 +1866,9 @@ const styles = themedStyles({
   },
   sessionWarmUpTitle: { color: BRAND_GOLD, fontWeight: "700", marginBottom: 4 },
   cardioRow: { borderLeftWidth: 3, borderLeftColor: "#F97316", paddingLeft: 8 },
+  headsUpChip: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 10, marginTop: 8, marginBottom: 4 },
+  headsUpChipText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14 },
+  headsUpChipSub: { color: "#CBD5E1", fontSize: 12, marginTop: 2 },
   supersetButton: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 12, marginTop: 10 },
   supersetButtonText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 15 },
   supersetButtonSub: { color: "#CBD5E1", fontSize: 12, marginTop: 2 },

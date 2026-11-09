@@ -248,6 +248,16 @@ describe("supersetStep", () => {
     expect(supersetStep(b, session, (e) => done[e.id])).toBeNull();
     expect(supersetStep(c, session, () => 0)).toBeNull();
   });
+  it("runs a tri-set 1, 2, 3, then back to 1 after the round's rest", () => {
+    const x = { ...a, id: "x" };
+    const y = { ...a, id: "y", exercise_name: "Leg Extension" };
+    const z = { ...b, id: "z", rest_seconds: 90 };
+    const tri = [x, y, z, c];
+    const done: Record<string, number> = { x: 1, y: 1, z: 1, c: 0 };
+    expect(supersetStep(x, tri, (e) => done[e.id])).toEqual({ go: y, restSeconds: 0 });
+    expect(supersetStep(y, tri, (e) => done[e.id])).toEqual({ go: z, restSeconds: 0 });
+    expect(supersetStep(z, tri, (e) => done[e.id])).toEqual({ go: x, restSeconds: 90 });
+  });
 });
 
 describe("withExtraCardio", () => {
