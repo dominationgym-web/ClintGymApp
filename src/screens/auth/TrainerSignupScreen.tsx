@@ -5,6 +5,7 @@ import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
+import { friendlyAlert } from "@/lib/network";
 import { retryIfIssuedInFuture } from "@/lib/clockSkew";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
@@ -93,7 +94,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
     }
     if (authError || !authData.user) {
       setLoading(false);
-      Alert.alert("Couldn't sign up", authError?.message ?? "Unknown error");
+      Alert.alert(...friendlyAlert("Couldn't sign up", authError, "Unknown error"));
       return;
     }
 
@@ -116,7 +117,7 @@ export default function TrainerSignupScreen({ navigation }: Props) {
     );
     if (error) {
       setLoading(false);
-      Alert.alert("Couldn't finish signup", error.message);
+      Alert.alert(...friendlyAlert("Couldn't finish signup", error));
       return;
     }
     // Swaps this screen for the waiting-for-approval screen.

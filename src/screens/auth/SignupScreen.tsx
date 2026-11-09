@@ -13,6 +13,7 @@ import ModalSafeArea from "../../components/ModalSafeArea";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
+import { friendlyAlert, isNetworkError } from "@/lib/network";
 import type { JoinableTrainer, PackageType, PlanType } from "@/types/database";
 import { normalizeJoinCode } from "@/lib/trainers";
 import { retryIfIssuedInFuture } from "@/lib/clockSkew";
@@ -185,7 +186,7 @@ export default function SignupScreen({ navigation }: Props) {
     }
     if (authError || !authData.user) {
       setLoading(false);
-      Alert.alert("Couldn't sign up", authError?.message ?? "Unknown error");
+      Alert.alert(...friendlyAlert("Couldn't sign up", authError, "Unknown error"));
       return;
     }
     // With "Confirm email" switched on in Supabase, signUp gives no session
@@ -197,6 +198,11 @@ export default function SignupScreen({ navigation }: Props) {
     let userId = authData.user.id;
     if (!authData.session) {
       const retry = await supabase.auth.signInWithPassword({ email, password });
+      if (retry.error && isNetworkError(retry.error)) {
+        setLoading(false);
+        Alert.alert(...friendlyAlert("Couldn't sign up", retry.error));
+        return;
+      }
       if (retry.error || !retry.data.session) {
         setLoading(false);
         Alert.alert(
@@ -232,7 +238,7 @@ export default function SignupScreen({ navigation }: Props) {
     // 23505: the details were already saved on an earlier try, so carry on.
     if (clientError && clientError.code !== "23505") {
       setLoading(false);
-      Alert.alert("Couldn't finish signup", clientError.message);
+      Alert.alert(...friendlyAlert("Couldn't finish signup", clientError));
       return;
     }
 

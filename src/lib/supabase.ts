@@ -2,6 +2,7 @@ import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { withNetworkRetry } from "@/lib/network";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -23,11 +24,14 @@ export function getLiveClient(): string | null {
   return liveClientId;
 }
 
+// A request that couldn't reach the server is tried again (src/lib/network.ts).
+const retryingFetch = withNetworkRetry((input, init) => fetch(input, init));
+
 const liveFetch: typeof fetch = (input, init) => {
-  if (!liveClientId) return fetch(input, init);
+  if (!liveClientId) return retryingFetch(input, init);
   const headers = new Headers(init?.headers);
   headers.set("x-live-client", liveClientId);
-  return fetch(input, { ...init, headers });
+  return retryingFetch(input, { ...init, headers });
 };
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {

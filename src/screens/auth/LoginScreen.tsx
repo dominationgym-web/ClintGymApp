@@ -4,6 +4,7 @@ import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
+import { friendlyAlert } from "@/lib/network";
 import PasswordInput from "@/components/PasswordInput";
 import { themeText, themedStyles } from "@/lib/theme";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -44,7 +45,7 @@ export default function LoginScreen({ navigation, route }: Props) {
       // Supabase says "Invalid login credentials": say it plainly and point to help.
       if (/invalid login credentials/i.test(error.message)) {
         Alert.alert("Couldn't log in", "The email or password is wrong. Check the spelling, or tap \"Forgot your password?\" for help.");
-      } else Alert.alert("Couldn't sign in", error.message);
+      } else Alert.alert(...friendlyAlert("Couldn't sign in", error));
       return;
     }
     // A login with no client or trainer details means sign-up was cut off
