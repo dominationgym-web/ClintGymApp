@@ -45,7 +45,6 @@ begin
     return;
   end if;
   insert into public.login_help_requests (email) values (typed);
-  delete from public.login_help_requests where created_at < now() - interval '30 days';
 
   select t.id into owner_id from public.trainers t where t.is_owner order by t.created_at limit 1;
   select u.id into uid from auth.users u where lower(u.email) = typed limit 1;
