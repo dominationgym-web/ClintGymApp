@@ -129,8 +129,19 @@ export function isAway(s: { status: string; away_id?: string | null }): boolean 
   return s.status === "cancelled" && !!s.away_id;
 }
 
+/** Held because they haven't paid (0203). */
+export function isOnHold(s: { status: string; away_id?: string | null; note?: string | null }): boolean {
+  return isAway(s) && (s.note ?? "").startsWith("On hold");
+}
+
+/** "✈️ Away 9 Nov to 13 Nov" or "🚫 On hold: not paid", for a held session. */
+export function awayTag(s: { status: string; away_id?: string | null; note?: string | null }): string {
+  return isOnHold(s) ? "🚫 On hold: not paid" : `✈️ ${awayLabel(s)}`;
+}
+
 /** "Away 9 Nov to 13 Nov" (or "Away till 14 Nov") from an away session's note. */
 export function awayLabel(s: { note?: string | null }): string {
+  if ((s.note ?? "").startsWith("On hold")) return "On hold: not paid";
   // "Away from 9 November until 13 November" (0185): "Away 9 Nov to 13 Nov".
   const r = /from (\d+) (\w{3})\w* until (\d+) (\w{3})/.exec(s.note ?? "");
   if (r) return `Away ${r[1]} ${r[2]} to ${r[3]} ${r[4]}`;

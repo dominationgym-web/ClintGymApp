@@ -21,7 +21,8 @@ import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } fr
 import DiaryPeople from "@/components/sessions/DiaryPeople";
 import CatchUpRows from "@/components/sessions/CatchUpRows";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
-import AwayModal, { awayOf, awaySpan, type AwayWho } from "@/components/sessions/AwayModal";
+import AwayModal, { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
+import HoldButton from "@/components/sessions/HoldButton";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -32,6 +33,7 @@ import {
   AGREEMENT_TEMPLATE,
   AGREEMENT_WORDS,
   awayLabel,
+  awayTag,
   BILLINGS,
   KIND_STYLE,
   POLICIES,
@@ -339,7 +341,7 @@ function SessionLine({
   const kind = sessionKind(s);
   const style = KIND_STYLE[kind];
   const detail = (x: LiveSession) => {
-    if (isAway(x)) return `✈️ ${awayLabel(x)}`;
+    if (isAway(x)) return awayTag(x);
     const k = sessionKind(x);
     return `${KIND_STYLE[k].icon} ${kindDetail(k, x.cancelled_at ? noticeHours(x.starts_at, x.cancelled_at) : null, {
       clientOk: !!x.client_confirmed_at,
@@ -404,7 +406,7 @@ function AwayLine({
         {time} · {name}
         {l.s.repeat_id ? " 🔁" : ""}
       </Text>
-      <Text style={styles.awayText}>✈️ {awayLabel(l.s)} · free to book</Text>
+      <Text style={styles.awayText}>{awayTag(l.s)} · free to book</Text>
     </Pressable>
   );
 }
@@ -1218,6 +1220,8 @@ function ClientsTab({
             </Text>
           </Pressable>
         ) : null}
+        {/* Hasn't paid: hold their sessions until they do (GRIZZ, 2026-11-09). */}
+        <HoldButton who={{ clientId: picked, name: c?.name ?? "Client" }} aways={aways} onChanged={onChanged} />
         {onOpenPage ? (
           // Says what's there (GRIZZ, 2026-11-02: "you don't know that's where you set up the diets").
           <Pressable style={styles.pageButton} onPress={() => onOpenPage(picked)} accessibilityRole="button">
@@ -1291,6 +1295,9 @@ function ClientsTab({
               const a = awayOf(aways, { clientId: c.id, name: c.name });
               return a ? <Text style={[styles.meta, { color: themeText("#22C55E") }]}>✈️ Away {awaySpan(a)}</Text> : null;
             })()}
+            {holdOf(aways, { clientId: c.id, name: c.name }) ? (
+              <Text style={[styles.meta, { color: themeText("#EF4444") }]}>🚫 On hold: not paid</Text>
+            ) : null}
           </Pressable>
         );
       })}
@@ -1417,7 +1424,9 @@ function InvoicesTab({
 
   return (
     <>
-      <Text style={styles.helper}>Invoices are made on the 1st.</Text>
+      <Text style={styles.helper}>
+        Invoices are made on the 1st. Flip Paid when the money comes in. Not paid by the 14th? Their sessions go on hold by themselves until you flip Paid.
+      </Text>
       <CatchUpRows catchUps={owed} name={(s) => (s.client_id ? byId[s.client_id]?.name : s.guest_name) ?? "Client"} onChanged={onChanged} onlyLate />
       {otherDrafts.length ? (
         <>

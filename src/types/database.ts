@@ -1259,6 +1259,8 @@ export type ClientAway = {
   until_at: string;
   ended_at: string | null;
   created_at: string;
+  /** On hold because they haven't paid (0203): no end date until Unblock. */
+  unpaid?: boolean;
 };
 // The coach's blocked-out time (0177): sessions in it are cancelled and not charged.
 export type TrainerTimeOff = {
@@ -1762,6 +1764,7 @@ export interface Database {
         Returns: ClientAway;
       };
       end_client_away: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };
+      block_client: { Args: { p_client: string | null; p_guest: string | null }; Returns: ClientAway };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
       decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };
       set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };

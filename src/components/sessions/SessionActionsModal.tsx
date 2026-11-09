@@ -19,6 +19,8 @@ import {
   atTime,
   autoCharge,
   awayLabel,
+  awayTag,
+  isOnHold,
   isAway,
   clockLabel,
   dayKey,
@@ -211,7 +213,7 @@ export default function SessionActionsModal({
             </Text>
             <Text style={[styles.kind, { color: themeText(style.colour) }]}>
               {isAway(session)
-                ? `✈️ ${awayLabel(session)} · not charged · the slot is free to book`
+                ? `${awayTag(session)} · ${isOnHold(session) ? "not charged" : "on the catch-up list"} · the slot is free to book`
                 : `${style.icon} ${kindDetail(kind, session.cancelled_at ? noticeHours(session.starts_at, session.cancelled_at) : null, {
                     clientOk: !!session.client_confirmed_at,
                     disputed: !!session.client_disputed_at,
