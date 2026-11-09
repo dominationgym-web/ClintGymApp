@@ -169,7 +169,7 @@ export const AWARD_SETTING_FIELDS: AwardSettingField[] = [
   { key: "period_months", label: "Months in a period", kind: "number", group: "basics" },
   { key: "cooldown_months", label: "Months a winner sits out", kind: "number", group: "basics" },
   { key: "min_verified_clients", label: "Verified clients needed to win", kind: "number", group: "basics" },
-  { key: "min_interactions", label: "Two-way interactions a month for a verified client", kind: "number", group: "basics" },
+  { key: "min_interactions", label: "Two-way interactions a week for a verified client", kind: "number", group: "basics", hint: "Every week the client has been on the app, over the last 4 weeks" },
   { key: "stream_url", label: "Live reveal stream link", kind: "text", group: "basics", hint: "The link trainers tap to watch the reveal" },
   { key: "signup_weight", label: "New sign-ups that stay (%)", kind: "number", group: "score" },
   { key: "retention_weight", label: "Client retention (%)", kind: "number", group: "score" },
