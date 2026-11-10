@@ -1648,6 +1648,7 @@ export interface Database {
       plan_workouts_left: { Args: { p_plan_id: string }; Returns: number };
       deload_check: { Args: { p_client: string }; Returns: DeloadCheck | null };
       add_deload_week: { Args: { p_client: string; p_start: string }; Returns: number };
+      resync_live_day: { Args: { p_client: string; p_date: string }; Returns: number };
       record_workout_session: {
         Args: {
           p_title: string;

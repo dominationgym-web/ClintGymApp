@@ -9,6 +9,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import type { SetEffort, WorkoutLog } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 import SafeBottom from "@/components/SafeBottom";
+import { removeLiveSet } from "@/lib/fixLiveWorkout";
 
 // GRIZZ 2026-10-29: logged a set wrong during a workout? Tap it to fix the
 // weight, reps or reps left. The client changes their own sets ("update own",
@@ -18,10 +19,13 @@ export default function EditSetModal({
   set,
   onSaved,
   onClose,
+  onRemoved,
 }: {
   set: WorkoutLog | null;
   onSaved: (updated: WorkoutLog) => void;
   onClose: () => void;
+  /** Given when the trainer logged this set in a live session (0210): shows "Remove this set". */
+  onRemoved?: (removed: WorkoutLog) => void;
 }) {
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
@@ -59,6 +63,29 @@ export default function EditSetModal({
     }
     onSaved(data);
     onClose();
+  };
+
+  // A set logged by mistake (GRIZZ 2026-11-10): take it out altogether.
+  const remove = () => {
+    if (!set || !onRemoved) return;
+    Alert.alert("Remove this set?", `${set.exercise_name}, ${set.warm_up ? "warm-up" : `set ${set.set_number}`} comes off the log.`, [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          setSaving(true);
+          const problem = await removeLiveSet(set);
+          setSaving(false);
+          if (problem) {
+            Alert.alert("Couldn't remove the set", problem);
+            return;
+          }
+          onRemoved(set);
+          onClose();
+        },
+      },
+    ]);
   };
 
   return (
@@ -102,6 +129,11 @@ export default function EditSetModal({
               <Pressable style={styles.save} onPress={save} disabled={saving}>
                 {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>Save the change</Text>}
               </Pressable>
+              {onRemoved && (
+                <Pressable style={styles.remove} onPress={remove} disabled={saving}>
+                  <Text style={styles.removeText}>🗑 Remove this set</Text>
+                </Pressable>
+              )}
               <Pressable style={styles.cancel} onPress={onClose}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
@@ -128,6 +160,8 @@ const styles = themedStyles({
   chipTextOn: { color: "#0F172A" },
   save: { backgroundColor: BRAND_GOLD, borderRadius: 12, paddingVertical: 14, alignItems: "center", marginTop: 14 },
   saveText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
+  remove: { borderRadius: 12, borderWidth: 1.5, borderColor: "#EF4444", paddingVertical: 12, alignItems: "center", marginTop: 10 },
+  removeText: { color: "#F87171", fontWeight: "800", fontSize: 15 },
   cancel: { paddingVertical: 12, alignItems: "center" },
   cancelText: { color: "#94A3B8", fontWeight: "700" },
 });

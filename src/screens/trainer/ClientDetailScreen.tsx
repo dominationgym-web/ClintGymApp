@@ -312,14 +312,17 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       .order("set_number", { ascending: true })
       .limit(1000);
 
+  const reloadTrainingLog = async () => {
+    setTrainingKey((k) => k + 1);
+    const { data } = await loadWorkoutLogs();
+    if (data) setWorkoutLogs(data);
+  };
   // Back from a live session (or anywhere else): reload the training log.
   useEffect(() => {
-    return navigation.addListener("focus", async () => {
-      setTrainingKey((k) => k + 1);
-      const { data } = await loadWorkoutLogs();
-      if (data) setWorkoutLogs(data);
-    });
+    return navigation.addListener("focus", reloadTrainingLog);
   }, [navigation, clientId]);
+  // Left a live session by mistake (GRIZZ 2026-11-10): the button takes them back into it.
+  const liveSetsToday = workoutLogs.filter((l) => l.log_date === todayIso() && !!trainer && l.logged_by === trainer.id).length;
 
   useEffect(() => {
     const load = async () => {
@@ -607,7 +610,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         {trainer && client.trainer_id === trainer.id && (
           <View style={styles.liveRow}>
             <Pressable style={[styles.liveButton, { flex: 1 }]} onPress={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}>
-              <Text style={styles.liveButtonText}>▶ Start live session</Text>
+              <Text style={styles.liveButtonText}>{liveSetsToday > 0 ? "▶ Back to today's live session" : "▶ Start live session"}</Text>
             </Pressable>
             {/* Group live session (0138): up to 4 clients at once, this one first. */}
             <Pressable style={styles.groupButton} onPress={() => navigation.navigate("GroupLive", { clientId: client.id })}>
@@ -1104,7 +1107,14 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               <ProgressCard clientId={client.id} role="trainer" />
             </TrainingSection>
             <TrainingSection title="Training log, last 2 weeks" open={trainingOpen === "log"} onToggle={() => toggleTraining("log")}>
-              <TrainerTrainingLog logs={workoutLogs} sessions={workoutSessions} />
+              <TrainerTrainingLog
+                logs={workoutLogs}
+                sessions={workoutSessions}
+                trainerId={trainer && client.trainer_id === trainer.id ? trainer.id : undefined}
+                clientId={client.id}
+                onChanged={reloadTrainingLog}
+                onBackIntoToday={() => navigation.navigate("LiveWorkout", { clientId: client.id, name: client.name })}
+              />
               <DropSetRoundsCard clientId={client.id} />
             </TrainingSection>
             <TrainingSection title="More options" open={trainingOpen === "more"} onToggle={() => toggleTraining("more")}>
