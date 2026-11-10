@@ -57,6 +57,7 @@ export default function SessionActionsModal({
   nameOf,
   onSwitch,
   onAway,
+  onStopped,
   onStartLive,
   onClose,
   onChanged,
@@ -65,6 +66,8 @@ export default function SessionActionsModal({
   onStartLive?: (who: LiveSession[]) => void;
   /** Mark this person away until a day (GRIZZ 2026-11-02). */
   onAway?: () => void;
+  /** They've stopped training: take every upcoming session of theirs off (GRIZZ 2026-11-10). */
+  onStopped?: () => void;
   session: LiveSession | null;
   clientName: string;
   /** The others booked in the same slot: a joint session (GRIZZ 2026-11-01). */
@@ -335,6 +338,10 @@ export default function SessionActionsModal({
                   />
                 ) : null}
                 {session.status === "booked" ? <Outline label="Take off the calendar" onPress={remove} danger /> : null}
+                {/* Stopped training with the coach: every upcoming session comes off and turns green, Available (GRIZZ 2026-11-10). */}
+                {onStopped && session.status !== "removed" && new Date(session.starts_at) > now ? (
+                  <Outline label={`🛑 ${first} stopped training with you`} onPress={onStopped} danger />
+                ) : null}
               </View>
             )}
 
