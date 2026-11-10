@@ -45,6 +45,8 @@ import SupersetLogger from "@/components/SupersetLogger";
 import SupersetHeadsUp, { headsUpSeen, markHeadsUpSeen } from "@/components/SupersetHeadsUp";
 import { stationsSummary, supersetGroups, type SupersetGroup } from "@/lib/superset";
 import EditSetModal from "@/components/EditSetModal";
+import { removeLiveDay, trainerCanRemove } from "@/lib/fixLiveWorkout";
+import { LoggedSetsByExercise } from "@/components/LoggedSetsByExercise";
 import AchievementBadge from "@/components/AchievementBadge";
 import Celebration, { type CelebrationInfo } from "@/components/Celebration";
 import { checkAchievement } from "@/lib/achievementQueries";
@@ -177,6 +179,8 @@ export default function ExerciseLibraryScreen() {
   const [badge, setBadge] = useState<ClientAchievement | null>(null);
   // A logged set being fixed (wrong weight or reps).
   const [editingSet, setEditingSet] = useState<WorkoutLog | null>(null);
+  // A set tapped in "Fix a set" on the live session's main page (GRIZZ 2026-11-10).
+  const [fixingSet, setFixingSet] = useState<WorkoutLog | null>(null);
   // Gold star confetti pop-up when a finished workout pushed something up.
   const [starred, setStarred] = useState<CelebrationInfo | null>(null);
   // Superset logger (GRIZZ, 2026-10-23): 2-4 exercises logged a round at a time.
@@ -963,6 +967,37 @@ export default function ExerciseLibraryScreen() {
     }
   };
 
+  // Live session (0210): the trainer removes a set or the whole session they
+  // logged. Set numbers close up, so today's sets load again.
+  const liveTrainerId = live ? client?.trainer_id ?? null : null;
+  const reloadTodaysSets = async () => {
+    if (!client) return;
+    const [{ data: rows }, { data: sessionRow }] = await Promise.all([
+      supabase.from("workout_logs").select("*").eq("client_id", client.id).eq("log_date", todayIso()).order("set_number", { ascending: true }),
+      supabase.from("workout_sessions").select("*").eq("client_id", client.id).eq("session_date", todayIso()).maybeSingle(),
+    ]);
+    const all = rows ?? [];
+    setAllTodaysSets(all);
+    setTodaySession(sessionRow ?? null);
+    if (selected) setTodaysSets(all.filter((r) => (selected.id ? r.exercise_id === selected.id : r.exercise_name === selected.name)));
+  };
+  const removeTodaysLive = () => {
+    if (!client || !liveTrainerId) return;
+    const first = self ? "your" : `${client.name.split(" ")[0]}'s`;
+    Alert.alert(self ? "Delete today's workout?" : "Delete today's live session?", `Every set you logged today comes off ${first} log.`, [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const problem = await removeLiveDay(client.id, todayIso(), liveTrainerId);
+          if (problem) Alert.alert("Couldn't delete it", problem);
+          await reloadTodaysSets();
+        },
+      },
+    ]);
+  };
+
   // A fixed set replaces the old one; when it's the latest working set, the
   // next set starts from its weight (APRE works the next set out again).
   const setFixed = (updated: WorkoutLog) => {
@@ -1006,6 +1041,23 @@ export default function ExerciseLibraryScreen() {
                   <Text style={styles.completeText}>{(self ? todaySession : todaySession?.in_person) ? "Save again" : self ? "Finish workout" : "Finish live session"}</Text>
                 </Pressable>
               </View>
+            )}
+            {/* Came back into a live session (GRIZZ 2026-11-10): every set so far, tap one to fix or remove it. */}
+            {live && client && allTodaysSets.length > 0 && (
+              <FoldSection
+                icon="✏️"
+                title="Fix a set"
+                hint={`${allTodaysSets.length} set${allTodaysSets.length === 1 ? "" : "s"} logged today · tap one to change or remove it`}
+                open={part === "fix"}
+                onToggle={() => togglePart("fix")}
+              >
+                <LoggedSetsByExercise sets={allTodaysSets} onPick={setFixingSet} />
+                {allTodaysSets.some((s) => trainerCanRemove(s, liveTrainerId)) && (
+                  <Pressable style={styles.removeDay} onPress={removeTodaysLive}>
+                    <Text style={styles.removeDayText}>🗑 {self ? "Delete today's workout" : "Delete today's live session"}</Text>
+                  </Pressable>
+                )}
+              </FoldSection>
             )}
             {client && !live && atHome && equipmentList(client.home_equipment).length === 0 && (
               <HomeEquipmentCard client={client} onChanged={() => refreshProfile()} />
@@ -1767,8 +1819,19 @@ export default function ExerciseLibraryScreen() {
         </ModalSafeArea>
         </KeyboardSafe>
         <AchievementBadge badge={badge} onClose={() => setBadge(null)} />
-        <EditSetModal set={editingSet} onSaved={setFixed} onClose={() => setEditingSet(null)} />
+        <EditSetModal
+          set={editingSet}
+          onSaved={setFixed}
+          onClose={() => setEditingSet(null)}
+          onRemoved={editingSet && trainerCanRemove(editingSet, liveTrainerId) ? reloadTodaysSets : undefined}
+        />
       </Modal>
+      <EditSetModal
+        set={fixingSet}
+        onSaved={(updated) => setAllTodaysSets((list) => list.map((x) => (x.id === updated.id ? updated : x)))}
+        onClose={() => setFixingSet(null)}
+        onRemoved={fixingSet && trainerCanRemove(fixingSet, liveTrainerId) ? reloadTodaysSets : undefined}
+      />
     </View>
   );
 }
@@ -1858,6 +1921,8 @@ const styles = themedStyles({
   },
   loggedSetText: { color: "#fff", fontSize: 14 },
   loggedSetEffort: { color: "#64748B", fontSize: 12 },
+  removeDay: { borderRadius: 10, borderWidth: 1.5, borderColor: "#EF4444", paddingVertical: 11, alignItems: "center", marginTop: 10 },
+  removeDayText: { color: "#F87171", fontWeight: "800", fontSize: 14 },
   loggedSetHint: { color: "#64748B", fontSize: 12, marginTop: -6, marginBottom: 6 },
   sessionWarmUp: {
     backgroundColor: "#1E293B",
