@@ -12,6 +12,7 @@ import { REFERRAL_DISCOUNT_PERCENT, REFERRALS_PER_FREE_MONTH, REFERRAL_WAIT_MONT
 import { money, referralCreditUseLine, referralCreditValue, referralPopupDue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
+import { popupOpen, setPopupOpen } from "@/lib/popupGate";
 
 const shownKey = (trainerId: string) => `referralPopupShownOn:${trainerId}`;
 
@@ -31,7 +32,7 @@ export default function ReferralPopup() {
 
   const check = useCallback(async () => {
     const t = trainerRef.current;
-    if (!t || t.is_owner || !t.approved || visibleRef.current) return;
+    if (!t || t.is_owner || !t.approved || visibleRef.current || popupOpen("referral")) return;
     try {
       const last = await AsyncStorage.getItem(shownKey(t.id));
       if (!referralPopupDue(last, todayIso())) return;
@@ -39,7 +40,7 @@ export default function ReferralPopup() {
       setCounted((refs.data ?? []).filter((r: { counted: boolean }) => r.counted).length);
       setPrices(planPrices);
       setFirstTime(!last);
-      setVisible(true);
+      if (!popupOpen("referral")) setVisible(true);
     } catch {
       // Storage or network failed: nothing pops up. It's all on the Profile tab.
     }
@@ -53,6 +54,11 @@ export default function ReferralPopup() {
     const subscription = AppState.addEventListener("change", (state) => state === "active" && check());
     return () => subscription.remove();
   }, [trainerId, isApproved, check]);
+
+  useEffect(() => {
+    setPopupOpen("referral", visible);
+    return () => setPopupOpen("referral", false);
+  }, [visible]);
 
   if (!trainer || !visible) return null;
 

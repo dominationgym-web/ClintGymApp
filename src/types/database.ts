@@ -1795,6 +1795,12 @@ export interface Database {
       block_client: { Args: { p_client: string | null; p_guest: string | null }; Returns: ClientAway };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
       decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };
+      link_diary_name: { Args: { p_client: string; p_name: string }; Returns: { moved: number; future: number } };
+      skip_client_link: { Args: { p_client: string }; Returns: undefined };
+      clients_to_link: {
+        Args: Record<string, never>;
+        Returns: { clients: { id: string; name: string; created_at: string }[]; names: { key: string; name: string; coming: number }[] };
+      };
       set_live_session_person: { Args: { p_id: string; p_client: string | null; p_name?: string | null; p_all?: boolean }; Returns: { moved: number } };
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };

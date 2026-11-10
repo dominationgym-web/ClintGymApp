@@ -39,6 +39,7 @@ import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
+import LinkNewClientPopup from "@/components/LinkNewClientPopup";
 import TimersScreen from "@/screens/TimersScreen";
 import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
 import TrainerSidebar, { useCurrentRoute } from "@/components/TrainerSidebar";
@@ -157,6 +158,8 @@ export default function TrainerNavigator() {
   return (
     <TrainerSideProvider>
       <ReferralPopup />
+      {/* A new sign-up: link them to their name on the 1 on 1 calendar (0208). */}
+      <LinkNewClientPopup />
       <View style={styles.row}>
         {wide ? <TrainerSidebar /> : null}
         {wide && onClients ? (

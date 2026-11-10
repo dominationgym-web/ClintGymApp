@@ -1,0 +1,196 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, AppState, Modal, Pressable, Text, View } from "react-native";
+import { ScrollView } from "@/components/ScrollView";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { BRAND_GOLD } from "@/lib/brand";
+import { clientsToAsk, rankNames, type LinkClient, type LinkName } from "@/lib/clientLinks";
+import { friendlyAlert } from "@/lib/network";
+import { onPopupChange, popupOpen, setPopupOpen } from "@/lib/popupGate";
+import { themeText, themedStyles } from "@/lib/theme";
+
+type Step = { kind: "ask" } | { kind: "others" } | { kind: "confirm"; name: LinkName } | { kind: "done"; name: string; moved: number };
+
+// When a client joins the app with the trainer's code, the trainer's app asks
+// straight away whether they're one of the names on the 1 on 1 calendar that
+// aren't in the app yet (GRIZZ, 2026-11-10: "a pop-up comes up when the client
+// joins, that the trainer can link him to the app"). One tap on the name, one
+// on Yes, and every session, weekly time, away date and price under that name
+// moves to the client's account. "A new client" stops the question;
+// "Ask me later" asks again the next time the app is opened.
+export default function LinkNewClientPopup() {
+  const { trainer } = useAuth();
+  const [queue, setQueue] = useState<LinkClient[]>([]);
+  const [names, setNames] = useState<LinkName[]>([]);
+  const [step, setStep] = useState<Step>({ kind: "ask" });
+  const [busy, setBusy] = useState(false);
+  // "Ask me later" for this run of the app.
+  const later = useRef(new Set<string>());
+  const loading = useRef(false);
+
+  const trainerId = trainer?.id;
+  const approved = trainer?.approved;
+
+  const check = useCallback(async () => {
+    if (!trainerId || !approved || loading.current) return;
+    loading.current = true;
+    try {
+      const { data, error } = await supabase.rpc("clients_to_link");
+      if (error || !data) return;
+      const ask = clientsToAsk(data.clients ?? [], data.names ?? []).filter((c) => !later.current.has(c.id));
+      setNames(data.names ?? []);
+      setQueue((q) => (q.length ? q : ask));
+    } finally {
+      loading.current = false;
+    }
+  }, [trainerId, approved]);
+
+  useEffect(() => {
+    if (!trainerId || !approved) return;
+    check();
+    const sub = AppState.addEventListener("change", (state) => state === "active" && check());
+    return () => sub.remove();
+  }, [trainerId, approved, check]);
+
+  // Waits while another pop-up (the referral one) is showing.
+  const [blocked, setBlocked] = useState(() => popupOpen("link"));
+  useEffect(() => onPopupChange(() => setBlocked(popupOpen("link"))), []);
+
+  const client = queue[0];
+  const visible = !!client && !blocked;
+  useEffect(() => {
+    setPopupOpen("link", visible);
+    return () => setPopupOpen("link", false);
+  }, [visible]);
+
+  const ranked = useMemo(() => (client ? rankNames(names, client.name) : []), [names, client]);
+  const likely = ranked.filter((n) => n.match > 0).slice(0, 3);
+
+  if (!visible) return null;
+
+  const first = client.name.trim().split(/\s+/)[0] || "They";
+  const next = () => {
+    setStep({ kind: "ask" });
+    // No names left on the calendar: nothing more to ask.
+    setQueue((q) => (names.length ? q.slice(1) : []));
+  };
+  const askLater = () => {
+    later.current.add(client.id);
+    next();
+  };
+  const newClient = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc("skip_client_link", { p_client: client.id });
+    setBusy(false);
+    if (error) return Alert.alert(...friendlyAlert("Couldn't save that", error));
+    next();
+  };
+  const link = async (n: LinkName) => {
+    setBusy(true);
+    const { data, error } = await supabase.rpc("link_diary_name", { p_client: client.id, p_name: n.name });
+    setBusy(false);
+    if (error) return Alert.alert(...friendlyAlert("Couldn't link them", error));
+    setNames((all) => all.filter((x) => x.key !== n.key));
+    setStep({ kind: "done", name: n.name, moved: data?.moved ?? 0 });
+  };
+
+  const nameButton = (n: LinkName & { match?: number }, big: boolean) => (
+    <Pressable key={n.key} style={big ? styles.button : styles.chip} onPress={() => setStep({ kind: "confirm", name: n })} disabled={busy}>
+      <Text style={big ? styles.buttonText : styles.chipText}>{big ? `Yes, it's ${n.name}` : n.name}</Text>
+      {big && n.coming ? <Text style={styles.buttonSub}>{n.coming} coming up on your calendar</Text> : null}
+    </Pressable>
+  );
+
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={step.kind === "ask" ? askLater : () => setStep({ kind: "ask" })}>
+      <View style={styles.backdrop}>
+        <View style={styles.popup}>
+          <Text style={styles.kicker}>NEW CLIENT ON THE APP</Text>
+
+          {step.kind === "ask" ? (
+            <>
+              <Text style={styles.title}>{client.name} joined</Text>
+              <Text style={styles.body}>
+                Is {first} on your 1 on 1 calendar already? Tap their name to link them, and their sessions move onto {first}'s app account.
+              </Text>
+              {likely.map((n) => nameButton(n, true))}
+              {ranked.length > likely.length ? (
+                <Pressable style={styles.outline} onPress={() => setStep({ kind: "others" })}>
+                  <Text style={styles.outlineText}>{likely.length ? "Someone else on my calendar" : "Pick their name on my calendar"}</Text>
+                </Pressable>
+              ) : null}
+              <Pressable style={styles.outline} onPress={newClient} disabled={busy}>
+                {busy ? <ActivityIndicator color={BRAND_GOLD} /> : <Text style={styles.outlineText}>No, a new client</Text>}
+              </Pressable>
+              <Pressable style={styles.secondary} onPress={askLater}>
+                <Text style={styles.secondaryText}>Ask me later</Text>
+              </Pressable>
+            </>
+          ) : null}
+
+          {step.kind === "others" ? (
+            <>
+              <Text style={styles.title}>Which one is {first}?</Text>
+              <Text style={styles.body}>The names on your calendar that aren't in the app yet.</Text>
+              <ScrollView style={{ maxHeight: 300 }} contentContainerStyle={styles.chips}>
+                {ranked.map((n) => nameButton(n, false))}
+              </ScrollView>
+              <Pressable style={styles.secondary} onPress={() => setStep({ kind: "ask" })}>
+                <Text style={styles.secondaryText}>Back</Text>
+              </Pressable>
+            </>
+          ) : null}
+
+          {step.kind === "confirm" ? (
+            <>
+              <Text style={styles.title}>
+                Link {step.name.name} to {client.name}?
+              </Text>
+              <Text style={styles.body}>
+                Everything under "{step.name.name}" moves to {first}: sessions, weekly times, away dates and their price. {first} gets a
+                notification for the sessions coming up.
+              </Text>
+              <Pressable style={styles.button} onPress={() => link(step.name)} disabled={busy}>
+                {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Yes, link them</Text>}
+              </Pressable>
+              <Pressable style={styles.secondary} onPress={() => setStep({ kind: "ask" })} disabled={busy}>
+                <Text style={styles.secondaryText}>Back</Text>
+              </Pressable>
+            </>
+          ) : null}
+
+          {step.kind === "done" ? (
+            <>
+              <Text style={styles.title}>✓ Linked</Text>
+              <Text style={styles.body}>
+                {step.moved === 1 ? "1 session" : `${step.moved} sessions`} moved from "{step.name}" to {client.name}. New calendar imports with
+                that name go to {first} too.
+              </Text>
+              <Pressable style={styles.button} onPress={next}>
+                <Text style={styles.buttonText}>{queue.length > 1 ? "Next new client" : "Done"}</Text>
+              </Pressable>
+            </>
+          ) : null}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = themedStyles({
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.75)", justifyContent: "center", padding: 20 },
+  popup: { backgroundColor: "#0F172A", borderRadius: 16, padding: 20, borderWidth: 1.5, borderColor: BRAND_GOLD, maxWidth: 460, width: "100%", alignSelf: "center" },
+  kicker: { color: BRAND_GOLD, fontSize: 11, fontWeight: "800", letterSpacing: 1.5, marginBottom: 6 },
+  title: { color: "#fff", fontSize: 21, fontWeight: "800", marginBottom: 8 },
+  body: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginBottom: 6 },
+  button: { backgroundColor: BRAND_GOLD, borderRadius: 10, padding: 14, alignItems: "center", marginTop: 10 },
+  buttonText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
+  buttonSub: { color: "#0F172A", fontSize: 12, marginTop: 2 },
+  outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 13, alignItems: "center", marginTop: 10 },
+  outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 15 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingVertical: 6 },
+  chip: { backgroundColor: "#1E293B", borderRadius: 20, paddingVertical: 10, paddingHorizontal: 14, borderWidth: 1, borderColor: "#334155" },
+  chipText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  secondary: { alignItems: "center", padding: 12, marginTop: 4 },
+  secondaryText: { color: "#94A3B8", fontWeight: "700", fontSize: 15 },
+});
