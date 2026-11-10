@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { clearAppLockOnSignOut } from "@/lib/appLock";
 import { AppState } from "react-native";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
@@ -169,6 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearNotificationPrefs();
     await unregisterForCoachMessages();
     await supabase.auth.signOut();
+    // The next person signs in with a password and sets their own PIN.
+    await clearAppLockOnSignOut();
   };
 
   const value = useMemo(

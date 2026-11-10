@@ -44,6 +44,8 @@ import MyTraining from "@/components/MyTraining";
 import OwnerChallenges from "@/components/OwnerChallenges";
 import FoldSection from "@/components/FoldSection";
 import ThemePicker from "@/components/ThemePicker";
+import AppLockSettings, { appLockSummary } from "@/components/AppLockSettings";
+import { useAppLock } from "@/lib/appLock";
 import UnitsPicker, { UNITS_HINT } from "@/components/UnitsPicker";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
@@ -65,11 +67,12 @@ const TABS: ScreenTab<TabKey>[] = [
 
 // A trainer's own setup (0029): the code their clients sign up with, the logo
 // their clients see, and the payment details shown after a client signs up.
-type SettingKey = "details" | "payments" | "units" | "theme" | "account";
+type SettingKey = "details" | "payments" | "units" | "theme" | "lock" | "account";
 let lastOpenSetting: SettingKey | null = null;
 
 export default function TrainerProfileScreen() {
   const { trainer, refreshProfile, signOut } = useAuth();
+  const appLock = useAppLock();
   const [businessName, setBusinessName] = useState(trainer?.business_name ?? "");
   const [phone, setPhone] = useState(trainer?.phone ?? "");
   const [popWhatsapp, setPopWhatsapp] = useState(trainer?.pop_whatsapp ?? "");
@@ -357,6 +360,9 @@ export default function TrainerProfileScreen() {
             >
               <Text style={styles.hint}>{UNITS_HINT}</Text>
               <UnitsPicker value={trainer.units === "imperial" ? "imperial" : "metric"} onChange={saveUnits} />
+            </FoldSection>
+            <FoldSection icon="🔒" title="App lock" hint={appLockSummary(appLock.enabled, appLock.biometrics)} open={openSetting === "lock"} onToggle={() => toggleSetting("lock")}>
+              <AppLockSettings showTitle={false} />
             </FoldSection>
             <FoldSection icon="🌗" title="Light or dark" hint="Dark, Light or Match phone" open={openSetting === "theme"} onToggle={() => toggleSetting("theme")}>
               <ThemePicker showTitle={false} />

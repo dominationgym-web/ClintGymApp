@@ -40,6 +40,7 @@ import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
 import LinkNewClientPopup from "@/components/LinkNewClientPopup";
+import AppLockSuggestPopup from "@/components/AppLockSuggestPopup";
 import { SetupGuideBar, SetupGuideProvider } from "@/components/SetupGuide";
 import TimersScreen from "@/screens/TimersScreen";
 import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
@@ -168,6 +169,7 @@ export default function TrainerNavigator() {
       <ReferralPopup />
       {/* A new sign-up: link them to their name on the 1 on 1 calendar (0208). */}
       <LinkNewClientPopup />
+      <AppLockSuggestPopup />
       <View style={styles.row}>
         {wide ? <TrainerSidebar /> : null}
         {wide && onClients ? (

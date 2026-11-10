@@ -97,6 +97,12 @@
         }
       ],
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Lets you open Daily Evolution with Face ID, so your training, money and client details stay private."
+        }
+      ],
+      [
         "expo-audio",
         {
           "microphonePermission": false,
