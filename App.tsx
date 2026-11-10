@@ -6,6 +6,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useClientWideScreen, useWideScreen } from "@/hooks/useWideScreen";
 import RootNavigator from "@/navigation/RootNavigator";
 import FirstOpenUpdate from "@/components/FirstOpenUpdate";
+import AppLockGate from "@/components/AppLockGate";
+import { loadAppLock } from "@/lib/appLock";
 import { setUpNotifications } from "@/lib/notifications";
 import { setUpWebAlert } from "@/lib/webAlert";
 import {
@@ -18,6 +20,7 @@ import {
 setUpNotifications();
 setUpWebAlert();
 loadThemePreference();
+loadAppLock();
 
 export default function App() {
   // Switching light/dark remounts the screens so every style is drawn again;
@@ -29,10 +32,8 @@ export default function App() {
       <FirstOpenUpdate>
         <AuthProvider>
           <StatusBar style={mode === "light" ? "dark" : "light"} />
-          {!ready ? null : Platform.OS === "web" ? (
-            <WebFrame key={mode} />
-          ) : (
-            <RootNavigator key={mode} />
+          {!ready ? null : (
+            <AppLockGate>{Platform.OS === "web" ? <WebFrame key={mode} /> : <RootNavigator key={mode} />}</AppLockGate>
           )}
         </AuthProvider>
       </FirstOpenUpdate>
