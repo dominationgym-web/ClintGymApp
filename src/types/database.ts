@@ -1233,6 +1233,8 @@ export type LiveSession = {
   catchup_until?: string | null;
   /** Cancelled because they're away (0184): the slot shows green with their name. */
   away_id?: string | null;
+  /** Taken off because they stopped training (0207); undo puts it back. */
+  stop_id?: string | null;
   proof_path: string | null;
   note: string | null;
   trainer_confirmed_at: string | null;
@@ -1245,6 +1247,21 @@ export type LiveSession = {
   updated_at: string;
 };
 // What a session counts as on an invoice (live_session_kind in 0168).
+// A 1 on 1 client who stopped training (0207, GRIZZ 2026-11-10).
+export type ClientStop = {
+  id: string;
+  trainer_id: string;
+  client_id: string | null;
+  guest_name: string | null;
+  guest_key: string | null;
+  /** First day they no longer train. */
+  from_on: string;
+  from_at: string;
+  plan_was_active: boolean;
+  repeat_ids: string[];
+  created_at: string;
+  undone_at: string | null;
+};
 // A 1 on 1 client away until a day (0184, GRIZZ 2026-11-02).
 export type ClientAway = {
   id: string;
@@ -1479,6 +1496,8 @@ export interface Database {
       live_sessions: { Row: LiveSession; Insert: never; Update: never; Relationships: [] };
       trainer_time_off: { Row: TrainerTimeOff; Insert: never; Update: never; Relationships: [] };
       client_away: { Row: ClientAway; Insert: never; Update: never; Relationships: [] };
+      // Clients who stopped training (0207).
+      client_stops: { Row: ClientStop; Insert: never; Update: never; Relationships: [] };
       // A diary-only person's price per session (0178).
       diary_name_fees: { Row: { trainer_id: string; name_key: string; fee: number; updated_at: string }; Insert: never; Update: never; Relationships: [] };
       session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
@@ -1771,6 +1790,8 @@ export interface Database {
         Returns: ClientAway;
       };
       end_client_away: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };
+      stop_client_training: { Args: { p_client: string | null; p_guest: string | null; p_from: string }; Returns: { stop_id: string; removed: number } };
+      undo_client_stop: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };
       block_client: { Args: { p_client: string | null; p_guest: string | null }; Returns: ClientAway };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
       decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };

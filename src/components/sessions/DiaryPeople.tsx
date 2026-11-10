@@ -4,11 +4,12 @@ import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
-import { regularLabel, sessionMoney } from "@/lib/liveSessions";
+import { dayLabel, regularLabel, sessionMoney } from "@/lib/liveSessions";
 import { diaryKey, regularFromCalendar } from "@/lib/calendarRegular";
-import type { BillingCurrency, ClientAway, LiveSession } from "@/types/database";
+import type { BillingCurrency, ClientAway, ClientStop, LiveSession } from "@/types/database";
 import { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
 import HoldButton from "@/components/sessions/HoldButton";
+import { stopOf } from "@/components/sessions/StopTrainingModal";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
 
@@ -22,10 +23,15 @@ export default function DiaryPeople({
   onChanged,
   aways = [],
   onAway,
+  stops = [],
+  onStop,
 }: {
   /** People marked away (0184); onAway opens the Away calendar. */
   aways?: ClientAway[];
   onAway?: (who: AwayWho) => void;
+  /** People who stopped training (0207); onStop opens the Stopped sheet. */
+  stops?: ClientStop[];
+  onStop?: (who: AwayWho) => void;
   sessions: LiveSession[];
   currency: BillingCurrency;
   normalFee: number | null;
@@ -52,20 +58,23 @@ export default function DiaryPeople({
   const people = useMemo(() => {
     const now = Date.now();
     const byKey = new Map<string, { name: string; next: number; last: LiveSession }>();
+    // Someone who stopped training stays listed (by their taken-off sessions), so Undo is one tap away.
+    const stopIds = new Set(stops.map((st) => st.id));
     for (const s of sessions) {
-      if (s.client_id || !s.guest_name || s.status === "removed") continue;
+      if (s.client_id || !s.guest_name) continue;
+      if (s.status === "removed" && !(s.stop_id && stopIds.has(s.stop_id))) continue;
       const k = diaryKey(s.guest_name);
       if (!k || k.includes("???")) continue;
       const t = new Date(s.starts_at).getTime();
       const row = byKey.get(k) ?? { name: s.guest_name.trim(), next: Infinity, last: s };
-      if (t >= now && t < row.next) row.next = t;
+      if (s.status !== "removed" && t >= now && t < row.next) row.next = t;
       if (t > new Date(row.last.starts_at).getTime()) row.last = s;
       byKey.set(k, row);
     }
     return [...byKey.entries()]
       .map(([key, r]) => ({ key, ...r, cal: regularFromCalendar(sessions, { name: r.name }) }))
       .sort((a, b) => (a.next === Infinity ? 1 : 0) - (b.next === Infinity ? 1 : 0) || a.name.localeCompare(b.name));
-  }, [sessions]);
+  }, [sessions, stops]);
 
   if (!people.length) return null;
 
@@ -86,7 +95,7 @@ export default function DiaryPeople({
   return (
     <View style={{ marginTop: 18 }}>
       <Text style={styles.title}>On your calendar, not in the app yet</Text>
-      <Text style={styles.meta}>Tap a name to set their price or mark them away.</Text>
+      <Text style={styles.meta}>Tap a name to set their price, or mark them away or stopped.</Text>
       {people.map((p) => {
         const on = open === p.key;
         return (
@@ -103,6 +112,10 @@ export default function DiaryPeople({
               <Text style={styles.meta}>{p.cal.regular.length ? `${regularLabel(p.cal.regular)}${p.cal.minutes ? ` · ${p.cal.minutes} min` : ""}` : "No regular times yet"}</Text>
               {away(p.name) ? <Text style={styles.away}>✈️ Away {awaySpan(away(p.name)!)}</Text> : null}
               {holdOf(aways, { clientId: null, name: p.name }) ? <Text style={[styles.away, { color: themeText("#EF4444") }]}>🚫 On hold: not paid</Text> : null}
+              {(() => {
+                const st = stopOf(stops, { clientId: null, name: p.name });
+                return st ? <Text style={[styles.away, { color: themeText("#EF4444") }]}>🛑 Stopped training from {dayLabel(`${st.from_on}T12:00:00`)}</Text> : null;
+              })()}
             </Pressable>
             {on ? (
               <View style={styles.edit}>
@@ -124,6 +137,12 @@ export default function DiaryPeople({
                 <HoldButton who={{ clientId: null, name: p.name }} aways={aways} onChanged={onChanged} />
               </View>
             ) : null}
+            {/* Stopped training: their upcoming sessions come off, the times turn green (GRIZZ, 2026-11-10). */}
+            {on && onStop ? (
+              <Pressable style={styles.stop} onPress={() => onStop({ clientId: null, name: p.name })}>
+                <Text style={styles.stopText}>{stopOf(stops, { clientId: null, name: p.name }) ? "🛑 Stopped training · tap to undo" : "🛑 Stopped training with you"}</Text>
+              </Pressable>
+            ) : null}
           </View>
         );
       })}
@@ -143,4 +162,6 @@ const styles = themedStyles({
   away: { color: "#22C55E", fontSize: 12, fontWeight: "700", marginTop: 3 },
   outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, padding: 10, alignItems: "center", marginTop: 10 },
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
+  stop: { borderWidth: 1, borderColor: "#EF4444", borderRadius: 8, padding: 10, alignItems: "center" },
+  stopText: { color: "#EF4444", fontWeight: "700", fontSize: 14 },
 });

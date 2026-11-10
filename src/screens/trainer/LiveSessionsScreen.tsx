@@ -23,6 +23,7 @@ import CatchUpRows from "@/components/sessions/CatchUpRows";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import AwayModal, { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
 import HoldButton from "@/components/sessions/HoldButton";
+import StopTrainingModal, { stopOf } from "@/components/sessions/StopTrainingModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -62,7 +63,7 @@ import {
   shiftMonth,
 } from "@/lib/liveSessions";
 import type { TrainerStackParamList } from "@/navigation/types";
-import type { BillingCurrency, ClientAway, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
+import type { BillingCurrency, ClientAway, ClientStop, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
@@ -103,6 +104,9 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   // Clients marked away (0184) and whose Away calendar is open.
   const [aways, setAways] = useState<ClientAway[]>([]);
   const [awayFor, setAwayFor] = useState<AwayWho | null>(null);
+  // Clients who stopped training (0207) and whose Stopped sheet is open.
+  const [stops, setStops] = useState<ClientStop[]>([]);
+  const [stopFor, setStopFor] = useState<AwayWho | null>(null);
 
   useEffect(() => {
     if (!only && route.params?.tab) setTab(route.params.tab);
@@ -120,7 +124,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     if (!trainer) return;
     const from = new Date(Math.min(new Date(`${shiftMonth(month, -1)}T00:00:00`).getTime(), Date.now() - 92 * 86400000)).toISOString();
     const to = new Date(`${shiftMonth(month, 2)}T00:00:00`).toISOString();
-    const [s, p, a, c, ls, d, aw] = await Promise.all([
+    const [s, p, a, c, ls, d, aw, st] = await Promise.all([
       supabase.from("session_settings").select("*").eq("trainer_id", trainer.id).maybeSingle(),
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
@@ -128,6 +132,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       supabase.from("live_sessions").select("*").eq("trainer_id", trainer.id).gte("starts_at", from).lt("starts_at", to).order("starts_at"),
       supabase.from("session_invoices").select("*").eq("trainer_id", trainer.id).eq("status", "draft").order("month"),
       supabase.from("client_away").select("*").eq("trainer_id", trainer.id).is("ended_at", null).gt("until_at", new Date().toISOString()),
+      supabase.from("client_stops").select("*").eq("trainer_id", trainer.id).is("undone_at", null),
     ]);
     setSettings(s.data ?? null);
     // A new trainer lands on 1 on 1 with Setup open, so they never have to
@@ -144,6 +149,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     setSessions(ls.data ?? []);
     setDrafts(d.data ?? []);
     setAways((aw.data ?? []) as ClientAway[]);
+    setStops((st.data ?? []) as ClientStop[]);
     setLoading(false);
   }, [trainer, month, only]);
 
@@ -206,6 +212,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
             <ToDo
               todo={todo}
               today={sessions.filter((s) => dayKey(s.starts_at) === dayKey(now) && s.status !== "removed" && !todo.includes(s))}
+              freedToday={sessions.some((s) => s.status === "removed" && !!s.stop_id && dayKey(s.starts_at) === dayKey(now))}
               openToday={openSlots(
                 settings?.day_start ?? "05:00",
                 settings?.day_end ?? "20:00",
@@ -274,6 +281,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               sessions={sessions}
               aways={aways}
               onAway={setAwayFor}
+              stops={stops}
+              onStop={setStopFor}
               onOpenPage={(clientId) => navigation.navigate("ClientDetail", { clientId })}
             />
           )}
@@ -310,8 +319,24 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
           setAwayFor({ clientId: open.client_id, name: who(open) });
           setOpen(null);
         }}
+        onStopped={() => {
+          if (!open) return;
+          setStopFor({ clientId: open.client_id, name: who(open) });
+          setOpen(null);
+        }}
         onClose={() => setOpen(null)}
         onChanged={load}
+      />
+      <StopTrainingModal
+        visible={!!stopFor}
+        who={stopFor}
+        sessions={sessions}
+        stop={stopFor ? stopOf(stops, stopFor) : null}
+        onClose={() => setStopFor(null)}
+        onDone={() => {
+          setStopFor(null);
+          load();
+        }}
       />
       <AwayModal
         visible={!!awayFor}
@@ -421,6 +446,7 @@ function ToDo({
   todo,
   today,
   openToday,
+  freedToday,
   onBookAt,
   catchUps,
   onCatchUp,
@@ -436,6 +462,8 @@ function ToDo({
   today: LiveSession[];
   /** Open slots left today, shown as Available (GRIZZ 2026-11-02). */
   openToday: string[];
+  /** A client who stopped training (0207) was on today: show the gaps even if nothing else is booked. */
+  freedToday?: boolean;
   onBookAt: (time: string) => void;
   catchUps: LiveSession[];
   onCatchUp: (s: LiveSession) => void;
@@ -469,7 +497,7 @@ function ToDo({
       <Text style={styles.sectionTitle}>Today · {dayLabel(new Date().toISOString())}</Text>
       {[
         ...jointLines(today).map((l) => ({ time: clockLabel(l.s.starts_at), l })),
-        ...(today.length ? openToday.map((t) => ({ time: t, l: null })) : []),
+        ...(today.length || freedToday ? openToday.map((t) => ({ time: t, l: null })) : []),
       ]
         .sort((a, b) => a.time.localeCompare(b.time))
         .map(({ time, l }) =>
@@ -770,7 +798,10 @@ function CalendarTab({
   const shown = jointLines(list).map((l) => ({ ...l, time: clockLabel(l.s.starts_at) }));
   const lines = [
     ...shown,
-    ...(list.length ? open.map((t) => ({ time: t, s: null, with: [] as LiveSession[] })) : []),
+    // A day freed by a client who stopped training (0207) shows its gaps green even when it's empty now.
+    ...(list.length || sessions.some((s) => s.status === "removed" && !!s.stop_id && dayKey(s.starts_at) === day)
+      ? open.map((t) => ({ time: t, s: null, with: [] as LiveSession[] }))
+      : []),
   ].sort((a, b) => a.time.localeCompare(b.time));
   const book = (t: string | null) => {
     setAddAt(t);
@@ -1175,11 +1206,16 @@ function ClientsTab({
   sessions,
   aways = [],
   onAway,
+  stops = [],
+  onStop,
 }: {
   sessions: LiveSession[];
   /** Clients marked away (0184); onAway opens the Away calendar. */
   aways?: ClientAway[];
   onAway?: (who: AwayWho) => void;
+  /** Clients who stopped training (0207); onStop opens the Stopped sheet. */
+  stops?: ClientStop[];
+  onStop?: (who: AwayWho) => void;
   clients: ClientInfo[];
   planOf: Record<string, SessionPlan>;
   signed: Record<string, SessionAgreement>;
@@ -1228,6 +1264,17 @@ function ClientsTab({
         ) : null}
         {/* Hasn't paid: hold their sessions until they do (GRIZZ, 2026-11-09). */}
         <HoldButton who={{ clientId: picked, name: c?.name ?? "Client" }} aways={aways} onChanged={onChanged} />
+        {/* Stopped training: every upcoming session comes off, the times turn green (GRIZZ, 2026-11-10). */}
+        {onStop ? (
+          <Pressable style={[styles.stopButton, stopOf(stops, { clientId: picked, name: c?.name ?? "" }) && styles.stopOn]} onPress={() => onStop({ clientId: picked, name: c?.name ?? "Client" })}>
+            <Text style={styles.stopText}>
+              {(() => {
+                const st = stopOf(stops, { clientId: picked, name: c?.name ?? "" });
+                return st ? `🛑 Stopped from ${dayLabel(`${st.from_on}T12:00:00`)} · tap to undo` : "🛑 Stopped training with you";
+              })()}
+            </Text>
+          </Pressable>
+        ) : null}
         {onOpenPage ? (
           // Says what's there (GRIZZ, 2026-11-02: "you don't know that's where you set up the diets").
           <Pressable style={styles.pageButton} onPress={() => onOpenPage(picked)} accessibilityRole="button">
@@ -1304,6 +1351,10 @@ function ClientsTab({
             {holdOf(aways, { clientId: c.id, name: c.name }) ? (
               <Text style={[styles.meta, { color: themeText("#EF4444") }]}>🚫 On hold: not paid</Text>
             ) : null}
+            {(() => {
+              const st = stopOf(stops, { clientId: c.id, name: c.name });
+              return st ? <Text style={[styles.meta, { color: themeText("#EF4444") }]}>🛑 Stopped training from {dayLabel(`${st.from_on}T12:00:00`)}</Text> : null;
+            })()}
           </Pressable>
         );
       })}
@@ -1349,7 +1400,7 @@ function ClientsTab({
       {showOthers && others.length === 0 ? <Text style={styles.helper}>Every client is set up.</Text> : null}
       {/* Calendar people who aren't app clients: their times and their own price (GRIZZ, 2026-11-01). */}
       {oneOnOne ? (
-        <DiaryPeople sessions={sessions} currency={currency} normalFee={settings?.fee ?? null} onChanged={onChanged} aways={aways} onAway={onAway} />
+        <DiaryPeople sessions={sessions} currency={currency} normalFee={settings?.fee ?? null} onChanged={onChanged} aways={aways} onAway={onAway} stops={stops} onStop={onStop} />
       ) : null}
     </>
   );
@@ -1865,6 +1916,9 @@ const styles = themedStyles({
   // Open slots in bright green so the coach sees his openings at a glance (GRIZZ, 2026-11-02).
   awayButton: { borderColor: "#22C55E", backgroundColor: "#14532D" },
   awayText: { color: "#4ADE80", fontSize: 13, fontWeight: "600", marginTop: 3 },
+  stopButton: { borderWidth: 1, borderColor: "#EF4444", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, alignItems: "center", marginBottom: 12 },
+  stopOn: { backgroundColor: "rgba(239,68,68,0.15)" },
+  stopText: { color: "#EF4444", fontWeight: "700", fontSize: 14 },
   openRow: { backgroundColor: "#14532D", borderWidth: 2, borderColor: "#22C55E", borderLeftWidth: 6, borderLeftColor: "#22C55E", paddingVertical: 8 },
   openText: { color: "#4ADE80", fontSize: 14, fontWeight: "800" },
   rowBody: { color: "#CBD5E1", fontSize: 14, marginTop: 4 },
