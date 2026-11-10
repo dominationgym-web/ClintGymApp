@@ -3,7 +3,7 @@ import { useTrainerBrand } from "@/hooks/useTrainerBrand";
 import React, { useContext, useEffect, useState } from "react";
 import { BackHandler, View } from "react-native";
 import { NavigationContext, StackActions } from "@react-navigation/native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { BottomTabBar, createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { tabIcon } from "@/navigation/tabIcon";
 import { BRAND_GOLD } from "@/lib/brand";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -40,6 +40,7 @@ import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
 import ReferralPopup from "@/components/ReferralPopup";
 import LinkNewClientPopup from "@/components/LinkNewClientPopup";
+import { SetupGuideBar, SetupGuideProvider } from "@/components/SetupGuide";
 import TimersScreen from "@/screens/TimersScreen";
 import VideoCheckInDayPopup from "@/components/VideoCheckInDayPopup";
 import TrainerSidebar, { useCurrentRoute } from "@/components/TrainerSidebar";
@@ -87,7 +88,13 @@ function TrainerTabs() {
     <Tab.Navigator
       // Back goes to the tab you were on before, one at a time (GRIZZ, 2026-11-01).
       backBehavior="history"
-      tabBar={wide ? () => null : undefined}
+      // The setup guide's step card sits just above the tabs (GRIZZ, 2026-11-10).
+      tabBar={(props) => (
+        <>
+          <SetupGuideBar />
+          {wide ? null : <BottomTabBar {...props} />}
+        </>
+      )}
       screenOptions={{
         headerStyle: { backgroundColor: themeBg("#0F172A") },
         headerTintColor: themeText("#fff"),
@@ -157,6 +164,7 @@ export default function TrainerNavigator() {
   };
   return (
     <TrainerSideProvider>
+      <SetupGuideProvider>
       <ReferralPopup />
       {/* A new sign-up: link them to their name on the 1 on 1 calendar (0208). */}
       <LinkNewClientPopup />
@@ -221,6 +229,7 @@ export default function TrainerNavigator() {
         </View>
       </View>
       <VideoCheckInDayPopup who="trainer" />
+      </SetupGuideProvider>
     </TrainerSideProvider>
   );
 }

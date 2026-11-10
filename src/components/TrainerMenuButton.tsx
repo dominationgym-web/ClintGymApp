@@ -16,6 +16,7 @@ import { useTrainerSide } from "@/context/TrainerSideContext";
 import { takeMenuReturn } from "@/lib/menuReturn";
 import { COACHING_GUIDES_MENU_ITEM } from "@/screens/trainer/CoachingGuidesScreen";
 import { HOLIDAYS_MENU_ITEM } from "@/screens/trainer/HolidaysScreen";
+import { useSetupGuide } from "@/components/SetupGuide";
 
 // The trainer app's menu (top right of every trainer tab). The things used
 // every week first; the guides share one line (GRIZZ, 2026-10-27).
@@ -28,6 +29,18 @@ export function useTrainerMenuItems(): MenuItem[] {
   const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const { trainer } = useAuth();
   const { side, evolutionOn, toggleEvolution } = useTrainerSide();
+  const guide = useSetupGuide();
+  // The step-by-step setup guide for this side (GRIZZ, 2026-11-10).
+  const setupGuide: MenuItem = {
+    key: "setupGuide",
+    title: "Setup guide",
+    icon: "🧭",
+    summary: side === "one" ? "Step by step: your times, calendar, clients, nutrition and invoices." : "Step by step: the dashboard, where the programs are and how they work.",
+    onPress: () => {
+      takeMenuReturn();
+      guide?.start(side === "one" ? "one" : "evo");
+    },
+  };
   const problems = {
     ...(trainer?.is_owner ? OWNER_PROBLEMS_MENU_ITEM : TRAINER_PROBLEMS_MENU_ITEM),
     route: "TrainerProblems",
@@ -94,6 +107,7 @@ export function useTrainerMenuItems(): MenuItem[] {
       ...evolutionSwitch,
       ...award,
       { ...TIMER_MENU_ITEM, route: "Timers", onPress: () => navigation.navigate("Timers") },
+      setupGuide,
       { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
       problems,
       { ...SUGGESTION_BOX_MENU_ITEM, route: "SuggestionBox", onPress: () => navigation.navigate("SuggestionBox") },
@@ -138,6 +152,7 @@ export function useTrainerMenuItems(): MenuItem[] {
     },
     ...evolutionSwitch,
     ...award,
+    setupGuide,
     { ...APP_GUIDE_MENU_ITEM, route: "AppGuide", onPress: () => navigation.navigate("AppGuide") },
     // Problems go to the owner in the app, linked to the trainer (0151).
     problems,
