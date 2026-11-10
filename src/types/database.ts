@@ -205,7 +205,12 @@ export type ClientInjury = {
   notes: string | null;
   healed_on: string | null;
   created_at: string;
+  // Weekly injury check (0209): the latest answer and when.
+  last_check?: InjuryCheckAnswer | null;
+  last_check_on?: string | null;
 };
+
+export type InjuryCheckAnswer = "better" | "improving" | "same" | "worse";
 
 // A flagged exercise the trainer kept anyway, with why (0119).
 export type ClientInjuryKeep = {
@@ -1784,6 +1789,7 @@ export interface Database {
       block_trainer_time: { Args: { p_from: string; p_to: string; p_reason: string }; Returns: TrainerTimeOff };
       remove_trainer_time_off: { Args: { p_id: string }; Returns: undefined };
       add_trainer_holiday: { Args: { p_first: string; p_last: string; p_reason: string }; Returns: TrainerTimeOff };
+      answer_injury_check: { Args: { p_injury: string; p_answer: InjuryCheckAnswer }; Returns: ClientInjury };
       add_diary_catch_up: { Args: { p_makeup_for: string; p_starts_at: string; p_minutes: number }; Returns: LiveSession };
       set_client_away: {
         Args: { p_client: string | null; p_guest: string | null; p_from: string; p_until: string; p_replace: string | null };

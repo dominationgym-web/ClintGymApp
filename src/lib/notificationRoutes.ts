@@ -17,6 +17,7 @@ export type NotificationRoute =
 
 const CLIENT_SCREENS: Record<string, "CheckIn" | "Habits" | "Exercises" | "Profile"> = {
   coach_message: "CheckIn",
+  injury_check: "CheckIn",
   steps: "CheckIn",
   client_activated: "CheckIn",
   catch_up: "Exercises",
@@ -39,6 +40,7 @@ const TRAINER_CLIENT_TYPES = new Set([
   "achievement",
   "habit_win",
   "login_help",
+  "injury_check",
 ]);
 const TRAINER_TRAINING_TYPES = new Set(["training_level", "deload_due", "plan_next_week", "workout_swap"]);
 

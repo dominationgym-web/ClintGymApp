@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { INJURY_AREAS } from "@/lib/injuryRisk";
+import { injuryCheckColor, injuryCheckLabel, injuryCheckWhen } from "@/lib/injuryCheck";
 import type { ClientInjury } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
@@ -65,7 +66,7 @@ export default function InjuryList({
   };
 
   const confirmHealed = (row: ClientInjury) =>
-    Alert.alert(`${row.area} healed?`, role === "client" ? "Your coach will see it's better." : `It no longer counts in ${clientName}'s injury check.`, [
+    Alert.alert(`${row.area} healed?`, role === "client" ? "Your coach will be told it's better so they can change your program." : `It no longer counts in ${clientName}'s injury check.`, [
       { text: "Cancel", style: "cancel" },
       { text: "Yes, healed", onPress: () => setHealed(row, true) },
     ]);
@@ -84,6 +85,12 @@ export default function InjuryList({
             <Text style={styles.area}>{r.area}</Text>
             {r.notes ? <Text style={styles.notes}>{r.notes}</Text> : null}
             <Text style={styles.since}>Since {r.created_at.slice(0, 10)}</Text>
+            {/* Weekly injury check (0209): the client's latest answer. */}
+            {r.last_check && r.last_check_on ? (
+              <Text style={[styles.check, { color: themeText(injuryCheckColor(r.last_check)) }]}>
+                Weekly check {injuryCheckWhen(r.last_check_on, todayIso())}: {injuryCheckLabel(r.last_check)}
+              </Text>
+            ) : null}
           </View>
           <Pressable style={styles.healedBtn} onPress={() => confirmHealed(r)}>
             <Text style={styles.healedText}>✓ Healed</Text>
@@ -155,6 +162,7 @@ const styles = themedStyles({
   area: { color: "#FCA5A5", fontWeight: "800", fontSize: 15 },
   notes: { color: "#CBD5E1", fontSize: 13, marginTop: 2 },
   since: { color: "#64748B", fontSize: 11, marginTop: 2 },
+  check: { fontSize: 12, fontWeight: "700", marginTop: 4 },
   healedBtn: { borderWidth: 1, borderColor: "#22C55E", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   healedText: { color: "#22C55E", fontWeight: "800", fontSize: 12 },
   back: { color: "#F59E0B", fontWeight: "700", fontSize: 12 },
