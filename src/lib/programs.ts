@@ -408,20 +408,23 @@ export function programGroupHeading(group: (typeof PROGRAM_GROUPS)[number], plac
 
 // The headings programs sit under, in order, each inside one group.
 export const PROGRAM_FAMILIES = [
+  // Gym order (GRIZZ, 2026-11-10): Beginner & Intermediate first, then by
+  // how many programs each holds (2, 4, 6, 15, 27) with push and pull side by
+  // side; the less used long programs sit at the bottom above Your programs.
   { key: "foundation", group: "gym", title: "Beginner & Intermediate", icon: "🌱" },
-  { key: "goalBlock", group: "gym", title: "12-week goal programs", icon: "🎯" },
-  { key: "muscleYear", group: "gym", title: "1-year muscle building", icon: "📅" },
-  { key: "apre", group: "gym", title: "APRE (the weight follows your reps)", icon: "📊" },
-  { key: "fullBody", group: "gym", title: "Full body", icon: "🏃" },
-  { key: "upperBody", group: "gym", title: "Upper body workouts", icon: "💪" },
-  { key: "upperPush", group: "gym", title: "Upper body push", icon: "🤜" },
-  { key: "upperPull", group: "gym", title: "Upper body pull", icon: "🧗" },
-  { key: "lowerBody", group: "gym", title: "Lower body workouts", icon: "🦵" },
   { key: "upperLower", group: "gym", title: "Quick upper & lower", icon: "⏱️" },
   { key: "chestBi", group: "gym", title: "Chest & Bi", icon: "🏋️" },
   { key: "backTri", group: "gym", title: "Back & Tri", icon: "🦾" },
   { key: "legs", group: "gym", title: "Legs", icon: "🦵" },
+  { key: "upperPush", group: "gym", title: "Upper body push", icon: "🤜" },
+  { key: "upperPull", group: "gym", title: "Upper body pull", icon: "🧗" },
+  { key: "fullBody", group: "gym", title: "Full body", icon: "🏃" },
+  { key: "upperBody", group: "gym", title: "Upper body workouts", icon: "💪" },
+  { key: "lowerBody", group: "gym", title: "Lower body workouts", icon: "🦵" },
   { key: "dropset", group: "gym", title: "Drop sets (intermediate & advanced)", icon: "⬇️" },
+  { key: "goalBlock", group: "gym", title: "12-week goal programs", icon: "🎯" },
+  { key: "muscleYear", group: "gym", title: "1-year muscle building", icon: "📅" },
+  { key: "apre", group: "gym", title: "APRE (the weight follows your reps)", icon: "📊" },
   { key: "own", group: "gym", title: "Your programs", icon: "⭐" },
   { key: "sportsPower", group: "sport", title: "Explosive power", icon: "💥" },
   { key: "sportsSpeed", group: "sport", title: "Speed", icon: "🚀" },
