@@ -12,6 +12,7 @@ import SessionActionsModal from "@/components/sessions/SessionActionsModal";
 import ClientContractFold from "@/components/sessions/ClientContractFold";
 import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
+import { onGuideOpen, takeGuideOpen } from "@/lib/setupGuide";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
 import { ForecastStrip, LossesCard, TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
@@ -117,6 +118,13 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       if (only) setTab(only);
     }, [only])
   );
+  // The setup guide's "Show me" opens Setup on the Today tab (GRIZZ, 2026-11-10).
+  useEffect(() => {
+    if (only !== "todo") return;
+    const take = () => takeGuideOpen("setup") && setTab("setup");
+    take();
+    return onGuideOpen(take);
+  }, [only]);
   // On a 1 on 1 tab, Back from an inside page (e.g. Setup) goes to the tab's own page first.
   useStepBack(!!only && tab !== only, () => only && setTab(only));
 
@@ -787,6 +795,13 @@ function CalendarTab({
     onBookAtDone?.();
   }, [bookAt]);
   const [importing, setImporting] = useState(false);
+  // The setup guide's "Show me" opens Bring in sessions (GRIZZ, 2026-11-10).
+  useEffect(() => {
+    if (makeup) return;
+    const take = () => takeGuideOpen("import") && setImporting(true);
+    take();
+    return onGuideOpen(take);
+  }, [makeup]);
   const list = sessions.filter((s) => s.status !== "removed" && dayKey(s.starts_at) === day);
   // Away sessions keep their slot: shown green with the name, free to book (0184).
   const taken = list.filter((s) => s.status === "booked" || s.status === "done" || isAway(s)).map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }));
