@@ -285,6 +285,20 @@ export const TRAINER_APP_GUIDE: AppGuide = {
     "Everything you need to coach your clients well, in one place. Tap a heading to see what it does and how to get the most from it. The phone's Back button goes back one step at a time: it closes what you opened last (a heading, a day, a client in the 1 on 1 list), then goes to the tab you were on before, then back to the side (🤝 1 on 1 or 🌐 Evolution) you switched from, and only closes the app when there's nothing left to go back to.",
   topics: [
     {
+      key: "setupGuide",
+      icon: "🧭",
+      title: "Setup guide for new trainers",
+      where: "Starts by itself when you join · ☰ Menu › Setup guide",
+      points: [
+        "When you join, the app opens on the 1 on 1 side and a short welcome page lists the steps. Tap Start, or Later to do it another time.",
+        "1 on 1 steps: your working day (fee, session length, first and last session time, cancellation rule), screenshot your calendar, upload the screenshots, check each client's price, send your code so clients join the app, nutrition for your clients, and your everyday (Today and Invoices).",
+        "Each step shows in a small card just above the tabs. Show me opens the right page, so you do the step right there. Steps the app can check tick ✓ Done by themselves. Skip › or Next › moves on, ‹ goes back a step.",
+        "Tap ▾ to make the card one small line, and tap it again to open it. ✕ stops the guide. Your place is remembered, so you can carry on later.",
+        "At the end you can switch on Evolution. The first time you're on the Evolution side, its guide shows you the dashboard, where the programs are, how to make your own, how to put a client on a program, how a program works for the client, and check-ins and food.",
+        "Run either guide again any time: ☰ Menu › Setup guide (it runs the guide for the side you're on).",
+      ],
+    },
+    {
       key: "dashboard",
       icon: "📊",
       title: "Your dashboard",
