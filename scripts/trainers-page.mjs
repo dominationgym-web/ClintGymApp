@@ -161,8 +161,10 @@ export function trainersPage(escape) {
 <meta name="description" content="The coaching app that thinks like a coach: smart programming, injury checks, safe nutrition, recovery tracking and your business in one place. Try it free for 30 days.">
 <meta property="og:title" content="Daily Evolution for Personal Trainers">
 <meta property="og:description" content="Smart programming, injury checks, safe nutrition, recovery tracking and your business in one app. Try it free for 30 days.">
-<meta property="og:image" content="/icon.png">
+<meta property="og:image" content="https://dailyevolution.co.za/icon.png">
+<meta property="og:url" content="https://dailyevolution.co.za/trainers">
 <meta property="og:type" content="website">
+<link rel="canonical" href="https://dailyevolution.co.za/trainers">
 <link rel="icon" href="/icon.png">
 <style>
   :root { color-scheme: dark; --gold: #D4AF37; --bg: #0F172A; --card: #111C33; --line: #1E293B; --text: #E2E8F0; --muted: #94A3B8; }
