@@ -28,12 +28,25 @@ const paragraphs = (text) =>
     .map((p) => `<p>${escape(p)}</p>`)
     .join("\n");
 
-const page = (title, body) => `<!doctype html>
+// The address Google should list (www and the old expo.app address point here).
+export const SITE = "https://dailyevolution.co.za";
+
+const DEFAULT_DESCRIPTION =
+  "Daily Evolution: the coaching app for personal trainers and their clients in South Africa. Check-ins, training programs, nutrition and progress in one place.";
+
+const page = (title, body, path, description = DEFAULT_DESCRIPTION) => `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)} - Daily Evolution</title>
+<meta name="description" content="${escape(description)}">
+<link rel="canonical" href="${SITE}${path}">
+<meta property="og:title" content="${escape(title)} - Daily Evolution">
+<meta property="og:description" content="${escape(description)}">
+<meta property="og:image" content="${SITE}/icon.png">
+<meta property="og:url" content="${SITE}${path}">
+<meta property="og:type" content="website">
 <link rel="icon" href="/icon.png">
 <style>
   :root { color-scheme: dark; }
@@ -71,6 +84,7 @@ const pages = {
 <p>Daily Evolution is a coaching app for personal trainers and their clients: daily check-ins, habits with streaks, training programs and progress tracking, all in one place.</p>
 <p>The app is available to clients of trainers who use Daily Evolution. Ask your trainer for their trainer code to sign up.</p>
 <p><strong>Are you a personal trainer?</strong> <a href="/trainers">See what Daily Evolution does for you, and try it free for 30 days</a>.</p>`,
+    "/",
   ),
   "trainers.html": trainersPage(escape),
   "privacy.html": page(
@@ -79,6 +93,8 @@ const pages = {
 <p class="muted">Last updated ${escape(PRIVACY_POLICY_LAST_UPDATED)}</p>
 <p>This notice is provided under Section 18 of South Africa's Protection of Personal Information Act, 4 of 2013 ("POPIA"). It covers the Daily Evolution app for iPhone and Android.</p>
 ${PRIVACY_POLICY_SECTIONS.map((s) => `<h2>${escape(s.heading)}</h2>\n${paragraphs(s.body)}`).join("\n")}`,
+    "/privacy",
+    "How Daily Evolution collects, uses and protects your personal information under POPIA.",
   ),
   "delete-account.html": page(
     "Delete your account",
@@ -91,6 +107,8 @@ ${PRIVACY_POLICY_SECTIONS.map((s) => `<h2>${escape(s.heading)}</h2>\n${paragraph
 </ol>
 <p>This permanently deletes your account, check-ins, habits, training logs, notes, progress photos, training videos and cycle log straight away. It can't be undone.</p>
 <p>If you can't open the app, email <a href="mailto:${PRIVACY_CONTACT_EMAIL}?subject=Delete%20my%20Daily%20Evolution%20account">${PRIVACY_CONTACT_EMAIL}</a> from the email address you signed up with, and your account will be deleted within 7 days.</p>`,
+    "/delete-account",
+    "How to delete your Daily Evolution account and all your data.",
   ),
   // Short address to share the Android test app (GRIZZ, 2026-10-22). Point
   // ANDROID_APK at each new preview build.
@@ -104,12 +122,16 @@ ${PRIVACY_POLICY_SECTIONS.map((s) => `<h2>${escape(s.heading)}</h2>\n${paragraph
 <li>Open the app and sign in, or sign up with your trainer's code.</li>
 </ol>
 <p class="muted">iPhone? Ask your trainer for the TestFlight link.</p>`,
+    "/android",
+    "Download the Daily Evolution coaching app for Android.",
   ),
   "support.html": page(
     "Support",
     `<h1>Support</h1>
 <p>Questions about your coaching, program or payments: contact your trainer directly.</p>
 <p>Problems with the app itself: email <a href="mailto:${PRIVACY_CONTACT_EMAIL}">${PRIVACY_CONTACT_EMAIL}</a>.</p>`,
+    "/support",
+    "Get help with the Daily Evolution app.",
   ),
 };
 
@@ -123,4 +145,20 @@ for (const [name, html] of Object.entries(pages)) {
   }
 }
 copyFileSync("assets/icon.png", join(outDir, "icon.png"));
+
+// Lets Google find and list the pages. The laptop app at /app is a log-in
+// screen, so it stays out of search results.
+const listed = ["/", "/trainers", "/android", "/privacy", "/delete-account", "/support"];
+writeFileSync(
+  join(outDir, "robots.txt"),
+  `User-agent: *\nAllow: /\nDisallow: /app/\n\nSitemap: ${SITE}/sitemap.xml\n`,
+);
+writeFileSync(
+  join(outDir, "sitemap.xml"),
+  `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${listed.map((p) => `  <url><loc>${SITE}${p}</loc></url>`).join("\n")}
+</urlset>
+`,
+);
 console.log(`Built ${Object.keys(pages).length} pages into ${outDir}`);

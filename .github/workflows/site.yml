@@ -11,6 +11,7 @@ on:
     paths:
       - "src/lib/privacyPolicy.ts"
       - "scripts/build-site.mjs"
+      - "scripts/trainers-page.mjs"
       - "assets/icon.png"
       - ".github/workflows/site.yml"
       # The laptop version of the app at /app is rebuilt with every app change.
