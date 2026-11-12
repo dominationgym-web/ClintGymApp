@@ -77,11 +77,8 @@ export function contrastRest(row: Pick<ProgramExercise, "reps">): number {
  * station back to the first one with sets left, after the round's rest. Null
  * when the row isn't in a superset or every other station is finished.
  */
-export function supersetStep(
-  row: ProgramExercise,
-  session: ProgramExercise[],
-  setsDone: (row: ProgramExercise) => number,
-): { go: ProgramExercise; restSeconds: number } | null {
+/** The stations of the superset or tri-set `row` is in, and its place in it; null when it isn't in one. */
+function supersetChain(row: ProgramExercise, session: ProgramExercise[]): { chain: ProgramExercise[]; at: number } | null {
   const i = session.findIndex((e) => e.id === row.id);
   if (i < 0 || row.kind === "cardio") return null;
   let start = i;
@@ -89,8 +86,45 @@ export function supersetStep(
   let end = i;
   while (end < session.length - 1 && session[end].rest_seconds === 0 && session[end + 1].kind !== "cardio") end++;
   if (end === start) return null;
-  const chain = session.slice(start, end + 1);
-  const at = i - start;
+  return { chain: session.slice(start, end + 1), at: i - start };
+}
+
+/** Rest after a warm-up set before the first working set. */
+export const WARM_UP_REST_SECONDS = 60;
+
+/**
+ * After a warm-up set in a superset or tri-set (GRIZZ 2026-11-12): go
+ * straight on to the next station that still needs its warm-up, so every
+ * station is warmed up before round 1. After the last warm-up, back to the
+ * first station with sets left, after a short rest. Null when the row isn't
+ * in a superset, or when the next working set is on this same station (stay
+ * here and rest).
+ */
+export function supersetWarmUpStep(
+  row: ProgramExercise,
+  session: ProgramExercise[],
+  needsWarmUpSet: (row: ProgramExercise) => boolean,
+  setsDone: (row: ProgramExercise) => number,
+): { go: ProgramExercise; restSeconds: number } | null {
+  const found = supersetChain(row, session);
+  if (!found) return null;
+  const { chain, at } = found;
+  const others = [...chain.slice(at + 1), ...chain.slice(0, at)];
+  const warm = others.find((e) => e.sets > setsDone(e) && needsWarmUpSet(e));
+  if (warm) return { go: warm, restSeconds: 0 };
+  const first = chain.find((e) => setsDone(e) < e.sets);
+  if (!first || first.id === row.id) return null;
+  return { go: first, restSeconds: WARM_UP_REST_SECONDS };
+}
+
+export function supersetStep(
+  row: ProgramExercise,
+  session: ProgramExercise[],
+  setsDone: (row: ProgramExercise) => number,
+): { go: ProgramExercise; restSeconds: number } | null {
+  const found = supersetChain(row, session);
+  if (!found) return null;
+  const { chain, at } = found;
   const left = (e: ProgramExercise) => setsDone(e) < e.sets;
   const ahead = chain.slice(at + 1).find(left);
   if (ahead) return { go: ahead, restSeconds: ahead === chain[at + 1] ? contrastRest(row) : 0 };

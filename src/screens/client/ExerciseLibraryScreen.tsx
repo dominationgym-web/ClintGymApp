@@ -85,6 +85,8 @@ import {
   contrastRest,
   supersetNext,
   supersetStep,
+  supersetWarmUpStep,
+  WARM_UP_REST_SECONDS,
   nextUnfinished,
   needsRamp,
   warmUpReps,
@@ -896,6 +898,9 @@ export default function ExerciseLibraryScreen() {
     }
     setTodaysSets((prev) => [...prev, data]);
     setAllTodaysSets((prev) => [...prev, data]);
+    // The next exercise can open before this screen draws again (supersets), so
+    // it must already see this body part as done for today's warm-ups.
+    categoriesRef.current = [...categoriesRef.current, selected.category];
     if (!warmUp) checkAchievement(client.id, data).then((b) => b && setBadge(b));
     setReps("");
     setEffort(null);
@@ -910,11 +915,22 @@ export default function ExerciseLibraryScreen() {
       }
     }
     if (warmUp) {
+      // Superset or tri-set (GRIZZ 2026-11-12): every station gets its warm-up
+      // first, back to back, then the short breather and round 1 on station 1.
+      const loggedToday = [...allTodaysSets, data];
+      const needsWarmUpSet = (row: ProgramExercise) =>
+        !loggedToday.some((l) => (row.exercise_id ? l.exercise_id === row.exercise_id : l.exercise_name === row.exercise_name)) &&
+        needsWarmUp(categoryOf(row), categoriesRef.current);
+      const warmStep = target ? supersetWarmUpStep(target, todaysWorkout, needsWarmUpSet, setsDoneFor) : null;
+      if (warmStep) {
+        openProgramExercise(warmStep.go, warmStep.restSeconds, false);
+        return;
+      }
       // Warm-up done: back to the start weight for the working sets, after a short breather.
       setWarmUpDue(false);
       setAbsDue(null);
       setWeight(startWeight);
-      setRestSeconds(60);
+      setRestSeconds(WARM_UP_REST_SECONDS);
       setRestRun((n) => n + 1);
       return;
     }
@@ -1557,6 +1573,10 @@ export default function ExerciseLibraryScreen() {
           rows={todaysWorkout}
           library={browsable}
           todaysSets={allTodaysSets}
+          categoryOf={(p) =>
+            (p.exercise_id ? categoryById.get(p.exercise_id) : undefined) ?? exercises.find((e) => e.name === p.exercise_name)?.category ?? null
+          }
+          categoriesToday={categoriesLoggedToday}
           onSaved={(logs) => {
             setAllTodaysSets((prev) => [...prev, ...logs]);
             logs.forEach((l) => checkAchievement(client.id, l).then((b) => b && (supersetBadge.current = b)));
@@ -1787,8 +1807,12 @@ export default function ExerciseLibraryScreen() {
             )}
             {targetNext && restRun === 0 && !absDue && (
               <View style={styles.warmUpBox}>
-                <Text style={styles.warmUpTitle}>Superset: no rest</Text>
-                <Text style={styles.warmUpText}>After each set, the app takes you straight to {targetNext.exercise_name}, then you rest.</Text>
+                <Text style={styles.warmUpTitle}>{warmUpDue ? "Superset: warm-ups first" : "Superset: no rest"}</Text>
+                <Text style={styles.warmUpText}>
+                  {warmUpDue
+                    ? "Warm-up sets come first, back to back, one per body part. Then a short rest and round 1 starts. Warm-ups don't count as working sets."
+                    : `After each set, the app takes you straight to ${targetNext.exercise_name}, then you rest.`}
+                </Text>
               </View>
             )}
             {restRun > 0 && (

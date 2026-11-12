@@ -11,6 +11,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { parseWeight } from "@/lib/weightInput";
 import { filterExercises } from "@/lib/exerciseFilter";
 import { EFFORT_OPTIONS } from "@/lib/progression";
+import { WARM_UP_REST_SECONDS } from "@/lib/programs";
 import {
   lastWeightOf,
   roundProblem,
@@ -18,6 +19,8 @@ import {
   SUPERSET_MIN,
   supersetRest,
   supersetRounds,
+  warmUpEntry,
+  warmUpPicks,
   workingSetsOf,
   type RoundEntry,
   type SupersetPick,
@@ -37,6 +40,8 @@ export default function SupersetLogger({
   rows,
   library,
   todaysSets,
+  categoryOf,
+  categoriesToday,
   onSaved,
   onClose,
 }: {
@@ -48,6 +53,10 @@ export default function SupersetLogger({
   library: Exercise[];
   /** Everything logged today, to number the sets. */
   todaysSets: WorkoutLog[];
+  /** The body part of an exercise, for the warm-up round. */
+  categoryOf: (pick: SupersetPick) => string | null;
+  /** Body parts already worked today. */
+  categoriesToday: (string | null)[];
   onSaved: (logs: WorkoutLog[]) => void;
   onClose: () => void;
 }) {
@@ -58,7 +67,13 @@ export default function SupersetLogger({
   const [round, setRound] = useState(1);
   const [rounds, setRounds] = useState(0);
   const [resting, setResting] = useState(0);
+  const [restFor, setRestFor] = useState(0);
   const [saving, setSaving] = useState(false);
+  // Warm-up round (GRIZZ 2026-11-12): before round 1, one easy set of each
+  // exercise whose body part isn't warm yet, so a warm-up isn't logged as a
+  // working round. Null once it's done or skipped.
+  const [warmUps, setWarmUps] = useState<boolean[] | null>(null);
+  const [startWeights, setStartWeights] = useState<string[]>([]);
 
   useEffect(() => {
     if (!visible) return;
@@ -66,6 +81,7 @@ export default function SupersetLogger({
     setStarted(false);
     setSearch("");
     setResting(0);
+    setWarmUps(null);
   }, [visible]);
 
   const picked = (name: string) => picks.some((p) => p.exercise_name === name);
@@ -90,8 +106,17 @@ export default function SupersetLogger({
       .order("log_date", { ascending: false })
       .limit(100);
     const logs = (data as Pick<WorkoutLog, "exercise_id" | "exercise_name" | "weight_kg" | "log_date" | "created_at">[]) ?? [];
-    setEntries(picks.map((p) => ({ ...blank(), weight: String(lastWeightOf(p, logs) ?? "") })));
+    const starts = picks.map((p) => String(lastWeightOf(p, logs) ?? ""));
+    setStartWeights(starts);
     const done = Math.min(...picks.map((p) => workingSetsOf(p, todaysSets)));
+    const due = done === 0 ? warmUpPicks(picks, categoryOf, todaysSets, categoriesToday) : [];
+    if (due.some(Boolean)) {
+      setWarmUps(due);
+      setEntries(picks.map((p, i) => (due[i] ? warmUpEntry(p, starts[i] ? Number(starts[i]) : null) : blank())));
+    } else {
+      setWarmUps(null);
+      setEntries(starts.map((weight) => ({ ...blank(), weight })));
+    }
     setRounds(supersetRounds(picks));
     setRound(done + 1);
     setStarted(true);
@@ -99,6 +124,44 @@ export default function SupersetLogger({
 
   const setEntry = (i: number, change: Partial<RoundEntry>) =>
     setEntries((es) => es.map((e, j) => (j === i ? { ...e, ...change } : e)));
+
+  const toWorkingSets = () => {
+    setWarmUps(null);
+    setEntries(startWeights.map((weight) => ({ ...blank(), weight })));
+  };
+
+  const logWarmUps = async () => {
+    if (!warmUps) return;
+    const rowsToSave = picks
+      .map((p, i) => ({ p, e: entries[i], due: warmUps[i] }))
+      .filter(({ e, due }) => due && Number(e?.reps) > 0)
+      .map(({ p, e }) => ({
+        client_id: client.id,
+        exercise_id: p.exercise_id,
+        exercise_name: p.exercise_name,
+        log_date: todayIso(),
+        set_number: 0,
+        weight_kg: parseWeight(e.weight),
+        reps: Number(e.reps),
+        effort: "comfortable" as const,
+        warm_up: true,
+      }));
+    if (rowsToSave.length === 0) {
+      Alert.alert("Almost there", "Enter the reps for the warm-up, or tap Skip the warm-up.");
+      return;
+    }
+    setSaving(true);
+    const { data, error } = await supabase.from("workout_logs").insert(rowsToSave).select();
+    setSaving(false);
+    if (error) {
+      Alert.alert("Couldn't save the warm-up", error.message);
+      return;
+    }
+    onSaved((data as WorkoutLog[]) ?? []);
+    toWorkingSets();
+    setRestFor(WARM_UP_REST_SECONDS);
+    setResting((n) => n + 1);
+  };
 
   const logRound = async () => {
     const problem = roundProblem(picks, entries);
@@ -131,7 +194,10 @@ export default function SupersetLogger({
     // Keep the weights for the next round; reps and effort start empty.
     setEntries((es) => es.map((e) => ({ ...blank(), weight: e.weight })));
     setRound((r) => r + 1);
-    if (round < rounds) setResting((n) => n + 1);
+    if (round < rounds) {
+      setRestFor(supersetRest(picks));
+      setResting((n) => n + 1);
+    }
   };
 
   const options: SupersetPick[] = rows
@@ -224,7 +290,55 @@ export default function SupersetLogger({
               </>
             ) : (
               <>
-                {resting > 0 && <RestTimer key={resting} seconds={supersetRest(picks)} onClose={() => setResting(0)} />}
+                {resting > 0 && <RestTimer key={resting} seconds={restFor || supersetRest(picks)} onClose={() => setResting(0)} />}
+                {warmUps ? (
+                  <>
+                    <Text style={styles.round}>Warm-up round</Text>
+                    <Text style={styles.sub}>
+                      One easy set of each, at about half the weight. Warm-ups don't count as rounds. Then a short rest and round 1 starts.
+                    </Text>
+                    {picks.map((p, i) =>
+                      warmUps[i] ? (
+                        <View key={p.exercise_name} style={styles.card}>
+                          <Text style={styles.cardTitle}>
+                            {i + 1}. {p.exercise_name} <Text style={styles.cardPlan}>· warm-up</Text>
+                          </Text>
+                          <View style={styles.inputs}>
+                            <TextInput
+                              style={styles.input}
+                              value={entries[i]?.weight ?? ""}
+                              onChangeText={(v) => setEntry(i, { weight: v })}
+                              placeholder="kg"
+                              placeholderTextColor="#64748B"
+                              keyboardType="decimal-pad"
+                              accessibilityLabel={`${p.exercise_name} warm-up weight`}
+                            />
+                            <TextInput
+                              style={styles.input}
+                              value={entries[i]?.reps ?? ""}
+                              onChangeText={(v) => setEntry(i, { reps: v })}
+                              placeholder="Reps"
+                              placeholderTextColor="#64748B"
+                              keyboardType="number-pad"
+                              accessibilityLabel={`${p.exercise_name} warm-up reps`}
+                            />
+                          </View>
+                        </View>
+                      ) : (
+                        <Text key={p.exercise_name} style={styles.hint}>
+                          {i + 1}. {p.exercise_name}: no warm-up needed (that body part is already warm).
+                        </Text>
+                      ),
+                    )}
+                    <Pressable style={styles.log} onPress={logWarmUps} disabled={saving} accessibilityRole="button">
+                      {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.logText}>✓ Log warm-ups</Text>}
+                    </Pressable>
+                    <Pressable onPress={toWorkingSets} accessibilityRole="button" hitSlop={8} style={{ alignSelf: "center" }}>
+                      <Text style={styles.more}>Already warmed up? Skip the warm-up</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                <>
                 <View style={styles.roundRow}>
                   <Text style={styles.round}>{allDone ? `All ${rounds} rounds done 💪` : `Round ${round} of ${rounds}`}</Text>
                   {allDone && (
@@ -290,6 +404,8 @@ export default function SupersetLogger({
                   <Pressable style={styles.log} onPress={onClose} accessibilityRole="button">
                     <Text style={styles.logText}>Done</Text>
                   </Pressable>
+                )}
+                </>
                 )}
               </>
             )}

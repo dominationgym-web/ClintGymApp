@@ -1,4 +1,5 @@
 import type { ProgramExercise, SetEffort, WorkoutLog } from "@/types/database";
+import { needsWarmUp, warmUpRepsToFill, warmUpWeight } from "@/lib/programs";
 
 // Superset logger (GRIZZ, 2026-10-23): pick 2, 3 or 4 exercises, start, do
 // one set of each back to back, then log the whole round at once and rest.
@@ -37,6 +38,33 @@ export function supersetRest(picks: SupersetPick[]): number {
 /** Working sets of this exercise already logged today. */
 export function workingSetsOf(pick: SupersetPick, todays: Pick<WorkoutLog, "exercise_id" | "exercise_name" | "warm_up">[]): number {
   return todays.filter((l) => !l.warm_up && same(l, pick)).length;
+}
+
+/**
+ * Warm-up round (GRIZZ 2026-11-12): which picked exercises get a warm-up set
+ * before round 1. Same rule as a single exercise: nothing of it logged today
+ * and its body part not worked yet today, so a superset of two chest
+ * exercises warms up only the first one.
+ */
+export function warmUpPicks(
+  picks: SupersetPick[],
+  categoryOf: (pick: SupersetPick) => string | null,
+  todays: Pick<WorkoutLog, "exercise_id" | "exercise_name">[],
+  categoriesToday: Iterable<string | null>,
+): boolean[] {
+  const seen: (string | null)[] = [...categoriesToday];
+  return picks.map((p) => {
+    const category = categoryOf(p);
+    const due = !todays.some((l) => same(l, p)) && needsWarmUp(category, seen);
+    seen.push(category);
+    return due;
+  });
+}
+
+/** A warm-up entry: about half the start weight, the working reps capped at 10. */
+export function warmUpEntry(pick: SupersetPick, startWeight: number | null): RoundEntry {
+  const half = warmUpWeight(startWeight);
+  return { weight: half ? String(half) : "", reps: pick.row ? warmUpRepsToFill(pick.row.reps) : "", effort: "comfortable" };
 }
 
 /** The weight to start from: the latest one logged for this exercise. */
