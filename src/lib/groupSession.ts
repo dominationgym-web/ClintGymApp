@@ -1,4 +1,5 @@
 import type { WorkoutLog } from "@/types/database";
+import { needsWarmUp } from "@/lib/programs";
 
 // Group live sessions (GRIZZ, 2026-10-21): one trainer, up to 4 clients, one
 // workout. Each client keeps one colour and letter for the whole session, on
@@ -48,4 +49,24 @@ export function startWeight(today: SetLike[], earlier: SetLike[], clientId: stri
   const mine = clientSets(today, clientId, exerciseName);
   const last = mine.length ? mine[mine.length - 1] : earlier.filter((l) => l.client_id === clientId && l.exercise_name === exerciseName && !l.warm_up).at(-1);
   return last?.weight_kg != null ? String(last.weight_kg) : "";
+}
+
+/**
+ * Warm-up set due (GRIZZ 2026-11-12): nothing of this exercise logged for the
+ * client today and its body part not worked by them yet today.
+ */
+export function groupWarmUpDue(
+  today: Pick<WorkoutLog, "client_id" | "exercise_name">[],
+  clientId: string,
+  exerciseName: string,
+  categoryOf: (exerciseName: string) => string | null,
+): boolean {
+  const mine = today.filter((l) => l.client_id === clientId);
+  if (mine.some((l) => l.exercise_name === exerciseName)) return false;
+  return needsWarmUp(categoryOf(exerciseName), mine.map((l) => categoryOf(l.exercise_name)));
+}
+
+/** Whether the client logged a warm-up of this exercise today. */
+export function warmedUp(today: Pick<WorkoutLog, "client_id" | "exercise_name" | "warm_up">[], clientId: string, exerciseName: string): boolean {
+  return today.some((l) => l.client_id === clientId && l.exercise_name === exerciseName && l.warm_up);
 }

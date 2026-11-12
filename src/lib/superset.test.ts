@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lastWeightOf, roundProblem, setupFor, stationsSummary, supersetGroups, supersetRest, supersetRounds, workingSetsOf, type SupersetPick } from "@/lib/superset";
+import { lastWeightOf, roundProblem, setupFor, stationsSummary, supersetGroups, supersetRest, supersetRounds, warmUpEntry, warmUpPicks, workingSetsOf, type SupersetPick } from "@/lib/superset";
 
 const bench: SupersetPick = { exercise_id: "b", exercise_name: "Bench Press", row: { sets: 4, reps: "8", rest_seconds: 0 } };
 const row: SupersetPick = { exercise_id: "r", exercise_name: "Chest-Supported Row", row: { sets: 3, reps: "10", rest_seconds: 120 } };
@@ -38,6 +38,23 @@ describe("superset", () => {
     expect(roundProblem([bench, row], [{ weight: "60", reps: "8", effort: null }, { weight: "", reps: "", effort: null }])).toMatch(/Bench Press/);
     expect(roundProblem([bench, row], [{ weight: "60", reps: "x", effort: "comfortable" }, { weight: "", reps: "", effort: null }])).toMatch(/reps/);
     expect(roundProblem([bench, row], [{ weight: "60", reps: "8", effort: "comfortable" }, { weight: "", reps: "", effort: null }])).toBeNull();
+  });
+});
+
+describe("superset warm-up round", () => {
+  const pick = (name: string, reps = "8-10"): SupersetPick => ({ exercise_id: name, exercise_name: name, row: { sets: 3, reps, rest_seconds: 0 } });
+  const cat: Record<string, string> = { Bench: "Chest", Fly: "Chest", Row: "Back", Plank: "Core" };
+  const categoryOf = (p: SupersetPick) => cat[p.exercise_name] ?? null;
+  it("warms up each body part once, never core, and skips what's done today", () => {
+    expect(warmUpPicks([pick("Bench"), pick("Row")], categoryOf, [], [])).toEqual([true, true]);
+    expect(warmUpPicks([pick("Bench"), pick("Fly")], categoryOf, [], [])).toEqual([true, false]);
+    expect(warmUpPicks([pick("Bench"), pick("Plank")], categoryOf, [], [])).toEqual([true, false]);
+    expect(warmUpPicks([pick("Bench"), pick("Row")], categoryOf, [], ["Chest"])).toEqual([false, true]);
+    expect(warmUpPicks([pick("Bench"), pick("Row")], categoryOf, [{ exercise_id: "Row", exercise_name: "Row" }], [])).toEqual([true, false]);
+  });
+  it("fills in half the weight and capped reps", () => {
+    expect(warmUpEntry(pick("Bench", "12-15"), 60)).toEqual({ weight: "30", reps: "10", effort: "comfortable" });
+    expect(warmUpEntry({ ...pick("Bench"), row: null }, null)).toEqual({ weight: "", reps: "", effort: "comfortable" });
   });
 });
 

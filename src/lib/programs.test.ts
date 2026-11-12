@@ -7,6 +7,7 @@ import {
   displayProgramName,
   supersetNext,
   supersetStep,
+  supersetWarmUpStep,
   contrastRest,
   nextUnfinished,
   resizeExercises,
@@ -221,6 +222,31 @@ describe("cardio blocks", () => {
   });
   it("won't save a cardio block with nothing chosen", () => {
     expect(draftProblem("Legs", [ex, { ...blankCardio(), reps: " " }])).toBe("Choose the cardio and how long for slot 2.");
+  });
+});
+
+describe("supersetWarmUpStep", () => {
+  const a = { ...row(1, 1, "Bench Press"), id: "a", sets: 3, rest_seconds: 0 };
+  const b = { ...row(1, 2, "Bent-Over Row"), id: "b", sets: 3, rest_seconds: 0 };
+  const c = { ...row(1, 3, "Leg Press"), id: "c", sets: 3, rest_seconds: 90 };
+  const d = { ...row(1, 4, "Calf Raise"), id: "d", sets: 3, rest_seconds: 60 };
+  const none = () => 0;
+  it("goes straight to the next station's warm-up, then back to the first after a short rest", () => {
+    const warm = new Set(["b", "c"]);
+    const session = [a, b, c, d];
+    expect(supersetWarmUpStep(a, session, (e) => warm.has(e.id), none)).toEqual({ go: b, restSeconds: 0 });
+    expect(supersetWarmUpStep(b, session, (e) => e.id === "c", none)).toEqual({ go: c, restSeconds: 0 });
+    expect(supersetWarmUpStep(c, session, () => false, none)).toEqual({ go: a, restSeconds: 60 });
+  });
+  it("skips stations that don't need a warm-up (same body part)", () => {
+    expect(supersetWarmUpStep(a, [a, b, c, d], () => false, none)).toBeNull();
+    expect(supersetWarmUpStep(b, [a, b, c, d], () => false, none)).toEqual({ go: a, restSeconds: 60 });
+  });
+  it("warms up an earlier station too when the second one was opened first", () => {
+    expect(supersetWarmUpStep(b, [a, b, c, d], (e) => e.id === "a", none)).toEqual({ go: a, restSeconds: 0 });
+  });
+  it("does nothing for a plain exercise", () => {
+    expect(supersetWarmUpStep(d, [a, b, c, d], () => true, none)).toBeNull();
   });
 });
 

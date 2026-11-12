@@ -19,8 +19,9 @@ import { parseWeight } from "@/lib/weightInput";
 import { findImprovements } from "@/lib/workoutSessions";
 import { categoryLabel, exerciseCategories, filterExercises, forPlace, type ExercisePlace } from "@/lib/exerciseFilter";
 import { ExerciseThumb } from "@/components/YouTubeCard";
-import { MAX_GROUP, clientSets, nextSetNumber, setsByClient, slotFor, startWeight } from "@/lib/groupSession";
-import { SUPERSET_MAX, SUPERSET_MIN, roundProblem, type RoundEntry } from "@/lib/superset";
+import { MAX_GROUP, clientSets, groupWarmUpDue, nextSetNumber, setsByClient, slotFor, startWeight, warmedUp } from "@/lib/groupSession";
+import { SUPERSET_MAX, SUPERSET_MIN, roundProblem, warmUpEntry, type RoundEntry } from "@/lib/superset";
+import { warmUpRepsToFill, warmUpWeight } from "@/lib/programs";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { TrainerStackParamList } from "@/navigation/types";
 import type { Client, Exercise, SetEffort, WorkoutLog } from "@/types/database";
@@ -83,6 +84,11 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const [choosing, setChoosing] = useState<number[] | null>(null);
   const [roundFor, setRoundFor] = useState<string | null>(null);
   const [round, setRound] = useState<RoundEntry[]>([]);
+  // Warm-up set (GRIZZ 2026-11-12): the first set of a body part is an easy
+  // warm-up that doesn't count as a working set. `entryWarm` for one set; for
+  // a superset round, which stations are warming up (null = a working round).
+  const [entryWarm, setEntryWarm] = useState(false);
+  const [roundWarm, setRoundWarm] = useState<boolean[] | null>(null);
 
   useEffect(() => {
     if (!trainer) return;
@@ -151,6 +157,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   };
 
   const step = steps[index] ?? null;
+  const categoryOf = (name: string) => library.find((e) => e.name === name)?.category ?? null;
+  const warmUpDueFor = (id: string, name: string) => groupWarmUpDue(logs, id, name, categoryOf);
+  const startNum = (w: string) => (w ? Number(w) : null);
   const supersetSteps = (superset ?? []).map((i) => steps[i]).filter((s): s is Step => !!s);
 
   const toggleChoice = (i: number) =>
@@ -163,16 +172,66 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
       Alert.alert(`${first({ name: nameOf(id) })} is on a medical hold`, "No sets can be logged for them until the hold is cleared on their Overview.");
       return;
     }
-    setRound(supersetSteps.map((s) => ({ weight: startWeight(logs, earlier, id, s.name), reps: "", effort: null })));
+    // Each body part once: two chest exercises only warm up the first.
+    const due: boolean[] = [];
+    supersetSteps.forEach((s, i) => {
+      const sameEarlier = supersetSteps.slice(0, i).some((p, j) => due[j] && categoryOf(p.name) === categoryOf(s.name));
+      due.push(!sameEarlier && warmUpDueFor(id, s.name));
+    });
+    const warm = due.some(Boolean) ? due : null;
+    setRoundWarm(warm);
+    setRound(
+      supersetSteps.map((s, i) => {
+        const start = startWeight(logs, earlier, id, s.name);
+        return warm?.[i]
+          ? warmUpEntry({ exercise_id: s.id, exercise_name: s.name, row: { sets: s.sets, reps: s.reps, rest_seconds: 0 } }, startNum(start))
+          : { weight: start, reps: "", effort: null };
+      }),
+    );
     setRoundFor(id);
   };
 
   const setRoundEntry = (i: number, change: Partial<RoundEntry>) =>
     setRound((prev) => prev.map((e, at) => (at === i ? { ...e, ...change } : e)));
 
+  const skipRoundWarmUp = () => {
+    const id = roundFor;
+    if (!id) return;
+    setRoundWarm(null);
+    setRound(supersetSteps.map((s) => ({ weight: startWeight(logs, earlier, id, s.name), reps: "", effort: null })));
+  };
+
+  const saveWarmUpRound = async (id: string, warm: boolean[]) => {
+    const rows = supersetSteps
+      .map((s, i) => ({ s, e: round[i], due: warm[i] }))
+      .filter(({ e, due }) => due && Number(e?.reps) > 0)
+      .map(({ s, e }) => ({
+        client_id: id,
+        exercise_id: s.id,
+        exercise_name: s.name,
+        log_date: todayIso(),
+        set_number: 0,
+        weight_kg: parseWeight(e.weight),
+        reps: Number(e.reps),
+        effort: "comfortable" as const,
+        warm_up: true,
+        gauge: false,
+      }));
+    if (rows.length === 0) return Alert.alert("Check the warm-up", "Enter the reps for the warm-up, or tap Skip the warm-up.");
+    setSaving(true);
+    const { data, error } = await supabase.from("workout_logs").insert(rows).select();
+    setSaving(false);
+    if (error || !data) return Alert.alert("Couldn't save the warm-up", error?.message ?? "Please try again.");
+    setLogs((prev) => [...prev, ...data]);
+    setRoundFor(null);
+    setToast(`✓ ${slotOf(id).letter} · Warm-up saved to ${nameOf(id)}`);
+    setTimeout(() => setToast(null), 2500);
+  };
+
   const saveRound = async () => {
     const id = roundFor;
     if (!id) return;
+    if (roundWarm) return saveWarmUpRound(id, roundWarm);
     const picks = supersetSteps.map((s) => ({ exercise_id: s.id, exercise_name: s.name, row: null }));
     const problem = roundProblem(picks, round);
     if (problem) return Alert.alert("Check the round", problem);
@@ -215,10 +274,19 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
       Alert.alert(`${first({ name: nameOf(id) })} is on a medical hold`, "No sets can be logged for them until the hold is cleared on their Overview.");
       return;
     }
-    setWeight(startWeight(logs, earlier, id, step.name));
-    setReps("");
+    pickEntryWarm(id, warmUpDueFor(id, step.name));
     setEffort(null);
     setEntryFor(id);
+  };
+
+  // Warm-up: about half the start weight and easy reps; working set: the start weight.
+  const pickEntryWarm = (id: string, warm: boolean) => {
+    if (!step) return;
+    const start = startWeight(logs, earlier, id, step.name);
+    const half = warmUpWeight(startNum(start));
+    setEntryWarm(warm);
+    setWeight(warm ? (half ? String(half) : "") : start);
+    setReps(warm ? warmUpRepsToFill(step.reps) : "");
   };
 
   const saveSet = async () => {
@@ -226,7 +294,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
     if (!id || !step) return;
     const repsNum = Number(reps);
     if (!reps || Number.isNaN(repsNum) || repsNum <= 0) return Alert.alert("Missing reps", "Enter how many reps they did.");
-    if (!effort) return Alert.alert("Missing effort", "Pick how many more good reps they could have done.");
+    const warm = entryWarm;
+    if (!effort && !warm) return Alert.alert("Missing effort", "Pick how many more good reps they could have done.");
     setSaving(true);
     const { data, error } = await supabase
       .from("workout_logs")
@@ -235,11 +304,11 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         exercise_id: step.id,
         exercise_name: step.name,
         log_date: todayIso(),
-        set_number: nextSetNumber(logs, id, step.name),
+        set_number: warm ? 0 : nextSetNumber(logs, id, step.name),
         weight_kg: parseWeight(weight),
         reps: repsNum,
-        effort,
-        warm_up: false,
+        effort: warm ? "comfortable" : effort!,
+        warm_up: warm,
         gauge: false,
       })
       .select()
@@ -248,7 +317,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
     if (error || !data) return Alert.alert("Couldn't save set", error?.message ?? "Please try again.");
     setLogs((prev) => [...prev, data]);
     setEntryFor(null);
-    setToast(`✓ ${slotOf(id).letter} · Saved to ${nameOf(id)}`);
+    setToast(`✓ ${slotOf(id).letter} · ${warm ? "Warm-up saved" : "Saved"} to ${nameOf(id)}`);
     setTimeout(() => setToast(null), 2500);
   };
 
@@ -471,6 +540,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                         <Text style={styles.cardSets}>
                           {sets.length} of {step.sets} sets
                         </Text>
+                        {warmedUp(logs, c.id, step.name) && <Text style={styles.cardSet}>Warm-up ✓</Text>}
                         {/* Tap a set to fix its weight or reps. */}
                         {sets.map((s) => (
                           <Pressable key={s.id} onPress={() => setFixing(s)} hitSlop={4}>
@@ -533,8 +603,20 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                   </Text>
                 </View>
                 <Text style={styles.sheetTitle}>
-                  {step.name} · set {nextSetNumber(logs, entryFor, step.name)}
+                  {step.name} · {entryWarm ? "warm-up" : `set ${nextSetNumber(logs, entryFor, step.name)}`}
                 </Text>
+                <View style={styles.chips}>
+                  {[true, false].map((w) => (
+                    <Pressable
+                      key={String(w)}
+                      style={[styles.chip, entryWarm === w && { backgroundColor: themeBg(slotOf(entryFor).color) }]}
+                      onPress={() => pickEntryWarm(entryFor, w)}
+                    >
+                      <Text style={[styles.chipText, entryWarm === w && styles.chipTextOn]}>{w ? "Warm-up set" : "Working set"}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                {entryWarm && <Text style={styles.helper}>Easy set at about half the weight. It doesn't count as one of the {step.sets} sets.</Text>}
                 <View style={styles.inputs}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.label}>Weight (kg)</Text>
@@ -545,16 +627,20 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                     <TextInput style={styles.input} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder={step.reps} placeholderTextColor="#64748B" />
                   </View>
                 </View>
-                <Text style={styles.label}>Good reps left</Text>
-                <View style={styles.chips}>
-                  {EFFORT_OPTIONS.map((o) => (
-                    <Pressable key={o.key} style={[styles.chip, effort === o.key && { backgroundColor: themeBg(slotOf(entryFor).color) }]} onPress={() => setEffort(o.key)}>
-                      <Text style={[styles.chipText, effort === o.key && styles.chipTextOn]}>{o.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
+                {!entryWarm && (
+                  <>
+                    <Text style={styles.label}>Good reps left</Text>
+                    <View style={styles.chips}>
+                      {EFFORT_OPTIONS.map((o) => (
+                        <Pressable key={o.key} style={[styles.chip, effort === o.key && { backgroundColor: themeBg(slotOf(entryFor).color) }]} onPress={() => setEffort(o.key)}>
+                          <Text style={[styles.chipText, effort === o.key && styles.chipTextOn]}>{o.label}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                )}
                 <Pressable style={[styles.saveButton, { backgroundColor: themeBg(slotOf(entryFor).color) }]} onPress={saveSet} disabled={saving}>
-                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Save {first({ name: nameOf(entryFor) })}'s set</Text>}
+                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Save {first({ name: nameOf(entryFor) })}'s {entryWarm ? "warm-up" : "set"}</Text>}
                 </Pressable>
                 <Pressable style={styles.cancel} onPress={() => setEntryFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
@@ -613,14 +699,26 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 <View style={[styles.banner, { backgroundColor: themeBg(slotOf(roundFor).color) }]}>
                   <Text style={styles.bannerLetter}>{slotOf(roundFor).letter}</Text>
                   <Text style={styles.bannerText} numberOfLines={1}>
-                    Round for {nameOf(roundFor).toUpperCase()}
+                    {roundWarm ? "Warm-up round" : "Round"} for {nameOf(roundFor).toUpperCase()}
                   </Text>
                 </View>
+                {roundWarm && (
+                  <>
+                    <Text style={styles.helper}>One easy set of each at about half the weight. Warm-ups don't count as rounds.</Text>
+                    <Pressable onPress={skipRoundWarmUp} hitSlop={8}>
+                      <Text style={[styles.cancelText, { textAlign: "center", marginVertical: 6 }]}>Already warmed up? Skip the warm-up</Text>
+                    </Pressable>
+                  </>
+                )}
                 <ScrollView keyboardShouldPersistTaps="handled">
-                  {supersetSteps.map((s, i) => (
+                  {supersetSteps.map((s, i) => roundWarm && !roundWarm[i] ? (
+                    <Text key={s.name} style={styles.helper}>
+                      {i + 1}. {s.name}: no warm-up needed (that body part is already warm).
+                    </Text>
+                  ) : (
                     <View key={s.name} style={styles.roundBox}>
                       <Text style={styles.sheetTitle}>
-                        {i + 1}. {s.name} · set {nextSetNumber(logs, roundFor, s.name)}
+                        {i + 1}. {s.name} · {roundWarm ? "warm-up" : `set ${nextSetNumber(logs, roundFor, s.name)}`}
                       </Text>
                       <View style={styles.inputs}>
                         <View style={{ flex: 1 }}>
@@ -632,7 +730,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                           <TextInput style={styles.input} value={round[i]?.reps ?? ""} onChangeText={(v) => setRoundEntry(i, { reps: v })} keyboardType="number-pad" placeholder={s.reps} placeholderTextColor="#64748B" />
                         </View>
                       </View>
-                      <View style={[styles.chips, { marginTop: 8 }]}>
+                      {!roundWarm && <View style={[styles.chips, { marginTop: 8 }]}>
                         {EFFORT_OPTIONS.map((o) => (
                           <Pressable
                             key={o.key}
@@ -642,12 +740,12 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                             <Text style={[styles.chipText, round[i]?.effort === o.key && styles.chipTextOn]}>{o.label}</Text>
                           </Pressable>
                         ))}
-                      </View>
+                      </View>}
                     </View>
                   ))}
                 </ScrollView>
                 <Pressable style={[styles.saveButton, { backgroundColor: themeBg(slotOf(roundFor).color) }]} onPress={saveRound} disabled={saving}>
-                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Save {first({ name: nameOf(roundFor) })}'s round</Text>}
+                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Save {first({ name: nameOf(roundFor) })}'s {roundWarm ? "warm-up" : "round"}</Text>}
                 </Pressable>
                 <Pressable style={styles.cancel} onPress={() => setRoundFor(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
