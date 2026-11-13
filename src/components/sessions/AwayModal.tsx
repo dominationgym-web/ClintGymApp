@@ -80,6 +80,9 @@ export default function AwayModal({
   const [from, setFrom] = useState<string | null>(null);
   const [until, setUntil] = useState<string | null>(null);
   const [changing, setChanging] = useState(false);
+  // A week or more away: catch-ups or credit? (GRIZZ, 2026-11-13: "Most won't
+  // be able to catchup 2 weeks worth. But give the trainer the option.")
+  const [bank, setBank] = useState<"catchup" | "credit" | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!visible) return;
@@ -87,6 +90,7 @@ export default function AwayModal({
     setFrom(null);
     setUntil(null);
     setChanging(false);
+    setBank(null);
   }, [visible]);
 
   const first = (who?.name ?? "They").split(" ")[0];
@@ -103,6 +107,7 @@ export default function AwayModal({
   }, [mine, from, until]);
   // First tap is the first day, second tap the last day; a third tap starts again.
   const pick = (day: string) => {
+    setBank(null);
     if (!from || until || day < from) {
       setFrom(day);
       setUntil(null);
@@ -112,6 +117,8 @@ export default function AwayModal({
   if (!who) return null;
   const showCalendar = !away || changing;
 
+  const long = !!from && !!until && daysBetween(from, until) >= 6;
+  const credit = long && bank === "credit";
   const span = from && until ? (from === until ? `on ${dayText(from)}` : `${dayText(from)} to ${dayText(until)}`) : "";
   const save = async () => {
     if (!from || !until) return;
@@ -122,10 +129,16 @@ export default function AwayModal({
       p_from: from,
       p_until: until,
       p_replace: away?.id ?? null,
+      p_credit: credit,
     });
     setBusy(false);
     if (error) return Alert.alert("Couldn't mark them away", error.message);
     onDone();
+    if (credit)
+      return Alert.alert(
+        `✈️ ${first} is away ${span}`,
+        `Their sessions in that time are green on your calendar: free to book. Their name stays on each one. No catch-ups: they're credited and not charged.${who.clientId ? ` ${first} gets a message.` : ""}`
+      );
     Alert.alert(
       `✈️ ${first} is away ${span}`,
       `Their sessions in that time are green on your calendar: free to book. Their name stays on each one, and they go on your catch-up list. Can't fit one in? Tap Can't do one: Credit there. Not caught up by month end? You pick Credit or Next month.${who.clientId ? ` ${first} gets a message.` : ""}`
@@ -231,17 +244,43 @@ export default function AwayModal({
                       ? `${hit.length} session${hit.length === 1 ? "" : "s"} turn${hit.length === 1 ? "s" : ""} green, free to book: ${hit
                           .slice(0, 6)
                           .map((s) => `${dayLabel(s.starts_at)} ${clockLabel(s.starts_at)}`)
-                          .join(", ")}${hit.length > 6 ? " ..." : ""}. They go on your catch-up list.`
+                          .join(", ")}${hit.length > 6 ? " ..." : ""}.${long ? "" : " They go on your catch-up list."}`
                       : "No sessions of theirs on your calendar in those days. Weekly sessions that fill in later turn green too."}
                   </Text>
                 </View>
               ) : null}
 
-              <Pressable style={[styles.button, (!from || !until || busy) && { opacity: 0.5 }]} onPress={save} disabled={!from || !until || busy}>
+              {long ? (
+                <View style={styles.preview}>
+                  <Text style={styles.previewTitle}>Add them to the catch-up bank?</Text>
+                  <Text style={styles.meta}>That's a long time away. Most clients can't catch up that many sessions.</Text>
+                  <View style={styles.choices}>
+                    <Pressable style={[styles.choice, bank === "catchup" && styles.choiceOn]} onPress={() => setBank("catchup")}>
+                      <Text style={[styles.choiceText, bank === "catchup" && styles.choiceTextOn]}>🔁 Yes, catch-ups</Text>
+                    </Pressable>
+                    <Pressable style={[styles.choice, bank === "credit" && styles.choiceOn]} onPress={() => setBank("credit")}>
+                      <Text style={[styles.choiceText, bank === "credit" && styles.choiceTextOn]}>🟢 No, credit them</Text>
+                    </Pressable>
+                  </View>
+                  <Text style={styles.meta}>
+                    {bank === "catchup"
+                      ? "Their sessions go on your catch-up list. Charged as usual, and you book catch-ups."
+                      : bank === "credit"
+                        ? "No catch-ups: they aren't charged for these sessions."
+                        : "Tap one."}
+                  </Text>
+                </View>
+              ) : null}
+
+              <Pressable
+                style={[styles.button, (!from || !until || busy || (long && !bank)) && { opacity: 0.5 }]}
+                onPress={save}
+                disabled={!from || !until || busy || (long && !bank)}
+              >
                 {busy ? (
                   <ActivityIndicator color={themeText("#0F172A")} />
                 ) : (
-                  <Text style={styles.buttonText}>{from && until ? `✈️ Away ${span}` : from ? "Now tap their last day away" : "Tap their first day away"}</Text>
+                  <Text style={styles.buttonText}>{from && until && long && !bank ? "Pick catch-ups or credit first" : from && until ? `✈️ Away ${span}` : from ? "Now tap their last day away" : "Tap their first day away"}</Text>
                 )}
               </Pressable>
             </>
@@ -257,7 +296,19 @@ export default function AwayModal({
   );
 }
 
+/** Whole days from one "2026-11-14" to another. */
+const daysBetween = (a: string, b: string) => {
+  const [y1, m1, d1] = a.split("-").map(Number);
+  const [y2, m2, d2] = b.split("-").map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+};
+
 const styles = themedStyles({
+  choices: { flexDirection: "row", gap: 8, marginTop: 10 },
+  choice: { flex: 1, borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 11, alignItems: "center" },
+  choiceOn: { backgroundColor: BRAND_GOLD },
+  choiceText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
+  choiceTextOn: { color: "#0F172A" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   sheet: { backgroundColor: "#0F172A", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, maxHeight: "92%" },
   title: { color: "#fff", fontSize: 19, fontWeight: "800", marginBottom: 6 },
