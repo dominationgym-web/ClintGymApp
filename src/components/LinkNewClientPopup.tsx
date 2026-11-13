@@ -8,8 +8,19 @@ import { clientsToAsk, rankNames, type LinkClient, type LinkName } from "@/lib/c
 import { friendlyAlert } from "@/lib/network";
 import { onPopupChange, popupOpen, setPopupOpen } from "@/lib/popupGate";
 import { themeText, themedStyles } from "@/lib/theme";
+import { renewedPlanDates } from "@/lib/planRenewal";
+import { trainingTypeFields, type TrainingType } from "@/components/TrainingTypePicker";
+import type { Client } from "@/types/database";
 
-type Step = { kind: "ask" } | { kind: "others" } | { kind: "confirm"; name: LinkName } | { kind: "done"; name: string; moved: number };
+type Step =
+  | { kind: "ask" }
+  | { kind: "others" }
+  | { kind: "confirm"; name: LinkName }
+  // `waiting`: the client's app isn't switched on yet, so they sit on the payment page.
+  | { kind: "done"; name: string; moved: number; waiting: PlanFields | null }
+  | { kind: "on"; type: TrainingType };
+
+type PlanFields = Pick<Client, "access_status" | "plan_type" | "plan_started_at" | "plan_expires_at">;
 
 // When a client joins the app with the trainer's code, the trainer's app asks
 // straight away whether they're one of the names on the 1 on 1 calendar that
@@ -91,7 +102,28 @@ export default function LinkNewClientPopup() {
     setBusy(false);
     if (error) return Alert.alert(...friendlyAlert("Couldn't link them", error));
     setNames((all) => all.filter((x) => x.key !== n.key));
-    setStep({ kind: "done", name: n.name, moved: data?.moved ?? 0 });
+    // Not switched on yet? A 1 on 1 client pays per session on invoices, so
+    // the trainer can switch their app on right here instead of the client
+    // waiting on the payment page (GRIZZ, 2026-11-13).
+    const { data: row } = await supabase
+      .from("clients")
+      .select("access_status, plan_type, plan_started_at, plan_expires_at")
+      .eq("id", client.id)
+      .maybeSingle();
+    const waiting = row && row.access_status === "expired" ? (row as PlanFields) : null;
+    setStep({ kind: "done", name: n.name, moved: data?.moved ?? 0, waiting });
+  };
+  const switchOn = async (plan: PlanFields, type: TrainingType) => {
+    const dates = renewedPlanDates({ ...plan, plan_type: plan.plan_type ?? "intro_1mo" }, new Date());
+    if (!dates) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({ ...dates, ...trainingTypeFields(type) })
+      .eq("id", client.id);
+    setBusy(false);
+    if (error) return Alert.alert(...friendlyAlert("Couldn't switch them on", error));
+    setStep({ kind: "on", type });
   };
 
   const nameButton = (n: LinkName & { match?: number }, big: boolean) => (
@@ -102,7 +134,7 @@ export default function LinkNewClientPopup() {
   );
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={step.kind === "ask" ? askLater : () => setStep({ kind: "ask" })}>
+    <Modal visible transparent animationType="fade" onRequestClose={step.kind === "ask" ? askLater : step.kind === "done" || step.kind === "on" ? next : () => setStep({ kind: "ask" })}>
       <View style={styles.backdrop}>
         <View style={styles.popup}>
           <Text style={styles.kicker}>NEW CLIENT ON THE APP</Text>
@@ -166,6 +198,35 @@ export default function LinkNewClientPopup() {
                 {step.moved === 1 ? "1 session" : `${step.moved} sessions`} moved from "{step.name}" to {client.name}. New calendar imports with
                 that name go to {first} too.
               </Text>
+              {step.waiting ? (
+                <>
+                  <Text style={[styles.body, styles.waiting]}>
+                    {first}'s app isn't switched on yet, so they're waiting on the payment page. Switch it on now?
+                  </Text>
+                  <Pressable style={styles.button} onPress={() => switchOn(step.waiting!, "one")} disabled={busy}>
+                    {busy ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Switch on: 1 on 1</Text>}
+                  </Pressable>
+                  <Pressable style={styles.outline} onPress={() => switchOn(step.waiting!, "both")} disabled={busy}>
+                    <Text style={styles.outlineText}>Switch on: 1 on 1 + Evolution</Text>
+                  </Pressable>
+                  <Pressable style={styles.secondary} onPress={next} disabled={busy}>
+                    <Text style={styles.secondaryText}>Not yet</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Pressable style={styles.button} onPress={next}>
+                  <Text style={styles.buttonText}>{queue.length > 1 ? "Next new client" : "Done"}</Text>
+                </Pressable>
+              )}
+            </>
+          ) : null}
+
+          {step.kind === "on" ? (
+            <>
+              <Text style={styles.title}>✓ {first}'s app is on</Text>
+              <Text style={styles.body}>
+                {first} is in as {step.type === "one" ? "a 1 on 1 client" : "a 1 on 1 + Evolution client"}. Their app opens by itself.
+              </Text>
               <Pressable style={styles.button} onPress={next}>
                 <Text style={styles.buttonText}>{queue.length > 1 ? "Next new client" : "Done"}</Text>
               </Pressable>
@@ -193,4 +254,5 @@ const styles = themedStyles({
   chipText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   secondary: { alignItems: "center", padding: 12, marginTop: 4 },
   secondaryText: { color: "#94A3B8", fontWeight: "700", fontSize: 15 },
+  waiting: { color: "#F8E7A1", marginTop: 8 },
 });

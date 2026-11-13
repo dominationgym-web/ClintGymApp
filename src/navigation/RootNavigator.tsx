@@ -145,15 +145,21 @@ export default function RootNavigator() {
   );
 }
 
-// A client who hasn't paid yet, or whose plan has expired. Shows their own
-// trainer's payment details (0029) so they can pay and be switched on.
+// A client who hasn't been switched on yet, or whose plan has expired. Shows
+// their own trainer's payment details (0029) so they can pay and be switched on.
+// GRIZZ, 2026-11-13: clients felt stuck here with Log out as the only way off
+// the page. Now: a Back button at the top, a "Check again" button that lets
+// them straight in once the trainer has switched them on, and 1 on 1 clients
+// (who pay per session on the trainer's invoices) aren't asked to pay a plan.
 function PendingAccessScreen() {
-  const { signOut, client } = useAuth();
+  const { signOut, client, refreshProfile } = useAuth();
   // So the client's phone hears the moment their trainer activates them (0056).
   useEffect(() => {
     registerForCoachMessages();
   }, []);
   const [trainer, setTrainer] = useState<Trainer | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [checked, setChecked] = useState(false);
   const trainerId = client?.trainer_id;
 
   useEffect(() => {
@@ -173,15 +179,32 @@ function PendingAccessScreen() {
   }, [trainerId]);
 
   const neverActivated = client?.plan_started_at == null;
+  // On the trainer's 1 on 1 side (linked to their calendar name, or 1 on 1 only).
+  const oneOnOne = !!(client?.one_on_one || client?.live_only);
+  const coach = trainer ? trainerDisplayName(trainer) : "your trainer";
+
+  // If the trainer has switched them on, this opens the app; otherwise it says so.
+  const checkAgain = async () => {
+    setChecking(true);
+    setChecked(false);
+    await refreshProfile();
+    setChecking(false);
+    setChecked(true);
+  };
 
   return (
     <ScrollView style={{ backgroundColor: themeBg("#0F172A") }} contentContainerStyle={styles.pendingContainer}>
+      <Pressable onPress={signOut} hitSlop={10} style={styles.backButton} accessibilityRole="button">
+        <Text style={styles.backText}>‹ Back to log in</Text>
+      </Pressable>
       <NotificationsPrompt who="client" />
-      <Text style={styles.title}>{neverActivated ? "One last step" : "Your plan has ended"}</Text>
+      <Text style={styles.title}>{neverActivated ? "Almost there" : "Your plan has ended"}</Text>
       <Text style={styles.body}>
-        {neverActivated
-          ? "Your account is created but not active yet. Pay for your plan using the details below, then let your trainer know. They'll confirm payment and switch on your access."
-          : "To keep going, renew your plan using the details below and let your trainer know. They'll switch your access back on."}
+        {neverActivated && oneOnOne
+          ? `You train 1 on 1 with ${coach}, so there's nothing to pay here. Your app opens by itself the moment ${coach} switches it on.`
+          : neverActivated
+            ? `Your account is made. Pay for your plan with the details below and ${coach} switches your app on. It opens by itself the moment they do. Training 1 on 1 with ${coach}? Then there's nothing to pay here.`
+            : "To keep going, renew your plan using the details below and let your trainer know. They'll switch your access back on."}
       </Text>
       {trainer ? (
         <View style={styles.trainerRow}>
@@ -189,14 +212,21 @@ function PendingAccessScreen() {
           <Text style={styles.trainerName}>{trainerDisplayName(trainer)}</Text>
         </View>
       ) : null}
-      <TrainerPaymentDetails eftDetails={trainer?.eft_details} popWhatsapp={trainer?.pop_whatsapp} proofInApp={!!trainer} />
-      {client && trainer ? (
-        <SendProofOfPayment to="trainer" payerId={client.id} trainerId={trainer.id} receiverName={trainerDisplayName(trainer)} />
-      ) : null}
-      <AbroadPayment trainer={trainer} />
-      <Pressable style={styles.logoutButton} onPress={signOut}>
-        <Text style={styles.logoutText}>Log out</Text>
+      <Pressable style={styles.checkButton} onPress={checkAgain} disabled={checking} accessibilityRole="button">
+        {checking ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.checkText}>Check again</Text>}
       </Pressable>
+      {checked && !checking ? (
+        <Text style={[styles.body, { marginTop: 8 }]}>Not switched on yet. {oneOnOne ? `Give ${coach} a shout.` : `Paid already? Send ${coach} your proof below.`}</Text>
+      ) : null}
+      {neverActivated && oneOnOne ? null : (
+        <>
+          <TrainerPaymentDetails eftDetails={trainer?.eft_details} popWhatsapp={trainer?.pop_whatsapp} proofInApp={!!trainer} />
+          {client && trainer ? (
+            <SendProofOfPayment to="trainer" payerId={client.id} trainerId={trainer.id} receiverName={trainerDisplayName(trainer)} />
+          ) : null}
+          <AbroadPayment trainer={trainer} />
+        </>
+      )}
       <DeleteAccountButton />
     </ScrollView>
   );
@@ -308,4 +338,8 @@ const styles = themedStyles({
   trainerName: { color: "#fff", fontSize: 16, fontWeight: "700" },
   logoutText: { color: "#64748B", fontSize: 14, fontWeight: "600" },
   link: { color: "#22C55E", fontWeight: "600" },
+  backButton: { alignSelf: "flex-start", paddingVertical: 8, marginBottom: 8 },
+  backText: { color: "#D4AF37", fontSize: 16, fontWeight: "700" },
+  checkButton: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },
+  checkText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
 });

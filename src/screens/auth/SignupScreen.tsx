@@ -370,7 +370,7 @@ export default function SignupScreen({ navigation }: Props) {
       </Modal>
 
       <Pressable style={styles.button} onPress={handleSignup} disabled={loading}>
-        {loading ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Continue to payment</Text>}
+        {loading ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Create my account</Text>}
       </Pressable>
       <Pressable onPress={() => navigation.navigate("Login")}>
         <Text style={styles.link}>Already have an account? Log in</Text>
