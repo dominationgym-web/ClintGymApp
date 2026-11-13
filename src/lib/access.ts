@@ -43,6 +43,15 @@ export function resolveAppArea({ loading, hasSession, role, client }: AccessInpu
   return "auth";
 }
 
+/**
+ * 1 on 1 clients (in-person, paid per session on invoices) have no plan end
+ * date: their app only closes when the trainer blocks them or they stop
+ * training (GRIZZ, 2026-11-13; 0212 skips them in auto_expire_plans).
+ */
+export function planNeverEnds(c: { one_on_one?: boolean | null; live_only?: boolean | null } | null | undefined): boolean {
+  return !!(c?.one_on_one || c?.live_only);
+}
+
 export function hasCompletedIntake(client: Pick<Client, "intake_responses">): boolean {
   return Object.keys(client.intake_responses ?? {}).length > 0;
 }

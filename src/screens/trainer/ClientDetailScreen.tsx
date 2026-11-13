@@ -1,4 +1,5 @@
 import CheckinFeedbackCard from "@/components/CheckinFeedbackCard";
+import { planNeverEnds } from "@/lib/access";
 import { coffeeText, isLateCoffee } from "@/lib/coffee";
 import { checkinFeedback } from "@/lib/checkinFeedback";
 import { intakeDetails } from "@/lib/dietPlan";
@@ -670,7 +671,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               title="Plan & payment"
               hint={
                 (client.plan_type
-                  ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""}`
+                  ? `${PLAN_LABEL[client.plan_type] ?? "12 Month"} plan${client.plan_expires_at && !planNeverEnds(client) ? ` · ends ${new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : ""}`
                   : "No plan picked") + ` · ${trainingTypeLabel(trainingTypeOf(client))}`
               }
               open={overviewOpen === "plan"}
@@ -707,7 +708,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                       Started: {new Date(client.plan_started_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </Text>
                   )}
-                  {client.plan_expires_at && (
+                  {client.plan_expires_at && !planNeverEnds(client) && (
                     <Text style={[styles.planDate, (new Date(client.plan_expires_at) < new Date()) && styles.expired]}>
                       Expires: {new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </Text>

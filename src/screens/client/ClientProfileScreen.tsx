@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { planNeverEnds } from "@/lib/access";
 import AppUpdateLine from "@/components/AppUpdateLine";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -202,7 +203,7 @@ export default function ClientProfileScreen() {
         </View>
       </View>
 
-      {client.plan_expires_at && (
+      {client.plan_expires_at && !planNeverEnds(client) && (
         <Text style={styles.helper}>Plan ends {new Date(client.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</Text>
       )}
 
