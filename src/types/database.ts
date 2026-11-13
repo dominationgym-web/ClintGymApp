@@ -1283,6 +1283,8 @@ export type ClientAway = {
   created_at: string;
   /** On hold because they haven't paid (0203): no end date until Unblock. */
   unpaid?: boolean;
+  /** Long trip, coach picked credit: no catch-ups (0211). */
+  credit_sessions?: boolean;
 };
 // The coach's blocked-out time (0177): sessions in it are cancelled and not charged.
 export type TrainerTimeOff = {
@@ -1793,7 +1795,7 @@ export interface Database {
       answer_injury_check: { Args: { p_injury: string; p_answer: InjuryCheckAnswer }; Returns: ClientInjury };
       add_diary_catch_up: { Args: { p_makeup_for: string; p_starts_at: string; p_minutes: number }; Returns: LiveSession };
       set_client_away: {
-        Args: { p_client: string | null; p_guest: string | null; p_from: string; p_until: string; p_replace: string | null };
+        Args: { p_client: string | null; p_guest: string | null; p_from: string; p_until: string; p_replace: string | null; p_credit?: boolean };
         Returns: ClientAway;
       };
       end_client_away: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };

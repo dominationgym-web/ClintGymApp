@@ -92,7 +92,7 @@ export default function StopTrainingModal({
     Alert.alert(
       `🛑 ${first} is off your calendar`,
       `${n ? `${n} session${n === 1 ? "" : "s"} from ${dayText(from)} came off.` : `Nothing of theirs was booked from ${dayText(from)}.`} Those times show green: Available. Their weekly times won't come back. Past sessions and invoices stay.${
-        owed ? `\n\n${first} still has ${owed} catch-up${owed === 1 ? "" : "s"} owed: on Today › Catch-ups, tap Can't do one: Credit, or book it.` : ""
+        owed ? `\n\n${first} still has ${owed} catch-up${owed === 1 ? "" : "s"} owed: on Today › Catch-ups, tap 🟢 Remove all (or Can't do one: Credit), or book them.` : ""
       }\n\nTapped by mistake? Open ${first} again and tap Undo.`
     );
   };
