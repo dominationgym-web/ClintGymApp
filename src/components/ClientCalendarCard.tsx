@@ -48,6 +48,7 @@ import { withClientCardio } from "@/lib/clientExtras";
 import { cardioKey, cardioSkipped, withoutSkippedCardio, type CardioSkip } from "@/lib/cardioSkips";
 import { cardioLabel } from "@/lib/programs";
 import PlanProgramModal from "@/components/PlanProgramModal";
+import { removeProgramFrom } from "@/lib/programRemoval";
 import type { StabilityArea } from "@/lib/stability";
 import ExerciseChangeModal from "@/components/ExerciseChangeModal";
 import { applyExerciseChanges } from "@/lib/exerciseChanges";
@@ -414,25 +415,7 @@ export default function ClientCalendarCard({
   // of it from today on, extra blocks too, and its weekly plan stops; days
   // already done stay as the client's history.
   const removeWholeProgram = async (programId: string) => {
-    const from = today;
-    const results = await Promise.all([
-      supabase.from("client_calendar_workouts").delete().eq("client_id", clientId).eq("program_id", programId).gte("workout_date", from),
-      // Taking a block off keeps its row, marked removed (0098).
-      supabase
-        .from("client_calendar_blocks")
-        .update({ removed_at: new Date().toISOString() })
-        .eq("client_id", clientId)
-        .eq("program_id", programId)
-        .gte("workout_date", from)
-        .is("removed_at", null),
-      supabase
-        .from("client_program_plans")
-        .update({ ended_at: new Date().toISOString() })
-        .eq("client_id", clientId)
-        .eq("program_id", programId)
-        .is("ended_at", null),
-    ]);
-    const error = results.find((r) => r.error)?.error;
+    const error = await removeProgramFrom(clientId, programId, today);
     if (error) Alert.alert("Couldn't remove it", error.message);
     await Promise.all([loadMonth(), loadUsed()]);
     setPlanKey((k) => k + 1);

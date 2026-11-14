@@ -33,6 +33,8 @@ import type { ExercisePlace } from "@/lib/exerciseFilter";
 import type { Program } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 import SafeBottom from "@/components/SafeBottom";
+import { isMainProgram, removeProgramFrom } from "@/lib/programRemoval";
+import { planEnd } from "@/lib/weeklyPlans";
 
 
 function dayHeading(date: string): string {
@@ -159,9 +161,9 @@ export default function PlanProgramModal({
   const activate = async () => {
     if (!date || !program || plan.length === 0) return;
     const end = plan[plan.length - 1].date;
-    const [{ data: current }, { data: existing }, { data: blocks }] = await Promise.all([
+    const [{ data: current }, { data: existing }, { data: blocks }, { data: running }] = await Promise.all([
       supabase.from("client_programs").select("program_id").eq("client_id", clientId).maybeSingle(),
-      supabase.from("client_calendar_workouts").select("workout_date").eq("client_id", clientId).gte("workout_date", date).lte("workout_date", end),
+      supabase.from("client_calendar_workouts").select("workout_date, program_id").eq("client_id", clientId).gte("workout_date", date).lte("workout_date", end),
       supabase
         .from("client_calendar_blocks")
         .select("workout_date, position")
@@ -169,7 +171,19 @@ export default function PlanProgramModal({
         .is("removed_at", null)
         .gte("workout_date", date)
         .lte("workout_date", end),
+      supabase.from("client_program_plans").select("program_id, start_date, weeks").eq("client_id", clientId).is("ended_at", null),
     ]);
+    // One training program at a time (GRIZZ, 2026-11-14): a program still
+    // running from this day on is replaced, never stacked. Mobility and
+    // flexibility can still go on top of training.
+    const main = isMainProgram(program);
+    const oldIds = main
+      ? [...new Set((running ?? []).filter((r) => planEnd(r) >= date).map((r) => r.program_id))].filter((id) => {
+          const p = programs.find((x) => x.id === id);
+          return !p || isMainProgram(p);
+        })
+      : [];
+    const oldNames = oldIds.map((id) => programs.find((p) => p.id === id)?.name ?? "their current program");
     const currentName = current ? programs.find((p) => p.id === current.program_id)?.name : null;
     const taken = (existing ?? []).map((e) => e.workout_date);
     // One week at a time (GRIZZ, 2026-10-18, 0113): only the first week goes
@@ -216,6 +230,11 @@ export default function PlanProgramModal({
     // The new plan takes over those weeks: what was on them is replaced.
     const replace = async () => {
       setBusy(true);
+      // The old program comes off from this day on and its weeks stop.
+      for (const id of oldIds) {
+        const error = await removeProgramFrom(clientId, id, date);
+        if (error) return finish(error);
+      }
       const cleared = await supabase
         .from("client_calendar_workouts")
         .delete()
@@ -257,6 +276,18 @@ export default function PlanProgramModal({
       finish(a?.error ?? b?.error ?? planned);
     };
 
+    if (oldIds.length > 0) {
+      const old = [...new Set(oldNames)].join(" and ");
+      Alert.alert(
+        `Replace ${old}?`,
+        `${clientName} is on ${old}. One program at a time keeps it clear for you both, so ${old} comes off from ${dayHeading(plan[0].date)} (workouts already done stay) and ${program.name} takes over. ${summary}`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Replace", style: "destructive", onPress: replace },
+        ],
+      );
+      return;
+    }
     if (taken.length === 0) {
       Alert.alert(
         `Activate ${program.name}?`,
@@ -266,6 +297,23 @@ export default function PlanProgramModal({
         [
           { text: "Cancel", style: "cancel" },
           { text: "Activate", onPress: replace },
+        ],
+      );
+      return;
+    }
+    // Training already on those days: a training program takes over, so no
+    // day ends up with two workouts.
+    const trainingTaken = (existing ?? []).some((e) => {
+      const p = programs.find((x) => x.id === e.program_id);
+      return !p || isMainProgram(p);
+    });
+    if (main && trainingTaken) {
+      Alert.alert(
+        `Replace what's planned?`,
+        `${summary} ${clientName} already has ${taken.length} workout${taken.length === 1 ? "" : "s"} planned in those weeks. They come off so ${program.name} takes over. Next you check each day one by one.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Replace", style: "destructive", onPress: replace },
         ],
       );
       return;
