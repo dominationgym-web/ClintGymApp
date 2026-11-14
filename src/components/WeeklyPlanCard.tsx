@@ -9,6 +9,8 @@ import { daysLabel, planWeekDates, slotsFrom, splitAlongside, toggleDay } from "
 import { nextPlanWeek, planSessionsBetween, planWeekOf } from "@/lib/weeklyPlans";
 import type { ClientProgramPlan, Program } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
+import { removeProgramFrom } from "@/lib/programRemoval";
+import OptionsSheet from "@/components/OptionsSheet";
 
 // Above the client's calendar (GRIZZ, 2026-10-18, 0113): each program planned
 // week by week. When the client has 2 or fewer workouts left in the week on
@@ -33,6 +35,8 @@ export default function WeeklyPlanCard({
   const [justAdded, setJustAdded] = useState<string | null>(null);
   // A plan on different days each week: the days being picked for its next week.
   const [picking, setPicking] = useState<{ id: string; days: number[] } | null>(null);
+  // The plan whose options are open (hold the card, or tap ⋯).
+  const [options, setOptions] = useState<ClientProgramPlan | null>(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -142,10 +146,29 @@ export default function WeeklyPlanCard({
       },
     ]);
 
+  // Takes the whole program off from today (GRIZZ, 2026-11-14: "how would a
+  // trainer remove one?"). Days already done stay as the client's history.
+  const remove = (plan: ClientProgramPlan, name: string) =>
+    Alert.alert(`Remove ${name}?`, `It comes off ${clientName}'s calendar from today on. Workouts already done stay.`, [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          setBusy(plan.id);
+          const error = await removeProgramFrom(clientId, plan.program_id, todayIso());
+          setBusy(null);
+          if (error) Alert.alert("Couldn't remove it", error.message);
+          load();
+          onChanged();
+        },
+      },
+    ]);
+
   const makeChanges = () =>
     Alert.alert(
       "Make changes first",
-      `Tap any day on the calendar below and tap an exercise to swap it or change its sets and reps for ${clientName}. Changes made for every workout carry into the next weeks. When you're happy, tap Go ahead.`,
+      `Tap any day on the calendar below and tap an exercise to swap it or change its sets and reps for ${clientName}. Changes made for every workout carry into the next weeks.`,
     );
 
   if (plans.length === 0) return null;
@@ -160,8 +183,13 @@ export default function WeeklyPlanCard({
         const onWeek = Math.min(planWeekOf(plan, today < plan.start_date ? plan.start_date : today), next.week - 1);
         const due = plan.left <= 2;
         return (
-          <View key={plan.id} style={[styles.card, due && styles.due]}>
-            <Text style={styles.title}>{program.name}</Text>
+          <Pressable key={plan.id} style={[styles.card, due && styles.due]} onLongPress={() => setOptions(plan)} delayLongPress={350}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, { flex: 1 }]}>{program.name}</Text>
+              <Pressable onPress={() => setOptions(plan)} hitSlop={10} accessibilityLabel="Program options">
+                <Text style={styles.dots}>⋯</Text>
+              </Pressable>
+            </View>
             <View style={[styles.loaded, justAdded === plan.id && styles.loadedNew]}>
               <Text style={styles.loadedBig}>
                 {justAdded === plan.id ? "✅ " : ""}Week {next.week - 1} of {plan.weeks} loaded
@@ -204,12 +232,7 @@ export default function WeeklyPlanCard({
             ) : (
               <>
                 <Text style={styles.body}>
-                  Week by week{plan.days_vary ? " on different days" : ""}: you'll be asked to add week {next.week} when {clientName} has 2 workouts left.{" "}
-                  {picking?.id !== plan.id && (
-                    <Text style={styles.link} onPress={() => goAhead(plan)}>
-                      Add it now
-                    </Text>
-                  )}
+                  You'll be asked to add week {next.week} when {clientName} has 2 workouts left. Hold for options.
                 </Text>
                 {picking?.id === plan.id && (
                   <DayPicker
@@ -222,9 +245,30 @@ export default function WeeklyPlanCard({
                 )}
               </>
             )}
-          </View>
+          </Pressable>
         );
       })}
+      <OptionsSheet
+        title={options ? (programs.find((p) => p.id === options.program_id)?.name ?? "Program") : null}
+        subtitle={`${clientName}'s program`}
+        onClose={() => setOptions(null)}
+        options={(() => {
+          const plan = options;
+          const next = plan && nextPlanWeek(plan);
+          if (!plan || !next) return [];
+          const name = programs.find((p) => p.id === plan.program_id)?.name ?? "this program";
+          return [
+            {
+              label: plan.days_vary ? `Add week ${next.week} now: pick its days` : `Add week ${next.week} now`,
+              detail: "Puts next week on the calendar straight away",
+              onPress: () => goAhead(plan),
+            },
+            { label: "Change a workout", detail: "Swap exercises or change sets and reps", onPress: makeChanges },
+            { label: "Stop adding weeks", detail: "Keeps what's on the calendar, adds no more", onPress: () => stop(plan, name) },
+            { label: "Remove program", detail: "Takes it off the calendar from today", danger: true, onPress: () => remove(plan, name) },
+          ];
+        })()}
+      />
     </View>
   );
 }
@@ -281,6 +325,8 @@ const styles = themedStyles({
   },
   due: { borderColor: BRAND_GOLD, backgroundColor: "#2A2410" },
   title: { color: "#fff", fontWeight: "800", fontSize: 14 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  dots: { color: BRAND_GOLD, fontWeight: "900", fontSize: 22, lineHeight: 22, paddingHorizontal: 4 },
   loaded: { backgroundColor: "#1E293B", borderRadius: 8, padding: 10, marginTop: 8, borderLeftWidth: 4, borderLeftColor: BRAND_GOLD },
   loadedNew: { backgroundColor: "#14532D", borderLeftColor: "#22C55E" },
   loadedBig: { color: "#fff", fontWeight: "900", fontSize: 20 },
