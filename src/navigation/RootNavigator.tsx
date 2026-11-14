@@ -198,13 +198,15 @@ function PendingAccessScreen() {
         <Text style={styles.backText}>‹ Back to log in</Text>
       </Pressable>
       <NotificationsPrompt who="client" />
-      <Text style={styles.title}>{neverActivated ? "Almost there" : "Your plan has ended"}</Text>
+      <Text style={styles.title}>{neverActivated ? "Almost there" : oneOnOne ? "Your app is paused" : "Your plan has ended"}</Text>
       <Text style={styles.body}>
         {neverActivated && oneOnOne
           ? `You train 1 on 1 with ${coach}, so there's nothing to pay here. Your app opens by itself the moment ${coach} switches it on.`
           : neverActivated
             ? `Your account is made. Pay for your plan with the details below and ${coach} switches your app on. It opens by itself the moment they do. Training 1 on 1 with ${coach}? Then there's nothing to pay here.`
-            : "To keep going, renew your plan using the details below and let your trainer know. They'll switch your access back on."}
+            : oneOnOne
+              ? `${coach} has paused your app. Everything you've logged is saved. Chat to ${coach}, and it opens by itself the moment they switch it back on.`
+              : "To keep going, renew your plan using the details below and let your trainer know. They'll switch your access back on."}
       </Text>
       {trainer ? (
         <View style={styles.trainerRow}>

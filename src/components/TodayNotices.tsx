@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { planNeverEnds } from "@/lib/access";
 import { Pressable, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -92,7 +93,7 @@ export default function TodayNotices({ extra }: { extra?: React.ReactNode }) {
 function PlanEndingBanner() {
   const { client } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<ClientStackParamList>>();
-  const ending = planEndingSoon(client?.plan_expires_at, todayIso());
+  const ending = planNeverEnds(client) ? null : planEndingSoon(client?.plan_expires_at, todayIso());
   if (!ending) return null;
   return (
     <Pressable

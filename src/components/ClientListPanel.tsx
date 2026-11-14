@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { planNeverEnds } from "@/lib/access";
 import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { problemColor, problemLevel, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
@@ -256,7 +257,7 @@ export default function ClientListPanel({
                   <View style={[styles.statusBadge, statusStyle(item.access_status)]}>
                     <Text style={styles.statusLabel}>{STATUS_LABEL[item.access_status]}</Text>
                   </View>
-                  {item.plan_expires_at && (
+                  {item.plan_expires_at && !planNeverEnds(item) && (
                     <Text style={styles.expiry}>expires {new Date(item.plan_expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</Text>
                   )}
                 </View>
