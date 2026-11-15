@@ -67,6 +67,15 @@ function placement(p: CardProgram, family: ProgramFamily, familyTitle: string): 
       if (m) return { key: "sport12", title: "12-week sport programs", label: m[2], sub: cap(m[1].toLowerCase()), hint: "Pick the sport, then the focus" };
       break;
     }
+    case "upperLower": {
+      // "Quick upper body (30 min)" is 1, "Quick upper body 2 (30 min)" is 2 (0213).
+      const m = name.match(/^(?:home\s+)?quick\s+(upper|lower)\s+body(?:\s+(\d+))?\s*(\(.*\))?$/i);
+      if (m) {
+        const part = m[1].toLowerCase();
+        return { key: `quick:${part}`, title: `Quick ${part} body${m[3] ? ` ${m[3]}` : ""}`, label: m[2] ?? "1" };
+      }
+      break;
+    }
     case "offSeason":
       if (dash) return { key: family, title: "Off-season: 8 weeks", label: dash[1] };
       break;
