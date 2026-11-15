@@ -128,10 +128,13 @@ ${PRIVACY_POLICY_SECTIONS.map((s) => `<h2>${escape(s.heading)}</h2>\n${paragraph
   "support.html": page(
     "Support",
     `<h1>Support</h1>
-<p>Questions about your coaching, program or payments: contact your trainer directly.</p>
-<p>Problems with the app itself: email <a href="mailto:${PRIVACY_CONTACT_EMAIL}">${PRIVACY_CONTACT_EMAIL}</a>.</p>`,
+<h2>Quickest way: report it in the app</h2>
+<p><strong>Trainers:</strong> open the app, tap the menu <strong>☰</strong>, then <strong>Report a problem</strong>. Pick what it's about, say what happened and tap Send. It goes straight to the app owner with your name on it, and the answer comes back on the same page with a notification.</p>
+<p><strong>Clients:</strong> questions about your coaching, program or payments go to your trainer directly. If something in the app isn't working, tell your trainer: they can report it in the app and it comes straight to us.</p>
+<h2>Can't open the app?</h2>
+<p>Email <a href="mailto:${PRIVACY_CONTACT_EMAIL}">${PRIVACY_CONTACT_EMAIL}</a>. Email replies can take longer than a problem reported in the app.</p>`,
     "/support",
-    "Get help with the Daily Evolution app.",
+    "Get help with the Daily Evolution app: report a problem inside the app for the quickest answer.",
   ),
 };
 
