@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import { supabase } from "@/lib/supabase";
@@ -12,8 +12,10 @@ import {
   loadExerciseChanges,
   loadProgramExercises,
 } from "@/lib/programQueries";
-import { isFunctionalProgram, PROGRAM_FAMILIES, programFamily, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
+import { isFunctionalProgram, PROGRAM_FAMILIES, WEEKDAY_NAMES, type ProgramFamily, type ProgramGroup } from "@/lib/programs";
 import ProgramGroups from "@/components/ProgramGroups";
+import ProgramCardView from "@/components/ProgramCardView";
+import { programCards } from "@/lib/programCards";
 import {
   applyMoves,
   calendarDayLabels,
@@ -26,7 +28,6 @@ import {
   programSlots,
   shortWorkoutName,
   slotLabel,
-  usedInBatch,
   usedWorkoutIds,
   weekDates,
 } from "@/lib/trainingCalendar";
@@ -827,7 +828,7 @@ export default function ClientCalendarCard({
   );
 }
 
-// The workouts to put on one day, under tap-to-open batch headings, with
+// The workouts to put on one day, as version cards (Chest & Bi 1 2 3 4) under the tap-to-open groups, with
 // used ones in red and a Reset per batch. Weekly and multi-week programs open
 // to list their sessions (rest days left out); tap one to put that day on.
 function WorkoutPicker({
@@ -862,7 +863,6 @@ function WorkoutPicker({
   onClose: () => void;
 }) {
   const [place, setPlace] = useState<ExercisePlace>(trainingPlace);
-  const [open, setOpen] = useState<ProgramFamily | null>(null);
   const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
   // The weekly program open to show its sessions, and each one's sessions once loaded.
   const [openProgram, setOpenProgram] = useState<string | null>(null);
@@ -871,7 +871,6 @@ function WorkoutPicker({
   useEffect(() => {
     if (date) {
       setPlace(trainingPlace);
-      setOpen(null);
       // Opens on the group most likely wanted, one tap less (GRIZZ, 2026-11-08):
       // training for the day's workout, mobility and flexibility for a block.
       setOpenGroup(mode === "block" ? "functional" : "gym");
@@ -879,27 +878,28 @@ function WorkoutPicker({
     }
   }, [date, trainingPlace, mode]);
 
-  const toggleProgram = async (p: Program) => {
+  // Tapping a version button picks it: a weekly program then lists its days,
+  // a single workout shows a "Put it on" button. Tapping it again closes it.
+  const pick = async (p: Program) => {
     if (openProgram === p.id) {
       setOpenProgram(null);
       return;
     }
     setOpenProgram(p.id);
-    if (slots[p.id]) return;
+    if (p.kind !== "weekly" || slots[p.id]) return;
     const { data } = await loadProgramExercises(p.id);
     setSlots((prev) => ({ ...prev, [p.id]: programSlots(data ?? []) }));
   };
 
-  const here = workouts.filter((p) => p.place === place);
+  const here = useMemo(() => workouts.filter((p) => p.place === place), [workouts, place]);
   // Gym and home batches are used up separately. Only quick workouts get used up.
   const used = usedWorkoutIds(
     entries,
     resets,
     here.filter((p) => p.kind === "quick"),
   );
-  const families = PROGRAM_FAMILIES.map((f) => ({ ...f, programs: here.filter((p) => programFamily(p) === f.key) })).filter(
-    (f) => f.programs.length > 0,
-  );
+  // One version card per set (Chest & Bi 1-4 is one card with 1 2 3 4).
+  const families = useMemo(() => programCards(here), [here]);
 
   return (
     <Modal visible={!!date} transparent animationType="fade" onRequestClose={onClose}>
@@ -917,7 +917,6 @@ function WorkoutPicker({
             current={place}
             onChange={(next) => {
               setPlace(next);
-              setOpen(null);
               setOpenGroup(null);
             }}
             accent={BRAND_GOLD}
@@ -940,8 +939,7 @@ function WorkoutPicker({
               open={openGroup}
               onToggle={(g) => {
                 setOpenGroup(g);
-                setOpen(null);
-              }}
+                }}
               extra={{
                 functional: (
                   <Text style={styles.stabilityNote}>
@@ -950,86 +948,67 @@ function WorkoutPicker({
                   </Text>
                 ),
               }}
-              renderFamily={(f) => {
-                const isOpen = open === f.key;
-                const usedCount = usedInBatch(f.key, f.programs, used);
-                const quickCount = f.programs.filter((p) => p.kind === "quick").length;
+              renderFamily={(card) => {
+                const quick = card.programs.filter((p) => p.kind === "quick");
+                const usedCount = quick.filter((p) => used.has(p.id)).length;
+                const p = card.options.find((o) => o.program.id === openProgram)?.program;
+                const familyTitle = PROGRAM_FAMILIES.find((f) => f.key === card.family)?.title ?? card.title;
                 return (
-                  <View key={f.key} style={[styles.family, isOpen && styles.familyOpen]}>
-                    <Pressable style={styles.familyHeader} onPress={() => setOpen(isOpen ? null : f.key)}>
-                      <Text style={styles.familyIcon}>{f.icon}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.familyTitle}>{f.title}</Text>
-                        {quickCount > 0 && (
-                          <Text style={[styles.usedCount, usedCount > 0 && { color: themeText(RED) }]}>
-                            {usedCount} of {quickCount} used
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={styles.chevron}>{isOpen ? "▴" : "▾"}</Text>
-                    </Pressable>
-                    {isOpen && usedCount > 0 && (
-                      <Pressable style={styles.reset} onPress={() => onReset(f.key, f.title)}>
-                        <Text style={styles.resetText}>↺ Reset this batch</Text>
+                  <View key={card.key}>
+                    <ProgramCardView
+                      card={card}
+                      selectedId={openProgram}
+                      onSelect={pick}
+                      disabled={busy}
+                      chipState={(w) =>
+                        w.id === currentId && (w.kind === "weekly" || currentSlot == null) ? "current" : used.has(w.id) ? "used" : null
+                      }
+                    >
+                      {p && p.kind === "weekly" && (
+                        <>
+                          <Text style={styles.description}>Tap one of its days</Text>
+                          {!slots[p.id] && <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 8 }} />}
+                          {slots[p.id]?.map((slot) => {
+                            const current = p.id === currentId && slot === currentSlot;
+                            return (
+                              <Pressable
+                                key={slot}
+                                style={[styles.session, current && { borderColor: themeBorder(BRAND_GOLD) }]}
+                                onPress={() => onChoose(p, slot)}
+                                disabled={busy || current}
+                              >
+                                <Text style={styles.sessionText}>{slotLabel(p, slot)}</Text>
+                                {current && <Text style={styles.currentTag}>✓ On this day</Text>}
+                              </Pressable>
+                            );
+                          })}
+                          {slots[p.id]?.length === 0 && <Text style={styles.description}>No exercises in this program yet.</Text>}
+                        </>
+                      )}
+                      {p && p.kind !== "weekly" && (
+                        <>
+                          {p.description ? (
+                            <Text style={styles.description} numberOfLines={3}>
+                              {p.description}
+                            </Text>
+                          ) : null}
+                          {p.id === currentId && currentSlot == null ? (
+                            <Text style={[styles.currentTag, { marginTop: 8 }]}>✓ Already on this day</Text>
+                          ) : (
+                            <Pressable style={styles.putOn} onPress={() => onChoose(p, null)} disabled={busy}>
+                              <Text style={styles.putOnText}>Put {p.name} on this day</Text>
+                            </Pressable>
+                          )}
+                        </>
+                      )}
+                    </ProgramCardView>
+                    {quick.length > 0 && usedCount > 0 && (
+                      <Pressable style={styles.reset} onPress={() => onReset(card.family, familyTitle)}>
+                        <Text style={styles.resetText}>
+                          {usedCount} of {quick.length} used · ↺ Reset {familyTitle}
+                        </Text>
                       </Pressable>
                     )}
-                    {isOpen &&
-                      f.programs.map((p) => {
-                        if (p.kind === "weekly") {
-                          const shut = openProgram !== p.id;
-                          const list = slots[p.id];
-                          return (
-                            <View key={p.id} style={[styles.choice, !shut && { borderColor: themeBorder(BRAND_GOLD) }]}>
-                              <Pressable onPress={() => toggleProgram(p)} disabled={busy}>
-                                <View style={styles.choiceTop}>
-                                  <Text style={styles.name}>{p.name}</Text>
-                                  {p.id === currentId && <Text style={styles.currentTag}>✓ On this day</Text>}
-                                  <Text style={styles.chevron}>{shut ? "▾" : "▴"}</Text>
-                                </View>
-                                <Text style={styles.description}>Tap to choose one of its days</Text>
-                              </Pressable>
-                              {!shut && !list && <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 8 }} />}
-                              {!shut &&
-                                list?.map((slot) => {
-                                  const current = p.id === currentId && slot === currentSlot;
-                                  return (
-                                    <Pressable
-                                      key={slot}
-                                      style={[styles.session, current && { borderColor: themeBorder(BRAND_GOLD) }]}
-                                      onPress={() => onChoose(p, slot)}
-                                      disabled={busy || current}
-                                    >
-                                      <Text style={styles.sessionText}>{slotLabel(p, slot)}</Text>
-                                      {current && <Text style={styles.currentTag}>✓ On this day</Text>}
-                                    </Pressable>
-                                  );
-                                })}
-                              {!shut && list?.length === 0 && <Text style={styles.description}>No exercises in this program yet.</Text>}
-                            </View>
-                          );
-                        }
-                        const current = p.id === currentId && currentSlot == null;
-                        const isUsed = used.has(p.id) && !current;
-                        return (
-                          <Pressable
-                            key={p.id}
-                            style={[styles.choice, current && { borderColor: themeBorder(BRAND_GOLD) }, isUsed && styles.choiceUsed]}
-                            onPress={() => onChoose(p, null)}
-                            disabled={busy || current || isUsed}
-                          >
-                            <View style={styles.choiceTop}>
-                              <Text style={[styles.name, isUsed && { color: themeText("#94A3B8") }]}>{p.name}</Text>
-                              {isUsed && <Text style={styles.usedTag}>Used</Text>}
-                              {current && <Text style={styles.currentTag}>✓ On this day</Text>}
-                            </View>
-                            {p.description ? (
-                              <Text style={styles.description} numberOfLines={2}>
-                                {p.description}
-                              </Text>
-                            ) : null}
-                          </Pressable>
-                        );
-                      })}
                   </View>
                 );
               }}
@@ -1089,20 +1068,10 @@ const styles = themedStyles({
   warning: { color: "#FBBF24", fontSize: 13, marginTop: 4 },
   resetBanner: { backgroundColor: "#422006", borderColor: "#F59E0B", borderWidth: 1, borderRadius: 10, padding: 10, marginTop: 8 },
   resetBannerText: { color: "#FDE68A", fontSize: 14, fontWeight: "700", lineHeight: 20 },
-  family: { backgroundColor: "#1E293B", borderRadius: 12, marginTop: 8, padding: 4 },
-  familyOpen: { borderWidth: 1, borderColor: BRAND_GOLD },
-  familyHeader: { flexDirection: "row", alignItems: "center", padding: 10, gap: 10 },
-  familyIcon: { fontSize: 20 },
-  familyTitle: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  usedCount: { color: "#64748B", fontSize: 12, marginTop: 1 },
-  chevron: { color: "#94A3B8", fontSize: 16 },
   reset: { alignSelf: "flex-start", marginHorizontal: 10, marginBottom: 8, paddingVertical: 4 },
   resetText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 13 },
-  choice: { backgroundColor: "#0F172A", borderRadius: 10, padding: 10, margin: 6, marginTop: 0, borderWidth: 1.5, borderColor: "transparent" },
-  choiceUsed: { borderColor: "#7F1D1D" },
-  choiceTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  name: { color: "#fff", fontWeight: "700", fontSize: 14, flex: 1 },
-  usedTag: { color: RED, fontWeight: "800", fontSize: 12 },
+  putOn: { backgroundColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 11, alignItems: "center", marginTop: 10 },
+  putOnText: { color: "#0F172A", fontWeight: "800", fontSize: 15, textAlign: "center" },
   currentTag: { color: BRAND_GOLD, fontWeight: "800", fontSize: 12 },
   description: { color: "#64748B", fontSize: 13, marginTop: 2 },
 });
