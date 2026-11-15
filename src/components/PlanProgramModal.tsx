@@ -8,6 +8,8 @@ import { firstWeekEnd } from "@/lib/weeklyPlans";
 import { loadProgramExercises } from "@/lib/programQueries";
 import { programEasyWeeks } from "@/lib/deload";
 import { WEEKDAY_NAMES } from "@/lib/programs";
+import ProgramCardView from "@/components/ProgramCardView";
+import { programCards } from "@/lib/programCards";
 import { levelOf, PROGRAM_GOALS, programGoal, programsForGoal, type GoalChoice } from "@/lib/programGoals";
 import { monthLabel, monthOf, programSlots } from "@/lib/trainingCalendar";
 import {
@@ -447,15 +449,9 @@ export default function PlanProgramModal({
                   </>
                 )}
                 {fits.others.length > 0 && <Text style={styles.step}>{fits.best ? "Or another one" : "Pick a program"}</Text>}
-                {fits.others.map((p) => (
-                  <Pressable key={p.id} style={styles.program} onPress={() => pickProgram(p)}>
-                    <Text style={styles.programName}>{p.name}</Text>
-                    {p.description ? (
-                      <Text style={styles.description} numberOfLines={2}>
-                        {p.description}
-                      </Text>
-                    ) : null}
-                  </Pressable>
+                {/* Version cards: Off-season is one card with a button per sport. */}
+                {programCards(fits.others).map((card) => (
+                  <ProgramCardView key={card.key} card={card} selectedId={null} onSelect={pickProgram} disabled={busy} />
                 ))}
                 {!fits.best && fits.others.length === 0 && (
                   <Text style={styles.description}>No programs for this goal yet. Pick one workout for this day instead.</Text>
