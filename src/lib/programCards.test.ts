@@ -11,7 +11,7 @@ describe("programCards", () => {
 
   it("folds the 184 built-in gym programs into about 30 cards, losing none", () => {
     expect(GYM.length).toBe(184);
-    expect(cards.length).toBe(31);
+    expect(cards.length).toBe(32);
     expect(cards.reduce((n, c) => n + c.options.length, 0)).toBe(184);
   });
 
@@ -51,8 +51,13 @@ describe("programCards", () => {
 
   it("drops Home from home card names and trims shared words", () => {
     const home = programCards(make(["Home Chest & Bi 1", "Home Chest & Bi 2", "Home quick upper body (30 min)", "Home quick lower body (30 min)"]));
-    expect(home.map((c) => c.title)).toEqual(["Quick upper & lower", "Chest & Bi"]);
-    expect(home[0].options.map((o) => o.label)).toEqual(["Lower body (30 min)", "Upper body (30 min)"]);
+    expect(home.map((c) => c.title)).toEqual(["Home quick upper body (30 min)", "Home quick lower body (30 min)", "Chest & Bi"]);
+  });
+
+  it("puts the numbered quick upper and lower workouts on one card each, the first as 1", () => {
+    const quick = programCards(make(["Quick upper body (30 min)", "Quick upper body 3 (30 min)", "Quick upper body 2 (30 min)", "Quick lower body (30 min)", "Quick lower body 2 (30 min)"]));
+    expect(quick.map((c) => c.title)).toEqual(["Quick upper body (30 min)", "Quick lower body (30 min)"]);
+    expect(quick[0].options.map((o) => o.label)).toEqual(["1", "2", "3"]);
   });
 
   it("gives every program a trainer built its own card", () => {
