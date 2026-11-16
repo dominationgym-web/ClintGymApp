@@ -5,6 +5,7 @@ import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
@@ -1945,11 +1946,11 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
       <View style={styles.dayRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.meta}>First session at</Text>
-          <TextInput style={styles.input} value={dayStart} onChangeText={setDayStart} placeholder="05:10" placeholderTextColor="#64748B" maxLength={5} keyboardType="numbers-and-punctuation" />
+          <TimeInput style={styles.input} value={dayStart} onChangeText={setDayStart} placeholder="05:10" placeholderTextColor="#64748B" />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.meta}>Last one ends by</Text>
-          <TextInput style={styles.input} value={dayEnd} onChangeText={setDayEnd} placeholder="20:00" placeholderTextColor="#64748B" maxLength={5} keyboardType="numbers-and-punctuation" />
+          <TimeInput style={styles.input} value={dayEnd} onChangeText={setDayEnd} placeholder="20:00" placeholderTextColor="#64748B" />
         </View>
       </View>
       <Text style={styles.meta}>

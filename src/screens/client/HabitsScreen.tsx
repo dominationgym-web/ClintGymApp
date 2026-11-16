@@ -10,7 +10,7 @@ import {
   Keyboard,
 } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
-import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import { supabase } from "@/lib/supabase";
 import { toIsoDate, todayIso } from "@/lib/dates";
 import { useAuth } from "@/context/AuthContext";
@@ -309,12 +309,10 @@ export default function HabitsScreen() {
                 </Pressable>
                 {h.reminder_enabled && (
                   <View style={styles.reminderTimeRow}>
-                    <TextInput
+                    <TimeInput
                       style={styles.timeInput}
                       placeholder="HH:MM"
                       placeholderTextColor="#64748B"
-                      keyboardType="numbers-and-punctuation"
-                      maxLength={5}
                       returnKeyType="done"
                       value={reminderDrafts[h.id] ?? ""}
                       onChangeText={(v) => {

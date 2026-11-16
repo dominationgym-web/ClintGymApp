@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionProofModal from "@/components/sessions/SessionProofModal";
@@ -594,7 +595,7 @@ function CancelForm({
           <Chip key={d} label={d === dayKey(now) ? "Today" : dayLabel(d)} on={day === d} onPress={() => setDay(d)} />
         ))}
       </View>
-      <TextInput style={styles.input} value={time} onChangeText={setTime} placeholder="17:45" placeholderTextColor="#64748B" maxLength={5} keyboardType="numbers-and-punctuation" />
+      <TimeInput style={styles.input} value={time} onChangeText={setTime} placeholder="17:45" placeholderTextColor="#64748B" />
       <Text style={styles.meta}>The time on their WhatsApp message.</Text>
 
       {/* Someone not in the app: the screenshot goes in the trainer's own folder (0180). */}

@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-na
 import { ScrollView } from "@/components/ScrollView";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { cleanTime, clockLabel, dayKey, dayLabel, sessionMoney } from "@/lib/liveSessions";
@@ -105,8 +106,8 @@ export default function BlockTimeModal({
             </View>
             {partDay ? (
               <View style={styles.timeRow}>
-                <TextInput style={styles.input} value={from} onChangeText={setFrom} placeholder="From 06:00" keyboardType="numbers-and-punctuation" />
-                <TextInput style={styles.input} value={to} onChangeText={setTo} placeholder="To 09:00" keyboardType="numbers-and-punctuation" />
+                <TimeInput style={styles.input} value={from} onChangeText={setFrom} placeholder="From 06:00" />
+                <TimeInput style={styles.input} value={to} onChangeText={setTo} placeholder="To 09:00" />
               </View>
             ) : null}
             {partDay && days > 1 ? <Text style={styles.meta}>Those hours on each day.</Text> : null}

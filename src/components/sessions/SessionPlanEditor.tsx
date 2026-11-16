@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, Switch, Text, View } from "react-native";
 import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { money } from "@/lib/billing";
@@ -277,14 +278,12 @@ export default function SessionPlanEditor({
               <Text style={[styles.dayName, on && styles.dayNameOn]}>{LONG_DAYS[d]}</Text>
             </Pressable>
             {on ? (
-              <TextInput
+              <TimeInput
                 style={[styles.timeInput, !cleanTime(typed[d]) && styles.timeInputBad]}
                 value={typed[d] ?? ""}
                 onChangeText={(v) => setTyped({ ...typed, [d]: v })}
                 placeholder="05:50"
                 placeholderTextColor="#64748B"
-                maxLength={5}
-                keyboardType="numbers-and-punctuation"
               />
             ) : null}
           </View>
