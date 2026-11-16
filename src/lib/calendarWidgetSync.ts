@@ -113,7 +113,7 @@ export async function forgetCalendarWidget(): Promise<void> {
   const key = await AsyncStorage.getItem(WIDGET_KEY_STORAGE).catch(() => null);
   if (!key) return;
   await saveKey(null);
-  await supabase.rpc("drop_widget_key", { p_key: key }).then(
+  await supabase.rpc("revoke_widget_key", { p_key: key }).then(
     () => undefined,
     () => undefined
   );

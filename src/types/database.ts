@@ -1859,7 +1859,7 @@ export interface Database {
       award_trainer_counter: { Args: Record<string, never>; Returns: unknown };
       award_preview_status: { Args: { p_sa: boolean }; Returns: unknown };
       create_widget_key: { Args: { p_old: string | null }; Returns: string };
-      drop_widget_key: { Args: { p_key: string }; Returns: undefined };
+      revoke_widget_key: { Args: { p_key: string }; Returns: undefined };
       widget_sessions: { Args: { p_key: string }; Returns: unknown };
     };
   };
