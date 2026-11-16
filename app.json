@@ -17,6 +17,12 @@
       "bundleIdentifier": "com.dominationgym.consistentchange",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "appleTeamId": "G9H9FAB4WS",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.dominationgym.consistentchange"
+        ]
       }
     },
     "android": {
@@ -109,7 +115,29 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "TrainerCalendar",
+              "label": "Today's sessions",
+              "description": "Your 1 on 1 sessions still to come today. Tap a name to open it.",
+              "minWidth": "110dp",
+              "minHeight": "180dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 3,
+              "maxResizeWidth": "400dp",
+              "maxResizeHeight": "600dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-preview.png"
+            }
+          ]
+        }
+      ],
+      "@bacons/apple-targets"
     ],
     "owner": "grizzly75",
     "extra": {

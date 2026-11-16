@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { keepIfSame } from "@/lib/keepIfSame";
 import { cancelAllReminders, unregisterForCoachMessages } from "@/lib/notifications";
 import { clearNotificationPrefs } from "@/lib/notificationPrefs";
+import { forgetCalendarWidget, refreshCalendarWidget, setUpCalendarWidget } from "@/lib/calendarWidgetSync";
 import type { Client, Trainer } from "@/types/database";
 
 type Role = "trainer" | "client" | null;
@@ -130,6 +131,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userIdRef.current = session?.user.id ?? null;
   }, [session]);
 
+  // The home-screen calendar widget (0214): a trainer's phone gets its widget
+  // key, and the widget redraws each time the app comes back to the front.
+  useEffect(() => {
+    if (role !== "trainer") return;
+    setUpCalendarWidget();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") refreshCalendarWidget();
+    });
+    return () => subscription.remove();
+  }, [role]);
+
   // Refetch whenever the app comes back to the foreground.
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
@@ -169,6 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await cancelAllReminders();
     await clearNotificationPrefs();
     await unregisterForCoachMessages();
+    // The calendar widget goes blank and its key stops working.
+    await forgetCalendarWidget();
     await supabase.auth.signOut();
     // The next person signs in with a password and sets their own PIN.
     await clearAppLockOnSignOut();

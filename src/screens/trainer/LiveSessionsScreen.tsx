@@ -9,6 +9,7 @@ import KeyboardSafe from "@/components/KeyboardSafe";
 import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionActionsModal from "@/components/sessions/SessionActionsModal";
+import { refreshCalendarWidget } from "@/lib/calendarWidgetSync";
 import ClientContractFold from "@/components/sessions/ClientContractFold";
 import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
@@ -112,6 +113,18 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   useEffect(() => {
     if (!only && route.params?.tab) setTab(route.params.tab);
   }, [only, route.params?.tab]);
+  // A tap on a name on the home-screen calendar widget (0214): open that
+  // session's sheet once the sessions have loaded.
+  const widgetSession = only ? undefined : route.params?.openSession;
+  useEffect(() => {
+    if (!widgetSession || loading) return;
+    const s = sessions.find((x) => x.id === widgetSession);
+    navigation.setParams({ openSession: undefined });
+    if (s) {
+      setTab("todo");
+      setOpen(s);
+    }
+  }, [widgetSession, loading, sessions, navigation]);
   // Back on the tab's own page each time the trainer comes to the tab.
   useFocusEffect(
     useCallback(() => {
@@ -159,6 +172,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     setAways((aw.data ?? []) as ClientAway[]);
     setStops((st.data ?? []) as ClientStop[]);
     setLoading(false);
+    // The home-screen calendar widget shows the same sessions (0214).
+    refreshCalendarWidget();
   }, [trainer, month, only]);
 
   useFocusEffect(
