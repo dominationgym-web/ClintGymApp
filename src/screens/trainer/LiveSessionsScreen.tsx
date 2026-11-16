@@ -243,7 +243,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
                 settings?.day_end ?? "20:00",
                 settings?.minutes ?? 60,
                 sessions
-                  .filter((s) => dayKey(s.starts_at) === dayKey(now) && (s.status === "booked" || s.status === "done" || isAway(s)))
+                  .filter((s) => dayKey(s.starts_at) === dayKey(now) && (s.status === "booked" || s.status === "done" || freedSlot(s, now)))
                   .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))
               ).filter((t) => t > clockLabel(now.toISOString()))}
               onBookAt={(t) => {
@@ -447,18 +447,32 @@ function SessionLine({
   );
 }
 
-/** Everyone on the line is away: the slot is free to book. */
-const allAway = (l: { s: LiveSession; with: LiveSession[] }) => [l.s, ...l.with].every(isAway);
+/**
+ * A session whose slot is free again but keeps its own card: away (0184), or
+ * cancelled / a no-show still to come. GRIZZ 2026-11-16: "instead of showing
+ * two slots for 12 ... the one with the client's name goes green" - so no
+ * separate Available card for the same time.
+ */
+const freedSlot = (s: LiveSession, now: Date) =>
+  isAway(s) || ((s.status === "cancelled" || s.status === "no_show") && new Date(s.starts_at).getTime() > now.getTime());
+
+/** Everyone on the line is out (away, or cancelled ahead of time): the slot is free to book. */
+const allAway = (l: { s: LiveSession; with: LiveSession[] }) => {
+  const now = new Date();
+  return [l.s, ...l.with].every((x) => freedSlot(x, now));
+};
 
 // A slot whose people are away (GRIZZ, 2026-11-02): "the name stays there,
 // but the colour will switch to green, meaning it's available to book".
 function AwayLine({
   l,
   name,
+  nameOf,
   onBook,
 }: {
   l: { s: LiveSession; with: LiveSession[] };
   name: string;
+  nameOf?: (s: LiveSession) => string;
   /** Opens the slot's choices: book, put a catch-up here, or see their session (GRIZZ 2026-11-16). */
   onBook: (time: string) => void;
 }) {
@@ -469,7 +483,14 @@ function AwayLine({
         {time} · {name}
         {l.s.repeat_id ? " 🔁" : ""}
       </Text>
-      <Text style={styles.awayText}>{awayTag(l.s)} · free to book</Text>
+      {/* Each person and why they're out (away, cancelled, no-show), then free to book. */}
+      {[l.s, ...l.with].map((x, i, all) => (
+        <Text key={x.id} style={styles.awayText}>
+          {all.length > 1 && nameOf ? `${nameOf(x).split(" ")[0]}: ` : ""}
+          {isAway(x) ? awayTag(x) : outLabel(x)}
+          {i === all.length - 1 ? " · free to book" : ""}
+        </Text>
+      ))}
     </Pressable>
   );
 }
@@ -534,7 +555,7 @@ function ToDo({
         .sort((a, b) => a.time.localeCompare(b.time))
         .map(({ time, l }) =>
           l && allAway(l) ? (
-            <AwayLine key={l.s.id} l={l} name={jointName(l, who)} onBook={onBookAt} />
+            <AwayLine key={l.s.id} l={l} name={jointName(l, who)} nameOf={who} onBook={onBookAt} />
           ) : l ? (
             <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />
           ) : (
@@ -841,7 +862,7 @@ function CalendarTab({
   }, [makeup]);
   const list = sessions.filter((s) => s.status !== "removed" && dayKey(s.starts_at) === day);
   // Away sessions keep their slot: shown green with the name, free to book (0184).
-  const taken = list.filter((s) => s.status === "booked" || s.status === "done" || isAway(s)).map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }));
+  const taken = list.filter((s) => s.status === "booked" || s.status === "done" || freedSlot(s, new Date())).map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }));
   // Open slots show as "???" between bookings (GRIZZ 2026-11-01), today and later only.
   const today = dayKey(new Date());
   const nowClock = clockLabel(new Date().toISOString());
@@ -907,7 +928,7 @@ function CalendarTab({
       </View>
       {lines.map((l) =>
         l.s && allAway({ s: l.s, with: l.with }) ? (
-          <AwayLine key={l.s.id} l={{ s: l.s, with: l.with }} name={jointName({ s: l.s, with: l.with }, who)} onBook={choose} />
+          <AwayLine key={l.s.id} l={{ s: l.s, with: l.with }} name={jointName({ s: l.s, with: l.with }, who)} nameOf={who} onBook={choose} />
         ) : l.s ? (
           <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} others={l.with} nameOf={who} onOpen={onOpen} />
         ) : (
@@ -948,7 +969,7 @@ function CalendarTab({
         🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · ✈️ away (green box: free to book) · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked. A 🔁 after a name means every week, 👥 a joint session.
       </Text>
       <SlotChoiceModal
-        slot={slot ? { ...slot, away: sessions.filter((s) => isAway(s) && dayKey(s.starts_at) === slot.day && clockLabel(s.starts_at) === slot.time) } : null}
+        slot={slot ? { ...slot, away: sessions.filter((s) => freedSlot(s, new Date()) && dayKey(s.starts_at) === slot.day && clockLabel(s.starts_at) === slot.time) } : null}
         catchUps={catchUps}
         name={who}
         onBook={() => {
