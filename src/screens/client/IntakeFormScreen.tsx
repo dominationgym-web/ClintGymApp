@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator, Alert } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -40,13 +41,12 @@ function TimeField({ label, value, onChangeText }: { label: string; value: strin
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput
+      <TimeInput
         style={styles.timeInput}
         value={value}
         onChangeText={onChangeText}
         placeholder="HH:MM"
         placeholderTextColor="#64748B"
-        keyboardType="numbers-and-punctuation"
       />
     </View>
   );

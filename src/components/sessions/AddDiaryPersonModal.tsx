@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-na
 import { ScrollView } from "@/components/ScrollView";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { LONG_DAYS, WEEK_ORDER, cleanTime, regularLabel, sessionMoney } from "@/lib/liveSessions";
@@ -119,14 +120,12 @@ export default function AddDiaryPersonModal({
                     <Text style={[styles.dayName, on && styles.dayNameOn]}>{LONG_DAYS[d]}</Text>
                   </Pressable>
                   {on ? (
-                    <TextInput
+                    <TimeInput
                       style={[styles.timeInput, !cleanTime(typed[d]) && styles.timeInputBad]}
                       value={typed[d] ?? ""}
                       onChangeText={(v) => setTyped({ ...typed, [d]: v })}
                       placeholder="05:50"
                       placeholderTextColor="#64748B"
-                      maxLength={5}
-                      keyboardType="numbers-and-punctuation"
                     />
                   ) : null}
                 </View>

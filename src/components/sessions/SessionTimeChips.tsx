@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import TextInput from "@/components/TextInput";
+import TimeInput from "@/components/TimeInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { cleanTime, slotTimes } from "@/lib/liveSessions";
 import { themedStyles } from "@/lib/theme";
@@ -43,14 +43,12 @@ export default function SessionTimeChips({
       </View>
       {times.length === 0 ? <Text style={styles.meta}>No free {minutes}-minute times left in your day. Type one below.</Text> : null}
       <View style={styles.otherRow}>
-        <TextInput
+        <TimeInput
           style={styles.input}
           value={other}
           onChangeText={setOther}
           placeholder="Other time, e.g. 12:15"
           placeholderTextColor="#64748B"
-          maxLength={5}
-          keyboardType="numbers-and-punctuation"
         />
         <Pressable
           style={[styles.add, !typed && { opacity: 0.4 }]}
