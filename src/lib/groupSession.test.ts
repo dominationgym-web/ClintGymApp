@@ -34,7 +34,7 @@ describe("group session", () => {
   });
 });
 
-import { addSteps, stationsOf, stepsFromPlan, supersetNext, type GroupStep } from "@/lib/groupSession";
+import { addSteps, blockOfStep, blocksOf, nextBehind, roundsDone, stationsOf, stepsFromPlan, type GroupStep } from "@/lib/groupSession";
 
 const row = (name: string, rest = 90, sets = 3) => ({ exercise_id: name, exercise_name: name, sets, reps: "8-12", rest_seconds: rest, kind: "exercise" });
 const lg = (client_id: string, exercise_name: string, set_number: number, warm_up = false) =>
@@ -65,24 +65,20 @@ describe("group session pages (one flow)", () => {
     expect(index).toBe(1);
   });
 
-  it("moves through the superset stations once everyone has done the round", () => {
+  it("groups pages into blocks and finds who is behind", () => {
     const steps: GroupStep[] = [
-      { id: "1", name: "Press", sets: 2, reps: "8", group: "g" },
-      { id: "2", name: "Row", sets: 2, reps: "8", group: "g" },
-      { id: "3", name: "Curl", sets: 3, reps: "8", group: null },
+      { id: "1", name: "Squat", sets: 3, reps: "5", group: null },
+      { id: "2", name: "Press", sets: 2, reps: "8", group: "g" },
+      { id: "3", name: "Row", sets: 2, reps: "8", group: "g" },
+      { id: "4", name: "Curl", sets: 3, reps: "8", group: null },
     ];
-    const ab = ["A", "B"];
-    // Only A has done station 1: stay.
-    expect(supersetNext(steps, 0, [lg("A", "Press", 1)], ab)).toBeNull();
-    // Both done station 1: go to station 2. A warm-up doesn't count.
-    expect(supersetNext(steps, 0, [lg("A", "Press", 0, true), lg("A", "Press", 1), lg("B", "Press", 1)], ab)).toBe(1);
-    // Both done round 1 of station 2: back to station 1.
-    const r1 = [lg("A", "Press", 1), lg("B", "Press", 1), lg("A", "Row", 1), lg("B", "Row", 1)];
-    expect(supersetNext(steps, 1, r1, ab)).toBe(0);
-    // Both done round 2 (the last): on to the next exercise.
-    const r2 = [...r1, lg("A", "Press", 2), lg("B", "Press", 2), lg("A", "Row", 2), lg("B", "Row", 2)];
-    expect(supersetNext(steps, 1, r2, ab)).toBe(2);
-    // A normal exercise never jumps.
-    expect(supersetNext(steps, 2, r2, ab)).toBeNull();
+    expect(blocksOf(steps)).toEqual([[0], [1, 2], [3]]);
+    expect(blockOfStep(steps, 2)).toBe(1);
+    const logs = [lg("A", "Press", 1), lg("A", "Row", 1), lg("B", "Press", 1), lg("C", "Press", 0, true)];
+    // B did Press but not Row, so B hasn't finished round 1.
+    expect(roundsDone(logs, "A", ["Press", "Row"])).toBe(1);
+    expect(roundsDone(logs, "B", ["Press", "Row"])).toBe(0);
+    expect(nextBehind(["A", "B", "C"], "A", logs, ["Press", "Row"])).toBe("B");
+    expect(nextBehind(["A", "B", "C"], "B", logs, ["Press", "Row"])).toBeNull();
   });
 });
