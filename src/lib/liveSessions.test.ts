@@ -19,6 +19,7 @@ import {
   slotTimes,
   openSlots,
   jointLines,
+  withoutReplaced,
   jointName,
   cleanTime,
   feeText,
@@ -213,6 +214,27 @@ describe("jointLines", () => {
       { id: "j", starts_at: at, status: "booked" },
     ]);
     expect(lines.map((l) => [l.s.id, l.with.map((w) => w.id)])).toEqual([["c", ["j"]], ["r", []]]);
+  });
+
+  // GRIZZ 2026-11-16: Daniel booked, cancelled, then booked as a catch-up in
+  // away Steven's slot showed "Daniel, Daniel, Steven".
+  it("leaves out a cancelled entry when the same person is booked again at that time", () => {
+    const at = "2026-11-16T05:10:00Z";
+    const list = [
+      { id: "steven", starts_at: at, status: "cancelled", client_id: "s1", guest_name: null },
+      { id: "dan1", starts_at: at, status: "cancelled", client_id: null, guest_name: "Daniel" },
+      { id: "dan2", starts_at: at, status: "booked", client_id: null, guest_name: " daniel" },
+    ];
+    expect(withoutReplaced(list).map((s) => s.id)).toEqual(["steven", "dan2"]);
+    expect(jointLines(list).map((l) => [l.s.id, l.with.map((w) => w.id)])).toEqual([["steven", ["dan2"]]]);
+  });
+
+  it("keeps a cancellation when that person isn't booked again at the same time", () => {
+    const list = [
+      { id: "a", starts_at: "2026-11-16T05:10:00Z", status: "cancelled", client_id: "c1" },
+      { id: "b", starts_at: "2026-11-17T05:10:00Z", status: "booked", client_id: "c1" },
+    ];
+    expect(withoutReplaced(list).map((s) => s.id)).toEqual(["a", "b"]);
   });
 });
 

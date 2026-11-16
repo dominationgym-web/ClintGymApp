@@ -104,14 +104,33 @@ export function openSlots(dayStart: string, dayEnd: string, minutes: number, boo
   }
   return out.map(toClock);
 }
+type SlotRow = { id?: string; starts_at: string; status: string; client_id?: string | null; guest_name?: string | null };
+
+const personKey = (s: SlotRow) => {
+  if (s.client_id) return `c:${s.client_id}`;
+  const g = (s.guest_name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return g ? `g:${g}` : `id:${s.id ?? Math.random()}`;
+};
+
+/**
+ * A person cancelled and then booked again at the same time is one person in
+ * the slot (GRIZZ 2026-11-16: Daniel was booked, cancelled, then booked as a
+ * catch-up, and the slot showed "Daniel, Daniel, Steven"). Their cancelled
+ * entry is left out wherever they also have a booked or trained entry then.
+ */
+export function withoutReplaced<T extends SlotRow>(list: T[]): T[] {
+  const live = new Set(list.filter((s) => s.status === "booked" || s.status === "done").map((s) => `${s.starts_at}|${personKey(s)}`));
+  return list.filter((s) => !((s.status === "cancelled" || s.status === "no_show") && live.has(`${s.starts_at}|${personKey(s)}`)));
+}
+
 /**
  * Two or more people booked at the same time are one joint session (GRIZZ
  * 2026-11-01: "Jade & Camilla is 1 joint session"). Each person keeps their
  * own row (their own cancellations and fee); lists show them as one line.
  */
-export function jointLines<T extends { starts_at: string; status: string }>(list: T[]): { s: T; with: T[] }[] {
+export function jointLines<T extends SlotRow>(list: T[]): { s: T; with: T[] }[] {
   const out: { s: T; with: T[] }[] = [];
-  for (const s of list) {
+  for (const s of withoutReplaced(list)) {
     // Everyone at the same time stays on one line, whatever happened to each
     // (GRIZZ 2026-11-02: Jade cancelled and the line split again).
     const joint = s.status !== "removed" ? out.find((x) => x.s.status !== "removed" && x.s.starts_at === s.starts_at) : undefined;

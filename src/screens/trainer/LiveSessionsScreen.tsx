@@ -25,6 +25,7 @@ import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import AwayModal, { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
 import HoldButton from "@/components/sessions/HoldButton";
 import StopTrainingModal, { stopOf } from "@/components/sessions/StopTrainingModal";
+import SlotChoiceModal from "@/components/sessions/SlotChoiceModal";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
@@ -34,7 +35,6 @@ import { eftRows } from "@/lib/trainers";
 import {
   AGREEMENT_TEMPLATE,
   AGREEMENT_WORDS,
-  awayLabel,
   awayTag,
   BILLINGS,
   KIND_STYLE,
@@ -55,6 +55,7 @@ import {
   monthStart,
   noticeHours,
   jointLines,
+  withoutReplaced,
   jointName,
   openSlots,
   policyLabel,
@@ -272,6 +273,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               name={who}
               makeup={makeup}
               onMakeupDone={() => setMakeup(null)}
+              onMakeup={setMakeup}
+              catchUps={catchUps}
               bookAt={bookAt}
               onBookAtDone={() => setBookAt(null)}
               onOpen={setOpen}
@@ -313,7 +316,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
         settings={settings}
         sessions={sessions}
         clients={clients}
-        partners={open ? sessions.filter((x) => x.id !== open.id && x.starts_at === open.starts_at && x.status !== "removed") : []}
+        partners={open ? withoutReplaced(sessions.filter((x) => x.starts_at === open.starts_at && x.status !== "removed")).filter((x) => x.id !== open.id) : []}
+        owed={catchUps}
         nameOf={who}
         onSwitch={setOpen}
         onStartLive={(group) => {
@@ -422,25 +426,15 @@ function AwayLine({
   l,
   name,
   onBook,
-  onOpen,
 }: {
   l: { s: LiveSession; with: LiveSession[] };
   name: string;
+  /** Opens the slot's choices: book, put a catch-up here, or see their session (GRIZZ 2026-11-16). */
   onBook: (time: string) => void;
-  onOpen: (s: LiveSession) => void;
 }) {
   const time = clockLabel(l.s.starts_at);
   return (
-    <Pressable
-      style={[styles.row, styles.openRow]}
-      onPress={() =>
-        Alert.alert(`${time} · ${name}`, `${awayLabel(l.s)}. The slot is free to book.`, [
-          { text: "Book someone in", onPress: () => onBook(time) },
-          { text: `See ${name.split(" ")[0]}'s session`, onPress: () => onOpen(l.s) },
-          { text: "Close", style: "cancel" },
-        ])
-      }
-    >
+    <Pressable style={[styles.row, styles.openRow]} onPress={() => onBook(time)}>
       <Text style={styles.openText}>
         {time} · {name}
         {l.s.repeat_id ? " 🔁" : ""}
@@ -510,7 +504,7 @@ function ToDo({
         .sort((a, b) => a.time.localeCompare(b.time))
         .map(({ time, l }) =>
           l && allAway(l) ? (
-            <AwayLine key={l.s.id} l={l} name={jointName(l, who)} onBook={onBookAt} onOpen={onOpen} />
+            <AwayLine key={l.s.id} l={l} name={jointName(l, who)} onBook={onBookAt} />
           ) : l ? (
             <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />
           ) : (
@@ -765,11 +759,17 @@ function CalendarTab({
   name: who,
   makeup,
   onMakeupDone,
+  onMakeup,
+  catchUps = [],
   bookAt,
   onBookAtDone,
   onOpen,
   onChanged,
 }: {
+  /** Put a catch-up client in a free slot (GRIZZ 2026-11-16). */
+  onMakeup?: (s: LiveSession) => void;
+  /** Catch-ups owed, to pick from when a green slot is tapped. */
+  catchUps?: LiveSession[];
   month: string;
   onMonth: (m: string) => void;
   sessions: LiveSession[];
@@ -787,11 +787,18 @@ function CalendarTab({
   const [day, setDay] = useState<string>(dayKey(new Date()));
   const [adding, setAdding] = useState(false);
   const [addAt, setAddAt] = useState<string | null>(null);
+  // A green slot tapped: book a session or put a catch-up client there (GRIZZ 2026-11-16).
+  const [slot, setSlot] = useState<{ day: string; time: string } | null>(null);
+  const fromSlot = useRef(false);
   useEffect(() => {
     if (!bookAt) return;
-    setDay(dayKey(new Date()));
-    setAddAt(bookAt);
-    setAdding(true);
+    const today = dayKey(new Date());
+    setDay(today);
+    // A green slot tapped on Today: the same choices as on the calendar.
+    if (makeup) {
+      setAddAt(bookAt);
+      setAdding(true);
+    } else setSlot({ day: today, time: bookAt });
     onBookAtDone?.();
   }, [bookAt]);
   const [importing, setImporting] = useState(false);
@@ -822,6 +829,8 @@ function CalendarTab({
     setAddAt(t);
     setAdding(true);
   };
+  // Already booking a catch-up: straight to it. Otherwise ask what goes in the slot.
+  const choose = (t: string) => (makeup || !onMakeup ? book(t) : setSlot({ day, time: t }));
   // Next or previous day by swiping or the ‹ › arrows (GRIZZ, 2026-11-01:
   // "swipe left to get to the next day"); the month follows.
   const goDay = (by: number) => {
@@ -868,11 +877,11 @@ function CalendarTab({
       </View>
       {lines.map((l) =>
         l.s && allAway({ s: l.s, with: l.with }) ? (
-          <AwayLine key={l.s.id} l={{ s: l.s, with: l.with }} name={jointName({ s: l.s, with: l.with }, who)} onBook={book} onOpen={onOpen} />
+          <AwayLine key={l.s.id} l={{ s: l.s, with: l.with }} name={jointName({ s: l.s, with: l.with }, who)} onBook={choose} />
         ) : l.s ? (
           <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} others={l.with} nameOf={who} onOpen={onOpen} />
         ) : (
-          <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => book(l.time)}>
+          <Pressable key={`open-${l.time}`} style={[styles.row, styles.openRow]} onPress={() => choose(l.time)}>
             <Text style={styles.openText}>{l.time} · Available</Text>
           </Pressable>
         ),
@@ -908,6 +917,28 @@ function CalendarTab({
       <Text style={styles.meta}>
         🟡 trained · 🔴 late cancellation or no-show · 🟢 cancelled in time · ✈️ away (green box: free to book) · 🔁 catch-up owed · 🔵 you cancelled · 🟠 needs you · ⚪ booked. A 🔁 after a name means every week, 👥 a joint session.
       </Text>
+      <SlotChoiceModal
+        slot={slot ? { ...slot, away: sessions.filter((s) => isAway(s) && dayKey(s.starts_at) === slot.day && clockLabel(s.starts_at) === slot.time) } : null}
+        catchUps={catchUps}
+        name={who}
+        onBook={() => {
+          const t = slot?.time ?? null;
+          setSlot(null);
+          book(t);
+        }}
+        onCatchUp={(s) => {
+          const t = slot?.time ?? null;
+          setSlot(null);
+          fromSlot.current = true;
+          onMakeup?.(s);
+          book(t);
+        }}
+        onOpen={(s) => {
+          setSlot(null);
+          onOpen(s);
+        }}
+        onClose={() => setSlot(null)}
+      />
       <AddSessionModal
         visible={adding}
         day={day}
@@ -923,9 +954,17 @@ function CalendarTab({
         booked={list
           .filter((s) => s.status === "booked" || s.status === "done")
           .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes, names: s.status === "booked" ? [who(s).split(" ")[0]] : [] }))}
-        onClose={() => setAdding(false)}
+        owed={makeup ? [] : catchUps}
+        priceFor={(m) => catchUpPrice(m, sessions, plans, settings)}
+        onClose={() => {
+          setAdding(false);
+          // Picked from a green slot and closed without booking: back to normal.
+          if (fromSlot.current && makeup) onMakeupDone();
+          fromSlot.current = false;
+        }}
         onSaved={() => {
           setAdding(false);
+          fromSlot.current = false;
           if (makeup) onMakeupDone();
           onChanged();
         }}
@@ -967,9 +1006,14 @@ function AddSessionModal({
   initialTime,
   guests = [],
   groups = [],
+  owed = [],
+  priceFor,
   onClose,
   onSaved,
 }: {
+  /** Catch-ups owed: booking one of these people asks if it's their catch-up (GRIZZ 2026-11-16). */
+  owed?: LiveSession[];
+  priceFor?: (missed: LiveSession) => number;
   /** People not in the app who train together, e.g. ["Camilla", "Jade"]. */
   groups?: string[][];
   visible: boolean;
@@ -998,8 +1042,11 @@ function AddSessionModal({
   const [weekly, setWeekly] = useState(false);
   const [saving, setSaving] = useState(false);
   const [price, setPrice] = useState("");
+  // A normal booking for someone owed a catch-up, switched to be that catch-up.
+  const [asCatchUp, setAsCatchUp] = useState<LiveSession | null>(null);
   useEffect(() => {
     if (visible) {
+      setAsCatchUp(null);
       setPrice(makeupPrice != null ? String(makeupPrice) : "");
       setPicked(
         clients.length === 1 && !guests.length ? [`c:${clients[0].id}`] : makeupFor && !clients.length && guests.length === 1 ? [`g:${guests[0]}`] : []
@@ -1026,14 +1073,31 @@ function AddSessionModal({
   const names = [...new Set([...picked.filter((k) => k.startsWith("g:")).map((k) => k.slice(2)), ...typedParts.filter((n) => !clientFor(n))])];
   const count = appIds.length + names.length;
   const firstClient = appIds[0] ?? null;
+  // One person picked who's owed a catch-up: ask if this is it, so it's never
+  // booked as a normal session by mistake (GRIZZ 2026-11-16, Daniel).
+  const theirOwed =
+    makeupFor || count !== 1
+      ? []
+      : owed
+          .filter((o) => (firstClient ? o.client_id === firstClient : !o.client_id && diaryKey(o.guest_name) === diaryKey(names[0])))
+          .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  useEffect(() => {
+    if (asCatchUp && !theirOwed.some((o) => o.id === asCatchUp.id)) setAsCatchUp(null);
+  }, [theirOwed.map((o) => o.id).join(",")]);
+  const catchUpFor = makeupFor ?? asCatchUp?.id ?? null;
+  const pickCatchUp = (o: LiveSession | null) => {
+    setAsCatchUp(o);
+    setPrice(o ? String(priceFor ? priceFor(o) : 0) : "");
+    if (o) setWeekly(false);
+  };
   const save = async () => {
     if (!count || !time) return;
     const fee = Number(price.replace(",", ".").replace(/[^\d.]/g, ""));
-    if (makeupFor && (!price.trim() || !Number.isFinite(fee) || fee < 0)) return Alert.alert("Type a price", "What this catch-up costs, e.g. 350, or 0 if it's free.");
+    if (catchUpFor && (!price.trim() || !Number.isFinite(fee) || fee < 0)) return Alert.alert("Type a price", "What this catch-up costs, e.g. 350, or 0 if it's free.");
     setSaving(true);
     // The price the coach typed goes on the catch-up session itself (GRIZZ, 2026-11-03).
     const setPriceOn = async (id: string | undefined, now: number | undefined) => {
-      if (!makeupFor || !id || Number(now) === fee) return;
+      if (!catchUpFor || !id || Number(now) === fee) return;
       const r = await supabase.rpc("set_session_fee", { p_id: id, p_fee: fee });
       if (r.error) failed.push(`Price: ${r.error.message}`);
     };
@@ -1041,22 +1105,22 @@ function AddSessionModal({
     const failed: string[] = [];
     let weeklyFailed = false;
     for (const id of appIds) {
-      const { data, error } = await supabase.rpc("add_live_session", { p_client: id, p_starts_at: at, p_makeup_for: makeupFor });
+      const { data, error } = await supabase.rpc("add_live_session", { p_client: id, p_starts_at: at, p_makeup_for: catchUpFor });
       if (error) {
         failed.push(`${clients.find((c) => c.id === id)?.name ?? "Client"}: ${error.message}`);
         continue;
       }
       await setPriceOn(data?.id, data?.fee);
       // "Every week" (GRIZZ 2026-11-01): the same slot repeats from this day on.
-      if (weekly && !makeupFor && data?.id) {
+      if (weekly && !catchUpFor && data?.id) {
         const r = await supabase.rpc("repeat_live_session", { p_id: data.id });
         if (r.error) weeklyFailed = true;
       }
     }
-    if (names.length && makeupFor) {
+    if (names.length && catchUpFor) {
       // A catch-up for someone not in the app: linked to the session they missed (0187).
       const { data, error } = await supabase.rpc("add_diary_catch_up", {
-        p_makeup_for: makeupFor,
+        p_makeup_for: catchUpFor,
         p_starts_at: at,
         p_minutes: settings?.minutes ?? 60,
       });
@@ -1166,7 +1230,23 @@ function AddSessionModal({
                   </View>
                 </>
               ) : null}
-              {makeupFor ? (
+              {theirOwed.length ? (
+                <>
+                  <Text style={styles.label}>Is this a catch-up?</Text>
+                  <Text style={styles.meta}>
+                    {(names[0] ?? clients.find((c) => c.id === firstClient)?.name ?? "They").split(" ")[0]} {theirOwed.length === 1 ? "is owed a catch-up" : `is owed ${theirOwed.length} catch-ups`}.
+                  </Text>
+                  <View style={[styles.chips, { marginTop: 6 }]}>
+                    <Pressable style={[styles.chip, !asCatchUp && styles.chipOn]} onPress={() => pickCatchUp(null)}>
+                      <Text style={[styles.chipText, !asCatchUp && styles.chipTextOn]}>Normal session</Text>
+                    </Pressable>
+                    <Pressable style={[styles.chip, !!asCatchUp && styles.chipOn]} onPress={() => pickCatchUp(theirOwed[0])}>
+                      <Text style={[styles.chipText, !!asCatchUp && styles.chipTextOn]}>🔁 Catch-up for {dayLabel(theirOwed[0].starts_at)}</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
+              {catchUpFor ? (
                 <>
                   <Text style={styles.label}>Price for this catch-up</Text>
                   <TextInput
@@ -1178,7 +1258,7 @@ function AddSessionModal({
                     placeholderTextColor="#64748B"
                   />
                   <Text style={styles.meta}>
-                    {makeupPrice ? "Filled in with a normal slot's price because they trained in a joint session: alone in the catch-up, it's a full slot. Change it if you need to." : "Filled in as free because they cancelled in time. Type a price if this one is charged."}
+                    {(makeupFor ? makeupPrice : asCatchUp && priceFor ? priceFor(asCatchUp) : 0) ? "Filled in with a normal slot's price because they trained in a joint session: alone in the catch-up, it's a full slot. Change it if you need to." : "Filled in as free because they cancelled in time. Type a price if this one is charged."}
                   </Text>
                 </>
               ) : (
