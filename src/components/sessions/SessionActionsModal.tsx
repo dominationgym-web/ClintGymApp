@@ -39,6 +39,7 @@ import type { LiveSession, SessionPolicy, SessionSettings } from "@/types/databa
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import SafeBottom from "@/components/SafeBottom";
+import { diaryKey } from "@/lib/calendarRegular";
 
 type Step = "menu" | "cancel" | "move" | "who" | "price";
 
@@ -54,6 +55,7 @@ export default function SessionActionsModal({
   sessions,
   clients,
   partners = [],
+  owed = [],
   nameOf,
   onSwitch,
   onAway,
@@ -70,6 +72,8 @@ export default function SessionActionsModal({
   onStopped?: () => void;
   session: LiveSession | null;
   clientName: string;
+  /** Catch-ups owed: a normal booking can become one (GRIZZ 2026-11-16). */
+  owed?: LiveSession[];
   /** The others booked in the same slot: a joint session (GRIZZ 2026-11-01). */
   partners?: LiveSession[];
   nameOf?: (s: LiveSession) => string;
@@ -203,6 +207,36 @@ export default function SessionActionsModal({
     );
   };
 
+  // Booked as a normal session but they're owed a catch-up: turn it into the
+  // catch-up in place, no cancelling and rebooking (GRIZZ 2026-11-16, Daniel).
+  const theirOwed =
+    session.status === "booked" && !session.makeup_for
+      ? owed
+          .filter((o) => o.id !== session.id && (session.client_id ? o.client_id === session.client_id : !o.client_id && diaryKey(o.guest_name) === diaryKey(session.guest_name)))
+          .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+      : [];
+  const makeCatchUp = () => {
+    const o = theirOwed[0];
+    Alert.alert(`Make this ${first}'s catch-up?`, `For the session missed on ${dayLabel(o.starts_at)} at ${clockLabel(o.starts_at)}. It gets the yellow Catch-up tag and comes off the catch-up list.`, [
+      { text: "Back", style: "cancel" },
+      {
+        text: "Yes, it's the catch-up",
+        onPress: async () => {
+          setBusy(true);
+          const { data, error } = await supabase.rpc("make_session_catch_up", { p_id: session.id, p_makeup_for: o.id });
+          setBusy(false);
+          if (error) return Alert.alert("Couldn't save", error.message);
+          onChanged();
+          Alert.alert(
+            "Saved ✅",
+            `It's ${first}'s catch-up now. Price: ${sessionMoney(Number(data?.fee ?? 0), settings?.currency ?? "ZAR")}. Change it under Price for this session if you need to.`
+          );
+          onClose();
+        },
+      },
+    ]);
+  };
+
   const link = whatsappLink(clientPhone);
   // A joint session's app clients who can train live together (group live holds up to 4).
   const liveGroup = [session, ...partners.filter((p) => canStartLive(p, now))].slice(0, 4);
@@ -236,7 +270,7 @@ export default function SessionActionsModal({
             {weekly ? <Text style={styles.meta}>Every week at this time</Text> : null}
             {partners.length ? (
               <View style={{ marginTop: 6 }}>
-                <Text style={styles.meta}>Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
+                <Text style={styles.meta}>Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "") + (isAway(p) ? " (away)" : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
                 {onSwitch ? (
                   <View style={styles.chips}>
                     <Chip label={first} on onPress={() => {}} />
@@ -314,6 +348,7 @@ export default function SessionActionsModal({
                     }}
                   />
                 ) : null}
+                {theirOwed.length ? <Outline label={`🔁 Make this ${first}'s catch-up (for ${dayLabel(theirOwed[0].starts_at)})`} onPress={makeCatchUp} /> : null}
                 {session.status === "booked" ? <Outline label="Move to another time" onPress={() => setStep("move")} /> : null}
                 {session.status === "booked" && !weekly && !session.makeup_for ? <Outline label="Repeat every week" onPress={makeWeekly} /> : null}
                 {!session.invoice_id && session.status !== "removed" ? (

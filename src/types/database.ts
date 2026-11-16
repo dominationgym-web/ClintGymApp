@@ -1794,6 +1794,7 @@ export interface Database {
       add_trainer_holiday: { Args: { p_first: string; p_last: string; p_reason: string }; Returns: TrainerTimeOff };
       answer_injury_check: { Args: { p_injury: string; p_answer: InjuryCheckAnswer }; Returns: ClientInjury };
       add_diary_catch_up: { Args: { p_makeup_for: string; p_starts_at: string; p_minutes: number }; Returns: LiveSession };
+      make_session_catch_up: { Args: { p_id: string; p_makeup_for: string }; Returns: LiveSession };
       set_client_away: {
         Args: { p_client: string | null; p_guest: string | null; p_from: string; p_until: string; p_replace: string | null; p_credit?: boolean };
         Returns: ClientAway;
