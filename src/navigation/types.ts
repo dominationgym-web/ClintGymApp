@@ -93,7 +93,7 @@ export type TrainerStackParamList = {
   // The coach's holidays (0205), shown on the clients' apps.
   Holidays: undefined;
   // In-person session booking, cancellations and invoices (0168).
-  LiveSessions: { tab?: "todo" | "calendar" | "clients" | "invoices" | "setup" } | undefined;
+  LiveSessions: { tab?: "todo" | "calendar" | "clients" | "invoices" | "setup"; openSession?: string } | undefined;
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   // With no `tab` it opens on the tab the trainer used last (2026-10-27).

@@ -3,7 +3,8 @@ import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications
 import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
 import React, { useEffect, useRef, useState } from "react";
 import { recordAppOpen } from "@/lib/awardUploads";
-import { View, ActivityIndicator, Text, Pressable, Platform } from "react-native";
+import { View, ActivityIndicator, Text, Pressable, Platform, Linking } from "react-native";
+import { sessionFromWidgetLink } from "@/lib/calendarWidget";
 import { ScrollView } from "@/components/ScrollView";
 import { NavigationContainer, type NavigationState } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigationRef";
@@ -70,6 +71,13 @@ function openRoute(route: NotificationRoute) {
   else navigationRef.navigate("TrainerTabs", { screen: route.screen });
 }
 
+// The widget link the app was opened with is only acted on once.
+let initialWidgetUrlTaken = false;
+
+function openWidgetSession(id: string) {
+  navigationRef.navigate("LiveSessions", { tab: "todo", openSession: id || undefined });
+}
+
 // The open pages, so switching light/dark (which remounts this) lands you back where you were.
 let savedNavState: NavigationState | undefined;
 
@@ -92,6 +100,25 @@ export default function RootNavigator() {
       if (navigationRef.isReady()) openRoute(route);
       else pendingRoute.current = route;
     });
+  }, [role]);
+
+  // A tap on the home-screen calendar widget (0214) opens that session's
+  // sheet on the Today page, or just the Today page.
+  const pendingWidget = useRef<string | null>(null);
+  useEffect(() => {
+    if (role !== "trainer") return;
+    const handle = (url: string | null) => {
+      const id = sessionFromWidgetLink(url);
+      if (id === null) return;
+      if (navigationRef.isReady()) openWidgetSession(id);
+      else pendingWidget.current = id;
+    };
+    if (!initialWidgetUrlTaken) {
+      initialWidgetUrlTaken = true;
+      Linking.getInitialURL().then(handle, () => undefined);
+    }
+    const sub = Linking.addEventListener("url", (e) => handle(e.url));
+    return () => sub.remove();
   }, [role]);
 
   if (loading) {
@@ -117,6 +144,9 @@ export default function RootNavigator() {
       onReady={() => {
         if (pendingRoute.current) openRoute(pendingRoute.current);
         pendingRoute.current = null;
+        const widgetId = pendingWidget.current;
+        pendingWidget.current = null;
+        if (widgetId !== null) setTimeout(() => openWidgetSession(widgetId), 300);
       }}
     >
       {role === "trainer" && trainer && needsAgreement(trainer, TRAINER_AGREEMENT_VERSION) ? (
