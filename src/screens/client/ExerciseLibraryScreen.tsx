@@ -271,7 +271,7 @@ export default function ExerciseLibraryScreen() {
       let missedList = missedRows ?? [];
       // More than one to catch up: start with the one that rests the body
       // parts they trained yesterday (GRIZZ, 2026-10-17).
-      if (client && missedList.length > 1 && !sessionRow && isWeekend(todayIso())) {
+      if (client && missedList.length > 1 && !sessionRow) {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const [workouts, { data: yesterdaySets }] = await Promise.all([
@@ -1128,7 +1128,7 @@ export default function ExerciseLibraryScreen() {
                     {program ? "Rest day. Let your body recover." : "Nothing planned for today."}
                   </Text>
                 )}
-                {/* On a weekday yesterday's missed workout is offered here too, so it's seen without opening today's. */}
+                {/* On a weekday missed workouts are offered here too, so they're seen without opening today's. */}
                 {program && (todaysWorkout.length === 0 || !isWeekend(today)) && !catchUpFor && catchUpChoices(today, missed).length > 0 && !todaySession && (
                   <View style={styles.catchUpChips}>
                     {catchUpChoices(today, missed).map((m) => (
@@ -1192,11 +1192,6 @@ export default function ExerciseLibraryScreen() {
                           </Pressable>
                         ))}
                       </View>
-                    )}
-                    {missed.length > 0 && catchUpChoices(today, missed).length === 0 && !isWeekend(today) && (
-                      <Text style={styles.carried}>
-                        Missed {weekdayOf(missed[0].workout_date)}'s workout? You can catch it up on Saturday or Sunday.
-                      </Text>
                     )}
                   </>
                 )}

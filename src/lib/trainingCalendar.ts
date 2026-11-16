@@ -197,7 +197,9 @@ export function applyMoves(
   const moves: Record<string, CalendarMove> = {};
   for (const s of sessions) {
     if (!s.makeup_for) continue;
-    moves[s.makeup_for] = "missed";
+    // A day that caught up another day stays green even when its own
+    // workout was later caught up too (any-day catch-ups, 0216).
+    if (moves[s.makeup_for] !== "caughtUp") moves[s.makeup_for] = "missed";
     moves[s.session_date] = "caughtUp";
     if (labels[s.makeup_for]) shown[s.session_date] = labels[s.makeup_for];
   }

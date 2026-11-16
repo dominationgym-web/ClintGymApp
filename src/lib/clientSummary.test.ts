@@ -88,6 +88,17 @@ describe("weekFacts", () => {
     expect(f.workoutsDone).toBe(2);
   });
 
+  it("counts a day's own workout as missed when that day was spent catching up another", () => {
+    const f = weekFacts(
+      base({
+        planned: ["2026-10-13", "2026-10-14"],
+        sessions: [session("2026-10-14", "complete", { makeup_for: "2026-10-13" })],
+      }),
+      TODAY,
+    );
+    expect(f.workoutsMissed).toBe(1);
+  });
+
   it("works out effort shares without the gauge sets", () => {
     const f = weekFacts(
       base({

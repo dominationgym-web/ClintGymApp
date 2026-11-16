@@ -135,6 +135,16 @@ describe("applyMoves", () => {
     expect(labels["2026-10-17"]).toBe("Upper SS 2");
     expect(moves).toEqual({ "2026-10-15": "missed", "2026-10-17": "caughtUp" });
   });
+
+  it("keeps a day green when it caught up another day and its own workout was caught up later", () => {
+    const { labels, moves } = applyMoves({ "2026-10-13": "Upper 1", "2026-10-14": "Lower 1" }, [
+      { session_date: "2026-10-15", makeup_for: "2026-10-14" },
+      { session_date: "2026-10-14", makeup_for: "2026-10-13" },
+    ]);
+    expect(labels["2026-10-14"]).toBe("Upper 1");
+    expect(labels["2026-10-15"]).toBe("Lower 1");
+    expect(moves).toEqual({ "2026-10-13": "missed", "2026-10-14": "caughtUp", "2026-10-15": "caughtUp" });
+  });
 });
 
 describe("calendarDayLabels", () => {
