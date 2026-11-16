@@ -1,46 +1,65 @@
 import React, { useState } from "react";
 import { Pressable, View, Text } from "react-native";
-import { cardioLabel, formatRest, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
+import { cardioLabel, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";
-import ExerciseClip from "@/components/ExerciseClip";
-import { useWideScreen } from "@/hooks/useWideScreen";
-import { useExerciseClips } from "@/hooks/useExerciseClips";
 import { themedStyles } from "@/lib/theme";
 
-// A program's exercises, grouped by weekday for weekly programs. Multi-week
-// programs (0065) list each week's training days under a week heading. On a
-// client's screen the trainer can tap an exercise to change it for them (0070).
-// ▶ beside each exercise opens its demo video and How to do it (2026-10-14);
-// where there's nothing to change, tapping the exercise opens it too.
-// Multi-week programs show one week at a time with ◀ ▶ (GRIZZ hates
-// scrolling, and the Muscle Year programs are 52 weeks long).
+/** Rest as a short clock, "1:15" or "0:45", so a whole week fits one screen. "–" for none (a superset). */
+export function shortRest(seconds: number): string {
+  if (!seconds) return "–";
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+/**
+ * Reps said short for the compact table ("20-30s ea"), with anything after a
+ * comma ("6-8, stand up quickly, lower slowly") kept as a note under the row.
+ */
+export function splitReps(reps: string): { short: string; note: string | null } {
+  const cut = reps.indexOf(",");
+  const main = cut > 0 ? reps.slice(0, cut) : reps;
+  const note = cut > 0 ? reps.slice(cut + 1).trim() || null : null;
+  return { short: shortReps(main), note };
+}
+
+export function shortReps(reps: string): string {
+  return reps
+    .replace(/\s*each side/i, " ea")
+    .replace(/\s*each leg/i, " ea")
+    .replace(/\s*each arm/i, " ea")
+    .replace(/\s*sec(ond)?s?\b/i, "s")
+    .trim();
+}
+
+// A program's week as one compact table (GRIZZ, 2026-11-16: "the full week
+// structure on 1 screen. Exercise - Sets - Reps - Rest. To see the exercise
+// must click on it"). Each training day is a gold heading with one thin row per
+// exercise; rest days are one line at the end. Tapping a row opens its video
+// and How to do it. Where tapping changes the exercise (a client's own
+// workout, the trainer's own program), a small ▶ at the end still opens the
+// video. Multi-week programs show one week at a time with ◀ ▶.
 export default function ProgramSummary({
   program,
   exercises,
   onPressExercise,
-  collapsible = false,
   onlySlot = null,
   tapHint,
+  hideHint = false,
   onPressCardio,
 }: {
   program: Program;
   exercises: ProgramExercise[];
   onPressExercise?: (row: ProgramExercise) => void;
-  /** Programs tab: the list stays shut until the trainer taps to check it (GRIZZ, 2026-10-14). */
-  collapsible?: boolean;
   /** Just this session of a weekly program, for a single day on the calendar (GRIZZ, 2026-10-16). */
   onlySlot?: number | null;
   /** What tapping an exercise does, when it isn't changing it for one client. */
   tapHint?: string;
+  /** The screen around it already says what tapping does (the week screen's title). */
+  hideHint?: boolean;
   /** Tapping a cardio block, e.g. to take it off the client's workout (0140). */
   onPressCardio?: (row: ProgramExercise) => void;
 }) {
   const [info, setInfo] = useState<ProgramExercise | null>(null);
-  const [shown, setShown] = useState(!collapsible);
-  // On a laptop each exercise shows its clip playing small in place of the ▶ (GRIZZ, 2026-10-27).
-  const wide = useWideScreen();
-  const clips = useExerciseClips(wide);
   const weeks = program.weeks ?? 1;
   const allDays =
     onlySlot != null
@@ -55,24 +74,21 @@ export default function ProgramSummary({
   const [weekAt, setWeekAt] = useState(0);
   const at = Math.min(weekAt, Math.max(0, weekList.length - 1));
   const days = weekList.length > 1 ? allDays.filter((d) => weekOf(d) === weekList[at]) : allDays;
+  const rowsOf = (day: number) => exercises.filter((e) => slotOf(e) === day).sort((a, b) => a.sort_order - b.sort_order);
+  const weekly = program.kind === "weekly";
+  // Rest days go on one line at the end, so training days get the room.
+  const restDays = weekly && onlySlot == null ? days.filter((d) => rowsOf(d).length === 0) : [];
+  const trainDays = weekly && onlySlot == null ? days.filter((d) => rowsOf(d).length > 0) : days;
+  const short = (day: number) => WEEKDAY_NAMES[(day - 1) % 7].slice(0, 3);
   return (
     <View>
       {program.warm_up ? <Text style={styles.line}>Warm-up: {program.warm_up}</Text> : null}
-      {onPressExercise ? (
-        <Text style={styles.tapHint}>{tapHint ?? "Tap an exercise to change it, or its sets and reps, for this client. Tap the green ▶ to watch it."}</Text>
-      ) : collapsible ? (
-        <Pressable onPress={() => setShown(!shown)} hitSlop={6} accessibilityRole="button" style={styles.checkButton}>
-          <Text style={styles.checkText}>
-            {shown
-              ? "▲ Hide exercises"
-              : `▶ Check all ${exercises.filter((e) => e.kind !== "cardio").length} exercises before you give it out`}
-          </Text>
-        </Pressable>
-      ) : (
-        <Text style={styles.tapHint}>▶ Tap an exercise to watch its video and how to do it.</Text>
-      )}
-      {collapsible && shown ? <Text style={styles.tapHint}>Tap an exercise or the green ▶ to watch its video and how to do it.</Text> : null}
-      {shown && weekList.length > 1 ? (
+      {hideHint ? null : <Text style={styles.tapHint}>
+        {onPressExercise
+          ? tapHint ?? "Tap an exercise to change it, or its sets and reps, for this client. Tap ▶ to watch it."
+          : "Tap an exercise to watch it and see how to do it."}
+      </Text>}
+      {weekList.length > 1 ? (
         <View style={styles.weekStep}>
           <Pressable onPress={() => setWeekAt(Math.max(0, at - 1))} disabled={at === 0} hitSlop={10} accessibilityLabel="Week before">
             <Text style={[styles.weekArrow, at === 0 && styles.weekArrowOff]}>◀</Text>
@@ -90,68 +106,79 @@ export default function ProgramSummary({
           </Pressable>
         </View>
       ) : null}
-      {shown && days.map((day) => {
-        const rows = exercises.filter((e) => slotOf(e) === day).sort((a, b) => a.sort_order - b.sort_order);
-        const i = days.indexOf(day);
-        const newWeek = weeks > 1 && weekList.length <= 1 && (i === 0 || weekOf(days[i - 1]) !== weekOf(day));
+      <View style={styles.colHead}>
+        <Text style={[styles.colHeadText, styles.nameCol]}>EXERCISE</Text>
+        <Text style={[styles.colHeadText, styles.setsCol]}>SETS</Text>
+        <Text style={[styles.colHeadText, styles.repsCol]}>REPS</Text>
+        <Text style={[styles.colHeadText, styles.restCol]}>REST</Text>
+        {onPressExercise ? <View style={styles.playCol} /> : null}
+      </View>
+      {trainDays.map((day) => {
+        const rows = rowsOf(day);
+        const i = trainDays.indexOf(day);
+        const newWeek = weeks > 1 && weekList.length <= 1 && onlySlot == null && (i === 0 || weekOf(trainDays[i - 1]) !== weekOf(day));
+        const count = rows.filter((r) => r.kind !== "cardio").length;
         return (
-          <View key={day} style={{ marginTop: 8 }}>
+          <View key={day}>
             {newWeek ? <Text style={styles.week}>Week {weekOf(day)}</Text> : null}
-            {program.kind === "weekly" && (
-              <Text style={styles.day}>
-                {WEEKDAY_NAMES[(day - 1) % 7]} · {program.day_titles[day - 1] ?? ""}
-              </Text>
+            {/* A single calendar day already says its day and title above. */}
+            {weekly && onlySlot == null && (
+              <View style={styles.dayHead}>
+                <Text style={styles.day} numberOfLines={1}>
+                  {short(day)} · {program.day_titles[day - 1] ?? ""}
+                </Text>
+                <Text style={styles.dayCount}>{count} ex</Text>
+              </View>
             )}
-            {rows.length === 0 && program.kind === "weekly" ? (
+            {rows.length === 0 ? (
               <Text style={styles.line}>Rest</Text>
             ) : (
               rows.map((r) => {
                 if (r.kind === "cardio") {
                   return onPressCardio ? (
                     <Pressable key={r.id} onPress={() => onPressCardio(r)} hitSlop={4} accessibilityRole="button" style={styles.cardioRow}>
-                      <Text style={[styles.line, { flex: 1 }]}>Cardio: {cardioLabel(r)}</Text>
+                      <Text style={[styles.cardio, { flex: 1 }]}>Cardio: {cardioLabel(r)}</Text>
                       <Text style={styles.cardioOff}>✕</Text>
                     </Pressable>
                   ) : (
-                    <Text key={r.id} style={styles.line}>
+                    <Text key={r.id} style={[styles.cardio, styles.cardioRow]}>
                       Cardio: {cardioLabel(r)}
                     </Text>
                   );
                 }
-                const line = (
-                  <Text style={[styles.detail, r.changed_from && styles.changed]}>
-                    <Text style={styles.exName}>{r.exercise_name}</Text>
-                    {`\n${r.sets} x ${r.reps}, rest ${formatRest(r.rest_seconds)}`}
-                    {r.changed_from ? (
-                      <Text style={styles.was}>
-                        {r.changed_from.exercise_name !== r.exercise_name
-                          ? `  ✎ changed, was ${r.changed_from.exercise_name}`
-                          : `  ✎ changed, was ${r.changed_from.sets} x ${r.changed_from.reps}`}
-                      </Text>
-                    ) : r.swapped_from ? (
-                      <Text style={styles.was}>{`  ⇄ for now, was ${r.swapped_from.exercise_name}`}</Text>
-                    ) : null}
-                  </Text>
-                );
+                const reps = splitReps(r.reps);
+                const was = r.changed_from
+                  ? r.changed_from.exercise_name !== r.exercise_name
+                    ? `✎ changed, was ${r.changed_from.exercise_name}`
+                    : `✎ changed, was ${r.changed_from.sets} x ${r.changed_from.reps}`
+                  : r.swapped_from
+                    ? `⇄ for now, was ${r.swapped_from.exercise_name}`
+                    : null;
                 return (
-                  <View key={r.id} style={styles.exCard}>
+                  <View key={r.id} style={styles.rowWrap}>
                     <Pressable
-                      style={{ flex: 1 }}
+                      style={styles.row}
                       onPress={() => (onPressExercise ? onPressExercise(r) : setInfo(r))}
-                      hitSlop={4}
+                      hitSlop={2}
                       accessibilityRole="button"
+                      accessibilityLabel={`${r.exercise_name}, ${r.sets} sets of ${r.reps}`}
                     >
-                      {line}
+                      <Text style={[styles.cell, styles.nameCol, (r.changed_from || r.swapped_from) && styles.changed]} numberOfLines={2}>
+                        {r.exercise_name}
+                      </Text>
+                      <Text style={[styles.cell, styles.num, styles.setsCol]}>{r.sets}</Text>
+                      <Text style={[styles.cell, styles.num, styles.repsCol]} numberOfLines={1}>
+                        {reps.short}
+                      </Text>
+                      <Text style={[styles.cell, styles.num, styles.restCol]}>{shortRest(r.rest_seconds)}</Text>
+                      {onPressExercise ? (
+                        <Pressable onPress={() => setInfo(r)} hitSlop={8} style={styles.playCol} accessibilityLabel={`Watch ${r.exercise_name}`}>
+                          <Text style={styles.play}>▶</Text>
+                        </Pressable>
+                      ) : null}
                     </Pressable>
-                    <Pressable onPress={() => setInfo(r)} hitSlop={8} accessibilityLabel={`Watch ${r.exercise_name}`}>
-                      {wide && r.exercise_id && clips[r.exercise_id] ? (
-                        <ExerciseClip url={clips[r.exercise_id]} width={120} height={72} />
-                      ) : (
-                        <View style={styles.play}>
-                          <Text style={styles.playText}>▶</Text>
-                        </View>
-                      )}
-                    </Pressable>
+                    {reps.note ? <Text style={styles.note}>{reps.note}</Text> : null}
+                    {was ? <Text style={styles.was}>{was}</Text> : null}
                   </View>
                 );
               })
@@ -159,45 +186,50 @@ export default function ProgramSummary({
           </View>
         );
       })}
+      {restDays.length > 0 ? <Text style={styles.restLine}>Rest: {restDays.map(short).join(", ")}</Text> : null}
       <ExerciseInfoModal exercise={info} onClose={() => setInfo(null)} />
     </View>
   );
 }
 
 const styles = themedStyles({
-  day: { color: "#fff", fontWeight: "700", fontSize: 13, marginBottom: 2 },
-  week: { color: "#D4AF37", fontWeight: "800", fontSize: 14, marginTop: 6, marginBottom: 2 },
-  weekStep: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10, backgroundColor: "#0F172A", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  week: { color: "#D4AF37", fontWeight: "800", fontSize: 13, marginTop: 6 },
+  weekStep: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6, backgroundColor: "#0F172A", borderRadius: 8, paddingVertical: 6, paddingHorizontal: 14 },
   weekStepText: { color: "#D4AF37", fontWeight: "800", fontSize: 14 },
   weekArrow: { color: "#D4AF37", fontSize: 18, fontWeight: "800" },
   weekArrowOff: { color: "#334155" },
-  line: { color: "#94A3B8", fontSize: 13, marginBottom: 2 },
-  tappable: { color: "#CBD5E1", paddingVertical: 3 },
-  cardioRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
-  cardioOff: { color: "#F87171", fontWeight: "800", fontSize: 15, marginLeft: 10 },
-  changed: { color: "#fff" },
-  was: { color: "#D4AF37", fontSize: 12, fontWeight: "600" },
-  tapHint: { color: "#D4AF37", fontSize: 12, marginTop: 6 },
-  checkButton: { borderWidth: 1, borderColor: "#D4AF37", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: 8 },
-  checkText: { color: "#D4AF37", fontSize: 14, fontWeight: "700", textAlign: "center" },
-  row: { flexDirection: "row", alignItems: "center", gap: 8 },
-  // Each exercise stands out as its own card with a green play button
-  // (GRIZZ, 2026-10-16: the video was easy to miss among the text).
-  exCard: {
+  line: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
+  tapHint: { color: "#D4AF37", fontSize: 12, marginTop: 4 },
+  colHead: { flexDirection: "row", alignItems: "center", paddingHorizontal: 8, marginTop: 4 },
+  colHeadText: { color: "#64748B", fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
+  dayHead: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
     backgroundColor: "#1E293B",
-    borderRadius: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: "#22C55E",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginVertical: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: "#D4AF37",
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    marginTop: 3,
   },
-  exName: { color: "#fff", fontSize: 15, fontWeight: "800" },
-  detail: { color: "#94A3B8", fontSize: 13 },
-  play: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#22C55E", alignItems: "center", justifyContent: "center" },
-  playText: { color: "#0F172A", fontSize: 16, fontWeight: "900", marginLeft: 2 },
-  watch: { color: "#D4AF37", fontSize: 14, fontWeight: "800", paddingHorizontal: 6, paddingVertical: 3 },
+  day: { flex: 1, color: "#D4AF37", fontWeight: "800", fontSize: 12, lineHeight: 16 },
+  dayCount: { color: "#94A3B8", fontSize: 11, fontWeight: "600" },
+  rowWrap: { borderBottomWidth: 1, borderBottomColor: "#1E293B" },
+  row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 8 },
+  cell: { color: "#E2E8F0", fontSize: 12, lineHeight: 14 },
+  num: { color: "#CBD5E1", textAlign: "center" },
+  nameCol: { flex: 1, paddingRight: 4 },
+  setsCol: { width: 30, textAlign: "center" },
+  repsCol: { width: 66, textAlign: "center" },
+  restCol: { width: 38, textAlign: "center" },
+  playCol: { width: 22, alignItems: "flex-end" },
+  play: { color: "#22C55E", fontSize: 13, fontWeight: "900" },
+  changed: { color: "#fff", fontWeight: "700" },
+  was: { color: "#D4AF37", fontSize: 11, fontWeight: "600", paddingHorizontal: 8, marginTop: -2, marginBottom: 2 },
+  note: { color: "#94A3B8", fontSize: 11, paddingHorizontal: 8, marginTop: -2, marginBottom: 2 },
+  cardioRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingVertical: 2 },
+  cardio: { color: "#94A3B8", fontSize: 12.5 },
+  cardioOff: { color: "#F87171", fontWeight: "800", fontSize: 15, marginLeft: 10 },
+  restLine: { color: "#64748B", fontSize: 12, marginTop: 6, paddingHorizontal: 8 },
 });
