@@ -5,7 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { loadAvailablePrograms, loadProgramExercises } from "@/lib/programQueries";
-import ProgramSummary from "@/components/ProgramSummary";
+import ProgramWeekModal from "@/components/ProgramWeekModal";
 import type { Program, ProgramExercise } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
@@ -34,11 +34,13 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [exercises, setExercises] = useState<Record<string, ProgramExercise[]>>({});
   const [open, setOpen] = useState<string | null>(null);
+  // The opened program's whole week, on its own screen (GRIZZ, 2026-11-16).
+  const [showWeek, setShowWeek] = useState(false);
   // The program whose exercises didn't load (no signal), so it shows a retry instead of spinning.
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
   const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
   // Phone Back closes what is open first, one step at a time.
-  useStepBack(open !== null, () => setOpen(null));
+  useStepBack(open !== null && !showWeek, () => setOpen(null));
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [place, setPlace] = useState<ExercisePlace>("gym");
@@ -99,6 +101,8 @@ export default function ProgramsScreen({ navigation }: Props) {
   // One version card per set (Chest & Bi 1-4 is one card with 1 2 3 4).
   const cards = useMemo(() => programCards(here), [here]);
   const hasOwn = cards.some((c) => c.family === "own");
+  const opened = programs.find((p) => p.id === open) ?? null;
+  const ownOpened = !!opened?.trainer_id && opened.trainer_id === trainer?.id;
 
   if (loading) {
     return (
@@ -171,30 +175,9 @@ export default function ProgramsScreen({ navigation }: Props) {
                   <>
                     {p.description && <Text style={styles.description}>{p.description}</Text>}
                     {p.nutrition ? <Text style={styles.description}>Nutrition: {p.nutrition}</Text> : null}
-                    {exercises[p.id] ? (
-                      p.trainer_id && p.trainer_id === trainer?.id ? (
-                        <ProgramSummary
-                          program={p}
-                          exercises={exercises[p.id]}
-                          onPressExercise={setEditing}
-                          tapHint="Tap an exercise to change it for everyone on this workout, just for now or for good. Tap the green ▶ to watch it."
-                        />
-                      ) : (
-                        <ProgramSummary program={p} exercises={exercises[p.id]} collapsible />
-                      )
-                    ) : loadFailed === p.id ? (
-                      <Pressable
-                        onPress={() => {
-                          setLoadFailed(null);
-                          setExercises((prev) => ({ ...prev }));
-                        }}
-                        hitSlop={8}
-                      >
-                        <Text style={styles.delete}>Couldn't load the exercises. Tap to try again.</Text>
-                      </Pressable>
-                    ) : (
-                      <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginVertical: 10 }} />
-                    )}
+                    <Pressable style={styles.weekButton} onPress={() => setShowWeek(true)} accessibilityRole="button">
+                      <Text style={styles.weekButtonText}>See the whole week ›</Text>
+                    </Pressable>
                     <Text style={styles.description}>
                       ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
                       workout screen. To change it for one client, tap it on that client's Training tab.
@@ -211,17 +194,30 @@ export default function ProgramsScreen({ navigation }: Props) {
           }}
         />
       </ScrollView>
-      <ProgramExerciseEditModal
-        row={editing}
-        place={place}
-        onClose={() => setEditing(null)}
-        onSaved={() => {
-          const programId = editing?.program_id;
-          setEditing(null);
-          // Reload the program, so the list shows the change.
-          if (programId) setExercises(({ [programId]: _changed, ...rest }) => rest);
+      <ProgramWeekModal
+        program={showWeek ? opened : null}
+        exercises={opened ? exercises[opened.id] ?? null : null}
+        loadFailed={!!opened && loadFailed === opened.id}
+        onRetry={() => {
+          setLoadFailed(null);
+          setExercises((prev) => ({ ...prev }));
         }}
-      />
+        programs={programs}
+        onPressExercise={ownOpened ? setEditing : undefined}
+        onClose={() => setShowWeek(false)}
+      >
+        <ProgramExerciseEditModal
+          row={editing}
+          place={place}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            const programId = editing?.program_id;
+            setEditing(null);
+            // Reload the program, so the list shows the change.
+            if (programId) setExercises(({ [programId]: _changed, ...rest }) => rest);
+          }}
+        />
+      </ProgramWeekModal>
     </>
   );
 }
@@ -235,5 +231,7 @@ const styles = themedStyles({
   description: { color: "#94A3B8", fontSize: 13, marginTop: 4 },
   shortcut: { backgroundColor: "#0B1220", borderRadius: 10, padding: 12, marginTop: 8 },
   shortcutText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
+  weekButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 11, alignItems: "center", marginTop: 10 },
+  weekButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
   delete: { color: "#F87171", fontSize: 13, fontWeight: "600", marginTop: 10 },
 });
