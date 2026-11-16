@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { loadAvailablePrograms, loadProgramExercises } from "@/lib/programQueries";
 import ProgramWeekModal from "@/components/ProgramWeekModal";
+import ResetPreviewModal from "@/components/reset/ResetPreviewModal";
 import type { Program, ProgramExercise } from "@/types/database";
 import type { TrainerTabScreenProps } from "@/navigation/types";
 import GymHomeTabs, { PROGRAM_PLACE_LABELS } from "@/components/GymHomeTabs";
@@ -44,6 +45,8 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [place, setPlace] = useState<ExercisePlace>("gym");
+  // The 12-Week Health Reset, to look through before enrolling anyone (GRIZZ, 2026-11-16).
+  const [showReset, setShowReset] = useState(false);
 
   // Exercises load one program at a time, when it's opened. Loading them all at
   // once hit the database's 1000-row limit, so most programs showed none.
@@ -123,6 +126,10 @@ export default function ProgramsScreen({ navigation }: Props) {
           <Text style={styles.buildButtonText}>+ Build a program</Text>
         </Pressable>
         <GiveProgramButton />
+        <Pressable style={styles.shortcut} onPress={() => setShowReset(true)} accessibilityRole="button">
+          <Text style={styles.shortcutText}>🌿 12-Week Health Reset (women and men) ›</Text>
+          <Text style={styles.description}>Look through all 12 weeks and the training. Enroll a client from their Overview tab.</Text>
+        </Pressable>
         <View style={{ marginTop: 8 }}>
           <GymHomeTabs
             current={place}
@@ -218,6 +225,7 @@ export default function ProgramsScreen({ navigation }: Props) {
           }}
         />
       </ProgramWeekModal>
+      <ResetPreviewModal visible={showReset} onClose={() => setShowReset(false)} place={place === "home" ? "home" : "gym"} />
     </>
   );
 }

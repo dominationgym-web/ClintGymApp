@@ -57,6 +57,7 @@ import ClientOwnMealPlan from "@/components/ClientOwnMealPlan";
 import WorkoutsSavedButton, { sendWorkoutLoaded } from "@/components/WorkoutsSavedButton";
 import { workoutFingerprint } from "@/lib/workoutChanges";
 import TrainerResetNotes from "@/components/reset/TrainerResetNotes";
+import ResetPreviewModal from "@/components/reset/ResetPreviewModal";
 import TrainerStabilityCard from "@/components/stability/TrainerStabilityCard";
 import RehabSuggestion from "@/components/stability/RehabSuggestion";
 import { stabilityAreasFor } from "@/lib/stability";
@@ -131,6 +132,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   // Bumped when a foundation program is approved, so the program card reloads.
   const [programKey, setProgramKey] = useState(0);
   const [stabilityKey, setStabilityKey] = useState(0);
+  // The Reset program to look through before enrolling (GRIZZ, 2026-11-16).
+  const [resetPreview, setResetPreview] = useState(false);
   // Bumped when a stability program starts or stops, so the calendar's stability days reload.
   const [stabilityDaysKey, setStabilityDaysKey] = useState(0);
   // Injury check (GRIZZ, 2026-10-17): planKey bumps after any program pick to put up the check sign.
@@ -762,12 +765,35 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
                       : "Not enrolled"}
                   </Text>
                 </View>
+                <Pressable style={styles.resetSeeButton} onPress={() => setResetPreview(true)} accessibilityRole="button">
+                  <Text style={styles.resetSeeText}>See it</Text>
+                </Pressable>
                 <Pressable style={styles.resetButton} onPress={toggleLifestyleReset}>
                   <Text style={styles.resetButtonText}>
                     {client.lifestyle_reset_started_at ? "End program" : "Enroll"}
                   </Text>
                 </Pressable>
               </View>
+              <ResetPreviewModal
+                visible={resetPreview}
+                onClose={() => setResetPreview(false)}
+                sex={client.sex}
+                place={client.training_place}
+                footer={
+                  client.lifestyle_reset_started_at ? null : (
+                    <Pressable
+                      style={styles.resetEnrollWide}
+                      onPress={() => {
+                        setResetPreview(false);
+                        toggleLifestyleReset();
+                      }}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.resetButtonText}>Enroll {client.name.split(" ")[0]}</Text>
+                    </Pressable>
+                  )
+                }
+              />
               {client.intake_responses?.high_stress_or_anxiety === "Yes" && (
                 <View style={styles.stressFlag}>
                   <Text style={styles.stressFlagText}>
@@ -1322,6 +1348,9 @@ const styles = themedStyles({
   resetTitle: { color: "#fff", fontWeight: "600", fontSize: 14 },
   resetNotes: { backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginTop: 8 },
   resetButton: { backgroundColor: "#D4AF37", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  resetSeeButton: { borderColor: "#D4AF37", borderWidth: 1, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12, marginRight: 8 },
+  resetSeeText: { color: "#D4AF37", fontWeight: "700", fontSize: 13 },
+  resetEnrollWide: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 11, alignItems: "center" },
   resetButtonText: { color: "#0F172A", fontWeight: "700", fontSize: 13 },
   body: { color: "#E2E8F0", fontSize: 14, marginBottom: 4 },
   sectionHeading: { color: "#94A3B8", fontWeight: "600", marginTop: 20, marginBottom: 8 },
