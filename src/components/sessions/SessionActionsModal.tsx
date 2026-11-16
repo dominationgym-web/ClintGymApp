@@ -23,6 +23,7 @@ import {
   canStartLive,
   isOnHold,
   isAway,
+  outLabel,
   clockLabel,
   dayKey,
   dayLabel,
@@ -270,7 +271,11 @@ export default function SessionActionsModal({
             {weekly ? <Text style={styles.meta}>Every week at this time</Text> : null}
             {partners.length ? (
               <View style={{ marginTop: 6 }}>
-                <Text style={styles.meta}>Joint session with {partners.map((p) => (nameOf ? nameOf(p) : "") + (isAway(p) ? " (away)" : "")).join(" & ")}. Moving or taking it off asks if it's for both. For a cancellation or no-show, tap the person:</Text>
+                <Text style={styles.meta}>
+                  {joint.length ? "Joint session with" : "Also in this slot:"}{" "}
+                  {partners.map((p) => (nameOf ? nameOf(p) : "") + (p.status === "cancelled" || p.status === "no_show" ? ` (${outLabel(p)})` : "")).join(" & ")}.
+                  {joint.length ? " Moving or taking it off asks if it's for both." : ""} For a cancellation or no-show, tap the person:
+                </Text>
                 {onSwitch ? (
                   <View style={styles.chips}>
                     <Chip label={first} on onPress={() => {}} />

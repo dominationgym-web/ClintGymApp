@@ -56,6 +56,7 @@ import {
   monthStart,
   noticeHours,
   jointLines,
+  outLabel,
   withoutReplaced,
   jointName,
   openSlots,
@@ -396,12 +397,15 @@ function SessionLine({
   others?: LiveSession[];
   nameOf?: (s: LiveSession) => string;
 }) {
-  // Someone away and someone else in their slot (GRIZZ 2026-11-16: "Dan's
-  // name goes 1st with C U attached and Steve's name below has away"): the
-  // people training lead the line, the away owner sits underneath in red.
+  // Someone out of a slot (away, cancelled, no-show) while someone else
+  // trains in it (GRIZZ 2026-11-16: "Dan's name goes 1st with C U attached
+  // and Steve's name below has away"; then Luanne moved into Jordan's
+  // cancelled 09:10): the people training lead the line with only their
+  // names, and whoever is out sits underneath in red.
   const all = [first, ...othersIn];
-  const here = all.filter((x) => !isAway(x));
-  const gone = all.filter(isAway);
+  const isOut = (x: LiveSession) => x.status === "cancelled" || x.status === "no_show";
+  const here = all.filter((x) => !isOut(x));
+  const gone = all.filter(isOut);
   const mixed = here.length > 0 && gone.length > 0;
   const s = mixed ? here[0] : first;
   const others = mixed ? [...here.slice(1), ...gone] : othersIn;
@@ -427,13 +431,13 @@ function SessionLine({
         {clockLabel(s.starts_at)} · {name}
         {showDay ? ` · ${dayLabel(s.starts_at)}` : ""}
         {s.repeat_id ? " 🔁" : ""}
-        {[s, ...others].some((x) => x.makeup_for) ? "  " : ""}
-        <CatchUpTag show={[s, ...others].some((x) => x.makeup_for)} />
+        {(mixed ? here : all).some((x) => x.makeup_for) ? "  " : ""}
+        <CatchUpTag show={(mixed ? here : all).some((x) => x.makeup_for)} />
       </Text>
       {each ? (
         each.map((x) => (
-          <Text key={x.id} style={[styles.rowKind, { color: themeText(mixed && isAway(x) ? "#EF4444" : KIND_STYLE[sessionKind(x)].colour) }, mixed && isAway(x) && { fontWeight: "700" }]}>
-            {firstName(x)}: {mixed && isAway(x) ? `away (${awayTag(x).replace(/^✈️ Away /, "")})` : x.makeup_for ? `🔁 Catch-up · ${detail(x).replace(/^• /, "")}` : detail(x)}
+          <Text key={x.id} style={[styles.rowKind, { color: themeText(mixed && isOut(x) ? "#EF4444" : KIND_STYLE[sessionKind(x)].colour) }, mixed && isOut(x) && { fontWeight: "700" }]}>
+            {firstName(x)}: {mixed && isOut(x) ? outLabel(x) : x.makeup_for ? `🔁 Catch-up · ${detail(x).replace(/^• /, "")}` : detail(x)}
           </Text>
         ))
       ) : (

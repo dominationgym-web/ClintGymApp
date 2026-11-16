@@ -168,6 +168,15 @@ export function awayLabel(s: { note?: string | null }): string {
   return m ? `Away till ${m[1]} ${m[2]}` : "Away";
 }
 
+/** Why someone is out of a slot, short, for the red line under the people training. */
+export function outLabel(x: { status: string; away_id?: string | null; note?: string | null; charge?: string | null; makeup_session_id?: string | null }): string {
+  if (isAway(x)) return isOnHold(x) ? "on hold, not paid" : `away (${awayTag(x).replace(/^✈️ Away /, "")})`;
+  const what = x.status === "no_show" ? "no-show" : "cancelled";
+  const after =
+    x.charge === "makeup" ? (x.makeup_session_id ? ", catch-up booked" : ", catch-up owed") : x.charge === "credit" ? ", credited" : x.charge === "charge" ? ", charged" : "";
+  return what + after;
+}
+
 /** "Camilla & Jade 👥" for a joint line, the full name for one person. */
 export function jointName<T>(line: { s: T; with: T[] }, name: (s: T) => string): string {
   if (!line.with.length) return name(line.s);
