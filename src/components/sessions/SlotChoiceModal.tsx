@@ -3,7 +3,7 @@ import { Modal, Pressable, Text, View } from "react-native";
 import { ScrollView } from "@/components/ScrollView";
 import SafeBottom from "@/components/SafeBottom";
 import { BRAND_GOLD } from "@/lib/brand";
-import { awayTag, clockLabel, dayLabel } from "@/lib/liveSessions";
+import { awayTag, clockLabel, dayLabel, isAway, outLabel } from "@/lib/liveSessions";
 import { catchUpWhoKey, groupCatchUps } from "@/lib/catchUpGroups";
 import type { LiveSession } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
@@ -47,7 +47,7 @@ export default function SlotChoiceModal({
           <Text style={styles.title}>{when}</Text>
           {slot.away.length ? (
             <Text style={styles.meta}>
-              {slot.away.map((s) => `${name(s).split(" ")[0]}: ${awayTag(s)}`).join(" · ")}. The slot is free to book.
+              {slot.away.map((s) => `${name(s).split(" ")[0]}: ${isAway(s) ? awayTag(s) : outLabel(s)}`).join(" · ")}. The slot is free to book.
             </Text>
           ) : (
             <Text style={styles.meta}>This time is free.</Text>

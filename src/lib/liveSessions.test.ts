@@ -20,6 +20,7 @@ import {
   openSlots,
   jointLines,
   withoutReplaced,
+  outLabel,
   jointName,
   cleanTime,
   feeText,
@@ -235,6 +236,15 @@ describe("jointLines", () => {
       { id: "b", starts_at: "2026-11-17T05:10:00Z", status: "booked", client_id: "c1" },
     ];
     expect(withoutReplaced(list).map((s) => s.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("outLabel", () => {
+  it("says briefly why someone is out of a slot", () => {
+    expect(outLabel({ status: "cancelled", charge: "makeup", makeup_session_id: null })).toBe("cancelled, catch-up owed");
+    expect(outLabel({ status: "cancelled", charge: "makeup", makeup_session_id: "x" })).toBe("cancelled, catch-up booked");
+    expect(outLabel({ status: "no_show", charge: "charge" })).toBe("no-show, charged");
+    expect(outLabel({ status: "cancelled", away_id: "a", note: "Away from 15 November until 21 November" })).toBe("away (15 Nov to 21 Nov)");
   });
 });
 
