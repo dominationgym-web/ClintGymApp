@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { RESET_HABITS, RESET_PHASES, RESET_WEEKS, RESET_WEEKS_TOTAL, newHabits, resetTraining, resetWeek, type ResetLocation } from "@/lib/resetProgram";
+import { RESET_HABITS, RESET_PHASES, RESET_WEEKS, RESET_WEEKS_TOTAL, newHabits, resetTraining, resetWeek, type ResetLocation, type ResetSex } from "@/lib/resetProgram";
 import { useAuth } from "@/context/AuthContext";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
@@ -14,17 +14,21 @@ export default function WeekBrowser({
   onChange,
   currentWeek,
   location = null,
+  sex,
 }: {
   week: number;
   onChange: (week: number) => void;
   // Her week if she has started, so it's highlighted and past weeks get a tick.
   currentWeek?: number;
   location?: ResetLocation | null;
+  // The trainer's preview passes it (they have no client of their own).
+  sex?: ResetSex;
 }) {
   const { client } = useAuth();
-  const plan = resetWeek(week, client?.sex);
+  const who = sex !== undefined ? sex : client?.sex;
+  const plan = resetWeek(week, who);
   const phase = RESET_PHASES[plan.phase];
-  const training = resetTraining(plan.phase, location, client?.sex);
+  const training = resetTraining(plan.phase, location, who);
   const fresh = new Set(newHabits(week));
 
   return (
