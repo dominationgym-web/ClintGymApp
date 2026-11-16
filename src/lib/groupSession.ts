@@ -139,25 +139,41 @@ export function addSteps(
 }
 
 /**
- * After a working set in a superset: once everyone training has done this
- * round on this station, the page to go to next (the next station, back to the
- * first for another round, or the page after the superset when the rounds are
- * done). Null to stay put.
+ * Blocks (GRIZZ 2026-11-16): what the group is doing at one time, a single
+ * exercise or a whole superset/circuit. Each block lists its step indexes.
  */
-export function supersetNext(steps: GroupStep[], index: number, logs: SetLike[], clientIds: string[]): number | null {
-  const stations = stationsOf(steps, index);
-  if (stations.length < 2 || clientIds.length === 0) return null;
-  const at = stations.indexOf(index);
-  const count = (id: string, i: number) => clientSets(logs, id, steps[i].name).length;
-  const firstStation = stations[0];
-  const everyoneDone = clientIds.every((id) =>
-    at === 0 ? count(id, index) > count(id, stations[1]) : count(id, index) >= count(id, firstStation),
-  );
-  if (!everyoneDone) return null;
-  if (at < stations.length - 1) return stations[at + 1];
-  const rounds = Math.max(...stations.map((i) => steps[i].sets));
-  const roundsDone = Math.min(...clientIds.map((id) => count(id, firstStation)));
-  if (roundsDone < rounds) return firstStation;
-  const after = stations[stations.length - 1] + 1;
-  return after < steps.length ? after : null;
+export function blocksOf(steps: GroupStep[]): number[][] {
+  const out: number[][] = [];
+  steps.forEach((s, i) => {
+    const last = out[out.length - 1];
+    if (last && s.group && steps[last[0]].group === s.group) last.push(i);
+    else out.push([i]);
+  });
+  return out;
+}
+
+/** The block a step is in. */
+export function blockOfStep(steps: GroupStep[], stepIndex: number): number {
+  return Math.max(0, blocksOf(steps).findIndex((b) => b.includes(stepIndex)));
+}
+
+/** Rounds of a block a client has finished: the fewest working sets of any of its exercises. */
+export function roundsDone(logs: SetLike[], clientId: string, names: string[]): number {
+  if (names.length === 0) return 0;
+  return Math.min(...names.map((n) => clientSets(logs, clientId, n).length));
+}
+
+/**
+ * After a client logs a round: the next person (in group order, after them)
+ * who is behind them on this block, so the trainer can go straight to them.
+ * Null when everyone has caught up.
+ */
+export function nextBehind(order: string[], after: string, logs: SetLike[], names: string[]): string | null {
+  const mine = roundsDone(logs, after, names);
+  const at = order.indexOf(after);
+  for (let k = 1; k < order.length; k++) {
+    const id = order[(at + k) % order.length];
+    if (roundsDone(logs, id, names) < mine) return id;
+  }
+  return null;
 }

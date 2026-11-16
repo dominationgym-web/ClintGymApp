@@ -28,9 +28,11 @@ import {
   setsByClient,
   slotFor,
   startWeight,
-  stationsOf,
   stepsFromPlan,
-  supersetNext,
+  blockOfStep,
+  blocksOf,
+  nextBehind,
+  roundsDone,
   type GroupStep,
 } from "@/lib/groupSession";
 import { SUPERSET_MAX, SUPERSET_MIN } from "@/lib/superset";
@@ -48,13 +50,15 @@ import ModalSafeArea from "@/components/ModalSafeArea";
 // client's own id (0134 trainer policy), and each client keeps one colour and
 // letter (src/lib/groupSession.ts) on their card, on the set box and on its
 // Save button. Finish saves each client's day as in person (0138).
-// One flow for everything (GRIZZ 2026-11-16): every exercise is one page with
-// arrows and a card per person; a superset is linked pages the screen moves
-// through by itself; a warm-up is a tap in the same set box. Add exercises or
-// supersets any time without starting a new workout.
+// Person blocks (GRIZZ 2026-11-16): one block per person in their colour. Tap
+// it to open everything they're doing now (one exercise or the whole
+// superset), fill in each exercise and tap Log set; jump straight to the next
+// person with the A B C D tabs. Add another exercise or circuit any time.
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "GroupLive">;
 type Step = GroupStep;
+/** One exercise's boxes in a person's open block. Warm-up: easy set at about half the weight, saved as set 0. */
+type Draft = { warm: boolean; weight: string; reps: string; effort: SetEffort | null };
 
 const first = (c: Pick<Client, "name">) => c.name.split(" ")[0];
 
@@ -74,14 +78,15 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const [plans, setPlans] = useState<Record<string, CalendarDayWorkout | null>>({});
   const [planFrom, setPlanFrom] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
-  const [index, setIndex] = useState(0);
+  // The block (one exercise, or a whole superset) everyone is on now.
+  const [block, setBlock] = useState(0);
   const [library, setLibrary] = useState<Exercise[]>([]);
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [earlier, setEarlier] = useState<WorkoutLog[]>([]);
-  const [entryFor, setEntryFor] = useState<string | null>(null);
-  const [weight, setWeight] = useState("");
-  const [reps, setReps] = useState("");
-  const [effort, setEffort] = useState<SetEffort | null>(null);
+  // The person whose block is open, and what's typed for each person so far
+  // (kept when the trainer jumps to someone else and back).
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, Draft[]>>({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [fixing, setFixing] = useState<WorkoutLog | null>(null);
@@ -93,9 +98,6 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const [category, setCategory] = useState<string | null>(null);
   const [place, setPlace] = useState<ExercisePlace>("gym");
   const [finished, setFinished] = useState(false);
-  // Warm-up set (GRIZZ 2026-11-12): easy set at about half the weight, saved
-  // as set 0, never counted as a working set.
-  const [entryWarm, setEntryWarm] = useState(false);
   const [setMenu, setSetMenu] = useState<WorkoutLog | null>(null);
 
   useEffect(() => {
@@ -159,87 +161,121 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
     setLogs(todayLogs ?? []);
     // Newest first to keep the latest within the 1000-row cap; oldest first for startWeight.
     setEarlier([...(before ?? [])].reverse());
-    setIndex(0);
+    setBlock(0);
     setStage("train");
     if (!from) setAdding("one");
   };
 
-  const step = steps[index] ?? null;
+  const blocks = blocksOf(steps);
+  const current = (blocks[block] ?? []).map((i) => steps[i]);
+  const names = current.map((s) => s.name);
+  const isCircuit = current.length > 1;
+  const rounds = current.length ? Math.max(...current.map((s) => s.sets)) : 0;
   const categoryOf = (name: string) => library.find((e) => e.name === name)?.category ?? null;
-  const warmUpDueFor = (id: string, name: string) => groupWarmUpDue(logs, id, name, categoryOf);
   const startNum = (w: string) => (w ? Number(w) : null);
-  const stations = step ? stationsOf(steps, index) : [];
-  const station = stations.indexOf(index);
-  const inSuperset = stations.length > 1;
+  const active = picked.filter((id) => !holds[id]);
   const say = (text: string) => {
     setToast(text);
     setTimeout(() => setToast(null), 2500);
   };
 
+  // Fresh boxes for one person: a warm-up where the body part isn't warm yet
+  // (each body part once), else their start weight.
+  const freshDraft = (id: string, now: WorkoutLog[] = logs): Draft[] => {
+    const warmed: (string | null)[] = [];
+    return current.map((s) => {
+      const cat = categoryOf(s.name);
+      const due = !warmed.includes(cat) && groupWarmUpDue(now, id, s.name, categoryOf);
+      if (due) warmed.push(cat);
+      const start = startWeight(now, earlier, id, s.name);
+      const half = warmUpWeight(startNum(start));
+      return due
+        ? { warm: true, weight: half ? String(half) : "", reps: warmUpRepsToFill(s.reps), effort: null }
+        : { warm: false, weight: start, reps: "", effort: null };
+    });
+  };
+  const draftOf = (id: string) => (drafts[id]?.length === current.length ? drafts[id] : freshDraft(id));
+  const setDraft = (id: string, i: number, change: Partial<Draft>) =>
+    setDrafts((prev) => {
+      const base = prev[id]?.length === current.length ? prev[id] : freshDraft(id);
+      return { ...prev, [id]: base.map((d, at) => (at === i ? { ...d, ...change } : d)) };
+    });
+  const pickWarm = (id: string, i: number, warm: boolean) => {
+    const s = current[i];
+    const start = startWeight(logs, earlier, id, s.name);
+    const half = warmUpWeight(startNum(start));
+    setDraft(id, i, warm ? { warm, weight: half ? String(half) : "", reps: warmUpRepsToFill(s.reps), effort: null } : { warm, weight: start, reps: "", effort: null });
+  };
+
+  const goBlock = (b: number) => {
+    setBlock(b);
+    setDrafts({});
+  };
+
   const usePlan = (id: string | null) => {
     setPlanFrom(id);
     setSteps(stepsOf(id ? plans[id] : null));
-    setIndex(0);
+    goBlock(0);
     if (!id) setAdding("one");
   };
 
-  const openEntry = (id: string) => {
-    if (!step) return;
+  const openPerson = (id: string) => {
+    if (!current.length) return;
     if (holds[id]) {
       Alert.alert(`${first({ name: nameOf(id) })} is on a medical hold`, "No sets can be logged for them until the hold is cleared on their Overview.");
       return;
     }
-    pickEntryWarm(id, warmUpDueFor(id, step.name));
-    setEffort(null);
-    setEntryFor(id);
+    setOpenFor(id);
   };
 
-  // Warm-up: about half the start weight and easy reps; working set: the start weight.
-  const pickEntryWarm = (id: string, warm: boolean) => {
-    if (!step) return;
-    const start = startWeight(logs, earlier, id, step.name);
-    const half = warmUpWeight(startNum(start));
-    setEntryWarm(warm);
-    setWeight(warm ? (half ? String(half) : "") : start);
-    setReps(warm ? warmUpRepsToFill(step.reps) : "");
-  };
-
-  const saveSet = async () => {
-    const id = entryFor;
-    if (!id || !step) return;
-    const repsNum = Number(reps);
-    if (!reps || Number.isNaN(repsNum) || repsNum <= 0) return Alert.alert("Missing reps", "Enter how many reps they did.");
-    const warm = entryWarm;
-    if (!effort && !warm) return Alert.alert("Missing effort", "Pick how many more good reps they could have done.");
+  // Log set: everything filled in for this person goes in at once. An exercise
+  // left without reps is skipped (they didn't get to it).
+  const logSet = async () => {
+    const id = openFor;
+    if (!id) return;
+    const draft = draftOf(id);
+    const filled = current.map((s, i) => ({ s, d: draft[i] })).filter(({ d }) => d && d.reps.trim() !== "");
+    if (filled.length === 0) return Alert.alert("Nothing to log", "Enter the reps for at least one exercise.");
+    for (const { s, d } of filled) {
+      const n = Number(d.reps);
+      if (!Number.isInteger(n) || n <= 0) return Alert.alert("Check the reps", `Check the reps for ${s.name}.`);
+      if (!d.warm && !d.effort) return Alert.alert("Good reps left?", `Pick how many more good reps they had left on ${s.name}.`);
+    }
+    const rows = filled.map(({ s, d }) => ({
+      client_id: id,
+      exercise_id: s.id,
+      exercise_name: s.name,
+      log_date: todayIso(),
+      set_number: d.warm ? 0 : nextSetNumber(logs, id, s.name),
+      weight_kg: parseWeight(d.weight),
+      reps: Number(d.reps),
+      effort: d.warm ? ("comfortable" as const) : d.effort!,
+      warm_up: d.warm,
+      gauge: false,
+    }));
     setSaving(true);
-    const { data, error } = await supabase
-      .from("workout_logs")
-      .insert({
-        client_id: id,
-        exercise_id: step.id,
-        exercise_name: step.name,
-        log_date: todayIso(),
-        set_number: warm ? 0 : nextSetNumber(logs, id, step.name),
-        weight_kg: parseWeight(weight),
-        reps: repsNum,
-        effort: warm ? "comfortable" : effort!,
-        warm_up: warm,
-        gauge: false,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.from("workout_logs").insert(rows).select();
     setSaving(false);
-    if (error || !data) return Alert.alert("Couldn't save set", error?.message ?? "Please try again.");
-    const now = [...logs, data];
+    if (error || !data) return Alert.alert("Couldn't save", error?.message ?? "Please try again.");
+    const now = [...logs, ...data];
     setLogs(now);
-    setEntryFor(null);
-    // Superset: once everyone has done this station, go to the next one.
-    const next = warm ? null : supersetNext(steps, index, now, picked.filter((p) => !holds[p]));
-    if (next != null) {
-      setIndex(next);
-      const sameGroup = steps[next].group === step.group;
-      say(sameGroup ? `✓ Saved · Next station: ${steps[next].name}` : `✓ Superset done · Next: ${steps[next].name}`);
-    } else say(`✓ ${slotOf(id).letter} · ${warm ? "Warm-up saved" : "Saved"} to ${nameOf(id)}`);
+    // Their next round starts fresh, keeping the weights they just used.
+    setDrafts((prev) => ({ ...prev, [id]: freshDraft(id, now) }));
+    const onlyWarm = rows.every((r) => r.warm_up);
+    const who = `${slotOf(id).letter} · ${first({ name: nameOf(id) })}`;
+    if (onlyWarm) return say(`✓ ${who}: warm-up saved. Now their working set.`);
+    const next = nextBehind(active, id, now, names);
+    if (next) {
+      setOpenFor(next);
+      return say(`✓ ${who} saved. Now ${first({ name: nameOf(next) })}.`);
+    }
+    setOpenFor(null);
+    const allDone = active.every((p) => roundsDone(now, p, names) >= rounds);
+    if (allDone && block < blocks.length - 1) {
+      goBlock(block + 1);
+      say(`✓ Everyone's done. Next: ${blocks[block + 1].map((i) => steps[i].name).join(" + ")}`);
+    } else if (allDone) say("✓ Everyone's done. Add another exercise or circuit, or finish.");
+    else say(`✓ Round done for everyone. Round ${Math.min(...active.map((p) => roundsDone(now, p, names))) + 1} next.`);
   };
 
   // Wrong person tapped: the set moves to the right client (trainer update policy, 0134).
@@ -259,7 +295,10 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const openPicker = (mode: "one" | "superset") => {
     setTicked([]);
     setSearch("");
-    setAdding(mode);
+    if (!openFor) return setAdding(mode);
+    // From a person's block: let it close first (iPhone can't open one full-screen pop-up while another closes).
+    setOpenFor(null);
+    setTimeout(() => setAdding(mode), 450);
   };
 
   const tick = (e: { id: string | null; name: string }) =>
@@ -273,10 +312,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
 
   const addTicked = () => {
     if (!adding || ticked.length === 0) return;
-    const asSuperset = adding === "superset";
-    const out = addSteps(steps, ticked, asSuperset, `ss-${Date.now()}`);
+    const out = addSteps(steps, ticked, adding === "superset", `ss-${Date.now()}`);
     setSteps(out.steps);
-    setIndex(out.index);
+    goBlock(blockOfStep(out.steps, out.index));
     setAdding(null);
     setTicked([]);
   };
@@ -366,12 +404,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
 
   const withPlan = picked.filter((id) => plans[id]);
   const shown = forPlace(library, place);
-  const nextUp = inSuperset ? steps[stations[(station + 1) % stations.length]] : null;
-  const supersetLetter = (i: number) => {
-    // Supersets are numbered in the order they appear: Superset 1, 2 ...
-    const groups = [...new Set(steps.slice(0, i + 1).map((s) => s.group).filter(Boolean))];
-    return groups.length;
-  };
+  const blockTitle = isCircuit ? `Superset · ${current.length} exercises` : current[0]?.name ?? "";
+  const setLine = (l: WorkoutLog, n: number) => `${l.warm_up ? "W" : `${n}.`} ${l.weight_kg != null ? `${l.weight_kg}kg×` : ""}${l.reps}`;
+  const opened = openFor ? group.find((c) => c.id === openFor) ?? null : null;
 
   return (
     <View style={styles.container}>
@@ -391,44 +426,45 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
           </ScrollView>
         )}
 
-        {step ? (
+        {current.length > 0 ? (
           <>
-            {/* Every exercise, superset or not, is one page: arrows go back and forward. */}
-            <View style={[styles.stepRow, inSuperset && { borderColor: themeBorder(BRAND_GOLD) }]}>
-              <Pressable style={styles.arrowBox} onPress={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0} hitSlop={10}>
-                <Text style={[styles.arrow, index === 0 && styles.arrowOff]}>◀</Text>
+            {/* What everyone is on now: one exercise or a whole superset. */}
+            <View style={[styles.stepRow, isCircuit && { borderColor: themeBorder(BRAND_GOLD) }]}>
+              <Pressable style={styles.arrowBox} onPress={() => goBlock(Math.max(0, block - 1))} disabled={block === 0} hitSlop={10}>
+                <Text style={[styles.arrow, block === 0 && styles.arrowOff]}>◀</Text>
               </Pressable>
               <View style={{ flex: 1, alignItems: "center" }}>
                 <Text style={styles.stepCount}>
-                  Exercise {index + 1} of {steps.length}
+                  {block + 1} of {blocks.length}
                 </Text>
-                {inSuperset && (
-                  <Text style={styles.supersetTag}>
-                    Superset {supersetLetter(index)} · station {station + 1} of {stations.length}
+                <Text style={styles.stepName} numberOfLines={2}>
+                  {blockTitle}
+                </Text>
+                {isCircuit ? (
+                  current.map((s, i) => (
+                    <Text key={s.name} style={styles.stepSub} numberOfLines={1}>
+                      {i + 1}. {s.name} · {s.sets} × {s.reps}
+                    </Text>
+                  ))
+                ) : (
+                  <Text style={styles.stepSub}>
+                    {current[0].sets} sets × {current[0].reps}
                   </Text>
                 )}
-                <Text style={styles.stepName} numberOfLines={2}>
-                  {step.name}
-                </Text>
-                <Text style={styles.stepSub}>
-                  {step.sets} sets × {step.reps}
-                  {nextUp ? `  ·  then ${nextUp.name}` : ""}
-                </Text>
               </View>
-              <Pressable style={styles.arrowBox} onPress={() => setIndex((i) => Math.min(steps.length - 1, i + 1))} disabled={index >= steps.length - 1} hitSlop={10}>
-                <Text style={[styles.arrow, index >= steps.length - 1 && styles.arrowOff]}>▶</Text>
+              <Pressable style={styles.arrowBox} onPress={() => goBlock(Math.min(blocks.length - 1, block + 1))} disabled={block >= blocks.length - 1} hitSlop={10}>
+                <Text style={[styles.arrow, block >= blocks.length - 1 && styles.arrowOff]}>▶</Text>
               </Pressable>
             </View>
 
+            {/* One block per person, in their colour. Tap to open everything they're doing now. */}
             <View style={styles.grid}>
               {group.map((c) => {
                 const slot = slotOf(c.id);
-                const all = logs.filter((l) => l.client_id === c.id && l.exercise_name === step.name);
-                const warm = all.filter((l) => l.warm_up);
-                const sets = clientSets(logs, c.id, step.name);
-                const done = sets.length >= step.sets;
+                const done = roundsDone(logs, c.id, names);
+                const finishedAll = done >= rounds;
                 return (
-                  <Pressable key={c.id} style={[styles.card, { borderColor: themeBorder(slot.color) }]} onPress={() => openEntry(c.id)}>
+                  <Pressable key={c.id} style={[styles.card, { borderColor: themeBorder(slot.color) }]} onPress={() => openPerson(c.id)}>
                     <View style={styles.cardTop}>
                       <View style={[styles.badge, { backgroundColor: themeBg(slot.color) }]}>
                         <Text style={styles.badgeText}>{slot.letter}</Text>
@@ -436,30 +472,25 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                       <Text style={styles.cardName} numberOfLines={1}>
                         {first(c)}
                       </Text>
-                      {!holds[c.id] && (
-                        <Text style={[styles.cardCount, done && { color: themeText("#22C55E") }]}>
-                          {sets.length}/{step.sets}
-                        </Text>
-                      )}
                     </View>
                     {holds[c.id] ? (
                       <Text style={styles.hold}>On hold</Text>
                     ) : (
                       <>
-                        {/* Tap a set to fix it, move it to the right person or remove it. */}
-                        <View style={styles.setChips}>
-                          {[...warm, ...sets].map((s, i) => (
-                            <Pressable key={s.id} style={[styles.setChip, s.warm_up && styles.setChipWarm]} onPress={() => setSetMenu(s)} hitSlop={3}>
-                              <Text style={styles.setChipText}>
-                                {s.warm_up ? "W " : `${i - warm.length + 1}. `}
-                                {s.weight_kg != null ? `${s.weight_kg}kg×` : ""}
-                                {s.reps}
-                              </Text>
-                            </Pressable>
-                          ))}
-                        </View>
+                        <Text style={[styles.cardCount, finishedAll && { color: themeText("#22C55E") }]}>
+                          {finishedAll ? "✓ Done" : `${isCircuit ? "Round" : "Set"} ${done + 1} of ${rounds}`}
+                        </Text>
+                        {current.map((s) => {
+                          const last = clientSets(logs, c.id, s.name).at(-1);
+                          return (
+                            <Text key={s.name} style={styles.cardLine} numberOfLines={1}>
+                              {isCircuit ? `${s.name.split(" ").slice(-1)[0]}: ` : "Last: "}
+                              {last ? `${last.weight_kg != null ? `${last.weight_kg}kg×` : ""}${last.reps}` : "–"}
+                            </Text>
+                          );
+                        })}
                         <View style={[styles.logButton, { backgroundColor: themeBg(slot.color) }]}>
-                          <Text style={styles.logText}>+ Log set</Text>
+                          <Text style={styles.logText}>Open {first(c)} ›</Text>
                         </View>
                       </>
                     )}
@@ -469,23 +500,21 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
             </View>
           </>
         ) : (
-          <Text style={[styles.helper, { textAlign: "center", marginVertical: 20 }]}>Add the first exercise or superset to start.</Text>
+          <Text style={[styles.helper, { textAlign: "center", marginVertical: 20 }]}>Add the first exercise or circuit to start.</Text>
         )}
 
-        {/* Add more any time: single exercises or a superset, they go in as new pages. */}
         <View style={styles.addRow}>
           <Pressable style={styles.addButton} onPress={() => openPicker("one")}>
             <Text style={styles.addText}>+ Exercise</Text>
           </Pressable>
           <Pressable style={styles.addButton} onPress={() => openPicker("superset")}>
-            <Text style={styles.addText}>+ Superset</Text>
+            <Text style={styles.addText}>+ Circuit / superset</Text>
           </Pressable>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        {/* Sits just above the Finish bar, so it never covers the exercise or the cards' buttons. */}
-        {toast && (
+        {toast && !openFor && (
           <View style={styles.toast}>
             <Text style={styles.toastText}>{toast}</Text>
           </View>
@@ -501,117 +530,164 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
         <SafeBottom />
       </View>
 
-      {/* The set box, the same for every set: warm-up or working, superset or not. */}
-      <Modal visible={!!entryFor} animationType="slide" transparent onRequestClose={() => setEntryFor(null)}>
-        <KeyboardSafe>
-          <View style={styles.sheetWrap}>
-            {entryFor && step && (
-              <View style={[styles.sheet, { borderColor: themeBorder(slotOf(entryFor).color) }]}>
-                <View style={[styles.banner, { backgroundColor: themeBg(slotOf(entryFor).color) }]}>
-                  <Text style={styles.bannerLetter}>{slotOf(entryFor).letter}</Text>
+      {/* One person's block: every exercise they're on now, their tabs to jump to the next person. */}
+      <Modal visible={!!opened} animationType="slide" onRequestClose={() => setOpenFor(null)}>
+        <KeyboardSafe style={styles.container}>
+          <ModalSafeArea style={{ flex: 1 }}>
+            {opened && (
+              <>
+                <View style={styles.tabs}>
+                  {group.map((c) => {
+                    const slot = slotOf(c.id);
+                    const on = c.id === opened.id;
+                    return (
+                      <Pressable
+                        key={c.id}
+                        style={[styles.tab, { borderColor: themeBorder(slot.color) }, on && { backgroundColor: themeBg(slot.color) }]}
+                        onPress={() => openPerson(c.id)}
+                      >
+                        <Text style={[styles.tabText, { color: themeText(on ? "#0F172A" : slot.color) }]} numberOfLines={1}>
+                          {slot.letter} {first(c)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <View style={[styles.banner, { backgroundColor: themeBg(slotOf(opened.id).color), marginHorizontal: 12 }]}>
+                  <Text style={styles.bannerLetter}>{slotOf(opened.id).letter}</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.bannerText} numberOfLines={1}>
-                      {nameOf(entryFor).toUpperCase()}
+                      {opened.name.toUpperCase()}
                     </Text>
                     <Text style={styles.bannerSub} numberOfLines={1}>
-                      {step.name}
+                      {isCircuit ? `Superset · round ${Math.min(roundsDone(logs, opened.id, names) + 1, rounds)} of ${rounds}` : current[0]?.name}
                     </Text>
                   </View>
                 </View>
-                <View style={styles.kindRow}>
-                  {[true, false].map((w) => (
-                    <Pressable
-                      key={String(w)}
-                      style={[styles.kind, entryWarm === w && { backgroundColor: themeBg(slotOf(entryFor).color), borderColor: themeBorder(slotOf(entryFor).color) }]}
-                      onPress={() => pickEntryWarm(entryFor, w)}
-                    >
-                      <Text style={[styles.kindText, entryWarm === w && styles.chipTextOn]}>
-                        {w ? "Warm-up" : `Set ${nextSetNumber(logs, entryFor, step.name)} of ${step.sets}`}
-                      </Text>
+                <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+                  {current.map((s, i) => {
+                    const d = draftOf(opened.id)[i];
+                    const color = slotOf(opened.id).color;
+                    const today = logs.filter((l) => l.client_id === opened.id && l.exercise_name === s.name);
+                    const warmLogs = today.filter((l) => l.warm_up);
+                    const working = clientSets(logs, opened.id, s.name);
+                    return (
+                      <View key={s.name} style={styles.exBox}>
+                        <Text style={styles.exName} numberOfLines={1}>
+                          {isCircuit ? `${i + 1}. ` : ""}
+                          {s.name} <Text style={styles.exPlan}>{s.sets} × {s.reps}</Text>
+                        </Text>
+                        {today.length > 0 && (
+                          <View style={styles.setChips}>
+                            {[...warmLogs, ...working].map((l, n) => (
+                              <Pressable key={l.id} style={[styles.setChip, l.warm_up && styles.setChipWarm]} onPress={() => setSetMenu(l)} hitSlop={3}>
+                                <Text style={styles.setChipText}>{setLine(l, n - warmLogs.length + 1)} ✏️</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        )}
+                        <View style={styles.kindRow}>
+                          {[true, false].map((w) => (
+                            <Pressable
+                              key={String(w)}
+                              style={[styles.kind, d?.warm === w && { backgroundColor: themeBg(color), borderColor: themeBorder(color) }]}
+                              onPress={() => pickWarm(opened.id, i, w)}
+                            >
+                              <Text style={[styles.kindText, d?.warm === w && styles.chipTextOn]}>
+                                {w ? "Warm-up" : `Set ${nextSetNumber(logs, opened.id, s.name)} of ${s.sets}`}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                        <View style={styles.inputs}>
+                          <View style={{ flex: 1 }}>
+                            <TextInput style={styles.input} value={d?.weight ?? ""} onChangeText={(v) => setDraft(opened.id, i, { weight: v })} keyboardType="decimal-pad" placeholder="kg (blank = bodyweight)" placeholderTextColor="#64748B" />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <TextInput style={styles.input} value={d?.reps ?? ""} onChangeText={(v) => setDraft(opened.id, i, { reps: v })} keyboardType="number-pad" placeholder={`reps (${s.reps})`} placeholderTextColor="#64748B" />
+                          </View>
+                        </View>
+                        {!d?.warm && (
+                          <View style={[styles.chips, { marginTop: 6 }]}>
+                            {EFFORT_OPTIONS.map((o) => (
+                              <Pressable key={o.key} style={[styles.chip, d?.effort === o.key && { backgroundColor: themeBg(color) }]} onPress={() => setDraft(opened.id, i, { effort: o.key })}>
+                                <Text style={[styles.chipText, d?.effort === o.key && styles.chipTextOn]}>{o.label}</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                {toast && (
+                  <View style={styles.panelToast}>
+                    <Text style={styles.toastText}>{toast}</Text>
+                  </View>
+                )}
+                <View style={styles.panelFooter}>
+                  <Pressable style={[styles.saveButton, { backgroundColor: themeBg(slotOf(opened.id).color), marginTop: 0 }]} onPress={logSet} disabled={saving}>
+                    {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>✓ Log {first(opened)}'s set</Text>}
+                  </Pressable>
+                  <View style={styles.addRow}>
+                    <Pressable style={styles.addButton} onPress={() => openPicker("superset")}>
+                      <Text style={styles.addText}>+ Another circuit</Text>
+                    </Pressable>
+                    <Pressable style={styles.addButton} onPress={() => setOpenFor(null)}>
+                      <Text style={styles.addText}>Back to everyone</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </>
+            )}
+          </ModalSafeArea>
+        </KeyboardSafe>
+
+        {/* A logged set: fix it, move it to the right person, or remove it. Inside this Modal so it opens on top. */}
+        <Modal visible={!!setMenu} animationType="fade" transparent onRequestClose={() => setSetMenu(null)}>
+          <View style={styles.sheetWrap}>
+            {setMenu && (
+              <View style={styles.sheet}>
+                <Text style={styles.sheetTitle}>
+                  {slotOf(setMenu.client_id).letter} · {first({ name: nameOf(setMenu.client_id) })} · {setMenu.exercise_name}
+                  {"\n"}
+                  {setMenu.warm_up ? "Warm-up" : `Set ${setMenu.set_number}`}: {setMenu.weight_kg != null ? `${setMenu.weight_kg}kg × ` : ""}
+                  {setMenu.reps}
+                </Text>
+                <Pressable
+                  style={[styles.pickRow, { borderColor: themeBorder(BRAND_GOLD) }]}
+                  onPress={() => {
+                    setFixing(setMenu);
+                    setSetMenu(null);
+                  }}
+                >
+                  <Text style={styles.pickName}>✏️ Fix the weight or reps, or remove it</Text>
+                </Pressable>
+                {group
+                  .filter((c) => c.id !== setMenu.client_id && !holds[c.id])
+                  .map((c) => (
+                    <Pressable key={c.id} style={[styles.pickRow, { borderColor: themeBorder(slotOf(c.id).color) }]} onPress={() => moveSet(setMenu, c.id)}>
+                      <View style={[styles.badge, { backgroundColor: themeBg(slotOf(c.id).color) }]}>
+                        <Text style={styles.badgeText}>{slotOf(c.id).letter}</Text>
+                      </View>
+                      <Text style={styles.pickName}>Wrong person: move it to {first(c)}</Text>
                     </Pressable>
                   ))}
-                </View>
-                {entryWarm && <Text style={styles.helper}>Easy set at about half the weight. It doesn't count as one of the {step.sets} sets.</Text>}
-                <View style={styles.inputs}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.label}>Weight (kg)</Text>
-                    <TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="decimal-pad" placeholder="Bodyweight" placeholderTextColor="#64748B" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.label}>Reps</Text>
-                    <TextInput style={styles.input} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder={step.reps} placeholderTextColor="#64748B" />
-                  </View>
-                </View>
-                {!entryWarm && (
-                  <>
-                    <Text style={styles.label}>Good reps left</Text>
-                    <View style={styles.chips}>
-                      {EFFORT_OPTIONS.map((o) => (
-                        <Pressable key={o.key} style={[styles.chip, effort === o.key && { backgroundColor: themeBg(slotOf(entryFor).color) }]} onPress={() => setEffort(o.key)}>
-                          <Text style={[styles.chipText, effort === o.key && styles.chipTextOn]}>{o.label}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </>
-                )}
-                <Pressable style={[styles.saveButton, { backgroundColor: themeBg(slotOf(entryFor).color) }]} onPress={saveSet} disabled={saving}>
-                  {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>Save {first({ name: nameOf(entryFor) })}'s {entryWarm ? "warm-up" : "set"}</Text>}
-                </Pressable>
-                <Pressable style={styles.cancel} onPress={() => setEntryFor(null)}>
+                <Pressable style={styles.cancel} onPress={() => setSetMenu(null)}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
                 <SafeBottom />
               </View>
             )}
           </View>
-        </KeyboardSafe>
+        </Modal>
+        <EditSetModal
+          set={fixing}
+          onSaved={(updated) => setLogs((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))}
+          onRemoved={(gone) => setLogs((prev) => prev.filter((l) => l.id !== gone.id))}
+          onClose={() => setFixing(null)}
+        />
       </Modal>
-
-      {/* A logged set: fix it, move it to the right person, or remove it. */}
-      <Modal visible={!!setMenu} animationType="fade" transparent onRequestClose={() => setSetMenu(null)}>
-        <View style={styles.sheetWrap}>
-          {setMenu && (
-            <View style={styles.sheet}>
-              <Text style={styles.sheetTitle}>
-                {slotOf(setMenu.client_id).letter} · {first({ name: nameOf(setMenu.client_id) })} · {setMenu.exercise_name}
-                {"\n"}
-                {setMenu.warm_up ? "Warm-up" : `Set ${setMenu.set_number}`}: {setMenu.weight_kg != null ? `${setMenu.weight_kg}kg × ` : ""}
-                {setMenu.reps}
-              </Text>
-              <Pressable
-                style={[styles.pickRow, { borderColor: themeBorder(BRAND_GOLD) }]}
-                onPress={() => {
-                  setFixing(setMenu);
-                  setSetMenu(null);
-                }}
-              >
-                <Text style={styles.pickName}>✏️ Fix the weight or reps</Text>
-              </Pressable>
-              {group
-                .filter((c) => c.id !== setMenu.client_id && !holds[c.id])
-                .map((c) => (
-                  <Pressable key={c.id} style={[styles.pickRow, { borderColor: themeBorder(slotOf(c.id).color) }]} onPress={() => moveSet(setMenu, c.id)}>
-                    <View style={[styles.badge, { backgroundColor: themeBg(slotOf(c.id).color) }]}>
-                      <Text style={styles.badgeText}>{slotOf(c.id).letter}</Text>
-                    </View>
-                    <Text style={styles.pickName}>Wrong person: move it to {first(c)}</Text>
-                  </Pressable>
-                ))}
-              <Pressable style={styles.cancel} onPress={() => setSetMenu(null)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <SafeBottom />
-            </View>
-          )}
-        </View>
-      </Modal>
-
-      <EditSetModal
-        set={fixing}
-        onSaved={(updated) => setLogs((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))}
-        onRemoved={(gone) => setLogs((prev) => prev.filter((l) => l.id !== gone.id))}
-        onClose={() => setFixing(null)}
-      />
 
       {/* The exercise picker: tick one or more (in order), then add them. */}
       <Modal visible={!!adding} animationType="slide" onRequestClose={() => setAdding(null)}>
@@ -619,7 +695,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
           <ModalSafeArea style={{ flex: 1 }}>
             <View style={{ padding: 16, flex: 1 }}>
               <View style={styles.addHeader}>
-                <Text style={styles.title}>{adding === "superset" ? "Add a superset" : "Add exercises"}</Text>
+                <Text style={styles.title}>{adding === "superset" ? "Add a circuit / superset" : "Add exercises"}</Text>
                 <Pressable onPress={() => setAdding(null)} hitSlop={10}>
                   <Text style={styles.cancelText}>Close</Text>
                 </Pressable>
@@ -627,7 +703,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
               <Text style={styles.helper}>
                 {adding === "superset"
                   ? `Tick ${SUPERSET_MIN}-${SUPERSET_MAX} exercises in the order they'll do them, back to back.`
-                  : "Tick one or more. Everyone in the group does them, each on its own page."}
+                  : "Tick one or more. Everyone in the group does them, one after the other."}
               </Text>
               {adding === "superset" && steps.length > 0 && (
                 <>
@@ -688,7 +764,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                     ? `Tick at least ${SUPERSET_MIN}`
                     : "Tick an exercise"
                   : adding === "superset"
-                    ? `Add superset (${ticked.length})`
+                    ? `Add circuit (${ticked.length})`
                     : `Add ${ticked.length} exercise${ticked.length === 1 ? "" : "s"}`;
                 return (
                   <Pressable style={[styles.saveButton, { backgroundColor: themeBg(ready ? BRAND_GOLD : "#334155") }]} disabled={!ready} onPress={addTicked}>
@@ -739,8 +815,17 @@ const styles = themedStyles({
   card: { width: "48%", flexGrow: 1, backgroundColor: "#1E293B", borderRadius: 14, borderWidth: 3, padding: 10 },
   cardTop: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
   cardName: { color: "#fff", fontSize: 17, fontWeight: "800", flex: 1 },
-  cardCount: { color: "#E2E8F0", fontSize: 17, fontWeight: "900" },
-  setChips: { flexDirection: "row", flexWrap: "wrap", gap: 4, minHeight: 26 },
+  cardCount: { color: "#E2E8F0", fontSize: 16, fontWeight: "900", marginBottom: 2 },
+  cardLine: { color: "#CBD5E1", fontSize: 13 },
+  tabs: { flexDirection: "row", gap: 6, padding: 12 },
+  tab: { flex: 1, borderWidth: 2, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
+  tabText: { fontWeight: "900", fontSize: 14 },
+  exBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 10, marginBottom: 8 },
+  exName: { color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 6 },
+  exPlan: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
+  panelFooter: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderTopWidth: 1, borderTopColor: "#1E293B" },
+  panelToast: { marginHorizontal: 12, marginBottom: 6, backgroundColor: "#14532D", borderRadius: 10, padding: 10 },
+  setChips: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 6 },
   setChip: { backgroundColor: "#0F172A", borderRadius: 6, paddingVertical: 3, paddingHorizontal: 6 },
   setChipWarm: { borderWidth: 1, borderColor: "#475569", backgroundColor: "transparent" },
   setChipText: { color: "#E2E8F0", fontSize: 12.5, fontWeight: "600" },
