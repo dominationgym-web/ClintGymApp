@@ -381,11 +381,11 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
 }
 
 function SessionLine({
-  s,
-  name,
+  s: first,
+  name: given,
   onOpen,
   showDay,
-  others = [],
+  others: othersIn = [],
   nameOf,
 }: {
   s: LiveSession;
@@ -396,6 +396,17 @@ function SessionLine({
   others?: LiveSession[];
   nameOf?: (s: LiveSession) => string;
 }) {
+  // Someone away and someone else in their slot (GRIZZ 2026-11-16: "Dan's
+  // name goes 1st with C U attached and Steve's name below has away"): the
+  // people training lead the line, the away owner sits underneath in red.
+  const all = [first, ...othersIn];
+  const here = all.filter((x) => !isAway(x));
+  const gone = all.filter(isAway);
+  const mixed = here.length > 0 && gone.length > 0;
+  const s = mixed ? here[0] : first;
+  const others = mixed ? [...here.slice(1), ...gone] : othersIn;
+  const firstName = (x: LiveSession) => (nameOf ? nameOf(x) : "").split(" ")[0];
+  const name = mixed && nameOf ? here.map(firstName).join(" & ") + (here.length > 1 ? " 👥" : "") : given;
   const kind = sessionKind(s);
   const style = KIND_STYLE[kind];
   const detail = (x: LiveSession) => {
@@ -421,8 +432,8 @@ function SessionLine({
       </Text>
       {each ? (
         each.map((x) => (
-          <Text key={x.id} style={[styles.rowKind, { color: themeText(KIND_STYLE[sessionKind(x)].colour) }]}>
-            {(nameOf ? nameOf(x) : "").split(" ")[0]}: {detail(x)}
+          <Text key={x.id} style={[styles.rowKind, { color: themeText(mixed && isAway(x) ? "#EF4444" : KIND_STYLE[sessionKind(x)].colour) }, mixed && isAway(x) && { fontWeight: "700" }]}>
+            {firstName(x)}: {mixed && isAway(x) ? `away (${awayTag(x).replace(/^✈️ Away /, "")})` : x.makeup_for ? `🔁 Catch-up · ${detail(x).replace(/^• /, "")}` : detail(x)}
           </Text>
         ))
       ) : (
