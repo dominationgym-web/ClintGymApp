@@ -1,9 +1,10 @@
-import { parseIsoDate, toIsoDate } from "@/lib/dates";
+import { parseIsoDate } from "@/lib/dates";
 import type { WorkoutSession } from "@/types/database";
 
 // Weekend catch-up (0101): a training calendar workout missed this week can
-// be done on Saturday or Sunday. On other days (GRIZZ, 2026-10-23) the client
-// can choose to do yesterday's missed workout instead of today's. The server
+// be done on Saturday or Sunday, where the screen opens on it. On other days
+// (GRIZZ, 2026-11-16, 0216) the client can choose to do any workout missed
+// this week instead of today's; today's then counts as missed. The server
 // works out which ones were missed (my_missed_workouts); this decides which
 // workout the screen opens on and which ones the client can pick.
 
@@ -19,20 +20,12 @@ export function isWeekend(iso: string): boolean {
   return day === 0 || day === 6;
 }
 
-function dayBefore(iso: string): string {
-  const d = parseIsoDate(iso);
-  d.setDate(d.getDate() - 1);
-  return toIsoDate(d);
-}
-
 /**
- * The missed workouts the client can do today: any from this week at the
- * weekend, otherwise only yesterday's.
+ * The missed workouts the client can do today: any from this week, on any
+ * day (GRIZZ, 2026-11-16; before that only yesterday's on a weekday).
  */
-export function catchUpChoices<T extends Pick<MissedWorkout, "workout_date">>(today: string, missed: T[]): T[] {
-  if (isWeekend(today)) return missed;
-  const yesterday = dayBefore(today);
-  return missed.filter((m) => m.workout_date === yesterday);
+export function catchUpChoices<T extends Pick<MissedWorkout, "workout_date">>(_today: string, missed: T[]): T[] {
+  return missed;
 }
 
 /**
@@ -49,7 +42,7 @@ export function catchUpDate(
 ): string | null {
   if (todaySession) return todaySession.makeup_for ?? null;
   if (chosen === "today") return null;
-  // On a weekday the screen stays on today's workout unless they pick yesterday's.
+  // On a weekday the screen stays on today's workout unless they pick a missed one.
   if (!isWeekend(today)) return chosen && catchUpChoices(today, missed).some((m) => m.workout_date === chosen) ? chosen : null;
   if (chosen && missed.some((m) => m.workout_date === chosen)) return chosen;
   return missed[0]?.workout_date ?? null;

@@ -165,7 +165,8 @@ export function weekFacts(input: SummaryInputs, today: string): WeekFacts {
   );
   const stepGoalDays = stepDays.filter((d) => d.goal !== null);
 
-  const doneDays = new Set(sessions.filter((s) => s.status !== "missed").map((s) => s.session_date));
+  // A session that caught up another day doesn't count for its own day's workout (0216).
+  const doneDays = new Set(sessions.filter((s) => s.status !== "missed" && !s.makeup_for).map((s) => s.session_date));
   const madeUp = new Set(sessions.map((s) => s.makeup_for).filter((d): d is string => !!d));
   const planned = [...new Set(input.planned.filter(inWeek))];
   // A planned day that has passed with nothing done (and wasn't caught up later).
