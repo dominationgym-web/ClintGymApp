@@ -9,12 +9,13 @@ import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseWeight } from "@/lib/weightInput";
-import { filterExercises } from "@/lib/exerciseFilter";
+import { categoryLabel, exerciseCategories, filterExercises, muscleGroup } from "@/lib/exerciseFilter";
 import { EFFORT_OPTIONS } from "@/lib/progression";
 import { WARM_UP_REST_SECONDS } from "@/lib/programs";
 import {
   lastWeightOf,
   roundProblem,
+  SUPERSET_DEFAULT_ROUNDS,
   SUPERSET_MAX,
   SUPERSET_MIN,
   supersetRest,
@@ -42,6 +43,7 @@ export default function SupersetLogger({
   todaysSets,
   categoryOf,
   categoriesToday,
+  startWith,
   onSaved,
   onClose,
 }: {
@@ -57,6 +59,11 @@ export default function SupersetLogger({
   categoryOf: (pick: SupersetPick) => string | null;
   /** Body parts already worked today. */
   categoriesToday: (string | null)[];
+  /**
+   * "+ Superset this" on an open exercise (GRIZZ 2026-11-17): it's already
+   * picked as number 1, and the rounds are the sets it has left.
+   */
+  startWith?: SupersetPick | null;
   onSaved: (logs: WorkoutLog[]) => void;
   onClose: () => void;
 }) {
@@ -74,12 +81,15 @@ export default function SupersetLogger({
   // working round. Null once it's done or skipped.
   const [warmUps, setWarmUps] = useState<boolean[] | null>(null);
   const [startWeights, setStartWeights] = useState<string[]>([]);
+  // Tap a muscle to see its exercises, no typing needed.
+  const [muscle, setMuscle] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible) return;
-    setPicks([]);
+    setPicks(startWith ? [startWith] : []);
     setStarted(false);
     setSearch("");
+    setMuscle(startWith ? muscleGroup(categoryOf(startWith)) : null);
     setResting(0);
     setWarmUps(null);
   }, [visible]);
@@ -109,7 +119,9 @@ export default function SupersetLogger({
     const starts = picks.map((p) => String(lastWeightOf(p, logs) ?? ""));
     setStartWeights(starts);
     const done = Math.min(...picks.map((p) => workingSetsOf(p, todaysSets)));
-    const due = done === 0 ? warmUpPicks(picks, categoryOf, todaysSets, categoriesToday) : [];
+    // Added part-way through an exercise (it has sets logged): they're warm already, no warm-up round.
+    const midway = !!startWith && workingSetsOf(startWith, todaysSets) > 0;
+    const due = done === 0 && !midway ? warmUpPicks(picks, categoryOf, todaysSets, categoriesToday) : [];
     if (due.some(Boolean)) {
       setWarmUps(due);
       setEntries(picks.map((p, i) => (due[i] ? warmUpEntry(p, starts[i] ? Number(starts[i]) : null) : blank())));
@@ -117,8 +129,15 @@ export default function SupersetLogger({
       setWarmUps(null);
       setEntries(starts.map((weight) => ({ ...blank(), weight })));
     }
-    setRounds(supersetRounds(picks));
-    setRound(done + 1);
+    if (startWith && picks[0]?.exercise_name === startWith.exercise_name) {
+      // Started from an exercise: the rounds are the sets it has left (at least 1).
+      const left = (startWith.row?.sets ?? SUPERSET_DEFAULT_ROUNDS) - workingSetsOf(startWith, todaysSets);
+      setRounds(Math.max(left, 1));
+      setRound(1);
+    } else {
+      setRounds(supersetRounds(picks));
+      setRound(done + 1);
+    }
     setStarted(true);
   };
 
@@ -203,11 +222,12 @@ export default function SupersetLogger({
   const options: SupersetPick[] = rows
     .filter((r) => r.kind !== "cardio")
     .map((r) => ({ exercise_id: r.exercise_id, exercise_name: r.exercise_name, row: r }));
-  const found = search.trim()
-    ? filterExercises(library, search)
-        .filter((e) => !options.some((o) => o.exercise_name === e.name))
-        .slice(0, 6)
-    : [];
+  const found =
+    search.trim() || muscle
+      ? filterExercises(library, search, muscle)
+          .filter((e) => !options.some((o) => o.exercise_name === e.name))
+          .slice(0, search.trim() ? 6 : 60)
+      : [];
   const allDone = round > rounds;
 
   return (
@@ -225,7 +245,9 @@ export default function SupersetLogger({
             {!started ? (
               <>
                 <Text style={styles.sub}>
-                  Pick {SUPERSET_MIN} to {SUPERSET_MAX} exercises in the order you'll do them. Do one set of each back to back, then log the round.
+                  {startWith
+                    ? `Tap what to do straight after ${startWith.exercise_name}. One set of each back to back, then log the round together.`
+                    : `Pick ${SUPERSET_MIN} to ${SUPERSET_MAX} exercises in the order you'll do them. Do one set of each back to back, then log the round.`}
                 </Text>
                 {picks.length > 0 && (
                   <Text style={styles.order}>{picks.map((p, i) => `${i + 1}. ${p.exercise_name}`).join("   ")}</Text>
@@ -256,23 +278,37 @@ export default function SupersetLogger({
                 </View>
                 {library.length > 0 && (
                   <>
-                    <Text style={styles.label}>Add another exercise</Text>
+                    <Text style={styles.label}>{startWith ? "Superset it with" : "Add another exercise"}</Text>
+                    <Text style={styles.hint}>Tap a body part, then tap the exercise.</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} keyboardShouldPersistTaps="handled">
+                      {exerciseCategories(library).map((m) => (
+                        <Pressable
+                          key={m}
+                          style={[styles.chip, { marginRight: 6 }, muscle === m && styles.chipOn]}
+                          onPress={() => setMuscle((cur) => (cur === m ? null : m))}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: muscle === m }}
+                        >
+                          <Text style={[styles.chipText, muscle === m && styles.chipTextOn]}>{m}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
                     <TextInput
                       style={styles.search}
                       value={search}
                       onChangeText={setSearch}
-                      placeholder="Search exercises"
+                      placeholder="Or search by name"
                       placeholderTextColor="#64748B"
                     />
                     {found.map((e) => (
                       <Pressable
                         key={e.id}
-                        style={styles.found}
+                        style={[styles.found, picked(e.name) && styles.foundOn]}
                         onPress={() => toggle({ exercise_id: e.id, exercise_name: e.name, row: null })}
                         accessibilityRole="button"
                       >
-                        <Text style={styles.foundText}>＋ {e.name}</Text>
-                        {e.category && <Text style={styles.foundCat}>{e.category}</Text>}
+                        <Text style={styles.foundText}>{picked(e.name) ? "✓" : "＋"} {e.name}</Text>
+                        {e.category && <Text style={styles.foundCat}>{categoryLabel(e.category)}</Text>}
                       </Pressable>
                     ))}
                   </>
@@ -432,6 +468,7 @@ const styles = themedStyles({
   chipTextOn: { color: "#0F172A" },
   search: { backgroundColor: "#1E293B", color: "#F8FAFC", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
   found: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#1E293B", borderRadius: 8, padding: 10 },
+  foundOn: { borderWidth: 1, borderColor: BRAND_GOLD },
   foundText: { color: "#F8FAFC", fontWeight: "600", flex: 1 },
   foundCat: { color: "#64748B", fontSize: 12 },
   start: { backgroundColor: "#D4AF37", borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 8 },
