@@ -50,6 +50,10 @@ import {
   dayLabel,
   fillAgreement,
   isAway,
+  allOut,
+  needsSorting,
+  dayRows,
+  freedSlot,
   groupFees,
   invoiceText,
   kindDetail,
@@ -194,7 +198,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const byId = useMemo(() => Object.fromEntries(clients.map((c) => [c.id, c])), [clients]);
   const planOf = useMemo(() => Object.fromEntries(plans.map((p) => [p.client_id, p])), [plans]);
   const now = new Date();
-  const todo = sessions.filter((s) => ["unconfirmed", "decide"].includes(sessionKind(s, now)) || (s.status === "done" && s.client_disputed_at));
+  const todo = sessions.filter((s) => needsSorting(s, now));
   // Cleared by the trainer for these terms: no signature needed (0191, GRIZZ 2026-11-04).
   const unsigned = plans.filter((p) => p.active && !agreementCurrent(signed[p.client_id], p) && !agreementCurrent(p.agreement_cleared, p));
   const catchUps = sessions.filter((s) => s.charge === "makeup" && !s.makeup_session_id && (s.status === "cancelled" || s.status === "no_show"));
@@ -237,16 +241,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
           {tab === "todo" && (
             <ToDo
               todo={todo}
-              today={sessions.filter((s) => dayKey(s.starts_at) === dayKey(now) && s.status !== "removed" && !todo.includes(s))}
-              freedToday={sessions.some((s) => s.status === "removed" && !!s.stop_id && dayKey(s.starts_at) === dayKey(now))}
-              openToday={openSlots(
-                settings?.day_start ?? "05:00",
-                settings?.day_end ?? "20:00",
-                settings?.minutes ?? 60,
-                sessions
-                  .filter((s) => dayKey(s.starts_at) === dayKey(now) && (s.status === "booked" || s.status === "done" || freedSlot(s, now)))
-                  .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))
-              ).filter((t) => t > clockLabel(now.toISOString()))}
+              day={dayRows(sessions, dayKey(now), settings, now)}
               onBookAt={(t) => {
                 setBookAt(t);
                 setTab("calendar");
@@ -448,21 +443,6 @@ function SessionLine({
   );
 }
 
-/**
- * A session whose slot is free again but keeps its own card: away (0184), or
- * cancelled / a no-show still to come. GRIZZ 2026-11-16: "instead of showing
- * two slots for 12 ... the one with the client's name goes green" - so no
- * separate Available card for the same time.
- */
-const freedSlot = (s: LiveSession, now: Date) =>
-  isAway(s) || ((s.status === "cancelled" || s.status === "no_show") && new Date(s.starts_at).getTime() > now.getTime());
-
-/** Everyone on the line is out (away, or cancelled ahead of time): the slot is free to book. */
-const allAway = (l: { s: LiveSession; with: LiveSession[] }) => {
-  const now = new Date();
-  return [l.s, ...l.with].every((x) => freedSlot(x, now));
-};
-
 // A slot whose people are away (GRIZZ, 2026-11-02): "the name stays there,
 // but the colour will switch to green, meaning it's available to book".
 function AwayLine({
@@ -498,9 +478,7 @@ function AwayLine({
 
 function ToDo({
   todo,
-  today,
-  openToday,
-  freedToday,
+  day,
   onBookAt,
   catchUps,
   onCatchUp,
@@ -513,11 +491,8 @@ function ToDo({
   onChanged,
 }: {
   todo: LiveSession[];
-  today: LiveSession[];
-  /** Open slots left today, shown as Available (GRIZZ 2026-11-02). */
-  openToday: string[];
-  /** A client who stopped training (0207) was on today: show the gaps even if nothing else is booked. */
-  freedToday?: boolean;
+  /** Today's list (shared with the home-screen widget, dayRows). */
+  day: ReturnType<typeof dayRows<LiveSession>>;
   onBookAt: (time: string) => void;
   catchUps: LiveSession[];
   onCatchUp: (s: LiveSession) => void;
@@ -549,13 +524,9 @@ function ToDo({
     <>
       {/* Today's sessions first: the 1 on 1 side is about the day (GRIZZ, 2026-11-01). */}
       <Text style={styles.sectionTitle}>Today · {dayLabel(new Date().toISOString())}</Text>
-      {[
-        ...jointLines(today).map((l) => ({ time: clockLabel(l.s.starts_at), l })),
-        ...(today.length || freedToday ? openToday.map((t) => ({ time: t, l: null })) : []),
-      ]
-        .sort((a, b) => a.time.localeCompare(b.time))
-        .map(({ time, l }) =>
-          l && allAway(l) ? (
+      {day.rows
+        .map(({ time, line: l }) =>
+          l && allOut(l) ? (
             <AwayLine key={l.s.id} l={l} name={jointName(l, who)} nameOf={who} onBook={onBookAt} />
           ) : l ? (
             <SessionLine key={l.s.id} s={l.s} name={jointName(l, who)} others={l.with} nameOf={who} onOpen={onOpen} />
@@ -565,8 +536,8 @@ function ToDo({
             </Pressable>
           )
         )}
-      {!today.length ? (
-        <Text style={styles.helper}>{openToday.length ? `No sessions booked today. Open from ${openToday[0]}.` : "No sessions booked today."}</Text>
+      {!day.booked.length ? (
+        <Text style={styles.helper}>{day.open.length ? `No sessions booked today. Open from ${day.open[0]}.` : "No sessions booked today."}</Text>
       ) : null}
 
       {clear ? <Text style={styles.helper}>All clear 👍 Every past session is marked and every invoice is sent.</Text> : null}
@@ -928,7 +899,7 @@ function CalendarTab({
         </Pressable>
       </View>
       {lines.map((l) =>
-        l.s && allAway({ s: l.s, with: l.with }) ? (
+        l.s && allOut({ s: l.s, with: l.with }) ? (
           <AwayLine key={l.s.id} l={{ s: l.s, with: l.with }} name={jointName({ s: l.s, with: l.with }, who)} nameOf={who} onBook={choose} />
         ) : l.s ? (
           <SessionLine key={l.s.id} s={l.s} name={jointName({ s: l.s, with: l.with }, who)} others={l.with} nameOf={who} onOpen={onOpen} />

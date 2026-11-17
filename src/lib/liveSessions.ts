@@ -177,6 +177,66 @@ export function outLabel(x: { status: string; away_id?: string | null; note?: st
   return what + after;
 }
 
+/**
+ * A session whose slot is free again but keeps its own card: away (0184), or
+ * cancelled / a no-show still to come. GRIZZ 2026-11-16: "instead of showing
+ * two slots for 12 ... the one with the client's name goes green" - so no
+ * separate Available card for the same time.
+ */
+export function freedSlot(s: { status: string; away_id?: string | null; starts_at: string }, now: Date = new Date()): boolean {
+  return isAway(s) || ((s.status === "cancelled" || s.status === "no_show") && new Date(s.starts_at).getTime() > now.getTime());
+}
+
+/** Everyone on the line is out (away, or cancelled ahead of time): the slot is free to book. */
+export function allOut<T extends { status: string; away_id?: string | null; starts_at: string }>(l: { s: T; with: T[] }, now: Date = new Date()): boolean {
+  return [l.s, ...l.with].every((x) => freedSlot(x, now));
+}
+
+/** Still to sort out, under "Did these happen?": over but not marked, a cancellation to decide, or disputed. */
+export function needsSorting(s: KindFields & { client_disputed_at?: string | null }, now: Date = new Date()): boolean {
+  const k = sessionKind(s, now);
+  return k === "unconfirmed" || k === "decide" || (s.status === "done" && !!s.client_disputed_at);
+}
+
+type DaySession = SlotRow & KindFields & { id: string; away_id?: string | null; stop_id?: string | null; client_disputed_at?: string | null };
+type DaySettings = { day_start?: string | null; day_end?: string | null; minutes?: number | null } | null | undefined;
+
+/**
+ * One day's list, exactly as 1 on 1 Today shows it (GRIZZ 2026-11-17: the
+ * home-screen widget shows "the exact same schedule and gaps and catch-ups"
+ * as the calendar, so both use this). Sessions (joint ones as one line, away
+ * and cancelled ones keeping their slot), plus the green Available gaps still
+ * to come, in time order. Sessions still to sort out are left off: they sit
+ * under "Did these happen?".
+ */
+export function dayRows<T extends DaySession>(
+  sessions: T[],
+  day: string,
+  settings: DaySettings,
+  now: Date = new Date()
+): { rows: { time: string; line: { s: T; with: T[] } | null }[]; booked: T[]; open: string[] } {
+  const onDay = sessions.filter((s) => dayKey(s.starts_at) === day);
+  const booked = onDay.filter((s) => s.status !== "removed" && !needsSorting(s, now));
+  // A client who stopped training (0207) was on: show the gaps even if nothing else is booked.
+  const freed = onDay.some((s) => s.status === "removed" && !!s.stop_id);
+  const today = dayKey(now);
+  const nowClock = clockLabel(now);
+  const open =
+    day < today
+      ? []
+      : openSlots(
+          settings?.day_start ?? "05:00",
+          settings?.day_end ?? "20:00",
+          settings?.minutes ?? 60,
+          onDay.filter((s) => s.status === "booked" || s.status === "done" || freedSlot(s, now)).map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes }))
+        ).filter((t) => day > today || t > nowClock);
+  const rows = [
+    ...jointLines(booked).map((line) => ({ time: clockLabel(line.s.starts_at), line })),
+    ...(booked.length || freed ? open.map((time) => ({ time, line: null })) : []),
+  ].sort((a, b) => a.time.localeCompare(b.time));
+  return { rows, booked, open };
+}
+
 /** "Camilla & Jade 👥" for a joint line, the full name for one person. */
 export function jointName<T>(line: { s: T; with: T[] }, name: (s: T) => string): string {
   if (!line.with.length) return name(line.s);
