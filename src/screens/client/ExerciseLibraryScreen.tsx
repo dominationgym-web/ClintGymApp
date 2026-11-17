@@ -43,7 +43,7 @@ import { findImprovements, SESSION_COLORS, SESSION_LABELS, sessionStatus, STAR_G
 import RestTimer from "@/components/RestTimer";
 import SupersetLogger from "@/components/SupersetLogger";
 import SupersetHeadsUp, { headsUpSeen, markHeadsUpSeen } from "@/components/SupersetHeadsUp";
-import { stationsSummary, supersetGroups, type SupersetGroup } from "@/lib/superset";
+import { stationsSummary, supersetGroups, type SupersetGroup, type SupersetPick } from "@/lib/superset";
 import EditSetModal from "@/components/EditSetModal";
 import { removeLiveDay, trainerCanRemove } from "@/lib/fixLiveWorkout";
 import { LoggedSetsByExercise } from "@/components/LoggedSetsByExercise";
@@ -187,6 +187,8 @@ export default function ExerciseLibraryScreen() {
   const [starred, setStarred] = useState<CelebrationInfo | null>(null);
   // Superset logger (GRIZZ, 2026-10-23): 2-4 exercises logged a round at a time.
   const [supersetOpen, setSupersetOpen] = useState(false);
+  // "+ Superset this" in a live session (GRIZZ 2026-11-17): the open exercise, picked first.
+  const [supersetFrom, setSupersetFrom] = useState<SupersetPick | null>(null);
   // Superset heads-up (GRIZZ, 2026-11-09): what to set up before a superset workout.
   const [headsUp, setHeadsUp] = useState<{ title: string; groups: SupersetGroup[] } | null>(null);
   // A badge earned in the superset logger shows once it closes (two pop-ups can't open at once).
@@ -470,6 +472,14 @@ export default function ExerciseLibraryScreen() {
   };
 
   // From the set log: close it first, since two pop-ups can't open at once.
+  const supersetFromLog = () => {
+    if (!selected) return;
+    const name = target?.exercise_name ?? selected.name;
+    setSupersetFrom({ exercise_id: target ? target.exercise_id : selected.id, exercise_name: name, row: target ?? null });
+    setSelected(null);
+    setTimeout(() => setSupersetOpen(true), 400);
+  };
+
   const hurtsFromLog = (row: ProgramExercise) => {
     setSelected(null);
     setTimeout(() => setHurting(row), 400);
@@ -1139,7 +1149,14 @@ export default function ExerciseLibraryScreen() {
                   </View>
                 )}
                 {!hold && (
-                  <Pressable style={styles.supersetButton} onPress={() => setSupersetOpen(true)} accessibilityRole="button">
+                  <Pressable
+                    style={styles.supersetButton}
+                    onPress={() => {
+                      setSupersetFrom(null);
+                      setSupersetOpen(true);
+                    }}
+                    accessibilityRole="button"
+                  >
                     <Text style={styles.supersetButtonText}>Do a superset</Text>
                   </Pressable>
                 )}
@@ -1572,12 +1589,14 @@ export default function ExerciseLibraryScreen() {
             (p.exercise_id ? categoryById.get(p.exercise_id) : undefined) ?? exercises.find((e) => e.name === p.exercise_name)?.category ?? null
           }
           categoriesToday={categoriesLoggedToday}
+          startWith={supersetFrom}
           onSaved={(logs) => {
             setAllTodaysSets((prev) => [...prev, ...logs]);
             logs.forEach((l) => checkAchievement(client.id, l).then((b) => b && (supersetBadge.current = b)));
           }}
           onClose={() => {
             setSupersetOpen(false);
+            setSupersetFrom(null);
             if (supersetBadge.current) setBadge(supersetBadge.current);
             supersetBadge.current = null;
           }}
@@ -1781,6 +1800,13 @@ export default function ExerciseLibraryScreen() {
                 <Text style={styles.buttonText}>{warmUpDue ? "Log warm-up set" : gaugeDue ? "Log gauge set" : "Log set"}</Text>
               )}
             </Pressable>
+            {/* Add a superset partner on the spot (GRIZZ 2026-11-17), e.g. leg press then lunge jumps. */}
+            {selected && live && !hold && target?.kind !== "cardio" && !targetNext && (
+              <Pressable style={styles.supersetButton} onPress={supersetFromLog} accessibilityRole="button">
+                <Text style={styles.supersetButtonText}>＋ Superset {target?.exercise_name ?? selected.name} with…</Text>
+                <Text style={styles.supersetButtonSub}>Tap the exercise to do straight after it, then log both together.</Text>
+              </Pressable>
+            )}
             {selected && !live && (
               <Pressable style={styles.filmButton} onPress={() => film.filmOrPick(selected.name)} disabled={film.uploading}>
                 {film.uploading ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.filmText}>Film this set for my coach</Text>}

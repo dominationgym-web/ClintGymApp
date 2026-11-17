@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  addSupersetPartner,
+  linkedFromPrev,
+  linkedToNext,
+  unlinkSuperset,
   warmUpRepsToFill,
   warmUpWeight,
   dayTitle,
@@ -409,5 +413,36 @@ describe("warmUpRepsToFill", () => {
     expect(warmUpRepsToFill("8-10")).toBe("8");
     expect(warmUpRepsToFill("12-15")).toBe("10");
     expect(warmUpRepsToFill("45 sec")).toBe("");
+  });
+});
+
+describe("builder supersets", () => {
+  const slot = (name: string, rest = 90) => ({ exerciseId: name, exerciseName: name, sets: 4, reps: "10", restSeconds: rest });
+  it("puts the partner straight after, with the anchor's sets, reps and rest", () => {
+    const out = addSupersetPartner([slot("Leg press"), slot("Curl")], 0, { exerciseId: "j", exerciseName: "Alternating lunge jumps" });
+    expect(out.map((s) => s.exerciseName)).toEqual(["Leg press", "Alternating lunge jumps", "Curl"]);
+    expect(out[0].restSeconds).toBe(0);
+    expect(out[1]).toMatchObject({ sets: 4, reps: "10", restSeconds: 90 });
+    expect(linkedToNext(out, 0)).toBe(true);
+    expect(linkedFromPrev(out, 1)).toBe(true);
+    expect(linkedToNext(out, 1)).toBe(false);
+  });
+  it("uses up an empty slot so the day keeps its count", () => {
+    const blank = { exerciseId: null, exerciseName: "", sets: 3, reps: "8-12", restSeconds: 120 };
+    const out = addSupersetPartner([slot("Leg press"), blank, blank], 0, { exerciseId: "j", exerciseName: "Lunge jump" });
+    expect(out.map((s) => s.exerciseName)).toEqual(["Leg press", "Lunge jump", ""]);
+  });
+  it("makes a tri-set when added on the partner", () => {
+    let out = addSupersetPartner([slot("A")], 0, { exerciseId: "b", exerciseName: "B" });
+    out = addSupersetPartner(out, 1, { exerciseId: "c", exerciseName: "C" });
+    expect(out.map((s) => s.restSeconds)).toEqual([0, 0, 90]);
+  });
+  it("undo gives the first one the round's rest back", () => {
+    const out = unlinkSuperset(addSupersetPartner([slot("A", 120)], 0, { exerciseId: "b", exerciseName: "B" }), 0);
+    expect(out.map((s) => s.restSeconds)).toEqual([120, 120]);
+  });
+  it("cardio never joins a superset", () => {
+    const out = [slot("A", 0), { ...slot("Bike", 0), kind: "cardio" as const }];
+    expect(linkedToNext(out, 0)).toBe(false);
   });
 });

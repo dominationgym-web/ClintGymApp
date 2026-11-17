@@ -335,6 +335,55 @@ export function resizeExercises(slots: DraftExercise[], count: number, blank: ()
   return next;
 }
 
+// Supersets in the builder (GRIZZ 2026-11-17): "+ Superset" on an exercise
+// puts the partner straight after it. The first one gets rest 0 (straight
+// into the next, the same rule built-in programs use) and the partner takes
+// over its rest, so the rest comes after the round. Tapping it again on the
+// partner makes a tri-set.
+
+/** Whether this slot goes straight into the next one with no rest (a superset). */
+export function linkedToNext(slots: DraftExercise[], index: number): boolean {
+  const s = slots[index];
+  const next = slots[index + 1];
+  return !!s && s.kind !== "cardio" && s.restSeconds === 0 && !!next && next.kind !== "cardio";
+}
+
+/** Whether the slot before this one goes straight into it. */
+export function linkedFromPrev(slots: DraftExercise[], index: number): boolean {
+  return index > 0 && linkedToNext(slots, index - 1);
+}
+
+/** Adds `partner` right after slot `index` as its superset, same sets and reps, using up an empty slot if there is one. */
+export function addSupersetPartner(
+  slots: DraftExercise[],
+  index: number,
+  partner: Pick<DraftExercise, "exerciseId" | "exerciseName">,
+): DraftExercise[] {
+  const anchor = slots[index];
+  if (!anchor || anchor.kind === "cardio") return slots;
+  const restAfter = anchor.restSeconds || 120;
+  const next = slots.map((s, i) => (i === index ? { ...s, restSeconds: 0 } : s));
+  next.splice(index + 1, 0, { exerciseId: partner.exerciseId, exerciseName: partner.exerciseName, sets: anchor.sets, reps: anchor.reps, restSeconds: restAfter });
+  // The partner fills one of the day's empty slots, so no blank one is left over.
+  let empty = -1;
+  for (let i = next.length - 1; i > index + 1; i--) {
+    if (next[i].kind !== "cardio" && !next[i].exerciseName) {
+      empty = i;
+      break;
+    }
+  }
+  if (empty >= 0) next.splice(empty, 1);
+  return next;
+}
+
+/** Breaks the link after slot `index`: it gets its own rest again (the round's rest). */
+export function unlinkSuperset(slots: DraftExercise[], index: number): DraftExercise[] {
+  let end = index + 1;
+  while (linkedToNext(slots, end)) end++;
+  const rest = slots[end]?.restSeconds || 120;
+  return slots.map((s, i) => (i === index ? { ...s, restSeconds: rest } : s));
+}
+
 /**
  * A program's rows with the cardio the trainer added for one client (0054)
  * slotted into every training day: after the `after`th exercise (never

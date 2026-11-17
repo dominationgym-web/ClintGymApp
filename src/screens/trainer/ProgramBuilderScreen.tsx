@@ -25,6 +25,10 @@ import {
   cardioDuration,
   DEFAULT_WARM_UP,
   resizeExercises,
+  addSupersetPartner,
+  linkedFromPrev,
+  linkedToNext,
+  unlinkSuperset,
   defaultSessionTitle,
   EXERCISE_COUNTS,
   formatRest,
@@ -69,6 +73,8 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const [sessions, setSessions] = useState<DraftSession[]>(() => [1, 3, 5].map(blankSession));
   const [activeDay, setActiveDay] = useState(1);
   const [picking, setPicking] = useState<number | null>(null);
+  // "+ Superset" (GRIZZ 2026-11-17): the slot whose superset partner is being picked.
+  const [pairing, setPairing] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [muscle, setMuscle] = useState<string | null>(null);
   const [place, setPlace] = useState<ExercisePlace>("gym");
@@ -157,7 +163,9 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
 
   const setCount = (count: number) => {
     if (!session) return;
-    updateSession({ exercises: resizeExercises(session.exercises, count, blankSlot) });
+    const resized = resizeExercises(session.exercises, count, blankSlot);
+    // A superset whose partner was taken off gets its own rest back.
+    updateSession({ exercises: resized.map((s, i) => (s.kind !== "cardio" && s.restSeconds === 0 && !linkedToNext(resized, i) ? { ...s, restSeconds: 120 } : s)) });
   };
 
   // Cardio blocks (0048) go between exercises or at the end of the session.
@@ -182,8 +190,14 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     updateSession({ exercises: session.exercises.map((s, i) => (i === index ? { ...s, ...change } : s)) });
   };
 
+  const addPartner = (index: number, exercise: Pick<Exercise, "id" | "name">) => {
+    if (!session) return;
+    updateSession({ exercises: addSupersetPartner(session.exercises, index, { exerciseId: exercise.id, exerciseName: exercise.name }) });
+  };
+
   const closePicker = () => {
     setPicking(null);
+    setPairing(null);
     setPreviewId(null);
     setSearch("");
     setMuscle(null);
@@ -197,12 +211,19 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   const target = picking !== null && session?.exercises[picking] ? picking : firstEmpty;
   const targetLabel = !session
     ? "the program"
-    : target >= 0
+    : pairing !== null && session.exercises[pairing]
+      ? `a superset with ${session.exercises[pairing].exerciseName}`
+      : target >= 0
       ? `Exercise ${exerciseNumber(target)} · ${SHORT_DAYS[session.day - 1]}`
       : `a new exercise · ${SHORT_DAYS[session.day - 1]}`;
   const addFromLibrary = (exercise: Exercise) => {
     if (!session) {
       Alert.alert("Pick a training day first", "Tick at least one day under Training days.");
+      return;
+    }
+    if (pairing !== null) {
+      addPartner(pairing, exercise);
+      setPairing(null);
       return;
     }
     const chosen = { exerciseId: exercise.id, exerciseName: exercise.name };
@@ -370,8 +391,18 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                 onRemove={() => removeSlot(i)}
               />
             ) : (
-            <View style={[styles.slot, wide && i === target && styles.slotTarget]}>
-              <Text style={styles.slotNumber}>Exercise {exerciseNumber(i)}</Text>
+            <View
+              style={[
+                styles.slot,
+                (linkedToNext(session.exercises, i) || linkedFromPrev(session.exercises, i)) && styles.slotSuperset,
+                linkedFromPrev(session.exercises, i) && styles.slotJoined,
+                wide && (i === target || i === pairing) && styles.slotTarget,
+              ]}
+            >
+              <Text style={styles.slotNumber}>
+                Exercise {exerciseNumber(i)}
+                {linkedFromPrev(session.exercises, i) ? `  ·  ⚡ superset with ${session.exercises[i - 1].exerciseName}` : ""}
+              </Text>
               <Pressable style={styles.picker} onPress={() => setPicking(i)}>
                 <Text style={slot.exerciseName ? styles.pickerText : styles.pickerPlaceholder}>
                   {slot.exerciseName || (wide ? "Click, then add one from the videos on the right" : "Tap to pick from the exercise videos")}
@@ -403,7 +434,16 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                 </View>
               </View>
 
-              <Text style={styles.label}>Rest between sets</Text>
+              {linkedToNext(session.exercises, i) ? (
+                <View style={styles.supersetLink}>
+                  <Text style={styles.supersetLinkText}>⚡ No rest: straight into {session.exercises[i + 1].exerciseName || "the next exercise"}</Text>
+                  <Pressable onPress={() => updateSession({ exercises: unlinkSuperset(session.exercises, i) })} hitSlop={8}>
+                    <Text style={styles.undoSuperset}>Undo superset</Text>
+                  </Pressable>
+                </View>
+              ) : (
+              <>
+              <Text style={styles.label}>{linkedFromPrev(session.exercises, i) ? "Rest after the round" : "Rest between sets"}</Text>
               <View style={styles.chipRow}>
                 {REST_OPTIONS.map((r) => (
                   <Pressable
@@ -415,13 +455,24 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                   </Pressable>
                 ))}
               </View>
+              {!!slot.exerciseName && (
+                <Pressable style={styles.supersetButton} onPress={() => setPairing(i)} accessibilityRole="button">
+                  <Text style={styles.supersetButtonText}>
+                    ＋ {linkedFromPrev(session.exercises, i) ? "Add another (tri-set)" : `Superset ${slot.exerciseName} with…`}
+                  </Text>
+                </Pressable>
+              )}
+              </>
+              )}
             </View>
             )}
+            {!linkedToNext(session.exercises, i) && (
             <Pressable onPress={() => addCardio(i + 1)} hitSlop={6} style={styles.addCardio}>
               <Text style={styles.addCardioText}>
                 + Add cardio {i === session.exercises.length - 1 ? "at the end" : "here"}
               </Text>
             </Pressable>
+            )}
             </React.Fragment>
           ))}
         </>
@@ -431,11 +482,13 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
         {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>Complete and save program</Text>}
       </Pressable>
 
-      <Modal visible={picking !== null && !wide} animationType="slide" onRequestClose={closePicker}>
+      <Modal visible={(picking !== null || pairing !== null) && !wide} animationType="slide" onRequestClose={closePicker}>
         <KeyboardSafe>
         <ModalSafeArea style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Pick an exercise</Text>
+            <Text style={[styles.modalTitle, { flex: 1 }]}>
+              {pairing !== null && session?.exercises[pairing] ? `Superset ${session.exercises[pairing].exerciseName} with…` : "Pick an exercise"}
+            </Text>
             <Pressable onPress={closePicker}>
               <Text style={styles.close}>Close</Text>
             </Pressable>
@@ -477,7 +530,8 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                   <Pressable
                     style={styles.useButton}
                     onPress={() => {
-                      if (picking !== null) update(picking, { exerciseId: item.id, exerciseName: item.name });
+                      if (pairing !== null) addPartner(pairing, item);
+                      else if (picking !== null) update(picking, { exerciseId: item.id, exerciseName: item.name });
                       closePicker();
                     }}
                   >
@@ -635,6 +689,13 @@ const styles = themedStyles({
   chipTextOn: { color: "#0F172A" },
   slot: { backgroundColor: "#1E293B", borderRadius: 12, padding: 14, marginTop: 14 },
   slotTarget: { borderWidth: 2, borderColor: BRAND_GOLD },
+  slotSuperset: { borderLeftWidth: 4, borderLeftColor: BRAND_GOLD },
+  slotJoined: { marginTop: 4 },
+  supersetLink: { marginTop: 12, backgroundColor: "#0F172A", borderRadius: 8, padding: 10, gap: 6 },
+  supersetLinkText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
+  undoSuperset: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
+  supersetButton: { marginTop: 12, borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingVertical: 10, alignItems: "center" },
+  supersetButtonText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14 },
   wideRow: { flex: 1, flexDirection: "row", backgroundColor: "#0F172A" },
   wideForm: { flex: 1, minWidth: 360 },
   wideLibrary: { flex: 1.3, borderLeftWidth: 1, borderLeftColor: "#1E293B" },
