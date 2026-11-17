@@ -213,7 +213,7 @@ func dayView(_ sessions: [WidgetSession], _ day: String, _ settings: WidgetSetti
     guard let first = stillBooked.first else { continue }
     let gone = all.filter(isOut)
     rows.append(Row(
-      id: first.id, time: item.time, name: names(here), state: .later,
+      session: first.id, time: item.time, name: names(here), state: .later,
       catchUp: here.contains { $0.makeup_for != nil },
       out: gone.isEmpty ? nil : gone.map { "\(firstName($0.name)) \(whyOut($0))" }.joined(separator: " · ")))
   }
