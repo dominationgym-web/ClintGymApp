@@ -43,7 +43,7 @@ import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import SafeBottom from "@/components/SafeBottom";
 import { diaryKey } from "@/lib/calendarRegular";
 
-type Step = "menu" | "cancel" | "move" | "who" | "price";
+type Step = "menu" | "cancel" | "coach" | "move" | "who" | "price";
 
 // Everything a trainer does to one session (0168): mark it done or a no-show,
 // log a cancellation (with the WhatsApp screenshot), charge or credit it,
@@ -328,7 +328,12 @@ export default function SessionActionsModal({
                 {/* ❌ Cancelled for everyone, people not in the app too (GRIZZ 2026-11-02:
                     "when client cancels the trainer can load cancellation", with the screenshot).
                     Catch-ups stay for app clients only. */}
-                {session.status !== "removed" && session.status !== "cancelled" ? <Outline label="❌ Cancelled" onPress={() => setStep("cancel")} danger /> : null}
+                {/* The coach can't make it: one clear button, no times to type (GRIZZ 2026-11-17:
+                    "there isn't an option for the trainer to cancel a session"). */}
+                {session.status === "booked" ? (
+                  <Outline label={`🚫 Cancel this session (I can't make it)`} onPress={() => setStep("coach")} danger />
+                ) : null}
+                {session.status !== "removed" && session.status !== "cancelled" ? <Outline label={`❌ ${first} cancelled`} onPress={() => setStep("cancel")} danger /> : null}
                 {session.status === "cancelled" ? <Outline label="❌ Change the cancellation" onPress={() => setStep("cancel")} /> : null}
                 {session.status !== "no_show" && session.status !== "removed" && started ? (
                   <Outline label="No-show (charged)" onPress={() => outcome("no_show")} />
@@ -386,6 +391,14 @@ export default function SessionActionsModal({
               </View>
             )}
 
+            {step === "coach" && (
+              <CoachCancelForm
+                who={[session, ...joint]}
+                names={label([session, ...joint])}
+                onDone={() => (onChanged(), onClose())}
+                onBack={() => setStep("menu")}
+              />
+            )}
             {step === "cancel" && <CancelForm session={session} policy={policy} first={first} onDone={() => (onChanged(), onClose())} onBack={() => setStep("menu")} />}
 
             {step === "price" && (
@@ -489,6 +502,81 @@ function WhoForm({
 
 // "When did they tell you?": a day before the session and a time, the
 // WhatsApp screenshot, and the charge or credit that follows from the rule.
+// The coach cancels (sick, family, something came up). Everyone booked in the
+// slot is cancelled, nobody is charged, the slot turns green and each person
+// goes on the catch-up list (like a holiday, 0205) unless the coach picks Credit.
+const COACH_REASONS = ["Not well", "Family matter", "Something came up"];
+
+function CoachCancelForm({
+  who,
+  names,
+  onDone,
+  onBack,
+}: {
+  who: LiveSession[];
+  names: string;
+  onDone: () => void;
+  onBack: () => void;
+}) {
+  const [then, setThen] = useState<"makeup" | "credit">("makeup");
+  const [reason, setReason] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const inApp = who.some((s) => s.client_id);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      for (const s of who) {
+        const { error } = await supabase.rpc("log_session_cancellation", {
+          p_id: s.id,
+          p_by: "trainer",
+          p_cancelled_at: new Date().toISOString(),
+          p_proof_path: null,
+          p_note: reason,
+          p_charge: then,
+        });
+        if (error) throw error;
+      }
+      Alert.alert(
+        "Session cancelled ✅",
+        `${names} ${who.length > 1 ? "aren't" : "isn't"} charged and the slot is green, free to book.` +
+          (then === "makeup" ? " It's on Today › Catch-ups to book." : " It's credited on their invoice.") +
+          (inApp ? " They've been told on their phone." : "")
+      );
+      onDone();
+    } catch (err) {
+      Alert.alert("Couldn't save", err instanceof Error ? err.message : "Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <View style={{ marginTop: 12 }}>
+      <Text style={styles.resultText}>
+        You're cancelling {names}'s session. {who.length > 1 ? "They aren't" : "They're not"} charged for it.
+      </Text>
+      <Text style={styles.label}>What happens to it?</Text>
+      <View style={styles.chips}>
+        <Chip label="🔁 Catch-up" on={then === "makeup"} onPress={() => setThen("makeup")} />
+        <Chip label="🟢 Credit" on={then === "credit"} onPress={() => setThen("credit")} />
+      </View>
+      <Text style={styles.meta}>
+        {then === "makeup" ? "Goes on Today › Catch-ups so you book another time." : "Taken off their invoice. No catch-up."}
+      </Text>
+      <Text style={styles.label}>Reason (optional)</Text>
+      <View style={styles.chips}>
+        {COACH_REASONS.map((r) => (
+          <Chip key={r} label={r} on={reason === r} onPress={() => setReason(reason === r ? null : r)} />
+        ))}
+      </View>
+      {inApp ? <Text style={styles.meta}>{reason ? `They get a notification with "${reason}".` : "They get a notification."}</Text> : null}
+      <Big label="Cancel the session" onPress={save} busy={saving} />
+      <Outline label="‹ Back" onPress={onBack} />
+    </View>
+  );
+}
+
 function CancelForm({
   session,
   policy,
@@ -511,7 +599,7 @@ function CancelForm({
     if (dayKey(d) <= dayKey(now)) days.push(dayKey(d));
   }
   if (!days.includes(dayKey(now)) && dayKey(now) < sessionDay) days.unshift(dayKey(now));
-  const [by, setBy] = useState<"client" | "trainer">("client");
+  const [by, setBy] = useState<"client" | "trainer">(session.cancelled_by === "trainer" ? "trainer" : "client");
   const [day, setDay] = useState(days.includes(dayKey(now)) ? dayKey(now) : days[0] ?? sessionDay);
   const [time, setTime] = useState(clockLabel(now));
   const [note, setNote] = useState("");
