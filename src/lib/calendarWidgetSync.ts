@@ -64,6 +64,7 @@ async function saveKey(key: string | null) {
     else {
       await AsyncStorage.removeItem(WIDGET_KEY_STORAGE);
       await AsyncStorage.removeItem(`${WIDGET_KEY_STORAGE}.last`);
+      await AsyncStorage.removeItem(`${WIDGET_KEY_STORAGE}.day`);
     }
   } catch {
     // Storage full or blocked: the widget asks to log in.

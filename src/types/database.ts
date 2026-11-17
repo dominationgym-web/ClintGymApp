@@ -1862,6 +1862,7 @@ export interface Database {
       create_widget_key: { Args: { p_old: string | null }; Returns: string };
       revoke_widget_key: { Args: { p_key: string }; Returns: undefined };
       widget_sessions: { Args: { p_key: string }; Returns: unknown };
+      widget_day: { Args: { p_key: string }; Returns: unknown };
     };
   };
 }
