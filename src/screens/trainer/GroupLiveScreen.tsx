@@ -732,7 +732,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                 placeholderTextColor="#64748B"
                 autoCorrect={false}
               />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: 8 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, marginBottom: 8 }}>
                 {[null, ...exerciseCategories(shown)].map((c) => (
                   <Pressable key={c ?? "all"} style={[styles.chip, category === c && { backgroundColor: themeBg(BRAND_GOLD) }]} onPress={() => setCategory(c)}>
                     <Text style={[styles.chipText, category === c && styles.chipTextOn]}>{c ?? "All"}</Text>

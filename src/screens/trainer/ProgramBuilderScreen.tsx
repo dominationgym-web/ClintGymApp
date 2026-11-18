@@ -716,7 +716,8 @@ const styles = themedStyles({
   close: { color: BRAND_GOLD, fontWeight: "600", fontSize: 15 },
   libraryRow: { backgroundColor: "#1E293B", borderRadius: 10, padding: 14, marginBottom: 8 },
   libraryTop: { flexDirection: "row", alignItems: "center", gap: 12 },
-  muscleChips: { flexGrow: 0, marginBottom: 10 },
+  // flexShrink 0: on Android with big phone text the list below squeezed this row and cut the chip words in half (GRIZZ 2026-11-17).
+  muscleChips: { flexGrow: 0, flexShrink: 0, marginBottom: 10 },
   muscleChip: { backgroundColor: "#1E293B", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8 },
   muscleChipOn: { backgroundColor: BRAND_GOLD },
   muscleChipText: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
