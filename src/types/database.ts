@@ -1269,6 +1269,10 @@ export type LiveSession = {
   asked_trainer: boolean;
   invoice_id: string | null;
   credit_invoice_id: string | null;
+  /** What it's billed so far (0222). */
+  billed?: number | null;
+  /** What it's worth after the joint-session rules (0222): what the invoice charges for it. */
+  due?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -1331,8 +1335,9 @@ export type InvoiceLine = {
   who?: string;
   at: string;
   kind: SessionKind;
-  // charge: on this invoice; credit: money back for an earlier invoice; diary: listed only.
-  role: "charge" | "credit" | "diary";
+  // charge: on this invoice; credit: money back for an earlier invoice;
+  // extra: owed on top of an earlier invoice (trained alone, 0222); diary: listed only.
+  role: "charge" | "credit" | "extra" | "diary";
   amount: number;
   fee: number;
   by: "client" | "trainer" | null;
@@ -1344,11 +1349,20 @@ export type InvoiceLine = {
   disputed: boolean;
   catch_up: boolean;
   catch_up_booked: boolean;
+  /** Joint sessions (0222): together, trained alone, the partner trained alone, or a catch-up on their own. */
+  joint?: "together" | "alone" | "partner_alone" | "catch_up" | null;
+  /** Who else was booked at that time. */
+  with?: string | null;
+  /** For a credit or extra: what the earlier invoice billed. */
+  billed?: number | null;
 };
 export type SessionInvoice = {
   id: string;
   trainer_id: string;
-  client_id: string;
+  /** Null for someone not in the app, invoiced by their calendar name (0223). */
+  client_id: string | null;
+  guest_key?: string | null;
+  guest_name?: string | null;
   month: string;
   billing: SessionBilling;
   currency: BillingCurrency;
@@ -1361,6 +1375,27 @@ export type SessionInvoice = {
   status: "draft" | "sent" | "paid";
   sent_at: string | null;
   paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+/** Two people who train together, set up once (0224). Side a/b: an app client, or a calendar name. */
+export type SessionPair = {
+  id: string;
+  trainer_id: string;
+  a_client: string | null;
+  a_key: string | null;
+  a_name: string;
+  b_client: string | null;
+  b_key: string | null;
+  b_name: string;
+  /** What they pay together for one session. */
+  together: number;
+  /** What one pays training alone. */
+  alone: number;
+  /** One invoice for both (most couples), paid by side `payer`; false = split. */
+  one_invoice: boolean;
+  payer: "a" | "b";
+  ended_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -1526,9 +1561,24 @@ export interface Database {
       client_away: { Row: ClientAway; Insert: never; Update: never; Relationships: [] };
       // Clients who stopped training (0207).
       client_stops: { Row: ClientStop; Insert: never; Update: never; Relationships: [] };
-      // A diary-only person's price per session (0178).
-      diary_name_fees: { Row: { trainer_id: string; name_key: string; fee: number; updated_at: string }; Insert: never; Update: never; Relationships: [] };
+      // A diary-only person's price per session (0178), and their plan (0223).
+      diary_name_fees: {
+        Row: {
+          trainer_id: string;
+          name_key: string;
+          fee: number;
+          billing: SessionBilling | null;
+          group_size: number;
+          group_total: number | null;
+          solo_fee: number | null;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
+      session_pairs: { Row: SessionPair; Insert: never; Update: never; Relationships: [] };
       trainer_problem_messages: {
         Row: TrainerProblemMessage;
         Insert: never;
@@ -1825,6 +1875,7 @@ export interface Database {
       undo_client_stop: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };
       block_client: { Args: { p_client: string | null; p_guest: string | null }; Returns: ClientAway };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
+      set_diary_plan: { Args: { p_name: string; p_fee: number; p_billing: SessionBilling | null; p_solo_fee: number | null }; Returns: number };
       decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };
       link_diary_name: { Args: { p_client: string; p_name: string }; Returns: { moved: number; future: number } };
       skip_client_link: { Args: { p_client: string }; Returns: undefined };
@@ -1836,6 +1887,23 @@ export interface Database {
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
       build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };
+      build_diary_invoice: { Args: { p_name: string; p_month: string }; Returns: SessionInvoice };
+      set_session_pair: {
+        Args: {
+          p_id: string | null;
+          p_a_client: string | null;
+          p_a_name: string | null;
+          p_b_client: string | null;
+          p_b_name: string | null;
+          p_together: number;
+          p_alone: number;
+          p_one_invoice: boolean;
+          p_payer: "a" | "b";
+        };
+        Returns: SessionPair;
+      };
+      set_pair_invoice: { Args: { p_id: string; p_one: boolean; p_payer: "a" | "b" | null }; Returns: SessionPair };
+      end_session_pair: { Args: { p_id: string }; Returns: SessionPair };
       send_session_invoice: { Args: { p_id: string }; Returns: SessionInvoice };
       set_session_invoice_paid: { Args: { p_id: string; p_paid: boolean }; Returns: SessionInvoice };
       send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };

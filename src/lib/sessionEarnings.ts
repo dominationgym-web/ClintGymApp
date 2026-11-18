@@ -9,7 +9,15 @@ import type { LiveSession, SessionKind } from "@/types/database";
 // in-time cancellations kept for a catch-up are paid; in-time cancellations,
 // credited no-shows and the coach's own cancellations are not.
 
-type EarningFields = Pick<LiveSession, "status" | "starts_at" | "minutes" | "charge" | "cancelled_by" | "fee">;
+type EarningFields = Pick<LiveSession, "status" | "starts_at" | "minutes" | "charge" | "cancelled_by" | "fee"> & { due?: number | null };
+
+/**
+ * What a session brings in: its due amount after the joint-session rules
+ * (0222: Dave training alone R750, Sharde who missed R250), or its fee.
+ */
+export function sessionAmount(s: { fee: number | null; due?: number | null }): number {
+  return s.due != null ? Number(s.due) || 0 : Number(s.fee) || 0;
+}
 
 const PAID: SessionKind[] = ["done", "unconfirmed", "late", "no_show", "makeup"];
 const CREDITED: SessionKind[] = ["notice", "excused"];
@@ -55,15 +63,20 @@ export function takings(sessions: EarningFields[], now: Date = new Date()): Taki
   for (const s of sessions) {
     const kind = sessionKind(s, now);
     const fee = Number(s.fee) || 0;
+    const due = sessionAmount(s);
     if (PAID.includes(kind)) {
-      t.made += fee;
+      t.made += due;
       if (kind === "done" || kind === "unconfirmed") t.trained += 1;
       else {
-        t.fromCancellations += fee;
+        t.fromCancellations += due;
         t.charged += 1;
       }
     } else if (CREDITED.includes(kind)) {
-      t.credited += fee;
+      // Missed while the partner trained alone: they still pay the balance.
+      const paid = s.due != null ? Math.min(due, fee) : 0;
+      t.made += paid;
+      t.fromCancellations += paid;
+      t.credited += fee - paid;
       t.creditedCount += 1;
     } else if (kind === "trainer") {
       t.byCoach += fee;
@@ -72,7 +85,7 @@ export function takings(sessions: EarningFields[], now: Date = new Date()): Taki
       t.undecided += fee;
       t.undecidedCount += 1;
     } else if (kind === "booked") {
-      t.toCome += fee;
+      t.toCome += due;
       t.toComeCount += 1;
     }
   }
@@ -230,18 +243,19 @@ export type Losses = {
 export function lostRow(s: LostFields, now: Date = new Date()): LostRow | null {
   const kind = sessionKind(s, now);
   const fee = Number(s.fee) || 0;
-  // Only app clients can be caught up (people not in the app: no catch-ups, 2026-11-01).
-  const app = !!s.client_id;
+  // Everyone can be caught up, in the app or not (GRIZZ, 2026-11-18).
   if (kind === "trainer") {
-    if (app && s.charge === "makeup") return { kind: "coach", fee, back: s.makeup_session_id ? "booked" : "can" };
+    if (s.charge === "makeup") return { kind: "coach", fee, back: s.makeup_session_id ? "booked" : "can" };
     return { kind: "coach", fee, back: "no" };
   }
   if (kind === "notice" || kind === "excused") {
     // Credited is the coach's decision (e.g. the client can't do catch-ups):
     // it isn't something to win back (GRIZZ, 2026-11-09).
-    return { kind: "credited", fee, back: "no" };
+    // Missed while the partner trained alone: only what's credited is lost.
+    const paid = s.due != null ? Math.min(Number(s.due) || 0, fee) : 0;
+    return { kind: "credited", fee: fee - paid, back: "no" };
   }
-  if (kind === "decide") return { kind: "decide", fee, back: app ? "can" : "no" };
+  if (kind === "decide") return { kind: "decide", fee, back: "can" };
   return null;
 }
 

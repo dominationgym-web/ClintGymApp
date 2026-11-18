@@ -437,24 +437,26 @@ export function feeText(
 ): string {
   const own = money(Number(plan.fee), currency);
   const size = plan.group_size ?? 1;
-  const solo = size > 1 && plan.solo_fee != null ? `, or ${money(Number(plan.solo_fee), currency)} when I train alone and the others are credited` : "";
+  const solo = size > 1 && plan.solo_fee != null ? `, or ${money(Number(plan.solo_fee), currency)} when I train alone` : "";
   if (size > 1 && plan.group_total != null) return `${own} (my share of ${money(Number(plan.group_total), currency)} for ${size} people${solo})`;
   if (size > 1) return `${own} (a shared session with ${size} people${solo})`;
   return own;
 }
 
 /**
- * After a group session: each person's fee for it. With the special rate, one
- * person training alone (the rest credited) pays their solo fee; otherwise
- * everyone keeps their normal share.
+ * After a group session: what each person pays for it (GRIZZ, 2026-11-18).
+ * Together, everyone pays their own fee. When only one trains and has an
+ * alone price, they pay it, and whoever missed (late or in time) pays the
+ * balance: the together total less the alone price (R1000 - R750 = R250).
+ * The invoice works this out by itself (0222 session_due); this shows it.
  */
-export function groupFees(
-  people: { id: string; came: boolean; fee: number; soloFee: number | null }[],
-  missed: "charge" | "credit"
-): Record<string, number> {
+export function groupFees(people: { id: string; came: boolean; fee: number; soloFee: number | null }[]): Record<string, number> {
   const came = people.filter((p) => p.came);
-  const alone = came.length === 1 && missed === "credit" && people.length > 1;
-  return Object.fromEntries(people.map((p) => [p.id, alone && p.came && p.soloFee != null ? p.soloFee : p.fee]));
+  const solo = came.length === 1 && people.length > 1 ? came[0].soloFee : null;
+  if (solo == null) return Object.fromEntries(people.map((p) => [p.id, p.fee]));
+  const total = people.reduce((t, p) => t + p.fee, 0);
+  const balance = Math.max(0, Math.round(((total - solo) / (people.length - 1)) * 100) / 100);
+  return Object.fromEntries(people.map((p) => [p.id, p.came ? solo : balance]));
 }
 
 export function sessionMoney(amount: number, currency: BillingCurrency | null | undefined): string {
@@ -506,6 +508,28 @@ export function invoicePeople(lines: InvoiceLine[]): { who: string | null; lines
   }));
 }
 
+/**
+ * The joint-session words on an invoice line (0222), so the client sees why
+ * a session costs what it does: "with Sharde", "trained alone, Sharde
+ * missed", "Dave trained alone: the balance", or what's added or credited
+ * against an earlier invoice.
+ */
+export function jointNote(l: InvoiceLine, currency: BillingCurrency | null | undefined): string {
+  const other = l.with?.trim() || "your partner";
+  if (l.role === "extra") {
+    return `trained alone, ${sessionMoney(Number(l.amount), currency)} on top of the ${sessionMoney(Number(l.billed ?? 0), currency)} billed`;
+  }
+  if (l.role === "credit") {
+    if (l.joint === "partner_alone") return `${other} trained alone, so you pay the ${sessionMoney(Number(l.fee), currency)} balance: the rest back`;
+    return "credit, paid last month";
+  }
+  if (l.joint === "alone") return l.with ? `trained alone, ${other} missed` : "trained alone";
+  if (l.joint === "partner_alone") return `${other} trained alone: the balance`;
+  if (l.joint === "catch_up") return "catch-up, trained alone";
+  if (l.joint === "together" && l.with) return `with ${other}`;
+  return "";
+}
+
 export function invoiceText(inv: SessionInvoice, clientName: string, coachName: string, opts: InvoiceTextOptions = { style: "whatsapp" }): string {
   const b = (t: string) => (opts.style === "whatsapp" ? `*${t}*` : t.toUpperCase());
   const lines = [...inv.lines].sort((a, x) => a.at.localeCompare(x.at));
@@ -513,10 +537,11 @@ export function invoiceText(inv: SessionInvoice, clientName: string, coachName: 
   const row = (l: InvoiceLine) => {
     const what = kindDetail(l.kind, l.notice_hours, { catchUp: l.catch_up, catchUpBooked: l.catch_up_booked });
     const amount = l.role === "diary" ? "no charge" : sessionMoney(l.amount, inv.currency);
-    const credit = l.role === "credit" ? " (credit, paid last month)" : "";
+    const note = jointNote(l, inv.currency);
+    const credit = note ? ` (${note})` : "";
     return `${MARK[l.kind] ?? "▫️"} ${dayLabel(l.at)}, ${clockLabel(l.at)} · ${what}${credit} · ${amount}`;
   };
-  const count = (kinds: SessionKind[]) => lines.filter((l) => l.role !== "credit" && kinds.includes(l.kind)).length;
+  const count = (kinds: SessionKind[]) => lines.filter((l) => l.role !== "credit" && l.role !== "extra" && kinds.includes(l.kind)).length;
   const counts = [
     [count(["done", "unconfirmed"]), "trained"],
     [count(["booked"]), "booked"],
