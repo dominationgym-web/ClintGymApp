@@ -18,7 +18,6 @@ import { onGuideOpen, takeGuideOpen } from "@/lib/setupGuide";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
 import SessionTimeChips from "@/components/sessions/SessionTimeChips";
 import { ForecastStrip, LossesCard, TodayMoneyCard, WeekMoneyModal } from "@/components/sessions/SessionEarnings";
-import { takings } from "@/lib/sessionEarnings";
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
 import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } from "@/lib/calendarRegular";
 import DiaryPeople from "@/components/sessions/DiaryPeople";
@@ -707,8 +706,8 @@ function GroupCheck({
       } else {
         const { error } = await supabase.rpc("set_session_outcome", { p_id: s.id, p_outcome: "no_show" });
         if (error) failed++;
-        // Not in the app yet: never charged for missing (GRIZZ, 2026-11-01).
-        else if (missed === "credit" || !s.client_id) {
+        // In the app or not, the same rules (GRIZZ, 2026-11-18).
+        else if (missed === "credit") {
           const r = await supabase.rpc("set_session_charge", { p_id: s.id, p_charge: "credit" });
           if (r.error) failed++;
         }
@@ -1560,11 +1559,26 @@ function InvoicesTab({
     onChanged();
   };
 
+  // Everyone who trains gets one, in the app or not (GRIZZ, 2026-11-18:
+  // "I need every person training in the 1 on 1 to be invoiced and tracked").
+  const namesToBill = useMemo(() => {
+    const byKey = new Map<string, string>();
+    for (const s of sessions) {
+      if (s.client_id || !s.guest_name || s.status === "removed" || monthStart(new Date(s.starts_at)) !== month) continue;
+      const k = diaryKey(s.guest_name);
+      if (k && !k.includes("???") && !byKey.has(k)) byKey.set(k, s.guest_name.trim());
+    }
+    return [...byKey.values()];
+  }, [sessions, month]);
   const makeAll = async () => {
     setBusy(true);
     let failed = 0;
     for (const p of plans) {
       const { error } = await supabase.rpc("build_session_invoice", { p_client: p.client_id, p_month: month });
+      if (error) failed++;
+    }
+    for (const n of namesToBill) {
+      const { error } = await supabase.rpc("build_diary_invoice", { p_name: n, p_month: month });
       if (error) failed++;
     }
     setBusy(false);
@@ -1581,7 +1595,7 @@ function InvoicesTab({
     const toPaid = inv.status !== "paid";
     let error: { message: string } | null = null;
     if (toPaid && inv.status === "draft") {
-      ({ error } = await supabase.rpc("build_session_invoice", { p_client: inv.client_id, p_month: inv.month }));
+      ({ error } = await rebuildInvoice(inv));
     }
     if (!error) ({ error } = await supabase.rpc("set_session_invoice_paid", { p_id: inv.id, p_paid: toPaid }));
     setPaying(null);
@@ -1592,12 +1606,10 @@ function InvoicesTab({
   const currency = rows[0]?.currency ?? "ZAR";
   const total = rows.reduce((t, r) => t + Number(r.total), 0);
   const paid = rows.filter((r) => r.status === "paid").reduce((t, r) => t + Number(r.total), 0);
-  const name = (id: string) => byId[id]?.name ?? "Client";
+  const name = (inv: SessionInvoice) => (inv.client_id ? byId[inv.client_id]?.name : inv.guest_name) ?? "Client";
   const otherDrafts = drafts.filter((d) => d.month !== month);
   // Catch-ups not done in time: decided before invoices go out (GRIZZ, 2026-11-02).
   const owed = sessions.filter((s) => s.charge === "makeup" && !s.makeup_session_id && (s.status === "cancelled" || s.status === "no_show"));
-  // People not in the app get no invoice, but what they paid counts (GRIZZ, 2026-11-01).
-  const notInApp = takings(sessions.filter((s) => !s.client_id && s.status !== "removed" && monthStart(new Date(s.starts_at)) === month)).made;
 
   return (
     <>
@@ -1612,7 +1624,7 @@ function InvoicesTab({
             <InvoiceRow
               key={inv.id}
               inv={inv}
-              name={`${name(inv.client_id)} · ${monthLabel(inv.month)}`}
+              name={`${name(inv)} · ${monthLabel(inv.month)}`}
               onPress={() => setOpen(inv)}
               onPaid={() => togglePaid(inv)}
               paying={paying === inv.id}
@@ -1637,24 +1649,17 @@ function InvoicesTab({
           <Text style={[styles.totalText, { color: themeText("#F59E0B") }]}>Owed {sessionMoney(total - paid, currency)}</Text>
         </View>
       ) : null}
-      {notInApp > 0 ? (
-        <Text style={styles.helper}>
-          {rows.length
-            ? `Plus ${sessionMoney(notInApp, currency)} from people not in the app. Total ${sessionMoney(total + notInApp, currency)}.`
-            : `${sessionMoney(notInApp, currency)} from people not in the app (no invoices).`}
-        </Text>
-      ) : null}
       {rows.map((inv) => (
         <InvoiceRow
           key={inv.id}
           inv={inv}
-          name={name(inv.client_id)}
+          name={name(inv)}
           onPress={() => setOpen(inv)}
           onPaid={() => togglePaid(inv)}
           paying={paying === inv.id}
         />
       ))}
-      {plans.length ? (
+      {plans.length || namesToBill.length ? (
         <Pressable style={styles.outline} onPress={makeAll} disabled={busy}>
           {busy ? (
             <ActivityIndicator color={themeText(BRAND_GOLD)} />
@@ -1668,7 +1673,7 @@ function InvoicesTab({
 
       <InvoiceModal
         invoice={open}
-        clientName={open ? name(open.client_id) : ""}
+        clientName={open ? name(open) : ""}
         phone={open ? byId[open.client_id ?? ""]?.phone ?? null : null}
         email={open ? byId[open.client_id ?? ""]?.email ?? null : null}
         onClose={() => setOpen(null)}
@@ -1679,6 +1684,13 @@ function InvoicesTab({
       />
     </>
   );
+}
+
+/** Bring a draft up to date: an app client's, or a name-only person's (0223). */
+function rebuildInvoice(inv: SessionInvoice) {
+  return inv.client_id
+    ? supabase.rpc("build_session_invoice", { p_client: inv.client_id, p_month: inv.month })
+    : supabase.rpc("build_diary_invoice", { p_name: inv.guest_name ?? inv.guest_key ?? "", p_month: inv.month });
 }
 
 function InvoiceRow({
@@ -1759,13 +1771,21 @@ function InvoiceModal({
     if (done) Alert.alert("Done ✅", done);
   };
 
-  const rebuild = () => act("rebuild", () => supabase.rpc("build_session_invoice", { p_client: invoice.client_id, p_month: invoice.month }));
+  const rebuild = () => act("rebuild", () => rebuildInvoice(invoice));
+  // Not in the app: Send marks it sent (it locks); the trainer shares it by WhatsApp or email.
+  const inApp = !!invoice.client_id;
   const send = () =>
-    Alert.alert(`Send to ${clientName}?`, "They get a notification and see it in the app under My sessions. After sending it can't change; later changes go on next month's.", [
+    Alert.alert(
+      inApp ? `Send to ${clientName}?` : `Mark ${clientName}'s invoice as sent?`,
+      inApp
+        ? "They get a notification and see it in the app under My sessions. After sending it can't change; later changes go on next month's."
+        : `${clientName.split(" ")[0]} isn't in the app, so share it with WhatsApp or Email below. Marking it sent locks it; later changes go on next month's.`,
+      [
       { text: "Back", style: "cancel" },
       {
         text: "Send",
-        onPress: () => act("send", () => supabase.rpc("send_session_invoice", { p_id: invoice.id }), `${clientName.split(" ")[0]} has it.`),
+        onPress: () =>
+          act("send", () => supabase.rpc("send_session_invoice", { p_id: invoice.id }), inApp ? `${clientName.split(" ")[0]} has it.` : "Marked as sent."),
       },
     ]);
   const paid = (p: boolean) => act("paid", () => supabase.rpc("set_session_invoice_paid", { p_id: invoice.id, p_paid: p }));
@@ -1794,7 +1814,11 @@ function InvoiceModal({
             {invoice.status === "draft" ? (
               <>
                 <Pressable style={styles.button} onPress={send} disabled={!!busy}>
-                  {busy === "send" ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Send to {clientName.split(" ")[0]}</Text>}
+                  {busy === "send" ? (
+                    <ActivityIndicator color={themeText("#0F172A")} />
+                  ) : (
+                    <Text style={styles.buttonText}>{inApp ? `Send to ${clientName.split(" ")[0]}` : "Mark as sent"}</Text>
+                  )}
                 </Pressable>
                 <Pressable style={styles.outline} onPress={rebuild} disabled={!!busy}>
                   {busy === "rebuild" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>Update with my latest changes</Text>}

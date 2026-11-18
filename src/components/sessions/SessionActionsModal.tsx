@@ -327,7 +327,7 @@ export default function SessionActionsModal({
                 ) : null}
                 {/* ❌ Cancelled for everyone, people not in the app too (GRIZZ 2026-11-02:
                     "when client cancels the trainer can load cancellation", with the screenshot).
-                    Catch-ups stay for app clients only. */}
+                    Catch-ups too, in the app or not (GRIZZ 2026-11-18). */}
                 {/* The coach can't make it: one clear button, no times to type (GRIZZ 2026-11-17:
                     "there isn't an option for the trainer to cancel a session"). */}
                 {session.status === "booked" ? (
@@ -342,7 +342,7 @@ export default function SessionActionsModal({
                   <View style={styles.chips}>
                     <Chip label="🔴 Charge" on={session.charge === "charge"} onPress={() => charge("charge")} />
                     <Chip label="🟢 Credit" on={session.charge === "credit"} onPress={() => charge("credit")} />
-                    {session.client_id ? <Chip label="Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} /> : null}
+                    <Chip label="Catch-up" on={session.charge === "makeup"} onPress={() => charge("makeup")} />
                   </View>
                 ) : null}
                 {/* Going away for a while: their sessions turn green, free to book (GRIZZ 2026-11-02). */}
@@ -367,7 +367,7 @@ export default function SessionActionsModal({
                 ) : null}
                 {!session.client_id ? (
                   <Text style={styles.meta}>
-                    Not in the app yet: no invoices or notifications until you link them.
+                    Not in the app: they get invoices you share by WhatsApp or email, but no notifications.
                   </Text>
                 ) : null}
                 {session.status !== "booked" && session.status !== "removed" && new Date(session.starts_at) > now ? (

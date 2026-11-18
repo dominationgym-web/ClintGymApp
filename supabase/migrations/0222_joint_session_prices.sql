@@ -347,10 +347,10 @@ begin
   if pg_trigger_depth() > 2 then
     return null;
   end if;
-  if tg_op in ('UPDATE', 'DELETE') then
+  if tg_op = 'UPDATE' then
     perform public.refresh_slot_due(old.trainer_id, old.starts_at);
   end if;
-  if tg_op in ('INSERT', 'UPDATE') and (tg_op = 'INSERT' or new.starts_at <> old.starts_at or new.trainer_id <> old.trainer_id) then
+  if tg_op = 'INSERT' or new.starts_at <> old.starts_at or new.trainer_id <> old.trainer_id then
     perform public.refresh_slot_due(new.trainer_id, new.starts_at);
   end if;
   return null;
@@ -359,7 +359,7 @@ $$;
 revoke execute on function public.live_sessions_refresh_due() from public, anon, authenticated;
 
 create or replace trigger live_sessions_refresh_due
-  after insert or delete or update of status, charge, cancelled_by, starts_at, fee, client_id, makeup_for, trainer_id
+  after insert or update of status, charge, cancelled_by, starts_at, fee, client_id, makeup_for, trainer_id
   on public.live_sessions
   for each row
   execute function public.live_sessions_refresh_due();

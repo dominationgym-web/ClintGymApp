@@ -243,10 +243,9 @@ export type Losses = {
 export function lostRow(s: LostFields, now: Date = new Date()): LostRow | null {
   const kind = sessionKind(s, now);
   const fee = Number(s.fee) || 0;
-  // Only app clients can be caught up (people not in the app: no catch-ups, 2026-11-01).
-  const app = !!s.client_id;
+  // Everyone can be caught up, in the app or not (GRIZZ, 2026-11-18).
   if (kind === "trainer") {
-    if (app && s.charge === "makeup") return { kind: "coach", fee, back: s.makeup_session_id ? "booked" : "can" };
+    if (s.charge === "makeup") return { kind: "coach", fee, back: s.makeup_session_id ? "booked" : "can" };
     return { kind: "coach", fee, back: "no" };
   }
   if (kind === "notice" || kind === "excused") {
@@ -256,7 +255,7 @@ export function lostRow(s: LostFields, now: Date = new Date()): LostRow | null {
     const paid = s.due != null ? Math.min(Number(s.due) || 0, fee) : 0;
     return { kind: "credited", fee: fee - paid, back: "no" };
   }
-  if (kind === "decide") return { kind: "decide", fee, back: app ? "can" : "no" };
+  if (kind === "decide") return { kind: "decide", fee, back: "can" };
   return null;
 }
 

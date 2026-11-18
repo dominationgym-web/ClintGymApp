@@ -1359,7 +1359,10 @@ export type InvoiceLine = {
 export type SessionInvoice = {
   id: string;
   trainer_id: string;
-  client_id: string;
+  /** Null for someone not in the app, invoiced by their calendar name (0223). */
+  client_id: string | null;
+  guest_key?: string | null;
+  guest_name?: string | null;
   month: string;
   billing: SessionBilling;
   currency: BillingCurrency;
@@ -1537,8 +1540,22 @@ export interface Database {
       client_away: { Row: ClientAway; Insert: never; Update: never; Relationships: [] };
       // Clients who stopped training (0207).
       client_stops: { Row: ClientStop; Insert: never; Update: never; Relationships: [] };
-      // A diary-only person's price per session (0178).
-      diary_name_fees: { Row: { trainer_id: string; name_key: string; fee: number; updated_at: string }; Insert: never; Update: never; Relationships: [] };
+      // A diary-only person's price per session (0178), and their plan (0223).
+      diary_name_fees: {
+        Row: {
+          trainer_id: string;
+          name_key: string;
+          fee: number;
+          billing: SessionBilling | null;
+          group_size: number;
+          group_total: number | null;
+          solo_fee: number | null;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
       trainer_problem_messages: {
         Row: TrainerProblemMessage;
@@ -1836,6 +1853,7 @@ export interface Database {
       undo_client_stop: { Args: { p_id: string }; Returns: { back: number; taken: string[] } };
       block_client: { Args: { p_client: string | null; p_guest: string | null }; Returns: ClientAway };
       set_diary_fee: { Args: { p_name: string; p_fee: number }; Returns: number };
+      set_diary_plan: { Args: { p_name: string; p_fee: number; p_billing: SessionBilling | null; p_solo_fee: number | null }; Returns: number };
       decide_catch_up: { Args: { p_id: string; p_choice: "credit" | "next" }; Returns: LiveSession };
       link_diary_name: { Args: { p_client: string; p_name: string }; Returns: { moved: number; future: number } };
       skip_client_link: { Args: { p_client: string }; Returns: undefined };
@@ -1847,6 +1865,7 @@ export interface Database {
       set_session_charge: { Args: { p_id: string; p_charge: "charge" | "credit" | "makeup" }; Returns: LiveSession };
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
       build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };
+      build_diary_invoice: { Args: { p_name: string; p_month: string }; Returns: SessionInvoice };
       send_session_invoice: { Args: { p_id: string }; Returns: SessionInvoice };
       set_session_invoice_paid: { Args: { p_id: string; p_paid: boolean }; Returns: SessionInvoice };
       send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };
