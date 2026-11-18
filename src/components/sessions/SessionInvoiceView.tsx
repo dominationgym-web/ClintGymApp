@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { BRAND_GOLD } from "@/lib/brand";
-import { KIND_STYLE, billingLabel, clockLabel, dayLabel, invoicePeople, kindDetail, monthLabel, sessionMoney } from "@/lib/liveSessions";
+import { KIND_STYLE, billingLabel, clockLabel, dayLabel, invoicePeople, jointNote, kindDetail, monthLabel, sessionMoney } from "@/lib/liveSessions";
 import type { InvoiceLine, SessionInvoice } from "@/types/database";
 import SessionProofModal from "@/components/sessions/SessionProofModal";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
@@ -57,8 +57,8 @@ export default function SessionInvoiceView({ invoice, who }: { invoice: SessionI
                   </Text>
                   <Text style={[styles.kind, { color: colour }]}>
                     {style.icon} {kindDetail(l.kind, l.notice_hours, { clientOk: l.client_ok, disputed: l.disputed, catchUp: l.catch_up, catchUpBooked: l.catch_up_booked })}
-                    {l.role === "credit" ? " · credit for an earlier invoice" : ""}
                   </Text>
+                  {jointNote(l, invoice.currency) ? <Text style={styles.joint}>{jointNote(l, invoice.currency)}</Text> : null}
                   {l.cancelled_at ? (
                     <Text style={styles.small}>
                       Cancelled {dayLabel(l.cancelled_at)} at {clockLabel(l.cancelled_at)}
@@ -115,6 +115,7 @@ const styles = themedStyles({
   when: { color: "#fff", fontSize: 14, fontWeight: "700" },
   kind: { fontSize: 13, fontWeight: "600", marginTop: 2 },
   small: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
+  joint: { color: "#CBD5E1", fontSize: 12, marginTop: 2, fontWeight: "600" },
   proof: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 4 },
   amount: { color: "#fff", fontSize: 14, fontWeight: "700", minWidth: 64, textAlign: "right" },
   amountNone: { color: "#64748B" },

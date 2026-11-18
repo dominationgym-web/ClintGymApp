@@ -1269,6 +1269,10 @@ export type LiveSession = {
   asked_trainer: boolean;
   invoice_id: string | null;
   credit_invoice_id: string | null;
+  /** What it's billed so far (0222). */
+  billed?: number | null;
+  /** What it's worth after the joint-session rules (0222): what the invoice charges for it. */
+  due?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -1331,8 +1335,9 @@ export type InvoiceLine = {
   who?: string;
   at: string;
   kind: SessionKind;
-  // charge: on this invoice; credit: money back for an earlier invoice; diary: listed only.
-  role: "charge" | "credit" | "diary";
+  // charge: on this invoice; credit: money back for an earlier invoice;
+  // extra: owed on top of an earlier invoice (trained alone, 0222); diary: listed only.
+  role: "charge" | "credit" | "extra" | "diary";
   amount: number;
   fee: number;
   by: "client" | "trainer" | null;
@@ -1344,6 +1349,12 @@ export type InvoiceLine = {
   disputed: boolean;
   catch_up: boolean;
   catch_up_booked: boolean;
+  /** Joint sessions (0222): together, trained alone, the partner trained alone, or a catch-up on their own. */
+  joint?: "together" | "alone" | "partner_alone" | "catch_up" | null;
+  /** Who else was booked at that time. */
+  with?: string | null;
+  /** For a credit or extra: what the earlier invoice billed. */
+  billed?: number | null;
 };
 export type SessionInvoice = {
   id: string;

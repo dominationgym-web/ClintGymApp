@@ -227,10 +227,10 @@ export default function SessionPlanEditor({
 
       {groupSize > 1 ? (
         <>
-          <Text style={styles.label}>Special rate if {first} trains alone (optional)</Text>
+          <Text style={styles.label}>Price if {first} trains alone</Text>
           <TextInput style={styles.input} value={solo} onChangeText={setSolo} keyboardType="decimal-pad" placeholder="700" placeholderTextColor="#64748B" />
           <Text style={styles.meta}>
-            When only {first} comes and you credit the others, {first} pays this instead. If the others forfeit, everyone pays their normal share.
+            When only {first} trains, {first} pays this. Whoever missed pays the balance (the together total less this), unless they book a catch-up. The invoices work it out by themselves.
           </Text>
         </>
       ) : null}

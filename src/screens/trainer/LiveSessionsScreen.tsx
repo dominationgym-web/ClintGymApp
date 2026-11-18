@@ -685,25 +685,22 @@ function GroupCheck({
   const [missed, setMissed] = useState<"charge" | "credit">("charge");
   const [saving, setSaving] = useState(false);
   const absent = sessions.filter((s) => !came.has(s.id));
-  // The special rate: one person training alone pays their solo fee.
+  // The alone price: one person training alone pays it and whoever missed
+  // pays the balance. The invoice works it out by itself (0222), so nothing
+  // is saved here; this just shows the trainer what will happen.
   const fees = groupFees(
     sessions.map((s) => ({
       id: s.id,
       came: came.has(s.id),
       fee: Number(planOf[s.client_id ?? ""]?.fee ?? s.fee),
       soloFee: planOf[s.client_id ?? ""]?.solo_fee != null ? Number(planOf[s.client_id ?? ""].solo_fee) : null,
-    })),
-    missed
+    }))
   );
   const special = sessions.find((s) => came.has(s.id) && fees[s.id] !== Number(planOf[s.client_id ?? ""]?.fee ?? s.fee));
   const save = async () => {
     setSaving(true);
     let failed = 0;
     for (const s of sessions) {
-      if (Number(s.fee) !== fees[s.id]) {
-        const { error } = await supabase.rpc("set_session_fee", { p_id: s.id, p_fee: fees[s.id] });
-        if (error) failed++;
-      }
       if (came.has(s.id)) {
         const { error } = await supabase.rpc("set_session_outcome", { p_id: s.id, p_outcome: "done" });
         if (error) failed++;
@@ -760,7 +757,8 @@ function GroupCheck({
       ) : null}
       {special ? (
         <Text style={styles.rowBody}>
-          Special rate: {who(special)} trained alone, so pays {money(fees[special.id], currency)}.
+          {who(special)} trained alone, so pays {money(fees[special.id], currency)}.
+          {absent.map((a) => ` ${who(a)} pays the ${money(fees[a.id], currency)} balance.`).join("")}
         </Text>
       ) : null}
       <View style={styles.actions}>
@@ -1009,11 +1007,15 @@ export function catchUpPrice(
   settings: SessionSettings | null
 ): number {
   const joint = sessions.some((s) => s.id !== missed.id && s.starts_at === missed.starts_at && s.status !== "removed");
+  if (missed.cancelled_by === "trainer") return Number(missed.fee ?? 0);
+  const plan = missed.client_id ? plans.find((p) => p.client_id === missed.client_id) : null;
+  // Set up to train together with an alone price: training alone in the
+  // catch-up costs the alone price (GRIZZ 2026-11-18: "a single session on a
+  // double will always be R750"). The invoice prices it the same way (0222).
+  if (plan && plan.group_size > 1 && plan.solo_fee != null) return Number(plan.solo_fee);
   if (joint) {
-    const plan = missed.client_id ? plans.find((p) => p.client_id === missed.client_id) : null;
     return Number((plan && (plan.solo_fee ?? (plan.group_size > 1 ? null : plan.fee))) ?? settings?.fee ?? missed.fee ?? 0);
   }
-  if (missed.cancelled_by === "trainer") return Number(missed.fee ?? 0);
   return 0;
 }
 
