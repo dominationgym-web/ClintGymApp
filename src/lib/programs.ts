@@ -495,7 +495,7 @@ export const PROGRAM_FAMILIES = [
   // how many programs each holds (2, 4, 6, 15, 27) with push and pull side by
   // side; the less used long programs sit at the bottom above Your programs.
   { key: "foundation", group: "gym", title: "Beginner & Intermediate", icon: "🌱" },
-  { key: "upperLower", group: "gym", title: "Quick upper & lower", icon: "⏱️" },
+  { key: "upperLower", group: "gym", title: "Quick workouts", icon: "⏱️" },
   { key: "chestBi", group: "gym", title: "Chest & Bi", icon: "🏋️" },
   { key: "backTri", group: "gym", title: "Back & Tri", icon: "🦾" },
   { key: "legs", group: "gym", title: "Legs", icon: "🦵" },
@@ -583,6 +583,8 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   if (name.includes("chest")) return "chestBi";
   if (name.includes("back")) return "backTri";
   if (name.includes("legs")) return "legs";
-  if (name.includes("upper") || name.includes("lower")) return "upperLower";
+  // Quick full body 1-6 (0225) sit with quick upper and lower body under
+  // Quick workouts (GRIZZ, 2026-11-18).
+  if (name.includes("upper") || name.includes("lower") || name.includes("quick full body")) return "upperLower";
   return "fullBody";
 }

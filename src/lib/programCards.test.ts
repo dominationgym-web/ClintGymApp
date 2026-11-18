@@ -41,7 +41,6 @@ describe("programCards", () => {
 
   it("shows a one-program card as that program", () => {
     expect(find(cards, "APRE Program").options).toHaveLength(1);
-    expect(find(cards, "Quick full body (35 min)")).toBeTruthy();
   });
 
   it("follows the heading order: Beginner first, gym before sport", () => {
@@ -58,6 +57,13 @@ describe("programCards", () => {
     const quick = programCards(make(["Quick upper body (30 min)", "Quick upper body 3 (30 min)", "Quick upper body 2 (30 min)", "Quick lower body (30 min)", "Quick lower body 2 (30 min)"]));
     expect(quick.map((c) => c.title)).toEqual(["Quick upper body (30 min)", "Quick lower body (30 min)"]);
     expect(quick[0].options.map((o) => o.label)).toEqual(["1", "2", "3"]);
+  });
+
+  it("puts Quick full body 1-6 on one card under Quick workouts", () => {
+    const quick = programCards(make(["Full body week", "Quick full body (35 min)", "Quick full body 2 (35 min)", "Quick full body 6 (35 min)", "Quick upper body (30 min)"]));
+    const card = find(quick, "Quick full body (35 min)");
+    expect(card.family).toBe("upperLower");
+    expect(card.options.map((o) => o.label)).toEqual(["1", "2", "6"]);
   });
 
   it("gives every program a trainer built its own card", () => {
