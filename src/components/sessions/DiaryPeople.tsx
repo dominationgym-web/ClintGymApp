@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { dayLabel, regularLabel, sessionMoney } from "@/lib/liveSessions";
 import { diaryKey, regularFromCalendar } from "@/lib/calendarRegular";
-import type { BillingCurrency, ClientAway, ClientStop, LiveSession } from "@/types/database";
+import type { BillingCurrency, ClientAway, ClientStop, LiveSession, SessionBilling } from "@/types/database";
 import { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
 import HoldButton from "@/components/sessions/HoldButton";
 import { stopOf } from "@/components/sessions/StopTrainingModal";
@@ -39,6 +39,10 @@ export default function DiaryPeople({
 }) {
   const { trainer } = useAuth();
   const [fees, setFees] = useState<Record<string, number>>({});
+  // Their plan (0223): how they pay and, training with someone, the alone price.
+  const [plans, setPlans] = useState<Record<string, { billing: SessionBilling | null; solo: number | null }>>({});
+  const [billing, setBilling] = useState<SessionBilling | null>(null);
+  const [solo, setSolo] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   // Phone Back closes what is open first, one step at a time.
   useStepBack(open !== null, () => setOpen(null));
@@ -47,8 +51,13 @@ export default function DiaryPeople({
 
   const loadFees = useCallback(async () => {
     if (!trainer) return;
-    const { data } = await supabase.from("diary_name_fees").select("name_key, fee").eq("trainer_id", trainer.id);
+    const { data } = await supabase.from("diary_name_fees").select("name_key, fee, billing, solo_fee").eq("trainer_id", trainer.id);
     setFees(Object.fromEntries((data ?? []).map((r) => [r.name_key, Number(r.fee)])));
+    setPlans(
+      Object.fromEntries(
+        (data ?? []).map((r) => [r.name_key, { billing: (r.billing ?? null) as SessionBilling | null, solo: r.solo_fee != null ? Number(r.solo_fee) : null }])
+      )
+    );
   }, [trainer]);
   useEffect(() => {
     loadFees();
@@ -83,8 +92,10 @@ export default function DiaryPeople({
   const save = async (name: string) => {
     const fee = Number(typed.replace(",", "."));
     if (!typed.trim() || !Number.isFinite(fee) || fee < 0) return Alert.alert("Type a price", "The price per session, e.g. 350.");
+    const alone = solo.trim() ? Number(solo.replace(",", ".")) : null;
+    if (alone !== null && (!Number.isFinite(alone) || alone < 0)) return Alert.alert("Type the alone price", "What they pay when they train alone, e.g. 750.");
     setBusy(true);
-    const { error } = await supabase.rpc("set_diary_fee", { p_name: name, p_fee: fee });
+    const { error } = await supabase.rpc("set_diary_plan", { p_name: name, p_fee: fee, p_billing: billing, p_solo_fee: alone });
     setBusy(false);
     if (error) return Alert.alert("Couldn't save the price", error.message);
     setOpen(null);
@@ -95,7 +106,7 @@ export default function DiaryPeople({
   return (
     <View style={{ marginTop: 18 }}>
       <Text style={styles.title}>On your calendar, not in the app yet</Text>
-      <Text style={styles.meta}>Tap a name to set their price, or mark them away or stopped.</Text>
+      <Text style={styles.meta}>Tap a name to set their price and how they pay, or mark them away or stopped.</Text>
       {people.map((p) => {
         const on = open === p.key;
         return (
@@ -104,6 +115,8 @@ export default function DiaryPeople({
               onPress={() => {
                 setOpen(on ? null : p.key);
                 setTyped(String(priceOf(p)));
+                setBilling(plans[p.key]?.billing ?? null);
+                setSolo(plans[p.key]?.solo != null ? String(plans[p.key].solo) : "");
               }}
             >
               <Text style={styles.name}>
@@ -125,7 +138,30 @@ export default function DiaryPeople({
                 </Pressable>
               </View>
             ) : null}
-            {on ? <Text style={styles.meta}>Their sessions from now on take the new price.</Text> : null}
+            {on ? <Text style={styles.meta}>Their sessions from now on take the new price. They get an invoice like everyone else: share it by WhatsApp or email.</Text> : null}
+            {on ? (
+              <>
+                <Text style={styles.label}>How they pay</Text>
+                <View style={styles.chips}>
+                  {(
+                    [
+                      [null, "Your usual"],
+                      ["advance", "Upfront"],
+                      ["arrears", "After"],
+                    ] as const
+                  ).map(([b, label]) => (
+                    <Pressable key={label} style={[styles.chip, billing === b && styles.chipOn]} onPress={() => setBilling(b)}>
+                      <Text style={[styles.chipText, billing === b && styles.chipTextOn]}>{label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Text style={styles.label}>Trains with someone? Price if they train alone</Text>
+                <TextInput style={styles.input} value={solo} onChangeText={setSolo} keyboardType="decimal-pad" placeholder="750" />
+                <Text style={styles.meta}>
+                  Leave empty if they train on their own. With it, the price above is their share together; whoever misses pays the balance when the other trains alone.
+                </Text>
+              </>
+            ) : null}
             {/* Going away: pick the last day on a calendar (GRIZZ, 2026-11-02). */}
             {on && onAway ? (
               <Pressable style={styles.outline} onPress={() => onAway({ clientId: null, name: p.name })}>
@@ -155,6 +191,12 @@ const styles = themedStyles({
   meta: { color: "#94A3B8", fontSize: 12, marginTop: 3, lineHeight: 17 },
   row: { backgroundColor: "#1E293B", borderRadius: 12, padding: 12, marginTop: 8 },
   name: { color: "#fff", fontSize: 15, fontWeight: "700" },
+  label: { color: "#CBD5E1", fontSize: 13, fontWeight: "700", marginTop: 12, marginBottom: 6 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: { borderWidth: 1, borderColor: "#334155", borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12 },
+  chipOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
+  chipText: { color: "#CBD5E1", fontSize: 13, fontWeight: "600" },
+  chipTextOn: { color: "#0F172A" },
   edit: { flexDirection: "row", gap: 8, marginTop: 10, alignItems: "center" },
   input: { width: 140, backgroundColor: "#F8FAFC", color: "#0F172A", borderRadius: 10, padding: 10, fontSize: 15 },
   button: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 14 },

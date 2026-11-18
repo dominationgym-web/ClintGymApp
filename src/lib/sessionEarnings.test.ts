@@ -15,6 +15,19 @@ const s = (o: Partial<Parameters<typeof takings>[0][number]> & { who?: string })
 });
 
 describe("takings", () => {
+  it("uses the joint-session amounts: Dave alone R750, Sharde who missed R250 (0222)", () => {
+    const t = takings(
+      [
+        s({ status: "done", fee: 500, due: 750 }),
+        s({ status: "cancelled", charge: "credit", cancelled_by: "client", fee: 500, due: 250 }),
+        s({ status: "cancelled", charge: "charge", cancelled_by: "client", fee: 500, due: 250 }),
+      ],
+      now
+    );
+    expect(t.made).toBe(1250);
+    expect(t.fromCancellations).toBe(500);
+    expect(t.credited).toBe(250);
+  });
   it("counts trained, charged cancellations and no-shows, and leaves out credits", () => {
     const t = takings(
       [

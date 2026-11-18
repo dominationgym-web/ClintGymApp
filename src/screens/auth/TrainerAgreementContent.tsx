@@ -10,8 +10,8 @@ const APP_OPERATOR = { name: "Clint Walters, trading as Daily Evolution", email:
 // version whenever the wording changes: trainers on an older version are asked
 // to sign again before they can carry on. Keep in sync with
 // docs/trainer-agreement.md.
-export const TRAINER_AGREEMENT_VERSION = "2026-10-15";
-export const TRAINER_AGREEMENT_LAST_UPDATED = "15 October 2026";
+export const TRAINER_AGREEMENT_VERSION = "2026-11-18";
+export const TRAINER_AGREEMENT_LAST_UPDATED = "18 November 2026";
 
 const SECTIONS: { heading: string; body: string }[] = [
   {
@@ -21,7 +21,7 @@ const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: "2. Fees and payment",
     body:
-      "You start with a free trial, shown on your Profile. After that you pay for the plan you choose (monthly, 6 months or 1 year upfront) plus the per-client fees shown in the app, in rand if you're in South Africa or US dollars elsewhere, by EFT. Credit from trainers you refer comes off what you owe. If we've given you free use, you only pay the per-client fees shown on your Profile.\n\nIf a payment is overdue, your account and your clients' access can be paused until it's paid; nothing is deleted. We'll tell you in the app at least 30 days before any price change.",
+      "You start with a free trial, shown on your Profile. After that you pay for the plan you choose (monthly, 6 months or 1 year upfront) plus the per-client fees shown in the app, in rand if you're in South Africa or US dollars elsewhere, by card or EFT. Credit from trainers you refer comes off what you owe. If we've given you free use, you only pay the per-client fees shown on your Profile.\n\nIf a payment is overdue, your account and your clients' access can be paused until it's paid; nothing is deleted. We'll tell you in the app at least 30 days before any price change.",
   },
   {
     heading: "3. Your clients' information is your responsibility",
@@ -56,14 +56,28 @@ const SECTIONS: { heading: string; body: string }[] = [
   {
     heading: "8. Approval, blocking and leaving",
     body:
-      "We approve every trainer before clients can join them, and we may block an account that breaks this agreement or puts clients at risk. You can stop at any time. To delete your trainer account, your clients' accounts first need to be closed or moved to another trainer - contact us to arrange it.",
+      "We approve every trainer before clients can join them, and we may block an account that breaks this agreement or puts clients at risk. You can cancel your subscription at any time (section 9). To delete your trainer account, your clients' accounts first need to be closed or moved to another trainer - contact us to arrange it.",
   },
   {
-    heading: "9. Changes to this agreement",
+    heading: "9. Cancelling your subscription",
+    body:
+      "You can cancel any time, with no cancellation fee, under Profile › Plan & refer › Cancel subscription, or by emailing us. If you cancel during your free trial, you pay nothing.\n\n" +
+      "No refunds: your free trial lets you try everything first, so payments aren't refunded once made, whether you cancel early or not.\n" +
+      "• Monthly plan: you keep full use until the end of the month you've paid for, and nothing more is charged after that.\n" +
+      "• 6-month or 1-year plan: these are commitment plans, which is why they're discounted. You keep full use until the end of the plan and it isn't renewed. The plan isn't refunded, except where South African law requires it.\n" +
+      "• Client fees for months that have already passed are still payable.\n" +
+      "• Unused referral credit is never paid out in cash. It's added as free time (half a month per credit), so your access runs longer before it ends.\n" +
+      "• Your saved card is removed the moment you cancel.\n" +
+      "• You can undo your cancellation any time before it takes effect.\n\n" +
+      "What happens to your clients: we remind you a week before your end date to tell them. On the end date your account and your clients' access are paused; nothing is deleted. For 90 days after that you can come back and find everything as it was, and a client can ask us to move them to another Daily Evolution trainer or for a copy of their information. After 90 days we delete your trainer account and your clients' information, unless a client has moved to another trainer, and you can ask us to delete it sooner. We keep payment records only as long as tax law requires.\n\n" +
+      "If we end your subscription: we may do so straight away if you break this agreement or put clients at risk. Otherwise we give you at least 30 days' notice and refund any full months you've paid for and not used.",
+  },
+  {
+    heading: "10. Changes to this agreement",
     body: "If we change this agreement, the app will ask you to read and sign the new version before you carry on.",
   },
   {
-    heading: "10. The legal bits",
+    heading: "11. The legal bits",
     body:
       "The app is provided as it is, especially during the test period, and may sometimes be unavailable. As far as the law allows, we're not liable for indirect losses from using it. This agreement is governed by the law of South Africa.",
   },

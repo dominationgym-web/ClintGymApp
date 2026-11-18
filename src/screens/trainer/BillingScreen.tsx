@@ -52,6 +52,7 @@ import type {
   BillingPlan,
   BillingSettings,
   ClientActivation,
+  OwnerCancellation,
   PaymentProof,
   PriceSide,
   Trainer,
@@ -93,6 +94,8 @@ export default function BillingScreen() {
   const [proofs, setProofs] = useState<PaymentProof[]>([]);
   const [viewing, setViewing] = useState<PaymentProof | null>(null);
   const [sides, setSides] = useState<Record<string, TrainerPriceSide>>({});
+  // Trainers who cancelled their subscription (0220).
+  const [cancellations, setCancellations] = useState<OwnerCancellation[]>([]);
   const today = todayIso();
 
   const load = useCallback(async () => {
@@ -107,6 +110,8 @@ export default function BillingScreen() {
     // Each trainer's price side (0179): Evolution or 1 on 1 only.
     const { data: sideRows } = await supabase.rpc("trainer_price_sides");
     setSides(Object.fromEntries((sideRows ?? []).map((x) => [x.trainer_id, x])));
+    const { data: cancelRows } = await supabase.rpc("owner_cancellations");
+    setCancellations(cancelRows ?? []);
     const { data: proofRows } = await supabase
       .from("payment_proofs")
       .select("*")
@@ -339,6 +344,27 @@ export default function BillingScreen() {
           {settings.free_clients}. They're worked out on the 1st and due by the {settings.client_fees_due_day}th.
         </Text>
       ) : null}
+
+      {cancellations.length > 0
+        ? section("cancellations", "Cancelled subscriptions", String(cancellations.length), () => (
+            <>
+              <Text style={styles.small}>
+                No refunds. Each trainer keeps full use until their end date, then their account and clients are paused. To
+                bring one back, approve them again on the Trainers tab.
+              </Text>
+              {cancellations.map((c) => (
+                <View key={c.trainer_id} style={styles.line}>
+                  <Text style={styles.lineName}>{c.name ?? "A trainer"}</Text>
+                  <Text style={styles.lineDetail}>
+                    {c.status === "pending" ? `Cancelled ${shortDate(c.requested_on)} · access ends ${shortDate(c.ends_on)}` : `Ended ${shortDate(c.ends_on)} · paused`}
+                  </Text>
+                  {c.reason ? <Text style={styles.small}>Reason: {c.reason}</Text> : null}
+                  {c.ready_to_clear ? <Text style={styles.warn}>90 days are up: their data can now be cleared. Ask Claude to clear it.</Text> : null}
+                </View>
+              ))}
+            </>
+          ))
+        : null}
 
       {proofs.length > 0
         ? section("proofs", "Proof of payment", String(proofs.length), () =>

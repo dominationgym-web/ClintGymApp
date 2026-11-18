@@ -30,6 +30,7 @@ export default function SessionPlanEditor({
   payers = [],
   paysFor = [],
   fromCalendar,
+  pairNote,
   onSaved,
 }: {
   clientId: string;
@@ -42,6 +43,8 @@ export default function SessionPlanEditor({
   paysFor?: string[];
   // Their days and times as already on the calendar (calendarRegular.ts): filled in when the plan has none yet.
   fromCalendar?: { regular: RegularTime[]; minutes: number | null };
+  /** In a pair (0224): says who with and the prices, instead of the group settings. */
+  pairNote?: string;
   onSaved: () => void;
 }) {
   const [fee, setFee] = useState("");
@@ -167,73 +170,81 @@ export default function SessionPlanEditor({
         </Text>
       ) : null}
 
-      <Text style={styles.label}>Who trains in the session?</Text>
-      <View style={styles.chips}>
-        {[1, 2, 3, 4, 5, 6].map((n) => (
-          <Chip key={n} label={n === 1 ? `Just ${first}` : `${n} people`} on={groupSize === n} onPress={() => setGroupSize(n)} />
-        ))}
-      </View>
-      {groupSize > 1 ? (
-        <>
-          <View style={styles.chips}>
-            <Chip label="Split one fee" on={split} onPress={() => setSplit(true)} />
-            <Chip label="Each pays their own fee" on={!split} onPress={() => setSplit(false)} />
-          </View>
-          <Text style={styles.meta}>Set up each person the same way and times.</Text>
-          <Text style={styles.label}>Who pays for {first}?</Text>
-          {paysFor.length ? (
-            <Text style={styles.meta}>
-              {first} pays for {paysFor.join(" and ")}, so their sessions are on {first}'s invoice too, each person listed separately.
-            </Text>
-          ) : (
-            <>
-              <View style={styles.chips}>
-                <Chip label={`${first} pays`} on={payer === null} onPress={() => setPayer(null)} />
-                {payers.map((p) => (
-                  <Chip key={p.id} label={`${p.name.split(" ")[0]} pays`} on={payer === p.id} onPress={() => setPayer(p.id)} />
-                ))}
-              </View>
-              <Text style={styles.meta}>
-                {payer
-                  ? `${first}'s sessions go on ${payers.find((p) => p.id === payer)?.name.split(" ")[0] ?? "their"}'s invoice, listed and costed separately. ${first} gets no invoice.`
-                  : payers.length
-                    ? `Or pick who pays for ${first}, like a husband paying for his wife. Each person's sessions stay costed separately.`
-                    : "Set up the others in the group first to let one person pay for everyone."}
-              </Text>
-            </>
-          )}
-        </>
-      ) : null}
-
-      {splitting ? (
-        <>
-          <Text style={styles.label}>Total fee for the session {settings?.currency === "USD" ? "($)" : "(R)"}</Text>
-          <TextInput style={styles.input} value={total} onChangeText={setTotal} keyboardType="decimal-pad" placeholder="1200" placeholderTextColor="#64748B" />
-          {share !== null && !Number.isNaN(share) ? (
-            <Text style={styles.share}>
-              {first} pays {money(share, settings?.currency)} a session (split {groupSize} ways)
-            </Text>
-          ) : null}
-        </>
+      {pairNote ? (
+        // Set up as a pair (0224): prices and invoices are changed under 👥 Pairs.
+        <Text style={[styles.status, { color: themeText(BRAND_GOLD) }]}>{pairNote}</Text>
       ) : (
         <>
-          <Text style={styles.label}>
-            {groupSize > 1 ? `${first}'s fee per session` : "Fee per session"} {settings?.currency === "USD" ? "($)" : "(R)"}
-          </Text>
-          <TextInput style={styles.input} value={fee} onChangeText={setFee} keyboardType="decimal-pad" placeholder="350" placeholderTextColor="#64748B" />
-          {settings?.fee != null ? <Text style={styles.meta}>Your normal fee is {money(Number(settings.fee), settings.currency)}.</Text> : null}
+        <Text style={styles.label}>Who trains in the session?</Text>
+        <View style={styles.chips}>
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <Chip key={n} label={n === 1 ? `Just ${first}` : `${n} people`} on={groupSize === n} onPress={() => setGroupSize(n)} />
+          ))}
+        </View>
+        {groupSize > 1 ? (
+          <>
+            <View style={styles.chips}>
+              <Chip label="Split one fee" on={split} onPress={() => setSplit(true)} />
+              <Chip label="Each pays their own fee" on={!split} onPress={() => setSplit(false)} />
+            </View>
+            <Text style={styles.meta}>Set up each person the same way and times.</Text>
+            <Text style={styles.label}>Who pays for {first}?</Text>
+            {paysFor.length ? (
+              <Text style={styles.meta}>
+                {first} pays for {paysFor.join(" and ")}, so their sessions are on {first}'s invoice too, each person listed separately.
+              </Text>
+            ) : (
+              <>
+                <View style={styles.chips}>
+                  <Chip label={`${first} pays`} on={payer === null} onPress={() => setPayer(null)} />
+                  {payers.map((p) => (
+                    <Chip key={p.id} label={`${p.name.split(" ")[0]} pays`} on={payer === p.id} onPress={() => setPayer(p.id)} />
+                  ))}
+                </View>
+                <Text style={styles.meta}>
+                  {payer
+                    ? `${first}'s sessions go on ${payers.find((p) => p.id === payer)?.name.split(" ")[0] ?? "their"}'s invoice, listed and costed separately. ${first} gets no invoice.`
+                    : payers.length
+                      ? `Or pick who pays for ${first}, like a husband paying for his wife. Each person's sessions stay costed separately.`
+                      : "Set up the others in the group first to let one person pay for everyone."}
+                </Text>
+              </>
+            )}
+          </>
+        ) : null}
+
+        {splitting ? (
+          <>
+            <Text style={styles.label}>Total fee for the session {settings?.currency === "USD" ? "($)" : "(R)"}</Text>
+            <TextInput style={styles.input} value={total} onChangeText={setTotal} keyboardType="decimal-pad" placeholder="1200" placeholderTextColor="#64748B" />
+            {share !== null && !Number.isNaN(share) ? (
+              <Text style={styles.share}>
+                {first} pays {money(share, settings?.currency)} a session (split {groupSize} ways)
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Text style={styles.label}>
+              {groupSize > 1 ? `${first}'s fee per session` : "Fee per session"} {settings?.currency === "USD" ? "($)" : "(R)"}
+            </Text>
+            <TextInput style={styles.input} value={fee} onChangeText={setFee} keyboardType="decimal-pad" placeholder="350" placeholderTextColor="#64748B" />
+            {settings?.fee != null ? <Text style={styles.meta}>Your normal fee is {money(Number(settings.fee), settings.currency)}.</Text> : null}
+          </>
+        )}
+
+        {groupSize > 1 ? (
+          <>
+            <Text style={styles.label}>Price if {first} trains alone</Text>
+            <TextInput style={styles.input} value={solo} onChangeText={setSolo} keyboardType="decimal-pad" placeholder="700" placeholderTextColor="#64748B" />
+            <Text style={styles.meta}>
+              When only {first} trains, {first} pays this. Whoever missed pays the balance (the together total less this), unless they book a catch-up. The invoices work it out by themselves.
+            </Text>
+          </>
+        ) : null}
+
         </>
       )}
-
-      {groupSize > 1 ? (
-        <>
-          <Text style={styles.label}>Special rate if {first} trains alone (optional)</Text>
-          <TextInput style={styles.input} value={solo} onChangeText={setSolo} keyboardType="decimal-pad" placeholder="700" placeholderTextColor="#64748B" />
-          <Text style={styles.meta}>
-            When only {first} comes and you credit the others, {first} pays this instead. If the others forfeit, everyone pays their normal share.
-          </Text>
-        </>
-      ) : null}
 
       <Text style={styles.label}>Sessions a week</Text>
       <View style={styles.chips}>

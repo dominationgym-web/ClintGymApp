@@ -39,6 +39,7 @@ import ClientAvatar from "@/components/ClientAvatar";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import ChangePasswordButton from "@/components/ChangePasswordButton";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
+import CancelSubscription from "@/components/CancelSubscription";
 import TrainerIncome from "@/components/TrainerIncome";
 import MyTraining from "@/components/MyTraining";
 import OwnerChallenges from "@/components/OwnerChallenges";
@@ -246,6 +247,7 @@ export default function TrainerProfileScreen() {
         {tab === "refer" && (
           <>
             <TrainerPlanCard trainer={trainer} />
+            {trainer.is_owner ? null : <CancelSubscription />}
             {trial ? (
               <View style={[styles.trialBox, trialLeft !== null && trialLeft < 0 && { borderColor: themeBorder("#F59E0B") }]}>
                 <Text style={styles.trialTitle}>{trial}</Text>

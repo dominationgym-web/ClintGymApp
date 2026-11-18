@@ -37,6 +37,8 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [open, setOpen] = useState<string | null>(null);
   // The opened program's whole week, on its own screen (GRIZZ, 2026-11-16).
   const [showWeek, setShowWeek] = useState(false);
+  // The opened program's write-up, closed until tapped (GRIZZ, 2026-11-18).
+  const [about, setAbout] = useState(false);
   // The program whose exercises didn't load (no signal), so it shows a retry instead of spinning.
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
   const [openGroup, setOpenGroup] = useState<ProgramGroup | null>(null);
@@ -126,10 +128,6 @@ export default function ProgramsScreen({ navigation }: Props) {
           <Text style={styles.buildButtonText}>+ Build a program</Text>
         </Pressable>
         <GiveProgramButton />
-        <Pressable style={styles.shortcut} onPress={() => setShowReset(true)} accessibilityRole="button">
-          <Text style={styles.shortcutText}>🌿 12-Week Health Reset (women and men) ›</Text>
-          <Text style={styles.description}>Look through all 12 weeks and the training. Enroll a client from their Overview tab.</Text>
-        </Pressable>
         <View style={{ marginTop: 8 }}>
           <GymHomeTabs
             current={place}
@@ -177,18 +175,37 @@ export default function ProgramsScreen({ navigation }: Props) {
           renderFamily={(card) => {
             const p = card.options.find((o) => o.program.id === open)?.program;
             return (
-              <ProgramCardView key={card.key} card={card} selectedId={open} onSelect={(next) => setOpen(open === next.id ? null : next.id)}>
+              <ProgramCardView key={card.key} card={card} selectedId={open} onSelect={(next) => {
+                  setOpen(open === next.id ? null : next.id);
+                  setAbout(false);
+                }}>
                 {p && (
                   <>
-                    {p.description && <Text style={styles.description}>{p.description}</Text>}
-                    {p.nutrition ? <Text style={styles.description}>Nutrition: {p.nutrition}</Text> : null}
+                    {/* The week button straight under the program buttons; the
+                        write-up waits behind a tap-to-open heading so the other
+                        programs stay in view (GRIZZ, 2026-11-18). */}
                     <Pressable style={styles.weekButton} onPress={() => setShowWeek(true)} accessibilityRole="button">
                       <Text style={styles.weekButtonText}>See the whole week ›</Text>
                     </Pressable>
-                    <Text style={styles.description}>
-                      ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
-                      workout screen. To change it for one client, tap it on that client's Training tab.
-                    </Text>
+                    <Pressable
+                      style={styles.aboutHeader}
+                      onPress={() => setAbout(!about)}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: about }}
+                    >
+                      <Text style={styles.aboutTitle}>About this program</Text>
+                      <Text style={styles.aboutChevron}>{about ? "▴" : "▾"}</Text>
+                    </Pressable>
+                    {about && (
+                      <>
+                        {p.description ? <Text style={styles.description}>{p.description}</Text> : null}
+                        {p.nutrition ? <Text style={styles.description}>Nutrition: {p.nutrition}</Text> : null}
+                        <Text style={styles.description}>
+                          ⇄ Gym busy? Clients can change any exercise for another one of the same body part on their
+                          workout screen. To change it for one client, tap it on that client's Training tab.
+                        </Text>
+                      </>
+                    )}
                     {p.trainer_id && (
                       <Pressable onPress={() => remove(p)} hitSlop={8}>
                         <Text style={styles.delete}>Delete program</Text>
@@ -200,6 +217,11 @@ export default function ProgramsScreen({ navigation }: Props) {
             );
           }}
         />
+        {/* Programs first, extras with a write-up below them (GRIZZ, 2026-11-18). */}
+        <Pressable style={[styles.shortcut, { marginTop: 14 }]} onPress={() => setShowReset(true)} accessibilityRole="button">
+          <Text style={styles.shortcutText}>🌿 12-Week Health Reset (women and men) ›</Text>
+          <Text style={styles.description}>Look through all 12 weeks and the training. Enroll a client from their Overview tab.</Text>
+        </Pressable>
       </ScrollView>
       <ProgramWeekModal
         program={showWeek ? opened : null}
@@ -241,5 +263,8 @@ const styles = themedStyles({
   shortcutText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   weekButton: { backgroundColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 11, alignItems: "center", marginTop: 10 },
   weekButtonText: { color: "#0F172A", fontWeight: "800", fontSize: 15 },
+  aboutHeader: { flexDirection: "row", alignItems: "center", marginTop: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#1E293B" },
+  aboutTitle: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14, flex: 1 },
+  aboutChevron: { color: "#94A3B8", fontSize: 16 },
   delete: { color: "#F87171", fontSize: 13, fontWeight: "600", marginTop: 10 },
 });

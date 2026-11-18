@@ -24,10 +24,11 @@ import {
   jointName,
   cleanTime,
   feeText,
+  jointNote,
   groupFees,
   toggleRegular,
 } from "./liveSessions";
-import type { SessionInvoice } from "@/types/database";
+import type { InvoiceLine, SessionInvoice } from "@/types/database";
 
 const at = "2026-11-04T06:00:00";
 
@@ -126,6 +127,23 @@ describe("agreement", () => {
     expect(agreementCurrent({ ...plan, fee: "400.00" as unknown as number }, plan)).toBe(true);
     expect(agreementCurrent({ ...plan, fee: 350 }, plan)).toBe(false);
     expect(agreementCurrent(null, plan)).toBe(false);
+  });
+});
+
+describe("joint session invoice lines (0222)", () => {
+  const line = (o: Partial<InvoiceLine>) => ({ at: "2026-11-06T06:30:00Z", kind: "done", role: "charge", amount: 500, fee: 500, ...o }) as InvoiceLine;
+  it("says why each session costs what it does", () => {
+    expect(jointNote(line({ joint: "together", with: "Sharde visagie" }), "ZAR")).toBe("with Sharde visagie");
+    expect(jointNote(line({ joint: "alone", with: "Sharde visagie", amount: 750 }), "ZAR")).toBe("trained alone, Sharde visagie missed");
+    expect(jointNote(line({ kind: "late", joint: "partner_alone", with: "Dave Campbell", amount: 250 }), "ZAR")).toBe("Dave Campbell trained alone: the balance");
+    expect(jointNote(line({ joint: "catch_up", amount: 750 }), "ZAR")).toBe("catch-up, trained alone");
+  });
+  it("explains what an upfront invoice adds or gives back next month", () => {
+    expect(jointNote(line({ role: "extra", joint: "alone", amount: 250, billed: 500 }), "ZAR")).toBe("trained alone, R250 on top of the R500 billed");
+    expect(jointNote(line({ kind: "notice", role: "credit", joint: "partner_alone", with: "Dave", amount: -250, fee: 250, billed: 500 }), "ZAR")).toBe(
+      "Dave trained alone, so you pay the R250 balance: the rest back"
+    );
+    expect(jointNote(line({ kind: "notice", role: "credit", amount: -500 }), "ZAR")).toBe("credit, paid last month");
   });
 });
 
@@ -291,16 +309,25 @@ describe("special rate", () => {
     { id: "a", came: true, fee: 500, soloFee: 700 },
     { id: "b", came: false, fee: 500, soloFee: 700 },
   ];
-  it("charges the solo rate when one comes and the other is credited (GRIZZ's R1 000 / R700 example)", () => {
-    expect(groupFees(pair, "credit")).toEqual({ a: 700, b: 500 });
+  it("charges the alone price to the one who came and the balance to the one who missed (GRIZZ 2026-11-18)", () => {
+    expect(groupFees(pair)).toEqual({ a: 700, b: 300 });
+    expect(groupFees(pair.map((p) => ({ ...p, soloFee: 750 })))).toEqual({ a: 750, b: 250 });
   });
-  it("keeps normal shares when the one who missed forfeits, or both came", () => {
-    expect(groupFees(pair, "charge")).toEqual({ a: 500, b: 500 });
-    expect(groupFees(pair.map((p) => ({ ...p, came: true })), "credit")).toEqual({ a: 500, b: 500 });
+  it("keeps normal shares when both came or nobody came", () => {
+    expect(groupFees(pair.map((p) => ({ ...p, came: true })))).toEqual({ a: 500, b: 500 });
+    expect(groupFees(pair.map((p) => ({ ...p, came: false })))).toEqual({ a: 500, b: 500 });
+  });
+  it("Jade and Camilla: R450 each together, R750 alone, R150 balance", () => {
+    expect(
+      groupFees([
+        { id: "camilla", came: true, fee: 450, soloFee: 750 },
+        { id: "jade", came: false, fee: 450, soloFee: null },
+      ])
+    ).toEqual({ camilla: 750, jade: 150 });
   });
   it("names the special rate in the agreement", () => {
     expect(feeText({ fee: 500, group_size: 2, group_total: 1000, solo_fee: 700 }, "ZAR")).toBe(
-      "R500 (my share of R1 000 for 2 people, or R700 when I train alone and the others are credited)"
+      "R500 (my share of R1 000 for 2 people, or R700 when I train alone)"
     );
   });
 });
