@@ -22,6 +22,9 @@ import SendProofOfPayment from "@/components/SendProofOfPayment";
 import TrainerPlanCard from "@/components/TrainerPlanCard";
 import { CardPaymentReturn } from "@/components/CardPayment";
 import { supabase } from "@/lib/supabase";
+import { shortDate } from "@/lib/billing";
+import { toIsoDate } from "@/lib/dates";
+import { PRIVACY_CONTACT_EMAIL } from "@/lib/privacyPolicy";
 import { needsAgreement, trainerDisplayName } from "@/lib/trainers";
 import TrainerAgreementScreen from "@/screens/trainer/TrainerAgreementScreen";
 import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
@@ -298,6 +301,30 @@ function PendingTrainerScreen() {
   // approved_at stays set once the owner has approved them, so a trainer with
   // it but no approval has been blocked, not newly applied.
   const blocked = !!trainer?.approved_at;
+  // A trainer whose own cancellation has ended (0220) sees why, not "the app owner paused you".
+  const [endedOn, setEndedOn] = useState<string | null>(null);
+  useEffect(() => {
+    if (!blocked) return;
+    supabase.rpc("my_cancellation").then(({ data }) => {
+      const c = data?.[0];
+      if (c?.status === "ended" && c.ended_on) setEndedOn(c.ended_on);
+    });
+  }, [blocked]);
+  if (blocked && endedOn) {
+    const keptUntil = new Date(`${endedOn}T12:00:00`);
+    keptUntil.setDate(keptUntil.getDate() + 90);
+    return (
+      <ScrollView style={{ backgroundColor: themeBg("#0F172A") }} contentContainerStyle={styles.pendingContainer}>
+        <Text style={[styles.title, { textAlign: "center" }]}>Your subscription has ended</Text>
+        <Text style={styles.body}>
+          {`Your account and your clients' access are paused. Everything is kept until ${shortDate(toIsoDate(keptUntil))}, so if you come back, it's all as you left it. To come back, contact Daily Evolution at ${PRIVACY_CONTACT_EMAIL}.`}
+        </Text>
+        <Pressable style={styles.logoutButton} onPress={signOut}>
+          <Text style={styles.logoutText}>Log out</Text>
+        </Pressable>
+      </ScrollView>
+    );
+  }
   return (
     <ScrollView style={{ backgroundColor: themeBg("#0F172A") }} contentContainerStyle={styles.pendingContainer}>
       <Text style={[styles.title, { textAlign: "center" }]}>{blocked ? "Your account has been paused" : "Thanks for applying"}</Text>

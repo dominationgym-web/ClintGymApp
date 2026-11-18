@@ -161,6 +161,27 @@ export type ReferralPayout = {
   free_months?: number | null;
 };
 
+// A trainer cancelling their own subscription (0220).
+export type CancellationStatus = "pending" | "undone" | "ended" | "reactivated";
+export type MyCancellation = {
+  status: CancellationStatus | null;
+  reason: string | null;
+  requested_on: string | null;
+  ends_on: string;
+  ended_on: string | null;
+  free_months: number;
+};
+export type OwnerCancellation = {
+  trainer_id: string;
+  name: string | null;
+  status: CancellationStatus;
+  reason: string | null;
+  requested_on: string;
+  ends_on: string;
+  ended_on: string | null;
+  ready_to_clear: boolean;
+};
+
 export type TrainerBillingStatus = {
   trainer_id: string;
   billing_plan: BillingPlan | null;
@@ -1825,6 +1846,10 @@ export interface Database {
         Returns: { trainer_id: string; currency: BillingCurrency; income: number; priced: number; unpriced: number }[];
       };
       am_i_locked: { Args: Record<string, never>; Returns: boolean };
+      my_cancellation: { Args: Record<string, never>; Returns: MyCancellation[] };
+      cancel_my_subscription: { Args: { p_reason: string }; Returns: string };
+      undo_my_cancellation: { Args: Record<string, never>; Returns: undefined };
+      owner_cancellations: { Args: Record<string, never>; Returns: OwnerCancellation[] };
       owner_payment_details: {
         Args: Record<string, never>;
         Returns: { display_name: string; eft_details: EftDetails; pop_whatsapp: string | null }[];
