@@ -320,14 +320,18 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
       ) : null}
       {kind && s ? (
         // Pinned under the settings, so Start is always in reach.
-        <View style={styles.footer}>
-          <Pressable style={styles.footerStart} onPress={() => setRunning({ title: describeTimer(s), settings: s })}>
-            <Text style={styles.startText}>▶ Start</Text>
-            <Text style={styles.footerTime}>{formatClock(totalSeconds(s))}</Text>
-          </Pressable>
-          <Pressable style={styles.footerSave} onPress={openSave} accessibilityLabel={role === "trainer" ? "Save for you or a client" : "Save"}>
-            <Text style={styles.secondaryText}>Save</Text>
-          </Pressable>
+        // SafeBottom keeps it clear of the phone's Back/Home bar (GRIZZ 2026-11-18: Start sat under it).
+        <View style={styles.footerWrap}>
+          <View style={styles.footer}>
+            <Pressable style={styles.footerStart} onPress={() => setRunning({ title: describeTimer(s), settings: s })}>
+              <Text style={styles.startText}>▶ Start</Text>
+              <Text style={styles.footerTime}>{formatClock(totalSeconds(s))}</Text>
+            </Pressable>
+            <Pressable style={styles.footerSave} onPress={openSave} accessibilityLabel={role === "trainer" ? "Save for you or a client" : "Save"}>
+              <Text style={styles.secondaryText}>Save</Text>
+            </Pressable>
+          </View>
+          <SafeBottom />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.pad}>
@@ -486,7 +490,8 @@ const styles = themedStyles({
   chipOn: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
   chipText: { color: "#CBD5E1", fontWeight: "700", fontSize: 13 },
   chipTextOn: { color: "#0F172A" },
-  footer: { flexDirection: "row", gap: 10, padding: 12, borderTopWidth: 1, borderTopColor: "#1E293B", backgroundColor: "#0F172A" },
+  footerWrap: { borderTopWidth: 1, borderTopColor: "#1E293B", backgroundColor: "#0F172A" },
+  footer: { flexDirection: "row", gap: 10, padding: 12 },
   footerStart: { flex: 1, flexDirection: "row", gap: 10, backgroundColor: BRAND_GOLD, borderRadius: 12, padding: 14, alignItems: "center", justifyContent: "center" },
   footerTime: { color: "#0F172A", fontWeight: "700", fontSize: 15, opacity: 0.75 },
   footerSave: { borderRadius: 12, borderWidth: 1, borderColor: BRAND_GOLD, paddingHorizontal: 16, justifyContent: "center" },
