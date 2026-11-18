@@ -68,8 +68,8 @@ function placement(p: CardProgram, family: ProgramFamily, familyTitle: string): 
       break;
     }
     case "upperLower": {
-      // "Quick upper body (30 min)" is 1, "Quick upper body 2 (30 min)" is 2 (0213).
-      const m = name.match(/^(?:home\s+)?quick\s+(upper|lower)\s+body(?:\s+(\d+))?\s*(\(.*\))?$/i);
+      // "Quick upper body (30 min)" is 1, "Quick upper body 2 (30 min)" is 2 (0213); full body the same (0225).
+      const m = name.match(/^(?:home\s+)?quick\s+(upper|lower|full)\s+body(?:\s+(\d+))?\s*(\(.*\))?$/i);
       if (m) {
         const part = m[1].toLowerCase();
         return { key: `quick:${part}`, title: `Quick ${part} body${m[3] ? ` ${m[3]}` : ""}`, label: m[2] ?? "1" };

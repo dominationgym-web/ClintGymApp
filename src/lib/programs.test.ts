@@ -328,7 +328,8 @@ describe("programFamily", () => {
   const built = (name: string) => programFamily({ name, trainer_id: null });
   it("groups built-in programs by name, gym and home alike", () => {
     expect(built("Full body week")).toBe("fullBody");
-    expect(built("Home quick full body (35 min)")).toBe("fullBody");
+    expect(built("Home quick full body (35 min)")).toBe("upperLower");
+    expect(built("Quick full body 4 (35 min)")).toBe("upperLower");
     expect(built("Quick upper body (30 min)")).toBe("upperLower");
     expect(built("Home quick lower body (30 min)")).toBe("upperLower");
     expect(built("Chest & Bi 3")).toBe("chestBi");
