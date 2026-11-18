@@ -21,6 +21,8 @@ import { ForecastStrip, LossesCard, TodayMoneyCard, WeekMoneyModal } from "@/com
 import { TimeOffSection } from "@/components/sessions/BlockTimeModal";
 import { diaryKey, diaryNames, regularFromCalendar, splitNames, usualGroups } from "@/lib/calendarRegular";
 import DiaryPeople from "@/components/sessions/DiaryPeople";
+import PairsSection from "@/components/sessions/PairsSection";
+import { firstName, invoicePair, invoiceSide, invoiceTitle, pairOf, pairPayer, pairSides, pairTitle } from "@/lib/sessionPairs";
 import CatchUpRows from "@/components/sessions/CatchUpRows";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import AwayModal, { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
@@ -71,7 +73,7 @@ import {
   shiftMonth,
 } from "@/lib/liveSessions";
 import type { TrainerStackParamList } from "@/navigation/types";
-import type { BillingCurrency, ClientAway, ClientStop, LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
+import type { BillingCurrency, ClientAway, ClientStop, LiveSession, SessionAgreement, SessionInvoice, SessionPair, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
@@ -115,6 +117,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   // Clients who stopped training (0207) and whose Stopped sheet is open.
   const [stops, setStops] = useState<ClientStop[]>([]);
   const [stopFor, setStopFor] = useState<AwayWho | null>(null);
+  // Pairs who train together (0224).
+  const [pairs, setPairs] = useState<SessionPair[]>([]);
 
   useEffect(() => {
     if (!only && route.params?.tab) setTab(route.params.tab);
@@ -151,7 +155,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     if (!trainer) return;
     const from = new Date(Math.min(new Date(`${shiftMonth(month, -1)}T00:00:00`).getTime(), Date.now() - 92 * 86400000)).toISOString();
     const to = new Date(`${shiftMonth(month, 2)}T00:00:00`).toISOString();
-    const [s, p, a, c, ls, d, aw, st] = await Promise.all([
+    const [s, p, a, c, ls, d, aw, st, pr] = await Promise.all([
       supabase.from("session_settings").select("*").eq("trainer_id", trainer.id).maybeSingle(),
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
@@ -160,6 +164,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       supabase.from("session_invoices").select("*").eq("trainer_id", trainer.id).eq("status", "draft").order("month"),
       supabase.from("client_away").select("*").eq("trainer_id", trainer.id).is("ended_at", null).gt("until_at", new Date().toISOString()),
       supabase.from("client_stops").select("*").eq("trainer_id", trainer.id).is("undone_at", null),
+      supabase.from("session_pairs").select("*").eq("trainer_id", trainer.id).is("ended_at", null).order("created_at"),
     ]);
     setSettings(s.data ?? null);
     // A new trainer lands on 1 on 1 with Setup open, so they never have to
@@ -177,6 +182,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     setDrafts(d.data ?? []);
     setAways((aw.data ?? []) as ClientAway[]);
     setStops((st.data ?? []) as ClientStop[]);
+    setPairs((pr.data ?? []) as SessionPair[]);
     setLoading(false);
     // The home-screen calendar widget shows the same sessions (0214).
     refreshCalendarWidget();
@@ -305,10 +311,11 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               onAway={setAwayFor}
               stops={stops}
               onStop={setStopFor}
+              pairs={pairs}
               onOpenPage={(clientId) => navigation.navigate("ClientDetail", { clientId })}
             />
           )}
-          {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} sessions={sessions} onChanged={load} />}
+          {tab === "invoices" && <InvoicesTab plans={plans} drafts={drafts} byId={byId} sessions={sessions} pairs={pairs} onChanged={load} />}
           {tab === "setup" && <SetupTab settings={settings} onSaved={setSettings} />}
         </ScrollView>
       )}
@@ -1327,7 +1334,10 @@ function ClientsTab({
   onAway,
   stops = [],
   onStop,
+  pairs = [],
 }: {
+  /** Pairs who train together (0224). */
+  pairs?: SessionPair[];
   sessions: LiveSession[];
   /** Clients marked away (0184); onAway opens the Away calendar. */
   aways?: ClientAway[];
@@ -1420,6 +1430,12 @@ function ClientsTab({
           payers={withPlan.filter((x) => x.id !== picked && planOf[x.id].group_size > 1 && !planOf[x.id].paid_by).map((x) => ({ id: x.id, name: x.name }))}
           fromCalendar={regularFromCalendar(sessions, picked)}
           paysFor={withPlan.filter((x) => planOf[x.id].paid_by === picked).map((x) => x.name.split(" ")[0])}
+          pairNote={(() => {
+            const pr = pairOf(pairs, { clientId: picked });
+            if (!pr) return undefined;
+            const other = pairSides(pr).find((x) => x.clientId !== picked) ?? pairSides(pr)[1];
+            return `👥 Trains with ${firstName(other.name)}: ${money(Number(pr.together), settings?.currency)} together, ${money(Number(pr.alone), settings?.currency)} when one trains alone. ${pr.one_invoice ? `One invoice, ${firstName(pairPayer(pr).name)} pays.` : "Separate invoices."} Change it under 👥 Pairs on the Clients tab.`;
+          })()}
           onSaved={onChanged}
         />
         {/* A second way back at the bottom, so there's no scrolling up after making changes (GRIZZ, 2026-11-01). */}
@@ -1461,7 +1477,11 @@ function ClientsTab({
                 ? regularLabel(p.regular)
                 : regularLabel(regularFromCalendar(sessions, c.id).regular)}
             </Text>
-            {p.paid_by ? <Text style={styles.meta}>Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null}
+            {(() => {
+              const pr = pairOf(pairs, { clientId: c.id });
+              if (pr) return <Text style={styles.meta}>👥 {pairTitle(pr)}{pr.one_invoice && pairPayer(pr).clientId !== c.id ? ` · ${firstName(pairPayer(pr).name)} pays` : ""}</Text>;
+              return p.paid_by ? <Text style={styles.meta}>Paid by {clients.find((x) => x.id === p.paid_by)?.name ?? "someone else"}</Text> : null;
+            })()}
             <Text style={[styles.meta, { color: themeText(ok ? "#22C55E" : cleared ? "#94A3B8" : "#F59E0B") }]}>{ok ? "Signed" : cleared ? "No signature needed" : "Not signed yet"}</Text>
             {(() => {
               const a = awayOf(aways, { clientId: c.id, name: c.name });
@@ -1518,6 +1538,7 @@ function ClientsTab({
         : null}
       {showOthers && others.length === 0 ? <Text style={styles.helper}>Every client is set up.</Text> : null}
       {/* Calendar people who aren't app clients: their times and their own price (GRIZZ, 2026-11-01). */}
+      {oneOnOne ? <PairsSection pairs={pairs} sessions={sessions} clients={clients} currency={currency} onChanged={onChanged} /> : null}
       {oneOnOne ? (
         <DiaryPeople sessions={sessions} currency={currency} normalFee={settings?.fee ?? null} onChanged={onChanged} aways={aways} onAway={onAway} stops={stops} onStop={onStop} />
       ) : null}
@@ -1530,9 +1551,12 @@ function InvoicesTab({
   drafts,
   byId,
   sessions,
+  pairs,
   onChanged,
 }: {
   sessions: LiveSession[];
+  /** Pairs (0224): one invoice for a couple, or split. */
+  pairs: SessionPair[];
   plans: SessionPlan[];
   drafts: SessionInvoice[];
   byId: Record<string, ClientInfo>;
@@ -1547,7 +1571,8 @@ function InvoicesTab({
   const loadMonth = useCallback(async () => {
     if (!trainer) return;
     const { data } = await supabase.from("session_invoices").select("*").eq("trainer_id", trainer.id).eq("month", month);
-    setRows(data ?? []);
+    // A draft left empty because someone else pays (a couple on one invoice) isn't shown.
+    setRows((data ?? []).filter((r) => !isEmptyDraft(r)));
   }, [trainer, month]);
 
   useEffect(() => {
@@ -1606,16 +1631,68 @@ function InvoicesTab({
   const currency = rows[0]?.currency ?? "ZAR";
   const total = rows.reduce((t, r) => t + Number(r.total), 0);
   const paid = rows.filter((r) => r.status === "paid").reduce((t, r) => t + Number(r.total), 0);
-  const name = (inv: SessionInvoice) => (inv.client_id ? byId[inv.client_id]?.name : inv.guest_name) ?? "Client";
-  const otherDrafts = drafts.filter((d) => d.month !== month);
+  // A couple on one invoice: "Dave & Sharde".
+  const name = (inv: SessionInvoice) => invoiceTitle(inv, (inv.client_id ? byId[inv.client_id]?.name : inv.guest_name) ?? "Client");
+  const otherDrafts = drafts.filter((d) => d.month !== month && !isEmptyDraft(d));
+
+  // Check, then one tap sends them all (GRIZZ, 2026-11-18: "okay, but
+  // Trainer needs to check before and give the okay"). Nothing goes out by itself.
+  const toSend = [...otherDrafts, ...rows.filter((r) => r.status === "draft")];
+  const [sending, setSending] = useState(false);
+  const sendAll = () => {
+    const outside = toSend.filter((i) => !i.client_id);
+    Alert.alert(
+      `Send ${toSend.length} invoice${toSend.length === 1 ? "" : "s"}?`,
+      `Only if you've checked them. Clients in the app get a notification.${outside.length ? ` ${outside.length} ${outside.length === 1 ? "person isn't" : "people aren't"} in the app: theirs are marked sent, then share them by WhatsApp or email.` : ""}`,
+      [
+        { text: "Not yet", style: "cancel" },
+        {
+          text: "Send all",
+          onPress: async () => {
+            setSending(true);
+            const failed: string[] = [];
+            const share: string[] = [];
+            for (const inv of toSend) {
+              const { error } = await supabase.rpc("send_session_invoice", { p_id: inv.id });
+              if (error) failed.push(`${name(inv)}: ${error.message}`);
+              else if (!inv.client_id) share.push(name(inv));
+            }
+            setSending(false);
+            refresh();
+            const sent = toSend.length - failed.length;
+            Alert.alert(
+              failed.length ? `Sent ${sent}, ${failed.length} not sent` : `Sent ${sent} ✅`,
+              [
+                failed.length ? `Not sent:\n${failed.join("\n")}` : "",
+                share.length ? `Share these by WhatsApp or email (tap each one): ${share.join(", ")}.` : "",
+              ]
+                .filter(Boolean)
+                .join("\n\n") || "Everyone has theirs."
+            );
+          },
+        },
+      ]
+    );
+  };
   // Catch-ups not done in time: decided before invoices go out (GRIZZ, 2026-11-02).
   const owed = sessions.filter((s) => s.charge === "makeup" && !s.makeup_session_id && (s.status === "cancelled" || s.status === "no_show"));
 
   return (
     <>
       <Text style={styles.helper}>
-        Invoices are made on the 1st. Flip Paid when the money comes in. Not paid by the 14th? Their sessions go on hold by themselves until you flip Paid.
+        Invoices are made on the 1st and you get a notification. Check them, then tap Send all. Flip Paid when the money comes in. Not paid by the 14th? Their sessions go on hold by themselves until you flip Paid.
       </Text>
+      {toSend.length ? (
+        <Pressable style={styles.button} onPress={sendAll} disabled={sending}>
+          {sending ? (
+            <ActivityIndicator color={themeText("#0F172A")} />
+          ) : (
+            <Text style={styles.buttonText}>
+              ✅ Checked: send all {toSend.length} draft{toSend.length === 1 ? "" : "s"}
+            </Text>
+          )}
+        </Pressable>
+      ) : null}
       <CatchUpRows catchUps={owed} name={(s) => (s.client_id ? byId[s.client_id]?.name : s.guest_name) ?? "Client"} onChanged={onChanged} onlyLate />
       {otherDrafts.length ? (
         <>
@@ -1673,6 +1750,11 @@ function InvoicesTab({
 
       <InvoiceModal
         invoice={open}
+        pair={open ? invoicePair(pairs, open) : undefined}
+        onPairChanged={() => {
+          setOpen(null);
+          refresh();
+        }}
         clientName={open ? name(open) : ""}
         phone={open ? byId[open.client_id ?? ""]?.phone ?? null : null}
         email={open ? byId[open.client_id ?? ""]?.email ?? null : null}
@@ -1684,6 +1766,11 @@ function InvoicesTab({
       />
     </>
   );
+}
+
+/** A draft emptied because someone else now pays for them (0224). */
+function isEmptyDraft(inv: SessionInvoice) {
+  return inv.status === "draft" && inv.lines.length === 0 && Number(inv.total) === 0;
 }
 
 /** Bring a draft up to date: an app client's, or a name-only person's (0223). */
@@ -1741,6 +1828,8 @@ function InvoiceRow({
 
 function InvoiceModal({
   invoice,
+  pair,
+  onPairChanged,
   clientName,
   phone,
   email,
@@ -1748,6 +1837,9 @@ function InvoiceModal({
   onChanged,
 }: {
   invoice: SessionInvoice | null;
+  /** The pair this invoice's person is in (0224): split or put on one invoice. */
+  pair?: SessionPair;
+  onPairChanged: () => void;
   clientName: string;
   phone: string | null;
   email: string | null;
@@ -1789,6 +1881,20 @@ function InvoiceModal({
       },
     ]);
   const paid = (p: boolean) => act("paid", () => supabase.rpc("set_session_invoice_paid", { p_id: invoice.id, p_paid: p }));
+  // A couple: one invoice (the usual) or split, before sending (GRIZZ, 2026-11-18).
+  const setOne = async (one: boolean) => {
+    if (!pair) return;
+    setBusy("pair");
+    const { error } = await supabase.rpc("set_pair_invoice", { p_id: pair.id, p_one: one, p_payer: one ? invoiceSide(pair, invoice) : null });
+    setBusy(null);
+    if (error) return Alert.alert("Couldn't change it", error.message);
+    const [a, b] = pairSides(pair).map((x) => firstName(x.name));
+    onPairChanged();
+    Alert.alert(
+      "Done ✅",
+      one ? `${a} and ${b} are on one invoice now, each session still listed with its own price.` : `${a} and ${b} each have their own draft now. Find them in the list.`
+    );
+  };
   const payTo = eftRows(trainer?.eft_details);
   const whatsapp = () => {
     const text = invoiceText(invoice, clientName, coach, { style: "whatsapp", payTo });
@@ -1823,6 +1929,19 @@ function InvoiceModal({
                 <Pressable style={styles.outline} onPress={rebuild} disabled={!!busy}>
                   {busy === "rebuild" ? <ActivityIndicator color={themeText(BRAND_GOLD)} /> : <Text style={styles.outlineText}>Update with my latest changes</Text>}
                 </Pressable>
+                {pair ? (
+                  <Pressable style={styles.outline} onPress={() => setOne(!pair.one_invoice)} disabled={!!busy}>
+                    {busy === "pair" ? (
+                      <ActivityIndicator color={themeText(BRAND_GOLD)} />
+                    ) : (
+                      <Text style={styles.outlineText}>
+                        {pair.one_invoice
+                          ? `✂️ Split: separate invoices for ${pairTitle(pair)}`
+                          : `👥 One invoice for ${pairTitle(pair)}, ${clientName.split(" ")[0]} pays`}
+                      </Text>
+                    )}
+                  </Pressable>
+                ) : null}
               </>
             ) : null}
             <View style={styles.actions}>

@@ -1378,6 +1378,27 @@ export type SessionInvoice = {
   created_at: string;
   updated_at: string;
 };
+/** Two people who train together, set up once (0224). Side a/b: an app client, or a calendar name. */
+export type SessionPair = {
+  id: string;
+  trainer_id: string;
+  a_client: string | null;
+  a_key: string | null;
+  a_name: string;
+  b_client: string | null;
+  b_key: string | null;
+  b_name: string;
+  /** What they pay together for one session. */
+  together: number;
+  /** What one pays training alone. */
+  alone: number;
+  /** One invoice for both (most couples), paid by side `payer`; false = split. */
+  one_invoice: boolean;
+  payer: "a" | "b";
+  ended_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 // One row of quiet_clients() (0156): a client the trainer hasn't been in touch with lately.
 export type QuietClientRow = { client_id: string; name: string; phone: string | null; last_spoke_at: string | null; days_quiet: number };
 
@@ -1557,6 +1578,7 @@ export interface Database {
         Relationships: [];
       };
       session_invoices: { Row: SessionInvoice; Insert: never; Update: never; Relationships: [] };
+      session_pairs: { Row: SessionPair; Insert: never; Update: never; Relationships: [] };
       trainer_problem_messages: {
         Row: TrainerProblemMessage;
         Insert: never;
@@ -1866,6 +1888,22 @@ export interface Database {
       client_confirm_session: { Args: { p_id: string; p_happened: boolean }; Returns: LiveSession };
       build_session_invoice: { Args: { p_client: string; p_month: string }; Returns: SessionInvoice };
       build_diary_invoice: { Args: { p_name: string; p_month: string }; Returns: SessionInvoice };
+      set_session_pair: {
+        Args: {
+          p_id: string | null;
+          p_a_client: string | null;
+          p_a_name: string | null;
+          p_b_client: string | null;
+          p_b_name: string | null;
+          p_together: number;
+          p_alone: number;
+          p_one_invoice: boolean;
+          p_payer: "a" | "b";
+        };
+        Returns: SessionPair;
+      };
+      set_pair_invoice: { Args: { p_id: string; p_one: boolean; p_payer: "a" | "b" | null }; Returns: SessionPair };
+      end_session_pair: { Args: { p_id: string }; Returns: SessionPair };
       send_session_invoice: { Args: { p_id: string }; Returns: SessionInvoice };
       set_session_invoice_paid: { Args: { p_id: string; p_paid: boolean }; Returns: SessionInvoice };
       send_trainer_problem_message: { Args: { p_problem: string; p_body: string }; Returns: TrainerProblemMessage };
