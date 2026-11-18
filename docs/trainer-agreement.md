@@ -2,8 +2,8 @@
 
 **Daily Evolution**: every trainer signs this in the app by typing their full name.
 
-**Last updated:** 15 October 2026  
-**Agreement version:** `2026-10-15`
+**Last updated:** 18 November 2026  
+**Agreement version:** `2026-11-18`
 
 _Generated from src/screens/auth/TrainerAgreementContent.tsx; the in-app text is the source of truth._
 
@@ -15,7 +15,7 @@ You (the trainer signing below) and Clint Walters, trading as Daily Evolution ("
 
 ## 2. Fees and payment
 
-You start with a free trial, shown on your Profile. After that you pay for the plan you choose (monthly, 6 months or 1 year upfront) plus the per-client fees shown in the app, in rand if you're in South Africa or US dollars elsewhere, by EFT. Credit from trainers you refer comes off what you owe. If we've given you free use, you only pay the per-client fees shown on your Profile.
+You start with a free trial, shown on your Profile. After that you pay for the plan you choose (monthly, 6 months or 1 year upfront) plus the per-client fees shown in the app, in rand if you're in South Africa or US dollars elsewhere, by card or EFT. Credit from trainers you refer comes off what you owe. If we've given you free use, you only pay the per-client fees shown on your Profile.
 
 If a payment is overdue, your account and your clients' access can be paused until it's paid; nothing is deleted. We'll tell you in the app at least 30 days before any price change.
 
@@ -47,12 +47,29 @@ You may use the app's programs, exercise library and guides with your clients in
 
 ## 8. Approval, blocking and leaving
 
-We approve every trainer before clients can join them, and we may block an account that breaks this agreement or puts clients at risk. You can stop at any time. To delete your trainer account, your clients' accounts first need to be closed or moved to another trainer - contact us to arrange it.
+We approve every trainer before clients can join them, and we may block an account that breaks this agreement or puts clients at risk. You can cancel your subscription at any time (section 9). To delete your trainer account, your clients' accounts first need to be closed or moved to another trainer - contact us to arrange it.
 
-## 9. Changes to this agreement
+## 9. Cancelling your subscription
+
+You can cancel any time, with no cancellation fee, under Profile › Plan & refer › Cancel subscription, or by emailing us. If you cancel during your free trial, you pay nothing.
+
+No refunds: your free trial lets you try everything first, so payments aren't refunded once made, whether you cancel early or not.
+
+- Monthly plan: you keep full use until the end of the month you've paid for, and nothing more is charged after that.
+- 6-month or 1-year plan: these are commitment plans, which is why they're discounted. You keep full use until the end of the plan and it isn't renewed. The plan isn't refunded, except where South African law requires it.
+- Client fees for months that have already passed are still payable.
+- Unused referral credit is never paid out in cash. It's added as free time (half a month per credit), so your access runs longer before it ends.
+- Your saved card is removed the moment you cancel.
+- You can undo your cancellation any time before it takes effect.
+
+What happens to your clients: we remind you a week before your end date to tell them. On the end date your account and your clients' access are paused; nothing is deleted. For 90 days after that you can come back and find everything as it was, and a client can ask us to move them to another Daily Evolution trainer or for a copy of their information. After 90 days we delete your trainer account and your clients' information, unless a client has moved to another trainer, and you can ask us to delete it sooner. We keep payment records only as long as tax law requires.
+
+If we end your subscription: we may do so straight away if you break this agreement or put clients at risk. Otherwise we give you at least 30 days' notice and refund any full months you've paid for and not used.
+
+## 10. Changes to this agreement
 
 If we change this agreement, the app will ask you to read and sign the new version before you carry on.
 
-## 10. The legal bits
+## 11. The legal bits
 
 The app is provided as it is, especially during the test period, and may sometimes be unavailable. As far as the law allows, we're not liable for indirect losses from using it. This agreement is governed by the law of South Africa.
