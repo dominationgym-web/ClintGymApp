@@ -114,6 +114,8 @@ export type BillingSettings = {
   card_billing_enabled: boolean;
   card_currencies: BillingCurrency[];
   usd_zar_rate: number;
+  // Automatic "how to pay" emails to trainers (0226), off until email is set up.
+  billing_emails_enabled: boolean;
   updated_at: string;
 };
 

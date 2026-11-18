@@ -238,6 +238,23 @@ export default function BillingScreen() {
     );
   };
 
+  // Automatic "how to pay" emails (0226): the phone apps can't point trainers
+  // to the website, so an email does. Off until Resend is set up.
+  const toggleEmails = async (value: boolean) => {
+    const { error } = await supabase.from("billing_settings").update({ billing_emails_enabled: value, updated_at: new Date().toISOString() }).eq("id", 1);
+    if (error) Alert.alert("Couldn't update", error.message);
+    await load();
+  };
+  const [testingEmail, setTestingEmail] = useState(false);
+  const testEmail = async () => {
+    setTestingEmail(true);
+    const { data, error } = await supabase.functions.invoke("billing-emails", { body: { action: "test" } });
+    setTestingEmail(false);
+    const problem = error?.message ?? (data as { error?: string } | null)?.error;
+    if (problem) Alert.alert("The test email didn't send", problem);
+    else Alert.alert("Test email sent", `Check ${(data as { sent?: string }).sent ?? "your inbox"} (and the spam folder) in a minute.`);
+  };
+
   // A trainer who cancels gets unused referrals as free extra months, never
   // cash (GRIZZ, 2026-11-06): each is 50% of a month, added to paid until.
   const payOutReferrals = (t: Trainer) => {
@@ -584,6 +601,23 @@ export default function BillingScreen() {
                 onValueChange={toggleCards}
                 trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
                 accessibilityLabel="Card payments"
+              />
+            </View>
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.lineName}>Payment emails</Text>
+                <Text style={styles.muted}>
+                  On: each trainer gets an email with a Pay now button to the website when you approve them, 3 days before their plan is due, on the day, if it's overdue, and when client fees are due. The app itself never points them to the website.
+                </Text>
+                <Pressable onPress={testEmail} disabled={testingEmail} accessibilityRole="button">
+                  <Text style={styles.link}>{testingEmail ? "Sending…" : "Send me a test email"}</Text>
+                </Pressable>
+              </View>
+              <Switch
+                value={settings.billing_emails_enabled}
+                onValueChange={toggleEmails}
+                trackColor={{ true: themeBg(BRAND_GOLD), false: themeBg("#334155") }}
+                accessibilityLabel="Payment emails"
               />
             </View>
             <CardTest trainerNames={Object.fromEntries(everyone.map((t) => [t.id, t.is_owner ? "You" : trainerDisplayName(t)]))} />
