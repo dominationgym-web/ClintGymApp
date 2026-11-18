@@ -1,4 +1,4 @@
-// Automatic "how to pay" emails for trainers (0219, GRIZZ 2026-11-17).
+// Automatic "how to pay" emails for trainers (0226, GRIZZ 2026-11-17).
 //
 // The phone apps can't send trainers to the website to pay (Apple and Google
 // don't allow it in South Africa), so this email does: it's sent outside the

@@ -14,6 +14,8 @@
 -- * The push reminders no longer say "Pay by EFT" or "Open the app for the
 --   payment details" (the phone app shows none): they say what's due and,
 --   with emails on, "We've emailed you the details."
+-- * Trainers who have cancelled (0220, trainer_cancelling) get no plan
+--   reminders (their plan won't renew). Client fees for months they used still are.
 -- * Trainers whose saved card pays automatically get a heads-up instead of
 --   "please pay", and no reminder on the day (the card is charged that morning).
 
@@ -152,6 +154,7 @@ begin
       coalesce(t.paid_until, t.billing_started_on - 1) as paid_until
     from public.trainers t
     where t.approved and not t.is_owner and t.billing_started_on is not null and t.free_use_from is null
+      and not public.trainer_cancelling(t.id)
       and coalesce(t.paid_until, t.billing_started_on - 1) in (today + 3, today, today - 1)
   loop
     autopay := exists (select 1 from public.trainer_cards c where c.trainer_id = r.id and c.autopay);

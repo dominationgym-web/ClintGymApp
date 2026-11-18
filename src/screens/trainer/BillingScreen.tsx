@@ -238,7 +238,7 @@ export default function BillingScreen() {
     );
   };
 
-  // Automatic "how to pay" emails (0219): the phone apps can't point trainers
+  // Automatic "how to pay" emails (0226): the phone apps can't point trainers
   // to the website, so an email does. Off until Resend is set up.
   const toggleEmails = async (value: boolean) => {
     const { error } = await supabase.from("billing_settings").update({ billing_emails_enabled: value, updated_at: new Date().toISOString() }).eq("id", 1);

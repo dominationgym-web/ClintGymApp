@@ -3,7 +3,7 @@ import { billingEmail, niceDate } from "../../supabase/functions/billing-emails/
 
 const who = { name: "Thabo Mokoena", site: "https://dailyevolution.co.za" };
 
-describe("trainer payment emails (0219)", () => {
+describe("trainer payment emails (0226)", () => {
   it("formats dates in plain words", () => {
     expect(niceDate("2026-12-01")).toBe("1 December");
     expect(niceDate(null)).toBe("");

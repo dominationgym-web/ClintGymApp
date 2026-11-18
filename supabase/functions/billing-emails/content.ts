@@ -1,4 +1,4 @@
-// The words of each trainer payment email (0219). Kept apart from the sender
+// The words of each trainer payment email (0226). Kept apart from the sender
 // so it can be checked by the app's tests (src/lib/billingEmails.test.ts).
 // Plain words, one gold "Pay now" button to the website, and three steps.
 
