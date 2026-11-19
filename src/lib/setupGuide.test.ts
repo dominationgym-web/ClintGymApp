@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EVOLUTION_STEPS, ONE_ON_ONE_STEPS, activeGuide, readGuideState, requestGuideOpen, shouldAutoStart, takeGuideOpen } from "./setupGuide";
+import { EVOLUTION_STAGES, EVOLUTION_STEPS, EVO_GUIDE_VERSION, ONE_ON_ONE_STEPS, activeGuide, readGuideState, requestGuideOpen, shouldAutoStart, takeGuideOpen } from "./setupGuide";
 
 const trainer = { is_owner: false, evolution_started_on: null as string | null };
 
@@ -26,11 +26,33 @@ describe("setup guide", () => {
     expect(shouldAutoStart("one", {}, { ...trainer, is_owner: true }, info)).toBe(false);
     expect(shouldAutoStart("one", { one: { step: 2, status: "stopped" } }, trainer, info)).toBe(false);
   });
-  it("starts Evolution only for trainers who switch it on from now", () => {
+  it("offers the start-to-finish Evolution guide once to every Evolution trainer", () => {
     const info = { hasSettings: true, side: "evo" as const, evolutionOn: true };
-    expect(shouldAutoStart("evo", {}, { ...trainer, evolution_started_on: "2026-11-12" }, info)).toBe(true);
-    expect(shouldAutoStart("evo", {}, { ...trainer, evolution_started_on: "2026-11-01" }, info)).toBe(false);
-    expect(shouldAutoStart("evo", {}, { ...trainer, evolution_started_on: "2026-11-12" }, { ...info, side: "one" })).toBe(false);
+    expect(shouldAutoStart("evo", {}, trainer, info)).toBe(true);
+    // Saw the short first guide: offered the new one once.
+    expect(shouldAutoStart("evo", { evo: { step: 5, status: "done" } }, trainer, info)).toBe(true);
+    expect(shouldAutoStart("evo", { evo: { step: 0, status: "stopped" }, evoV: EVO_GUIDE_VERSION }, trainer, info)).toBe(false);
+    expect(shouldAutoStart("evo", {}, trainer, { ...info, side: "one" })).toBe(false);
+    expect(shouldAutoStart("evo", {}, trainer, { ...info, evolutionOn: false })).toBe(false);
+    expect(shouldAutoStart("evo", {}, { ...trainer, is_owner: true }, info)).toBe(false);
+  });
+  it("Evolution guide runs start to finish in four stages, each step with a tip or a page", () => {
+    const stages = EVOLUTION_STEPS.map((s) => s.stage);
+    expect(stages.every((st) => (EVOLUTION_STAGES as readonly string[]).includes(st ?? ""))).toBe(true);
+    // Stages in order, none split up.
+    const order = stages.filter((st, i) => st !== stages[i - 1]);
+    expect(order).toEqual([...EVOLUTION_STAGES]);
+    const keys = EVOLUTION_STEPS.map((s) => s.key);
+    for (const k of ["prices", "pay", "code", "approve", "programs", "give", "diet", "checkins", "dashboard", "progress", "video", "challenges", "touch"]) expect(keys).toContain(k);
+    for (const s of EVOLUTION_STEPS) {
+      expect(s.tip || s.target).toBeTruthy();
+      if (s.tip) expect(s.tip.length).toBeLessThan(120);
+    }
+    // Never a ready-made message to clients.
+    expect(JSON.stringify(EVOLUTION_STEPS)).not.toMatch(/quick-send|ready-made message/i);
+  });
+  it("keeps a saved place inside the list when steps change", () => {
+    expect(readGuideState(JSON.stringify({ evo: { step: 99, status: "running" } })).evo?.step).toBe(EVOLUTION_STEPS.length - 1);
   });
   it("shows the guide for the side the trainer is on first", () => {
     const both = { one: { step: 1, status: "running" as const }, evo: { step: 0, status: "running" as const } };
