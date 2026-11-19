@@ -287,15 +287,19 @@ export const TRAINER_APP_GUIDE: AppGuide = {
     {
       key: "setupGuide",
       icon: "🧭",
-      title: "Setup guide for new trainers",
-      where: "Starts by itself when you join · ☰ Menu › Setup guide",
+      title: "Setup guide and Evolution guide",
+      where: "Starts by itself when you join · ☰ Menu › Setup guide (1 on 1) or Evolution guide",
       points: [
         "When you join, the app opens on the 1 on 1 side and a short welcome page lists the steps. Tap Start, or Later to do it another time.",
         "1 on 1 steps: your working day (fee, session length, first and last session time, cancellation rule), screenshot your calendar, upload the screenshots, check each client's price, send your code so clients join the app, nutrition for your clients, and your everyday (Today and Invoices).",
         "Each step shows in a small card just above the tabs. Show me opens the right page, so you do the step right there. Steps the app can check tick ✓ Done by themselves. Skip › or Next › moves on, ‹ goes back a step.",
         "Tap ▾ to make the card one small line, and tap it again to open it. ✕ stops the guide. Your place is remembered, so you can carry on later.",
-        "At the end you can switch on Evolution. The first time you're on the Evolution side, its guide shows you the dashboard, where the programs are, how to make your own, how to put a client on a program, how a program works for the client, and check-ins and food.",
-        "Run either guide again any time: ☰ Menu › Setup guide (it runs the guide for the side you're on).",
+        "At the end you can switch on Evolution. The first time you're on the Evolution side, the 🧭 Evolution guide walks you through online coaching from start to finish, one step at a time with a 💡 tip on each step for getting the most out of it.",
+        "Evolution guide, 1. Get ready: your free start (30 days free, first 5 clients free), your client prices on Profile › Income (Local, and International in dollars for clients abroad), how clients pay you (EFT, and PayPal or Wise for clients abroad), and your logo.",
+        "2. Get clients: send your trainer code (clients fill in an intake form as they join), then approve sign-ups on Clients › New: read their intake, check they've paid, tap Activate and pick Evolution and their prices.",
+        "3. Coach them: where the programs are, putting a client on a program, how a program works for the client, their meal plan (Diet), daily check-ins (reply with a check-in note in your own words), your dashboard once a day, and the AI daily summary on each client's Overview.",
+        "4. Keep them: progress graphs and photos, weekly video check-ins, monthly challenges and habits, staying in touch when the dashboard shows Check in on…, and the coaching guides (read Client retention first).",
+        "Run either guide again any time: ☰ Menu › Setup guide on the 1 on 1 side, or ☰ Menu › Evolution guide on the Evolution side.",
       ],
     },
     {
