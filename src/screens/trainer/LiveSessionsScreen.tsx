@@ -1982,7 +1982,7 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
   const { trainer } = useAuth();
   const [fee, setFee] = useState(settings?.fee != null ? String(settings.fee) : "");
   const [currency, setCurrency] = useState<BillingCurrency>(settings?.currency ?? trainer?.client_prices?.currency ?? "ZAR");
-  const [billing, setBilling] = useState<SessionSettings["billing"]>(settings?.billing ?? "arrears");
+  const [billing, setBilling] = useState<SessionSettings["billing"]>(settings?.billing ?? "advance");
   const [policy, setPolicy] = useState<SessionSettings["policy"]>(settings?.policy ?? "24h");
   const [minutes, setMinutes] = useState(settings?.minutes ?? 60);
   const [customMinutes, setCustomMinutes] = useState("");
