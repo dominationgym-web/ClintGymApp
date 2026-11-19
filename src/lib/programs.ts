@@ -230,6 +230,9 @@ export interface DraftExercise {
   sets: number;
   reps: string;
   restSeconds: number;
+  // The saved row this came from, when changing a saved program (0230), so
+  // the row is updated in place and clients' changes to it stay.
+  rowId?: string;
 }
 
 /** What's wrong with a program from the builder, or null when it can be saved. */
@@ -587,4 +590,69 @@ export function programFamily(program: Pick<Program, "name" | "trainer_id">): Pr
   // Quick workouts (GRIZZ, 2026-11-18).
   if (name.includes("upper") || name.includes("lower") || name.includes("quick full body")) return "upperLower";
   return "fullBody";
+}
+
+/** A saved weekly program's rows as builder days, to change it in the builder (0230). */
+export function sessionsFromProgram(rows: ProgramExercise[], dayTitles: string[]): DraftSession[] {
+  const days = [...new Set(rows.map((r) => r.day_number))].sort((a, b) => a - b);
+  return days.map((day, index) => {
+    const title = (dayTitles[day - 1] ?? "").trim();
+    return {
+      day,
+      // A title the app made up ("Workout A") stays blank, so it follows the day order.
+      title: title === defaultSessionTitle(index) ? "" : title,
+      exercises: rows
+        .filter((r) => r.day_number === day)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((r) => ({
+          kind: r.kind === "cardio" ? ("cardio" as const) : undefined,
+          exerciseId: r.exercise_id,
+          exerciseName: r.exercise_name,
+          sets: r.sets,
+          reps: r.reps,
+          restSeconds: r.rest_seconds,
+          rowId: r.id,
+        })),
+    };
+  });
+}
+
+/** One builder day as program_exercises columns. */
+export function programRows(programId: string, sessions: DraftSession[]) {
+  return sessions.flatMap((s) =>
+    s.exercises.map((e, i) => ({
+      rowId: e.rowId,
+      row: {
+        program_id: programId,
+        day_number: s.day,
+        week_number: 1,
+        sort_order: i + 1,
+        exercise_id: e.exerciseId,
+        exercise_name: e.exerciseName,
+        sets: e.sets,
+        reps: e.reps.trim(),
+        rest_seconds: e.restSeconds,
+        kind: (e.kind ?? "exercise") as "exercise" | "cardio",
+      },
+    })),
+  );
+}
+
+/**
+ * What saving a changed program does to its rows: rows still there are
+ * updated in place (keeping clients' own changes and stand-ins), new ones are
+ * added and the ones taken out are removed.
+ */
+export function programRowWrites(programId: string, sessions: DraftSession[], savedIds: string[]) {
+  const rows = programRows(programId, sessions);
+  const seen = new Set<string>();
+  const updates: { id: string; row: (typeof rows)[number]["row"] }[] = [];
+  const inserts: (typeof rows)[number]["row"][] = [];
+  for (const { rowId, row } of rows) {
+    if (rowId && savedIds.includes(rowId) && !seen.has(rowId)) {
+      seen.add(rowId);
+      updates.push({ id: rowId, row });
+    } else inserts.push(row);
+  }
+  return { updates, inserts, deletes: savedIds.filter((id) => !seen.has(id)) };
 }

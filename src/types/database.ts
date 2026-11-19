@@ -750,6 +750,19 @@ export type Program = {
   created_at: string;
 }
 
+// A program saved as a draft while the trainer builds it (0230). data holds
+// the builder screen (see src/lib/programDraft.ts). program_id is set when it
+// holds unsaved changes to a saved program.
+export type ProgramDraftRow = {
+  id: string;
+  trainer_id: string;
+  program_id: string | null;
+  name: string;
+  data: unknown;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ProgramExercise = {
   id: string;
   program_id: string;
@@ -1628,6 +1641,7 @@ export interface Database {
       habit_wins: { Row: HabitWinRow; Insert: Partial<HabitWinRow>; Update: Partial<HabitWinRow>; Relationships: [] };
       workout_logs: { Row: WorkoutLog; Insert: Partial<WorkoutLog>; Update: Partial<WorkoutLog>; Relationships: [] };
       programs: { Row: Program; Insert: Partial<Program>; Update: Partial<Program>; Relationships: [] };
+      program_drafts: { Row: ProgramDraftRow; Insert: Partial<ProgramDraftRow>; Update: Partial<ProgramDraftRow>; Relationships: [] };
       program_exercises: {
         Row: ProgramExercise;
         Insert: Partial<ProgramExercise>;

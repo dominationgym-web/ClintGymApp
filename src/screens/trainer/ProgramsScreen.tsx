@@ -20,6 +20,18 @@ import ProgramExerciseEditModal from "@/components/ProgramExerciseEditModal";
 import { useAuth } from "@/context/AuthContext";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import { deleteProgramDraft, draftLabel, draftSavesDone, listProgramDrafts, syncPhoneDraft, type ProgramDraftSummary } from "@/lib/programDraft";
+
+// "today 14:05", "yesterday 09:30" or "Tue 18 Nov".
+function whenChanged(iso: string): string {
+  const d = new Date(iso);
+  const time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const day = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((day(new Date()) - day(d)) / 86400000);
+  if (days === 0) return `today ${time}`;
+  if (days === 1) return `yesterday ${time}`;
+  return d.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
+}
 
 type Props = TrainerTabScreenProps<"Programs">;
 
@@ -49,14 +61,40 @@ export default function ProgramsScreen({ navigation }: Props) {
   const [place, setPlace] = useState<ExercisePlace>("gym");
   // The 12-Week Health Reset, to look through before enrolling anyone (GRIZZ, 2026-11-16).
   const [showReset, setShowReset] = useState(false);
+  // Programs saved as drafts while being built (0230), at the top to carry on with.
+  const [drafts, setDrafts] = useState<ProgramDraftSummary[]>([]);
+  const [allDrafts, setAllDrafts] = useState(false);
 
   // Exercises load one program at a time, when it's opened. Loading them all at
   // once hit the database's 1000-row limit, so most programs showed none.
   const load = useCallback(async () => {
-    const list = await loadAvailablePrograms();
+    const [list, draftList] = await Promise.all([
+      loadAvailablePrograms(),
+      trainer ? draftSavesDone().then(() => syncPhoneDraft(trainer.id)).then(() => listProgramDrafts(trainer.id)) : Promise.resolve([]),
+    ]);
     setPrograms(list);
+    setDrafts(draftList);
     setExercises({});
-  }, []);
+  }, [trainer?.id]);
+
+  const removeDraft = (d: ProgramDraftSummary) =>
+    Alert.alert(
+      d.program_id ? "Throw away these changes?" : `Delete "${draftLabel(d.name)}"?`,
+      d.program_id ? "The saved program stays as it was." : "This deletes the program you were building.",
+      [
+        { text: "Keep it", style: "cancel" },
+        {
+          text: d.program_id ? "Throw away" : "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (trainer) await deleteProgramDraft(trainer.id, d.id);
+            setDrafts((prev) => prev.filter((x) => x.id !== d.id));
+          },
+        },
+      ],
+    );
+  const openDraft = (d: ProgramDraftSummary) =>
+    navigation.navigate("ProgramBuilder", d.program_id ? { draftId: d.id, programId: d.program_id } : { draftId: d.id });
 
   useEffect(() => {
     if (!open || exercises[open]) return;
@@ -108,6 +146,9 @@ export default function ProgramsScreen({ navigation }: Props) {
   const hasOwn = cards.some((c) => c.family === "own");
   const opened = programs.find((p) => p.id === open) ?? null;
   const ownOpened = !!opened?.trainer_id && opened.trainer_id === trainer?.id;
+  // Programs from the builder can be changed in it (one week, Monday to Sunday).
+  const canChange = (p: Program) => p.trainer_id === trainer?.id && p.kind === "weekly" && (p.weeks ?? 1) <= 1;
+  const shownDrafts = allDrafts ? drafts : drafts.slice(0, 3);
 
   if (loading) {
     return (
@@ -127,6 +168,32 @@ export default function ProgramsScreen({ navigation }: Props) {
         <Pressable style={styles.buildButton} onPress={() => navigation.navigate("ProgramBuilder")}>
           <Text style={styles.buildButtonText}>+ Build a program</Text>
         </Pressable>
+        {drafts.length > 0 && (
+          <View style={styles.drafts}>
+            <Text style={styles.draftsTitle}>📝 Not finished yet: tap to carry on</Text>
+            {shownDrafts.map((d) => (
+              <View key={d.id} style={styles.draftRow}>
+                <Pressable style={{ flex: 1 }} onPress={() => openDraft(d)} accessibilityRole="button">
+                  <Text style={styles.draftName} numberOfLines={1}>
+                    {d.program_id ? `✎ Changes to ${draftLabel(d.name)}` : draftLabel(d.name)}
+                  </Text>
+                  <Text style={styles.draftWhen}>Last changed {whenChanged(d.updated_at)}</Text>
+                </Pressable>
+                <Pressable onPress={() => openDraft(d)} hitSlop={6} style={styles.carryOn}>
+                  <Text style={styles.carryOnText}>Carry on ›</Text>
+                </Pressable>
+                <Pressable onPress={() => removeDraft(d)} hitSlop={10} accessibilityLabel="Delete draft">
+                  <Text style={styles.draftDelete}>✕</Text>
+                </Pressable>
+              </View>
+            ))}
+            {drafts.length > 3 && (
+              <Pressable onPress={() => setAllDrafts(!allDrafts)} hitSlop={6}>
+                <Text style={styles.moreDrafts}>{allDrafts ? "Show fewer" : `Show ${drafts.length - 3} more`}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
         <GiveProgramButton />
         <View style={{ marginTop: 8 }}>
           <GymHomeTabs
@@ -187,6 +254,17 @@ export default function ProgramsScreen({ navigation }: Props) {
                     <Pressable style={styles.weekButton} onPress={() => setShowWeek(true)} accessibilityRole="button">
                       <Text style={styles.weekButtonText}>See the whole week ›</Text>
                     </Pressable>
+                    {canChange(p) && (
+                      <Pressable
+                        style={styles.changeButton}
+                        onPress={() => navigation.navigate("ProgramBuilder", { programId: p.id })}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.changeButtonText}>
+                          {drafts.some((d) => d.program_id === p.id) ? "✎ Carry on changing this program ›" : "✎ Change this program ›"}
+                        </Text>
+                      </Pressable>
+                    )}
                     <Pressable
                       style={styles.aboutHeader}
                       onPress={() => setAbout(!about)}
@@ -267,4 +345,15 @@ const styles = themedStyles({
   aboutTitle: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14, flex: 1 },
   aboutChevron: { color: "#94A3B8", fontSize: 16 },
   delete: { color: "#F87171", fontSize: 13, fontWeight: "600", marginTop: 10 },
+  changeButton: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 8 },
+  changeButtonText: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14 },
+  drafts: { backgroundColor: "#1E293B", borderRadius: 10, borderWidth: 1, borderColor: BRAND_GOLD, padding: 10, marginBottom: 8, gap: 6 },
+  draftsTitle: { color: BRAND_GOLD, fontWeight: "800", fontSize: 13 },
+  draftRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#0F172A", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  draftName: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  draftWhen: { color: "#94A3B8", fontSize: 12, marginTop: 1 },
+  carryOn: { backgroundColor: BRAND_GOLD, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
+  carryOnText: { color: "#0F172A", fontWeight: "800", fontSize: 13 },
+  draftDelete: { color: "#94A3B8", fontSize: 16, fontWeight: "700" },
+  moreDrafts: { color: BRAND_GOLD, fontWeight: "700", fontSize: 13, textAlign: "center", paddingVertical: 2 },
 });
