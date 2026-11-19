@@ -33,9 +33,12 @@ export function useTrainerMenuItems(): MenuItem[] {
   // The step-by-step setup guide for this side (GRIZZ, 2026-11-10).
   const setupGuide: MenuItem = {
     key: "setupGuide",
-    title: "Setup guide",
+    title: side === "one" ? "Setup guide" : "Evolution guide",
     icon: "🧭",
-    summary: side === "one" ? "Step by step: your times, calendar, clients, nutrition and invoices." : "Step by step: the dashboard, where the programs are and how they work.",
+    summary:
+      side === "one"
+        ? "Step by step: your times, calendar, clients, nutrition and invoices."
+        : "Start to finish: prices, getting clients, programs, meal plans, check-ins and keeping clients.",
     onPress: () => {
       takeMenuReturn();
       guide?.start(side === "one" ? "one" : "evo");
@@ -86,7 +89,7 @@ export function useTrainerMenuItems(): MenuItem[] {
         key: "sessionSetup",
         title: "Session setup",
         icon: "⚙️",
-        summary: "Your normal fee, session length, first session time and cancellation rule.",
+        summary: "Your normal fee, session length, first session time and your session contract.",
         route: "LiveSessions",
         onPress: () => navigation.navigate("LiveSessions", { tab: "setup" }),
       },

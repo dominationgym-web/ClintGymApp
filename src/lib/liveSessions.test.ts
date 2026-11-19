@@ -10,6 +10,11 @@ import {
   autoCharge,
   cancelPreview,
   fillAgreement,
+  AGREEMENT_TEMPLATE,
+  DEFAULT_CONTRACT,
+  buildAgreement,
+  contractChoices,
+  sameContract,
   invoiceText,
   invoicePeople,
   monthGrid,
@@ -373,6 +378,29 @@ describe("canStartLive", () => {
     expect(canStartLive({ ...base, starts_at: at(10, 10) }, now)).toBe(false);
     expect(canStartLive({ ...base, status: "cancelled" as const }, now)).toBe(false);
     expect(canStartLive({ ...base, status: "cancelled" as const, away_id: "a1" }, now)).toBe(false);
+  });
+});
+
+describe("fill-in contract", () => {
+  it("the standard choices give GRIZZ's standard text", () => {
+    expect(buildAgreement(DEFAULT_CONTRACT)).toBe(AGREEMENT_TEMPLATE);
+    expect(AGREEMENT_TEMPLATE).toContain("1 calendar month's notice");
+    expect(AGREEMENT_TEMPLATE).toContain("more than 2 weeks, a 50% deposit");
+  });
+
+  it("puts the picked numbers in and renumbers when a point is left out", () => {
+    const t = buildAgreement({ ...DEFAULT_CONTRACT, notice: "2w", awayWeeks: 1, deposit: 30, off: ["cancel"], own: ["Bring a towel."] });
+    expect(t).toContain("2. All trainers need to be given 2 weeks' notice");
+    expect(t).not.toContain("cancellation policy");
+    expect(t).toContain("more than 1 week, a 30% deposit");
+    expect(t).toContain("• Bring a towel.");
+    expect(t).toContain("{fee}");
+  });
+
+  it("reads saved choices safely", () => {
+    expect(contractChoices(null)).toBeNull();
+    expect(contractChoices({ notice: "zz", deposit: 500, off: ["away", "bad"] })).toEqual({ ...DEFAULT_CONTRACT, off: ["away"] });
+    expect(sameContract(contractChoices({})!, DEFAULT_CONTRACT)).toBe(true);
   });
 });
 

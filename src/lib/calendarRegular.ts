@@ -116,3 +116,18 @@ export function usualGroups(sessions: Pick<LiveSession, "client_id" | "guest_nam
   }
   return [...counts.values()].filter((r) => r.n >= 2).map((r) => r.names);
 }
+
+/**
+ * The days and times written into a client's contract (GRIZZ 2026-11-19:
+ * "auto filled ... based on the calendar slots and times"): their saved
+ * regular times, or else worked out from their sessions on the calendar.
+ */
+export function contractSlots(
+  saved: RegularTime[] | null | undefined,
+  sessions: Fields[],
+  clientId: string,
+  now: Date = new Date(),
+): RegularTime[] {
+  if (saved?.length) return saved;
+  return regularFromCalendar(sessions, clientId, now).regular;
+}

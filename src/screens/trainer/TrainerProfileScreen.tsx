@@ -52,6 +52,7 @@ import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } from "@/lib/billing";
 import type { BillingPrices, EftDetails, Units } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { onGuideOpen, takeGuideOpen } from "@/lib/setupGuide";
 
 type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "settings";
 
@@ -85,6 +86,20 @@ export default function TrainerProfileScreen() {
   // trainer's new logo saved but the screen kept showing the old one).
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("code");
+  // The Evolution guide's Show me opens Income, How your clients pay you, or Code & logo.
+  useEffect(() => {
+    const take = () => {
+      if (takeGuideOpen("income")) setTab("income");
+      else if (takeGuideOpen("logo")) setTab("code");
+      else if (takeGuideOpen("payments")) {
+        setTab("settings");
+        lastOpenSetting = "payments";
+        setOpenSetting("payments");
+      }
+    };
+    take();
+    return onGuideOpen(take);
+  }, []);
   // Starts on the last open fold, so switching light/dark (which redraws the page) keeps it open.
   const [openSetting, setOpenSetting] = useState<SettingKey | null>(lastOpenSetting);
   const toggleSetting = (key: SettingKey) => {

@@ -8,6 +8,8 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { navigationRef } from "@/navigation/navigationRef";
 import { onPopupChange, popupOpen, setPopupOpen } from "@/lib/popupGate";
 import {
+  EVOLUTION_STAGES,
+  EVO_GUIDE_VERSION,
   GUIDE_TITLE,
   activeGuide,
   guideKey,
@@ -42,6 +44,13 @@ type Ctx = {
 };
 
 const GuideContext = createContext<Ctx | null>(null);
+
+// A guide started from step 1; the Evolution one remembers it was offered.
+const begun = (state: GuideState, kind: GuideKind): GuideState => ({
+  ...state,
+  [kind]: { step: 0, status: "running" },
+  ...(kind === "evo" ? { evoV: EVO_GUIDE_VERSION } : {}),
+});
 export const useSetupGuide = () => useContext(GuideContext);
 
 export function SetupGuideProvider({ children }: { children: React.ReactNode }) {
@@ -87,7 +96,7 @@ export function SetupGuideProvider({ children }: { children: React.ReactNode }) 
         hasSettings = !!data;
       }
       if (shouldAutoStart(kind, state, trainer, { hasSettings, side: kind, evolutionOn })) {
-        save({ ...state, [kind]: { step: 0, status: "running" } });
+        save(begun(state, kind));
         setIntro(kind);
       }
     })();
@@ -130,7 +139,7 @@ export function SetupGuideProvider({ children }: { children: React.ReactNode }) 
   const start = useCallback(
     (kind: GuideKind) => {
       if (!state) return;
-      save({ ...state, [kind]: { step: 0, status: "running" } });
+      save(begun(state, kind));
       setSmall(false);
       // Wait for the menu to close: iPhone can't open a Modal while another is closing.
       setTimeout(() => setIntro(kind), 400);
@@ -250,14 +259,28 @@ function IntroPage({ kind, onStart, onLater }: { kind: GuideKind; onStart: () =>
       <Text style={styles.text}>
         {kind === "one"
           ? `${steps.length} short steps, about 10 minutes. A small card above the tabs shows each step, and Show me takes you there.`
-          : `${steps.length} short steps: where everything is and how programs work.`}
+          : `From your first client to keeping them for years, in ${steps.length} short steps. Each one has a 💡 tip to get the most out of it, and Show me takes you there.`}
       </Text>
       <View style={styles.list}>
-        {steps.map((s, i) => (
-          <Text key={s.key} style={styles.listLine} numberOfLines={1}>
-            {i + 1}. {s.icon} {s.title}
-          </Text>
-        ))}
+        {kind === "evo"
+          ? EVOLUTION_STAGES.map((stage, i) => {
+              const inStage = steps.filter((s) => s.stage === stage);
+              return (
+                <View key={stage}>
+                  <Text style={styles.listLine} numberOfLines={1}>
+                    {i + 1}. {stage}
+                  </Text>
+                  <Text style={styles.listSub} numberOfLines={2}>
+                    {inStage.map((s) => s.title).join(" · ")}
+                  </Text>
+                </View>
+              );
+            })
+          : steps.map((s, i) => (
+              <Text key={s.key} style={styles.listLine} numberOfLines={1}>
+                {i + 1}. {s.icon} {s.title}
+              </Text>
+            ))}
       </View>
       <Pressable style={styles.primary} onPress={onStart} accessibilityRole="button">
         <Text style={styles.primaryText}>Start</Text>
@@ -284,8 +307,8 @@ function FinishPage({
 }) {
   return (
     <>
-      <Text style={styles.title}>{kind === "one" ? "Your 1 on 1 side is set up ✅" : "You're all set ✅"}</Text>
-      <Text style={styles.text}>You can run this guide again any time: ☰ Menu › Setup guide.</Text>
+      <Text style={styles.title}>{kind === "one" ? "Your 1 on 1 side is set up ✅" : "You know Evolution from start to finish ✅"}</Text>
+      <Text style={styles.text}>You can run this guide again any time: ☰ Menu › {kind === "one" ? "Setup guide" : "Evolution guide"}.</Text>
       {kind === "one" && !isOwner ? (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🌐 Online clients too?</Text>
@@ -335,8 +358,9 @@ export function SetupGuideBar() {
   return (
     <View style={styles.bar}>
       <View style={styles.head}>
-        <Text style={styles.stepNo}>
+        <Text style={styles.stepNo} numberOfLines={1}>
           🧭 Step {run.step + 1} of {steps.length}
+          {s.stage ? ` · ${s.stage}` : ""}
         </Text>
         <View style={styles.headRight}>
           <Pressable onPress={() => g.setSmall(true)} hitSlop={10} accessibilityLabel="Make the guide small">
@@ -352,6 +376,7 @@ export function SetupGuideBar() {
         {ticked ? <Text style={styles.tick}>  ✓ Done</Text> : null}
       </Text>
       <Text style={styles.stepText}>{s.text}</Text>
+      {s.tip ? <Text style={styles.tip}>💡 {s.tip}</Text> : null}
       {s.shareCode && trainer ? <Text style={styles.code}>Your code: {trainer.join_code}</Text> : null}
       <View style={styles.buttons}>
         {run.step > 0 ? (
@@ -390,6 +415,7 @@ const styles = themedStyles({
   text: { color: "#CBD5E1", fontSize: 14, marginTop: 8, lineHeight: 20 },
   list: { marginTop: 12, gap: 6 },
   listLine: { color: "#fff", fontSize: 15 },
+  listSub: { color: "#94A3B8", fontSize: 12, lineHeight: 16, marginLeft: 18, marginTop: 1 },
   card: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 12, padding: 12, marginTop: 14 },
   cardTitle: { color: "#fff", fontSize: 15, fontWeight: "700" },
   primary: { backgroundColor: BRAND_GOLD, borderRadius: 12, paddingVertical: 12, alignItems: "center", marginTop: 16 },
@@ -404,6 +430,7 @@ const styles = themedStyles({
   stepTitle: { color: "#fff", fontSize: 16, fontWeight: "700", marginTop: 4 },
   tick: { color: "#22C55E", fontSize: 14 },
   stepText: { color: "#CBD5E1", fontSize: 13, lineHeight: 18, marginTop: 4 },
+  tip: { color: BRAND_GOLD, fontSize: 13, lineHeight: 18, marginTop: 4 },
   code: { color: "#fff", fontSize: 14, fontWeight: "700", marginTop: 6 },
   buttons: { flexDirection: "row", gap: 8, marginTop: 10, alignItems: "center" },
   btn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center" },

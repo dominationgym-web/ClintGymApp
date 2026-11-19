@@ -7,6 +7,7 @@ import { parseIsoDate, toIsoDate } from "@/lib/dates";
 import { renewedPlanDates } from "@/lib/planRenewal";
 import { bringBackChanges } from "@/lib/comeback";
 import { CLIENT_GROUPS, clientGroup, type ClientGroup } from "@/lib/clientGroups";
+import { onGuideOpen, takeGuideOpen } from "@/lib/setupGuide";
 import { useAuth } from "@/context/AuthContext";
 import { useTrainerSide } from "@/context/TrainerSideContext";
 import ClientAvatar, { signAvatarUrls } from "@/components/ClientAvatar";
@@ -47,6 +48,12 @@ export default function ClientListPanel({
   // Four tabs: Active / Waiting approval / Awaiting payment / Dormant (archived
   // clients from 0097 land under Dormant).
   const [group, setGroup] = useState<ClientGroup>("active");
+  // The Evolution guide's Show me opens New (sign-ups waiting for approval).
+  useEffect(() => {
+    const take = () => takeGuideOpen("newClients") && setGroup("approval");
+    take();
+    return onGuideOpen(take);
+  }, []);
   const [askWeighIn, setAskWeighIn] = useState<Client | null>(null);
   // Being activated: asks 1 on 1, Evolution or both first.
   const [pickType, setPickType] = useState<Client | null>(null);

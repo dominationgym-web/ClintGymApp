@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, Text, View } from "react-native";
+import { contractSlots } from "@/lib/calendarRegular";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useRoute, type RouteProp } from "@react-navigation/native";
 import TextInput from "@/components/TextInput";
@@ -33,7 +34,7 @@ import {
   shiftMonth,
 } from "@/lib/liveSessions";
 import type { ClientStackParamList } from "@/navigation/types";
-import type { LiveSession, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
+import type { LiveSession, RegularTime, SessionAgreement, SessionInvoice, SessionPlan, SessionSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
@@ -142,7 +143,7 @@ export default function MySessionsScreen() {
           {tab === "month" && <MonthTab month={month} onMonth={setMonth} sessions={sessions} holidays={holidays} />}
           {tab === "invoices" && <InvoicesTab invoices={invoices} paidForYou={!!plan.paid_by} />}
           {tab === "agreement" && (
-            <AgreementTab plan={plan} settings={settings} signed={signed} coach={coach} coachPhone={coachPhone} clientName={client?.name ?? ""} needsSign={needsSign} onSigned={load} />
+            <AgreementTab plan={plan} slots={contractSlots(plan.regular, sessions, client?.id ?? "")} settings={settings} signed={signed} coach={coach} coachPhone={coachPhone} clientName={client?.name ?? ""} needsSign={needsSign} onSigned={load} />
           )}
         </ScrollView>
       )}
@@ -362,6 +363,7 @@ function InvoicesTab({ invoices, paidForYou }: { invoices: SessionInvoice[]; pai
 
 function AgreementTab({
   plan,
+  slots,
   settings,
   signed,
   coach,
@@ -371,6 +373,8 @@ function AgreementTab({
   onSigned,
 }: {
   plan: SessionPlan;
+  /** Their days and times: saved ones, or from the calendar. */
+  slots: RegularTime[];
   settings: SessionSettings | null;
   signed: SessionAgreement | null;
   coach: string;
@@ -389,7 +393,7 @@ function AgreementTab({
     policy: plan.policy,
     billing: plan.billing,
     minutes: plan.minutes,
-    regular: plan.regular,
+    regular: slots,
     contact: coachPhone,
   });
 

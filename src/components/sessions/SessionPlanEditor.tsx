@@ -50,7 +50,7 @@ export default function SessionPlanEditor({
   const [fee, setFee] = useState("");
   const [perWeek, setPerWeek] = useState(3);
   const [policy, setPolicy] = useState<SessionPlan["policy"]>("24h");
-  const [billing, setBilling] = useState<SessionPlan["billing"]>("arrears");
+  const [billing, setBilling] = useState<SessionPlan["billing"]>("advance");
   const [minutes, setMinutes] = useState(60);
   // Days ticked, and the time typed for each (GRIZZ, 2026-10-31: "days to be
   // selected by ticking. And time slots to be typed in by the trainer").
@@ -74,7 +74,7 @@ export default function SessionPlanEditor({
     setFee(String(plan?.fee ?? settings?.fee ?? ""));
     setPerWeek(cal ? cal.regular.length : (plan?.per_week ?? 3));
     setPolicy(plan?.policy ?? settings?.policy ?? "24h");
-    setBilling(plan?.billing ?? settings?.billing ?? "arrears");
+    setBilling(plan?.billing ?? settings?.billing ?? "advance");
     setMinutes(plan?.minutes ?? cal?.minutes ?? settings?.minutes ?? 60);
     setTicked(new Set(startRegular.map((r) => r.weekday)));
     setTyped(Object.fromEntries(startRegular.map((r) => [r.weekday, r.time])));

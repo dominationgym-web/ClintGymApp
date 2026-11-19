@@ -13,6 +13,7 @@ import SessionActionsModal from "@/components/sessions/SessionActionsModal";
 import { refreshCalendarWidget } from "@/lib/calendarWidgetSync";
 import ClientContractFold from "@/components/sessions/ClientContractFold";
 import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
+import ContractEditor from "@/components/sessions/ContractEditor";
 import CalendarImportModal from "@/components/sessions/CalendarImportModal";
 import { onGuideOpen, takeGuideOpen } from "@/lib/setupGuide";
 import SessionInvoiceView from "@/components/sessions/SessionInvoiceView";
@@ -38,10 +39,14 @@ import { eftRows } from "@/lib/trainers";
 import {
   AGREEMENT_TEMPLATE,
   AGREEMENT_WORDS,
+  DEFAULT_CONTRACT,
+  buildAgreement,
+  contractChoices,
+  sameContract,
+  type ContractChoices,
   awayTag,
   BILLINGS,
   KIND_STYLE,
-  POLICIES,
   SESSION_LENGTHS,
   agreementCurrent,
   atTime,
@@ -1977,13 +1982,18 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
   const { trainer } = useAuth();
   const [fee, setFee] = useState(settings?.fee != null ? String(settings.fee) : "");
   const [currency, setCurrency] = useState<BillingCurrency>(settings?.currency ?? (trainer?.client_prices?.currency === "USD" ? "USD" : "ZAR"));
-  const [billing, setBilling] = useState<SessionSettings["billing"]>(settings?.billing ?? "arrears");
+  const [billing, setBilling] = useState<SessionSettings["billing"]>(settings?.billing ?? "advance");
   const [policy, setPolicy] = useState<SessionSettings["policy"]>(settings?.policy ?? "24h");
   const [minutes, setMinutes] = useState(settings?.minutes ?? 60);
   const [customMinutes, setCustomMinutes] = useState("");
   const [dayStart, setDayStart] = useState(cleanTime(settings?.day_start) ?? "05:00");
   const [dayEnd, setDayEnd] = useState(cleanTime(settings?.day_end) ?? "20:00");
   const [agreement, setAgreement] = useState(settings?.agreement_text ?? AGREEMENT_TEMPLATE);
+  // GRIZZ 2026-11-19: the fill-in contract (wording written out, tap the
+  // numbers). Wording a trainer typed out before stays until they switch.
+  const [choices, setChoices] = useState<ContractChoices>(contractChoices(settings?.agreement_choices) ?? DEFAULT_CONTRACT);
+  const [ownWording, setOwnWording] = useState(!!settings?.agreement_text?.trim() && !contractChoices(settings?.agreement_choices));
+  const contractText = ownWording ? agreement : buildAgreement(choices);
   const [preview, setPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const coach = trainer?.business_name?.trim() || trainer?.name || "Your coach";
@@ -2013,8 +2023,12 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
         minutes,
         day_start: start,
         day_end: end,
-        // The standard text is kept as null, so later wording fixes in the app reach it.
-        agreement_text: agreement.trim() && agreement.trim() !== AGREEMENT_TEMPLATE.trim() ? agreement.trim() : null,
+        // The standard contract is kept as null, so later wording fixes in the app reach it.
+        ...(ownWording
+          ? { agreement_text: agreement.trim() && agreement.trim() !== AGREEMENT_TEMPLATE.trim() ? agreement.trim() : null, agreement_choices: null }
+          : sameContract(choices, DEFAULT_CONTRACT)
+            ? { agreement_text: null, agreement_choices: null }
+            : { agreement_text: buildAgreement(choices), agreement_choices: choices }),
         time_zone: phoneTimeZone(),
         updated_at: new Date().toISOString(),
       })
@@ -2041,25 +2055,6 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
         ))}
       </View>
       <TextInput style={styles.input} value={fee} onChangeText={setFee} keyboardType="decimal-pad" placeholder="350" placeholderTextColor="#64748B" />
-
-      <Text style={styles.label}>Billing</Text>
-      <View style={styles.chips}>
-        {BILLINGS.map((b) => (
-          <Pressable key={b.key} style={[styles.chip, billing === b.key && styles.chipOn]} onPress={() => setBilling(b.key)}>
-            <Text style={[styles.chipText, billing === b.key && styles.chipTextOn]}>{b.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Text style={styles.meta}>{BILLINGS.find((b) => b.key === billing)?.detail}</Text>
-
-      <Text style={styles.label}>Cancellation rule</Text>
-      <View style={styles.chips}>
-        {POLICIES.map((p) => (
-          <Pressable key={p.key} style={[styles.chip, policy === p.key && styles.chipOn]} onPress={() => setPolicy(p.key)}>
-            <Text style={[styles.chipText, policy === p.key && styles.chipTextOn]}>{p.label}</Text>
-          </Pressable>
-        ))}
-      </View>
 
       <Text style={styles.label}>How long is a session?</Text>
       <View style={styles.chips}>
@@ -2104,36 +2099,54 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
         ... A session booked at another time starts a new run straight after it.
       </Text>
 
-      <Text style={styles.label}>Your session agreement</Text>
-      <Text style={styles.meta}>Change any of the wording. Each client signs it with a tick, their name and the date.</Text>
-      <View style={styles.notice}>
-        <Text style={styles.noticeText}>
-          ⚠️ Invoices follow your settings, not the wording. If you change how you bill or your cancellation rule here, change Billing and Cancellation rule above (and on each client) to match, or invoices will be wrong.
-        </Text>
-      </View>
-      <TextInput
-        style={[styles.input, { minHeight: 220, textAlignVertical: "top", fontSize: 14 }]}
-        value={agreement}
-        onChangeText={setAgreement}
-        multiline
-        maxLength={10000}
-      />
-      <Text style={styles.meta}>
-        Words in {"{ }"} are filled in for each client: {AGREEMENT_WORDS.map((w) => `${w.word} ${w.means}`).join("; ")}.
-      </Text>
+      <Text style={styles.label}>Your session contract</Text>
+      <Text style={styles.meta}>Each client reads it and signs with a tick, their name and the date.</Text>
+      {ownWording ? (
+        <>
+          <View style={styles.notice}>
+            <Text style={styles.noticeText}>
+              You typed out your own wording before. The new contract has all the wording written for you: you only tap the numbers, like your notice period and deposit.
+            </Text>
+          </View>
+          <Pressable style={styles.button} onPress={() => setOwnWording(false)}>
+            <Text style={styles.buttonText}>Use the new fill-in contract</Text>
+          </Pressable>
+          <Text style={styles.meta}>Or keep editing your own wording:</Text>
+          <TextInput
+            style={[styles.input, { minHeight: 220, textAlignVertical: "top", fontSize: 14 }]}
+            value={agreement}
+            onChangeText={setAgreement}
+            multiline
+            maxLength={10000}
+          />
+          <Text style={styles.meta}>
+            Words in {"{ }"} are filled in for each client: {AGREEMENT_WORDS.map((w) => `${w.word} ${w.means}`).join("; ")}.
+          </Text>
+        </>
+      ) : (
+        <ContractEditor
+          choices={choices}
+          onChange={setChoices}
+          billing={billing}
+          onBilling={setBilling}
+          policy={policy}
+          onPolicy={setPolicy}
+          phone={trainer?.phone}
+        />
+      )}
       <View style={styles.actions}>
         <Pressable onPress={() => setPreview(!preview)}>
-          <Text style={styles.link}>{preview ? "Hide the example" : "See an example"}</Text>
+          <Text style={styles.link}>{preview ? "Hide what the client sees" : "See it as your client will"}</Text>
         </Pressable>
-        {agreement.trim() !== AGREEMENT_TEMPLATE.trim() ? (
-          <Pressable onPress={() => setAgreement(AGREEMENT_TEMPLATE)}>
-            <Text style={styles.link}>Back to the standard text</Text>
+        {!ownWording && !sameContract(choices, DEFAULT_CONTRACT) ? (
+          <Pressable onPress={() => setChoices(DEFAULT_CONTRACT)}>
+            <Text style={styles.link}>Back to the standard contract</Text>
           </Pressable>
         ) : null}
       </View>
       {preview ? (
         <Text style={styles.agreement}>
-          {fillAgreement(agreement, {
+          {fillAgreement(contractText, {
             coach,
             client: "Sarah Jacobs",
             fee: fee ? money(Number(fee) || 0, currency) : "R750",

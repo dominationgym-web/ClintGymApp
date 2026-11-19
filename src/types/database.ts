@@ -1222,6 +1222,9 @@ export type SessionSettings = {
   time_zone: string;
   // The trainer's own wording of the session agreement; null = the standard text.
   agreement_text: string | null;
+  // The fill-in choices behind agreement_text (0227); null = the standard
+  // contract, or older wording the trainer typed out themselves.
+  agreement_choices?: unknown | null;
   updated_at: string;
 };
 // weekday 0 Sunday; time "06:00" in the trainer's time zone.
