@@ -780,3 +780,21 @@ export function canStartLive(s: Pick<LiveSession, "client_id" | "status" | "star
   if (isAway(s)) return false;
   return dayKey(s.starts_at) === dayKey(now);
 }
+
+/**
+ * What happened to a booked catch-up when the missed session it was for is
+ * put back (they trained after all). The database moves it (0229): onto
+ * another catch-up they still owe, off the calendar, or it stays as a normal
+ * extra session. This says which, for the trainer (GRIZZ 2026-11-19).
+ */
+export function catchUpAfterBackMessage(
+  first: string,
+  catchUp: { starts_at: string; status: string; makeup_for: string | null },
+  nowFor: { starts_at: string } | null
+): string {
+  const when = `${dayLabel(catchUp.starts_at)} at ${clockLabel(catchUp.starts_at)}`;
+  if (catchUp.status === "removed") return `${first}'s catch-up on ${when} isn't needed any more, so it came off the calendar. That slot is free again.`;
+  if (catchUp.makeup_for && nowFor)
+    return `${first}'s catch-up on ${when} now counts for the session missed on ${dayLabel(nowFor.starts_at)} at ${clockLabel(nowFor.starts_at)}, which was still owed.`;
+  return `${first}'s catch-up on ${when} isn't needed for this session any more. It stays on the calendar as a normal session. To change it, tap it.`;
+}
