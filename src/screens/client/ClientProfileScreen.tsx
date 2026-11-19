@@ -29,6 +29,7 @@ import ProgressCard from "@/components/ProgressCard";
 import { trainerDisplayName } from "@/lib/trainers";
 import { STATUS_FLAGS } from "@/lib/statusFlags";
 import { clientGoals } from "@/lib/clientGoals";
+import { clientRate, trainerCountry } from "@/lib/clientPricing";
 import type { ClientStatusFlag, Trainer } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 
@@ -321,7 +322,13 @@ export default function ClientProfileScreen() {
 
       {trainer ? (
         <FoldSection icon="💳" title="Paying your trainer" open={openFold === "pay"} onToggle={() => fold("pay")}>
-          <TrainerPaymentDetails eftDetails={trainer.eft_details} popWhatsapp={trainer.pop_whatsapp} proofInApp />
+          <TrainerPaymentDetails
+            eftDetails={trainer.eft_details}
+            popWhatsapp={trainer.pop_whatsapp}
+            proofInApp
+            international={clientRate(client, trainerCountry(trainer)) === "international"}
+            intlDetails={trainer.intl_payment_details}
+          />
           <SendProofOfPayment to="trainer" payerId={client.id} trainerId={trainer.id} receiverName={trainerDisplayName(trainer)} />
         </FoldSection>
       ) : null}

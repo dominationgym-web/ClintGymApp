@@ -16,7 +16,10 @@ import TrainingTypePicker, { trainingTypeFields, type TrainingType } from "@/com
 import BulkWeighInModal from "@/components/BulkWeighInModal";
 import type { WeighInEvery } from "@/lib/progress";
 import { waitingByPerson } from "@/lib/paymentProofs";
-import type { AccessStatus, Client, PaymentProof } from "@/types/database";
+import { countryLabel } from "@/lib/countries";
+import { clientRate, trainerCountry } from "@/lib/clientPricing";
+import RatePicker from "@/components/RatePicker";
+import type { AccessStatus, Client, ClientRate, PaymentProof } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 const STATUS_LABEL: Record<AccessStatus, string> = {
@@ -124,13 +127,15 @@ export default function ClientListPanel({
   // Payment received: set the plan dates and open access. Paying early adds the
   // new plan on from the current end date (renewedPlanDates).
   // `type`: 1 on 1, Evolution or both, asked when activating (GRIZZ, 2026-11-01).
-  const activateNow = async (client: Client, type?: TrainingType) => {
+  // `rate`: Local or International prices, picked when an online client is accepted (0227).
+  const activateNow = async (client: Client, type?: TrainingType, rate?: ClientRate) => {
     const dates = renewedPlanDates(client, new Date());
     if (!dates) {
       Alert.alert("Error", "No plan type selected for this client.");
       return;
     }
-    const updates: Partial<Client> = type ? { ...dates, ...trainingTypeFields(type) } : dates;
+    const updates: Partial<Client> = type ? { ...dates, ...trainingTypeFields(type) } : { ...dates };
+    if (rate) updates.client_rate = rate;
     const { error } = await supabase.from("clients").update(updates).eq("id", client.id);
     if (!error) {
       setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, ...updates } : c)));
@@ -178,6 +183,10 @@ export default function ClientListPanel({
       ]
     );
   };
+  // Online clients: Local or International prices, from the country they live in (GRIZZ 2026-11-19).
+  const home = trainerCountry(trainer);
+  const [askRate, setAskRate] = useState<{ who: Client; type: TrainingType } | null>(null);
+
   const viewingClient = viewing ? allClients.find((c) => c.id === viewing.client_id) ?? null : null;
 
   // Bring an archived client back: all their old data is still there.
@@ -253,6 +262,12 @@ export default function ClientListPanel({
                   {isLeader && <Text style={styles.flagIcon}>🏆</Text>}
                   <Text style={styles.name}>{item.name}</Text>
                 </View>
+                {countryLabel(item.residence_country) ? (
+                  <Text style={styles.country}>
+                    {countryLabel(item.residence_country)}
+                    {!item.live_only && item.plan_started_at && clientRate(item, home) === "international" ? " · International prices" : ""}
+                  </Text>
+                ) : null}
                 <View style={styles.statusRow}>
                   <View style={[styles.statusBadge, statusStyle(item.access_status)]}>
                     <Text style={styles.statusLabel}>{STATUS_LABEL[item.access_status]}</Text>
@@ -298,7 +313,20 @@ export default function ClientListPanel({
           if (!who) return;
           if (t === "one") {
             activateNow(who, t);
-          } else guardEvolution(() => activateNow(who, t));
+          } else guardEvolution(() => setAskRate({ who, type: t }));
+        }}
+      />
+      <RatePicker
+        visible={!!askRate}
+        name={askRate?.who.name ?? "your client"}
+        residenceCountry={askRate?.who.residence_country}
+        homeCountry={home}
+        localCurrency={trainer?.client_prices?.currency ?? "ZAR"}
+        onCancel={() => setAskRate(null)}
+        onPick={(rate) => {
+          const pending = askRate;
+          setAskRate(null);
+          if (pending) activateNow(pending.who, pending.type, rate);
         }}
       />
       <PaymentProofModal
@@ -356,6 +384,7 @@ const styles = themedStyles({
   flagIcon: { fontSize: 13 },
   flagDot: { width: 9, height: 9, borderRadius: 5 },
   name: { color: "#fff", fontWeight: "600" },
+  country: { color: "#94A3B8", fontSize: 12, marginTop: 2 },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, alignSelf: "flex-start" },
   statusLabel: { color: "#0F172A", fontWeight: "700", fontSize: 11 },

@@ -696,7 +696,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               <ClientPricePicker
                 clientId={client.id}
                 value={client.price_package}
+                residenceCountry={client.residence_country}
+                rate={client.client_rate}
                 onChanged={(next) => setClient((c) => (c ? { ...c, price_package: next } : c))}
+                onRateChanged={(next) => setClient((c) => (c ? { ...c, client_rate: next } : c))}
               />
               {client.package_type && (
                 <Text style={styles.helper}>

@@ -78,6 +78,7 @@ export default function TrainerProfileScreen() {
   const [phone, setPhone] = useState(trainer?.phone ?? "");
   const [popWhatsapp, setPopWhatsapp] = useState(trainer?.pop_whatsapp ?? "");
   const [eft, setEft] = useState<EftDetails>(trainer?.eft_details ?? {});
+  const [intlPay, setIntlPay] = useState(trainer?.intl_payment_details ?? "");
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   // The picked picture, shown the moment it's saved (GRIZZ, 2026-10-21: a
@@ -178,6 +179,7 @@ export default function TrainerProfileScreen() {
         phone: phone.trim() || null,
         pop_whatsapp: popWhatsapp.trim() || null,
         eft_details: cleanEft,
+        intl_payment_details: intlPay.trim() || null,
       })
       .eq("id", trainer.id);
     setSaving(false);
@@ -348,6 +350,16 @@ export default function TrainerProfileScreen() {
               ))}
               <Text style={styles.label}>WhatsApp number for proof of payment</Text>
               <TextInput style={styles.input} keyboardType="phone-pad" value={popWhatsapp} onChangeText={setPopWhatsapp} />
+              <Text style={styles.label}>International clients: how they pay you</Text>
+              <TextInput
+                style={[styles.input, { minHeight: 70, textAlignVertical: "top" }]}
+                multiline
+                placeholder="e.g. PayPal: you@email.com, or your Wise link"
+                placeholderTextColor="#64748B"
+                value={intlPay}
+                onChangeText={setIntlPay}
+              />
+              <Text style={styles.hint}>Shown instead of your EFT details to clients on your International prices.</Text>
 
               <Pressable style={styles.button} onPress={save} disabled={saving}>
                 {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.buttonText}>Save</Text>}

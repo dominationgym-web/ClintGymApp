@@ -4,7 +4,8 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { money, monthLabel } from "@/lib/billing";
-import { clientIncomeTotals, trackerTotals, trainerPlanLine, type ClientIncomeRow } from "@/lib/tracker";
+import { clientIncomeTotals, trackerTotals, trainerIncomeText, trainerPlanLine, type ClientIncomeRow } from "@/lib/tracker";
+import { priceText } from "@/lib/clientPricing";
 import type { BillingCurrency, OwnerTrackerRow } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
@@ -41,7 +42,8 @@ export default function OwnerTracker() {
   const today = todayIso();
   const t = trackerTotals(rows, today);
   const earned = clientIncomeTotals(income);
-  const incomeFor = new Map(income.map((i) => [i.trainer_id, i]));
+  const incomeFor = new Map<string, ClientIncomeRow[]>();
+  for (const i of income) incomeFor.set(i.trainer_id, [...(incomeFor.get(i.trainer_id) ?? []), i]);
 
   return (
     <>
@@ -122,10 +124,8 @@ export default function OwnerTracker() {
               <Text style={styles.trainerName}>
                 {r.clients_active} client{r.clients_active === 1 ? "" : "s"}
               </Text>
-              {incomeFor.get(r.trainer_id)?.priced ? (
-                <Text style={styles.small}>
-                  Earns {money(Number(incomeFor.get(r.trainer_id)?.income), incomeFor.get(r.trainer_id)?.currency)} a month
-                </Text>
+              {trainerIncomeText(incomeFor.get(r.trainer_id) ?? [], priceText) ? (
+                <Text style={styles.small}>Earns {trainerIncomeText(incomeFor.get(r.trainer_id) ?? [], priceText)} a month</Text>
               ) : null}
               {!r.is_owner && (
                 <Text style={styles.small}>Pays you {money(Number(r.client_fee_full), r.currency)} a month</Text>

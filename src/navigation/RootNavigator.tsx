@@ -26,6 +26,7 @@ import { shortDate } from "@/lib/billing";
 import { toIsoDate } from "@/lib/dates";
 import { PRIVACY_CONTACT_EMAIL } from "@/lib/privacyPolicy";
 import { needsAgreement, trainerDisplayName } from "@/lib/trainers";
+import { clientRate, trainerCountry } from "@/lib/clientPricing";
 import TrainerAgreementScreen from "@/screens/trainer/TrainerAgreementScreen";
 import { TRAINER_AGREEMENT_VERSION } from "@/screens/auth/TrainerAgreementContent";
 import type { Trainer } from "@/types/database";
@@ -212,6 +213,8 @@ function PendingAccessScreen() {
   }, [trainerId]);
 
   const neverActivated = client?.plan_started_at == null;
+  // Lives abroad (0227): the trainer's way to pay from abroad comes first.
+  const international = !!client && !!trainer && clientRate(client, trainerCountry(trainer)) === "international";
   // On the trainer's 1 on 1 side (linked to their calendar name, or 1 on 1 only).
   const oneOnOne = !!(client?.one_on_one || client?.live_only);
   const coach = trainer ? trainerDisplayName(trainer) : "your trainer";
@@ -255,11 +258,17 @@ function PendingAccessScreen() {
       ) : null}
       {neverActivated && oneOnOne ? null : (
         <>
-          <TrainerPaymentDetails eftDetails={trainer?.eft_details} popWhatsapp={trainer?.pop_whatsapp} proofInApp={!!trainer} />
+          <TrainerPaymentDetails
+            eftDetails={trainer?.eft_details}
+            popWhatsapp={trainer?.pop_whatsapp}
+            proofInApp={!!trainer}
+            international={international}
+            intlDetails={trainer?.intl_payment_details}
+          />
           {client && trainer ? (
             <SendProofOfPayment to="trainer" payerId={client.id} trainerId={trainer.id} receiverName={trainerDisplayName(trainer)} />
           ) : null}
-          <AbroadPayment trainer={trainer} />
+          {international && trainer?.intl_payment_details?.trim() ? null : <AbroadPayment trainer={trainer} />}
         </>
       )}
       <DeleteAccountButton />
@@ -274,6 +283,7 @@ function PendingAccessScreen() {
 // for a way to pay that isn't there.
 function AbroadPayment({ trainer }: { trainer: Trainer | null }) {
   const [open, setOpen] = useState(false);
+  const abroadDetails = trainer?.intl_payment_details?.trim();
   const abroad = !!trainer?.signup_country && trainer.signup_country !== "ZA";
   if (!abroad && !open) {
     return (
@@ -285,7 +295,7 @@ function AbroadPayment({ trainer }: { trainer: Trainer | null }) {
   return (
     <>
       <Text style={styles.sectionHeading}>Paying from outside South Africa</Text>
-      <Text style={styles.body}>Ask your trainer how to pay from abroad. They'll send you the details directly.</Text>
+      <Text style={styles.body}>{abroadDetails || "Ask your trainer how to pay from abroad. They'll send you the details directly."}</Text>
     </>
   );
 }

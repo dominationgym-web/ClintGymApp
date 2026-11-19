@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientPrice, incomeSummary, parsePrice } from "@/lib/clientPricing";
+import { clientPrice, clientRate, incomeSummary, parsePrice, priceText, ratePrice, suggestedRate } from "@/lib/clientPricing";
 import type { AccessStatus, ClientPrices, PricePackage } from "@/types/database";
 
 const table: ClientPrices = { currency: "ZAR", mode: "table", online: 1500, extra: { "1": 300, "2": 500, "4": 900 } };
@@ -37,7 +37,7 @@ describe("incomeSummary", () => {
       client("online", { archived_at: "2026-10-01" }),
       client("online", { access_status: "expired" }),
     ]);
-    expect(s.total).toBe(3300);
+    expect(s.totals).toEqual([{ currency: "ZAR", total: 3300 }]);
     expect(s.active).toBe(4);
     expect(s.unpriced).toBe(1);
     expect(s.lines.map((l) => [l.key, l.clients, l.total])).toEqual([
@@ -47,8 +47,49 @@ describe("incomeSummary", () => {
   });
   it("puts everyone on one line in monthly-fee mode", () => {
     const s = incomeSummary(flat, [client(null), client("online")]);
-    expect(s.total).toBe(240);
-    expect(s.lines).toEqual([{ key: "flat", label: "Monthly fee", clients: 2, price: 120, total: 240 }]);
+    expect(s.totals).toEqual([{ currency: "USD", total: 240 }]);
+    expect(s.lines).toEqual([{ key: "flat", label: "Monthly fee", clients: 2, price: 120, currency: "USD", total: 240 }]);
+  });
+});
+
+describe("local and international prices", () => {
+  const both: ClientPrices = { ...table, international: { online: 100, extra: { "1": 30 } } };
+  const abroad = (price_package: PricePackage | null, residence_country: string | null, client_rate: "local" | "international" | null = null) => ({
+    ...client(price_package),
+    residence_country,
+    client_rate,
+  });
+  it("calls someone international when they live in another country than the trainer", () => {
+    expect(suggestedRate("GB", "ZA")).toBe("international");
+    expect(suggestedRate("za", "ZA")).toBe("local");
+    expect(suggestedRate(null, "ZA")).toBe("local");
+  });
+  it("lets the trainer's own pick win over the country", () => {
+    expect(clientRate({ residence_country: "GB", client_rate: "local" }, "ZA")).toBe("local");
+    expect(clientRate({ residence_country: "ZA", client_rate: "international" }, "ZA")).toBe("international");
+  });
+  it("charges international clients the dollar list, falling back to Local when it's blank", () => {
+    expect(ratePrice(both, "online", "international")).toEqual({ amount: 100, currency: "USD" });
+    expect(ratePrice(both, "extra_2", "international")).toEqual({ amount: 500, currency: "ZAR" });
+    expect(ratePrice(both, "online", "local")).toEqual({ amount: 1500, currency: "ZAR" });
+  });
+  it("adds up rand and dollars separately", () => {
+    const s = incomeSummary(both, [abroad("online", "ZA"), abroad("online", "GB"), abroad("online", "US"), abroad("extra_1", "AU", "local")], "ZA");
+    expect(s.totals).toEqual([
+      { currency: "ZAR", total: 1800 },
+      { currency: "USD", total: 200 },
+    ]);
+    expect(s.international).toBe(2);
+    expect(s.lines.map((l) => [l.label, l.clients, l.total])).toEqual([
+      ["Fully Online", 1, 1500],
+      ["Fully Online (international)", 2, 200],
+      ["1-on-1 + 1 extra day a week", 1, 300],
+    ]);
+  });
+  it("writes prices in each currency", () => {
+    expect(priceText(1500, "ZAR")).toBe("R1\u00a0500");
+    expect(priceText(60.5, "USD")).toBe("$60.50");
+    expect(priceText(1200, "GBP")).toBe("£1,200");
   });
 });
 
