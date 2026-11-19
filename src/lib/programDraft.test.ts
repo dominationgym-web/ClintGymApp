@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@react-native-async-storage/async-storage", () => ({ default: {} }));
+vi.mock("@/lib/supabase", () => ({ supabase: {} }));
 
-import { isEmptyDraft, type ProgramDraft } from "@/lib/programDraft";
+import { draftLabel, isEmptyDraft, newDraftId, type ProgramDraft } from "@/lib/programDraft";
 import { DEFAULT_WARM_UP } from "@/lib/programs";
 
 const blank: ProgramDraft = {
@@ -23,5 +24,17 @@ describe("isEmptyDraft", () => {
     expect(isEmptyDraft({ ...blank, howTo: "Brace" })).toBe(false);
     const picked = { ...blank.sessions[0], exercises: [{ ...blank.sessions[0].exercises[0], exerciseId: "x", exerciseName: "Squat" }] };
     expect(isEmptyDraft({ ...blank, sessions: [picked] })).toBe(false);
+  });
+});
+
+describe("drafts", () => {
+  it("makes a fresh uuid for each new draft", () => {
+    const a = newDraftId();
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(newDraftId()).not.toBe(a);
+  });
+  it("shows a draft with no name yet", () => {
+    expect(draftLabel("  ")).toBe("Program with no name yet");
+    expect(draftLabel("Push day")).toBe("Push day");
   });
 });

@@ -212,7 +212,7 @@ export default function TrainerNavigator() {
             <Stack.Screen
               name="ProgramBuilder"
               component={ProgramBuilderScreen}
-              options={{ title: "Build a program", headerBackTitle: "Back" }}
+              options={({ route }) => ({ title: route.params?.programId ? "Change program" : "Build a program", headerBackTitle: "Back" })}
             />
             <Stack.Screen
               name="TrainerGuide"

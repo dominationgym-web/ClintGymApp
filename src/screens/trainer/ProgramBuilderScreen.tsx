@@ -35,23 +35,32 @@ import {
   REST_OPTIONS,
   WEEKDAY_NAMES,
   weeklyDraftProblem,
+  programRows,
+  programRowWrites,
+  sessionsFromProgram,
   type DraftExercise,
   type DraftSession,
 } from "@/lib/programs";
-import { clearProgramDraft, loadProgramDraft, saveProgramDraft } from "@/lib/programDraft";
+import {
+  deleteProgramDraft,
+  isEmptyDraft,
+  loadProgramDraft,
+  newDraftId,
+  saveProgramDraft,
+  syncPhoneDraft,
+  type AbsChoice,
+  type ProgramDraft,
+} from "@/lib/programDraft";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import { ExerciseThumb } from "@/components/YouTubeCard";
 import CardioDurationPicker from "@/components/CardioDurationPicker";
-import type { Exercise } from "@/types/database";
+import type { Exercise, Program } from "@/types/database";
 import type { TrainerStackParamList } from "@/navigation/types";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import { AB_EXERCISES, AB_REP_OPTIONS, AB_REPS } from "@/lib/absBetweenSets";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import ExerciseLibraryPanel from "@/components/ExerciseLibraryPanel";
 import { themeText, themedStyles } from "@/lib/theme";
-
-// Abs between sets (0083), chosen when the program is saved.
-type AbsChoice = { on: boolean; reps: number; exercise: string | null };
 
 type Props = NativeStackScreenProps<TrainerStackParamList, "ProgramBuilder">;
 
@@ -63,7 +72,7 @@ const SHORT_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 // 6 or 8 exercises from the library (with a demo video to check) and tap in
 // sets, reps and rest. A "how to do it" note covers technique and safety.
 // The client works through the sessions in order (0037).
-export default function ProgramBuilderScreen({ navigation }: Props) {
+export default function ProgramBuilderScreen({ navigation, route }: Props) {
   const { trainer } = useAuth();
   const [library, setLibrary] = useState<Exercise[]>([]);
   const [name, setName] = useState("");
@@ -83,57 +92,141 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
   // Save asks about abs between sets first (GRIZZ, 2026-10-12).
   const [askAbs, setAskAbs] = useState(false);
   const [abs, setAbs] = useState<AbsChoice>({ on: false, reps: AB_REPS, exercise: null });
-  // Work in progress is kept on the phone (programDraft.ts), so going back by
-  // mistake doesn't lose it. It's brought back on opening the builder.
+  // Saved as a draft as the trainer goes, under the program's name (0230,
+  // GRIZZ 2026-11-19), so leaving to do something else never loses it. The
+  // Programs tab lists drafts at the top to carry on with.
   const [draftReady, setDraftReady] = useState(false);
   const [restored, setRestored] = useState(false);
-  const saved = useRef(false);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "phone">("idle");
+  const draftId = useRef(route.params?.draftId ?? newDraftId());
+  // Changing a saved program: its id, and its rows as they are in the database.
+  const [programId, setProgramId] = useState<string | null>(route.params?.programId ?? null);
+  const savedRowIds = useRef<string[]>([]);
+  // The saved program as loaded, so just opening it to look doesn't make a draft.
+  const baseline = useRef<string | null>(null);
+  const hasDraft = useRef(!!route.params?.draftId);
+  const pending = useRef<ProgramDraft | null>(null);
+  // What was last saved, so opening a draft doesn't save it again unchanged.
+  const lastSaved = useRef<string | null>(null);
+  const done = useRef(false);
+  const trainerId = useRef(trainer?.id);
+  trainerId.current = trainer?.id;
+  const programIdRef = useRef(programId);
+  programIdRef.current = programId;
   // On a laptop the exercise videos sit beside the program instead of in a pop-up.
   const wide = useWideScreen();
 
+  const apply = (d: ProgramDraft) => {
+    setName(d.name);
+    setHowTo(d.howTo);
+    setWarmUp(d.warmUp);
+    setSessions(d.sessions);
+    setActiveDay(d.activeDay);
+    setPlace(d.place);
+    if (d.abs) setAbs(d.abs);
+  };
+  const snapshot = (d: ProgramDraft) => JSON.stringify({ ...d, activeDay: 0 });
+
   useEffect(() => {
     if (!trainer) return;
-    loadProgramDraft(trainer.id).then((draft) => {
-      if (draft) {
-        setName(draft.name);
-        setHowTo(draft.howTo);
-        setWarmUp(draft.warmUp);
-        setSessions(draft.sessions);
-        setActiveDay(draft.activeDay);
-        setPlace(draft.place);
+    let cancelled = false;
+    (async () => {
+      // A draft only this phone has (no signal, or from before drafts were kept online) goes up first.
+      await syncPhoneDraft(trainer.id);
+      const asked = route.params ?? {};
+      const found = asked.draftId
+        ? await loadProgramDraft({ id: asked.draftId })
+        : asked.programId
+          ? await loadProgramDraft({ programId: asked.programId })
+          : null;
+      const pid = found?.programId ?? asked.programId ?? null;
+      if (pid) {
+        const [{ data: program }, { data: rows, error }] = await Promise.all([
+          supabase.from("programs").select("*").eq("id", pid).maybeSingle(),
+          supabase.from("program_exercises").select("*").eq("program_id", pid),
+        ]);
+        if (cancelled) return;
+        if (!program || error) {
+          Alert.alert("Couldn't open the program", "Check your internet connection and try again.");
+          navigation.goBack();
+          return;
+        }
+        savedRowIds.current = (rows ?? []).map((r) => r.id);
+        const loaded: ProgramDraft = {
+          name: program.name,
+          howTo: program.description ?? "",
+          warmUp: program.warm_up || DEFAULT_WARM_UP,
+          sessions: sessionsFromProgram(rows ?? [], program.day_titles ?? []),
+          activeDay: 1,
+          place: program.place,
+          abs: { on: program.abs_between_sets, reps: program.abs_reps || AB_REPS, exercise: program.abs_exercise },
+        };
+        loaded.activeDay = loaded.sessions[0]?.day ?? 1;
+        baseline.current = snapshot(loaded);
+        setProgramId(pid);
+        if (!found) apply(loaded);
+      }
+      if (cancelled) return;
+      if (found) {
+        draftId.current = found.id;
+        hasDraft.current = true;
+        apply(found.draft);
+        lastSaved.current = JSON.stringify({ ...found.draft, abs: found.draft.abs ?? abs });
         setRestored(true);
       }
       setDraftReady(true);
-    });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [trainer?.id]);
 
-  useEffect(() => {
-    if (!trainer || !draftReady || saved.current) return;
-    const timer = setTimeout(
-      () => !saved.current && saveProgramDraft(trainer.id, { name, howTo, warmUp, sessions, activeDay, place }),
-      400,
-    );
-    return () => clearTimeout(timer);
-  }, [trainer?.id, draftReady, name, howTo, warmUp, sessions, activeDay, place]);
+  const flush = async () => {
+    const d = pending.current;
+    const id = trainerId.current;
+    pending.current = null;
+    if (!d || !id || done.current) return;
+    hasDraft.current = true;
+    lastSaved.current = JSON.stringify(d);
+    setStatus("saving");
+    const ok = await saveProgramDraft(id, draftId.current, programIdRef.current, d);
+    if (!done.current) setStatus(ok ? "saved" : "phone");
+  };
 
-  const startOver = () =>
-    Alert.alert("Start over?", "This deletes the program you were building.", [
-      { text: "Keep it", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          if (trainer) await clearProgramDraft(trainer.id);
-          setName("");
-          setHowTo("");
-          setWarmUp(DEFAULT_WARM_UP);
-          setSessions([1, 3, 5].map(blankSession));
-          setActiveDay(1);
-          setPlace("gym");
-          setRestored(false);
+  useEffect(() => {
+    if (!trainer || !draftReady || done.current) return;
+    const current: ProgramDraft = { name, howTo, warmUp, sessions, activeDay, place, abs };
+    if (!hasDraft.current) {
+      // Nothing worth keeping yet: a blank new program, or a saved one only looked at.
+      if (baseline.current ? snapshot(current) === baseline.current : isEmptyDraft(current)) return;
+    }
+    if (JSON.stringify(current) === lastSaved.current) return;
+    pending.current = current;
+    const timer = setTimeout(flush, 600);
+    return () => clearTimeout(timer);
+  }, [trainer?.id, draftReady, name, howTo, warmUp, sessions, activeDay, place, abs]);
+
+  // Leaving the screen saves straight away whatever is still waiting.
+  useEffect(() => () => void flush(), []);
+
+  const throwAway = () =>
+    Alert.alert(
+      programId ? "Throw away your changes?" : "Delete this draft?",
+      programId ? "Your saved program stays as it was." : "This deletes the program you were building.",
+      [
+        { text: "Keep it", style: "cancel" },
+        {
+          text: programId ? "Throw away" : "Delete",
+          style: "destructive",
+          onPress: async () => {
+            done.current = true;
+            pending.current = null;
+            if (trainer) await deleteProgramDraft(trainer.id, draftId.current);
+            navigation.goBack();
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   useEffect(() => {
     supabase
@@ -246,16 +339,15 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     if (!trainer) return;
     setAskAbs(false);
     setSaving(true);
+    // No draft saves while the program is being saved (one could bring the draft back).
+    done.current = true;
     const dayTitles = WEEKDAY_NAMES.map((_, i) => {
       const s = sessions.find((x) => x.day === i + 1);
       return s ? titleFor(s) : "";
     });
-    const { data: program, error } = await supabase
-      .from("programs")
-      .insert({
-        trainer_id: trainer.id,
+    const fields: Partial<Program> = {
         name: name.trim(),
-        kind: "weekly",
+        kind: "weekly" as const,
         description: howTo.trim() || null,
         day_titles: dayTitles,
         warm_up: warmUp.trim() || DEFAULT_WARM_UP,
@@ -263,40 +355,67 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
         abs_between_sets: absChoice.on,
         abs_reps: absChoice.reps,
         abs_exercise: absChoice.exercise,
-      })
+    };
+    if (programId) {
+      await saveChanges(programId, fields);
+      return;
+    }
+    const { data: program, error } = await supabase
+      .from("programs")
+      .insert({ trainer_id: trainer.id, ...fields })
       .select()
       .single();
     if (error || !program) {
+      done.current = false;
       setSaving(false);
       Alert.alert("Couldn't save", error?.message ?? "Unknown error");
       return;
     }
-    const { error: rowsError } = await supabase.from("program_exercises").insert(
-      sessions.flatMap((s) =>
-        s.exercises.map((e, i) => ({
-          program_id: program.id,
-          day_number: s.day,
-          sort_order: i + 1,
-          exercise_id: e.exerciseId,
-          exercise_name: e.exerciseName,
-          sets: e.sets,
-          reps: e.reps.trim(),
-          rest_seconds: e.restSeconds,
-          kind: e.kind ?? "exercise",
-        }))
-      )
-    );
+    const { error: rowsError } = await supabase.from("program_exercises").insert(programRows(program.id, sessions).map((r) => r.row));
     if (rowsError) {
       // Don't leave an empty program behind.
       await supabase.from("programs").delete().eq("id", program.id);
+      done.current = false;
       setSaving(false);
       Alert.alert("Couldn't save", rowsError.message);
       return;
     }
-    saved.current = true;
-    await clearProgramDraft(trainer.id);
+    await deleteProgramDraft(trainer.id, draftId.current);
     setSaving(false);
-    Alert.alert("Program saved", "Open a client and go to their Training tab to put them on it.");
+    Alert.alert("Program saved", "It's under ⭐ Your programs on the Programs tab. Open a client and go to their Training tab to put them on it.");
+    navigation.goBack();
+  };
+
+  // Changing a saved program: rows still there are updated in place, so clients'
+  // own changes and stand-ins stay; new ones are added and removed ones go.
+  const saveChanges = async (pid: string, fields: Partial<Program>) => {
+    if (!trainer) return;
+    const fail = (message: string) => {
+      done.current = false;
+      setSaving(false);
+      Alert.alert("Couldn't save the changes", `${message}\n\nYour changes are still kept as a draft. Try again.`);
+    };
+    const { error } = await supabase.from("programs").update(fields).eq("id", pid);
+    if (error) return fail(error.message);
+    // The rows as they are now, in case a try before this only got part way.
+    const { data: now, error: rowsError } = await supabase.from("program_exercises").select("id").eq("program_id", pid);
+    if (rowsError) return fail(rowsError.message);
+    savedRowIds.current = (now ?? []).map((r) => r.id);
+    const { updates, inserts, deletes } = programRowWrites(pid, sessions, savedRowIds.current);
+    if (deletes.length) {
+      const { error: e } = await supabase.from("program_exercises").delete().in("id", deletes);
+      if (e) return fail(e.message);
+    }
+    const results = await Promise.all(updates.map((u) => supabase.from("program_exercises").update(u.row).eq("id", u.id)));
+    const updateError = results.find((r) => r.error)?.error;
+    if (updateError) return fail(updateError.message);
+    if (inserts.length) {
+      const { error: e } = await supabase.from("program_exercises").insert(inserts);
+      if (e) return fail(e.message);
+    }
+    await deleteProgramDraft(trainer.id, draftId.current);
+    setSaving(false);
+    Alert.alert("Changes saved", "Every client on this program gets the new version from their next workout. Past workouts stay as they were.");
     navigation.goBack();
   };
 
@@ -304,10 +423,20 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
       <View style={styles.draftBar}>
         <Text style={styles.draftText}>
-          {restored ? "Carrying on where you left off." : "Your work is kept if you go back."}
+          {status === "saving"
+            ? "Saving draft…"
+            : status === "phone"
+              ? "No internet: kept on this phone for now. It saves online when you're back."
+              : status === "saved"
+                ? "✓ Draft saved. Leave any time: carry on from the top of the Programs tab."
+                : restored
+                  ? "Carrying on where you left off. Saves as you go."
+                  : programId
+                    ? "Changing your saved program. Your changes save as a draft until you tap Save changes."
+                    : "Saves as a draft as you go, under the program's name."}
         </Text>
-        <Pressable onPress={startOver} hitSlop={8}>
-          <Text style={styles.startOver}>Start over</Text>
+        <Pressable onPress={throwAway} hitSlop={8}>
+          <Text style={styles.startOver}>{programId ? "Throw away changes" : "Delete draft"}</Text>
         </Pressable>
       </View>
       <Text style={styles.label}>This program is for</Text>
@@ -479,7 +608,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
       )}
 
       <Pressable style={styles.saveButton} onPress={askToSave} disabled={saving}>
-        {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>Complete and save program</Text>}
+        {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.saveText}>{programId ? "Save changes" : "Complete and save program"}</Text>}
       </Pressable>
 
       <Modal visible={(picking !== null || pairing !== null) && !wide} animationType="slide" onRequestClose={closePicker}>
@@ -588,7 +717,7 @@ export default function ProgramBuilderScreen({ navigation }: Props) {
                 </>
               )}
               <Pressable style={styles.saveButton} onPress={() => save(abs)}>
-                <Text style={styles.saveText}>Save program</Text>
+                <Text style={styles.saveText}>{programId ? "Save changes" : "Save program"}</Text>
               </Pressable>
               <Pressable onPress={() => setAskAbs(false)} hitSlop={8} style={{ alignSelf: "center", marginTop: 12 }}>
                 <Text style={styles.close}>Back to editing</Text>
