@@ -20,6 +20,7 @@ import { retryIfIssuedInFuture } from "@/lib/clockSkew";
 import TrainerLogo from "@/components/TrainerLogo";
 import { useAuth } from "@/context/AuthContext";
 import PasswordInput from "@/components/PasswordInput";
+import CountryPicker from "@/components/CountryPicker";
 import PrivacyPolicyContent, { PRIVACY_POLICY_VERSION } from "@/screens/auth/PrivacyPolicyContent";
 import { themeText, themedStyles } from "@/lib/theme";
 import type * as ImagePicker from "expo-image-picker";
@@ -59,6 +60,8 @@ export default function SignupScreen({ navigation }: Props) {
   const [name, setName] = useState("");
   const [emailText, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  // Country of residence, compulsory (GRIZZ 2026-11-19, 0231): decides Local or International prices.
+  const [country, setCountry] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<PlanType>("intro_1mo");
   const [pkg, setPkg] = useState<PackageType>("training_only");
@@ -123,6 +126,11 @@ export default function SignupScreen({ navigation }: Props) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert("Invalid email", "Please enter a valid email address.");
+      return;
+    }
+
+    if (!country) {
+      Alert.alert("Where do you live?", "Tap the country you live in. Your trainer uses it to set your prices.");
       return;
     }
 
@@ -227,6 +235,7 @@ export default function SignupScreen({ navigation }: Props) {
         name,
         email,
         phone: phone || null,
+        residence_country: country,
         plan_type: plan,
         package_type: pkg,
         training_place: trainingPlace,
@@ -296,6 +305,8 @@ export default function SignupScreen({ navigation }: Props) {
       />
       <Text style={styles.label}>Phone number (optional)</Text>
       <TextInput placeholderTextColor="#94A3B8" style={styles.input} placeholder="e.g. 082 123 4567" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+      <Text style={styles.label}>Country you live in</Text>
+      <CountryPicker value={country} onPick={setCountry} />
       <Text style={styles.label}>Password</Text>
       <PasswordInput placeholder="Choose a password" value={password} onChangeText={setPassword} />
 

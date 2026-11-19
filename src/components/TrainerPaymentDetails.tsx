@@ -9,12 +9,16 @@ type Props = {
   popWhatsapp: string | null | undefined;
   /** A Send proof of payment button follows (0117). */
   proofInApp?: boolean;
+  /** The client is on International prices (0231): show the trainer's abroad details instead of EFT. */
+  international?: boolean;
+  intlDetails?: string | null;
 };
 
 // A trainer's own EFT details and proof-of-payment number (0029), each row
 // tap-to-copy. Shown after client signup and on the client's Profile.
-export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofInApp = false }: Props) {
+export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofInApp = false, international = false, intlDetails }: Props) {
   const rows = eftRows(eftDetails);
+  const abroad = international ? intlDetails?.trim() : "";
 
   const copy = async (value: string, label: string) => {
     try {
@@ -24,6 +28,35 @@ export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofIn
       Alert.alert("Error", "Failed to copy to clipboard.");
     }
   };
+
+  const proofLine = proofInApp ? (
+    <Text style={styles.body}>Then send your proof of payment with the button below. It goes straight to the right person.</Text>
+  ) : popWhatsapp ? (
+    <Text style={styles.body}>
+      Then send proof of payment to <Text style={styles.inline}>{popWhatsapp}</Text> on WhatsApp.
+    </Text>
+  ) : (
+    <Text style={styles.body}>Then send your trainer proof of payment.</Text>
+  );
+
+  // International clients (0231): the trainer's own way to pay from abroad (PayPal, Wise...).
+  if (abroad) {
+    return (
+      <View>
+        <Text style={styles.sectionHeading}>Paying from abroad</Text>
+        <Pressable
+          style={[styles.bankBox, styles.bankRow]}
+          onPress={() => copy(abroad, "Payment details")}
+          android_ripple={{ color: themeText("rgba(34, 197, 94, 0.1)") }}
+        >
+          <Text style={[styles.bankValue, { flex: 1, textAlign: "left" }]}>{abroad}</Text>
+          <Text style={styles.copyIcon}>📋</Text>
+        </Pressable>
+        <Text style={styles.body}>Use your name as the payment reference so your trainer can match it to your account.</Text>
+        {proofLine}
+      </View>
+    );
+  }
 
   if (rows.length === 0) {
     return <Text style={styles.body}>Your trainer will send you their payment details directly.</Text>;
@@ -51,15 +84,7 @@ export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofIn
       <Text style={styles.body}>
         Use your name as the payment reference so your trainer can match it to your account.
       </Text>
-      {proofInApp ? (
-        <Text style={styles.body}>Then send your proof of payment with the button below. It goes straight to the right person.</Text>
-      ) : popWhatsapp ? (
-        <Text style={styles.body}>
-          Then send proof of payment to <Text style={styles.inline}>{popWhatsapp}</Text> on WhatsApp.
-        </Text>
-      ) : (
-        <Text style={styles.body}>Then send your trainer proof of payment.</Text>
-      )}
+      {proofLine}
     </View>
   );
 }

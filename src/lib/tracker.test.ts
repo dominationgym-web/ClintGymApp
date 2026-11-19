@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientIncomeTotals, trackerTotals, trainerPlanLine } from "@/lib/tracker";
+import { clientIncomeTotals, trackerTotals, trainerIncomeText, trainerPlanLine } from "@/lib/tracker";
 import type { OwnerTrackerRow } from "@/types/database";
 
 const today = "2026-10-17";
@@ -70,5 +70,21 @@ describe("clientIncomeTotals", () => {
       { trainer_id: "c", currency: "ZAR", income: 1000, priced: 1, unpriced: 3 },
     ]);
     expect(t).toEqual({ ZAR: { income: 4000, priced: 3 }, USD: { income: 240, priced: 2 }, unpriced: 4 });
+  });
+});
+
+describe("trainerIncomeText", () => {
+  it("joins a trainer's Local and dollar income", () => {
+    const fmt = (a: number, c: string) => `${c} ${a}`;
+    expect(
+      trainerIncomeText(
+        [
+          { trainer_id: "a", currency: "USD", income: 200, priced: 2, unpriced: 0 },
+          { trainer_id: "a", currency: "ZAR", income: 3000, priced: 2, unpriced: 1 },
+        ],
+        fmt
+      )
+    ).toBe("ZAR 3000 + USD 200");
+    expect(trainerIncomeText([{ trainer_id: "a", currency: "ZAR", income: 0, priced: 0, unpriced: 2 }], fmt)).toBeNull();
   });
 });

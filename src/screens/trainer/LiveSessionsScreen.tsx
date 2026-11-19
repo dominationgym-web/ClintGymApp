@@ -1981,7 +1981,7 @@ function InvoiceModal({
 function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onSaved: (s: SessionSettings) => void }) {
   const { trainer } = useAuth();
   const [fee, setFee] = useState(settings?.fee != null ? String(settings.fee) : "");
-  const [currency, setCurrency] = useState<BillingCurrency>(settings?.currency ?? trainer?.client_prices?.currency ?? "ZAR");
+  const [currency, setCurrency] = useState<BillingCurrency>(settings?.currency ?? (trainer?.client_prices?.currency === "USD" ? "USD" : "ZAR"));
   const [billing, setBilling] = useState<SessionSettings["billing"]>(settings?.billing ?? "advance");
   const [policy, setPolicy] = useState<SessionSettings["policy"]>(settings?.policy ?? "24h");
   const [minutes, setMinutes] = useState(settings?.minutes ?? 60);

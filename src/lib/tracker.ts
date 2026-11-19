@@ -80,16 +80,28 @@ function monthShort(iso: string): string {
   return SHORT[Number(iso.slice(5, 7)) - 1];
 }
 
-export type ClientIncomeRow = { trainer_id: string; currency: BillingCurrency; income: number; priced: number; unpriced: number };
+// One row per trainer and currency since 0231 (Local, and dollars for international clients).
+export type ClientIncomeRow = { trainer_id: string; currency: string; income: number; priced: number; unpriced: number };
 
-/** What clients pay their trainers a month (0106), added up by currency. */
+/** What clients pay their trainers a month (0106), added up in rand and dollars. Other local currencies aren't added in. */
 export function clientIncomeTotals(rows: ClientIncomeRow[]) {
   const totals = { ZAR: { income: 0, priced: 0 }, USD: { income: 0, priced: 0 }, unpriced: 0 };
   for (const r of rows) {
-    const side = totals[r.currency === "USD" ? "USD" : "ZAR"];
+    totals.unpriced += Number(r.unpriced);
+    if (r.currency !== "USD" && r.currency !== "ZAR") continue;
+    const side = totals[r.currency];
     side.income += Number(r.income);
     side.priced += Number(r.priced);
-    totals.unpriced += Number(r.unpriced);
   }
   return totals;
+}
+
+/** A trainer's rows as "R12 000 + $450", or null when nobody has a price. */
+export function trainerIncomeText(rows: ClientIncomeRow[], format: (amount: number, currency: string) => string): string | null {
+  const priced = rows.filter((r) => Number(r.priced) > 0);
+  if (!priced.length) return null;
+  return priced
+    .sort((a, b) => (a.currency === "USD" ? 1 : 0) - (b.currency === "USD" ? 1 : 0))
+    .map((r) => format(Number(r.income), r.currency))
+    .join(" + ");
 }
