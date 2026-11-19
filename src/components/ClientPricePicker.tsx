@@ -18,7 +18,7 @@ type Props = {
 };
 
 // On a client's profile: which of the trainer's prices they pay (0106), and
-// whether that's the Local or International list (0227). Feeds the trainer's
+// whether that's the Local or International list (0231). Feeds the trainer's
 // Profile > Income.
 export default function ClientPricePicker({ clientId, value, residenceCountry, rate: chosenRate, onChanged, onRateChanged }: Props) {
   const { trainer } = useAuth();

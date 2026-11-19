@@ -1,6 +1,6 @@
 // Countries a client can pick as where they live (GRIZZ 2026-11-19). Tap
 // only: a few common ones as buttons, the rest by first letter. Saved as the
-// two-letter ISO code (clients.residence_country, 0227).
+// two-letter ISO code (clients.residence_country, 0231).
 
 export const COUNTRIES: [code: string, name: string][] = [
   ["AF", "Afghanistan"], ["AL", "Albania"], ["DZ", "Algeria"], ["AD", "Andorra"], ["AO", "Angola"],

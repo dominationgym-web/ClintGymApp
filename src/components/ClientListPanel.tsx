@@ -127,7 +127,7 @@ export default function ClientListPanel({
   // Payment received: set the plan dates and open access. Paying early adds the
   // new plan on from the current end date (renewedPlanDates).
   // `type`: 1 on 1, Evolution or both, asked when activating (GRIZZ, 2026-11-01).
-  // `rate`: Local or International prices, picked when an online client is accepted (0227).
+  // `rate`: Local or International prices, picked when an online client is accepted (0231).
   const activateNow = async (client: Client, type?: TrainingType, rate?: ClientRate) => {
     const dates = renewedPlanDates(client, new Date());
     if (!dates) {

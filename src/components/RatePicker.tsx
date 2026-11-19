@@ -7,7 +7,7 @@ import type { ClientRate } from "@/types/database";
 import { themedStyles } from "@/lib/theme";
 
 // Accepting an online client: Local or International prices (GRIZZ
-// 2026-11-19, 0227). The one that fits the country they live in is marked.
+// 2026-11-19, 0231). The one that fits the country they live in is marked.
 export default function RatePicker({
   visible,
   name,

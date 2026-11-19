@@ -60,7 +60,7 @@ export default function SignupScreen({ navigation }: Props) {
   const [name, setName] = useState("");
   const [emailText, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  // Country of residence, compulsory (GRIZZ 2026-11-19, 0227): decides Local or International prices.
+  // Country of residence, compulsory (GRIZZ 2026-11-19, 0231): decides Local or International prices.
   const [country, setCountry] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<PlanType>("intro_1mo");

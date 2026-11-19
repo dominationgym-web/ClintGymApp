@@ -213,7 +213,7 @@ function PendingAccessScreen() {
   }, [trainerId]);
 
   const neverActivated = client?.plan_started_at == null;
-  // Lives abroad (0227): the trainer's way to pay from abroad comes first.
+  // Lives abroad (0231): the trainer's way to pay from abroad comes first.
   const international = !!client && !!trainer && clientRate(client, trainerCountry(trainer)) === "international";
   // On the trainer's 1 on 1 side (linked to their calendar name, or 1 on 1 only).
   const oneOnOne = !!(client?.one_on_one || client?.live_only);

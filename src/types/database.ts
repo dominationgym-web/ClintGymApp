@@ -69,7 +69,7 @@ export type Trainer = {
   free_use_from: string | null;
   // What this trainer's clients pay them a month (0106).
   client_prices?: ClientPrices | null;
-  // 0227: how clients abroad pay (PayPal, Wise link...), shown only to international clients.
+  // 0231: how clients abroad pay (PayPal, Wise link...), shown only to international clients.
   intl_payment_details?: string | null;
   // 0189: Metric (kg, cm) or Imperial (lb, inches). History imports read
   // numbers with no unit shown in these units. Stored values stay kg and cm.
@@ -221,14 +221,14 @@ export type ClientPriceList = {
 
 // The top-level prices are the trainer's Local prices, in their own currency
 // (ZAR, GBP, EUR...). `international` is the second list, always in dollars,
-// for clients who live in another country (0227). Same mode for both.
+// for clients who live in another country (0231). Same mode for both.
 export type ClientPrices = ClientPriceList & {
   currency: string;
   mode: "table" | "flat";
   international?: ClientPriceList | null;
 };
 
-// Which price list a client pays (0227). Null = worked out from where they live.
+// Which price list a client pays (0231). Null = worked out from where they live.
 export type ClientRate = "local" | "international";
 
 // A recovery activity a client planned or did (0107).
@@ -466,7 +466,7 @@ export type Client = {
   package_type: PackageType | null;
   // Which of the trainer's prices this client pays (0106).
   price_package?: PricePackage | null;
-  // 0227: the country they live in (ISO code, picked at sign-up), and the
+  // 0231: the country they live in (ISO code, picked at sign-up), and the
   // trainer's Local / International choice (null = from the country).
   residence_country?: string | null;
   client_rate?: ClientRate | null;

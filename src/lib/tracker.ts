@@ -80,7 +80,7 @@ function monthShort(iso: string): string {
   return SHORT[Number(iso.slice(5, 7)) - 1];
 }
 
-// One row per trainer and currency since 0227 (Local, and dollars for international clients).
+// One row per trainer and currency since 0231 (Local, and dollars for international clients).
 export type ClientIncomeRow = { trainer_id: string; currency: string; income: number; priced: number; unpriced: number };
 
 /** What clients pay their trainers a month (0106), added up in rand and dollars. Other local currencies aren't added in. */

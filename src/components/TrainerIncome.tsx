@@ -47,7 +47,7 @@ function draftFrom(prices: ClientPrices | null | undefined): Draft {
 
 // A trainer's own income (0106): what their active clients pay them a month,
 // and the price table (or one monthly fee) it's worked out from. Each client's
-// package is picked on their profile. Two price lists since 0227 (GRIZZ
+// package is picked on their profile. Two price lists since 0231 (GRIZZ
 // 2026-11-19): Local, in the trainer's own currency, and International, in
 // dollars, for clients who live in another country.
 export default function TrainerIncome() {

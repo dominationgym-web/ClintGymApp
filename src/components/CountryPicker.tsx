@@ -6,7 +6,7 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { COMMON_COUNTRIES, countriesStartingWith, countryFlag, countryLabel, countryLetters, countryName } from "@/lib/countries";
 import { themedStyles } from "@/lib/theme";
 
-// "Where do you live?" at client sign-up (GRIZZ 2026-11-19, 0227). Tap only:
+// "Where do you live?" at client sign-up (GRIZZ 2026-11-19, 0231). Tap only:
 // common countries as buttons, every other one behind "Another country",
 // picked by first letter so there's no long list to scroll.
 export default function CountryPicker({ value, onPick }: { value: string | null; onPick: (code: string) => void }) {

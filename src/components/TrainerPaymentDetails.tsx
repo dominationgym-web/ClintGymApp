@@ -9,7 +9,7 @@ type Props = {
   popWhatsapp: string | null | undefined;
   /** A Send proof of payment button follows (0117). */
   proofInApp?: boolean;
-  /** The client is on International prices (0227): show the trainer's abroad details instead of EFT. */
+  /** The client is on International prices (0231): show the trainer's abroad details instead of EFT. */
   international?: boolean;
   intlDetails?: string | null;
 };
@@ -39,7 +39,7 @@ export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofIn
     <Text style={styles.body}>Then send your trainer proof of payment.</Text>
   );
 
-  // International clients (0227): the trainer's own way to pay from abroad (PayPal, Wise...).
+  // International clients (0231): the trainer's own way to pay from abroad (PayPal, Wise...).
   if (abroad) {
     return (
       <View>

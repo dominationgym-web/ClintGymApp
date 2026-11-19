@@ -33,7 +33,7 @@ export function clientPrice(prices: ClientPrices | null | undefined, pkg: PriceP
   return prices ? listPrice(prices, prices.mode, pkg) : null;
 }
 
-// Local and international prices (GRIZZ 2026-11-19, 0227). A client is
+// Local and international prices (GRIZZ 2026-11-19, 0231). A client is
 // international when they live in another country than their trainer, unless
 // the trainer picked Local or International for them by hand.
 
