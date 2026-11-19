@@ -577,24 +577,108 @@ export function invoiceText(inv: SessionInvoice, clientName: string, coachName: 
   ].join("\n");
 }
 
-// The agreement the client signs: GRIZZ's text (2026-10-31). Each trainer can
-// change it under Live sessions › Setup. The words in { } are filled in for
-// each client from their plan; the client signs with a tick, their name and
-// the date, saved with the exact text they saw.
-export const AGREEMENT_TEMPLATE = `1. Please note, all sessions are paid for {paid}. This secures your time slots.
-2. We have a {cancelHours} hour cancellation policy. This allows the trainer to find an alternate to fill the slot. Late cancellations will be forfeited.
-3. All trainers need to be given 1 calendar month's notice before cancelling (vacating) your training slot. This is to allow them time to fill your slot on completion of training.
+// The agreement the client signs: GRIZZ's text (2026-10-31). GRIZZ
+// 2026-11-19: trainers found the free-text box confusing, so the wording is
+// fixed and they only pick the numbers (notice, holiday weeks, deposit),
+// leave points out, or add a point of their own. The fee, length, slot,
+// billing and cancellation hours stay { } words, filled in for each client
+// from their plan. buildAgreement turns the choices into that template.
+export type ContractPoint = "cancel" | "notice" | "holiday" | "away" | "contact";
 
-• Please also note that to secure your time slot when going on holiday or business for more than 2 weeks, a 50% deposit will be required. This is not compulsory but at the client's discretion if they want to keep that time slot.
-• Once again, please do understand that if you go away the trainers do not earn an income and cannot keep slots indefinitely.
+export type ContractChoices = {
+  v: 1;
+  notice: string; // a key of NOTICE_OPTIONS
+  awayWeeks: number;
+  deposit: number; // percent
+  off: ContractPoint[];
+  own: string[];
+};
 
-Please be considerate of the fact that all trainers sell time, and their time is limited.
-If you have any complaints or queries feel free to contact me on {contact}.
+export const DEFAULT_CONTRACT: ContractChoices = { v: 1, notice: "1m", awayWeeks: 2, deposit: 50, off: [], own: [] };
 
-• This is to confirm that I accept the rate of {fee} for a {length} min session.
-• My confirmed slot is {slots}.
+export const NOTICE_OPTIONS: { key: string; label: string; words: string }[] = [
+  { key: "1w", label: "1 week", words: "1 week's" },
+  { key: "2w", label: "2 weeks", words: "2 weeks'" },
+  { key: "3w", label: "3 weeks", words: "3 weeks'" },
+  { key: "1m", label: "1 month", words: "1 calendar month's" },
+  { key: "2m", label: "2 months", words: "2 calendar months'" },
+  { key: "3m", label: "3 months", words: "3 calendar months'" },
+];
 
-Please acknowledge that you understand all of the above and sign if you agree.`;
+export const AWAY_WEEK_OPTIONS = [1, 2, 3, 4, 6, 8];
+export const DEPOSIT_OPTIONS = [25, 50, 75, 100];
+
+const noticeWords = (key: string) => (NOTICE_OPTIONS.find((n) => n.key === key) ?? NOTICE_OPTIONS[3]).words;
+const weeksWords = (n: number) => `${n} week${n === 1 ? "" : "s"}`;
+
+/** Reads saved choices; anything missing or odd falls back to the standard. */
+export function contractChoices(raw: unknown): ContractChoices | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Partial<ContractChoices>;
+  const num = (v: unknown, d: number, max: number) => (typeof v === "number" && v > 0 && v <= max ? Math.round(v) : d);
+  return {
+    v: 1,
+    notice: NOTICE_OPTIONS.some((n) => n.key === r.notice) ? (r.notice as string) : DEFAULT_CONTRACT.notice,
+    awayWeeks: num(r.awayWeeks, DEFAULT_CONTRACT.awayWeeks, 52),
+    deposit: num(r.deposit, DEFAULT_CONTRACT.deposit, 100),
+    off: Array.isArray(r.off) ? (r.off.filter((x) => ["cancel", "notice", "holiday", "away", "contact"].includes(x)) as ContractPoint[]) : [],
+    own: Array.isArray(r.own) ? r.own.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim()) : [],
+  };
+}
+
+export function sameContract(a: ContractChoices, b: ContractChoices): boolean {
+  return (
+    a.notice === b.notice &&
+    a.awayWeeks === b.awayWeeks &&
+    a.deposit === b.deposit &&
+    [...a.off].sort().join() === [...b.off].sort().join() &&
+    a.own.join("\n") === b.own.join("\n")
+  );
+}
+
+/** The contract's words, in order, each with the part it belongs to. */
+export function contractParts(c: ContractChoices): { point: ContractPoint | "paid" | "rate" | "slot" | "own" | "end"; text: string }[] {
+  const on = (p: ContractPoint) => !c.off.includes(p);
+  const numbered: { point: ContractPoint | "paid"; text: string }[] = [
+    { point: "paid", text: "Please note, all sessions are paid for {paid}. This secures your time slots." },
+    ...(on("cancel")
+      ? [{ point: "cancel" as const, text: "We have a {cancelHours} hour cancellation policy. This allows the trainer to find an alternate to fill the slot. Late cancellations will be forfeited." }]
+      : []),
+    ...(on("notice")
+      ? [{ point: "notice" as const, text: `All trainers need to be given ${noticeWords(c.notice)} notice before cancelling (vacating) your training slot. This is to allow them time to fill your slot on completion of training.` }]
+      : []),
+  ];
+  return [
+    ...numbered.map((p, i) => ({ ...p, text: `${i + 1}. ${p.text}` })),
+    ...(on("holiday")
+      ? [{ point: "holiday" as const, text: `• Please also note that to secure your time slot when going on holiday or business for more than ${weeksWords(c.awayWeeks)}, a ${c.deposit}% deposit will be required. This is not compulsory but at the client's discretion if they want to keep that time slot.` }]
+      : []),
+    ...(on("away") ? [{ point: "away" as const, text: "• Once again, please do understand that if you go away the trainers do not earn an income and cannot keep slots indefinitely." }] : []),
+    ...(on("contact")
+      ? [{ point: "contact" as const, text: "Please be considerate of the fact that all trainers sell time, and their time is limited.\nIf you have any complaints or queries feel free to contact me on {contact}." }]
+      : []),
+    ...c.own.map((t) => ({ point: "own" as const, text: `• ${t}` })),
+    { point: "rate", text: "• This is to confirm that I accept the rate of {fee} for a {length} min session." },
+    { point: "slot", text: "• My confirmed slot is {slots}." },
+    { point: "end", text: "Please acknowledge that you understand all of the above and sign if you agree." },
+  ];
+}
+
+/** The template text (with { } words) for these choices. */
+export function buildAgreement(c: ContractChoices): string {
+  const parts = contractParts(c);
+  // A blank line between the groups, as in GRIZZ's text.
+  const group = (p: (typeof parts)[number]["point"]) =>
+    p === "paid" || p === "cancel" || p === "notice" ? 0 : p === "holiday" || p === "away" ? 1 : p === "contact" ? 2 : p === "own" ? 5 : p === "end" ? 4 : 3;
+  let out = "";
+  parts.forEach((p, i) => {
+    if (i) out += group(p.point) === group(parts[i - 1].point) ? "\n" : "\n\n";
+    out += p.text;
+  });
+  return out;
+}
+
+export const AGREEMENT_TEMPLATE = buildAgreement(DEFAULT_CONTRACT);
 
 // What each { } word means, shown to the trainer under the agreement box.
 export const AGREEMENT_WORDS: { word: string; means: string }[] = [
