@@ -5,7 +5,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { agreementCurrent, feeText, fillAgreement } from "@/lib/liveSessions";
-import type { SessionAgreement, SessionPlan, SessionSettings } from "@/types/database";
+import type { LiveSession, SessionAgreement, SessionPlan, SessionSettings } from "@/types/database";
+import { contractSlots } from "@/lib/calendarRegular";
 import { themeText, themedStyles } from "@/lib/theme";
 
 const longDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -38,14 +39,24 @@ export default function ClientContractFold({
   const [plan, setPlan] = useState<SessionPlan | null>(null);
   const [settings, setSettings] = useState<SessionSettings | null>(null);
   const [signed, setSigned] = useState<SessionAgreement[]>([]);
+  // Their sessions around today, so the contract can fill in their days and times from the calendar.
+  const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [reading, setReading] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [p, a, s] = await Promise.all([
+    const now = Date.now();
+    const [p, a, s, ls] = await Promise.all([
       supabase.from("session_plans").select("*").eq("client_id", clientId).maybeSingle(),
       supabase.from("session_agreements").select("*").eq("client_id", clientId).order("signed_at", { ascending: false }),
       trainer ? supabase.from("session_settings").select("*").eq("trainer_id", trainer.id).maybeSingle() : Promise.resolve({ data: null }),
+      supabase
+        .from("live_sessions")
+        .select("*")
+        .eq("client_id", clientId)
+        .gte("starts_at", new Date(now - 28 * 86400000).toISOString())
+        .lt("starts_at", new Date(now + 35 * 86400000).toISOString()),
     ]);
+    setSessions((ls.data as LiveSession[] | null) ?? []);
     setPlan(p.data ?? null);
     setSigned(a.data ?? []);
     setSettings((s.data as SessionSettings | null) ?? null);
@@ -84,7 +95,7 @@ export default function ClientContractFold({
         policy: plan.policy,
         billing: plan.billing,
         minutes: plan.minutes,
-        regular: plan.regular,
+        regular: contractSlots(plan.regular, sessions, clientId),
         contact: trainer?.phone ?? null,
       })
     : null;

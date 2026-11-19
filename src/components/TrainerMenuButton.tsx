@@ -89,7 +89,7 @@ export function useTrainerMenuItems(): MenuItem[] {
         key: "sessionSetup",
         title: "Session setup",
         icon: "⚙️",
-        summary: "Your normal fee, session length, first session time and cancellation rule.",
+        summary: "Your normal fee, session length, first session time and your session contract.",
         route: "LiveSessions",
         onPress: () => navigation.navigate("LiveSessions", { tab: "setup" }),
       },

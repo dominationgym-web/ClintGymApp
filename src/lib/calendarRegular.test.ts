@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstStarts, regularFromCalendar, splitNames, usualGroups } from "./calendarRegular";
+import { contractSlots, firstStarts, regularFromCalendar, splitNames, usualGroups } from "./calendarRegular";
 
 const now = new Date(2026, 10, 1, 9, 0); // Sun 1 Nov 2026
 const s = (d: number, h: number, m: number, o: Partial<{ client_id: string; status: "booked" | "removed" | "done"; repeat_id: string | null; minutes: number }> = {}) => ({
@@ -66,5 +66,21 @@ describe("splitNames and usualGroups", () => {
   it("finds people booked together at least twice", () => {
     const g = (name: string, d: number) => ({ client_id: null, guest_name: name, status: "booked" as const, starts_at: new Date(2026, 10, d, 6).toISOString() });
     expect(usualGroups([g("Jade", 3), g("Camilla", 3), g("Jade", 5), g("Camilla", 5), g("Sam", 4), g("Jade", 4)])).toEqual([["Camilla", "Jade"]]);
+  });
+});
+
+describe("contractSlots", () => {
+  const now = new Date(2026, 10, 19, 6, 0);
+  const at = (d: number, h: number, m: number) => new Date(2026, 10, d, h, m).toISOString();
+  const row = (d: number) => ({ client_id: "c1", starts_at: at(d, 5, 50), status: "booked", minutes: 40, repeat_id: "r1" }) as never;
+  it("keeps saved days and times", () => {
+    expect(contractSlots([{ weekday: 2, time: "07:10" }], [row(20)], "c1", now)).toEqual([{ weekday: 2, time: "07:10" }]);
+  });
+  it("fills them in from the calendar when none are saved", () => {
+    expect(contractSlots([], [row(20), row(23), row(26)], "c1", now)).toEqual([
+      { weekday: 1, time: "05:50" },
+      { weekday: 4, time: "05:50" },
+      { weekday: 5, time: "05:50" },
+    ]);
   });
 });
