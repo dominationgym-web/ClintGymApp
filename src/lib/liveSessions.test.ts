@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  catchUpAfterBackMessage,
   agreementCurrent,
   awayLabel,
   canStartLive,
@@ -372,5 +373,23 @@ describe("canStartLive", () => {
     expect(canStartLive({ ...base, starts_at: at(10, 10) }, now)).toBe(false);
     expect(canStartLive({ ...base, status: "cancelled" as const }, now)).toBe(false);
     expect(canStartLive({ ...base, status: "cancelled" as const, away_id: "a1" }, now)).toBe(false);
+  });
+});
+
+describe("catchUpAfterBackMessage", () => {
+  const at = new Date(2026, 10, 18, 8, 30).toISOString();
+  const missed = new Date(2026, 10, 11, 8, 30).toISOString();
+  it("says the catch-up came off the calendar", () => {
+    expect(catchUpAfterBackMessage("Sharde", { starts_at: at, status: "removed", makeup_for: null }, null)).toBe(
+      "Sharde's catch-up on Wed 18 Nov at 08:30 isn't needed any more, so it came off the calendar. That slot is free again."
+    );
+  });
+  it("says which owed session it counts for now", () => {
+    expect(catchUpAfterBackMessage("Sharde", { starts_at: at, status: "done", makeup_for: "x" }, { starts_at: missed })).toContain(
+      "now counts for the session missed on Wed 11 Nov at 08:30"
+    );
+  });
+  it("says it stays as a normal session", () => {
+    expect(catchUpAfterBackMessage("Sharde", { starts_at: at, status: "done", makeup_for: null }, null)).toContain("stays on the calendar as a normal session");
   });
 });

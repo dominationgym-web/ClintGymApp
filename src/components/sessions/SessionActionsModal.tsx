@@ -22,6 +22,7 @@ import {
   awayLabel,
   awayTag,
   canStartLive,
+  catchUpAfterBackMessage,
   isOnHold,
   isAway,
   outLabel,
@@ -120,11 +121,29 @@ export default function SessionActionsModal({
     onClose();
   };
 
-  const outcome = (o: "done" | "no_show" | "booked") =>
-    run(
-      () => supabase.rpc("set_session_outcome", { p_id: session.id, p_outcome: o }),
-      o === "done" ? `${first} gets a notification to confirm with one tap.` : o === "no_show" ? "Marked as a no-show. It's charged." : undefined
-    );
+  const outcome = async (o: "done" | "no_show" | "booked") => {
+    const doneText = o === "done" ? `${first} gets a notification to confirm with one tap.` : o === "no_show" ? "Marked as a no-show. It's charged." : undefined;
+    // Put back into a session they were out of, with a catch-up already
+    // booked for it: the database moves that catch-up (0229). Say what it did
+    // (GRIZZ 2026-11-19: no way to remove the catch-up when Sharde trained after all).
+    const catchUpId = (session.status === "cancelled" || session.status === "no_show") && o !== "no_show" ? session.makeup_session_id : null;
+    if (!catchUpId) return run(() => supabase.rpc("set_session_outcome", { p_id: session.id, p_outcome: o }), doneText);
+    setBusy(true);
+    const { error } = await supabase.rpc("set_session_outcome", { p_id: session.id, p_outcome: o });
+    if (error) {
+      setBusy(false);
+      return Alert.alert("Couldn't save", error.message);
+    }
+    const { data: c } = await supabase.from("live_sessions").select("starts_at, status, makeup_for").eq("id", catchUpId).maybeSingle();
+    const { data: nowFor } = c?.makeup_for
+      ? await supabase.from("live_sessions").select("starts_at").eq("id", c.makeup_for).maybeSingle()
+      : { data: null };
+    setBusy(false);
+    onChanged();
+    const note = c ? catchUpAfterBackMessage(first, c, nowFor) : null;
+    Alert.alert("Saved ✅", [note, doneText].filter(Boolean).join("\n\n"));
+    onClose();
+  };
 
   const charge = (c: "charge" | "credit" | "makeup") =>
     run(
