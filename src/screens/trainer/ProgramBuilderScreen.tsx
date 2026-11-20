@@ -421,20 +421,27 @@ export default function ProgramBuilderScreen({ navigation, route }: Props) {
 
   const form = (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+      {/* The bar keeps the same height whatever it says, so the boxes below
+          don't jump up and down while the draft saves (GRIZZ 2026-11-20). */}
       <View style={styles.draftBar}>
-        <Text style={styles.draftText}>
-          {status === "saving"
-            ? "Saving draft…"
-            : status === "phone"
-              ? "No internet: kept on this phone for now. It saves online when you're back."
-              : status === "saved"
-                ? "✓ Draft saved. Leave any time: carry on from the top of the Programs tab."
-                : restored
-                  ? "Carrying on where you left off. Saves as you go."
-                  : programId
-                    ? "Changing your saved program. Your changes save as a draft until you tap Save changes."
-                    : "Saves as a draft as you go, under the program's name."}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.draftStatus} numberOfLines={1}>
+            {status === "saving"
+              ? "Saving draft…"
+              : status === "phone"
+                ? "No internet: kept on this phone"
+                : status === "saved"
+                  ? "✓ Draft saved"
+                  : restored
+                    ? "Carrying on where you left off"
+                    : "Saves as a draft as you go"}
+          </Text>
+          <Text style={styles.draftText}>
+            {programId
+              ? "Your changes stay a draft until you tap Save changes."
+              : "Leave any time: carry on from the top of the Programs tab."}
+          </Text>
+        </View>
         <Pressable onPress={throwAway} hitSlop={8}>
           <Text style={styles.startOver}>{programId ? "Throw away changes" : "Delete draft"}</Text>
         </Pressable>
@@ -801,7 +808,8 @@ function CardioSlot({
 
 const styles = themedStyles({
   draftBar: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#1E293B", borderRadius: 10, padding: 10, marginBottom: 4 },
-  draftText: { color: "#CBD5E1", fontSize: 13, flex: 1 },
+  draftStatus: { color: "#E2E8F0", fontSize: 13, fontWeight: "700" },
+  draftText: { color: "#CBD5E1", fontSize: 13 },
   startOver: { color: "#F87171", fontWeight: "700", fontSize: 13 },
   cardioSlot: { borderColor: "#F97316" },
   cardioHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
