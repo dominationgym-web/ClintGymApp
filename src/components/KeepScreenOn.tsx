@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { useKeepAwake } from "expo-keep-awake";
 
@@ -11,7 +12,14 @@ function Awake() {
   return null;
 }
 
+// Phones only: on the website the browser's wake lock throws "has not activated
+// yet" when you leave the screen quickly, and a laptop doesn't need it.
 export default function KeepScreenOn({ when = true }: { when?: boolean }) {
+  if (Platform.OS === "web") return null;
+  return <KeepScreenOnPhone when={when} />;
+}
+
+function KeepScreenOnPhone({ when }: { when: boolean }) {
   let focused = true;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
