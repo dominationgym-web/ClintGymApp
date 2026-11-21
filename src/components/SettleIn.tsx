@@ -6,13 +6,13 @@ import Skeleton from "@/components/Skeleton";
 // Stops a screen jumping while its cards load one by one (GRIZZ, 2026-11-21:
 // the client Today tab moved "All good" under the finger for 2 seconds).
 // The real content is laid out out of sight under grey placeholders; once its
-// height has stopped changing for a moment (or after 2.5 s at most) it fades in,
+// height has stopped changing for a moment (or after 1.5 s at most) it fades in,
 // already in its final place. Only the first time per app open for each `id`,
 // so saving or coming back to the screen never hides it again.
 
 const settled = new Set<string>();
-const QUIET_MS = 450;
-const MAX_MS = 2500;
+const QUIET_MS = 300;
+const MAX_MS = 1500;
 
 export default function SettleIn({ id, children, placeholder }: { id: string; children: React.ReactNode; placeholder?: React.ReactNode }) {
   const [shown, setShown] = useState(settled.has(id));
@@ -61,15 +61,24 @@ export default function SettleIn({ id, children, placeholder }: { id: string; ch
   );
 }
 
-/** A few grey card shapes: a header line, a big card and two rows. */
+/** Grey shapes in the same places as the client Today tab: coach line, the
+ *  workout card with its Start button, the "things for today" row, the
+ *  check-in title and two answer buttons. So nothing seems to move when the
+ *  real page fades in. */
 export function SkeletonCards() {
   return (
-    <View style={{ gap: 12 }}>
-      <Skeleton height={40} width="60%" />
-      <Skeleton height={86} />
+    <View style={{ gap: 14 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Skeleton height={40} width={40} radius={20} />
+        <Skeleton height={18} width="55%" />
+      </View>
+      <Skeleton height={90} />
       <Skeleton height={44} />
-      <Skeleton height={28} width="45%" style={{ alignSelf: "center", marginTop: 8 }} />
-      <Skeleton height={64} />
+      <Skeleton height={28} width="35%" style={{ alignSelf: "center", marginTop: 4 }} />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Skeleton height={56} style={{ flex: 1 }} />
+        <Skeleton height={56} style={{ flex: 1 }} />
+      </View>
     </View>
   );
 }

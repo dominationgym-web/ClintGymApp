@@ -109,7 +109,7 @@ const styles = themedStyles({
   helper: { color: "#94A3B8", fontSize: 13, marginBottom: 12 },
   modalContainer: { flex: 1, backgroundColor: "#0F172A" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", padding: 20 },
-  closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
+  closeText: { color: "#D4AF37", fontWeight: "600", fontSize: 15 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15 },
   swapBack: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, padding: 12, alignItems: "center", marginBottom: 10 },
   swapBackText: { color: BRAND_GOLD, fontWeight: "700" },

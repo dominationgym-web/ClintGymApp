@@ -58,7 +58,7 @@ export { WatchOnlineLink };
 // full-width "How to do it" button that also says what the exercise works,
 // so it's easy to spot on a workout. Shows nothing when there's no guide for
 // the exercise (a trainer's own exercise with no body part). With onDoSet, a
-// green "Do set" button at the bottom of the guide closes it and goes to the
+// gold "Do set" button at the bottom of the guide closes it and goes to the
 // set log (GRIZZ 2026-10-13).
 export default function ExerciseGuideButton({
   name,
@@ -142,7 +142,7 @@ export default function ExerciseGuideButton({
   );
 }
 
-// The green "Do set" button, beside an exercise name on a workout and at the
+// The gold "Do set" button, beside an exercise name on a workout and at the
 // bottom of the guide.
 export function DoSetButton({ onPress, name }: { onPress: () => void; name: string }) {
   return (
@@ -160,14 +160,14 @@ export function DoSetButton({ onPress, name }: { onPress: () => void; name: stri
 
 const doSetStyles = themedStyles({
   button: {
-    backgroundColor: "#16A34A",
+    backgroundColor: "#D4AF37",
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  text: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  text: { color: "#0F172A", fontSize: 14, fontWeight: "800" },
   big: { marginTop: 22, paddingVertical: 14, borderRadius: 12 },
   bigText: { fontSize: 17 },
 });

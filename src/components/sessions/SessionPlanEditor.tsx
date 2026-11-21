@@ -337,7 +337,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 
 const styles = themedStyles({
   status: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
-  share: { color: "#22C55E", fontSize: 14, fontWeight: "700", marginTop: 6 },
+  share: { color: "#D4AF37", fontSize: 14, fontWeight: "700", marginTop: 6 },
   label: { color: BRAND_GOLD, fontSize: 13, fontWeight: "700", marginTop: 16, marginBottom: 4 },
   meta: { color: "#94A3B8", fontSize: 12, marginTop: 4, lineHeight: 17 },
   warn: { color: "#FDE68A", fontSize: 13, marginTop: 14 },

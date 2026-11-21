@@ -59,7 +59,7 @@ export default function AgreementSignFields({ signedName, onChangeSignedName, ag
 }
 
 const styles = themedStyles({
-  link: { color: "#22C55E", fontSize: 14, fontWeight: "600", marginVertical: 12, textDecorationLine: "underline" },
+  link: { color: "#D4AF37", fontSize: 14, fontWeight: "600", marginVertical: 12, textDecorationLine: "underline" },
   label: { color: "#94A3B8", fontWeight: "600", marginBottom: 6 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 10, padding: 14, marginBottom: 12 },
   row: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 8 },
@@ -69,5 +69,5 @@ const styles = themedStyles({
   modal: { flex: 1, backgroundColor: "#0F172A" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20 },
   modalTitle: { color: "#fff", fontSize: 20, fontWeight: "700" },
-  close: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
+  close: { color: "#D4AF37", fontWeight: "600", fontSize: 15 },
 });

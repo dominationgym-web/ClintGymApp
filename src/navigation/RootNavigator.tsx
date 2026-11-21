@@ -118,7 +118,7 @@ export default function RootNavigator() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={themeText("#22C55E")} />
+        <ActivityIndicator color={themeText("#D4AF37")} />
       </View>
     );
   }
@@ -396,7 +396,7 @@ const styles = themedStyles({
   trainerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
   trainerName: { color: "#fff", fontSize: 16, fontWeight: "700" },
   logoutText: { color: "#64748B", fontSize: 14, fontWeight: "600" },
-  link: { color: "#22C55E", fontWeight: "600" },
+  link: { color: "#D4AF37", fontWeight: "600" },
   backButton: { alignSelf: "flex-start", paddingVertical: 8, marginBottom: 8 },
   backText: { color: "#D4AF37", fontSize: 16, fontWeight: "700" },
   checkButton: { backgroundColor: "#D4AF37", borderRadius: 10, padding: 14, alignItems: "center", marginTop: 20 },

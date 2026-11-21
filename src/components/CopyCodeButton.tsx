@@ -32,6 +32,6 @@ export default function CopyCodeButton({ code }: { code: string }) {
 }
 
 const styles = themedStyles({
-  button: { borderColor: "#22C55E", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 8 },
-  text: { color: "#22C55E", fontWeight: "700" },
+  button: { borderColor: "#D4AF37", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 8 },
+  text: { color: "#D4AF37", fontWeight: "700" },
 });

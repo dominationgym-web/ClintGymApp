@@ -319,7 +319,7 @@ const styles = themedStyles({
   header: { flexDirection: "row", alignItems: "flex-start", padding: 20, gap: 12 },
   kicker: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },
   title: { color: "#fff", fontSize: 20, fontWeight: "800", marginTop: 4 },
-  close: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
+  close: { color: "#D4AF37", fontWeight: "600", fontSize: 15 },
   q: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14, marginTop: 14, marginBottom: 8 },
   hint: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

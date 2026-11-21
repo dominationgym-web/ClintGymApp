@@ -172,6 +172,6 @@ const styles = themedStyles({
   buttonText: { color: "#0F172A", fontWeight: "700", fontSize: 15 },
   passwordBox: { marginTop: 14, borderWidth: 1, borderColor: "#22C55E", borderRadius: 10, padding: 12 },
   password: { color: "#fff", fontSize: 22, fontWeight: "800", letterSpacing: 0.5 },
-  copy: { borderColor: "#22C55E", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 8, alignSelf: "flex-start" },
-  copyText: { color: "#22C55E", fontWeight: "700" },
+  copy: { borderColor: "#D4AF37", borderWidth: 1, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, marginTop: 8, alignSelf: "flex-start" },
+  copyText: { color: "#D4AF37", fontWeight: "700" },
 });

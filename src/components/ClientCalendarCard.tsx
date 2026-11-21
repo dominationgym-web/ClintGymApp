@@ -219,7 +219,12 @@ export default function ClientCalendarCard({
   const entryOn = (date: string) => monthEntries.find((e) => e.workout_date === date) ?? null;
   const blocksOn = (date: string) => monthBlocks.filter((b) => b.workout_date === date && byId.has(b.program_id));
   // Training in gold; mobility and flexibility apart, in teal (GRIZZ, 2026-10-18).
-  const shortName = (p: Pick<Program, "name" | "trainer_id">) => (isFunctionalProgram(p) ? functionalShortName(p.name) : shortWorkoutName(p.name));
+  // Week list: whole name (up to two lines) unless there's a known short form.
+  const shortName = (p: Pick<Program, "name" | "trainer_id">) => {
+    if (isFunctionalProgram(p)) return functionalShortName(p.name);
+    const short = shortWorkoutName(p.name);
+    return short.endsWith("…") ? p.name : short;
+  };
   const { labels } = calendarDayLabels(monthEntries, monthBlocks, (id) => byId.get(id), shortName);
   const selectedEntry = selected ? entryOn(selected) : null;
   const selectedProgram = selectedEntry ? byId.get(selectedEntry.program_id) ?? null : null;
