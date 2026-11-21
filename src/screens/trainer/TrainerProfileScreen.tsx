@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from "react";
 import AppUpdateLine from "@/components/AppUpdateLine";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  Share,
-  Switch,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Share, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import * as ImagePicker from "expo-image-picker";
@@ -53,6 +46,7 @@ import { money, referralCreditUseLine, referralCreditValue, trainerCurrency } fr
 import type { BillingPrices, EftDetails, Units } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 import { onGuideOpen, takeGuideOpen } from "@/lib/setupGuide";
+import { toast } from "@/lib/toast";
 
 type TabKey = "code" | "train" | "income" | "refer" | "challenges" | "settings";
 
@@ -203,7 +197,7 @@ export default function TrainerProfileScreen() {
       return;
     }
     await refreshProfile();
-    Alert.alert("Saved", "Your profile is up to date.");
+    toast("Saved", "Your profile is up to date.");
   };
 
   const saveUnits = async (units: Units) => {

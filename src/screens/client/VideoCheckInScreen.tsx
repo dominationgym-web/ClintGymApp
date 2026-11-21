@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, RefreshControl, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect } from "@react-navigation/native";
 import TextInput from "@/components/TextInput";
@@ -22,6 +23,7 @@ import {
 import type { OpenVideoSlot, VideoCheckin, VideoCheckinSettings } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import { toast } from "@/lib/toast";
 
 // Weekly video check-in (0155, GRIZZ 2026-10-25). The client books one of the
 // times their coach is free, at most one a week, and can keep the same time
@@ -96,7 +98,7 @@ export default function VideoCheckInScreen() {
     }
     setPicked(null);
     setTopic("");
-    Alert.alert("Booked 📹", "Your coach has been told. You'll get a notification when they confirm, and reminders the day before, that morning, an hour before and 15 minutes before.");
+    toast("Booked 📹", "Your coach has been told. You'll get a notification when they confirm, and reminders the day before, that morning, an hour before and 15 minutes before.");
     load();
   };
 

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { planNeverEnds } from "@/lib/access";
-import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import { problemColor, problemLevel, unfixedByClient, type ProblemLevel } from "@/lib/clientProblems";
 import { parseIsoDate, toIsoDate } from "@/lib/dates";
@@ -22,6 +23,7 @@ import { clientRate, trainerCountry } from "@/lib/clientPricing";
 import RatePicker from "@/components/RatePicker";
 import type { AccessStatus, Client, ClientRate, PaymentProof } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 
 const STATUS_LABEL: Record<AccessStatus, string> = {
   active: "Active",
@@ -167,7 +169,7 @@ export default function ClientListPanel({
     if (error) return Alert.alert("Couldn't save it", error.message);
     setClients((prev) => prev.map((c) => (ids.includes(c.id) ? { ...c, weigh_in_every: key } : c)));
     setBulkWeighIn(false);
-    Alert.alert("Saved", `${ids.length} client${ids.length === 1 ? "" : "s"} set. They'll be reminded when it's due.`);
+    toast("Saved", `${ids.length} client${ids.length === 1 ? "" : "s"} set. They'll be reminded when it's due.`);
   };
 
   // With a proof of payment waiting, Activate / Renew opens it so it can be checked first.

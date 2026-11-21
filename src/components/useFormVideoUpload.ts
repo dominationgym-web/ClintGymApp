@@ -4,6 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { supabase } from "@/lib/supabase";
 import { videoProblem, MAX_VIDEO_SECONDS } from "@/lib/videoLimits";
+import { toast } from "@/lib/toast";
 
 // 720p is plenty to check form and about half the size of full HD (iOS only;
 // Android records at the camera app's own quality).
@@ -46,7 +47,7 @@ export function useFormVideoUpload(clientId: string | undefined, onUploaded?: ()
         exercise_name: exerciseName?.trim() || null,
       });
       if (insertError) throw insertError;
-      Alert.alert("Sent to your coach ✅", "Your coach has been told and will watch it. Their feedback shows under Profile → Form videos.");
+      toast("Sent to your coach ✅", "Your coach has been told and will watch it. Their feedback shows under Profile → Form videos.");
       onUploaded?.();
     } catch (err) {
       Alert.alert("Upload failed", err instanceof Error ? err.message : "Unknown error");

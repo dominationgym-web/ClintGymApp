@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Clipboard, Pressable, Text } from "react-native";
+import { Clipboard, Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import { themedStyles } from "@/lib/theme";
 
 // Copies the trainer's code so they can paste it into WhatsApp or an email to

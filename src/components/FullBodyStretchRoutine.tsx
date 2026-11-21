@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import WatchOnlineLink from "@/components/WatchOnlineLink";
 import { FULL_BODY_STRETCH, FULL_BODY_STRETCH_MINUTES } from "@/lib/fullBodyStretch";
 import { themedStyles } from "@/lib/theme";

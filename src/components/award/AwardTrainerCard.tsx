@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, Text } from "react-native";
+import { Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";

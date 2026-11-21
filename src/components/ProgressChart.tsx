@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { Point } from "@/lib/progress";
 import { themeBg, themeBorder, themedStyles } from "@/lib/theme";

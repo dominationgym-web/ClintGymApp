@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import LineIcon from "@/components/LineIcon";
 import { useStepBack } from "@/hooks/useStepBack";
-import { View, Text, Switch, Pressable } from "react-native";
+import { View, Text, Switch } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Linking, RefreshControl, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";
@@ -29,6 +30,7 @@ import {
 import { awardFileUrl } from "@/lib/awardUploads";
 import TrainerCounter from "@/components/award/TrainerCounter";
 import { themeText, themedStyles } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 
 type Tab = "scores" | "flags" | "proofs" | "winners" | "settings";
 const TABS: ScreenTab<Tab>[] = [
@@ -389,7 +391,7 @@ function Settings() {
       patch[f.key] = parsed.value;
     }
     const warn = weightsWarning(patch);
-    if (await update(patch)) Alert.alert("Saved ✅", warn ? `${warn} They still work, scaled to 100.` : "Settings saved.");
+    if (await update(patch)) toast("Saved ✅", warn ? `${warn} They still work, scaled to 100.` : "Settings saved.");
   };
 
   const toggle = (on: boolean) => {

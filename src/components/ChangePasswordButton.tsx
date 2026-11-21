@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import PasswordInput from "@/components/PasswordInput";
 import { supabase } from "@/lib/supabase";
 import { passwordProblem } from "@/lib/passwordRules";

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { AppState, Linking, Pressable, Text, View } from "react-native";
+import { AppState, Linking, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { notificationPermission, turnOnNotifications, type NotificationPermission } from "@/lib/notifications";
 import { themedStyles } from "@/lib/theme";

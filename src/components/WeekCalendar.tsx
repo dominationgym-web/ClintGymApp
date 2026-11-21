@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { DELOAD_BLUE } from "@/lib/deload";
 import { STABILITY_PURPLE, type StabilityCalendarItem } from "@/lib/stabilityCalendar";

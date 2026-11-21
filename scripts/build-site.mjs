@@ -6,7 +6,7 @@
 //   node --experimental-strip-types scripts/build-site.mjs [outDir]
 //
 // .github/workflows/site.yml builds it and publishes it with EAS Hosting.
-import { mkdirSync, writeFileSync, copyFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, copyFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import {
@@ -15,6 +15,7 @@ import {
   PRIVACY_POLICY_SECTIONS,
 } from "../src/lib/privacyPolicy.ts";
 import { trainersPage } from "./trainers-page.mjs";
+import { homePage, SITE_FONTS, SITE_BASE_CSS } from "./home-page.mjs";
 
 const outDir = process.argv[2] ?? "site-dist";
 mkdirSync(outDir, { recursive: true });
@@ -48,25 +49,26 @@ const page = (title, body, path, description = DEFAULT_DESCRIPTION) => `<!doctyp
 <meta property="og:url" content="${SITE}${path}">
 <meta property="og:type" content="website">
 <link rel="icon" href="/icon.png">
+${SITE_FONTS}
 <style>
-  :root { color-scheme: dark; }
-  body { margin: 0; background: #0F172A; color: #E2E8F0; font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-  header img { width: 48px; height: 48px; border-radius: 12px; }
-  header a { color: #D4AF37; font-weight: 700; font-size: 20px; text-decoration: none; }
-  h1 { color: #FFFFFF; font-size: 28px; margin: 0 0 8px; }
-  h2 { color: #D4AF37; font-size: 18px; margin: 28px 0 8px; }
-  a { color: #D4AF37; }
-  .muted { color: #94A3B8; font-size: 14px; }
-  nav { margin-top: 40px; border-top: 1px solid #1E293B; padding-top: 16px; font-size: 14px; }
-  nav a { margin-right: 16px; }
+${SITE_BASE_CSS}
+  main { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+  header img { width: 38px; height: 38px; border-radius: 10px; }
+  header a { color: var(--white); font: 700 20px/1 var(--head); letter-spacing: .02em; text-decoration: none; }
+  header a span { color: var(--gold); }
+  h1 { font-size: clamp(32px, 6vw, 44px); line-height: 1.05; margin: 0 0 12px; text-transform: uppercase; }
+  h2 { color: var(--gold); font-size: 24px; margin: 32px 0 8px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  nav { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 18px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  nav a { color: var(--muted); text-decoration: none; }
+  nav a:hover { color: var(--white); }
   ol li { margin-bottom: 8px; }
 </style>
 </head>
 <body>
 <main>
-<header><img src="/icon.png" alt=""><a href="/">Daily Evolution</a></header>
+<header><img src="/icon.png" alt=""><a href="/">DAILY <span>EVOLUTION</span></a></header>
 ${body}
 <nav><a href="/trainers">For personal trainers</a><a href="/privacy">Privacy policy</a><a href="/delete-account">Delete your account</a><a href="/support">Support</a><a href="/app/">Trainer login on a laptop</a></nav>
 </main>
@@ -77,15 +79,7 @@ ${body}
 const ANDROID_APK = "https://expo.dev/artifacts/eas/9yG6Ci7HNBj730xwc8ADZuXanHLHSX8okZgxftWL5AY.apk";
 
 const pages = {
-  "index.html": page(
-    "Building a better you",
-    `<h1>Daily Evolution</h1>
-<p>Building a better you.</p>
-<p>Daily Evolution is a coaching app for personal trainers and their clients: daily check-ins, habits with streaks, training programs and progress tracking, all in one place.</p>
-<p>The app is available to clients of trainers who use Daily Evolution. Ask your trainer for their trainer code to sign up.</p>
-<p><strong>Are you a personal trainer?</strong> <a href="/trainers">See what Daily Evolution does for you, and try it free for 30 days</a>.</p>`,
-    "/",
-  ),
+  "index.html": homePage(escape, SITE),
   "trainers.html": trainersPage(escape),
   "privacy.html": page(
     "Privacy policy",
@@ -115,7 +109,7 @@ ${PRIVACY_POLICY_SECTIONS.map((s) => `<h2>${escape(s.heading)}</h2>\n${paragraph
   "android.html": page(
     "Get the Android app",
     `<h1>Get Daily Evolution for Android</h1>
-<p><a href="${ANDROID_APK}" style="display:inline-block;background:#D4AF37;color:#0F172A;font-weight:700;padding:14px 22px;border-radius:12px;text-decoration:none">Download the app</a></p>
+<p><a class="btn btn-gold" href="${ANDROID_APK}">Download the app</a></p>
 <ol>
 <li>If you already have Daily Evolution, uninstall it first.</li>
 <li>Tap <strong>Download the app</strong> above, then open the downloaded file and tap <strong>Install</strong>. If your phone asks, allow installs from your browser.</li>
@@ -148,6 +142,9 @@ for (const [name, html] of Object.entries(pages)) {
   }
 }
 copyFileSync("assets/icon.png", join(outDir, "icon.png"));
+// Real app pictures for the front page and the trainers page (scripts/site-assets).
+mkdirSync(join(outDir, "img"), { recursive: true });
+for (const f of readdirSync("scripts/site-assets")) copyFileSync(join("scripts/site-assets", f), join(outDir, "img", f));
 
 // Lets Google find and list the pages. The laptop app at /app is a log-in
 // screen, so it stays out of search results.

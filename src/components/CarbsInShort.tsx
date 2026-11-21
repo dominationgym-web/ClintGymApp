@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { breakdownStyles as styles } from "@/components/breakdownStyles";
 import { UNDERSTANDING_INSULIN } from "@/lib/nutrition";
 import InsulinGuide from "@/components/InsulinGuide";

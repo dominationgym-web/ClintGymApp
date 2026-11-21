@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Linking, Pressable, Text, View } from "react-native";
+import { AppState, Linking, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";

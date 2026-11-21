@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, Pressable, Text } from "react-native";
+import { Modal, Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { currencySymbol, suggestedRate } from "@/lib/clientPricing";
 import { countryLabel } from "@/lib/countries";

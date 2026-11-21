@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Modal, Pressable, Text, View } from "react-native";
+import { FlatList, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";

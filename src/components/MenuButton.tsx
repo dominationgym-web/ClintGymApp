@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import LineIcon from "@/components/LineIcon";
 import { useNavigation } from "@react-navigation/native";
-import { View, Text, Pressable, Modal, useWindowDimensions } from "react-native";
+import { View, Text, Modal, useWindowDimensions } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SearchButton from "@/components/SearchButton";

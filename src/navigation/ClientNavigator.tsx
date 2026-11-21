@@ -42,6 +42,7 @@ import LiftsScreen from "@/screens/client/laptop/LiftsScreen";
 import BodyScreen from "@/screens/client/laptop/BodyScreen";
 import FoodScreen from "@/screens/client/laptop/FoodScreen";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { headingFont } from "@/lib/fonts";
 
 const Tab = createBottomTabNavigator<ClientTabParamList>();
 const Stack = createNativeStackNavigator<ClientStackParamList>();
@@ -101,6 +102,7 @@ function ClientTabs() {
       screenOptions={{
         headerStyle: { backgroundColor: themeBg("#0F172A") },
         headerTintColor: themeText("#fff"),
+        headerTitleStyle: headingFont(18),
         headerRight: wide ? undefined : () => <SectionsMenuButton />,
         tabBarStyle: { backgroundColor: themeBg("#0F172A"), borderTopColor: themeBorder("#1E293B") },
         // So the typing box sits right on the keyboard, not above the tab bar.
@@ -176,7 +178,7 @@ export default function ClientNavigator() {
       <View style={styles.row}>
         {wide ? <ClientSidebar /> : null}
         <View style={styles.page}>
-          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: themeBg("#0F172A") }, headerTintColor: themeText("#fff") }} screenLayout={wide ? phoneColumn : undefined}>
+          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: themeBg("#0F172A") }, headerTintColor: themeText("#fff"), headerTitleStyle: headingFont(18) }} screenLayout={wide ? phoneColumn : undefined}>
             <Stack.Screen name="ClientTabs" component={ClientTabs} options={{ headerShown: false }} layout={fullWidth} />
             <Stack.Screen
               name="Section"

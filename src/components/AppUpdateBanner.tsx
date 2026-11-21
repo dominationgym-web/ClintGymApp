@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, Text } from "react-native";
+import { Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import * as Updates from "expo-updates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themedStyles } from "@/lib/theme";

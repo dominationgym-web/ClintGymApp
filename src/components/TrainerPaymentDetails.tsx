@@ -1,8 +1,10 @@
 import React from "react";
-import { Alert, Clipboard, Pressable, Text, View } from "react-native";
+import { Alert, Clipboard, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { eftRows } from "@/lib/trainers";
 import type { EftDetails } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 
 type Props = {
   eftDetails: EftDetails | null | undefined;
@@ -23,7 +25,7 @@ export default function TrainerPaymentDetails({ eftDetails, popWhatsapp, proofIn
   const copy = async (value: string, label: string) => {
     try {
       await Clipboard.setString(value);
-      Alert.alert("Copied", `${label} copied to clipboard.`);
+      toast("Copied", `${label} copied to clipboard.`);
     } catch {
       Alert.alert("Error", "Failed to copy to clipboard.");
     }

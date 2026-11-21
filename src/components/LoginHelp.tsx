@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Clipboard, Linking, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Clipboard, Linking, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { whatsappDigits } from "@/lib/videoCheckins";
 import TextInput from "@/components/TextInput";
 import { fixLoginEmail, loadLoginEmail, makeNewPassword } from "@/lib/loginHelp";

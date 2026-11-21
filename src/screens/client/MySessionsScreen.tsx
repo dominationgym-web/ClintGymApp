@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, RefreshControl, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { contractSlots } from "@/lib/calendarRegular";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useRoute, type RouteProp } from "@react-navigation/native";

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import FoldSection from "@/components/FoldSection";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";

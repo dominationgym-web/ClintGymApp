@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Linking, Pressable, Text, View } from "react-native";
+import { Image, Linking, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { exerciseThumbnail, youtubeId, youtubeThumbnail } from "@/lib/watchOnline";
 import { themedStyles } from "@/lib/theme";

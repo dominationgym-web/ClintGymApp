@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { Modal, Platform, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useAuth } from "@/context/AuthContext";
 import { AppLockSetupSteps } from "@/components/AppLockSetup";

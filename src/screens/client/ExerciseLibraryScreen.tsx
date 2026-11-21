@@ -1,16 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  View,
-  Text,
-  FlatList,
-  ActivityIndicator,
-  Pressable,
-  Modal,
-  Alert,
-  AppState,
-  useWindowDimensions,
-} from "react-native";
+import { View, Text, FlatList, ActivityIndicator, Modal, Alert, AppState, useWindowDimensions } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "../../components/ModalSafeArea";
@@ -117,6 +108,10 @@ import ExerciseClip from "@/components/ExerciseClip";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import KeepScreenOn from "@/components/KeepScreenOn";
+import { toast } from "@/lib/toast";
+import NumberStepper from "@/components/NumberStepper";
+import { tap } from "@/lib/haptics";
 
 export default function ExerciseLibraryScreen() {
   // In a live 1-on-1 session (0134) the trainer runs this screen for the client.
@@ -629,7 +624,7 @@ export default function ExerciseLibraryScreen() {
       return;
     }
     if (saved.status === "complete") Alert.alert("Workout complete ✅", "Great work.");
-    else Alert.alert("Thanks for letting your coach know", saved.status === "partial" ? "Every set counts." : "Rest up and look after yourself.");
+    else toast("Thanks for letting your coach know", saved.status === "partial" ? "Every set counts." : "Rest up and look after yourself.");
   };
 
   const goldStar = (saved: WorkoutSession, first: string): CelebrationInfo => ({
@@ -912,7 +907,8 @@ export default function ExerciseLibraryScreen() {
     // it must already see this body part as done for today's warm-ups.
     categoriesRef.current = [...categoriesRef.current, selected.category];
     if (!warmUp) checkAchievement(client.id, data).then((b) => b && setBadge(b));
-    setReps("");
+    tap();
+    setReps(warmUp ? "" : String(data.reps));
     setEffort(null);
     if (gauge && target) {
       setGaugeDue(false);
@@ -1048,8 +1044,12 @@ export default function ExerciseLibraryScreen() {
     );
   }
 
+  const lastWorking = [...todaysSets].reverse().find((s) => !s.warm_up && !s.gauge) ?? null;
+  const targetLow = Number(target?.reps.match(/\d+/)?.[0] ?? 10) || 10;
+
   return (
     <View style={styles.container}>
+      <KeepScreenOn />
       <FlatList
         data={showReference ? filterExercises(shown, search, category) : []}
         keyboardShouldPersistTaps="handled"
@@ -1748,27 +1748,38 @@ export default function ExerciseLibraryScreen() {
             <Text style={[styles.sectionHeading, { marginTop: 0 }]}>{warmUpDue ? "Log your warm-up set" : "Log a set"}</Text>
             <MuscleNotWeight />
             <EveryRepTips />
+            {/* One tap repeats the last working set; − / + change it (GRIZZ, 2026-11-21: no typing). */}
+            {!warmUpDue && !gaugeDue && lastWorking && (
+              <Pressable
+                style={styles.sameButton}
+                onPress={() => {
+                  setWeight(lastWorking.weight_kg != null ? String(lastWorking.weight_kg) : "");
+                  setReps(String(lastWorking.reps));
+                  if (lastWorking.effort) setEffort(lastWorking.effort);
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.sameText}>
+                  ↺ Same as last set: {lastWorking.weight_kg ? `${lastWorking.weight_kg}kg x ` : ""}
+                  {lastWorking.reps}
+                </Text>
+              </Pressable>
+            )}
             <View style={styles.setRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Weight (kg)</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  placeholder="Optional"
-                  placeholderTextColor="#64748B"
-                  value={weight}
-                  onChangeText={setWeight}
-                />
+                <NumberStepper value={weight} onChange={setWeight} step={2.5} start={2.5} placeholder="-" accessibilityLabel="weight" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Reps</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  placeholder="e.g. 8"
-                  placeholderTextColor="#64748B"
+                <NumberStepper
                   value={reps}
-                  onChangeText={setReps}
+                  onChange={setReps}
+                  step={1}
+                  min={1}
+                  start={targetLow}
+                  placeholder={String(targetLow)}
+                  accessibilityLabel="reps"
                 />
               </View>
             </View>
@@ -1882,6 +1893,8 @@ export default function ExerciseLibraryScreen() {
 }
 
 const styles = themedStyles({
+  sameButton: { alignSelf: "flex-start", borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 },
+  sameText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   todayCard: { backgroundColor: "#111C33", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#1E293B" },
   todayHeading: { color: BRAND_GOLD, fontSize: 22, fontWeight: "800" },
   todayDate: { color: "#94A3B8", fontSize: 13, marginTop: 2, marginBottom: 6 },

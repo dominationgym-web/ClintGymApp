@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, View, Text } from "react-native";
+import { View, Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import { cardioLabel, slotOf, WEEKDAY_NAMES } from "@/lib/programs";
 import type { Program, ProgramExercise } from "@/types/database";
 import ExerciseInfoModal from "@/components/ExerciseInfoModal";

@@ -1,5 +1,6 @@
 import React from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { findArea, rehabRedFlags, type StabilityArea } from "@/lib/stability";
 import { themedStyles } from "@/lib/theme";

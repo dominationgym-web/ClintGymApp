@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import PhotoStrip from "@/components/PhotoStrip";
 import type { LoadedProgressPhoto } from "@/components/progressPhotoData";
 import { ANGLE_LABEL, PROGRESS_ANGLES, type ProgressPhotoAngle } from "@/lib/progressPhotos";

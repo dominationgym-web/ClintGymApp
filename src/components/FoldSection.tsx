@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import LineIcon from "@/components/LineIcon";
-import { Pressable, Text, View } from "react-native";
+import { Animated, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
+import { DURATION, EASE_OUT, reduceMotion } from "@/lib/motion";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import { headingFont } from "@/lib/fonts";
 
 // A tap-to-open heading for a long page, so the client sees a short list of
 // headings instead of scrolling (GRIZZ dislikes scrolling). `hint` is a short
@@ -25,17 +28,35 @@ export default function FoldSection({
 }) {
   // The phone's Back button closes an open fold first.
   useStepBack(open, onToggle);
+  // The arrow turns and the inside eases in (GRIZZ, 2026-11-21 design review)
+  // instead of snapping open.
+  const turn = useRef(new Animated.Value(open ? 1 : 0)).current;
+  const show = useRef(new Animated.Value(open ? 1 : 0)).current;
+  useEffect(() => {
+    if (reduceMotion()) {
+      turn.setValue(open ? 1 : 0);
+      show.setValue(open ? 1 : 0);
+      return;
+    }
+    Animated.timing(turn, { toValue: open ? 1 : 0, duration: DURATION.normal, easing: EASE_OUT, useNativeDriver: true }).start();
+    if (open) {
+      show.setValue(0);
+      Animated.timing(show, { toValue: 1, duration: DURATION.normal, easing: EASE_OUT, useNativeDriver: true }).start();
+    }
+  }, [open, turn, show]);
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] });
+  const slide = show.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] });
   return (
     <View style={[styles.fold, open && styles.foldOpen]}>
       <Pressable style={styles.header} onPress={onToggle}>
         <LineIcon icon={icon} size={22} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, headingFont(16)]}>{title}</Text>
           {hint ? <Text style={styles.hint}>{hint}</Text> : null}
         </View>
-        <Text style={styles.chevron}>{open ? "▴" : "▾"}</Text>
+        <Animated.Text style={[styles.chevron, { transform: [{ rotate }] }]}>▾</Animated.Text>
       </Pressable>
-      {open && <View style={styles.body}>{children}</View>}
+      {open && <Animated.View style={[styles.body, { opacity: show, transform: [{ translateY: slide }] }]}>{children}</Animated.View>}
     </View>
   );
 }

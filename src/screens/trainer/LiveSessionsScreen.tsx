@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AwardTrainerCard from "@/components/award/AwardTrainerCard";
-import { ActivityIndicator, Alert, Linking, Modal, PanResponder, Pressable, RefreshControl, Share, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Modal, PanResponder, RefreshControl, Share, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -83,6 +84,7 @@ import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import { useStepBack } from "@/hooks/useStepBack";
 import SafeBottom from "@/components/SafeBottom";
+import { toast } from "@/lib/toast";
 
 // Setup opened by itself once this app start (see load).
 let setupOpened = false;
@@ -624,7 +626,7 @@ function NotSigned({
     const { error } = await supabase.rpc("send_session_agreement", { p_client: p.client_id });
     setBusy(null);
     if (error) return Alert.alert("Couldn't send", error.message);
-    Alert.alert("Sent ✅", `${first} got a notification to sign the agreement under Menu › My sessions.`);
+    toast("Sent ✅", `${first} got a notification to sign the agreement under Menu › My sessions.`);
     onChanged();
   };
   const clear = (p: SessionPlan) => {
@@ -1178,7 +1180,7 @@ function AddSessionModal({
     }
     setSaving(false);
     if (failed.length) Alert.alert("Couldn't book everyone", failed.join("\n"));
-    else if (weeklyFailed) Alert.alert("Booked for this day only", "Couldn't make it weekly for everyone. Tap the session › 🔁 Repeat every week.");
+    else if (weeklyFailed) toast("Booked for this day only", "Couldn't make it weekly for everyone. Tap the session › 🔁 Repeat every week.");
     onSaved();
   };
   const chip = (key: string, label: string) => {
@@ -1525,7 +1527,7 @@ function ClientsTab({
         onSaved={(n) => {
           setAddingPerson(false);
           onChanged();
-          Alert.alert("Added", `${n} is on your calendar every week. You'll find them under "On your calendar, not in the app yet".`);
+          toast("Added", `${n} is on your calendar every week. You'll find them under "On your calendar, not in the app yet".`);
         }}
       />
       {!oneOnOne || showOthers ? (
@@ -1865,7 +1867,7 @@ function InvoiceModal({
       return;
     }
     onChanged(data);
-    if (done) Alert.alert("Done ✅", done);
+    if (done) toast("Done ✅", done);
   };
 
   const rebuild = () => act("rebuild", () => rebuildInvoice(invoice));
@@ -2040,7 +2042,7 @@ function SetupTab({ settings, onSaved }: { settings: SessionSettings | null; onS
       return;
     }
     onSaved(data);
-    Alert.alert("Saved ✅", "New clients start with these. You can change any client's own deal on the Clients tab.");
+    toast("Saved ✅", "New clients start with these. You can change any client's own deal on the Clients tab.");
   };
 
   return (

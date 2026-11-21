@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { supabase } from "@/lib/supabase";

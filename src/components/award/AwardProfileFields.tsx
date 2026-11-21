@@ -1,5 +1,6 @@
 import React from "react";
-import { Alert, Image, Pressable, Text, View } from "react-native";
+import { Alert, Image, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import type * as ImagePicker from "expo-image-picker";
 import { BRAND_GOLD } from "@/lib/brand";
 import { FACE_PHOTO_CONSENT, FACE_PHOTO_WHY, GOAL_DIRECTIONS, type GoalDirection } from "@/lib/award";

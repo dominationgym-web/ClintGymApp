@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "./ModalSafeArea";
@@ -23,6 +24,8 @@ import type { SetEffort, WorkoutLog } from "@/types/database";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import EditSetModal from "@/components/EditSetModal";
 import { themeText, themedStyles } from "@/lib/theme";
+import { tap } from "@/lib/haptics";
+import NumberStepper from "@/components/NumberStepper";
 
 export type LogExercise = { id: string | null; name: string; category: string | null; external_url: string | null };
 export type LogTarget = { setsLabel: string; sets: number; reps: string; restSeconds: number };
@@ -126,11 +129,12 @@ export default function LogSetModal({
       Alert.alert("Couldn't save set", error?.message ?? "Unknown error");
       return;
     }
+    tap();
     const count = todaysSets.length + 1;
     setTodaysSets((prev) => [...prev, data]);
     checkAchievement(client.id, data).then((b) => b && setBadge(b));
     setWeight(data.weight_kg !== null ? String(data.weight_kg) : "");
-    setReps("");
+    setReps(String(data.reps));
     setEffort(null);
     setRestRun((n) => n + 1);
     if (target && count === target.sets) {
@@ -139,6 +143,9 @@ export default function LogSetModal({
   };
 
   const technique = exercise ? techniqueFor(exercise.name, exercise.category) : null;
+  // One tap repeats the last working set; − / + change it (GRIZZ, 2026-11-21: no typing).
+  const lastWorking = [...todaysSets].reverse().find((s) => !s.warm_up) ?? null;
+  const targetLow = Number(target?.reps.match(/\d+/)?.[0] ?? 10) || 10;
 
   return (
     <Modal visible={!!exercise} animationType="slide" onRequestClose={() => onClose(todaysSets.length)}>
@@ -192,27 +199,37 @@ export default function LogSetModal({
 
           <Text style={styles.heading}>Log a set</Text>
           {!technique?.noWeightRule && <MuscleNotWeight />}
+          {lastWorking && (
+            <Pressable
+              style={styles.sameButton}
+              onPress={() => {
+                setWeight(lastWorking.weight_kg != null ? String(lastWorking.weight_kg) : "");
+                setReps(String(lastWorking.reps));
+                setEffort(lastWorking.effort);
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.sameText}>
+                ↺ Same as last set: {lastWorking.weight_kg ? `${lastWorking.weight_kg}kg x ` : ""}
+                {lastWorking.reps}
+              </Text>
+            </Pressable>
+          )}
           <View style={styles.setRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Weight (kg)</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                placeholder="Optional"
-                placeholderTextColor="#64748B"
-                value={weight}
-                onChangeText={setWeight}
-              />
+              <NumberStepper value={weight} onChange={setWeight} step={2.5} start={2.5} placeholder="-" accessibilityLabel="weight" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Reps</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                placeholder={target ? `e.g. ${target.reps.split("-")[0]}` : "e.g. 10"}
-                placeholderTextColor="#64748B"
+              <NumberStepper
                 value={reps}
-                onChangeText={setReps}
+                onChange={setReps}
+                step={1}
+                min={1}
+                start={targetLow}
+                placeholder={String(targetLow)}
+                accessibilityLabel="reps"
               />
             </View>
           </View>
@@ -279,6 +296,8 @@ const styles = themedStyles({
   heading: { color: "#94A3B8", fontWeight: "600", marginTop: 8, marginBottom: 10 },
   setRow: { flexDirection: "row", gap: 12, marginBottom: 12 },
   label: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 6 },
+  sameButton: { alignSelf: "flex-start", borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, marginBottom: 10 },
+  sameText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
   input: { backgroundColor: "#1E293B", color: "#fff", borderRadius: 8, padding: 12, fontSize: 15 },
   effortRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
   chip: { flex: 1, borderRadius: 8, borderWidth: 1.5, borderColor: "#334155", paddingVertical: 10, alignItems: "center" },

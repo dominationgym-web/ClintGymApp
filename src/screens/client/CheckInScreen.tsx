@@ -11,14 +11,8 @@ import TrainerBrandBar from "@/components/TrainerBrandBar";
 import { WELLBEING_TOPICS } from "@/lib/wellbeing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import HighGiInfo from "@/components/HighGiInfo";
-import {
-  View,
-  Text,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-  AppState,
-} from "react-native";
+import { View, Text, ActivityIndicator, Alert, AppState } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
@@ -42,6 +36,9 @@ import { useStepBack } from "@/hooks/useStepBack";
 import { coffeeText, isLateCoffee } from "@/lib/coffee";
 import TimeSlotButton from "@/components/TimeSlotButton";
 import { halfHourSlots } from "@/lib/mealPlanMaker";
+import { success } from "@/lib/haptics";
+import SettleIn from "@/components/SettleIn";
+import { headingFont } from "@/lib/fonts";
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
@@ -214,6 +211,7 @@ export default function CheckInScreen() {
       Alert.alert("Couldn't save your check-in", error?.message ?? "Please try again.");
       return;
     }
+    success();
     setSaved(data);
     setForm(formFromCheckin(data));
     setEditing(false);
@@ -258,7 +256,7 @@ export default function CheckInScreen() {
   if (loadError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.title}>Couldn't load your check-in</Text>
+        <Text style={[styles.title, headingFont(24)]}>Couldn't load your check-in</Text>
         <Text style={[styles.label, styles.centerText]}>Check your internet connection and try again.</Text>
         <Pressable style={[styles.button, styles.buttonCompact]} onPress={load}>
           <Text style={styles.buttonText}>Try again</Text>
@@ -271,56 +269,58 @@ export default function CheckInScreen() {
     const missing = unansweredSections(formFromCheckin(saved));
     return (
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-        <TrainerBrandBar />
-        {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
-        <TodayNotices />
-        <Text style={styles.title}>Checked in ✓</Text>
-        {saved.symptoms_status === "reported" && <StopAdvice />}
-        <CheckinFeedbackCard
-          feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso(), client ? intakeDetails(client).weight_kg : null)}
-        />
-        {client && <RecoverySuggestionCard clientId={client.id} refreshKey={saved} />}
-        {missing.length > 0 && (
-          <View style={styles.notice}>
-            <Text style={styles.noticeText}>
-              Still blank: {missing.join(", ")}.
-            </Text>
+        <SettleIn id="today">
+          <TrainerBrandBar />
+          {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
+          <TodayNotices />
+          <Text style={[styles.title, headingFont(24)]}>Checked in ✓</Text>
+          {saved.symptoms_status === "reported" && <StopAdvice />}
+          <CheckinFeedbackCard
+            feedback={checkinFeedback(week.some((c) => c.id === saved.id) ? week.map((c) => (c.id === saved.id ? saved : c)) : [saved, ...week], todayIso(), client ? intakeDetails(client).weight_kg : null)}
+          />
+          {client && <RecoverySuggestionCard clientId={client.id} refreshKey={saved} />}
+          {missing.length > 0 && (
+            <View style={styles.notice}>
+              <Text style={styles.noticeText}>
+                Still blank: {missing.join(", ")}.
+              </Text>
+            </View>
+          )}
+          <Pressable style={styles.answersToggle} onPress={() => setShowAnswers(!showAnswers)}>
+            <Text style={styles.answersToggleText}>Today's answers</Text>
+            <Text style={styles.answersToggleText}>{showAnswers ? "▲" : "▼"}</Text>
+          </Pressable>
+          {showAnswers && (
+          <View style={styles.summaryCard}>
+            <SummaryRow label="Alcohol (units)" value={String(saved.alcohol_units)} />
+            <SummaryRow label="Bed / wake" value={`${orDash(saved.sleep_bed_time)} / ${orDash(saved.sleep_wake_time)}`} />
+            <SummaryRow label="Sleep quality" value={saved.sleep_quality ? `${saved.sleep_quality} / 5` : "-"} />
+            <SummaryRow label="Water" value={`${saved.water_litres} L`} />
+            <SummaryRow label="Meals yesterday" value={String(saved.meals_total)} />
+            <SummaryRow label="High-GI meals" value={String(saved.high_gi_count)} />
+            <SummaryRow label="Wound down without screens" value={yesNo(saved.wound_down)} />
+            <SummaryRow label="Coffee yesterday" value={coffeeText(saved) ?? "-"} />
+            {WELLBEING_TOPICS.map((t) => (
+              <SummaryRow
+                key={t.key}
+                label={`${t.icon} ${t.title}`}
+                value={saved[`${t.key}_status`] === "reported" ? "Reported" : saved[`${t.key}_status`] === "ok" ? "Okay" : "-"}
+              />
+            ))}
+            {saved.distress_flag && saved.distress_notes && <Text style={styles.summaryNote}>{saved.distress_notes}</Text>}
           </View>
-        )}
-        <Pressable style={styles.answersToggle} onPress={() => setShowAnswers(!showAnswers)}>
-          <Text style={styles.answersToggleText}>Today's answers</Text>
-          <Text style={styles.answersToggleText}>{showAnswers ? "▲" : "▼"}</Text>
-        </Pressable>
-        {showAnswers && (
-        <View style={styles.summaryCard}>
-          <SummaryRow label="Alcohol (units)" value={String(saved.alcohol_units)} />
-          <SummaryRow label="Bed / wake" value={`${orDash(saved.sleep_bed_time)} / ${orDash(saved.sleep_wake_time)}`} />
-          <SummaryRow label="Sleep quality" value={saved.sleep_quality ? `${saved.sleep_quality} / 5` : "-"} />
-          <SummaryRow label="Water" value={`${saved.water_litres} L`} />
-          <SummaryRow label="Meals yesterday" value={String(saved.meals_total)} />
-          <SummaryRow label="High-GI meals" value={String(saved.high_gi_count)} />
-          <SummaryRow label="Wound down without screens" value={yesNo(saved.wound_down)} />
-          <SummaryRow label="Coffee yesterday" value={coffeeText(saved) ?? "-"} />
-          {WELLBEING_TOPICS.map((t) => (
-            <SummaryRow
-              key={t.key}
-              label={`${t.icon} ${t.title}`}
-              value={saved[`${t.key}_status`] === "reported" ? "Reported" : saved[`${t.key}_status`] === "ok" ? "Okay" : "-"}
-            />
-          ))}
-          {saved.distress_flag && saved.distress_notes && <Text style={styles.summaryNote}>{saved.distress_notes}</Text>}
-        </View>
-        )}
-        <Pressable
-          style={styles.button}
-          onPress={() => {
-            setStep(0);
-            setEditing(true);
-          }}
-        >
-          <Text style={styles.buttonText}>Change my answers</Text>
-        </Pressable>
-        <StepsCard />
+          )}
+          <Pressable
+            style={styles.button}
+            onPress={() => {
+              setStep(0);
+              setEditing(true);
+            }}
+          >
+            <Text style={styles.buttonText}>Change my answers</Text>
+          </Pressable>
+          <StepsCard />
+        </SettleIn>
       </ScrollView>
     );
   }
@@ -334,158 +334,160 @@ export default function CheckInScreen() {
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        {step === 0 && (
-          <>
-            <TrainerBrandBar />
-            {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
-            <TodayNotices extra={client && !saved ? <RecoverySuggestionCard clientId={client.id} /> : null} />
-          </>
-        )}
-        <Text style={styles.title}>{saved ? "Change today's check-in" : "Check-in"}</Text>
-        {client?.live_only && !saved && step === 0 ? (
-          // A live client checks in only when they want to (GRIZZ, 2026-10-31).
-          <Text style={styles.optional}>Optional. Helps your coach plan your session.</Text>
-        ) : null}
-        <View style={styles.steps}>
-          {CHECKIN_STEPS.map((label, i) => (
-            <Pressable key={label} style={styles.stepItem} onPress={() => setStep(i)}>
-              <View style={[styles.stepBar, i <= step && styles.stepBarOn]} />
-              <Text style={[styles.stepLabel, i === step && styles.stepLabelOn]}>{label}</Text>
-            </Pressable>
-          ))}
-        </View>
-        {step === 0 && (
-          <>
-            <WellbeingQuestions value={form.wellbeing} onChange={(next) => set("wellbeing", next)} onAllGood={() => setStep(1)} />
+        <SettleIn id="today">
+          {step === 0 && (
+            <>
+              <TrainerBrandBar />
+              {client && !client.live_only && <TodayTrainingCard clientId={client.id} />}
+              <TodayNotices extra={client && !saved ? <RecoverySuggestionCard clientId={client.id} /> : null} />
+            </>
+          )}
+          <Text style={[styles.title, headingFont(24)]}>{saved ? "Change today's check-in" : "Check-in"}</Text>
+          {client?.live_only && !saved && step === 0 ? (
+            // A live client checks in only when they want to (GRIZZ, 2026-10-31).
+            <Text style={styles.optional}>Optional. Helps your coach plan your session.</Text>
+          ) : null}
+          <View style={styles.steps}>
+            {CHECKIN_STEPS.map((label, i) => (
+              <Pressable key={label} style={styles.stepItem} onPress={() => setStep(i)}>
+                <View style={[styles.stepBar, i <= step && styles.stepBarOn]} />
+                <Text style={[styles.stepLabel, i === step && styles.stepLabelOn]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {step === 0 && (
+            <>
+              <WellbeingQuestions value={form.wellbeing} onChange={(next) => set("wellbeing", next)} onAllGood={() => setStep(1)} />
 
-          </>
-        )}
-        {step === 1 && (
-          <>
-            {/* Tap a time, no typing (GRIZZ, 2026-11-08: "Typing out times is a pain"). */}
-            <Text style={styles.sectionHeading}>Sleep times</Text>
-            {watchNight && (
-              <Text style={styles.watchNote}>
-                From your watch: {sleepLength(watchNight.asleep_minutes)} asleep.
-              </Text>
-            )}
-            <View style={styles.row}>
-              <View style={styles.flex1}>
-                <TimeSlotButton label="Bed" value={form.bedTime || null} onChange={(t) => set("bedTime", t ?? "")} slots={BED_SLOTS} style={styles.timeButton} />
+            </>
+          )}
+          {step === 1 && (
+            <>
+              {/* Tap a time, no typing (GRIZZ, 2026-11-08: "Typing out times is a pain"). */}
+              <Text style={styles.sectionHeading}>Sleep times</Text>
+              {watchNight && (
+                <Text style={styles.watchNote}>
+                  From your watch: {sleepLength(watchNight.asleep_minutes)} asleep.
+                </Text>
+              )}
+              <View style={styles.row}>
+                <View style={styles.flex1}>
+                  <TimeSlotButton label="Bed" value={form.bedTime || null} onChange={(t) => set("bedTime", t ?? "")} slots={BED_SLOTS} style={styles.timeButton} />
+                </View>
+                <View style={styles.flex1}>
+                  <TimeSlotButton label="Wake" value={form.wakeTime || null} onChange={(t) => set("wakeTime", t ?? "")} slots={WAKE_SLOTS} style={styles.timeButton} />
+                </View>
               </View>
-              <View style={styles.flex1}>
-                <TimeSlotButton label="Wake" value={form.wakeTime || null} onChange={(t) => set("wakeTime", t ?? "")} slots={WAKE_SLOTS} style={styles.timeButton} />
-              </View>
-            </View>
 
-            <Text style={styles.sectionHeading}>Sleep quality (1 = poor, 5 = great)</Text>
-            <View style={styles.row}>
-              {([1, 2, 3, 4, 5] as const).map((n) => (
-                <Pressable
-                  key={n}
-                  style={[styles.scoreBubble, form.sleepQuality === n && styles.scoreBubbleSelected]}
-                  onPress={() => set("sleepQuality", form.sleepQuality === n ? null : n)}
-                >
-                  <Text style={styles.scoreText}>{n}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.sectionHeading}>No screens for 30 min before bed?</Text>
-            <View style={styles.row}>
-              {([true, false] as const).map((answer) => (
-                <Pressable
-                  key={String(answer)}
-                  style={[styles.choice, form.woundDown === answer && styles.choiceSelected]}
-                  onPress={() => set("woundDown", form.woundDown === answer ? null : answer)}
-                >
-                  <Text style={[styles.choiceText, form.woundDown === answer && styles.choiceTextSelected]}>
-                    {answer ? "Yes" : "No"}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Coffee (0203): late caffeine is a common cause of poor sleep and tiredness. */}
-            <Text style={styles.sectionHeading}>Cups of coffee yesterday</Text>
-            <View style={[styles.row, { gap: 6 }]}>
-              {CUP_CHOICES.map((n) => {
-                const on = form.coffeeCups === String(n);
-                return (
+              <Text style={styles.sectionHeading}>Sleep quality (1 = poor, 5 = great)</Text>
+              <View style={styles.row}>
+                {([1, 2, 3, 4, 5] as const).map((n) => (
                   <Pressable
                     key={n}
-                    style={[styles.cupChip, on && styles.scoreBubbleSelected]}
-                    onPress={() => set("coffeeCups", on ? "" : String(n))}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${n} cups`}
+                    style={[styles.scoreBubble, form.sleepQuality === n && styles.scoreBubbleSelected]}
+                    onPress={() => set("sleepQuality", form.sleepQuality === n ? null : n)}
                   >
-                    <Text style={[styles.scoreText, on && styles.choiceTextSelected]}>{n === 6 ? "6+" : n}</Text>
+                    <Text style={styles.scoreText}>{n}</Text>
                   </Pressable>
-                );
-              })}
-            </View>
-            {form.coffeeCups !== "" && form.coffeeCups !== "0" && (
-              <View style={{ marginTop: 10 }}>
-                <TimeSlotButton
-                  label="Last cup at"
-                  value={form.coffeeLastTime || null}
-                  onChange={(t) => set("coffeeLastTime", t ?? "")}
-                  slots={COFFEE_SLOTS}
-                  style={styles.timeButton}
-                />
+                ))}
               </View>
-            )}
-            {isLateCoffee({ coffee_cups: Number(form.coffeeCups) || 0, coffee_last_time: parseTime(form.coffeeLastTime) || null }) && (
-              <Text style={styles.coffeeNote}>Coffee after 2pm can still keep you awake at bedtime.</Text>
-            )}
 
-          </>
-        )}
-        {step === 2 && (
-          <>
-            {/* Buttons only, no typing (GRIZZ, 2026-11-08). The last button means "or more". */}
-            <Text style={styles.sectionHeading}>Water yesterday (litres)</Text>
-            <Choices options={WATER_CHOICES} value={form.waterLitres} onChange={(v) => set("waterLitres", v)} />
+              <Text style={styles.sectionHeading}>No screens for 30 min before bed?</Text>
+              <View style={styles.row}>
+                {([true, false] as const).map((answer) => (
+                  <Pressable
+                    key={String(answer)}
+                    style={[styles.choice, form.woundDown === answer && styles.choiceSelected]}
+                    onPress={() => set("woundDown", form.woundDown === answer ? null : answer)}
+                  >
+                    <Text style={[styles.choiceText, form.woundDown === answer && styles.choiceTextSelected]}>
+                      {answer ? "Yes" : "No"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
 
-            <Text style={styles.sectionHeading}>Meals yesterday</Text>
-            <Choices options={MEAL_CHOICES} value={form.mealsTotal} onChange={(v) => set("mealsTotal", v)} />
-
-            <Text style={styles.sectionHeading}>High-GI meals yesterday</Text>
-            <HighGiInfo />
-            <Choices options={HIGH_GI_CHOICES} value={form.highGiCount} onChange={(v) => set("highGiCount", v)} />
-
-            <Text style={styles.sectionHeading}>Alcohol last night (units)</Text>
-            <Choices options={ALCOHOL_CHOICES} value={form.alcoholUnits} onChange={(v) => set("alcoholUnits", v)} />
-
-          </>
-        )}
-
-        {step < CHECKIN_STEPS.length - 1 ? (
-          <Pressable style={styles.button} onPress={() => setStep(step + 1)}>
-            <Text style={styles.buttonText}>Next: {CHECKIN_STEPS[step + 1]} ›</Text>
-          </Pressable>
-        ) : (
-          <>
-            <Pressable style={[styles.button, saving && styles.buttonDisabled]} onPress={handleSubmit} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color={themeText("#0F172A")} />
-              ) : (
-                <Text style={styles.buttonText}>{saved ? "Save changes" : "Submit check-in"}</Text>
+              {/* Coffee (0203): late caffeine is a common cause of poor sleep and tiredness. */}
+              <Text style={styles.sectionHeading}>Cups of coffee yesterday</Text>
+              <View style={[styles.row, { gap: 6 }]}>
+                {CUP_CHOICES.map((n) => {
+                  const on = form.coffeeCups === String(n);
+                  return (
+                    <Pressable
+                      key={n}
+                      style={[styles.cupChip, on && styles.scoreBubbleSelected]}
+                      onPress={() => set("coffeeCups", on ? "" : String(n))}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${n} cups`}
+                    >
+                      <Text style={[styles.scoreText, on && styles.choiceTextSelected]}>{n === 6 ? "6+" : n}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {form.coffeeCups !== "" && form.coffeeCups !== "0" && (
+                <View style={{ marginTop: 10 }}>
+                  <TimeSlotButton
+                    label="Last cup at"
+                    value={form.coffeeLastTime || null}
+                    onChange={(t) => set("coffeeLastTime", t ?? "")}
+                    slots={COFFEE_SLOTS}
+                    style={styles.timeButton}
+                  />
+                </View>
               )}
+              {isLateCoffee({ coffee_cups: Number(form.coffeeCups) || 0, coffee_last_time: parseTime(form.coffeeLastTime) || null }) && (
+                <Text style={styles.coffeeNote}>Coffee after 2pm can still keep you awake at bedtime.</Text>
+              )}
+
+            </>
+          )}
+          {step === 2 && (
+            <>
+              {/* Buttons only, no typing (GRIZZ, 2026-11-08). The last button means "or more". */}
+              <Text style={styles.sectionHeading}>Water yesterday (litres)</Text>
+              <Choices options={WATER_CHOICES} value={form.waterLitres} onChange={(v) => set("waterLitres", v)} />
+
+              <Text style={styles.sectionHeading}>Meals yesterday</Text>
+              <Choices options={MEAL_CHOICES} value={form.mealsTotal} onChange={(v) => set("mealsTotal", v)} />
+
+              <Text style={styles.sectionHeading}>High-GI meals yesterday</Text>
+              <HighGiInfo />
+              <Choices options={HIGH_GI_CHOICES} value={form.highGiCount} onChange={(v) => set("highGiCount", v)} />
+
+              <Text style={styles.sectionHeading}>Alcohol last night (units)</Text>
+              <Choices options={ALCOHOL_CHOICES} value={form.alcoholUnits} onChange={(v) => set("alcoholUnits", v)} />
+
+            </>
+          )}
+
+          {step < CHECKIN_STEPS.length - 1 ? (
+            <Pressable style={styles.button} onPress={() => setStep(step + 1)}>
+              <Text style={styles.buttonText}>Next: {CHECKIN_STEPS[step + 1]} ›</Text>
             </Pressable>
-          </>
-        )}
-        {step > 0 && (
-          <Pressable style={styles.secondaryButton} onPress={() => setStep(step - 1)} disabled={saving}>
-            <Text style={styles.secondaryButtonText}>‹ Back</Text>
-          </Pressable>
-        )}
-        {saved && (
-          <Pressable style={styles.secondaryButton} onPress={cancelEditing} disabled={saving}>
-            <Text style={styles.secondaryButtonText}>Cancel</Text>
-          </Pressable>
-        )}
-        {step === 0 && !saved && <StepsCard />}
+          ) : (
+            <>
+              <Pressable style={[styles.button, saving && styles.buttonDisabled]} onPress={handleSubmit} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator color={themeText("#0F172A")} />
+                ) : (
+                  <Text style={styles.buttonText}>{saved ? "Save changes" : "Submit check-in"}</Text>
+                )}
+              </Pressable>
+            </>
+          )}
+          {step > 0 && (
+            <Pressable style={styles.secondaryButton} onPress={() => setStep(step - 1)} disabled={saving}>
+              <Text style={styles.secondaryButtonText}>‹ Back</Text>
+            </Pressable>
+          )}
+          {saved && (
+            <Pressable style={styles.secondaryButton} onPress={cancelEditing} disabled={saving}>
+              <Text style={styles.secondaryButtonText}>Cancel</Text>
+            </Pressable>
+          )}
+          {step === 0 && !saved && <StepsCard />}
+        </SettleIn>
       </ScrollView>
     </View>
   );

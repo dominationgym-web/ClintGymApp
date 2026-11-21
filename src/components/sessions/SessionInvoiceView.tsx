@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { KIND_STYLE, billingLabel, clockLabel, dayLabel, invoicePeople, jointNote, kindDetail, monthLabel, sessionMoney } from "@/lib/liveSessions";
 import type { InvoiceLine, SessionInvoice } from "@/types/database";

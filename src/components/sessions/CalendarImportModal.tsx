@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import * as ImagePicker from "expo-image-picker";

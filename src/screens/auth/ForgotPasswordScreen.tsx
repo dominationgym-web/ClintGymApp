@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text } from "react-native";
+import { ActivityIndicator, Alert, Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
 import TextInput from "@/components/TextInput";

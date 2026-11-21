@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, Alert, Image, Platform } from "react-native";
+import { View, Text, ActivityIndicator, Alert, Image, Platform } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AuthStackParamList } from "@/navigation/types";
@@ -10,6 +11,7 @@ import { themeText, themedStyles } from "@/lib/theme";
 import { BRAND_GOLD } from "@/lib/brand";
 import { loadLoginBrand, type TrainerBrand } from "@/hooks/useTrainerBrand";
 import { ScrollView } from "@/components/ScrollView";
+import { headingFont } from "@/lib/fonts";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
@@ -78,7 +80,7 @@ export default function LoginScreen({ navigation, route }: Props) {
       ) : (
         <Image source={require("../../../assets/splash-icon.png")} style={styles.logo} resizeMode="contain" accessibilityLabel="Daily Evolution" />
       )}
-      <Text style={styles.title}>{coach ? "Trainer log in" : "Log in"}</Text>
+      <Text style={[styles.title, headingFont(26)]}>{coach ? "Trainer log in" : "Log in"}</Text>
       <Text style={styles.label}>Email</Text>
       <TextInput placeholderTextColor="#94A3B8"
         style={styles.input}

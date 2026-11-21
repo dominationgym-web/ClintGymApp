@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, AppState, Image, Pressable, Text, View } from "react-native";
+import { Alert, AppState, Image, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { checkAppLockPin, getAppLock, useAppLock, useAppLockReady } from "@/lib/appLock";

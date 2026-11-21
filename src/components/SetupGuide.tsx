@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Alert, AppState, Modal, Pressable, Share, Text, View } from "react-native";
+import { Alert, AppState, Modal, Share, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
 import { useTrainerSide } from "@/context/TrainerSideContext";

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { Modal, Pressable, Switch, Text, View } from "react-native";
+import { Modal, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect } from "@react-navigation/native";
 import TextInput from "@/components/TextInput";

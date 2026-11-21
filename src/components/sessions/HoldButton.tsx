@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text } from "react-native";
+import { ActivityIndicator, Alert, Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import type { ClientAway } from "@/types/database";
 import { holdOf, type AwayWho } from "@/components/sessions/AwayModal";

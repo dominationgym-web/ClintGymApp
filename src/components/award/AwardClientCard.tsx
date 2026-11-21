@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useFocusEffect } from "@react-navigation/native";
 import type * as ImagePicker from "expo-image-picker";
 import { supabase } from "@/lib/supabase";
@@ -10,6 +11,7 @@ import { proofDueText, type AwardClientNeeds, type GoalDirection } from "@/lib/a
 import { saveAwardProfile, sendProofVideo } from "@/lib/awardUploads";
 import AwardProfileFields from "@/components/award/AwardProfileFields";
 import { themeText, themedStyles } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 
 // On the client's Today tab while Trainer of the Half-Year is switched on
 // (0194): a face photo and goal for clients who joined before it, and any
@@ -69,7 +71,7 @@ export default function AwardClientCard() {
     setBusy(null);
     if (problem === "cancelled") return;
     if (problem) Alert.alert("Couldn't send the video", problem);
-    else Alert.alert("Sent ✅", "Thanks! It will be checked soon.");
+    else toast("Sent ✅", "Thanks! It will be checked soon.");
     load();
   };
 

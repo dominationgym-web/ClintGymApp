@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { RESET_HABITS, RESET_PHASES, RESET_WEEKS, RESET_WEEKS_TOTAL, newHabits, resetTraining, resetWeek, type ResetLocation, type ResetSex } from "@/lib/resetProgram";
 import { useAuth } from "@/context/AuthContext";

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { ClientStackParamList } from "@/navigation/types";
@@ -10,6 +11,7 @@ import { displayProgramName } from "@/lib/programs";
 import { sessionTitle } from "@/lib/programSchedule";
 import { COACH_MEAL_PLAN_TITLE, useHasMealPlan } from "@/hooks/useHasMealPlan";
 import { themedStyles } from "@/lib/theme";
+import { headingFont } from "@/lib/fonts";
 
 type Today = { title: string; sub: string; done: boolean } | null;
 
@@ -47,7 +49,7 @@ export default function TodayTrainingCard({ clientId }: { clientId: string }) {
         <Pressable style={styles.workout} onPress={openTraining} accessibilityRole="button">
           <View style={{ flex: 1 }}>
             <Text style={styles.sub}>{today.sub}</Text>
-            <Text style={styles.title} numberOfLines={2}>
+            <Text style={[styles.title, headingFont(20)]} numberOfLines={2}>
               {today.title}
             </Text>
           </View>
@@ -59,7 +61,7 @@ export default function TodayTrainingCard({ clientId }: { clientId: string }) {
         <Pressable style={styles.workout} onPress={openTraining} accessibilityRole="button">
           <View style={{ flex: 1 }}>
             <Text style={styles.sub}>Today</Text>
-            <Text style={styles.title}>No workout planned</Text>
+            <Text style={[styles.title, headingFont(20)]}>No workout planned</Text>
           </View>
           <Text style={styles.link}>Training ›</Text>
         </Pressable>

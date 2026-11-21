@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { markThemeChosen, setThemePreference, themedStyles, useThemePreference, type ThemePreference } from "@/lib/theme";
 import { BRAND_GOLD } from "@/lib/brand";

@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable } from "react-native";
+import Pressable from "@/components/Pressable";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("react-native", () => ({ Modal: () => null, Pressable: () => null, Text: () => null, View: () => null, Appearance: { getColorScheme: () => "dark" }, StyleSheet: { create: (s: unknown) => s } }));
+vi.mock("react-native", () => ({ Modal: () => null, Pressable: () => null, Text: () => null, View: () => null, Appearance: { getColorScheme: () => "dark" }, StyleSheet: { create: (s: unknown) => s, flatten: (s: unknown) => s }, Animated: { Value: class {}, createAnimatedComponent: () => () => null }, AccessibilityInfo: {} }));
 vi.mock("@/lib/theme", () => ({ themedStyles: (s: unknown) => s }));
 
 describe("1 on 1 / Evolution / Both", async () => {
