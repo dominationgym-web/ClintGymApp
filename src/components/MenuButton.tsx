@@ -5,6 +5,7 @@ import { View, Text, Modal, useWindowDimensions } from "react-native";
 import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import InboxButton from "@/components/InboxButton";
 import SearchButton from "@/components/SearchButton";
 import { markOpenedFromMenu, takeMenuReturn } from "@/lib/menuReturn";
 import { themeText, themedStyles } from "@/lib/theme";
@@ -35,6 +36,7 @@ export default function MenuButton({ items }: { items: MenuItem[] }) {
 
   return (
     <View style={styles.row}>
+      <InboxButton />
       <SearchButton />
       <Pressable
         onPress={() => setOpen(true)}

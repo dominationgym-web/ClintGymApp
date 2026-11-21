@@ -614,6 +614,18 @@ export type ClientProblem = {
   created_at: string;
 }
 
+// One notification kept in the 🔔 inbox (0232). data is the push's data
+// (type, clientId, messageId...).
+export type InboxItem = {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  created_at: string;
+  read_at: string | null;
+};
+
 // One phone's Expo push token, held by whoever last signed in on it (0034).
 export type PushToken = {
   id: string;
@@ -1548,6 +1560,7 @@ export interface Database {
         Update: Partial<CoachMessage>;
         Relationships: [];
       };
+      inbox_items: { Row: InboxItem; Insert: Partial<InboxItem>; Update: Partial<InboxItem>; Relationships: [] };
       push_tokens: { Row: PushToken; Insert: Partial<PushToken>; Update: Partial<PushToken>; Relationships: [] };
       cycle_logs: { Row: CycleLog; Insert: Partial<CycleLog>; Update: Partial<CycleLog>; Relationships: [] };
       suggestions: { Row: Suggestion; Insert: Partial<Suggestion>; Update: Partial<Suggestion>; Relationships: [] };
@@ -1825,6 +1838,7 @@ export interface Database {
         Returns: { id: string; name: string; category: string | null; external_url: string | null }[];
       };
       mark_coach_messages_read: { Args: Record<string, never>; Returns: undefined };
+      mark_inbox_read: { Args: { p_id?: string | null }; Returns: undefined };
       register_push_token: { Args: { p_token: string }; Returns: undefined };
       client_monthly_consistency: {
         Args: { p_client_id: string; p_month?: string };

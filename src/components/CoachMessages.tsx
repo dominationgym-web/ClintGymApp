@@ -6,6 +6,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { registerForCoachMessages } from "@/lib/notifications";
+import { inboxChanged, onInboxChanged } from "@/lib/inbox";
 import { useAuth } from "@/context/AuthContext";
 import { QUICK_REPLIES } from "@/lib/clientProblems";
 import type { CoachMessage } from "@/types/database";
@@ -39,6 +40,9 @@ export function CoachMessageCard() {
     }, [load])
   );
 
+  // Read in the 🔔 inbox: gone from here too.
+  useEffect(() => onInboxChanged(() => load()), [load]);
+
   useEffect(() => {
     if (!client) return;
     registerForCoachMessages();
@@ -59,6 +63,7 @@ export function CoachMessageCard() {
     setUnread([]);
     const { error } = await supabase.rpc("mark_coach_messages_read");
     if (error) load();
+    inboxChanged();
   };
 
   if (unread.length === 0) return null;
@@ -76,6 +81,7 @@ export function CoachMessageCard() {
       <Pressable style={styles.button} onPress={markRead}>
         <Text style={styles.buttonText}>Got it</Text>
       </Pressable>
+      <Text style={styles.time}>You can always find it again under 🔔 at the top.</Text>
     </View>
   );
 }
@@ -84,7 +90,7 @@ export function CoachMessageCard() {
  * Under the app's next-day check-in about a problem (0075): the client answers
  * in their own words, or taps a quick answer, and their coach is told.
  */
-function ProblemReplyBox({ problemId }: { problemId: string }) {
+export function ProblemReplyBox({ problemId }: { problemId: string }) {
   const [sentReply, setSentReply] = useState<string | null | undefined>(undefined);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
