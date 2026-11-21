@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, RefreshControl, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useFocusEffect } from "@react-navigation/native";
 import TextInput from "@/components/TextInput";
@@ -27,6 +28,7 @@ import {
 } from "@/lib/videoCheckins";
 import type { VideoCheckin, VideoCheckinSettings, VideoCheckinSlot } from "@/types/database";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 
 type Tab = "bookings" | "times" | "setup";
 type ClientInfo = { id: string; name: string; phone: string | null };
@@ -425,7 +427,7 @@ function Setup({ settings, onSaved }: { settings: VideoCheckinSettings | null; o
       return;
     }
     onSaved(data);
-    Alert.alert("Saved ✅", paused ? "Bookings are paused." : "Clients can book your open times.");
+    toast("Saved ✅", paused ? "Bookings are paused." : "Clients can book your open times.");
   };
 
   return (

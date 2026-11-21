@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { DELOAD_BLUE, deloadStartChoices } from "@/lib/deload";

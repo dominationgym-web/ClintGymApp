@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Vibration } from "react-native";
+import { Animated, Easing, View, Text, Vibration } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatClock } from "@/lib/programs";
 import { playTimerSound, prepareTimerSounds, setTimerSoundOn } from "@/lib/timerSounds";
 import { countdownCue } from "@/lib/timerWorkouts";
 import { themeText, themedStyles } from "@/lib/theme";
+import KeepScreenOn from "@/components/KeepScreenOn";
 
 interface Props {
   // Length of the rest the timer starts with, in seconds.
@@ -54,6 +56,17 @@ export default function RestTimer({ seconds, onClose }: Props) {
     playTimerSound("go");
   }, [done]);
 
+  // A gold bar that empties as the rest runs down (GRIZZ, 2026-11-21): easy to
+  // read from across the gym. Runs smoothly on its own; restarts with the clock.
+  const bar = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const ms = Math.max(0, endsAt - Date.now());
+    bar.setValue(total > 0 ? Math.min(1, ms / (total * 1000)) : 0);
+    const run = Animated.timing(bar, { toValue: 0, duration: ms, easing: Easing.linear, useNativeDriver: true });
+    run.start();
+    return () => run.stop();
+  }, [endsAt, total, bar]);
+
   const restart = (s: number) => {
     const start = Date.now();
     setNow(start);
@@ -64,8 +77,12 @@ export default function RestTimer({ seconds, onClose }: Props) {
 
   return (
     <View style={[styles.box, done && styles.boxDone]}>
+      <KeepScreenOn />
       <Text style={styles.label}>{done ? "Rest done - hit your next set!" : "Rest"}</Text>
       <Text style={[styles.clock, done && { color: themeText("#22C55E") }]}>{formatClock(left)}</Text>
+      <View style={styles.track}>
+        <Animated.View style={[styles.fill, done && styles.fillDone, { transform: [{ scaleX: bar }] }]} />
+      </View>
       <View style={styles.row}>
         {QUICK_PICKS.map((s) => (
           <Pressable key={s} style={styles.chip} onPress={() => restart(s)}>
@@ -103,6 +120,9 @@ const styles = themedStyles({
   boxDone: { borderColor: "#22C55E" },
   label: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
   clock: { color: BRAND_GOLD, fontSize: 48, fontWeight: "800", fontVariant: ["tabular-nums"], marginVertical: 4 },
+  track: { alignSelf: "stretch", height: 6, borderRadius: 3, backgroundColor: "#0F172A", overflow: "hidden", marginBottom: 12 },
+  fill: { height: 6, borderRadius: 3, backgroundColor: BRAND_GOLD, transformOrigin: "left" },
+  fillDone: { backgroundColor: "#22C55E" },
   row: { flexDirection: "row", gap: 8 },
   chip: { backgroundColor: "#0F172A", borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   chipText: { color: "#E2E8F0", fontSize: 13, fontWeight: "600" },

@@ -3,7 +3,8 @@ import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications
 import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
 import React, { useEffect, useRef, useState } from "react";
 import { recordAppOpen } from "@/lib/awardUploads";
-import { View, ActivityIndicator, Text, Pressable, Platform, Linking } from "react-native";
+import { View, ActivityIndicator, Text, Platform, Linking } from "react-native";
+import Pressable from "@/components/Pressable";
 import { sessionFromWidgetLink } from "@/lib/calendarWidget";
 import { ScrollView } from "@/components/ScrollView";
 import { NavigationContainer, type NavigationState } from "@react-navigation/native";

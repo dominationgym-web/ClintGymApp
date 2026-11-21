@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { parseIsoDate, todayIso } from "@/lib/dates";

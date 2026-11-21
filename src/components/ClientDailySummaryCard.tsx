@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { todayIso } from "@/lib/dates";
 import { ENERGY_COLOR, ruleSummary, type WeekFacts } from "@/lib/clientSummary";

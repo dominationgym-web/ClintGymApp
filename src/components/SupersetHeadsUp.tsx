@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { BRAND_GOLD } from "@/lib/brand";
 import { formatRest } from "@/lib/programs";

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Image, Pressable, Text, View } from "react-native";
+import { Animated, Image, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";

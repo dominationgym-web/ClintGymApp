@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { setThemePreference, themedStyles, useThemePreference, type ThemePreference } from "@/lib/theme";
 
 const OPTIONS: { value: ThemePreference; label: string; icon: string }[] = [

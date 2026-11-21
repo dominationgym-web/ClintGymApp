@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import TrainerCounter from "@/components/award/TrainerCounter";
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, RefreshControl, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import { countryName } from "@/lib/phoneCountry";
 import { useAuth } from "@/context/AuthContext";

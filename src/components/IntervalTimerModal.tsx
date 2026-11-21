@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, Text, Vibration, View } from "react-native";
+import { ActivityIndicator, Modal, Text, Vibration, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import ModalSafeArea from "./ModalSafeArea";
 import { useKeepAwake } from "expo-keep-awake";

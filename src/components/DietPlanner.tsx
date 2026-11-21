@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";

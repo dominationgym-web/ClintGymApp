@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Modal, Pressable, Text, View } from "react-native";
+import { Image, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import AngleCompare from "@/components/AngleCompare";
 import type { LoadedProgressPhoto } from "@/components/progressPhotoData";
 import { parseIsoDate } from "@/lib/dates";

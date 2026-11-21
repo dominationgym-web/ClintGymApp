@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";

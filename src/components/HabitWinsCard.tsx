@@ -1,13 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";

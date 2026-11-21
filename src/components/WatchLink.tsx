@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Alert, Platform, Pressable, Text, View } from "react-native";
+import { Alert, Platform, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { getHealthLink, healthSourceHere, linkHealth, openHealthConnectInStore, syncHealthWorkouts, unlinkHealth } from "@/lib/healthLink";
 import { healthAppName, type HealthSource } from "@/lib/healthSync";

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, RefreshControl, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -22,6 +23,7 @@ import type { TrainerStackParamList } from "@/navigation/types";
 import type { Trainer, TrainerProblem, TrainerProblemArea, TrainerProblemMessage, TrainerProblemStatus } from "@/types/database";
 import { themeBorder, themeText, themedStyles } from "@/lib/theme";
 import { useStepBack } from "@/hooks/useStepBack";
+import { toast } from "@/lib/toast";
 
 const INBOX_TABS: TrainerProblemStatus[] = ["new", "fixing", "fixed"];
 
@@ -85,7 +87,7 @@ export default function TrainerProblemsScreen() {
     setText("");
     setArea("app");
     setList((prev) => [data, ...prev]);
-    Alert.alert("Sent 🛠", "It's gone straight to the app owner. You'll get a notification when they answer.");
+    toast("Sent 🛠", "It's gone straight to the app owner. You'll get a notification when they answer.");
   };
 
   const open = openId ? list.find((p) => p.id === openId) : null;

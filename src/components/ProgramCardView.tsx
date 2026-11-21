@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { cardLabels, isTwoStep, type ProgramCard } from "@/lib/programCards";
 import type { Program } from "@/types/database";

@@ -1,14 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  Pressable,
-  Alert,
-  RefreshControl,
-  Keyboard,
-} from "react-native";
+import { View, Text, ActivityIndicator, Alert, RefreshControl, Keyboard } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import TimeInput from "@/components/TimeInput";
 import { supabase } from "@/lib/supabase";

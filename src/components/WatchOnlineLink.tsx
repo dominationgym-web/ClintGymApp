@@ -1,5 +1,6 @@
 import React from "react";
-import { Linking, Pressable, Text } from "react-native";
+import { Linking, Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { watchOnlineUrl } from "@/lib/sportsGuides";
 import { youtubeSearchUrl } from "@/lib/watchOnline";

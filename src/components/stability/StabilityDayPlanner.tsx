@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { parseIsoDate } from "@/lib/dates";
 import { WEEKDAY_NAMES } from "@/lib/programs";
 import { levelInfo } from "@/lib/stability";

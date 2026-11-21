@@ -49,6 +49,7 @@ import ClientListPanel from "@/components/ClientListPanel";
 import { useWideScreen } from "@/hooks/useWideScreen";
 import { navigationRef } from "@/navigation/navigationRef";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import { headingFont } from "@/lib/fonts";
 
 const Tab = createBottomTabNavigator<TrainerTabParamList>();
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
@@ -99,6 +100,7 @@ function TrainerTabs() {
       screenOptions={{
         headerStyle: { backgroundColor: themeBg("#0F172A") },
         headerTintColor: themeText("#fff"),
+        headerTitleStyle: headingFont(18),
         headerRight: wide ? undefined : () => <TrainerMenuButton />,
         headerTitle: wide ? undefined : () => <TrainerSideSwitch />,
         headerTitleAlign: "left",
@@ -178,7 +180,7 @@ export default function TrainerNavigator() {
           </View>
         ) : null}
         <View style={styles.page}>
-          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: themeBg("#0F172A") }, headerTintColor: themeText("#fff") }}>
+          <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: themeBg("#0F172A") }, headerTintColor: themeText("#fff"), headerTitleStyle: headingFont(18) }}>
             <Stack.Screen name="TrainerTabs" component={TrainerTabs} options={{ headerShown: false }} />
             <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: "Client" }} />
             <Stack.Screen

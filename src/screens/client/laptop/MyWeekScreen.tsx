@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { useAuth } from "@/context/AuthContext";

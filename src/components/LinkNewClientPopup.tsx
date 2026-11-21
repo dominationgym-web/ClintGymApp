@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, AppState, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, AppState, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import AwardTrainerCard from "@/components/award/AwardTrainerCard";
-import { View, Text, FlatList, ActivityIndicator, Pressable, RefreshControl, Alert } from "react-native";
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { CHALLENGE_NUDGE_DAYS, monthName, monthStart } from "@/lib/challenges";

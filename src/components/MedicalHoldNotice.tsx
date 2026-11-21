@@ -1,5 +1,6 @@
 import React from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Linking, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { themedStyles } from "@/lib/theme";
 
 // Serious symptoms on a check-in (0133): every workout is on hold until the

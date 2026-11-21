@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, Modal } from "react-native";
+import { View, Text, Modal } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import ModalSafeArea from "./ModalSafeArea";
 import { MUSCLE_NOT_WEIGHT, SAFETY_NOTE, techniqueFor, type ExerciseTechnique } from "@/lib/exerciseTechnique";

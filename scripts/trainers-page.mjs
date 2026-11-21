@@ -1,3 +1,4 @@
+import { SITE_FONTS, SITE_BASE_CSS } from "./home-page.mjs";
 // The For Personal Trainers landing page (GRIZZ, 2026-10-19): where Facebook
 // and Instagram adverts send trainers. It says straight away why Daily
 // Evolution is worth paying for, shows the five main features as a tap-through
@@ -166,23 +167,36 @@ export function trainersPage(escape) {
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://dailyevolution.co.za/trainers">
 <link rel="icon" href="/icon.png">
+${SITE_FONTS}
 <style>
+${SITE_BASE_CSS}
   :root { color-scheme: dark; --gold: #D4AF37; --bg: #0F172A; --card: #111C33; --line: #1E293B; --text: #E2E8F0; --muted: #94A3B8; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--body); }
   a { color: var(--gold); }
   .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
   header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; }
-  .brand { display: flex; align-items: center; gap: 10px; color: var(--gold); font-weight: 800; font-size: 18px; text-decoration: none; }
+  .brand { display: flex; align-items: center; gap: 10px; color: #fff; font: 700 20px/1 var(--head); letter-spacing: .02em; text-decoration: none; }
+  .brand span { color: var(--gold); }
   .brand img { width: 40px; height: 40px; border-radius: 10px; }
   .login { color: var(--muted); font-size: 14px; text-decoration: none; }
   .hero { padding: 28px 0 36px; text-align: center; }
   .eyebrow { color: var(--gold); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
-  h1 { color: #fff; font-size: clamp(30px, 6vw, 48px); line-height: 1.12; margin: 10px auto 14px; max-width: 760px; }
+  h1 { color: #fff; font-size: clamp(40px, 7vw, 68px); line-height: 1; text-transform: uppercase; margin: 10px auto 14px; max-width: 760px; }
   .sub { color: var(--muted); font-size: 18px; max-width: 640px; margin: 0 auto 24px; }
   .cta { display: inline-block; background: var(--gold); color: #111; font-weight: 800; font-size: 18px; padding: 15px 28px; border-radius: 12px; text-decoration: none; }
-  .cta:hover { filter: brightness(1.08); }
+  .cta { transition: transform .16s var(--ease), filter .2s var(--ease); box-shadow: 0 10px 30px -10px rgba(212,175,55,.6); }
+  .cta:active { transform: scale(.97); }
+  @media (hover: hover) and (pointer: fine) { .cta:hover { filter: brightness(1.08); } }
+  .tab, .nav button, .get-btn, dialog.get .close { transition: transform .16s var(--ease), background-color .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease); }
+  .tab:active, .nav button:active, .get-btn:active, dialog.get .close:active { transform: scale(.96); }
   .fine { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .hero { position: relative; isolation: isolate; }
+  .hero::before { content: ""; position: absolute; left: 50%; top: 45%; width: 760px; max-width: 100vw; height: 760px; transform: translateX(-50%); pointer-events: none; z-index: -1;
+    background: radial-gradient(closest-side, rgba(212,175,55,.16), rgba(212,175,55,0)); }
+  .hero-phone { width: 270px; margin: 36px auto 0; border-radius: 40px; padding: 9px; background: linear-gradient(160deg, #2A3550, #0B1120 60%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 40px 80px -20px rgba(0,0,0,.7), 0 20px 40px -20px rgba(212,175,55,.25); animation-delay: .2s; }
+  .hero-phone img { display: block; width: 100%; height: auto; border-radius: 32px; }
   .control { background: linear-gradient(180deg, #1A2338, var(--card)); border: 2px solid var(--gold); border-radius: 18px; padding: 24px; margin: 0 0 28px; }
   .control h2 { color: var(--gold); font-size: clamp(22px, 4.5vw, 30px); margin: 0 0 6px; text-transform: uppercase; letter-spacing: .02em; }
   .pts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
@@ -207,6 +221,10 @@ export function trainersPage(escape) {
   .get-btn { display: block; width: 100%; margin-top: 14px; padding: 12px; border-radius: 12px; border: 1.5px solid var(--gold); background: transparent; color: var(--gold); font-weight: 700; font-size: 16px; cursor: pointer; }
   dialog.get { max-width: 560px; width: calc(100% - 32px); max-height: 85vh; background: var(--card); color: #E2E8F0; border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
   dialog.get::backdrop { background: rgba(0,0,0,0.65); }
+  dialog.get[open] { animation: dlgIn .24s var(--ease); }
+  dialog.get[open]::backdrop { animation: fadeIn .24s var(--ease); }
+  @keyframes dlgIn { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+  @keyframes fadeIn { from { opacity: 0; } }
   dialog.get h3 { color: #fff; margin: 0 0 8px; font-size: 20px; }
   dialog.get h4 { color: var(--gold); margin: 16px 0 6px; font-size: 15px; }
   dialog.get h4 em { font-style: normal; font-size: 12px; color: #F59E0B; border: 1px solid #F59E0B; border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
@@ -223,8 +241,11 @@ export function trainersPage(escape) {
   .tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
   .tab { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 9px 16px; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
   .tab.on { background: var(--gold); border-color: var(--gold); color: #111; }
-  .slide { display: none; grid-template-columns: 1fr 320px; gap: 32px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
-  .slide.on { display: grid; }
+  /* All slides sit in the same spot, so the box is as tall as the tallest one and
+     Back / Next never move under your finger; the new one fades in (2026-11-21). */
+  .slides { display: grid; }
+  .slide { grid-area: 1 / 1; display: grid; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity .25s var(--ease), transform .25s var(--ease), visibility 0s linear .25s; grid-template-columns: 1fr 320px; gap: 32px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+  .slide.on { opacity: 1; visibility: visible; transform: none; transition: opacity .25s var(--ease), transform .25s var(--ease), visibility 0s; }
   .slide h2 { color: var(--gold); margin: 0 0 6px; font-size: 24px; }
   .tagline { color: #fff; font-size: 19px; font-weight: 800; margin: 0 0 6px; }
   .lead { color: var(--text); font-size: 16px; margin: 0 0 12px; }
@@ -272,7 +293,7 @@ export function trainersPage(escape) {
     .why, .modes, .steps, .prices, .pts { grid-template-columns: 1fr; }
     body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
     .control { padding: 18px; }
-    .slide.on { grid-template-columns: 1fr; padding: 18px; gap: 18px; }
+    .slide { grid-template-columns: 1fr; padding: 18px; gap: 18px; align-content: start; }
     .phone { max-width: 320px; width: 100%; margin: 0 auto; }
     .screen { min-height: 0; }
     .tabs { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; }
@@ -286,7 +307,7 @@ export function trainersPage(escape) {
 <body>
 <div class="wrap">
 <header class="top">
-  <a class="brand" href="/"><img src="/icon.png" alt="">Daily Evolution</a>
+  <a class="brand" href="/"><img src="/icon.png" alt="">DAILY <span>EVOLUTION</span></a>
   <a class="login" href="/app/">Trainer login</a>
 </header>
 
@@ -297,6 +318,7 @@ export function trainersPage(escape) {
   <a class="cta" href="${SIGNUP}">Start your free 30-day trial</a>
   <div class="fine"><strong>No credit card required.</strong> Apply in a few minutes.</div>
   <div class="fine">Your clients remain under your coaching control. No independent client access.</div>
+  <div class="hero-phone rise" aria-hidden="true"><img src="/img/home-trainer.webp" alt="" width="360" height="640"></div>
 </section>
 
 <section class="control">
@@ -321,7 +343,7 @@ export function trainersPage(escape) {
 <h2 class="section">See what it does</h2>
 <p class="section">Tap through the five things that set it apart: programming, injury-aware training, nutrition, recovery and business management.</p>
 <div class="tabs" role="tablist">${tabs}</div>
-${slides}
+<div class="slides">${slides}</div>
 <div class="nav"><button type="button" id="prev">‹ Back</button><button type="button" id="next">Next ›</button></div>
 </div>
 
@@ -464,7 +486,8 @@ ${[
         tabs[k].classList.toggle("on", k === cur);
         tabs[k].setAttribute("aria-selected", k === cur);
       }
-      tabs[cur].scrollIntoView({ block: "nearest", inline: "center" });
+      var bar = tabs[cur].parentNode, t = tabs[cur];
+      bar.scrollTo({ left: t.offsetLeft - (bar.clientWidth - t.offsetWidth) / 2, behavior: "smooth" });
     }
     for (var k = 0; k < tabs.length; k++) tabs[k].addEventListener("click", function () { show(Number(this.dataset.i)); });
     document.getElementById("prev").addEventListener("click", function () { show(cur - 1); });

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Image, Modal, Pressable, Text, View } from "react-native";
+import { Image, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { parseIsoDate } from "@/lib/dates";
 import { themedStyles } from "@/lib/theme";

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { ScrollView } from "@/components/ScrollView";
@@ -43,6 +44,7 @@ import { themeBg, themeText, themedStyles } from "@/lib/theme";
 import { CatchUpTag } from "@/components/sessions/CatchUpTag";
 import SafeBottom from "@/components/SafeBottom";
 import { diaryKey } from "@/lib/calendarRegular";
+import { toast } from "@/lib/toast";
 
 type Step = "menu" | "cancel" | "coach" | "move" | "who" | "price";
 
@@ -117,7 +119,7 @@ export default function SessionActionsModal({
       return;
     }
     onChanged();
-    if (after) Alert.alert("Saved ✅", after);
+    if (after) toast("Saved ✅", after);
     onClose();
   };
 

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import ModalSafeArea from "../components/ModalSafeArea";
 import TextInput from "@/components/TextInput";
@@ -28,6 +29,7 @@ import {
 } from "@/lib/timerWorkouts";
 import { themeText, themedStyles } from "@/lib/theme";
 import SafeBottom from "@/components/SafeBottom";
+import KeepScreenOn from "@/components/KeepScreenOn";
 
 type TabKey = TimerKind | "saved";
 
@@ -178,6 +180,7 @@ export default function TimersScreen({ initialTab }: { initialTab?: TabKey }) {
 
   return (
     <View style={styles.screen}>
+      <KeepScreenOn />
       <ScreenTabBar tabs={TABS} current={tab} onChange={setTab} position="top" />
       {kind && s ? (
         <ScrollView contentContainerStyle={styles.pad} keyboardShouldPersistTaps="handled">

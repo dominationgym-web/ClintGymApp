@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useStepBack } from "@/hooks/useStepBack";
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";

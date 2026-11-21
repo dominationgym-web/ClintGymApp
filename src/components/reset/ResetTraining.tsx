@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import ModalSafeArea from "../ModalSafeArea";
 import KeyboardSafe from "@/components/KeyboardSafe";

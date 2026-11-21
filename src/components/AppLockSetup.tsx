@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import ModalSafeArea from "@/components/ModalSafeArea";
 import PinPad from "@/components/PinPad";
 import { changeAppLockPin, checkAppLockPin, turnOffAppLock, turnOnAppLock } from "@/lib/appLock";

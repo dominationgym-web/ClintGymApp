@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Text, View, type StyleProp, type ViewStyle } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";

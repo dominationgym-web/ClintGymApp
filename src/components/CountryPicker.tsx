@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import ModalSafeArea from "@/components/ModalSafeArea";
 import { BRAND_GOLD } from "@/lib/brand";

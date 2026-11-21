@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Modal, Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { Modal, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import SafeBottom from "@/components/SafeBottom";
 import { BRAND_GOLD } from "@/lib/brand";

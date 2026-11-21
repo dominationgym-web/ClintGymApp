@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { loadClientProgram, type ActiveProgram } from "@/lib/programQueries";

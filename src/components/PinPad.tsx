@@ -1,8 +1,10 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import { PIN_LENGTH } from "@/lib/appLockRules";
 import { themedStyles } from "@/lib/theme";
+import { tick } from "@/lib/haptics";
 
 // Big tap buttons for the app lock PIN: no keyboard, no typing (GRIZZ, 2026-11-08).
 export default function PinPad({
@@ -72,7 +74,10 @@ function Key({
   return (
     <Pressable
       style={({ pressed }) => [styles.key, pressed && !disabled && styles.keyPressed, disabled && styles.keyDisabled]}
-      onPress={onPress}
+      onPress={() => {
+        tick();
+        onPress();
+      }}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}

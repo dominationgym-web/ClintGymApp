@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Alert, ActivityIndicator } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";
 import { loadRecoveryCheck, type RecoveryCheck } from "@/lib/recoveryQueries";
@@ -9,6 +10,7 @@ import { displayProgramName } from "@/lib/programs";
 import { BRAND_GOLD } from "@/lib/brand";
 import type { ClientProgram } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 
 const AMBER = "#F59E0B";
 
@@ -61,7 +63,7 @@ export default function RecoveryCheckCard({
     }
     setEditing(null);
     await load();
-    Alert.alert("Done", done);
+    toast("Done", done);
   };
 
   // Already dealt with today: a quiet line, with a way to undo.

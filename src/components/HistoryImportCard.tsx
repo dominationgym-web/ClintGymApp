@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { pickScreenshots, pickWebFiles } from "@/lib/pickImportFiles";
 import { supabase } from "@/lib/supabase";
 import { todayIso } from "@/lib/dates";

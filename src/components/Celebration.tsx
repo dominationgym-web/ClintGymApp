@@ -1,8 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Easing, Modal, Pressable, Text, View } from "react-native";
+import { Animated, Easing, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { BRAND_GOLD } from "@/lib/brand";
 import Confetti from "@/components/Confetti";
 import { themedStyles } from "@/lib/theme";
+import { reduceMotion } from "@/lib/motion";
+import { success } from "@/lib/haptics";
+import { headingFont } from "@/lib/fonts";
 
 export type CelebrationInfo = {
   emoji: string;
@@ -21,22 +25,32 @@ export default function Celebration({ info, onClose }: { info: CelebrationInfo |
 
   useEffect(() => {
     if (!info) return;
+    // Calmer than before (GRIZZ, 2026-11-21 design review): the card settles in
+    // from 92% with one small overshoot, the medal pulses twice and stops.
     pop.setValue(0);
     pulse.setValue(0);
-    Animated.spring(pop, { toValue: 1, friction: 4, tension: 90, useNativeDriver: true }).start();
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 600, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 600, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
+    if (reduceMotion()) {
+      pop.setValue(1);
+      return;
+    }
+    Animated.spring(pop, { toValue: 1, friction: 7, tension: 120, useNativeDriver: true }).start();
+    const twice = Animated.sequence([
+      Animated.delay(250),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: 1, duration: 450, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 0, duration: 450, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        ]),
+        { iterations: 2 },
+      ),
+    ]);
+    twice.start();
+    success();
+    return () => twice.stop();
   }, [info, pop, pulse]);
 
-  const cardScale = pop.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
-  const medalScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
-  const medalTurn = pop.interpolate({ inputRange: [0, 1], outputRange: ["-200deg", "0deg"] });
+  const cardScale = pop.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] });
+  const medalScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
   const glow = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.7] });
 
   return (
@@ -46,11 +60,11 @@ export default function Celebration({ info, onClose }: { info: CelebrationInfo |
           <Animated.View style={[styles.card, { opacity: pop, transform: [{ scale: cardScale }] }]}>
             <View style={styles.medalWrap}>
               <Animated.View style={[styles.glow, { opacity: glow, transform: [{ scale: medalScale }] }]} />
-              <Animated.View style={[styles.medal, { transform: [{ scale: medalScale }, { rotate: medalTurn }] }]}>
+              <Animated.View style={[styles.medal, { transform: [{ scale: medalScale }] }]}>
                 <Text style={styles.medalText}>{info.emoji}</Text>
               </Animated.View>
             </View>
-            <Text style={styles.title}>{info.title}</Text>
+            <Text style={[styles.title, headingFont(24)]}>{info.title}</Text>
             {info.lines?.map((l, i) => (
               <Text key={i} style={i === 0 ? styles.first : styles.line}>
                 {l}

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { EFFORT_LABEL as PROGRESSION_EFFORT_LABEL } from "@/lib/progression";
-import { View, Text, Pressable, Alert } from "react-native";
+import { View, Text, Alert } from "react-native";
+import Pressable from "@/components/Pressable";
 import { groupTrainingLog, type TrainingLogExercise } from "@/lib/trainingLog";
 import { todayIso } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";

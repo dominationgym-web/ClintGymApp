@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, SectionList, Text, View } from "react-native";
+import { ActivityIndicator, SectionList, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import ExerciseVideoPreview from "@/components/ExerciseVideoPreview";
 import { themeText, themedStyles } from "@/lib/theme";

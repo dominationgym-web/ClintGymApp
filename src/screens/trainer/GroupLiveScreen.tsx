@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import TextInput from "@/components/TextInput";
@@ -43,6 +44,7 @@ import type { Client, Exercise, SetEffort, WorkoutLog } from "@/types/database";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
 import SafeBottom from "@/components/SafeBottom";
 import ModalSafeArea from "@/components/ModalSafeArea";
+import KeepScreenOn from "@/components/KeepScreenOn";
 
 // Group live session (GRIZZ, 2026-10-21): "a trainer might be training up to
 // 4 people ... the same session ... when the session is done it logs it all
@@ -410,6 +412,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <KeepScreenOn />
       <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 16 }}>
         {withPlan.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>

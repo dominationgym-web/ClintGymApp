@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";

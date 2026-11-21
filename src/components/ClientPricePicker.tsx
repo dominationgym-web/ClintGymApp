@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useAuth } from "@/context/AuthContext";
 import { BRAND_GOLD } from "@/lib/brand";
 import { supabase } from "@/lib/supabase";

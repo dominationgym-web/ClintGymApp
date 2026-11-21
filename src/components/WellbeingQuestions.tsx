@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Linking, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { EMERGENCY_NUMBERS } from "@/components/MedicalHoldNotice";
 import TextInput from "@/components/TextInput";
 import { splitKinds, STOP_EXERCISE_ADVICE, toggleKind, WELLBEING_TOPICS, type WellbeingAnswer, type WellbeingForm, type WellbeingKey } from "@/lib/wellbeing";
 import { themedStyles } from "@/lib/theme";
+import { tap } from "@/lib/haptics";
 
 // Pain, fatigue and mental exhaustion on the check-in (0055). Each needs a tap:
 // "I'm okay", or "Something's up" with what it is and a short note. Dizziness
@@ -47,6 +49,7 @@ export default function WellbeingQuestions({
           <Pressable
             style={[styles.bigChoice, allOk && styles.okOn]}
             onPress={() => {
+              tap();
               onChange(allSetTo(value, false));
               onAllGood?.();
             }}

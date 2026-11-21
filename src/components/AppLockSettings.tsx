@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import AppLockSetupModal, { type AppLockSetupMode } from "@/components/AppLockSetup";
 import { setAppLockBiometrics, setAppLockDelay, useAppLock } from "@/lib/appLock";
 import { LOCK_DELAY_OPTIONS } from "@/lib/appLockRules";

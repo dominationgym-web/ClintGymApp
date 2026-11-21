@@ -10,23 +10,32 @@ import AppLockGate from "@/components/AppLockGate";
 import { loadAppLock } from "@/lib/appLock";
 import { setUpNotifications } from "@/lib/notifications";
 import { setUpWebAlert } from "@/lib/webAlert";
+import ToastHost from "@/components/ToastHost";
 import {
   loadThemePreference,
   themedStyles,
   useThemeMode,
   useThemeReady,
 } from "@/lib/theme";
+import { loadFonts } from "@/lib/fonts";
 
 setUpNotifications();
 setUpWebAlert();
 loadThemePreference();
+const fontsLoading = loadFonts();
 loadAppLock();
 
 export default function App() {
   // Switching light/dark remounts the screens so every style is drawn again;
   // RootNavigator keeps the page you were on.
   const mode = useThemeMode();
-  const ready = useThemeReady();
+  const themeReady = useThemeReady();
+  // Wait (1.5 s at most) for the heading font, so titles don't change shape after showing.
+  const [fontsReady, setFontsReady] = React.useState(false);
+  React.useEffect(() => {
+    fontsLoading.then(() => setFontsReady(true));
+  }, []);
+  const ready = themeReady && fontsReady;
   return (
     <SafeAreaProvider>
       <FirstOpenUpdate>
@@ -35,6 +44,7 @@ export default function App() {
           {!ready ? null : (
             <AppLockGate>{Platform.OS === "web" ? <WebFrame key={mode} /> : <RootNavigator key={mode} />}</AppLockGate>
           )}
+          <ToastHost />
         </AuthProvider>
       </FirstOpenUpdate>
     </SafeAreaProvider>

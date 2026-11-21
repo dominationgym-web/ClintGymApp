@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { CARDIO_ALL, CARDIO_OPTIONS, cardioDuration, cardioLabel } from "@/lib/programs";

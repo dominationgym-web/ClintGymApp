@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TimeInput from "@/components/TimeInput";
 import { BRAND_GOLD } from "@/lib/brand";
 import { cleanTime, slotTimes } from "@/lib/liveSessions";

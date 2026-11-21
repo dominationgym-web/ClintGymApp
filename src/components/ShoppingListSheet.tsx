@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Modal, Platform, Pressable, Share, Text, View } from "react-native";
+import { Alert, Linking, Modal, Platform, Share, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import { BRAND_GOLD } from "@/lib/brand";
 import { emailShareLink, shoppingList, shoppingListText, weekShoppingList, whatsappShareLink } from "@/lib/shoppingList";

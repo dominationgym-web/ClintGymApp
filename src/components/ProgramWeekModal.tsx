@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";

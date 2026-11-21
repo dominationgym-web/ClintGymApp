@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Switch, Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TextInput from "@/components/TextInput";
 import TimeInput from "@/components/TimeInput";
 import { supabase } from "@/lib/supabase";

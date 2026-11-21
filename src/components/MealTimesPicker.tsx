@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Pressable from "@/components/Pressable";
 import TimeSlotButton from "@/components/TimeSlotButton";
 import { BRAND_GOLD } from "@/lib/brand";
 import { MAX_MEALS, MAX_SNACKS, MIN_MEALS, mealTimesFor, snackTimesFor } from "@/lib/mealPlanMaker";
