@@ -197,12 +197,14 @@ export default function ClientCalendarView({
     exercises.find((e) => e.name === row.exercise_name)?.category ??
     null;
   // Training in gold; mobility and flexibility apart, in teal (GRIZZ, 2026-10-18).
-  const nameOf = (p: Pick<Program, "name" | "trainer_id">) =>
-    isFunctionalProgram(p)
-      ? functionalShortName(p.name, !!p.trainer_id)
-      : p.trainer_id
-        ? shortWorkoutName(p.name)
-        : shortWorkoutName(displayProgramName(p), false);
+  // The week list has room for the whole name (up to two lines), so only the
+  // known short forms (Push 2, Upper SS) are used, never a cut "Intermediat…".
+  const nameOf = (p: Pick<Program, "name" | "trainer_id">) => {
+    if (isFunctionalProgram(p)) return functionalShortName(p.name, !!p.trainer_id);
+    const full = p.trainer_id ? p.name : displayProgramName(p);
+    const short = shortWorkoutName(full, !!p.trainer_id);
+    return short.endsWith("…") ? full : short;
+  };
   const plans: Record<string, WeekDayPlan> = {};
   const mainLabels: Record<string, string> = {};
   for (const date of weekDates(monday)) {

@@ -27,6 +27,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useAuth } from "@/context/AuthContext";
 import { cancelMenuReturn } from "@/lib/menuReturn";
 import { themeBg, themeBorder, themeText, themedStyles } from "@/lib/theme";
+import FoldSection from "@/components/FoldSection";
 
 type Props = NativeStackScreenProps<ClientStackParamList, "Section">;
 
@@ -88,28 +89,23 @@ export default function SectionScreen({ route }: Props) {
         parts.map((part) => {
           const isOpen = open === part.title;
           return (
-            <View key={part.title}>
-              <Pressable
-                style={[styles.partHeader, { borderLeftColor: themeBorder(section.accent) }, isOpen && styles.partHeaderOpen]}
-                onPress={() => setOpen(isOpen ? null : part.title)}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: isOpen }}
-              >
-                {part.icon ? (
-                  <View style={[styles.partIcon, { backgroundColor: themeBg(section.accent + "1F") }]}>
-                    <LineIcon icon={part.icon} size={20} color={section.accent} />
-                  </View>
-                ) : null}
-                <Text style={styles.partTitle}>{part.title}</Text>
-                {part.tag ? (
+            <FoldSection
+              key={part.title}
+              icon={part.icon}
+              title={part.title}
+              open={isOpen}
+              onToggle={() => setOpen(isOpen ? null : part.title)}
+              stepBack={false}
+              tag={
+                part.tag ? (
                   <Text style={[styles.partTag, { color: themeText(LEVEL_COLOURS[part.tag]), borderColor: themeBorder(LEVEL_COLOURS[part.tag]) }]}>
                     {part.tag}
                   </Text>
-                ) : null}
-                <Text style={[styles.partArrow, { color: themeText(section.accent) }]}>{isOpen ? "▲" : "▼"}</Text>
-              </Pressable>
-              {isOpen ? part.body : null}
-            </View>
+                ) : null
+              }
+            >
+              {part.body}
+            </FoldSection>
           );
         })
       ) : (

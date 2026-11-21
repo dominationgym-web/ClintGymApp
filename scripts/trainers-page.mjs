@@ -9,10 +9,13 @@ import { SITE_FONTS, SITE_BASE_CSS } from "./home-page.mjs";
 
 const SIGNUP = "/app/?signup=trainer";
 
-// One tap-through slide per feature: what it does, and a mock of the screen.
+// One tap-through slide per feature: what it does, and a real picture of that
+// screen from the app (made-up client names, never real ones).
 const FEATURES = [
   {
     key: "progression",
+    shot: "/img/trainers-progression.webp",
+    alt: "A client's training calendar in the app, with today's workout and the week planned",
     tab: "Programming",
     title: "Intelligent Programming",
     tagline: "Smarter training. Less planning.",
@@ -24,22 +27,11 @@ const FEATURES = [
       "Plan workouts directly onto your client's calendar.",
     ],
     closer: "Spend less time programming. More time coaching.",
-    demo: `
-      <div class="m-title">📅 Training calendar</div>
-      <div class="week">
-        <div class="d"><b>Mon</b><span class="g">Upper 1</span><i>Chest · Back</i></div>
-        <div class="d"><b>Tue</b><span class="t">Mobility</span></div>
-        <div class="d"><b>Wed</b><span class="g">Lower 1</span><i>Quads · Glutes</i></div>
-        <div class="d"><b>Thu</b><span class="p">Knee rehab</span></div>
-        <div class="d"><b>Fri</b><span class="g">Upper 2</span><i>Shoulders · Arms</i></div>
-        <div class="d"><b>Sat</b><span class="r">Recovery</span></div>
-        <div class="d"><b>Sun</b><span class="m">Rest</span></div>
-      </div>
-      <div class="m-card blue">🌙 <b>Time for a deload week</b><br>6 weeks in a row, sleep down, more sets to failure. Half the sets at about 70% next week?</div>
-      <div class="m-card">🎯 <b>Gauge set</b>: Leg press. They pick a weight they can do well; the app sets their working weight from it.</div>`,
   },
   {
     key: "injury",
+    shot: "/img/trainers-injury.webp",
+    alt: "The injury check finding five exercises that may aggravate a client's knee",
     tab: "Injury-aware",
     title: "Injury-Aware Training",
     tagline: "Your client's safety matters.",
@@ -51,15 +43,11 @@ const FEATURES = [
       "Records your decisions and programme adjustments.",
     ],
     closer: "Better information. More confident coaching decisions.",
-    demo: `
-      <div class="m-title">🩹 Injury check</div>
-      <div class="m-sub">Sarah · Left knee (open) · Lower back pain reported Tue</div>
-      <div class="m-card amber"><b>⚠ Barbell back squat</b><br>Loads the knee deeply.<div class="chips"><span>Box squat</span><span>Leg press, short range</span><span>Glute bridge</span></div></div>
-      <div class="m-card amber"><b>⚠ Romanian deadlift</b><br>Loads the lower back.<div class="chips"><span>Hip thrust</span><span>Cable pull-through</span><span>Back extension, light</span></div></div>
-      <div class="m-card green">✓ The other 4 exercises are fine for her injuries.</div>`,
   },
   {
     key: "nutrition",
+    shot: "/img/trainers-nutrition.webp",
+    alt: "The client Nutrition page: meal plan, BMR and macros, protein cooking ideas, sauces and the meal builder",
     tab: "Nutrition",
     title: "Intelligent Nutrition",
     tagline: "Nutrition planning without the admin.",
@@ -71,20 +59,11 @@ const FEATURES = [
       "Identify clients who may need specialist nutritional guidance.",
     ],
     closer: "Less time calculating. More time helping clients succeed.",
-    demo: `
-      <div class="m-title">🍽 Daily targets</div>
-      <div class="targets">
-        <div><b>1 950</b><i>kcal</i></div>
-        <div><b>140 g</b><i>protein</i></div>
-        <div><b>200 g</b><i>carbs</i></div>
-        <div><b>65 g</b><i>fat</i></div>
-      </div>
-      <div class="m-sub">Fat loss · 18% below maintenance · never below resting burn</div>
-      <div class="m-card">🥚 Breakfast: eggs, wholegrain toast, fruit<br>🍗 Lunch: chicken, rice, salad<br>🐟 Dinner: fish, sweet potato, veg</div>
-      <div class="m-card amber">⚕ Health check: type 2 diabetes ticked on intake. Kept at maintenance until a doctor or dietitian is involved.</div>`,
   },
   {
     key: "recovery",
+    shot: "/img/trainers-recovery.webp",
+    alt: "The Recovery page suggesting foam rolling and stretching after a hard week",
     tab: "Recovery",
     title: "Recovery & Rehabilitation",
     tagline: "Training is only half the equation.",
@@ -96,15 +75,11 @@ const FEATURES = [
       "Monitor recovery alongside training progress.",
     ],
     closer: "Smarter recovery. Better-informed training decisions.",
-    demo: `
-      <div class="m-title">🧠 Daily summary · James</div>
-      <div class="pill low">Energy: Low</div>
-      <div class="m-sub">Check-ins 6/7 · Workouts 3/4 · Sleep 5.5 h ⌚</div>
-      <div class="m-card">Sleep has been short for 4 nights and he reported tiredness twice. Two heavy leg days this week.</div>
-      <div class="m-card green"><b>Suggestions</b><br>• Lighten Thursday's legs or swap in mobility.<br>• Sleep is short: an earlier bedtime will help more than more training.</div>`,
   },
   {
     key: "payments",
+    shot: "/img/trainers-business.webp",
+    alt: "Monthly invoices ready to check and send, with paid switches",
     tab: "Business",
     title: "Business & Client Management",
     tagline: "Your clients. Your business. Your control.",
@@ -116,14 +91,6 @@ const FEATURES = [
       "Manage online, in-person and hybrid coaching clients.",
     ],
     closer: "Less administration. More time to grow your business.",
-    demo: `
-      <div class="m-title">👥 Clients</div>
-      <div class="group">Active · 18</div>
-      <div class="group amber-t">Awaiting payment · 2</div>
-      <div class="m-card">💳 <b>Lerato sent proof of payment</b><br>R850 · Online coaching<div class="btn-mini">Paid, activate her</div></div>
-      <div class="group">Waiting approval · 1</div>
-      <div class="group muted-t">Dormant · 3</div>
-      <div class="m-card">📈 This month: <b>R15 300</b> from 18 clients</div>`,
   },
 ];
 
@@ -146,7 +113,7 @@ export function trainersPage(escape) {
     <ul>${f.points.map((p) => `<li>${escape(p)}</li>`).join("")}</ul>
     <p class="closer">${escape(f.closer)}</p>
   </div>
-  <div><div class="phone" aria-hidden="true"><div class="screen">${f.demo}</div></div><div class="caption">Example screen</div></div>
+  <div><div class="phone"><img src="${f.shot}" alt="${escape(f.alt)}" width="540" height="960" loading="lazy" decoding="async"></div><div class="caption">In the app</div></div>
 </section>`,
   ).join("\n");
   const modes = ONLINE_IN_PERSON.map(
@@ -254,30 +221,9 @@ ${SITE_BASE_CSS}
   .slide li { margin-bottom: 8px; color: var(--text); }
   .nav { display: flex; justify-content: space-between; margin-top: 12px; }
   .nav button { background: none; border: 1px solid var(--line); color: var(--gold); border-radius: 10px; padding: 8px 14px; font: inherit; font-weight: 700; cursor: pointer; }
-  .phone { background: #05080F; border: 2px solid #2A3550; border-radius: 30px; padding: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
-  .screen { background: var(--bg); border-radius: 20px; padding: 14px 12px; min-height: 420px; font-size: 13px; }
+  .phone { background: linear-gradient(160deg, #2A3550, #0B1120 60%); border-radius: 30px; padding: 8px; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 20px 50px rgba(0,0,0,.45); }
+  .phone img { display: block; width: 100%; height: auto; border-radius: 22px; }
   .caption { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }
-  .m-title { color: var(--gold); font-weight: 800; font-size: 15px; margin-bottom: 8px; }
-  .m-sub { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
-  .m-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-top: 8px; }
-  .m-card.amber { border-color: #B45309; }
-  .m-card.green { border-color: #15803D; }
-  .m-card.blue { border-color: #3B82F6; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .chips span { background: #13301F; color: #86EFAC; border-radius: 999px; padding: 3px 9px; font-size: 12px; }
-  .week { display: grid; gap: 5px; }
-  .week .d { display: grid; grid-template-columns: 36px 1fr; align-items: center; background: var(--card); border-radius: 9px; padding: 6px 8px; }
-  .week .d i { grid-column: 2; color: var(--muted); font-style: normal; font-size: 11px; }
-  .week b { color: var(--muted); font-size: 12px; }
-  .g { color: var(--gold); font-weight: 700; } .t { color: #2DD4BF; font-weight: 700; } .p { color: #C084FC; font-weight: 700; } .r { color: #4ADE80; font-weight: 700; } .m { color: #64748B; }
-  .targets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .targets div { background: var(--card); border-radius: 10px; padding: 10px; text-align: center; }
-  .targets b { color: #fff; font-size: 18px; display: block; } .targets i { color: var(--muted); font-style: normal; font-size: 12px; }
-  .pill { display: inline-block; border: 1px solid #F97316; color: #F97316; border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: 12px; }
-  .group { color: #fff; font-weight: 700; margin-top: 10px; }
-  .group i { color: var(--muted); font-weight: 400; font-style: normal; }
-  .amber-t { color: #F59E0B; } .muted-t { color: var(--muted); }
-  .btn-mini { display: inline-block; margin-top: 8px; background: #22C55E; color: #fff; border-radius: 8px; padding: 5px 10px; font-weight: 700; font-size: 12px; }
   .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 40px 0; }
   .mode { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
   .mode .icon { font-size: 26px; } .mode b { color: #fff; } .mode p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
@@ -294,8 +240,7 @@ ${SITE_BASE_CSS}
     body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
     .control { padding: 18px; }
     .slide { grid-template-columns: 1fr; padding: 18px; gap: 18px; align-content: start; }
-    .phone { max-width: 320px; width: 100%; margin: 0 auto; }
-    .screen { min-height: 0; }
+    .phone { max-width: 280px; width: 100%; margin: 0 auto; }
     .tabs { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; }
     .tab { flex: none; }
     .sticky { display: block; transition: transform .2s ease; position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(15,23,42,.96); border-top: 1px solid var(--line); }

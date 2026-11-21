@@ -111,7 +111,8 @@ export default function WeekCalendar({
             <View style={{ flex: 1, gap: 3 }}>
               {main && (
                 <View>
-                  <Text style={[styles.mainTitle, main.deload && { color: themeText(DELOAD_BLUE) }]} numberOfLines={1}>
+                  {/* Two lines so long program names read in full, not "Intermediat…" (design review round 2). */}
+                  <Text style={[styles.mainTitle, main.deload && { color: themeText(DELOAD_BLUE) }]} numberOfLines={2}>
                     {main.deload ? "Deload · " : "🏋️ "}
                     {main.title}
                   </Text>

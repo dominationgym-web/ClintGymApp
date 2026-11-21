@@ -1938,7 +1938,7 @@ const styles = themedStyles({
   name: { color: "#fff", fontWeight: "600", flexShrink: 1 },
   nameRow: { flexDirection: "row", alignItems: "center" },
   category: { color: "#64748B", fontSize: 12, marginTop: 2 },
-  link: { color: "#22C55E", fontSize: 13 },
+  link: { color: "#D4AF37", fontSize: 13 },
   helper: { color: "#94A3B8", fontSize: 13, marginBottom: 12 },
   modalContainer: { flex: 1, backgroundColor: "#0F172A" },
   modalHeader: {
@@ -1947,7 +1947,7 @@ const styles = themedStyles({
     alignItems: "flex-start",
     padding: 20,
   },
-  closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
+  closeText: { color: "#D4AF37", fontWeight: "600", fontSize: 15 },
   video: { width: "100%", backgroundColor: "#000", borderRadius: 10, marginBottom: 8 },
   videoExpanded: { aspectRatio: 9 / 16 },
   expandText: { color: "#22C55E", fontSize: 13, fontWeight: "600", textAlign: "center" },

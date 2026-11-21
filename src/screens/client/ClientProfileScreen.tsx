@@ -371,7 +371,7 @@ const styles = themedStyles({
   trainerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   trainerLabel: { color: "#64748B", fontSize: 12 },
   trainerName: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  photoLink: { color: "#22C55E", fontWeight: "600", marginTop: 6, fontSize: 12 },
+  photoLink: { color: "#D4AF37", fontWeight: "600", marginTop: 6, fontSize: 12 },
   title: { fontSize: 22, fontWeight: "700", color: "#fff" },
   email: { color: "#94A3B8", marginBottom: 8 },
   statusPill: { alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginBottom: 8 },

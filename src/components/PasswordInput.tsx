@@ -32,5 +32,5 @@ const styles = themedStyles({
     marginBottom: 12,
   },
   toggle: { position: "absolute", right: 14, top: 0, bottom: 12, justifyContent: "center" },
-  toggleText: { color: "#15803D", fontWeight: "700", fontSize: 13 },
+  toggleText: { color: "#D4AF37", fontWeight: "700", fontSize: 13 },
 });

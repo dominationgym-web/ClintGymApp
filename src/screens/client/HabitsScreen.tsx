@@ -13,6 +13,7 @@ import { parseReminderTime } from "@/lib/reminderTime";
 import { scheduleHabitReminders } from "@/lib/notifications";
 import { findHabit, isRunning } from "@/lib/habitLibrary";
 import { BRAND_GOLD } from "@/lib/brand";
+import { toast } from "@/lib/toast";
 import ChooseHabitsModal from "@/components/ChooseHabitsModal";
 import ChallengeCard from "@/components/ChallengeCard";
 import { themeBg, themeText, themedStyles } from "@/lib/theme";
@@ -28,7 +29,18 @@ function isActiveToday(habit: Habit) {
   return habit.active_days.includes(todayWeekday());
 }
 
+// One-tap starters shown while the client has no habits yet. Names match the
+// suggestions in habitLibrary so "Choose habits" shows them as added.
+const STARTER_HABITS = [
+  { emoji: "🚶", name: "Walk 8,000 steps", reps: 1 },
+  { emoji: "🥩", name: "Protein with every meal", reps: 3 },
+  { emoji: "🌙", name: "In bed by 22:30", reps: 1 },
+  { emoji: "🧘", name: "10 minutes of stretching", reps: 1 },
+  { emoji: "🥤", name: "No sugary drinks", reps: 1 },
+];
+
 export default function HabitsScreen() {
+  const [addingStarter, setAddingStarter] = useState<string | null>(null);
   const { client } = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
   // habit_id -> { "2026-09-20": repsCompleted, ... } for the last 60 days, used
@@ -229,13 +241,37 @@ export default function HabitsScreen() {
       keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Text style={styles.title}>Habits</Text>
       {/* This month's challenge from their coach (0153), when there is one. */}
       {client?.trainer_id ? <ChallengeCard clientId={client.id} trainerId={client.trainer_id} /> : null}
       <Pressable style={styles.chooseButton} onPress={() => setChoosing(true)}>
         <Text style={styles.chooseButtonText}>+ Choose habits</Text>
       </Pressable>
-      {running.length === 0 && <Text style={styles.helper}>No habits yet. Tap "Choose habits" to pick some.</Text>}
+      {running.length === 0 && (
+        // Nothing to look at yet: offer a few easy starters, one tap each, so the
+        // page is never just an empty list (design review round 2, 2026-11-21).
+        <View style={styles.starterCard}>
+          <Text style={styles.starterTitle}>Start with one small habit</Text>
+          <Text style={styles.helper}>Tap one to add it. You can change or stop it any time.</Text>
+          {STARTER_HABITS.map((s) => (
+            <Pressable
+              key={s.name}
+              style={styles.starterRow}
+              disabled={addingStarter !== null}
+              onPress={async () => {
+                setAddingStarter(s.name);
+                const ok = await addHabit(s.name, s.reps);
+                setAddingStarter(null);
+                if (ok) toast(`Added: ${s.name}`);
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.starterEmoji}>{s.emoji}</Text>
+              <Text style={styles.starterName}>{s.name}</Text>
+              <Text style={styles.starterPlus}>{addingStarter === s.name ? "…" : "+"}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {running.map((h) => {
         const activeToday = isActiveToday(h);
@@ -341,6 +377,12 @@ const styles = themedStyles({
   container: { flex: 1, backgroundColor: "#0F172A" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" },
   title: { fontSize: 24, fontWeight: "700", color: "#fff", marginBottom: 6 },
+  starterCard: { backgroundColor: "#1E293B", borderRadius: 14, padding: 16, marginBottom: 14 },
+  starterTitle: { color: "#fff", fontWeight: "800", fontSize: 17, marginBottom: 4 },
+  starterRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#0F172A", borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, marginTop: 8 },
+  starterEmoji: { fontSize: 18 },
+  starterName: { flex: 1, color: "#fff", fontWeight: "600", fontSize: 14 },
+  starterPlus: { color: "#D4AF37", fontWeight: "800", fontSize: 20 },
   helper: { color: "#64748B", fontSize: 13, marginBottom: 12 },
   settingsToggle: { marginTop: 12, alignSelf: "flex-start" },
   settingsToggleText: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
@@ -361,7 +403,7 @@ const styles = themedStyles({
     alignItems: "center",
     justifyContent: "center",
   },
-  stepperButtonText: { color: "#22C55E", fontSize: 20, fontWeight: "700" },
+  stepperButtonText: { color: "#D4AF37", fontSize: 20, fontWeight: "700" },
   repsValue: { color: "#fff", fontSize: 14, fontWeight: "600" },
   fieldLabel: { color: "#64748B", fontSize: 12, fontWeight: "600", marginBottom: 8 },
   dayRow: { flexDirection: "row", gap: 6, marginBottom: 14 },

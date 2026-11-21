@@ -309,7 +309,7 @@ const styles = themedStyles({
   body: { color: "#E2E8F0", fontSize: 14, lineHeight: 20 },
   privateNote: { marginTop: 8 },
   helper: { color: "#64748B", fontSize: 12, marginTop: 6 },
-  link: { color: "#22C55E", fontWeight: "600", marginTop: 8 },
+  link: { color: "#D4AF37", fontWeight: "600", marginTop: 8 },
   guideBox: { backgroundColor: "#1E293B", borderRadius: 8, padding: 12, marginTop: 10 },
   guideTitle: { color: "#E2E8F0", fontWeight: "600", marginBottom: 4 },
   guideItem: { color: "#CBD5E1", fontSize: 14, lineHeight: 22 },

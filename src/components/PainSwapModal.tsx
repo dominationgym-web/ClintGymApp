@@ -115,7 +115,7 @@ const styles = themedStyles({
   header: { flexDirection: "row", alignItems: "flex-start", padding: 20, gap: 12 },
   title: { color: "#fff", fontSize: 18, fontWeight: "800" },
   helper: { color: "#94A3B8", fontSize: 13, marginTop: 4, marginBottom: 8 },
-  close: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
+  close: { color: "#D4AF37", fontWeight: "600", fontSize: 15 },
   label: { color: BRAND_GOLD, fontWeight: "800", fontSize: 14, marginTop: 8, marginBottom: 8 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
   chip: { borderWidth: 1, borderColor: "#334155", borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },

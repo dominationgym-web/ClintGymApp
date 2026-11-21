@@ -407,7 +407,7 @@ const styles = themedStyles({
   checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: "#64748B" },
   checkboxChecked: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   consentText: { color: "#E2E8F0", fontSize: 13, lineHeight: 18, flex: 1 },
-  policyLink: { color: "#22C55E", fontSize: 13, fontWeight: "600", marginBottom: 12, textDecorationLine: "underline" },
+  policyLink: { color: "#D4AF37", fontSize: 13, fontWeight: "600", marginBottom: 12, textDecorationLine: "underline" },
   modalContainer: { flex: 1, backgroundColor: "#0F172A" },
   modalHeader: {
     flexDirection: "row",
@@ -416,7 +416,7 @@ const styles = themedStyles({
     padding: 20,
   },
   modalTitle: { color: "#fff", fontSize: 20, fontWeight: "700" },
-  closeText: { color: "#22C55E", fontWeight: "600", fontSize: 15 },
+  closeText: { color: "#D4AF37", fontWeight: "600", fontSize: 15 },
   button: {
     backgroundColor: "#D4AF37",
     borderRadius: 10,

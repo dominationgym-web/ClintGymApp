@@ -4,11 +4,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND_GOLD } from "@/lib/brand";
 import { themedStyles } from "@/lib/theme";
 import { DURATION, EASE_OUT, reduceMotion } from "@/lib/motion";
-import { clearToast, currentToast, registerHost, subscribeToast, topHost } from "@/lib/toast";
+import { clearToast, currentToast, registerHost, subscribeToast, topHost, type Toast } from "@/lib/toast";
 import { success } from "@/lib/haptics";
 
 // Shows the newest toast() at the top of the screen: drops in, stays long
-// enough to read (longer for longer text), then goes. Tap to close early.
+// enough to read (longer for longer text), then slides back up and fades. Tap to close early.
 export default function ToastHost() {
   const insets = useSafeAreaInsets();
   const [hostId, setHostId] = useState(0);
@@ -27,27 +27,41 @@ export default function ToastHost() {
   }, []);
 
   const t = currentToast();
-  const mine = hostId !== 0 && topHost() === hostId && t;
+  const mine = hostId !== 0 && topHost() === hostId ? t : null;
+  // What is on screen. It stays a moment after the toast ends so it can slide
+  // back up and fade, instead of vanishing (design review round 2).
+  const [shown, setShown] = useState<Toast | null>(null);
 
   useEffect(() => {
-    if (!mine || !t || lastId.current === t.id) return;
-    lastId.current = t.id;
-    success();
-    y.setValue(reduceMotion() ? 1 : 0);
-    Animated.timing(y, { toValue: 1, duration: DURATION.normal, easing: EASE_OUT, useNativeDriver: true }).start();
+    if (mine && lastId.current !== mine.id) {
+      lastId.current = mine.id;
+      setShown(mine);
+      success();
+      y.setValue(reduceMotion() ? 1 : 0);
+      Animated.timing(y, { toValue: 1, duration: DURATION.normal, easing: EASE_OUT, useNativeDriver: true }).start();
+    } else if (!mine && shown) {
+      const leaving = shown.id;
+      if (reduceMotion()) {
+        setShown(null);
+        return;
+      }
+      Animated.timing(y, { toValue: 0, duration: DURATION.fast, easing: EASE_OUT, useNativeDriver: true }).start(() => {
+        setShown((s) => (s?.id === leaving ? null : s));
+      });
+    }
   });
 
-  if (!mine || !t) return null;
+  if (!shown) return null;
   const translateY = y.interpolate({ inputRange: [0, 1], outputRange: [-24, 0] });
   const scale = y.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] });
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { top: insets.top + 8 }]}>
       <Animated.View style={{ opacity: y, transform: [{ translateY }, { scale }] }}>
-        <Pressable style={styles.toast} onPress={() => clearToast(t.id)} accessibilityRole="alert" accessibilityLiveRegion="polite">
+        <Pressable style={styles.toast} onPress={() => clearToast(shown.id)} accessibilityRole="alert" accessibilityLiveRegion="polite">
           <View style={styles.dot} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>{t.title}</Text>
-            {t.message ? <Text style={styles.message}>{t.message}</Text> : null}
+            <Text style={styles.title}>{shown.title}</Text>
+            {shown.message ? <Text style={styles.message}>{shown.message}</Text> : null}
           </View>
         </Pressable>
       </Animated.View>

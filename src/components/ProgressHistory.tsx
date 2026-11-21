@@ -112,7 +112,7 @@ const styles = themedStyles({
   missing: { borderWidth: 1, borderStyle: "dashed", borderColor: "#334155", alignItems: "center", justifyContent: "center" },
   missingText: { color: "#64748B", fontSize: 11 },
   caption: { color: "#94A3B8", fontSize: 11, marginTop: 4 },
-  link: { color: "#22C55E", fontWeight: "600", marginTop: 2 },
+  link: { color: "#D4AF37", fontWeight: "600", marginTop: 2 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", alignItems: "center", padding: 16 },
   full: { width: "100%", height: "85%" },
   fullCaption: { color: "#E2E8F0", marginTop: 12 },
