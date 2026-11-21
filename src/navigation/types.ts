@@ -42,6 +42,8 @@ export type ClientStackParamList = {
   Section: { sectionKey: SectionKey; open?: string; shop?: boolean };
   Search: undefined;
   SuggestionBox: undefined;
+  // The 🔔 inbox (0232): messageId opens that coach message.
+  Inbox: { messageId?: string } | undefined;
   Welcome: undefined;
   AppGuide: undefined;
   Stability: undefined;
@@ -82,6 +84,8 @@ export type TrainerStackParamList = {
   TrainerTabs: NavigatorScreenParams<TrainerTabParamList> | undefined;
   Search: undefined;
   SuggestionBox: undefined;
+  // The 🔔 inbox (0232): messageId opens that coach message.
+  Inbox: { messageId?: string } | undefined;
   // Trainer problems (0151): problemId opens that one, e.g. from its notification.
   TrainerProblems: { problemId?: string } | undefined;
   // Monthly challenges (0153): pick one for all clients and see who's winning.

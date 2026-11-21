@@ -23,6 +23,7 @@ import CoachingGuidesScreen from "@/screens/trainer/CoachingGuidesScreen";
 import TrainerGuideScreen from "@/screens/trainer/TrainerGuideScreen";
 import { trainerGuide } from "@/lib/trainerGuides";
 import TrainerMenuButton from "@/components/TrainerMenuButton";
+import InboxScreen from "@/screens/InboxScreen";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import TrainerProblemsScreen from "@/screens/trainer/TrainerProblemsScreen";
 import AwardScreen from "@/screens/trainer/AwardScreen";
@@ -198,6 +199,7 @@ export default function TrainerNavigator() {
             </Stack.Screen>
             <Stack.Screen name="GroupLive" component={GroupLiveScreen} options={{ title: "Group live session", headerBackTitle: "Back" }} />
             <Stack.Screen name="Search" component={TrainerSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Inbox" component={InboxScreen} options={{ title: "Messages & notifications", headerBackTitle: "Back" }} />
             <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
             <Stack.Screen name="TrainerProblems" component={TrainerProblemsScreen} options={{ title: "Problems", headerBackTitle: "Back" }} />
             <Stack.Screen name="Award" component={AwardScreen} options={{ title: "Trainer of the Half-Year", headerBackTitle: "Back" }} />

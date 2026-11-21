@@ -1,6 +1,8 @@
 import NotificationsPrompt from "@/components/NotificationsPrompt";
 import { onNotificationTap, registerForCoachMessages } from "@/lib/notifications";
 import { notificationRoute, type NotificationRoute } from "@/lib/notificationRoutes";
+import { openRoute } from "@/navigation/openNotificationRoute";
+import { markInboxRead } from "@/lib/inbox";
 import React, { useEffect, useRef, useState } from "react";
 import { recordAppOpen } from "@/lib/awardUploads";
 import { View, ActivityIndicator, Text, Platform, Linking } from "react-native";
@@ -61,21 +63,6 @@ function useLockedOut(role: string | null, profile: unknown) {
   return locked;
 }
 
-// Tapping a notification opens the screen it is about (notificationRoutes.ts).
-
-function openRoute(route: NotificationRoute) {
-  if (route.stack === "client" && route.screen === "Timers") navigationRef.navigate("Timers", { tab: "saved" });
-  else if (route.screen === "VideoCheckIn" || route.screen === "VideoCheckIns") navigationRef.navigate(route.screen);
-  else if (route.screen === "MySessions" || route.screen === "LiveSessions") navigationRef.navigate(route.screen, { tab: route.tab });
-  else if (route.stack === "client") navigationRef.navigate("ClientTabs", { screen: route.screen });
-  else if (route.screen === "ClientDetail")
-    navigationRef.navigate("ClientDetail", { clientId: route.clientId, tab: route.tab, open: route.open });
-  else if (route.screen === "Billing" || route.screen === "Challenges" || route.screen === "Award" || route.screen === "AwardAdmin")
-    navigationRef.navigate(route.screen);
-  else if (route.screen === "TrainerProblems") navigationRef.navigate("TrainerProblems", { problemId: route.problemId });
-  else navigationRef.navigate("TrainerTabs", { screen: route.screen });
-}
-
 // The widget link the app was opened with is only acted on once.
 let initialWidgetUrlTaken = false;
 
@@ -100,6 +87,8 @@ export default function RootNavigator() {
   useEffect(() => {
     if (!role) return;
     return onNotificationTap((data) => {
+      // The tapped notification is read in the 🔔 inbox too (0232).
+      if (typeof data.inboxId === "string" && data.inboxId) markInboxRead(data.inboxId).catch(() => undefined);
       const route = notificationRoute(data, role);
       if (!route) return;
       if (navigationRef.isReady()) openRoute(route);

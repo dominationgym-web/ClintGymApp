@@ -4,6 +4,7 @@
 // not listed just opens the app where it was.
 
 export type NotificationRoute =
+  | { stack: "any"; screen: "Inbox"; messageId?: string }
   | { stack: "client"; screen: "CheckIn" | "Habits" | "Exercises" | "Profile" }
   | { stack: "client"; screen: "Timers" }
   | { stack: "client"; screen: "VideoCheckIn" }
@@ -16,7 +17,6 @@ export type NotificationRoute =
   | { stack: "trainer"; screen: "ClientDetail"; clientId: string; tab?: "training"; open?: "videos" | "history" };
 
 const CLIENT_SCREENS: Record<string, "CheckIn" | "Habits" | "Exercises" | "Profile"> = {
-  coach_message: "CheckIn",
   injury_check: "CheckIn",
   steps: "CheckIn",
   client_activated: "CheckIn",
@@ -57,6 +57,12 @@ export function notificationRoute(
   if (type === "session_invoice" || type === "session_invoices")
     return role === "client" ? { stack: "client", screen: "MySessions", tab: "invoices" } : { stack: "trainer", screen: "LiveSessions", tab: "invoices" };
   if (role === "client") {
+    // A message from the coach opens on its own page in the 🔔 inbox (0232),
+    // where it can always be found again.
+    if (type === "coach_message") {
+      const messageId = typeof data?.messageId === "string" && data.messageId ? data.messageId : undefined;
+      return { stack: "any", screen: "Inbox", messageId };
+    }
     // Trainer of the Half-Year proof videos (0195) are asked for on the Today tab.
     if (type === "award_proof") return { stack: "client", screen: "CheckIn" };
     if (type === "timer_workout") return { stack: "client", screen: "Timers" };

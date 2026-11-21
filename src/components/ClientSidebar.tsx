@@ -2,6 +2,7 @@ import React from "react";
 import { type PressableStateCallbackType, Text, View } from "react-native";
 import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
+import { InboxCountPill } from "@/components/InboxButton";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { CommonActions } from "@react-navigation/native";
 import { navigationRef } from "@/navigation/navigationRef";
@@ -89,6 +90,16 @@ export default function ClientSidebar() {
             </Pressable>
           );
         })}
+        <Pressable
+          onPress={() => openPage(() => navigationRef.navigate("Inbox"))}
+          style={itemStyle(name === "Inbox")}
+          accessibilityRole="button"
+          accessibilityLabel="Messages and notifications"
+        >
+          <Ionicons name={name === "Inbox" ? "notifications" : "notifications-outline"} size={19} color={themeText(name === "Inbox" ? BRAND_GOLD : "#94A3B8")} />
+          <Text style={[styles.itemText, name === "Inbox" && styles.itemTextOn]}>Messages</Text>
+          <InboxCountPill />
+        </Pressable>
         <Pressable
           onPress={() => openPage(() => navigationRef.navigate("Search"))}
           style={itemStyle(name === "Search")}

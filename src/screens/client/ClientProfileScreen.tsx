@@ -15,7 +15,6 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { AVATAR_BUCKET, avatarContentType, avatarStoragePath } from "@/lib/avatars";
 import ClientAvatar from "@/components/ClientAvatar";
-import { CoachMessageHistory } from "@/components/CoachMessages";
 import ProgressPhotosSection from "@/components/ProgressPhotosSection";
 import HomeEquipmentCard from "@/components/HomeEquipmentCard";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
@@ -270,8 +269,15 @@ export default function ClientProfileScreen() {
         <ProgressCard clientId={client.id} role="client" />
       </FoldSection>
 
-      <FoldSection icon="💬" title="Messages from your coach" open={openFold === "messages"} onToggle={() => fold("messages")}>
-        <CoachMessageHistory bare />
+      {/* Every message now lives in the 🔔 inbox (0232), so this opens it. */}
+      <FoldSection
+        icon="💬"
+        title="Messages from your coach"
+        hint="All of them, also under 🔔 at the top"
+        open={false}
+        onToggle={() => navigation.navigate("Inbox")}
+      >
+        {null}
       </FoldSection>
 
       {/* Was the Video log tab (app-flow review C2, 2026-10-18); opens its own page. */}

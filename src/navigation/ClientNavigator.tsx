@@ -18,6 +18,7 @@ import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import ClientProfileScreen from "@/screens/client/ClientProfileScreen";
 import SectionScreen from "@/screens/client/SectionScreen";
 import ClientSearchScreen from "@/screens/client/ClientSearchScreen";
+import InboxScreen from "@/screens/InboxScreen";
 import SuggestionBoxScreen from "@/screens/SuggestionBoxScreen";
 import ClientWelcomeScreen from "@/screens/client/ClientWelcomeScreen";
 import { ClientAppGuideScreen } from "@/screens/AppGuideScreen";
@@ -186,6 +187,7 @@ export default function ClientNavigator() {
               options={({ route }) => ({ title: findSection(route.params.sectionKey)?.title ?? "", headerBackTitle: "Back" })}
             />
             <Stack.Screen name="Search" component={ClientSearchScreen} options={{ title: "Search", headerBackTitle: "Back" }} />
+            <Stack.Screen name="Inbox" component={InboxScreen} options={{ title: "Messages & notifications", headerBackTitle: "Back" }} />
             <Stack.Screen name="SuggestionBox" component={SuggestionBoxScreen} options={{ title: "Suggestion box", headerBackTitle: "Back" }} />
             <Stack.Screen name="Welcome" component={ClientWelcomeScreen} options={{ title: "Welcome", headerBackTitle: "Back" }} />
             <Stack.Screen name="AppGuide" component={ClientAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
