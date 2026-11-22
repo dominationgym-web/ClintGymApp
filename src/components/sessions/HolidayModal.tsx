@@ -198,7 +198,7 @@ export default function HolidayModal({
                     </Text>
                     <Text style={styles.meta}>
                       {hit.length
-                        ? `${hit.length} 1 on 1 session${hit.length === 1 ? "" : "s"} in that time ${hit.length === 1 ? "is" : "are"} cancelled free and go on your catch-up list. You decide who gets a catch-up and who gets credited.`
+                        ? `${hit.length} 1 on 1 session${hit.length === 1 ? "" : "s"} in that time ${hit.length === 1 ? "is" : "are"} cancelled and go on your catch-up list. They still count and catch-ups are free; credit any you can't fit in.`
                         : "No 1 on 1 sessions booked in those days."}
                     </Text>
                   </>

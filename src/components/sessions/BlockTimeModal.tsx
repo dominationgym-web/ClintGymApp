@@ -84,7 +84,7 @@ export default function BlockTimeModal({
         <View style={styles.backdrop}>
           <ScrollView style={styles.sheet} contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>Block out time</Text>
-            <Text style={styles.helper}>Sessions are cancelled free, clients get your reason, and catch-ups go on Today.</Text>
+            <Text style={styles.helper}>Clients get your reason. Their sessions go on Today › Catch-ups: they still count and the catch-ups are free.</Text>
 
             <Text style={styles.label}>From {dayLabel(`${firstDay}T12:00:00`)}, for</Text>
             <View style={styles.chips}>

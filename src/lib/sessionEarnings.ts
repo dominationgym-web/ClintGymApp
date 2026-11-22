@@ -19,6 +19,16 @@ export function sessionAmount(s: { fee: number | null; due?: number | null }): n
   return s.due != null ? Number(s.due) || 0 : Number(s.fee) || 0;
 }
 
+// For money, a session the coach cancelled but put on the catch-up list is
+// charged like any other catch-up: the client keeps the session and the
+// catch-up is free (GRIZZ 2026-11-22: "any client that goes to catch-up keeps
+// the session so will never be charged for the catch-up. Only if I credit the
+// slot ... Keep it standard across the board").
+export function moneyKind(s: Pick<LiveSession, "status" | "starts_at" | "minutes" | "charge" | "cancelled_by">, now: Date = new Date()): SessionKind {
+  const kind = sessionKind(s, now);
+  return kind === "trainer" && s.charge === "makeup" ? "makeup" : kind;
+}
+
 const PAID: SessionKind[] = ["done", "unconfirmed", "late", "no_show", "makeup"];
 const CREDITED: SessionKind[] = ["notice", "excused"];
 
@@ -61,7 +71,7 @@ const empty = (): Takings => ({
 export function takings(sessions: EarningFields[], now: Date = new Date()): Takings {
   const t = empty();
   for (const s of sessions) {
-    const kind = sessionKind(s, now);
+    const kind = moneyKind(s, now);
     const fee = Number(s.fee) || 0;
     const due = sessionAmount(s);
     if (PAID.includes(kind)) {
@@ -241,13 +251,11 @@ export type Losses = {
 
 /** One session's part in the losses, or null when it isn't one. */
 export function lostRow(s: LostFields, now: Date = new Date()): LostRow | null {
-  const kind = sessionKind(s, now);
+  const kind = moneyKind(s, now);
   const fee = Number(s.fee) || 0;
-  // Everyone can be caught up, in the app or not (GRIZZ, 2026-11-18).
-  if (kind === "trainer") {
-    if (s.charge === "makeup") return { kind: "coach", fee, back: s.makeup_session_id ? "booked" : "can" };
-    return { kind: "coach", fee, back: "no" };
-  }
+  // You cancelled and credited it. With a catch-up instead it's still charged,
+  // so not lost (GRIZZ 2026-11-22).
+  if (kind === "trainer") return { kind: "coach", fee, back: "no" };
   if (kind === "notice" || kind === "excused") {
     // Credited is the coach's decision (e.g. the client can't do catch-ups):
     // it isn't something to win back (GRIZZ, 2026-11-09).
@@ -276,7 +284,7 @@ export function losses(sessions: LostFields[], now: Date = new Date()): Losses {
     owedCount: 0,
   };
   for (const s of sessions) {
-    if (sessionKind(s, now) === "makeup" && s.client_id && !s.makeup_session_id) t.owedCount += 1;
+    if (moneyKind(s, now) === "makeup" && s.client_id && !s.makeup_session_id) t.owedCount += 1;
     const r = lostRow(s, now);
     if (!r) continue;
     if (r.back === "booked") {
