@@ -76,7 +76,7 @@ ${body}
 </html>
 `;
 
-const ANDROID_APK = "https://expo.dev/artifacts/eas/g5I0-e8sqaKZxGLObBWK5QlJGKv9cn1E3xO5t4cyF70.apk";
+const ANDROID_APK = "https://expo.dev/artifacts/eas/klVUi9P5Ds0iVgbOiEUDK6xM1qq_R5huhfI49yiVS3c.apk";
 
 const pages = {
   "index.html": homePage(escape, SITE),
