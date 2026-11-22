@@ -292,9 +292,10 @@ describe("their own meal (GRIZZ, 2026-10-27)", () => {
           }
           const totals = dayTotals(day);
           expect(Math.abs(totals.kcal - targets.kcal)).toBeLessThanOrEqual(TARGET_MARGIN);
-          // Fewer meals to fill means their carbs bring a bit more protein: never short, at most 30 g over.
+          // Fewer meals to fill means their carbs bring a bit more protein: never short, at most 40 g over
+          // (two app meals carrying 2,000 kcal of real dishes: pasta, bread, lentils all bring some).
           expect(totals.protein).toBeGreaterThanOrEqual(targets.protein - 10);
-          expect(totals.protein).toBeLessThanOrEqual(targets.protein + 30);
+          expect(totals.protein).toBeLessThanOrEqual(targets.protein + 40);
           expect(totals.fibre).toBeGreaterThanOrEqual(FIBRE_TARGET - 2);
         }
       });
@@ -386,5 +387,52 @@ describe("trainer's own calories (GRIZZ, 2026-11-07)", () => {
     expect(slots[0]).toBe("05:00");
     expect(slots[1]).toBe("05:30");
     expect(slots[slots.length - 1]).toBe("23:00");
+  });
+});
+
+describe("meals are real dishes (GRIZZ, 2026-11-21: brown rice and quinoa in one meal)", () => {
+  const GRAIN = /rice|quinoa|pasta|couscous|bulgur|barley|noodle|pap|porridge|samp/i;
+  const people = [
+    { t: macroTargets(1520, 65, "lose", 165), diet: "everything" as const },
+    { t: macroTargets(3200, 80, "gain", 180), diet: "everything" as const },
+    { t: macroTargets(2400, 80), diet: "everything" as const },
+    { t: macroTargets(1800, 60, "maintain", 162), diet: "vegetarian" as const },
+    { t: macroTargets(1900, 70, "maintain", 170), diet: "pescatarian" as const },
+    { t: macroTargets(2000, 70, "maintain", 170), diet: "everything" as const, dairyFree: true },
+  ];
+  const days = () =>
+    people.flatMap((p) =>
+      [3, 4, 5].flatMap((count) =>
+        ["06:30", "17:30", null].flatMap((training) =>
+          [0, 1, 2, 3, 4, 5, 6].flatMap((v) =>
+            [true, false].map((td) => makeDay({ meals: mealTimesFor(count, training), training, diet: p.diet, dairyFree: p.dairyFree }, p.t, td, v)),
+          ),
+        ),
+      ),
+    );
+  it("never has two grains, or two main proteins, in one meal", () => {
+    for (const day of days())
+      for (const m of day.meals) {
+        expect(m.items.filter((i) => GRAIN.test(i.food)).length, `${m.name}: ${m.items.map((i) => i.food).join(", ")}`).toBeLessThanOrEqual(1);
+        const proteins = m.items.filter((i) => FOODS.find((f) => f.name === i.food)?.group === "Protein" && !/egg whites|whey|edamame|biltong/i.test(i.food));
+        expect(proteins.length, `${m.name}: ${m.items.map((i) => i.food).join(", ")}`).toBeLessThanOrEqual(1);
+      }
+  });
+  it("doesn't serve the same dish twice in a day", () => {
+    const carbFoods = new Set(FOODS.filter((f) => f.group === "Carbs").map((f) => f.name));
+    for (const day of days()) {
+      const dishes = day.meals.filter((m) => !isSnack(m)).map((m) => m.items.filter((i) => i.food === m.items[0].food || carbFoods.has(i.food) || FOODS.find((f) => f.name === i.food)?.group === "Veg").map((i) => i.food).join("+"));
+      expect(new Set(dishes).size, dishes.join(" | ")).toBe(dishes.length);
+    }
+  });
+  it("keeps breakfast to breakfast foods", () => {
+    const settings = { meals: mealTimesFor(4, "17:30"), training: "17:30" };
+    for (let v = 0; v < 10; v++) {
+      const breakfast = makeDay(settings, targets, false, v).meals[0];
+      expect(breakfast.items.map((i) => i.food).join(", ")).not.toMatch(/steak|mince|chicken|salmon|hake|pilchard|rice|pasta|lentil|chickpea|bean/i);
+    }
+  });
+  it("never puts oats in a meal", () => {
+    expect(JSON.stringify(days())).not.toMatch(/oat/i);
   });
 });

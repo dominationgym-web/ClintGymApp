@@ -376,58 +376,98 @@ export function fatShares(roles: MealRole[], trainingDay: boolean): number[] {
 
 type Slot = "breakfast" | "pre" | "post" | "main";
 
-const VEG = ["Broccoli", "Green beans", "Mixed salad leaves", "Spinach", "Cauliflower", "Peppers", "Baby marrow", "Butternut", "Cabbage", "Carrots"];
+// Real meals, not foods picked one by one (GRIZZ, 2026-11-21: "why have brown
+// rice and quinoa for 1 meal?"). Each meal is a dish people actually eat: one
+// protein, one starch, a vegetable and a fat that go together. Each list is in
+// order of choice: the first one the client eats is used, so a vegetarian
+// gets the tofu in the stir-fry and a pescatarian the hake with the potatoes.
+// `extra` is the second starch that goes with the dish (rice with a chilli,
+// corn with potatoes), only used when a big muscle-building meal needs more
+// carbs than one food sensibly gives. A dish with no protein or starch the
+// client eats is skipped. Biltong is only the snack, never in a meal, so it's
+// at most once a day. The pre-workout meals are low in fibre and fat so they
+// sit well. No oats: the app never suggests them (GRIZZ, 2026-10-10).
+// `needsStarch`: the dish is nothing without its starch (porridge, a wrap,
+// pasta, fried rice), so a low-carb meal picks another dish instead of
+// serving bolognese with no pasta. The rest work as protein and veg alone
+// (steak and green beans, a chicken salad, eggs and tomato).
+type Dish = { protein: string[]; carbs: string[]; extra: string[]; veg: string[]; fat: string[]; anyMeat?: boolean; needsStarch?: boolean };
 
-// Biltong is only the snack, never in these pools, so it's at most once a day.
-// Legumes (lentils, chickpeas, beans) are in the main and reload meals for
-// fibre; the pre-workout meal stays low in fibre so it sits well.
-const POOLS: Record<Slot, { protein: string[]; carbs: string[]; veg: string[]; fat: string[] }> = {
-  breakfast: {
-    protein: ["Eggs", "Whey protein powder", "Eggs", "Greek yoghurt, plain"],
-    carbs: ["Brown bread", "Pap / maize porridge (cooked)", "Wholewheat wrap", "Sweet potato (cooked)", "Baby potatoes (boiled)"],
-    veg: ["Spinach", "Tomato", "Mushrooms"],
-    fat: ["Avocado", "Almonds", "Avocado", "Pumpkin seeds"],
-  },
-  pre: {
-    protein: ["Chicken breast (cooked)", "Whey protein powder", "Tuna in water (drained)", "Turkey breast (cooked)"],
-    carbs: ["White rice (cooked)", "Potatoes (boiled)", "Basmati rice (cooked)", "Pasta (cooked)", "Baby potatoes (boiled)"],
-    veg: [],
-    fat: ["Almonds", "Avocado"],
-  },
-  post: {
-    protein: ["Chicken breast (cooked)", "Lean beef mince (cooked)", "Hake / white fish (cooked)", "Ostrich steak (cooked)", "Lean turkey mince (cooked)"],
-    carbs: ["Basmati rice (cooked)", "Lentils (cooked)", "Potatoes (boiled)", "Chickpeas (cooked)", "Sweet potato (cooked)"],
-    veg: VEG,
-    fat: ["Olive oil", "Avocado"],
-  },
-  main: {
-    protein: ["Chicken breast (cooked)", "Beef steak (cooked)", "Salmon (cooked)", "Ostrich steak (cooked)", "Turkey breast (cooked)", "Hake / white fish (cooked)", "Lean beef mince (cooked)"],
-    carbs: ["Lentils (cooked)", "Sweet potato (cooked)", "Chickpeas (cooked)", "Brown rice (cooked)", "Kidney beans (cooked)", "Baby potatoes (boiled)", "Wholewheat pasta (cooked)", "Quinoa (cooked)"],
-    veg: VEG,
-    fat: ["Avocado", "Olive oil", "Feta", "Mixed nuts, unsalted", "Pumpkin seeds"],
-  },
-};
-
-// Proteins for people who don't eat meat, by meal.
-const NO_MEAT_PROTEIN: Record<MealDiet, Partial<Record<Slot, string[]>>> = {
-  everything: {},
-  pescatarian: {
-    pre: ["Whey protein powder", "Tuna in water (drained)", "Hake / white fish (cooked)"],
-    post: ["Hake / white fish (cooked)", "Salmon (cooked)", "Tuna in water (drained)", "Prawns (cooked)"],
-    main: ["Salmon (cooked)", "Hake / white fish (cooked)", "Prawns (cooked)", "Tuna in water (drained)", "Pilchards in tomato sauce"],
-  },
-  vegetarian: {
-    breakfast: ["Eggs", "Greek yoghurt, plain", "Eggs", "Whey protein powder"],
-    pre: ["Whey protein powder", "Egg whites", "Greek yoghurt, plain"],
-    post: ["Tofu, firm", "Eggs", "Whey protein powder", "Cottage cheese, low fat"],
-    main: ["Tofu, firm", "Eggs", "Cottage cheese, low fat", "Tofu, firm", "Egg whites"],
-  },
+const DISHES: Record<Slot, Dish[]> = {
+  breakfast: [
+    // Eggs on toast with tomato or spinach and avocado
+    { protein: ["Eggs"], carbs: ["Brown bread", "Rye bread", "Sourdough bread"], extra: ["Banana"], veg: ["Tomato", "Spinach", "Mushrooms"], fat: ["Avocado"] },
+    // Greek yoghurt bowl with banana, berries and nuts
+    { protein: ["Greek yoghurt, plain", "Skyr"], carbs: ["Banana"], extra: ["Berries"], veg: [], fat: ["Almonds", "Pumpkin seeds"] , needsStarch: true },
+    // Breakfast wrap: scrambled eggs, peppers and spinach
+    { protein: ["Eggs"], carbs: ["Wholewheat wrap"], extra: ["Banana"], veg: ["Peppers", "Spinach", "Mushrooms"], fat: ["Avocado"] , needsStarch: true },
+    // Maize porridge with protein powder, banana and peanut butter
+    { protein: ["Whey protein powder"], carbs: ["Pap / maize porridge (cooked)", "Mabele / sorghum porridge (cooked)"], extra: ["Banana"], veg: [], fat: ["Peanut butter", "Almonds"] , needsStarch: true },
+    // Eggs with sweet potato hash, spinach and avocado
+    { protein: ["Eggs"], carbs: ["Sweet potato (cooked)", "Baby potatoes (boiled)"], extra: ["Brown bread"], veg: ["Spinach", "Peppers", "Mushrooms"], fat: ["Avocado"] },
+  ],
+  pre: [
+    // Chicken and white rice
+    { protein: ["Chicken breast (cooked)", "Hake / white fish (cooked)", "Egg whites"], carbs: ["White rice (cooked)", "Basmati rice (cooked)"], extra: ["Banana"], veg: [], fat: [] },
+    // Protein shake with a banana and rice cakes with peanut butter
+    { protein: ["Whey protein powder", "Greek yoghurt, plain", "Plant protein powder"], carbs: ["Banana"], extra: ["Rice cakes"], veg: [], fat: ["Peanut butter"] },
+    // Tuna pasta
+    { protein: ["Tuna in water (drained)"], carbs: ["Pasta (cooked)"], extra: ["Banana"], veg: [], fat: [] },
+    // Turkey or chicken with baby potatoes
+    { protein: ["Turkey breast (cooked)", "Chicken breast (cooked)", "Hake / white fish (cooked)"], carbs: ["Baby potatoes (boiled)", "Potatoes (boiled)"], extra: ["Banana"], veg: [], fat: [] },
+    // Eggs on white toast
+    { protein: ["Eggs"], carbs: ["White bread", "Sourdough bread"], extra: ["Banana"], veg: [], fat: [] },
+  ],
+  post: [
+    // Chicken, basmati rice and broccoli
+    { protein: ["Chicken breast (cooked)", "Hake / white fish (cooked)", "Tofu, firm"], carbs: ["Basmati rice (cooked)", "White rice (cooked)"], extra: ["Banana"], veg: ["Broccoli", "Green beans"], fat: ["Olive oil"], anyMeat: true },
+    // Cottage pie style: mince with mash, carrots and peas
+    { protein: ["Lean beef mince (cooked)", "Lean turkey mince (cooked)"], carbs: ["Potatoes (boiled)"], extra: ["Corn on the cob (cooked)"], veg: ["Carrots", "Green peas (cooked)", "Green beans"], fat: [] },
+    // Fish and potatoes with salad
+    { protein: ["Hake / white fish (cooked)", "Kingklip (cooked)", "Cod (cooked)"], carbs: ["Potatoes (boiled)", "Baby potatoes (boiled)"], extra: ["Corn on the cob (cooked)"], veg: ["Mixed salad leaves", "Green beans", "Carrots"], fat: ["Olive oil"] },
+    // Ostrich or steak with sweet potato and green beans
+    { protein: ["Ostrich steak (cooked)", "Beef steak (cooked)", "Salmon (cooked)", "Tofu, firm"], carbs: ["Sweet potato (cooked)"], extra: ["Corn on the cob (cooked)"], veg: ["Green beans", "Broccoli", "Spinach"], fat: ["Olive oil"], anyMeat: true },
+    // Turkey bolognese
+    { protein: ["Lean turkey mince (cooked)", "Lean beef mince (cooked)", "Prawns (cooked)"], carbs: ["Pasta (cooked)"], extra: ["Sourdough bread"], veg: ["Tomato", "Baby marrow", "Mushrooms"], fat: ["Parmesan", "Olive oil"] , needsStarch: true },
+    // Chicken fried rice with egg and peas
+    { protein: ["Chicken breast (cooked)", "Prawns (cooked)", "Eggs"], carbs: ["Basmati rice (cooked)", "White rice (cooked)"], extra: ["Edamame beans"], veg: ["Peppers", "Green peas (cooked)", "Cabbage"], fat: [] , needsStarch: true },
+    // Chicken with dhal (lentils) and rice
+    { protein: ["Chicken breast (cooked)", "Hake / white fish (cooked)", "Tofu, firm", "Eggs"], carbs: ["Lentils (cooked)"], extra: ["Basmati rice (cooked)"], veg: ["Spinach", "Cauliflower"], fat: ["Olive oil"] },
+  ],
+  main: [
+    // Grilled chicken, sweet potato, salad and avocado
+    { protein: ["Chicken breast (cooked)", "Hake / white fish (cooked)", "Tofu, firm"], carbs: ["Sweet potato (cooked)"], extra: ["Corn on the cob (cooked)"], veg: ["Mixed salad leaves", "Broccoli", "Green beans"], fat: ["Avocado"], anyMeat: true },
+    // Chilli con carne with beans and brown rice
+    { protein: ["Lean beef mince (cooked)", "Lean turkey mince (cooked)"], carbs: ["Kidney beans (cooked)"], extra: ["Brown rice (cooked)"], veg: ["Peppers", "Tomato"], fat: ["Avocado"] },
+    // Steak, baby potatoes and green beans
+    { protein: ["Beef steak (cooked)", "Ostrich steak (cooked)", "Salmon (cooked)"], carbs: ["Baby potatoes (boiled)"], extra: ["Corn on the cob (cooked)"], veg: ["Green beans", "Mixed salad leaves", "Broccoli", "Butternut"], fat: ["Olive oil"], anyMeat: true },
+    // Salmon rice bowl with corn
+    { protein: ["Salmon (cooked)", "Trout (cooked)", "Tofu, firm"], carbs: ["Brown rice (cooked)", "Basmati rice (cooked)"], extra: ["Corn on the cob (cooked)"], veg: ["Broccoli", "Spinach", "Cucumber"], fat: [] },
+    // Chicken and chickpea curry with basmati rice
+    { protein: ["Chicken breast (cooked)", "Prawns (cooked)", "Tofu, firm"], carbs: ["Chickpeas (cooked)"], extra: ["Basmati rice (cooked)"], veg: ["Cauliflower", "Spinach", "Tomato"], fat: ["Olive oil"] },
+    // Quinoa salad with feta and chickpeas
+    { protein: ["Chicken breast (cooked)", "Prawns (cooked)", "Eggs"], carbs: ["Quinoa (cooked)"], extra: ["Chickpeas (cooked)"], veg: ["Mixed salad leaves", "Cucumber", "Tomato", "Peppers"], fat: ["Feta", "Avocado", "Olive oil"] },
+    // White fish with potatoes and butternut
+    { protein: ["Hake / white fish (cooked)", "Kingklip (cooked)", "Cod (cooked)"], carbs: ["Baby potatoes (boiled)", "Potatoes (boiled)"], extra: ["Corn on the cob (cooked)"], veg: ["Butternut", "Green beans", "Mixed salad leaves"], fat: ["Olive oil"] },
+    // Turkey bolognese with wholewheat pasta
+    { protein: ["Lean turkey mince (cooked)", "Lean beef mince (cooked)", "Prawns (cooked)"], carbs: ["Wholewheat pasta (cooked)"], extra: ["Sourdough bread"], veg: ["Tomato", "Baby marrow", "Mushrooms"], fat: ["Parmesan", "Olive oil"] , needsStarch: true },
+    // Stir-fry with rice
+    { protein: ["Chicken breast (cooked)", "Prawns (cooked)", "Tofu, firm"], carbs: ["Brown rice (cooked)", "Basmati rice (cooked)", "Rice noodles (cooked)"], extra: ["Edamame beans"], veg: ["Peppers", "Broccoli", "Cabbage", "Bok choy"], fat: ["Cashews", "Peanuts, unsalted"] },
+    // Pilchards with pap, beans and cabbage
+    { protein: ["Pilchards in tomato sauce", "Sardines in tomato sauce"], carbs: ["Stiff pap (cooked)"], extra: ["Sugar beans (cooked)"], veg: ["Cabbage", "Chakalaka", "Spinach"], fat: [] },
+    // Baked potato with tuna or cottage cheese and salad
+    { protein: ["Tuna in water (drained)", "Cottage cheese, low fat"], carbs: ["Potatoes (boiled)"], extra: ["Corn on the cob (cooked)"], veg: ["Mixed salad leaves", "Cucumber", "Tomato"], fat: ["Avocado", "Olive oil"] },
+    // Shakshuka: eggs in tomato and peppers with toast
+    { protein: ["Eggs"], carbs: ["Sourdough bread", "Brown bread"], extra: ["Chickpeas (cooked)"], veg: ["Tomato", "Peppers", "Spinach"], fat: ["Feta", "Avocado"] },
+    // Chicken with lentils and carrots
+    { protein: ["Chicken breast (cooked)", "Hake / white fish (cooked)", "Tofu, firm"], carbs: ["Lentils (cooked)"], extra: ["Brown rice (cooked)"], veg: ["Carrots", "Spinach", "Butternut"], fat: ["Olive oil"] },
+  ],
 };
 
 type Prefs = { diet: MealDiet; dairyFree: boolean; avoid: string[]; likes: string[] };
 
 // Fits the diet, dairy-free, and isn't a food they left out.
-const ok = (name: string, prefs: Prefs) => foodAllowed(name, prefs.diet, prefs.dairyFree) && !prefs.avoid.includes(name);
+const ok = (name: string, prefs: Prefs) => foodAllowed(name, prefs.diet, prefs.dairyFree) && !prefs.avoid.includes(name) && !!findFood(name);
 
 /** The food list's group for a food, if it's in the list. */
 const groupOf = (name: string) => findFood(name)?.group ?? null;
@@ -435,8 +475,8 @@ const groupOf = (name: string) => findFood(name)?.group ?? null;
 /**
  * Foods they like come up more often (GRIZZ, 2026-11-02: "get a feel for what
  * they like"): a liked food already in the list goes in again at the front,
- * and in the main and reload meals a liked food from the same food group joins
- * the list. Liked foods are only foods the client chose themselves.
+ * and when `open`, a liked food from the same food group joins the list.
+ * Liked foods are only foods the client chose themselves.
  */
 export function favour(list: string[], prefs: Pick<Prefs, "likes" | "avoid" | "diet" | "dairyFree">, group: string | null, open: boolean): string[] {
   if (!prefs.likes.length || !list.length) return list;
@@ -446,13 +486,76 @@ export function favour(list: string[], prefs: Pick<Prefs, "likes" | "avoid" | "d
   return liked.length ? [...liked, ...list] : list;
 }
 
-const OPEN_SLOTS: Slot[] = ["main", "post"];
+const ALL_DISH_FOODS = new Set(Object.values(DISHES).flatMap((list) => list.flatMap((d) => [...d.protein, ...d.carbs, ...d.extra, ...d.veg, ...d.fat])));
 
-function proteinPool(slot: Slot, prefs: Prefs): string[] {
-  const list = favour((NO_MEAT_PROTEIN[prefs.diet][slot] ?? POOLS[slot].protein).filter((f) => ok(f, prefs)), prefs, "Protein", OPEN_SLOTS.includes(slot));
-  if (list.length) return list;
-  const fallback = ["Chicken breast (cooked)", "Tuna in water (drained)", "Eggs", "Tofu, firm", "Egg whites"].filter((f) => ok(f, prefs));
-  return fallback.length ? fallback : ["Eggs"];
+// The foods a dish would use for this client, or null when they can't have it.
+type Plate = { dish: string; protein: string; carbs: string; extra: string | null; veg: string | null; fat: string | null };
+function plateFor(dish: Dish, prefs: Prefs, n: number, used: Set<string>): Plate | null {
+  // A liked meat or fish that isn't in any dish can stand in for the meat in a
+  // plain grilled dish (pork chop with sweet potato and salad).
+  const likedMeat = dish.anyMeat
+    ? prefs.likes.filter((f) => groupOf(f) === "Protein" && (MEAT.test(f) || FISH.test(f)) && !/biltong|wors/i.test(f) && !ALL_DISH_FOODS.has(f))
+    : [];
+  const first = (list: string[]) => {
+    const fine = list.filter((f) => ok(f, prefs));
+    return fine.find((f) => prefs.likes.includes(f)) ?? fine[0] ?? null;
+  };
+  const protein = first([...likedMeat, ...dish.protein]);
+  const carbs = first(dish.carbs);
+  if (!protein || !carbs) return null;
+  // A vegetable not already in today's meals, when the dish has another.
+  const allVeg = dish.veg.filter((f) => ok(f, prefs));
+  const veg = allVeg.some((f) => !used.has(f)) ? allVeg.filter((f) => !used.has(f)) : allVeg;
+  const fat = dish.fat.filter((f) => ok(f, prefs));
+  return {
+    dish: `${dish.protein[0]}|${dish.carbs[0]}`,
+    protein,
+    carbs,
+    extra: first(dish.extra.filter((f) => f !== carbs)),
+    veg: veg.length ? pick(favour(veg, prefs, null, false), n) : null,
+    fat: fat.length ? (fat.find((f) => prefs.likes.includes(f)) ?? fat[0]) : null,
+  };
+}
+
+/**
+ * Picks the dish for one meal. `n` turns the choice so New ideas gives other
+ * dishes; dishes with a food they like come up first; and a dish whose
+ * protein or starch is already in today's meals is passed over when another
+ * one fits, so a day doesn't have chicken and rice twice.
+ */
+function pickPlate(slot: Slot, prefs: Prefs, n: number, used: Set<string>, carbsNeeded: number): Plate {
+  const dishes = DISHES[slot].filter((d) => !(carbsNeeded < 25 && d.needsStarch));
+  let plates = dishes.map((d) => plateFor(d, prefs, n, used)).filter((p): p is Plate => !!p);
+  // A big carb meal (building muscle) picks a dish that can hold that much
+  // starch, not a shake and a banana.
+  const holds = (p: Plate) => [p.carbs, p.extra].reduce((t, f) => t + (f ? itemTotals(item(f, carbMax(f))).carbs : 0), 0);
+  const roomy = plates.filter((p) => holds(p) >= carbsNeeded);
+  if (roomy.length) plates = roomy;
+  const liked = plates.filter((p) => [p.protein, p.carbs, p.veg, p.fat].some((f) => f && prefs.likes.includes(f)));
+  const order = [...liked, ...plates];
+  if (order.length) {
+    const start = ((n % order.length) + order.length) % order.length;
+    const turned = [...order.slice(start), ...order.slice(0, start)];
+    const fresh = (p: Plate) => !used.has(p.protein) && !used.has(p.carbs) && !(LEGUME.test(p.carbs) && used.has("legumes"));
+    const newDish = (p: Plate) => !used.has(p.dish);
+    const plate =
+      turned.find(fresh) ??
+      turned.find((p) => newDish(p) && !used.has(p.carbs)) ??
+      turned.find((p) => newDish(p) && !used.has(p.protein)) ??
+      turned.find(newDish) ??
+      turned[0];
+    used.add(plate.dish);
+    if (plate.veg) used.add(plate.veg);
+    used.add(plate.protein);
+    used.add(plate.carbs);
+    if (LEGUME.test(plate.carbs)) used.add("legumes");
+    return plate;
+  }
+  // Nothing fits (they left out a lot): a plain protein and starch they eat.
+  const protein = ["Chicken breast (cooked)", "Tuna in water (drained)", "Eggs", "Tofu, firm", "Egg whites"].find((f) => ok(f, prefs)) ?? "Eggs";
+  const carbs = ["White rice (cooked)", "Potatoes (boiled)", "Brown rice (cooked)", "Sweet potato (cooked)"].find((f) => ok(f, prefs)) ?? "White rice (cooked)";
+  const veg = slot === "pre" ? null : (["Broccoli", "Green beans", "Mixed salad leaves", "Carrots"].find((f) => ok(f, prefs)) ?? null);
+  return { dish: "plain", protein, carbs, extra: null, veg, fat: ["Olive oil", "Avocado"].find((f) => ok(f, prefs)) ?? null };
 }
 
 // A piece of fruit with the snack, different each day.
@@ -505,76 +608,113 @@ export const FIBRE_TARGET = 25;
 const MAX_GRAMS: Record<string, number> = {
   Eggs: 150,
   "Whey protein powder": 60,
+  "Plant protein powder": 60,
   "Biltong, lean, medium": 100,
   "Tofu, firm": 250,
   "Cottage cheese, low fat": 250,
   "Greek yoghurt, plain": 250,
+  Skyr: 250,
 };
 const TOP_UP: Record<string, string> = {
   Eggs: "Egg whites",
   "Tofu, firm": "Egg whites",
   "Cottage cheese, low fat": "Whey protein powder",
   "Greek yoghurt, plain": "Whey protein powder",
+  Skyr: "Whey protein powder",
 };
 
-// The most of one carb food in a meal.
+// The most of one starch in a meal: 300 g cooked, less for bread, wraps,
+// rice cakes and bananas (about 4 slices, 2 wraps, 6 cakes, 2 bananas).
 const MAX_CARB_GRAMS = 300;
+const CARB_MAX: Record<string, number> = {
+  "Brown bread": 140,
+  "Rye bread": 140,
+  "Sourdough bread": 140,
+  "White bread": 140,
+  "Wholewheat wrap": 130,
+  "Rice cakes": 55,
+  Banana: 240,
+  Berries: 200,
+  "Edamame beans": 150,
+  // About a cup of beans or lentils: more piles on fibre and protein.
+  "Kidney beans (cooked)": 200,
+  "Chickpeas (cooked)": 200,
+  "Lentils (cooked)": 200,
+  "Sugar beans (cooked)": 200,
+};
+// Beans, lentils and chickpeas as the starch: one such dish a day is plenty.
+const LEGUME = /lentil|chickpea|bean/i;
+const carbMax = (name: string) => CARB_MAX[name] ?? MAX_CARB_GRAMS;
+// The most of a fat in one meal: a sprinkle of cheese, a handful of nuts, 2 tbsp oil.
+const FAT_MAX: Record<string, number> = {
+  Feta: 60,
+  Parmesan: 30,
+  "Olive oil": 25,
+  "Peanut butter": 32,
+  Almonds: 40,
+  "Pumpkin seeds": 40,
+  Cashews: 40,
+  "Peanuts, unsalted": 40,
+};
 
 const pick = (list: string[], n: number) => list[((n % list.length) + list.length) % list.length];
 
-function slotFor(role: MealRole, time: string, index: number): Slot {
+function slotFor(role: MealRole, time: string): Slot {
   if (role === "pre") return "pre";
   if (role === "post") return "post";
-  return index === 0 && minutes(time) < 10 * 60 ? "breakfast" : "main";
+  // Any meal called Breakfast (before 10:00) gets a breakfast dish, not a curry.
+  return minutes(time) < 10 * 60 ? "breakfast" : "main";
 }
 
 const item = (food: string, grams: number): DietItem => ({ food, grams });
 
-function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: number, prefs: Prefs, extras: DietItem[] = []): DietItem[] {
-  const all = POOLS[slot];
-  const open = OPEN_SLOTS.includes(slot);
-  const pool = {
-    veg: favour(all.veg.filter((f) => ok(f, prefs)), prefs, "Veg", open),
-    carbs: favour(all.carbs.filter((f) => ok(f, prefs)), prefs, "Carbs", open),
-    fat: favour(all.fat.filter((f) => ok(f, prefs)), prefs, "Fats", open),
-  };
-  if (!pool.carbs.length) pool.carbs = ["White rice (cooked)", "Potatoes (boiled)", "Brown rice (cooked)"].filter((f) => ok(f, prefs) && findFood(f));
+// The same food twice in a meal (yoghurt in the bowl and the day's dairy) is one portion.
+function mergeSame(items: DietItem[]): DietItem[] {
+  const out: DietItem[] = [];
+  for (const it of items) {
+    const same = out.find((o) => o.food === it.food);
+    if (same) same.grams += it.grams;
+    else out.push({ ...it });
+  }
+  return out;
+}
+
+function buildMeal(slot: Slot, protein: number, carbs: number, fat: number, n: number, prefs: Prefs, used: Set<string>, extras: DietItem[] = []): DietItem[] {
+  const plate = pickPlate(slot, prefs, n, used, carbs - extras.reduce((t, i) => t + itemTotals(i).carbs, 0));
   const sides: DietItem[] = [...extras];
-  if (pool.veg.length) sides.push(item(pick(pool.veg, n + slot.length), slot === "breakfast" ? 100 : 150));
+  if (plate.veg) sides.push(item(plate.veg, slot === "breakfast" ? 100 : 150));
   const sideCarbs = sides.reduce((t, i) => t + itemTotals(i).carbs, 0);
-  if (carbs - sideCarbs >= 10 && pool.carbs.length) {
-    const carbName = pick(pool.carbs, n);
-    const grams = gramsFor(findFood(carbName) as Food, "carbs", carbs - sideCarbs);
-    if (grams <= MAX_CARB_GRAMS) {
-      sides.push(item(carbName, grams));
+  if (carbs - sideCarbs >= 10) {
+    const grams = gramsFor(findFood(plate.carbs) as Food, "carbs", carbs - sideCarbs);
+    const max = carbMax(plate.carbs);
+    if (grams <= max) {
+      sides.push(item(plate.carbs, grams));
     } else {
-      // A big carb meal (building muscle) gets two carb foods, not a mountain of one.
-      sides.push(item(carbName, MAX_CARB_GRAMS));
+      // A big carb meal (building muscle) gets the dish's own second starch,
+      // not a mountain of one (rice with the chilli, corn with the potatoes).
+      sides.push(item(plate.carbs, max));
       const left = carbs - sideCarbs - itemTotals(sides[sides.length - 1]).carbs;
-      const second = pool.carbs.find((c) => c !== carbName && !/potato|wrap|bread|lentil|chickpea|bean/i.test(c)) ?? (ok("White rice (cooked)", prefs) ? "White rice (cooked)" : null);
-      if (second && left >= 10) sides.push(item(second, gramsFor(findFood(second) as Food, "carbs", left)));
+      if (plate.extra && left >= 10) sides.push(item(plate.extra, Math.min(carbMax(plate.extra), gramsFor(findFood(plate.extra) as Food, "carbs", left))));
     }
   }
   // Carbs, veg and dairy bring some protein too, so the protein food makes up the rest.
   const sideProtein = sides.reduce((t, i) => t + itemTotals(i).protein, 0);
   const wanted = Math.max(protein * 0.5, protein - sideProtein);
-  const proteinName = pick(proteinPool(slot, prefs), n);
-  const proteinItems = [item(proteinName, gramsFor(findFood(proteinName) as Food, "protein", wanted))];
-  const max = MAX_GRAMS[proteinName];
+  // A real portion of meat or fish, not a few bites (more next to a big plate of starch).
+  const least = MEAT.test(plate.protein) || FISH.test(plate.protein) ? (carbs >= 60 ? 75 : 60) : 0;
+  const proteinItems = [item(plate.protein, Math.max(least, gramsFor(findFood(plate.protein) as Food, "protein", wanted)))];
+  // The day's dairy can be the same food (yoghurt with the yoghurt bowl): it counts towards the most.
+  const already = extras.filter((e) => e.food === plate.protein).reduce((t, e) => t + e.grams, 0);
+  const max = MAX_GRAMS[plate.protein] != null ? Math.max(50, MAX_GRAMS[plate.protein] - already) : undefined;
   if (max && proteinItems[0].grams > max) {
-    proteinItems[0] = item(proteinName, max);
-    const topUp = TOP_UP[proteinName];
+    proteinItems[0] = item(plate.protein, max);
+    const topUp = TOP_UP[plate.protein];
     const left = wanted - itemTotals(proteinItems[0]).protein;
-    if (topUp && ok(topUp, prefs) && left >= 5)
-      proteinItems.push(item(topUp, gramsFor(findFood(topUp) as Food, "protein", left)));
+    if (topUp && ok(topUp, prefs) && left >= 5) proteinItems.push(item(topUp, gramsFor(findFood(topUp) as Food, "protein", left)));
   }
-  const items = [...proteinItems, ...sides];
+  const items = mergeSame([...proteinItems, ...sides]);
   const fatSoFar = items.reduce((t, i) => t + itemTotals(i).fat, 0);
-  const fats = pool.fat.filter((f) => ok(f, prefs));
-  if (fat - fatSoFar >= 4 && fats.length) {
-    const fatName = pick(fats, n);
-    items.push(item(fatName, gramsFor(findFood(fatName) as Food, "fat", fat - fatSoFar)));
-  }
+  if (fat - fatSoFar >= 4 && plate.fat) items.push(item(plate.fat, Math.min(FAT_MAX[plate.fat] ?? 150, gramsFor(findFood(plate.fat) as Food, "fat", fat - fatSoFar))));
   return items;
 }
 
@@ -622,16 +762,23 @@ export function makeDay(settings: MealPlanSettings, targets: MacroTargets, train
   // No extra dairy when their own meal already has some, or no meal is left for it.
   const ownDairy = ownAll.some((it) => DAIRY.test(it.food) && !PLANT_MILK.test(it.food));
   const dairy = prefs.diet === "everything" && !prefs.dairyFree && dairyFoods.length && !ownDairy && firstFree !== -1 ? [dairyFoods[((variety % dairyFoods.length) + dairyFoods.length) % dairyFoods.length]] : [];
-  const fixed = sumTotals([...snackItems, ...secondItems, ...dairy, ...ownAll]);
+  // The dairy goes with breakfast; with no breakfast from the app, with the
+  // protein snack, so a steak lunch doesn't come with cottage cheese.
+  const breakfastAt = times.findIndex((t, i) => !own[i] && slotFor(roles[i], t) === "breakfast");
+  const dairyAt = breakfastAt !== -1 ? breakfastAt : snackItems.length ? -1 : firstFree;
+  if (dairyAt === -1) snackItems.push(...dairy);
+  const fixed = sumTotals([...snackItems, ...secondItems, ...(dairyAt === -1 ? [] : dairy), ...ownAll]);
   const proteinEach = Math.max(0, targets.protein - fixed.protein) / Math.max(1, own.filter((o) => !o).length);
   const carbsLeft = Math.max(0, targets.carbs - fixed.carbs);
   const fatLeft = Math.max(0, targets.fat - fixed.fat);
+  // Foods already on today's plate (the snack's yoghurt and their own meals too), so the next meal is a different dish.
+  const used = new Set<string>([...snackItems, ...ownAll].map((it) => it.food));
   const meals: DietMeal[] = times.map((time, i) => {
     const mine = own[i];
     if (mine) return { name: mealLabel(time, roles[i]), items: mine, own: true };
     return {
       name: mealLabel(time, roles[i]),
-      items: buildMeal(slotFor(roles[i], time, i), proteinEach, carbsLeft * carbs[i], fatLeft * fats[i], variety + i * 3, prefs, i === firstFree ? dairy : []),
+      items: buildMeal(slotFor(roles[i], time), proteinEach, carbsLeft * carbs[i], fatLeft * fats[i], variety + i * 3, prefs, used, i === dairyAt ? dairy : []),
     };
   });
   const snackMeals: DietMeal[] = snackAt.map((at, i) => ({ name: `${at} · ${i === 0 ? "Protein snack" : "Snack"}`, items: i === 0 ? snackItems : secondItems }));
@@ -686,9 +833,9 @@ function addFibre(day: DietDay, chia = true, already = 0): DietDay {
   // A little over the target, as fitting the calories afterwards can trim some.
   const aim = FIBRE_TARGET + 2 - already;
   const fibre = () => sumTotals(meals.flatMap((m) => m.items)).fibre;
-  const veg = new Set([...VEG, ...POOLS.breakfast.veg]);
+  const isVeg = (name: string) => groupOf(name) === "Veg";
   for (let round = 0; round < 3 && fibre() < aim; round++) {
-    meals = meals.map((m) => ({ ...m, items: m.items.map((it) => (veg.has(it.food) ? { ...it, grams: it.grams + 50 } : it)) }));
+    meals = meals.map((m) => ({ ...m, items: m.items.map((it) => (isVeg(it.food) ? { ...it, grams: it.grams + 50 } : it)) }));
   }
   if (chia && fibre() < aim) {
     // With the snack, or the first meal when there's no snack.
@@ -709,37 +856,64 @@ const kcalOf = (day: DietDay) => day.meals.reduce((t, m) => t + m.items.reduce((
 // protein foods (at most a fifth). The day lands within the "on target" margin.
 function fitKcal(day: DietDay, kcal: number): DietDay {
   let fitted = trimFats(day, kcal);
-  for (let round = 0; round < 3; round++) {
+  // Short: the fats that still have room first (up to their most in a meal),
+  // so the day keeps its fat share instead of piling on starch.
+  {
+    const short = kcal - kcalOf(fitted);
+    const fat = (it: DietItem) => findFood(it.food)?.group === "Fats" && it.grams < (FAT_MAX[it.food] ?? 150);
+    const have = fitted.meals.flatMap((m) => m.items).reduce((t, i) => t + (fat(i) ? itemTotals(i).kcal : 0), 0);
+    if (short > 25 && have > 0) fitted = scale(fitted, fat, Math.min(2, (have + short) / have), (it) => FAT_MAX[it.food] ?? 150);
+  }
+  // Adding carbs fills the starches that still have room first, so one food
+  // doesn't become a mountain; only when they're all full does it go over.
+  for (let round = 0; round < 6; round++) {
     const off = kcalOf(fitted) - kcal;
     if (Math.abs(off) <= 25) break;
+    const capped = off < 0 && round < 5;
     // Cutting keeps the legumes (they bring the fibre) when there's another carb to cut.
-    const carb = (name: string, keepFibre: boolean) => {
-      const food = findFood(name);
-      return food?.group === "Carbs" && !(keepFibre && (food.fibre ?? 0) >= 5);
+    const carb = (it: DietItem, keepFibre: boolean) => {
+      const food = findFood(it.food);
+      return food?.group === "Carbs" && !(keepFibre && (food.fibre ?? 0) >= 5) && !(capped && it.grams >= carbMax(it.food));
     };
     const all = fitted.meals.flatMap((m) => m.items);
-    const keepFibre = off > 0 && all.some((i) => carb(i.food, true));
-    const carbKcal = all.reduce((t, i) => t + (carb(i.food, keepFibre) ? itemTotals(i).kcal : 0), 0);
-    if (carbKcal <= 0) break;
+    const keepFibre = off > 0 && all.some((i) => carb(i, true));
+    const carbKcal = all.reduce((t, i) => t + (carb(i, keepFibre) ? itemTotals(i).kcal : 0), 0);
+    if (carbKcal <= 0) {
+      if (capped) continue;
+      break;
+    }
     const factor = Math.min(1.6, Math.max(0.4, (carbKcal - off) / carbKcal));
-    fitted = scale(fitted, (name) => carb(name, keepFibre), factor);
+    fitted = scale(fitted, (it) => carb(it, keepFibre), factor, capped ? (it) => carbMax(it.food) : undefined);
+  }
+  // Still short with no starch left to grow (a low-carb day): a little more
+  // of the fats, then of the protein foods.
+  for (const [group, most] of [["Fats", 2], ["Protein", 1.25]] as const) {
+    const short = kcal - kcalOf(fitted);
+    if (short <= 25) break;
+    const match = (it: DietItem) => findFood(it.food)?.group === group && !/biltong/i.test(it.food);
+    const have = fitted.meals.flatMap((m) => m.items).reduce((t, i) => t + (match(i) ? itemTotals(i).kcal : 0), 0);
+    if (have > 0) fitted = scale(fitted, match, Math.min(most, (have + short) / have));
   }
   const over = kcalOf(fitted) - kcal;
   if (over > 25) {
-    const protein = (name: string) => findFood(name)?.group === "Protein" && !/biltong/i.test(name);
-    const proteinKcal = fitted.meals.flatMap((m) => m.items).reduce((t, i) => t + (protein(i.food) ? itemTotals(i).kcal : 0), 0);
+    const protein = (it: DietItem) => findFood(it.food)?.group === "Protein" && !/biltong/i.test(it.food);
+    const proteinKcal = fitted.meals.flatMap((m) => m.items).reduce((t, i) => t + (protein(i) ? itemTotals(i).kcal : 0), 0);
     if (proteinKcal > 0) fitted = scale(fitted, protein, Math.max(0.8, (proteinKcal - over) / proteinKcal));
   }
   return fitted;
 }
 
-// Every matching food times `factor`, to the nearest 5 g.
-function scale(day: DietDay, matches: (name: string) => boolean, factor: number): DietDay {
+// Every matching food times `factor`, to the nearest 5 g, and no more than `cap` if given.
+function scale(day: DietDay, matches: (it: DietItem) => boolean, factor: number, cap?: (it: DietItem) => number): DietDay {
   return {
     meals: day.meals.map((m) => ({
       ...m,
       items: m.items
-        .map((it) => (matches(it.food) ? { ...it, grams: Math.round((it.grams * factor) / 5) * 5 } : it))
+        .map((it) => {
+          if (!matches(it)) return it;
+          const grams = Math.round((it.grams * factor) / 5) * 5;
+          return { ...it, grams: cap ? Math.min(grams, Math.max(it.grams, cap(it))) : grams };
+        })
         .filter((it) => it.grams >= 5),
     })),
   };
@@ -883,7 +1057,7 @@ function makeUp(without: DietDay, foodName: string, removed: DietItem[]): { day:
   if (lost <= 0) return { day: without, rebalanced: false };
   for (const matches of [same, anyGiving]) {
     const have = sumTotals(items.filter((it) => matches(it.food)))[key];
-    if (have > 0) return { day: scale(without, matches, Math.min(2, (have + lost) / have)), rebalanced: true };
+    if (have > 0) return { day: scale(without, (it) => matches(it.food), Math.min(2, (have + lost) / have)), rebalanced: true };
   }
   return { day: without, rebalanced: false };
 }
