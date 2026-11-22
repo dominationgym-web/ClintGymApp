@@ -26,6 +26,7 @@ import DiaryPeople from "@/components/sessions/DiaryPeople";
 import PairsSection from "@/components/sessions/PairsSection";
 import { firstName, invoicePair, invoiceSide, invoiceTitle, pairOf, pairPayer, pairSides, pairTitle } from "@/lib/sessionPairs";
 import CatchUpRows from "@/components/sessions/CatchUpRows";
+import { catchUpCharge, type CatchUpCharge, type PairPlan } from "@/lib/catchUpPrice";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import AwayModal, { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
 import HoldButton from "@/components/sessions/HoldButton";
@@ -105,6 +106,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
   const [tab, setTab] = useState<Tab>(only ?? route.params?.tab ?? "todo");
   const [settings, setSettings] = useState<SessionSettings | null>(null);
   const [plans, setPlans] = useState<SessionPlan[]>([]);
+  // Plans for people not in the app, by calendar name (their own price, and a pair's alone price).
+  const [diaryPlans, setDiaryPlans] = useState<Record<string, PairPlan>>({});
   const [signed, setSigned] = useState<Record<string, SessionAgreement>>({});
   const [clients, setClients] = useState<ClientInfo[]>([]);
   const [sessions, setSessions] = useState<LiveSession[]>([]);
@@ -162,7 +165,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     if (!trainer) return;
     const from = new Date(Math.min(new Date(`${shiftMonth(month, -1)}T00:00:00`).getTime(), Date.now() - 92 * 86400000)).toISOString();
     const to = new Date(`${shiftMonth(month, 2)}T00:00:00`).toISOString();
-    const [s, p, a, c, ls, d, aw, st, pr] = await Promise.all([
+    const [s, p, a, c, ls, d, aw, st, pr, df] = await Promise.all([
       supabase.from("session_settings").select("*").eq("trainer_id", trainer.id).maybeSingle(),
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
@@ -172,6 +175,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       supabase.from("client_away").select("*").eq("trainer_id", trainer.id).is("ended_at", null).gt("until_at", new Date().toISOString()),
       supabase.from("client_stops").select("*").eq("trainer_id", trainer.id).is("undone_at", null),
       supabase.from("session_pairs").select("*").eq("trainer_id", trainer.id).is("ended_at", null).order("created_at"),
+      supabase.from("diary_name_fees").select("name_key, fee, group_size, solo_fee").eq("trainer_id", trainer.id),
     ]);
     setSettings(s.data ?? null);
     // A new trainer lands on 1 on 1 with Setup open, so they never have to
@@ -190,6 +194,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
     setAways((aw.data ?? []) as ClientAway[]);
     setStops((st.data ?? []) as ClientStop[]);
     setPairs((pr.data ?? []) as SessionPair[]);
+    setDiaryPlans(Object.fromEntries((df.data ?? []).map((f) => [f.name_key, f as PairPlan])));
     setLoading(false);
     // The home-screen calendar widget shows the same sessions (0214).
     refreshCalendarWidget();
@@ -293,6 +298,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
               sessions={sessions}
               clients={clients}
               plans={plans}
+              diaryPlans={diaryPlans}
               settings={settings}
               name={who}
               makeup={makeup}
@@ -789,6 +795,7 @@ function CalendarTab({
   sessions,
   clients,
   plans,
+  diaryPlans = {},
   settings,
   name: who,
   makeup,
@@ -809,6 +816,7 @@ function CalendarTab({
   sessions: LiveSession[];
   clients: ClientInfo[];
   plans: SessionPlan[];
+  diaryPlans?: Record<string, PairPlan>;
   settings: SessionSettings | null;
   makeup: LiveSession | null;
   onMakeupDone: () => void;
@@ -979,7 +987,7 @@ function CalendarTab({
         initialTime={addAt}
         clients={makeup ? clients.filter((c) => c.id === makeup.client_id) : clients.filter((c) => plans.some((p) => p.client_id === c.id && p.active))}
         makeupFor={makeup?.id ?? null}
-        makeupPrice={makeup ? catchUpPrice(makeup, sessions, plans, settings) : null}
+        makeupCharge={makeup ? catchUpPrice(makeup, sessions, plans, diaryPlans, settings) : null}
         // A catch-up for someone not in the app is booked by their calendar name (GRIZZ, 2026-11-03).
         guests={makeup ? (makeup.client_id || !makeup.guest_name ? [] : [makeup.guest_name]) : diaryNames(sessions)}
         groups={makeup ? [] : usualGroups(sessions)}
@@ -989,7 +997,7 @@ function CalendarTab({
           .filter((s) => s.status === "booked" || s.status === "done")
           .map((s) => ({ time: clockLabel(s.starts_at), minutes: s.minutes, names: s.status === "booked" ? [who(s).split(" ")[0]] : [] }))}
         owed={makeup ? [] : catchUps}
-        priceFor={(m) => catchUpPrice(m, sessions, plans, settings)}
+        priceFor={(m) => catchUpPrice(m, sessions, plans, diaryPlans, settings)}
         onClose={() => {
           setAdding(false);
           // Picked from a green slot and closed without booking: back to normal.
@@ -1008,28 +1016,22 @@ function CalendarTab({
 }
 
 /**
- * What a catch-up costs before the coach changes it (GRIZZ, 2026-11-03). A
- * catch-up for a joint session (Sharde & Dave) is them training alone in
- * another slot, so a normal slot's price; for the coach's own cancellation,
- * the missed session's price; otherwise free (they cancelled in time).
+ * What a catch-up costs before the coach changes it, and why in plain words
+ * (rule in src/lib/catchUpPrice.ts: the client pays once per session).
  */
 export function catchUpPrice(
   missed: LiveSession,
   sessions: LiveSession[],
   plans: SessionPlan[],
+  diaryPlans: Record<string, PairPlan>,
   settings: SessionSettings | null
-): number {
-  const joint = sessions.some((s) => s.id !== missed.id && s.starts_at === missed.starts_at && s.status !== "removed");
-  if (missed.cancelled_by === "trainer") return Number(missed.fee ?? 0);
-  const plan = missed.client_id ? plans.find((p) => p.client_id === missed.client_id) : null;
-  // Set up to train together with an alone price: training alone in the
-  // catch-up costs the alone price (GRIZZ 2026-11-18: "a single session on a
-  // double will always be R750"). The invoice prices it the same way (0222).
-  if (plan && plan.group_size > 1 && plan.solo_fee != null) return Number(plan.solo_fee);
-  if (joint) {
-    return Number((plan && (plan.solo_fee ?? (plan.group_size > 1 ? null : plan.fee))) ?? settings?.fee ?? missed.fee ?? 0);
-  }
-  return 0;
+): CatchUpCharge {
+  const plan = missed.client_id ? plans.find((p) => p.client_id === missed.client_id) : diaryPlans[diaryKey(missed.guest_name)];
+  return catchUpCharge(missed, sessions, {
+    plan: plan ?? null,
+    money: (n) => sessionMoney(n, settings?.currency),
+    day: (iso) => dayLabel(iso),
+  });
 }
 
 function AddSessionModal({
@@ -1040,7 +1042,7 @@ function AddSessionModal({
   settings,
   booked,
   makeupFor,
-  makeupPrice = null,
+  makeupCharge = null,
   initialTime,
   guests = [],
   groups = [],
@@ -1051,7 +1053,7 @@ function AddSessionModal({
 }: {
   /** Catch-ups owed: booking one of these people asks if it's their catch-up (GRIZZ 2026-11-16). */
   owed?: LiveSession[];
-  priceFor?: (missed: LiveSession) => number;
+  priceFor?: (missed: LiveSession) => CatchUpCharge;
   /** People not in the app who train together, e.g. ["Camilla", "Jade"]. */
   groups?: string[][];
   visible: boolean;
@@ -1061,8 +1063,8 @@ function AddSessionModal({
   /** People on the calendar who aren't in the app (names). */
   guests?: string[];
   makeupFor: string | null;
-  /** What the catch-up costs, filled in for the coach to check (GRIZZ, 2026-11-03). */
-  makeupPrice?: number | null;
+  /** What the catch-up costs and why, filled in for the coach to check (GRIZZ, 2026-11-03). */
+  makeupCharge?: CatchUpCharge | null;
   plans: SessionPlan[];
   settings: SessionSettings | null;
   /** Sessions already that day, with who's in them (to add someone to one). */
@@ -1085,7 +1087,7 @@ function AddSessionModal({
   useEffect(() => {
     if (visible) {
       setAsCatchUp(null);
-      setPrice(makeupPrice != null ? String(makeupPrice) : "");
+      setPrice(makeupCharge ? String(makeupCharge.price) : "");
       setPicked(
         clients.length === 1 && !guests.length ? [`c:${clients[0].id}`] : makeupFor && !clients.length && guests.length === 1 ? [`g:${guests[0]}`] : []
       );
@@ -1125,7 +1127,7 @@ function AddSessionModal({
   const catchUpFor = makeupFor ?? asCatchUp?.id ?? null;
   const pickCatchUp = (o: LiveSession | null) => {
     setAsCatchUp(o);
-    setPrice(o ? String(priceFor ? priceFor(o) : 0) : "");
+    setPrice(o ? String(priceFor ? priceFor(o).price : 0) : "");
     if (o) setWeekly(false);
   };
   const save = async () => {
@@ -1296,7 +1298,7 @@ function AddSessionModal({
                     placeholderTextColor="#64748B"
                   />
                   <Text style={styles.meta}>
-                    {(makeupFor ? makeupPrice : asCatchUp && priceFor ? priceFor(asCatchUp) : 0) ? "Filled in with a normal slot's price because they trained in a joint session: alone in the catch-up, it's a full slot. Change it if you need to." : "Filled in as free because they cancelled in time. Type a price if this one is charged."}
+                    {(makeupFor ? makeupCharge?.why : asCatchUp && priceFor ? priceFor(asCatchUp).why : null) ?? "Type what this catch-up costs."} You can change the price if you need to.
                   </Text>
                 </>
               ) : (

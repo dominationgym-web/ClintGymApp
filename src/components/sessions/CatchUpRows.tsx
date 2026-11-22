@@ -20,8 +20,12 @@ const dayList = (rows: Row[], max = 3) =>
     .map((r) => `${dayLabel(r.s.starts_at)} ${clockLabel(r.s.starts_at)}`)
     .join(", ") + (rows.length > max ? ` and ${rows.length - max} more` : "");
 
+// Says who pays for what, so it's clear the client pays once (GRIZZ
+// 2026-11-22: "the trainer will be confused as to how the system works").
 const reason = (s: LiveSession) =>
-  s.cancelled_by === "trainer" ? "you were away: the catch-up is charged" : s.away_id ? "they were away" : "cancelled in time";
+  s.cancelled_by === "trainer"
+    ? "you cancelled: not charged, the catch-up is charged"
+    : `${s.away_id ? "they were away" : s.status === "no_show" ? "didn't come" : "cancelled in time"}: charged, so the catch-up is free`;
 
 // Catch-ups owed, each with the day it has to be booked by (GRIZZ,
 // 2026-11-02: "If the trainer doesn't do the catch-up by the end of the month
@@ -81,7 +85,7 @@ export default function CatchUpRows({
     const n = list.length;
     Alert.alert(
       n === 1 ? `Remove 1 of ${who}'s catch-ups?` : `Remove ${n} of ${who}'s catch-ups?`,
-      `${n === 1 ? "It's" : "They're"} credited: no catch-up, and ${n === 1 ? "it comes" : "they come"} off ${who}'s next invoice.`,
+      `${n === 1 ? "It's" : "They're"} credited: no catch-up, and ${n === 1 ? "that session isn't" : "those sessions aren't"} charged (if already invoiced, ${n === 1 ? "it comes" : "they come"} off ${who}'s next invoice).`,
       [
         { text: "Back", style: "cancel" },
         {
@@ -94,7 +98,7 @@ export default function CatchUpRows({
     );
   };
   const credit = (s: LiveSession) =>
-    Alert.alert(`Credit ${name(s)}?`, "No catch-up for this session. It comes off their next invoice instead.", [
+    Alert.alert(`Credit ${name(s)}?`, s.cancelled_by === "trainer" ? "No catch-up for this session, and they aren't charged for it." : "No catch-up for this session, and it isn't charged (if already invoiced, it comes off their next invoice).", [
       { text: "Back", style: "cancel" },
       { text: "Credit", onPress: () => decide(s, "credit") },
     ]);
