@@ -56,7 +56,7 @@ export default function TrainerSearchScreen({ navigation }: NativeStackScreenPro
           key: `program-${p.id}`,
           title: p.name,
           subtitle: p.description,
-          onPress: () => navigation.navigate("TrainerTabs", { screen: "Programs" }),
+          onPress: () => navigation.navigate("TrainerTabs", { screen: "Programs" }, { pop: true }),
         })),
     },
     {
@@ -88,7 +88,7 @@ export default function TrainerSearchScreen({ navigation }: NativeStackScreenPro
       data: pages.map((p) => ({
         key: `page-${p.tab}`,
         title: p.title,
-        onPress: () => navigation.navigate("TrainerTabs", { screen: p.tab }),
+        onPress: () => navigation.navigate("TrainerTabs", { screen: p.tab }, { pop: true }),
       })),
     },
   ];

@@ -46,7 +46,7 @@ export default function WeighInDueBanner() {
   return (
     <Pressable
       style={styles.card}
-      onPress={() => navigation.navigate("ClientTabs", { screen: "Profile", params: { open: "progress" } })}
+      onPress={() => navigation.navigate("ClientTabs", { screen: "Profile", params: { open: "progress" } }, { pop: true })}
       accessibilityRole="button"
     >
       <Text style={styles.title}>Weigh-in day</Text>

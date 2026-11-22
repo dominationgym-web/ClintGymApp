@@ -99,7 +99,7 @@ function PlanEndingBanner() {
   return (
     <Pressable
       style={styles.plan}
-      onPress={() => navigation.navigate("ClientTabs", { screen: "Profile", params: { open: "pay" } })}
+      onPress={() => navigation.navigate("ClientTabs", { screen: "Profile", params: { open: "pay" } }, { pop: true })}
       accessibilityRole="button"
     >
       <Text style={styles.planTitle}>Your plan ends {planEndingWhen(ending)}</Text>

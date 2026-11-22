@@ -37,7 +37,7 @@ export default function ClientSearchScreen({ navigation }: NativeStackScreenProp
       data: pages.map((p) => ({
         key: `page-${p.tab}`,
         title: p.title,
-        onPress: () => navigation.navigate("ClientTabs", { screen: p.tab }),
+        onPress: () => navigation.navigate("ClientTabs", { screen: p.tab }, { pop: true }),
       })),
     },
     {

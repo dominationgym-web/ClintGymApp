@@ -46,8 +46,11 @@ export function CoachMessageCard() {
   useEffect(() => {
     if (!client) return;
     registerForCoachMessages();
+    // A name of its own for each card on screen: Supabase hands back the same,
+    // already-joined channel for a repeated name, and adding to that one throws,
+    // which closed the app when a second Today page opened (2026-11-22).
     const channel = supabase
-      .channel(`coach-messages-${client.id}`)
+      .channel(`coach-messages-${client.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "coach_messages", filter: `client_id=eq.${client.id}` },

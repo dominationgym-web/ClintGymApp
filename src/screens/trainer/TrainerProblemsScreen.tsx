@@ -101,7 +101,7 @@ export default function TrainerProblemsScreen() {
           navigation.setParams({ problemId: undefined });
         }}
         onChanged={(changes) => setList((prev) => prev.map((p) => (p.id === open.id ? { ...p, ...changes } : p)))}
-        onSeeClients={(trainerId) => navigation.navigate("TrainerTabs", { screen: "Trainers", params: { openId: trainerId } })}
+        onSeeClients={(trainerId) => navigation.navigate("TrainerTabs", { screen: "Trainers", params: { openId: trainerId } }, { pop: true })}
       />
     );
   }
