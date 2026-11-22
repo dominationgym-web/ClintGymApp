@@ -46,7 +46,7 @@ export default function HolidaysScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
       <Text style={styles.helper}>
-        Tap the days you're away. Every client is told and sees it on their app until you're back. 1 on 1 sessions in that time are cancelled free and go on your catch-up list, where you book a catch-up or credit each one.
+        Tap the days you're away. Every client is told and sees it on their app until you're back. 1 on 1 sessions in that time are cancelled and go on your catch-up list: they still count and the catch-ups are free. Credit any you can't fit in (then it isn't charged).
       </Text>
       <Pressable style={styles.button} onPress={() => setAdding(true)}>
         <Text style={styles.buttonText}>＋ Add a holiday</Text>

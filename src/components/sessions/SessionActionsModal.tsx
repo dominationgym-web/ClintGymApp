@@ -524,8 +524,9 @@ function WhoForm({
 // "When did they tell you?": a day before the session and a time, the
 // WhatsApp screenshot, and the charge or credit that follows from the rule.
 // The coach cancels (sick, family, something came up). Everyone booked in the
-// slot is cancelled, nobody is charged, the slot turns green and each person
-// goes on the catch-up list (like a holiday, 0205) unless the coach picks Credit.
+// slot is cancelled, the slot turns green and each person goes on the catch-up
+// list (still charged, free catch-up: GRIZZ 2026-11-22) unless the coach picks
+// Credit (not charged).
 const COACH_REASONS = ["Not well", "Family matter", "Something came up"];
 
 function CoachCancelForm({
@@ -560,8 +561,8 @@ function CoachCancelForm({
       }
       Alert.alert(
         "Session cancelled ✅",
-        `${names} ${who.length > 1 ? "aren't" : "isn't"} charged and the slot is green, free to book.` +
-          (then === "makeup" ? " It's on Today › Catch-ups to book." : " It's credited on their invoice.") +
+        "The slot is green, free to book." +
+          (then === "makeup" ? " The session still counts and it's on Today › Catch-ups: the catch-up is free." : ` ${names} ${who.length > 1 ? "aren't" : "isn't"} charged for it.`) +
           (inApp ? " They've been told on their phone." : "")
       );
       onDone();
@@ -575,7 +576,7 @@ function CoachCancelForm({
   return (
     <View style={{ marginTop: 12 }}>
       <Text style={styles.resultText}>
-        You're cancelling {names}'s session. {who.length > 1 ? "They aren't" : "They're not"} charged for it.
+        You're cancelling {names}'s session.
       </Text>
       <Text style={styles.label}>What happens to it?</Text>
       <View style={styles.chips}>
@@ -583,7 +584,7 @@ function CoachCancelForm({
         <Chip label="🟢 Credit" on={then === "credit"} onPress={() => setThen("credit")} />
       </View>
       <Text style={styles.meta}>
-        {then === "makeup" ? "Goes on Today › Catch-ups so you book another time." : "Taken off their invoice. No catch-up."}
+        {then === "makeup" ? "Still counts (charged as usual) and goes on Today › Catch-ups. The catch-up is free." : "Not charged (taken off their invoice). No catch-up."}
       </Text>
       <Text style={styles.label}>Reason (optional)</Text>
       <View style={styles.chips}>

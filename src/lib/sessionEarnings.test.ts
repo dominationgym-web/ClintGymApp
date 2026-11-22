@@ -37,16 +37,17 @@ describe("takings", () => {
         s({ status: "no_show", charge: "charge" }),
         s({ status: "cancelled", charge: "credit", cancelled_by: "client" }), // in time
         s({ status: "cancelled", cancelled_by: "trainer", charge: "credit" }),
+        s({ status: "cancelled", cancelled_by: "trainer", charge: "makeup" }), // you cancelled, catch-up: still charged
         s({ status: "cancelled", charge: null, cancelled_by: "client" }), // decide
         s({ status: "booked", starts_at: at(4, 17) }), // still to come
         s({ status: "removed" }),
       ],
       now
     );
-    expect(t.made).toBe(1400);
+    expect(t.made).toBe(1750);
     expect(t.trained).toBe(2);
-    expect(t.charged).toBe(2);
-    expect(t.fromCancellations).toBe(700);
+    expect(t.charged).toBe(3);
+    expect(t.fromCancellations).toBe(1050);
     expect(t.credited).toBe(350);
     expect(t.creditedCount).toBe(1);
     expect(t.byCoach).toBe(350);
@@ -111,8 +112,8 @@ describe("losses", () => {
   it("adds up lost sessions and what catch-ups bring back", () => {
     const t = losses(
       [
-        l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup" }), // you cancelled, catch-up owed: can come back
-        l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup", makeup_session_id: "m1" }), // catch-up booked
+        l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup" }), // you cancelled, catch-up owed: still charged, time owed
+        l({ status: "cancelled", cancelled_by: "trainer", charge: "makeup", makeup_session_id: "m1" }), // catch-up booked: not lost
         l({ status: "cancelled", cancelled_by: "trainer", charge: "credit", client_id: null }), // name only: lost
         l({ status: "cancelled", cancelled_by: "client", charge: "credit" }), // credited: decided, not won back
         l({ status: "cancelled", cancelled_by: "client", charge: "credit", credit_invoice_id: "i1" }), // credited on an invoice: lost
@@ -122,12 +123,12 @@ describe("losses", () => {
       ],
       now
     );
-    expect(t.lost).toBe(350 * 4);
-    expect(t.coach).toBe(700);
+    expect(t.lost).toBe(350 * 3);
+    expect(t.coach).toBe(350);
     expect(t.credited).toBe(700);
     expect(t.undecided).toBe(350);
-    expect(t.canComeBack).toBe(350);
-    expect(t.bookedBack).toBe(350);
-    expect(t.owedCount).toBe(1);
+    expect(t.canComeBack).toBe(0);
+    expect(t.bookedBack).toBe(0);
+    expect(t.owedCount).toBe(2);
   });
 });

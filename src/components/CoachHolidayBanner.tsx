@@ -24,7 +24,7 @@ export default function CoachHolidayBanner({ holidays: given }: { holidays?: Hol
           <Text style={styles.title}>🌴 Your coach is away {holidaySpan(h, today)}</Text>
           {h.reason ? <Text style={styles.text}>{h.reason}</Text> : null}
           {client?.one_on_one || client?.live_only ? (
-            <Text style={styles.meta}>Your sessions in that time are cancelled free. Your coach will find you catch-up times.</Text>
+            <Text style={styles.meta}>Your sessions in that time still count. Your coach will find you free catch-up times.</Text>
           ) : null}
         </View>
       ))}
