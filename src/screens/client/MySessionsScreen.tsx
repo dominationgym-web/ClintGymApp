@@ -332,7 +332,7 @@ function InvoicesTab({ invoices, paidForYou }: { invoices: SessionInvoice[]; pai
           <SessionInvoiceView invoice={open} who="client" />
         </View>
         {open.status === "sent" ? (
-          <Pressable style={styles.button} onPress={() => navigationRef.navigate("ClientTabs", { screen: "Profile", params: { open: "pay" } })}>
+          <Pressable style={styles.button} onPress={() => navigationRef.navigate("ClientTabs", { screen: "Profile", params: { open: "pay" } }, { pop: true })}>
             <Text style={styles.buttonText}>Send proof of payment</Text>
           </Pressable>
         ) : null}

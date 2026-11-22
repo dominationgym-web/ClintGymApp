@@ -41,7 +41,7 @@ export default function TodayTrainingCard({ clientId }: { clientId: string }) {
   }, [clientId]);
   useFocusEffect(load);
 
-  const openTraining = () => navigation.navigate("ClientTabs", { screen: "Exercises" });
+  const openTraining = () => navigation.navigate("ClientTabs", { screen: "Exercises" }, { pop: true });
 
   return (
     <View style={styles.card}>

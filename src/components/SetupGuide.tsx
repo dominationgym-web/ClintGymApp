@@ -170,7 +170,7 @@ export function SetupGuideProvider({ children }: { children: React.ReactNode }) 
       setTimeout(
         () => {
           if (!navigationRef.isReady()) return;
-          navigationRef.navigate("TrainerTabs", { screen: target.tab });
+          navigationRef.navigate("TrainerTabs", { screen: target.tab }, { pop: true });
           const open = target.open;
           if (open) setTimeout(() => requestGuideOpen(open), 350);
         },
