@@ -88,6 +88,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   // The person whose block is open, and what's typed for each person so far
   // (kept when the trainer jumps to someone else and back).
   const [openFor, setOpenFor] = useState<string | null>(null);
+  // Which exercise box the trainer is typing in, shown in a strip pinned above
+  // the list so the exercise name stays in view with the keyboard open.
+  const [typingIn, setTypingIn] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft[]>>({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -209,6 +212,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
     setDraft(id, i, warm ? { warm, weight: half ? String(half) : "", reps: warmUpRepsToFill(s.reps), effort: null } : { warm, weight: start, reps: "", effort: null });
   };
 
+  useEffect(() => setTypingIn(null), [openFor, block]);
+
   const goBlock = (b: number) => {
     setBlock(b);
     setDrafts({});
@@ -261,6 +266,7 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
     if (error || !data) return Alert.alert("Couldn't save", error?.message ?? "Please try again.");
     const now = [...logs, ...data];
     setLogs(now);
+    setTypingIn(null);
     // Their next round starts fresh, keeping the weights they just used.
     setDrafts((prev) => ({ ...prev, [id]: freshDraft(id, now) }));
     const onlyWarm = rows.every((r) => r.warm_up);
@@ -486,8 +492,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                         {current.map((s) => {
                           const last = clientSets(logs, c.id, s.name).at(-1);
                           return (
-                            <Text key={s.name} style={styles.cardLine} numberOfLines={1}>
-                              {isCircuit ? `${s.name.split(" ").slice(-1)[0]}: ` : "Last: "}
+                            <Text key={s.name} style={styles.cardLine} numberOfLines={2}>
+                              {isCircuit ? `${s.name}: ` : "Last: "}
                               {last ? `${last.weight_kg != null ? `${last.weight_kg}kg×` : ""}${last.reps}` : "–"}
                             </Text>
                           );
@@ -567,6 +573,16 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                     </Text>
                   </View>
                 </View>
+                {typingIn != null && current[typingIn] && (
+                  <View style={[styles.typingStrip, { borderColor: themeBorder(slotOf(opened.id).color) }]}>
+                    <Text style={styles.typingLabel}>
+                      ✎ Logging {first(opened)}'s{isCircuit ? ` exercise ${typingIn + 1} of ${current.length}` : ""}
+                    </Text>
+                    <Text style={styles.typingName} numberOfLines={2}>
+                      {current[typingIn].name}
+                    </Text>
+                  </View>
+                )}
                 <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 12 }}>
                   {current.map((s, i) => {
                     const d = draftOf(opened.id)[i];
@@ -575,20 +591,18 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                     const warmLogs = today.filter((l) => l.warm_up);
                     const working = clientSets(logs, opened.id, s.name);
                     return (
-                      <View key={s.name} style={styles.exBox}>
-                        <Text style={styles.exName} numberOfLines={1}>
-                          {isCircuit ? `${i + 1}. ` : ""}
-                          {s.name} <Text style={styles.exPlan}>{s.sets} × {s.reps}</Text>
-                        </Text>
-                        {today.length > 0 && (
-                          <View style={styles.setChips}>
-                            {[...warmLogs, ...working].map((l, n) => (
-                              <Pressable key={l.id} style={[styles.setChip, l.warm_up && styles.setChipWarm]} onPress={() => setSetMenu(l)} hitSlop={3}>
-                                <Text style={styles.setChipText}>{setLine(l, n - warmLogs.length + 1)} ✏️</Text>
-                              </Pressable>
-                            ))}
-                          </View>
+                      <View key={s.name} style={[styles.exBox, { borderColor: themeBorder(color) }, typingIn === i && styles.exBoxTyping]}>
+                        {isCircuit && (
+                          <Text style={[styles.exStation, { color: themeText(color) }]}>
+                            Exercise {i + 1} of {current.length}
+                          </Text>
                         )}
+                        <Text style={styles.exName} numberOfLines={3}>
+                          {s.name}
+                        </Text>
+                        <Text style={styles.exPlan}>
+                          Plan: {s.sets} × {s.reps}
+                        </Text>
                         <View style={styles.kindRow}>
                           {[true, false].map((w) => (
                             <Pressable
@@ -602,12 +616,15 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                             </Pressable>
                           ))}
                         </View>
+                        <Text style={styles.inputFor} numberOfLines={2}>
+                          Weight and reps for {s.name}
+                        </Text>
                         <View style={styles.inputs}>
                           <View style={{ flex: 1 }}>
-                            <TextInput style={styles.input} value={d?.weight ?? ""} onChangeText={(v) => setDraft(opened.id, i, { weight: v })} keyboardType="decimal-pad" placeholder="kg (blank = bodyweight)" placeholderTextColor="#64748B" />
+                            <TextInput style={styles.input} value={d?.weight ?? ""} onChangeText={(v) => setDraft(opened.id, i, { weight: v })} onFocus={() => setTypingIn(i)} keyboardType="decimal-pad" placeholder="kg (blank = bodyweight)" placeholderTextColor="#64748B" />
                           </View>
                           <View style={{ flex: 1 }}>
-                            <TextInput style={styles.input} value={d?.reps ?? ""} onChangeText={(v) => setDraft(opened.id, i, { reps: v })} keyboardType="number-pad" placeholder={`reps (${s.reps})`} placeholderTextColor="#64748B" />
+                            <TextInput style={styles.input} value={d?.reps ?? ""} onChangeText={(v) => setDraft(opened.id, i, { reps: v })} onFocus={() => setTypingIn(i)} keyboardType="number-pad" placeholder={`reps (${s.reps})`} placeholderTextColor="#64748B" />
                           </View>
                         </View>
                         {!d?.warm && (
@@ -615,6 +632,15 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                             {EFFORT_OPTIONS.map((o) => (
                               <Pressable key={o.key} style={[styles.chip, d?.effort === o.key && { backgroundColor: themeBg(color) }]} onPress={() => setDraft(opened.id, i, { effort: o.key })}>
                                 <Text style={[styles.chipText, d?.effort === o.key && styles.chipTextOn]}>{o.label}</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        )}
+                        {today.length > 0 && (
+                          <View style={[styles.setChips, { marginTop: 6 }]}>
+                            {[...warmLogs, ...working].map((l, n) => (
+                              <Pressable key={l.id} style={[styles.setChip, l.warm_up && styles.setChipWarm]} onPress={() => setSetMenu(l)} hitSlop={3}>
+                                <Text style={styles.setChipText}>{setLine(l, n - warmLogs.length + 1)} ✏️</Text>
                               </Pressable>
                             ))}
                           </View>
@@ -823,9 +849,15 @@ const styles = themedStyles({
   tabs: { flexDirection: "row", gap: 6, padding: 12 },
   tab: { flex: 1, borderWidth: 2, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
   tabText: { fontWeight: "900", fontSize: 14 },
-  exBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 10, marginBottom: 8 },
-  exName: { color: "#fff", fontSize: 16, fontWeight: "800", marginBottom: 6 },
-  exPlan: { color: "#94A3B8", fontSize: 13, fontWeight: "600" },
+  exBox: { backgroundColor: "#1E293B", borderRadius: 12, padding: 10, marginBottom: 10, borderLeftWidth: 5 },
+  exBoxTyping: { borderWidth: 2, borderLeftWidth: 5 },
+  exStation: { fontSize: 12, fontWeight: "900", textTransform: "uppercase", marginBottom: 2 },
+  exName: { color: "#fff", fontSize: 18, fontWeight: "900" },
+  exPlan: { color: "#94A3B8", fontSize: 13, fontWeight: "600", marginBottom: 6 },
+  inputFor: { color: "#E2E8F0", fontSize: 13, fontWeight: "700", marginTop: 8, marginBottom: 4 },
+  typingStrip: { marginHorizontal: 12, marginTop: -4, marginBottom: 8, backgroundColor: "#1E293B", borderRadius: 10, borderWidth: 2, paddingVertical: 8, paddingHorizontal: 12 },
+  typingLabel: { color: "#94A3B8", fontSize: 12, fontWeight: "800" },
+  typingName: { color: "#fff", fontSize: 17, fontWeight: "900" },
   panelFooter: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderTopWidth: 1, borderTopColor: "#1E293B" },
   panelToast: { marginHorizontal: 12, marginBottom: 6, backgroundColor: "#14532D", borderRadius: 10, padding: 10 },
   setChips: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 6 },
