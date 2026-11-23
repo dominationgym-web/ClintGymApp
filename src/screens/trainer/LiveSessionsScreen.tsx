@@ -2201,7 +2201,7 @@ const styles = themedStyles({
   tickOn: { backgroundColor: BRAND_GOLD },
   tickMark: { color: "#0F172A", fontWeight: "900" },
   tickText: { color: "#fff", fontSize: 15 },
-  totals: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
+  totals: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", columnGap: 12, rowGap: 4, backgroundColor: "#1E293B", borderRadius: 10, padding: 12, marginBottom: 8 },
   totalText: { color: "#fff", fontSize: 13, fontWeight: "700" },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   sheet: { backgroundColor: "#0F172A", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 20, maxHeight: "92%" },
