@@ -8,7 +8,7 @@
 // server is involved. Messages from the trainer are the one exception: those
 // come from the server through Expo's push service (0034), using the token
 // registerForCoachMessages() saves.
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { isRunningInExpoGo } from "expo";
 import Constants from "expo-constants";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,7 @@ import { upcomingResetReminders } from "@/lib/resetProgram";
 import { parseIsoDate, todayIso } from "@/lib/dates";
 import { habitReminderSlots } from "@/lib/reminderTime";
 import { notificationGroupOn, type NotificationGroup } from "@/lib/notificationPrefs";
+import { notificationsToClear, shownInboxId } from "@/lib/inboxItems";
 
 type NotificationsModule = typeof import("expo-notifications");
 
@@ -51,6 +52,11 @@ export function setUpNotifications(): void {
       shouldPlaySound: true,
       shouldSetBadge: false,
     }),
+  });
+  // Each time the app opens, take away notifications already dealt with.
+  setTimeout(() => clearHandledNotifications().catch(() => undefined), 3000);
+  AppState.addEventListener("change", (state) => {
+    if (state === "active") setTimeout(() => clearHandledNotifications().catch(() => undefined), 1500);
   });
 }
 
@@ -310,6 +316,30 @@ export function onNotificationTap(handle: (data: Record<string, unknown>) => voi
     .catch(() => undefined);
   const subscription = N.addNotificationResponseReceivedListener(take);
   return () => subscription.remove();
+}
+
+/**
+ * Takes notifications off the phone once they're dealt with (GRIZZ
+ * 2026-11-24: "Did your 06:30 with X happen?" stayed after he'd marked it).
+ * A push's inbox row is marked read by the server when the session is marked
+ * Done, Cancelled or No-show (0236), or when it's read under the bell, so
+ * anything on the phone whose row is read goes.
+ */
+export async function clearHandledNotifications(): Promise<void> {
+  const N = notifications();
+  if (!N) return;
+  try {
+    const presented = await N.getPresentedNotificationsAsync();
+    const shown = presented.map((n) => ({ identifier: n.request.identifier, data: n.request.content.data }));
+    const ids = [...new Set(shown.map(shownInboxId).filter((id): id is string => id !== null))];
+    if (ids.length === 0) return;
+    const { data } = await supabase.from("inbox_items").select("id").in("id", ids).not("read_at", "is", null);
+    const dealtWith = new Set(((data ?? []) as { id: string }[]).map((r) => r.id));
+    await Promise.all(notificationsToClear(shown, dealtWith).map((id) => N.dismissNotificationAsync(id)));
+  } catch (e) {
+    // Tidying the notification list must never break anything else.
+    console.warn("Couldn't clear handled notifications", e);
+  }
 }
 
 /** Clears this phone's reminders, so the next person to sign in doesn't get them. */

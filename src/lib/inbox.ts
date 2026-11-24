@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { supabase } from "@/lib/supabase";
+import { clearHandledNotifications } from "@/lib/notifications";
 import type { InboxItem } from "@/types/database";
 
 // The 🔔 inbox (0232, GRIZZ 2026-11-21: "messages get lost and can't be
@@ -40,6 +41,18 @@ export async function refreshInboxUnread(): Promise<void> {
 export function inboxChanged() {
   changeListeners.forEach((l) => l());
   refreshInboxUnread().catch(() => undefined);
+  clearSoon();
+}
+
+// Something was marked or read: take dealt-with notifications off the phone.
+// Batched, because marking a morning's sessions fires many changes at once.
+let clearTimer: ReturnType<typeof setTimeout> | null = null;
+function clearSoon() {
+  if (clearTimer) clearTimeout(clearTimer);
+  clearTimer = setTimeout(() => {
+    clearTimer = null;
+    clearHandledNotifications().catch(() => undefined);
+  }, 800);
 }
 
 export function onInboxChanged(listener: () => void): () => void {
