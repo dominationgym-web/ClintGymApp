@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Modal, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Keyboard, Modal, Text, View } from "react-native";
 import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -213,6 +213,11 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   };
 
   useEffect(() => setTypingIn(null), [openFor, block]);
+  // Keyboard down: the full panel (tabs, banner, buttons) comes back.
+  useEffect(() => {
+    const sub = Keyboard.addListener("keyboardDidHide", () => setTypingIn(null));
+    return () => sub.remove();
+  }, []);
 
   const goBlock = (b: number) => {
     setBlock(b);
@@ -415,6 +420,10 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
   const blockTitle = isCircuit ? `Superset · ${current.length} exercises` : current[0]?.name ?? "";
   const setLine = (l: WorkoutLog, n: number) => `${l.warm_up ? "W" : `${n}.`} ${l.weight_kg != null ? `${l.weight_kg}kg×` : ""}${l.reps}`;
   const opened = openFor ? group.find((c) => c.id === openFor) ?? null : null;
+  // While typing, the keyboard takes half the screen: the tabs, banner and
+  // extra buttons step aside so the boxes stay visible, and one strip names
+  // the person and exercise being typed into.
+  const typing = typingIn != null && !!current[typingIn];
 
   return (
     <View style={styles.container}>
@@ -545,7 +554,8 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
           <ModalSafeArea style={{ flex: 1 }}>
             {opened && (
               <>
-                <View style={styles.tabs}>
+                {!typing && (
+                  <View style={styles.tabs}>
                   {group.map((c) => {
                     const slot = slotOf(c.id);
                     const on = c.id === opened.id;
@@ -561,7 +571,9 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                       </Pressable>
                     );
                   })}
-                </View>
+                  </View>
+                )}
+                {!typing && (
                 <View style={[styles.banner, { backgroundColor: themeBg(slotOf(opened.id).color), marginHorizontal: 12 }]}>
                   <Text style={styles.bannerLetter}>{slotOf(opened.id).letter}</Text>
                   <View style={{ flex: 1 }}>
@@ -573,13 +585,15 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                     </Text>
                   </View>
                 </View>
-                {typingIn != null && current[typingIn] && (
-                  <View style={[styles.typingStrip, { borderColor: themeBorder(slotOf(opened.id).color) }]}>
-                    <Text style={styles.typingLabel}>
-                      ✎ Logging {first(opened)}'s{isCircuit ? ` exercise ${typingIn + 1} of ${current.length}` : ""}
+                )}
+                {typing && (
+                  <View style={[styles.typingStrip, { backgroundColor: themeBg(slotOf(opened.id).color) }]}>
+                    <Text style={styles.typingLabel} numberOfLines={1}>
+                      {slotOf(opened.id).letter} · {first(opened)}
+                      {isCircuit ? ` · exercise ${typingIn! + 1} of ${current.length}` : ""}
                     </Text>
                     <Text style={styles.typingName} numberOfLines={2}>
-                      {current[typingIn].name}
+                      {current[typingIn!].name}
                     </Text>
                   </View>
                 )}
@@ -658,14 +672,16 @@ export default function GroupLiveScreen({ route, navigation }: Props) {
                   <Pressable style={[styles.saveButton, { backgroundColor: themeBg(slotOf(opened.id).color), marginTop: 0 }]} onPress={logSet} disabled={saving}>
                     {saving ? <ActivityIndicator color={themeText("#0F172A")} /> : <Text style={styles.finishText}>✓ Log {first(opened)}'s set</Text>}
                   </Pressable>
-                  <View style={styles.addRow}>
-                    <Pressable style={styles.addButton} onPress={() => openPicker("superset")}>
-                      <Text style={styles.addText}>+ Another circuit</Text>
-                    </Pressable>
-                    <Pressable style={styles.addButton} onPress={() => setOpenFor(null)}>
-                      <Text style={styles.addText}>Back to everyone</Text>
-                    </Pressable>
-                  </View>
+                  {!typing && (
+                    <View style={styles.addRow}>
+                      <Pressable style={styles.addButton} onPress={() => openPicker("superset")}>
+                        <Text style={styles.addText}>+ Another circuit</Text>
+                      </Pressable>
+                      <Pressable style={styles.addButton} onPress={() => setOpenFor(null)}>
+                        <Text style={styles.addText}>Back to everyone</Text>
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
               </>
             )}
@@ -855,9 +871,9 @@ const styles = themedStyles({
   exName: { color: "#fff", fontSize: 18, fontWeight: "900" },
   exPlan: { color: "#94A3B8", fontSize: 13, fontWeight: "600", marginBottom: 6 },
   inputFor: { color: "#E2E8F0", fontSize: 13, fontWeight: "700", marginTop: 8, marginBottom: 4 },
-  typingStrip: { marginHorizontal: 12, marginTop: -4, marginBottom: 8, backgroundColor: "#1E293B", borderRadius: 10, borderWidth: 2, paddingVertical: 8, paddingHorizontal: 12 },
-  typingLabel: { color: "#94A3B8", fontSize: 12, fontWeight: "800" },
-  typingName: { color: "#fff", fontSize: 17, fontWeight: "900" },
+  typingStrip: { marginHorizontal: 12, marginTop: 8, marginBottom: 6, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 12 },
+  typingLabel: { color: "#0F172A", fontSize: 12, fontWeight: "800" },
+  typingName: { color: "#0F172A", fontSize: 17, fontWeight: "900" },
   panelFooter: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderTopWidth: 1, borderTopColor: "#1E293B" },
   panelToast: { marginHorizontal: 12, marginBottom: 6, backgroundColor: "#14532D", borderRadius: 10, padding: 10 },
   setChips: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 6 },
