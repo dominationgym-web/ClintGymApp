@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { badgeText, inboxIcon, inboxTitle, isCoachMessage, splitInbox, timeAgo } from "@/lib/inboxItems";
+import { badgeText, inboxIcon, inboxTitle, isCoachMessage, notificationsToClear, shownInboxId, splitInbox, timeAgo } from "@/lib/inboxItems";
 
 describe("inbox", () => {
   it("knows a coach message", () => {
@@ -44,5 +44,18 @@ describe("inbox", () => {
     expect(badgeText(0)).toBeNull();
     expect(badgeText(3)).toBe("3");
     expect(badgeText(14)).toBe("9+");
+  });
+
+  it("clears phone notifications whose inbox row is dealt with", () => {
+    const shown = [
+      { identifier: "n1", data: { type: "live_session_ask", inboxId: "a" } },
+      { identifier: "n2", data: { type: "live_session_ask", inboxId: "b" } },
+      { identifier: "n3", data: { type: "live_session_ask" } },
+      { identifier: "n4", data: null },
+    ];
+    expect(shownInboxId(shown[0])).toBe("a");
+    expect(shownInboxId(shown[2])).toBeNull();
+    expect(notificationsToClear(shown, new Set(["a"]))).toEqual(["n1"]);
+    expect(notificationsToClear(shown, new Set())).toEqual([]);
   });
 });

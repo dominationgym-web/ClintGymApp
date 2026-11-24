@@ -72,3 +72,25 @@ export function badgeText(count: number): string | null {
   if (count <= 0) return null;
   return count > 9 ? "9+" : String(count);
 }
+
+/** A notification sitting on the phone, with the inbox row it came from. */
+export type ShownNotification = { identifier: string; data: unknown };
+
+/** The inbox id a push carries (push_to_user adds 'inboxId' since 0232). */
+export function shownInboxId(n: Pick<ShownNotification, "data">): string | null {
+  const data = n.data && typeof n.data === "object" ? (n.data as Record<string, unknown>) : null;
+  const id = data?.inboxId;
+  return typeof id === "string" && id ? id : null;
+}
+
+/**
+ * Which phone notifications to take away: the ones whose inbox row is already
+ * dealt with (read, or cleared by the server once the session was marked, 0236).
+ * Anything without an inbox id, or still unread, stays.
+ */
+export function notificationsToClear(shown: ShownNotification[], dealtWith: Set<string>): string[] {
+  return shown.filter((n) => {
+    const id = shownInboxId(n);
+    return id !== null && dealtWith.has(id);
+  }).map((n) => n.identifier);
+}
