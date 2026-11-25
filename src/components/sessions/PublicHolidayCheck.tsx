@@ -53,6 +53,10 @@ export default function PublicHolidayCheck({
   const [off, setOff] = useState<string | null>(null);
   const [shown, setShown] = useState(!!startOpen);
   const [busy, setBusy] = useState<string | null>(null);
+  // Not working: each client's choice, by session (GRIZZ, 2026-11-25: "Let the
+  // trainer decide based on clients choice. Some will want to catchup. Other
+  // will be credited.").
+  const [choice, setChoice] = useState<Record<string, "catch" | "credit">>({});
   const country = trainerCountry(trainer);
 
   const load = useCallback(async () => {
@@ -110,22 +114,22 @@ export default function PublicHolidayCheck({
     setAnswered((a) => new Set([...(a ?? []), q.day]));
   };
 
-  const notWorking = async (q: Question, catchUps: boolean) => {
-    setBusy(q.day + (catchUps ? "catch" : "credit"));
+  const notWorking = async (q: Question) => {
+    setBusy(q.day + "off");
     const why = q.official ? `It's ${q.name}, a public holiday. No training that day.` : `It's ${q.name}. No training that day.`;
     const { error } = await supabase.rpc("add_trainer_holiday", { p_first: q.day, p_last: q.day, p_reason: why });
     if (error) {
       setBusy(null);
       return Alert.alert("Couldn't save", error.message);
     }
-    if (!catchUps) {
-      // Credited: not charged, nothing owed.
-      const ids = q.booked.map((s) => s.id);
-      const { data } = await supabase.from("live_sessions").select("id, charge, makeup_session_id").in("id", ids);
+    // Everyone is on the catch-up list now; the ones picked for Credit come off it (not charged).
+    const credit = q.booked.filter((s) => choice[s.id] === "credit").map((s) => s.id);
+    if (credit.length) {
+      const { data } = await supabase.from("live_sessions").select("id, charge, makeup_session_id").in("id", credit);
       const owed = (data ?? []).filter((s) => s.charge === "makeup" && !s.makeup_session_id);
       await Promise.all(owed.map((s) => supabase.rpc("decide_catch_up", { p_id: s.id, p_choice: "credit" })));
     }
-    await save(q, false, catchUps);
+    await save(q, false, credit.length === 0 ? true : credit.length === q.booked.length ? false : null);
     await rebuildDrafts(q.day);
     setBusy(null);
     setOff(null);
@@ -165,31 +169,37 @@ export default function PublicHolidayCheck({
             </Text>
             {off === q.day ? (
               <>
-                <Text style={styles.ask}>
-                  What happens to {n === 1 ? "this session" : `these ${n} sessions`}? Clients are told you're off.
-                </Text>
-                <View style={styles.actions}>
-                  <Pressable style={[styles.outline, styles.half]} onPress={() => notWorking(q, true)} disabled={!!busy}>
-                    {busy === q.day + "catch" ? (
-                      <ActivityIndicator color={themeText(BRAND_GOLD)} />
-                    ) : (
-                      <>
-                        <Text style={styles.outlineText}>🔁 Catch-ups</Text>
-                        <Text style={styles.small}>Still charged, catch-up free</Text>
-                      </>
-                    )}
-                  </Pressable>
-                  <Pressable style={[styles.green, styles.half]} onPress={() => notWorking(q, false)} disabled={!!busy}>
-                    {busy === q.day + "credit" ? (
-                      <ActivityIndicator color="#052E16" />
-                    ) : (
-                      <>
-                        <Text style={styles.greenText}>🟢 Credit</Text>
-                        <Text style={styles.greenSmall}>Not charged</Text>
-                      </>
-                    )}
-                  </Pressable>
-                </View>
+                <Text style={styles.ask}>Clients are told you're off. What does each one want?</Text>
+                {q.booked.map((sess) => {
+                  const c = choice[sess.id];
+                  const pick = (v: "catch" | "credit") => setChoice((m) => ({ ...m, [sess.id]: v }));
+                  return (
+                    <View key={sess.id} style={styles.person}>
+                      <Text style={styles.personName}>{firstName(name(sess))}</Text>
+                      <View style={styles.chips}>
+                        <Pressable style={[styles.chip, c === "catch" && styles.chipCatch]} onPress={() => pick("catch")} disabled={!!busy}>
+                          <Text style={[styles.chipText, c === "catch" && styles.chipCatchText]}>🔁 Catch-up</Text>
+                        </Pressable>
+                        <Pressable style={[styles.chip, c === "credit" && styles.chipCredit]} onPress={() => pick("credit")} disabled={!!busy}>
+                          <Text style={[styles.chipText, c === "credit" && styles.chipCreditText]}>🟢 Credit</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })}
+                <Text style={styles.small}>Catch-up: still charged, the catch-up is free. Credit: not charged.</Text>
+                {(() => {
+                  const left = q.booked.filter((x) => !choice[x.id]).length;
+                  return (
+                    <Pressable style={[styles.button, styles.save, left > 0 && styles.dim]} onPress={() => notWorking(q)} disabled={!!busy || left > 0}>
+                      {busy === q.day + "off" ? (
+                        <ActivityIndicator color="#0F172A" />
+                      ) : (
+                        <Text style={styles.buttonText}>{left > 0 ? `Pick for ${left === n ? "each person" : `${left} more`}` : "🌴 Save my day off"}</Text>
+                      )}
+                    </Pressable>
+                  );
+                })()}
                 <Pressable onPress={() => setOff(null)} hitSlop={10} disabled={!!busy}>
                   <Text style={styles.back}>‹ Back</Text>
                 </Pressable>
@@ -229,9 +239,17 @@ const styles = themedStyles({
   half: { flexGrow: 1, flexBasis: 130 },
   outline: { borderWidth: 1, borderColor: BRAND_GOLD, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9, minWidth: 130, alignItems: "center", justifyContent: "center" },
   outlineText: { color: BRAND_GOLD, fontWeight: "700", fontSize: 14 },
-  small: { color: "#CBD5E1", fontSize: 12, marginTop: 2 },
-  green: { backgroundColor: "#22C55E", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9, minWidth: 130, alignItems: "center", justifyContent: "center" },
-  greenText: { color: "#052E16", fontWeight: "800", fontSize: 14 },
-  greenSmall: { color: "#052E16", fontSize: 12, marginTop: 2 },
+  small: { color: "#94A3B8", fontSize: 12, marginTop: 8 },
+  person: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  personName: { color: "#fff", fontSize: 15, fontWeight: "600", flex: 1, minWidth: 60 },
+  chips: { flexDirection: "row", gap: 6 },
+  chip: { borderWidth: 1, borderColor: "#475569", borderRadius: 999, paddingHorizontal: 9, paddingVertical: 7 },
+  chipText: { color: "#CBD5E1", fontSize: 13, fontWeight: "600" },
+  chipCatch: { backgroundColor: BRAND_GOLD, borderColor: BRAND_GOLD },
+  chipCatchText: { color: "#0F172A" },
+  chipCredit: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
+  chipCreditText: { color: "#052E16" },
+  save: { marginTop: 12, paddingVertical: 12 },
+  dim: { opacity: 0.5 },
   back: { color: BRAND_GOLD, fontSize: 14, fontWeight: "600", marginTop: 10 },
 });

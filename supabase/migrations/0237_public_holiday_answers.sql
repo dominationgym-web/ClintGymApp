@@ -9,8 +9,9 @@
 --   * working = true: nothing changes.
 --   * working = false: the app adds a one-day coach holiday
 --     (add_trainer_holiday), so the sessions are cancelled free and go on the
---     catch-up list like any holiday, or are credited straight away when the
---     trainer picks Credit (catch_ups = false).
+--     catch-up list like any holiday; the trainer picks Catch-up or Credit for
+--     each client (GRIZZ: "Some will want to catchup. Other will be
+--     credited."). catch_ups: true all catch-ups, false all credit, null mixed.
 
 create table if not exists public.trainer_public_holiday_answers (
   trainer_id uuid not null references public.trainers (id) on delete cascade,
