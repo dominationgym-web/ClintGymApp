@@ -27,6 +27,7 @@ import {
   type HrInputs,
   type HrTally,
   type HrZone,
+  type HrZoneKey,
 } from "@/lib/heartRateZones";
 import { connectStrap, lastStrap, scanForStraps, strapSupported, type FoundStrap, type ScanProblem, type StrapConnection } from "@/lib/heartRateStrap";
 import { MONITOR_BRANDS } from "@/lib/watchBroadcast";
@@ -56,7 +57,7 @@ const PROBLEM_TEXT: Record<ScanProblem, string> = {
 export default function HeartRateScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<ClientStackParamList, "HeartRate">>();
-  return <HeartRateSession mode={route.params?.mode ?? "session"} onClose={() => navigation.goBack()} />;
+  return <HeartRateSession mode={route.params?.mode ?? "session"} zone={route.params?.zone} onClose={() => navigation.goBack()} />;
 }
 
 export type HrStatus = { hr: number | null; colour: string; running: boolean };
@@ -70,11 +71,14 @@ export type HrStatus = { hr: number | null; colour: string; running: boolean };
  */
 export function HeartRateSession({
   mode,
+  zone,
   onClose,
   onStatus,
   active = true,
 }: {
   mode: "session" | "resting";
+  /** The zone they tapped to aim for; otherwise the coach's main goal. */
+  zone?: HrZoneKey;
   onClose: () => void;
   onStatus?: (s: HrStatus) => void;
   /** false while tucked away, so the phone's Back button goes to the workout. */
@@ -134,8 +138,8 @@ export function HeartRateSession({
   // The trainer can use zones they've worked out but not sent yet.
   const inputs: HrInputs | null = row && (row.sent_at || live) ? inputsFromSaved(row) : null;
   const zones = useMemo(() => (inputs ? buildZones(inputs) : null), [row]); // eslint-disable-line react-hooks/exhaustive-deps
-  const target = zones ? zoneForGoal(zones, row?.goal ?? "fat") : null;
-  const goalLabel = HR_GOALS.find((g) => g.key === (row?.goal ?? "fat"))?.label ?? "";
+  const target = zones ? (zones.find((z) => z.key === zone) ?? zoneForGoal(zones, row?.goal ?? "fat")) : null;
+  const goalLabel = zone && target ? target.name : (HR_GOALS.find((g) => g.key === (row?.goal ?? "fat"))?.label ?? "");
 
   const credit = useRef<() => void>(() => undefined);
   const onBeat = useCallback((bpm: number) => {

@@ -56,15 +56,21 @@ export default function HeartRateZonesScreen() {
             <Text style={styles.kicker}>FROM {coach.toUpperCase()}</Text>
             <Text style={styles.title}>Your heart rate zones</Text>
             <Text style={styles.sub}>I've worked these out for your body and fitness{exercise ? `, for ${exercise}` : ""}.</Text>
-            <View style={styles.hero}>
+            <Pressable
+              style={styles.hero}
+              onPress={() => navigation.navigate("HeartRate", { mode: "session", zone: target.key })}
+              accessibilityRole="button"
+              accessibilityLabel="Start the speedometer in your zone"
+            >
               <Text style={styles.heroKicker}>TRAIN HERE</Text>
               <Text style={[styles.heroBpm, { color: target.colour }]}>
                 {target.low}–{target.high}
               </Text>
               <Text style={styles.heroName}>bpm · {goal.label}</Text>
-            </View>
-            <Text style={styles.label}>WHAT EACH ZONE DOES</Text>
-            <HrZoneList zones={zones} target={target} mode="about" />
+              <Text style={styles.heroGo}>▶ Tap to start</Text>
+            </Pressable>
+            <Text style={styles.label}>OR TAP ANY ZONE TO TRAIN IN IT</Text>
+            <HrZoneList zones={zones} target={target} mode="about" onPick={(z) => navigation.navigate("HeartRate", { mode: "session", zone: z.key })} />
           </>
         ) : (
           <>
@@ -80,14 +86,7 @@ export default function HeartRateZonesScreen() {
           </Text>
         </Pressable>
       </ScrollView>
-      {zones && (
-        <View style={styles.footer}>
-          <Pressable style={styles.main} onPress={() => navigation.navigate("HeartRate", { mode: "session" })} accessibilityRole="button">
-            <Text style={styles.mainText}>Start a heart rate session</Text>
-          </Pressable>
-          <SafeBottom />
-        </View>
-      )}
+      <SafeBottom />
     </View>
   );
 }
@@ -102,6 +101,7 @@ const styles = themedStyles({
   heroKicker: { color: "#94A3B8", fontSize: 13, fontWeight: "800", letterSpacing: 0.6 },
   heroBpm: { fontSize: 42, fontWeight: "900", letterSpacing: -1 },
   heroName: { color: "#F1F5F9", fontSize: 15, fontWeight: "700" },
+  heroGo: { color: "#22C55E", fontSize: 14, fontWeight: "900", marginTop: 6 },
   label: { color: "#94A3B8", fontSize: 13, fontWeight: "800", letterSpacing: 0.6, marginTop: 16, marginBottom: 8 },
   secondary: { marginTop: 12, borderRadius: 14, borderWidth: 1, borderColor: "#334155", backgroundColor: "#1E293B", paddingVertical: 14, alignItems: "center" },
   secondaryText: { color: "#F1F5F9", fontWeight: "700", fontSize: 15 },
