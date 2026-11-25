@@ -6,7 +6,7 @@
 // The native part only exists in app builds made after it was added. Older
 // builds that get this as an instant update simply don't show the button.
 import { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { AppState, Dimensions, Platform } from "react-native";
 import { requireOptionalNativeModule } from "expo";
 
 type PipModule = {
@@ -61,14 +61,25 @@ export function setAutoMiniWindow(on: boolean): void {
   }
 }
 
-/** True while the app is the small floating window. */
+/**
+ * True while the app is the small floating window. The library's own event
+ * doesn't always arrive (on GRIZZ's Samsung the window showed the full-size
+ * screen), so it also checks whenever the app goes to the background or the
+ * window changes size.
+ */
 export function useInMiniWindow(): boolean {
   const [inMini, setInMini] = useState(false);
   useEffect(() => {
     const m = load();
     if (!m) return;
-    const sub = m.addListener("onPipModeChange", (e) => setInMini(!!e?.isInPipMode));
-    return () => sub.remove();
+    const check = () => setInMini(inMiniWindowNow());
+    const subs = [
+      m.addListener("onPipModeChange", (e) => setInMini(!!e?.isInPipMode)),
+      AppState.addEventListener("change", check),
+      Dimensions.addEventListener("change", check),
+    ];
+    check();
+    return () => subs.forEach((s) => s.remove());
   }, []);
   return inMini;
 }

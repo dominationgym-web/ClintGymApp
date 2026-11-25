@@ -45,26 +45,13 @@ function MiniWhenShrunk() {
 
   return (
     <View style={[styles.fill, { backgroundColor: bg }]} pointerEvents="none">
-      <View style={{ width: GAUGE_W * k, height: GAUGE_H * k }}>
-        <View
-          style={{
-            position: "absolute",
-            width: GAUGE_W,
-            height: GAUGE_H,
-            left: (GAUGE_W * k - GAUGE_W) / 2,
-            top: (GAUGE_H * k - GAUGE_H) / 2,
-            transform: [{ scale: k }],
-          }}
-        >
-          <HeartRateGauge zones={s.zones} target={s.target} hr={s.lost ? null : s.hr} hideLabels />
-        </View>
-      </View>
-      <Text style={[styles.hr, { color: colour, fontSize: font * 2.1 }]} numberOfLines={1}>
+      <HeartRateGauge zones={s.zones} target={s.target} hr={s.lost ? null : s.hr} size={GAUGE_W * k} hideLabels />
+      <Text allowFontScaling={false} style={[styles.hr, { color: colour, fontSize: font * 2.1 }]} numberOfLines={1}>
         {s.hr == null || s.lost ? "–" : s.hr}
-        <Text style={[styles.bpm, { fontSize: font * 0.8, color: "#CBD5E1" }]}> bpm</Text>
+        <Text allowFontScaling={false} style={[styles.bpm, { fontSize: font * 0.8, color: "#CBD5E1" }]}> bpm</Text>
       </Text>
       <View style={[styles.pill, inZone ? styles.pillIn : { borderColor: colour }]}>
-        <Text style={[styles.line, { fontSize: font, color: inZone ? "#0F172A" : colour }]} numberOfLines={1} adjustsFontSizeToFit>
+        <Text allowFontScaling={false} style={[styles.line, { fontSize: font, color: inZone ? "#0F172A" : colour }]} numberOfLines={1} adjustsFontSizeToFit>
           {line}
         </Text>
       </View>
