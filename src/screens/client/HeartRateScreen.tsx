@@ -417,7 +417,9 @@ export function HeartRateSession({
         <View style={styles.content}>
           <Text style={styles.title}>No heart rate zones yet</Text>
           <Text style={[styles.sub, { textAlign: "left" }]}>
-            {live
+            {live && client?.id === client?.trainer_id
+              ? "Work out your own zones first: Profile › My training › My heart rate zones."
+              : live
               ? `Work out ${first}'s zones first: open ${first} on the Clients tab, then Training › Heart rate zones. You don't have to send them.`
               : "Your coach hasn't sent your zones yet."}
           </Text>

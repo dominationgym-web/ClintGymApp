@@ -10,8 +10,10 @@ import { BRAND_GOLD } from "@/lib/brand";
 import { trainingLogStart } from "@/lib/trainingLog";
 import TrainerTrainingLog from "@/components/TrainerTrainingLog";
 import ProgressCard from "@/components/ProgressCard";
+import FoldSection from "@/components/FoldSection";
+import HrZonesTrainerCard from "@/components/HrZonesTrainerCard";
 import type { TrainerStackParamList } from "@/navigation/types";
-import type { WorkoutLog, WorkoutSession } from "@/types/database";
+import type { Client, WorkoutLog, WorkoutSession } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
 
 // Makes sure the trainer's own training row exists (0146), then opens their
@@ -39,12 +41,14 @@ export default function MyTraining() {
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [sessions, setSessions] = useState<Record<string, WorkoutSession>>({});
   const [opening, setOpening] = useState(false);
+  const [me, setMe] = useState<Client | null>(null);
+  const [hrOpen, setHrOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!trainer) return;
     const from = trainingLogStart(todayIso());
     const [{ data: row }, { data: logRows }, { data: sessionRows }] = await Promise.all([
-      supabase.from("clients").select("id").eq("id", trainer.id).maybeSingle(),
+      supabase.from("clients").select("*").eq("id", trainer.id).maybeSingle(),
       supabase
         .from("workout_logs")
         .select("*")
@@ -56,6 +60,7 @@ export default function MyTraining() {
       supabase.from("workout_sessions").select("*").eq("client_id", trainer.id).gte("session_date", from),
     ]);
     setStarted(!!row);
+    setMe((row as Client | null) ?? null);
     setLogs(logRows ?? []);
     setSessions(Object.fromEntries((sessionRows ?? []).map((s) => [s.session_date, s])));
   }, [trainer?.id]);
@@ -91,6 +96,14 @@ export default function MyTraining() {
         <ActivityIndicator color={themeText(BRAND_GOLD)} style={{ marginTop: 20 }} />
       ) : started ? (
         <>
+          {/* Heart rate zones and the speedometer for the trainer themselves (GRIZZ, 2026-11-25). */}
+          {me && (
+            <View style={{ marginBottom: 16 }}>
+              <FoldSection icon="❤️" title="My heart rate zones" hint="Work out your zones, then tap ❤️ HR in My workout" open={hrOpen} onToggle={() => setHrOpen((o) => !o)}>
+                <HrZonesTrainerCard client={me} trainerId={trainer.id} />
+              </FoldSection>
+            </View>
+          )}
           <Text style={styles.heading}>My last two weeks</Text>
           <Text style={styles.hint}>Tap a day to see what you lifted.</Text>
           <TrainerTrainingLog logs={logs} sessions={sessions} />
@@ -99,7 +112,7 @@ export default function MyTraining() {
           </View>
         </>
       ) : (
-        <Text style={styles.hint}>Your training log and progress graphs show here after your first workout.</Text>
+        <Text style={styles.hint}>Your training log, progress graphs and heart rate zones show here after your first workout.</Text>
       )}
     </>
   );

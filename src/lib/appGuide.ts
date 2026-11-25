@@ -431,6 +431,7 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "The app works out their five zones, each named by what it's for (Maximise fat burning, Maximise fitness, Maximise calorie burn and so on), with roughly the calories and grams of fat for 30 minutes in each. They're good estimates; exact numbers need a lab breathing test.",
         "Tap their main goal and Send. They get a notification and find Your heart rate zones, from you, in ☰ Menu → Heart rate zones, then train with the live speedometer that says HOLD THIS ZONE once they're in. Their sessions come in under Other exercise with the time in the zone, calories and fat.",
         "❤️ The same tools on your phone: in a live workout tap ❤️ HR at the top to connect the client's strap or watch and open their speedometer over the workout. Back to the workout keeps it measuring, and the top shows their heart rate in their zone colour while you log sets. Or use ❤️ Speedometer and Measure resting heart rate under Heart rate zones. Sessions you run save on the client's Other exercise. Work out their zones first (you don't have to send them).",
+        "❤️ For yourself: Profile › My training › My heart rate zones. Tap in your own details, Save my zones, then tap ❤️ HR at the top of My workout for your own speedometer.",
         "💡 Three different burns (under the zones): the difference between maximum fat burning, maximum calorie burn and after-burn, in plain words, to help you explain it to clients.",
       ],
     },
