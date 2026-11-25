@@ -324,7 +324,7 @@ export type ClientHrZones = {
   age: number | null;
   sex: "male" | "female" | null;
   fitness: "beginner" | "average" | "trained" | null;
-  exercise: "walk" | "bike" | "elliptical" | "rower" | null;
+  exercise: "walk" | "bike" | "elliptical" | "rower" | "skierg" | null;
   resting_hr: number | null;
   goal: "fat" | "fitness" | "calories" | null;
   sent_at: string | null;
