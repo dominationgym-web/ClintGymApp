@@ -56,7 +56,9 @@ export default function ToastHost() {
   const scale = y.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] });
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { top: insets.top + 8 }]}>
-      <Animated.View style={{ opacity: y, transform: [{ translateY }, { scale }] }}>
+      {/* Full width (up to 480): shrink-wrapped, Android gave the text no room and
+          showed an empty little block (GRIZZ's screenshot, 2026-11-25). */}
+      <Animated.View style={{ width: "100%", maxWidth: 480, opacity: y, transform: [{ translateY }, { scale }] }}>
         <Pressable style={styles.toast} onPress={() => clearToast(shown.id)} accessibilityRole="alert" accessibilityLiveRegion="polite">
           <View style={styles.dot} />
           <View style={{ flex: 1 }}>
