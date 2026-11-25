@@ -26,6 +26,7 @@ import DiaryPeople from "@/components/sessions/DiaryPeople";
 import PairsSection from "@/components/sessions/PairsSection";
 import { firstName, invoicePair, invoiceSide, invoiceTitle, pairOf, pairPayer, pairSides, pairTitle } from "@/lib/sessionPairs";
 import CatchUpRows from "@/components/sessions/CatchUpRows";
+import PublicHolidayCheck from "@/components/sessions/PublicHolidayCheck";
 import { catchUpCharge, type CatchUpCharge } from "@/lib/catchUpPrice";
 import AddDiaryPersonModal from "@/components/sessions/AddDiaryPersonModal";
 import AwayModal, { awayOf, awaySpan, holdOf, type AwayWho } from "@/components/sessions/AwayModal";
@@ -251,6 +252,8 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
             </Pressable>
           ) : null}
           {tab === "todo" && only === "todo" && <AwardTrainerCard />}
+          {/* Working on the public holidays? Asked before the invoices (GRIZZ, 2026-11-25). */}
+          {(tab === "todo" || tab === "invoices") && settings ? <PublicHolidayCheck sessions={sessions} drafts={drafts} name={who} onChanged={load} startOpen={tab === "invoices"} key={tab} /> : null}
           {tab === "todo" && (
             <ToDo
               todo={todo}
