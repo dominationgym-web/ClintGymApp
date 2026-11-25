@@ -1377,6 +1377,17 @@ export type ClientAway = {
   credit_sessions?: boolean;
 };
 // The coach's blocked-out time (0177): sessions in it are cancelled and not charged.
+/** The trainer's answer for one public holiday (0238). */
+export type PublicHolidayAnswer = {
+  trainer_id: string;
+  day: string;
+  name: string;
+  working: boolean;
+  /** Not working: true = catch-up list, false = credited straight away. */
+  catch_ups: boolean | null;
+  answered_at: string;
+};
+
 export type TrainerTimeOff = {
   id: string;
   trainer_id: string;
@@ -1625,6 +1636,13 @@ export interface Database {
       session_agreements: { Row: SessionAgreement; Insert: never; Update: never; Relationships: [] };
       live_sessions: { Row: LiveSession; Insert: never; Update: never; Relationships: [] };
       trainer_time_off: { Row: TrainerTimeOff; Insert: never; Update: never; Relationships: [] };
+      // Working on a public holiday? One answer per day (0238).
+      trainer_public_holiday_answers: {
+        Row: PublicHolidayAnswer;
+        Insert: Pick<PublicHolidayAnswer, "trainer_id" | "day" | "name" | "working" | "catch_ups">;
+        Update: Partial<Pick<PublicHolidayAnswer, "name" | "working" | "catch_ups">>;
+        Relationships: [];
+      };
       client_away: { Row: ClientAway; Insert: never; Update: never; Relationships: [] };
       // Clients who stopped training (0207).
       client_stops: { Row: ClientStop; Insert: never; Update: never; Relationships: [] };
