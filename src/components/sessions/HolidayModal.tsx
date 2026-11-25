@@ -5,6 +5,7 @@ import { ScrollView } from "@/components/ScrollView";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import TextInput from "@/components/TextInput";
 import { supabase } from "@/lib/supabase";
+import { fetchPaged } from "@/lib/paged";
 import { BRAND_GOLD } from "@/lib/brand";
 import { useAuth } from "@/context/AuthContext";
 import { dayKey, monthGrid, monthLabel, monthStart, shiftMonth } from "@/lib/liveSessions";
@@ -64,14 +65,19 @@ export default function HolidayModal({
   // Booked sessions from today on (to show what a holiday cancels) and how many clients hear about it.
   useEffect(() => {
     if (!visible || !trainer) return;
-    supabase
-      .from("live_sessions")
-      .select("id, starts_at, client_id, guest_name")
-      .eq("trainer_id", trainer.id)
-      .eq("status", "booked")
-      .gte("starts_at", new Date().toISOString())
-      .lt("starts_at", new Date(Date.now() + 100 * 86400000).toISOString())
-      .then(({ data }) => setSessions(data ?? []));
+    // Paged: 100 days of a busy calendar can be over 1000 sessions.
+    fetchPaged((a, b) =>
+      supabase
+        .from("live_sessions")
+        .select("id, starts_at, client_id, guest_name")
+        .eq("trainer_id", trainer.id)
+        .eq("status", "booked")
+        .gte("starts_at", new Date().toISOString())
+        .lt("starts_at", new Date(Date.now() + 100 * 86400000).toISOString())
+        .order("starts_at")
+        .order("id")
+        .range(a, b)
+    ).then(({ data }) => setSessions(data));
     supabase
       .from("clients")
       .select("id", { count: "exact", head: true })

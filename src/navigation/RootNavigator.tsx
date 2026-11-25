@@ -16,6 +16,7 @@ import AuthNavigator from "@/navigation/AuthNavigator";
 import KeyboardSafe from "@/components/KeyboardSafe";
 import ClientNavigator from "@/navigation/ClientNavigator";
 import TrainerNavigator from "@/navigation/TrainerNavigator";
+import { shouldBlockScreenshots, useBlockScreenshots } from "@/lib/screenshotBlock";
 import IntakeFormScreen from "@/screens/client/IntakeFormScreen";
 import AwardPitchCard from "@/components/award/AwardPitchCard";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
@@ -77,6 +78,8 @@ export default function RootNavigator() {
   const { role, loading, client, trainer } = useAuth();
   const themeChosen = useThemeChosen();
   const locked = useLockedOut(role, role === "trainer" ? trainer : client);
+  // No screenshots once signed in (GRIZZ, 2026-11-25).
+  useBlockScreenshots(shouldBlockScreenshots(role));
   // Trainer of the Half-Year (0194): which phone opened the app today, for the
   // fake-account check. The database ignores it while the award is off.
   useEffect(() => {

@@ -9,6 +9,7 @@ import { STABILITY_MENU_ITEM } from "@/lib/stability";
 import { RECOVERY_MENU_ITEM } from "@/lib/recoveryActivities";
 import { supabase } from "@/lib/supabase";
 import { TIMER_MENU_ITEM } from "@/lib/timerWorkouts";
+import { HEART_RATE_MENU_ITEM } from "@/lib/heartRateZones";
 import { VIDEO_CHECKIN_MENU_ITEM } from "@/lib/videoCheckins";
 import { CLIENT_SESSIONS_MENU_ITEM } from "@/lib/liveSessions";
 import { HELP_SETTINGS_MENU_ITEM } from "@/screens/client/HelpSettingsScreen";
@@ -94,6 +95,8 @@ export function useClientMenuItems(recheck: Recheck): MenuItem[] {
     ...(client?.live_only ? [] : [{ ...VIDEO_CHECKIN_MENU_ITEM, route: "VideoCheckIn", onPress: () => navigationRef.navigate("VideoCheckIn") }]),
     { ...RECOVERY_MENU_ITEM, route: "Recovery", onPress: () => navigationRef.navigate("Recovery") },
     ...first.map(item),
+    // Heart rate zones from the coach and live heart rate (GRIZZ, 2026-11-25, 0237).
+    { ...HEART_RATE_MENU_ITEM, route: "HeartRateZones", onPress: () => navigationRef.navigate("HeartRateZones") },
     // EMOM, Tabata and interval timers (GRIZZ, 2026-10-25).
     { ...TIMER_MENU_ITEM, route: "Timers", onPress: () => navigationRef.navigate("Timers") },
     ...(hasStability

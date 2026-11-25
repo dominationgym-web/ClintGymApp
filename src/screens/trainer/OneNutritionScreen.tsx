@@ -5,6 +5,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { TrainerStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
+import { fetchPaged } from "@/lib/paged";
 import { BRAND_GOLD } from "@/lib/brand";
 import { ScrollView } from "@/components/ScrollView";
 import { themedStyles } from "@/lib/theme";
@@ -40,13 +41,18 @@ export default function OneNutritionScreen() {
           .eq("one_on_one", true)
           .order("name"),
         // Diary-only people booked in the last 3 months or the next 2.
-        supabase
-          .from("live_sessions")
-          .select("client_id, guest_name, status")
-          .eq("trainer_id", trainer.id)
-          .is("client_id", null)
-          .gte("starts_at", new Date(Date.now() - 90 * day).toISOString())
-          .lt("starts_at", new Date(Date.now() + 60 * day).toISOString()),
+        fetchPaged((a, b) =>
+          supabase
+            .from("live_sessions")
+            .select("client_id, guest_name, status")
+            .eq("trainer_id", trainer.id)
+            .is("client_id", null)
+            .gte("starts_at", new Date(Date.now() - 90 * day).toISOString())
+            .lt("starts_at", new Date(Date.now() + 60 * day).toISOString())
+            .order("starts_at")
+            .order("id")
+            .range(a, b)
+        ),
       ]).then(([{ data: clients }, { data: sessions }]) => {
         const app: Row[] = (clients ?? []).filter((c) => c.access_status !== "expired").map((c) => ({ id: c.id, name: c.name }));
         const appKeys = new Set(app.map((c) => diaryKey(c.name)));

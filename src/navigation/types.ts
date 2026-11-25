@@ -54,6 +54,9 @@ export type ClientStackParamList = {
   Timers: { tab?: "saved" } | undefined;
   // Weekly video check-in with the coach (0155).
   VideoCheckIn: undefined;
+  // Heart rate zones from the coach (0237), and the live speedometer or a resting measurement.
+  HeartRateZones: undefined;
+  HeartRate: { mode?: "session" | "resting" } | undefined;
   // In-person sessions with the coach, cancelling and invoices (0168).
   MySessions: { tab?: "sessions" | "invoices" } | undefined;
   // Which notification groups the client gets (0159).
