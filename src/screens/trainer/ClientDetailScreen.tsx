@@ -69,6 +69,7 @@ import { archiveChanges, bringBackChanges } from "@/lib/comeback";
 import { problemColor, problemLevel } from "@/lib/clientProblems";
 import { RESET_WEEKS_TOTAL, resetName, resetNotice, resetWeekNumber } from "@/lib/resetProgram";
 import FoldSection from "@/components/FoldSection";
+import HrZonesTrainerCard from "@/components/HrZonesTrainerCard";
 import LoginHelp from "@/components/LoginHelp";
 import ClientContractFold from "@/components/sessions/ClientContractFold";
 import { whatsappLink } from "@/lib/videoCheckins";
@@ -1101,6 +1102,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
             </TrainingSection>
             <TrainingSection title="Form videos" open={trainingOpen === "videos"} onToggle={() => toggleTraining("videos")}>
               {trainer && <ClientFormVideos client={client} trainerId={trainer.id} />}
+            </TrainingSection>
+            {/* GRIZZ, 2026-11-25: personal heart rate zones, worked out and sent from here (0237). */}
+            <TrainingSection title="Heart rate zones" open={trainingOpen === "hrzones"} onToggle={() => toggleTraining("hrzones")}>
+              <HrZonesTrainerCard client={client} trainerId={trainer?.id} />
             </TrainingSection>
             <TrainingSection title="Other exercise" open={trainingOpen === "other"} onToggle={() => toggleTraining("other")}>
               <OtherActivityCard clientId={client.id} role="trainer" />

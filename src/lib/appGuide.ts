@@ -266,6 +266,19 @@ export const CLIENT_APP_GUIDE: AppGuide = {
       ],
     },
     {
+      key: "heartRate",
+      icon: "❤️",
+      title: "Heart rate zones and live heart rate",
+      where: "Menu ☰ → Heart rate zones",
+      points: [
+        "Your coach works out your own heart rate zones from your weight, age, fitness and resting heart rate, and sends them to you. Each zone says what it's for: Warm up & recover, Maximise fat burning, Maximise fitness, Maximise calorie burn and Maximise speed. Your coach's main goal for you shows in big green numbers: TRAIN HERE.",
+        "❤️ Start a heart rate session: connect a Bluetooth chest strap or arm band (Polar, Garmin, Wahoo, Coospo and others), or a Garmin, Polar, Coros, Suunto, Amazfit or Wahoo watch with heart rate broadcast turned on. Tap which one you have and follow the steps, then Find my monitor. Next time it's one tap.",
+        "The speedometer moves with your heart rate. Below your zone it says ▲ Speed up a little, in your zone it glows green and says HOLD THIS ZONE (with a buzz when you get there), and above it says ▼ Ease off a little. It counts your time in the zone, calories and fat burned. Finish saves it under Other exercise for your coach.",
+        "Measure my resting heart rate: put your monitor on, sit still for a minute (best first thing in the morning) and tap Save. Your coach uses it for your zones.",
+        "Apple Watch and Samsung Galaxy Watch can't send live heart rate yet; that's coming. Use a chest strap or arm band for now. Live heart rate needs the newest version of the app on your phone.",
+      ],
+    },
+    {
       key: "more",
       icon: "🔎",
       title: "Search and the suggestion box",
@@ -406,6 +419,18 @@ export const TRAINER_APP_GUIDE: AppGuide = {
         "The upper body, push, pull, lower body, full body, Chest & Bi and Back & Tri workouts have 15 ab reps between sets (none after heavy squats, hinges, lunges or rows, and at most 10 rounds a workout). When you save your own program, the app asks if you want abs between sets and lets you pick the reps and the exercise.",
         "Each exercise has a video and a How to do it guide, so clients know what it works and how to do it well.",
         "Clients can change an exercise when the gym is busy, always for the same body part.",
+      ],
+    },
+    {
+      key: "heartRate",
+      icon: "❤️",
+      title: "Heart rate zones for a client",
+      where: "Clients → a client → Training → Heart rate zones",
+      points: [
+        "Their weight (latest weigh-in), age and sex fill in from their profile. Tap how fit they are, what they'll do (walk / jog, bike, elliptical, rower) and their resting heart rate: the one they measured with their strap or watch, or a guess.",
+        "The app works out their five zones, each named by what it's for (Maximise fat burning, Maximise fitness, Maximise calorie burn and so on), with roughly the calories and grams of fat for 30 minutes in each. They're good estimates; exact numbers need a lab breathing test.",
+        "Tap their main goal and Send. They get a notification and find Your heart rate zones, from you, in ☰ Menu → Heart rate zones, then train with the live speedometer that says HOLD THIS ZONE once they're in. Their sessions come in under Other exercise with the time in the zone, calories and fat.",
+        "💡 Three different burns (under the zones): the difference between maximum fat burning, maximum calorie burn and after-burn, in plain words, to help you explain it to clients.",
       ],
     },
     {
