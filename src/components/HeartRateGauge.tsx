@@ -18,11 +18,14 @@ export default function HeartRateGauge({
   target,
   hr,
   size = 330,
+  hideLabels = false,
 }: {
   zones: HrZone[];
   target: HrZone;
   hr: number | null;
   size?: number;
+  /** The mini floating window is too small for the zone names. */
+  hideLabels?: boolean;
 }) {
   const min = zones[0].low - 10;
   const max = zones[zones.length - 1].high;
@@ -84,7 +87,7 @@ export default function HeartRateGauge({
           <View style={styles.edge} />
         </View>
       ))}
-      {zones.map((z) => (
+      {!hideLabels && zones.map((z) => (
         <Text key={z.key} style={[styles.label, label(z), z.key === target.key && { color: themeText("#22C55E") }]} numberOfLines={1}>
           {z.short}
         </Text>

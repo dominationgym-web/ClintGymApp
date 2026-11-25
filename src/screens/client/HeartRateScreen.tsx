@@ -26,9 +26,12 @@ import {
   zoneHint,
   type HrInputs,
   type HrTally,
+  type HrZone,
 } from "@/lib/heartRateZones";
 import { connectStrap, lastStrap, scanForStraps, strapSupported, type FoundStrap, type ScanProblem, type StrapConnection } from "@/lib/heartRateStrap";
 import { MONITOR_BRANDS } from "@/lib/watchBroadcast";
+import { setHrMini } from "@/lib/heartRateMini";
+import { enterMiniWindow, miniWindowSupported, setAutoMiniWindow } from "@/lib/miniWindow";
 import type { ClientStackParamList } from "@/navigation/types";
 import type { ClientHrZones } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
@@ -134,10 +137,12 @@ export function HeartRateSession({
   const target = zones ? zoneForGoal(zones, row?.goal ?? "fat") : null;
   const goalLabel = HR_GOALS.find((g) => g.key === (row?.goal ?? "fat"))?.label ?? "";
 
+  const credit = useRef<() => void>(() => undefined);
   const onBeat = useCallback((bpm: number) => {
     latest.current = { bpm, at: Date.now() };
     setHr(bpm);
     setLost(false);
+    credit.current();
   }, []);
 
   const connect = async (s: FoundStrap) => {
@@ -180,19 +185,59 @@ export function HeartRateSession({
     );
   };
 
-  // A second at a time: time in the zone, calories and fat (only with a fresh reading).
+  // Time in the zone, calories and fat, a second at a time (only with a fresh
+  // reading). Each heart beat reading also counts the seconds since the last
+  // count, because Android stops app timers while the app is the mini window
+  // over a movie, but the strap keeps sending.
+  const lastCredit = useRef<number | null>(null);
+  credit.current = () => {
+    const l = latest.current;
+    const now = Date.now();
+    if (phase !== "live" || paused || !inputs || !target || !l || now - l.at > 5000) {
+      lastCredit.current = null;
+      return;
+    }
+    if (lastCredit.current == null) {
+      lastCredit.current = now;
+      return;
+    }
+    let secs = Math.floor((now - lastCredit.current) / 1000);
+    if (secs < 1) return;
+    if (secs > 5) {
+      secs = 5;
+      lastCredit.current = now;
+    } else lastCredit.current += secs * 1000;
+    const zone: HrZone = target;
+    const inp: HrInputs = inputs;
+    setTally((prev) => {
+      let t = prev;
+      for (let i = 0; i < secs; i++) t = addSecond(t, l.bpm, inp, zone);
+      return t;
+    });
+    const isIn = l.bpm >= zone.low && l.bpm <= zone.high;
+    if (isIn && !wasIn.current) success();
+    wasIn.current = isIn;
+  };
   useEffect(() => {
-    if (phase !== "live" || paused || !inputs || !target) return;
-    const t = setInterval(() => {
-      const l = latest.current;
-      if (!l || Date.now() - l.at > 5000) return;
-      setTally((prev) => addSecond(prev, l.bpm, inputs, target));
-      const isIn = l.bpm >= target.low && l.bpm <= target.high;
-      if (isIn && !wasIn.current) success();
-      wasIn.current = isIn;
-    }, 1000);
+    if (phase !== "live" || paused) return;
+    const t = setInterval(() => credit.current(), 1000);
     return () => clearInterval(t);
-  }, [phase, paused, row]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase, paused]);
+
+  // The mini speedometer window (Android): what it shows, and pressing Home
+  // mid-session shrinks the app into it by itself.
+  const running = phase === "live" && !!zones && !!target;
+  useEffect(() => {
+    if (running && zones && target) setHrMini({ zones, target, hr, lost });
+  }, [running, hr, lost, target?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!running) return;
+    setAutoMiniWindow(true);
+    return () => {
+      setAutoMiniWindow(false);
+      setHrMini(null);
+    };
+  }, [running]);
 
   // Resting: a minute of readings, then the lowest 20-second average.
   useEffect(() => {
@@ -514,6 +559,11 @@ export function HeartRateSession({
         <Stat value={grams(tally.fatG)} label="fat burned" green />
         <Stat value={`~${Math.round(tally.kcal)}`} label="kcal" />
       </View>
+      {miniWindowSupported() && (
+        <Pressable style={styles.mini} onPress={enterMiniWindow} accessibilityRole="button">
+          <Text style={styles.secondaryText}>📺 Watch a movie too (small window)</Text>
+        </Pressable>
+      )}
       <View style={styles.buttons}>
         <Pressable style={styles.pause} onPress={() => setPaused((p) => !p)} accessibilityRole="button">
           <Text style={styles.pauseText}>{paused ? "Carry on" : "Pause"}</Text>
@@ -589,6 +639,7 @@ const styles = themedStyles({
   stat: { flex: 1, alignItems: "center" },
   statValue: { color: "#F1F5F9", fontSize: 22, fontWeight: "800" },
   statLabel: { color: "#94A3B8", fontSize: 12 },
+  mini: { marginHorizontal: 16, marginBottom: 10, borderRadius: 14, borderWidth: 1, borderColor: "#334155", backgroundColor: "#1E293B", paddingVertical: 12, alignItems: "center" },
   buttons: { flexDirection: "row", gap: 12, paddingHorizontal: 16 },
   pause: { flex: 1, borderRadius: 14, borderWidth: 1, borderColor: "#334155", backgroundColor: "#1E293B", paddingVertical: 16, alignItems: "center" },
   pauseText: { color: "#F1F5F9", fontWeight: "800", fontSize: 17 },

@@ -11,6 +11,7 @@ import { loadAppLock } from "@/lib/appLock";
 import { setUpNotifications } from "@/lib/notifications";
 import { setUpWebAlert } from "@/lib/webAlert";
 import ToastHost from "@/components/ToastHost";
+import HeartRateMiniWindow from "@/components/HeartRateMiniWindow";
 import {
   loadThemePreference,
   themedStyles,
@@ -45,6 +46,7 @@ export default function App() {
             <AppLockGate>{Platform.OS === "web" ? <WebFrame key={mode} /> : <RootNavigator key={mode} />}</AppLockGate>
           )}
           <ToastHost />
+          {ready && <HeartRateMiniWindow />}
         </AuthProvider>
       </FirstOpenUpdate>
     </SafeAreaProvider>

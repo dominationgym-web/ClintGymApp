@@ -138,6 +138,7 @@
         }
       ],
       "@bacons/apple-targets",
+      ["expo-pip", {}],
       [
         "react-native-ble-plx",
         {
