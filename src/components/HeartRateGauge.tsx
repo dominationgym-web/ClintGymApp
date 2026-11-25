@@ -13,11 +13,34 @@ import { reduceMotion } from "@/lib/motion";
 
 const TICKS = 61;
 
-export default function HeartRateGauge({
+const FULL = 330;
+const FULL_HEIGHT = FULL / 2 + 18;
+
+/** Smaller than full size, the whole dial is drawn full size and shrunk, so it keeps its look. */
+export default function HeartRateGauge(props: {
+  zones: HrZone[];
+  target: HrZone;
+  hr: number | null;
+  size?: number;
+  hideLabels?: boolean;
+}) {
+  const size = props.size ?? FULL;
+  if (size >= FULL) return <Dial {...props} />;
+  const k = size / FULL;
+  return (
+    <View style={{ width: FULL * k, height: FULL_HEIGHT * k }}>
+      <View style={{ position: "absolute", width: FULL, height: FULL_HEIGHT, left: (FULL * k - FULL) / 2, top: (FULL_HEIGHT * k - FULL_HEIGHT) / 2, transform: [{ scale: k }] }}>
+        <Dial {...props} size={FULL} hideLabels={props.hideLabels || k < 0.62} />
+      </View>
+    </View>
+  );
+}
+
+function Dial({
   zones,
   target,
   hr,
-  size = 330,
+  size = FULL,
   hideLabels = false,
 }: {
   zones: HrZone[];
@@ -88,7 +111,7 @@ export default function HeartRateGauge({
         </View>
       ))}
       {!hideLabels && zones.map((z) => (
-        <Text key={z.key} style={[styles.label, label(z), z.key === target.key && { color: themeText("#22C55E") }]} numberOfLines={1}>
+        <Text key={z.key} maxFontSizeMultiplier={1} style={[styles.label, label(z), z.key === target.key && { color: themeText("#22C55E") }]} numberOfLines={1}>
           {z.short}
         </Text>
       ))}

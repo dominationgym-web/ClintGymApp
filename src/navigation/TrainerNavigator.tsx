@@ -209,7 +209,7 @@ export default function TrainerNavigator() {
             >
               {({ route, navigation }) => (
                 <LiveClientProvider clientId={route.params.clientId}>
-                  <HeartRateSession mode={route.params.mode ?? "session"} onClose={() => navigation.goBack()} />
+                  <HeartRateSession mode={route.params.mode ?? "session"} zone={route.params.zone} onClose={() => navigation.goBack()} />
                 </LiveClientProvider>
               )}
             </Stack.Screen>

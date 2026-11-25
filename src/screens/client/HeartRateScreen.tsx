@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Text, View, useWindowDimensions } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
 import Pressable from "@/components/Pressable";
 import { ScrollView } from "@/components/ScrollView";
@@ -27,6 +27,7 @@ import {
   type HrInputs,
   type HrTally,
   type HrZone,
+  type HrZoneKey,
 } from "@/lib/heartRateZones";
 import { connectStrap, lastStrap, scanForStraps, strapSupported, type FoundStrap, type ScanProblem, type StrapConnection } from "@/lib/heartRateStrap";
 import { MONITOR_BRANDS } from "@/lib/watchBroadcast";
@@ -45,6 +46,8 @@ import { themeText, themedStyles } from "@/lib/theme";
 
 type Phase = "connect" | "scanning" | "connecting" | "live" | "resting" | "done";
 const RESTING_SECONDS = 60;
+// The live speedometer is drawn to fit one screen: big phone text grows it only a little.
+const FONT_CAP = 1.15;
 
 const PROBLEM_TEXT: Record<ScanProblem, string> = {
   not_here: "This needs the newest version of the app.",
@@ -56,7 +59,7 @@ const PROBLEM_TEXT: Record<ScanProblem, string> = {
 export default function HeartRateScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<ClientStackParamList, "HeartRate">>();
-  return <HeartRateSession mode={route.params?.mode ?? "session"} onClose={() => navigation.goBack()} />;
+  return <HeartRateSession mode={route.params?.mode ?? "session"} zone={route.params?.zone} onClose={() => navigation.goBack()} />;
 }
 
 export type HrStatus = { hr: number | null; colour: string; running: boolean };
@@ -70,11 +73,14 @@ export type HrStatus = { hr: number | null; colour: string; running: boolean };
  */
 export function HeartRateSession({
   mode,
+  zone,
   onClose,
   onStatus,
   active = true,
 }: {
   mode: "session" | "resting";
+  /** The zone they tapped to aim for; otherwise the coach's main goal. */
+  zone?: HrZoneKey;
   onClose: () => void;
   onStatus?: (s: HrStatus) => void;
   /** false while tucked away, so the phone's Back button goes to the workout. */
@@ -99,6 +105,8 @@ export function HeartRateSession({
   const [restSamples, setRestSamples] = useState<number[]>([]);
   const [restResult, setRestResult] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [midHeight, setMidHeight] = useState(0);
+  const { width: winWidth, fontScale } = useWindowDimensions();
 
   const stopScan = useRef<() => void>(() => undefined);
   const conn = useRef<StrapConnection | null>(null);
@@ -134,8 +142,8 @@ export function HeartRateSession({
   // The trainer can use zones they've worked out but not sent yet.
   const inputs: HrInputs | null = row && (row.sent_at || live) ? inputsFromSaved(row) : null;
   const zones = useMemo(() => (inputs ? buildZones(inputs) : null), [row]); // eslint-disable-line react-hooks/exhaustive-deps
-  const target = zones ? zoneForGoal(zones, row?.goal ?? "fat") : null;
-  const goalLabel = HR_GOALS.find((g) => g.key === (row?.goal ?? "fat"))?.label ?? "";
+  const target = zones ? (zones.find((z) => z.key === zone) ?? zoneForGoal(zones, row?.goal ?? "fat")) : null;
+  const goalLabel = zone && target ? target.name : (HR_GOALS.find((g) => g.key === (row?.goal ?? "fat"))?.label ?? "");
 
   const credit = useRef<() => void>(() => undefined);
   const onBeat = useCallback((bpm: number) => {
@@ -503,56 +511,60 @@ export function HeartRateSession({
   // ---- Live speedometer ----
   const hint = hr == null ? null : zoneHint(target, hr);
   const inZone = hint?.kind === "in";
+  // The dial shrinks to leave room for the bpm and banner, so nothing overlaps
+  // on small phones or with big text (GRIZZ's screenshot, 2026-11-25).
+  const textRoom = 210 * Math.min(FONT_CAP, fontScale);
+  const gaugeSize = Math.max(170, Math.min(330, winWidth - 32, midHeight > 0 ? (midHeight - textRoom) / 0.56 : 330));
   const hrColour = hint == null ? "#F1F5F9" : inZone ? "#22C55E" : hint.kind === "below" ? BRAND_GOLD : "#F97316";
   return (
     <View style={[styles.page, inZone && styles.pageIn]}>
       <KeepScreenOn />
       <View style={styles.liveTop}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.liveGoal}>{goalLabel}</Text>
-          <Text style={styles.liveClock}>{clock(tally.seconds)}</Text>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.liveGoal} numberOfLines={1} adjustsFontSizeToFit>{goalLabel}</Text>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.liveClock}>{clock(tally.seconds)}</Text>
         </View>
         <View style={styles.strapPill}>
           <View style={[styles.dot, lost && { backgroundColor: "#EF4444" }]} />
-          <Text style={styles.strapText} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.strapText} numberOfLines={1}>
             {lost ? "Reconnecting…" : strap?.name}
           </Text>
         </View>
       </View>
       <View style={styles.targetBar}>
-        <Text style={styles.targetLabel}>Your zone</Text>
-        <Text style={styles.targetValue}>
+        <Text maxFontSizeMultiplier={FONT_CAP} style={styles.targetLabel}>YOUR ZONE</Text>
+        <Text maxFontSizeMultiplier={FONT_CAP} style={styles.targetValue} numberOfLines={2}>
           {target.name} · {target.low}–{target.high} bpm
         </Text>
       </View>
-      <View style={styles.liveMid}>
-        <HeartRateGauge zones={zones} target={target} hr={hr} />
-        <Text style={[styles.liveHr, { color: themeText(hrColour) }]}>
+      <View style={styles.liveMid} onLayout={(e) => setMidHeight(e.nativeEvent.layout.height)}>
+        <HeartRateGauge zones={zones} target={target} hr={hr} size={gaugeSize} />
+        <Text maxFontSizeMultiplier={FONT_CAP} style={[styles.liveHr, { color: themeText(hrColour), fontSize: Math.max(56, (84 * gaugeSize) / 330), marginTop: gaugeSize < 330 ? -6 : -24 }]}>
           {hr ?? "–"}
-          <Text style={styles.bpm}> bpm</Text>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.bpm}> bpm</Text>
         </Text>
         {hint == null ? (
-          <Text style={styles.sub}>Waiting for your heart rate…</Text>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.sub}>Waiting for your heart rate…</Text>
         ) : inZone ? (
           <>
             <View style={styles.holdBanner}>
-              <Text style={styles.holdText}>HOLD THIS ZONE</Text>
+              <Text maxFontSizeMultiplier={FONT_CAP} style={styles.holdText} numberOfLines={1} adjustsFontSizeToFit>HOLD THIS ZONE</Text>
             </View>
-            <Text style={styles.sub}>Perfect pace. Keep it right here.</Text>
+            <Text maxFontSizeMultiplier={FONT_CAP} style={styles.sub}>Perfect pace. Keep it right here.</Text>
           </>
         ) : (
           <>
             <View style={[styles.hintBanner, { borderColor: hrColour }]}>
-              <Text style={[styles.hintText, { color: themeText(hrColour) }]}>{hint.kind === "below" ? "▲ Speed up a little" : "▼ Ease off a little"}</Text>
+              <Text maxFontSizeMultiplier={FONT_CAP} style={[styles.hintText, { color: themeText(hrColour) }]} numberOfLines={1} adjustsFontSizeToFit>{hint.kind === "below" ? "▲ Speed up a little" : "▼ Ease off a little"}</Text>
             </View>
-            <Text style={styles.sub}>
+            <Text maxFontSizeMultiplier={FONT_CAP} style={styles.sub}>
               {hint.kind === "below"
                 ? `${hint.beats} more beat${hint.beats === 1 ? "" : "s"} to reach your zone`
                 : `${hint.beats} beat${hint.beats === 1 ? "" : "s"} too high. Slow down to get back in.`}
             </Text>
           </>
         )}
-        {paused && <Text style={styles.problem}>Paused</Text>}
+        {paused && <Text maxFontSizeMultiplier={FONT_CAP} style={styles.problem}>Paused</Text>}
       </View>
       <View style={styles.stats}>
         <Stat value={clock(tally.inZoneSeconds)} label="in zone" green />
@@ -561,15 +573,15 @@ export function HeartRateSession({
       </View>
       {miniWindowSupported() && (
         <Pressable style={styles.mini} onPress={enterMiniWindow} accessibilityRole="button">
-          <Text style={styles.secondaryText}>📺 Watch a movie too (small window)</Text>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.secondaryText} numberOfLines={1} adjustsFontSizeToFit>📺 Watch a movie too (small window)</Text>
         </Pressable>
       )}
       <View style={styles.buttons}>
         <Pressable style={styles.pause} onPress={() => setPaused((p) => !p)} accessibilityRole="button">
-          <Text style={styles.pauseText}>{paused ? "Carry on" : "Pause"}</Text>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.pauseText}>{paused ? "Carry on" : "Pause"}</Text>
         </Pressable>
         <Pressable style={[styles.main, { flex: 1 }]} onPress={finish} accessibilityRole="button">
-          <Text style={styles.mainText}>Finish</Text>
+          <Text maxFontSizeMultiplier={FONT_CAP} style={styles.mainText}>Finish</Text>
         </Pressable>
       </View>
       <SafeBottom />
@@ -585,8 +597,8 @@ function grams(g: number): string {
 function Stat({ value, label, green }: { value: string; label: string; green?: boolean }) {
   return (
     <View style={styles.stat}>
-      <Text style={[styles.statValue, green && { color: themeText("#22C55E") }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text maxFontSizeMultiplier={FONT_CAP} numberOfLines={1} adjustsFontSizeToFit style={[styles.statValue, green && { color: themeText("#22C55E") }]}>{value}</Text>
+      <Text maxFontSizeMultiplier={FONT_CAP} numberOfLines={1} style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -625,9 +637,9 @@ const styles = themedStyles({
   strapPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#1E293B", borderRadius: 20, paddingVertical: 6, paddingHorizontal: 10, maxWidth: 170 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#22C55E" },
   strapText: { color: "#94A3B8", fontSize: 12 },
-  targetBar: { marginHorizontal: 16, marginTop: 12, backgroundColor: "#1E293B", borderWidth: 1, borderColor: "#334155", borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, flexDirection: "row", justifyContent: "space-between", gap: 8 },
-  targetLabel: { color: "#94A3B8", fontSize: 14 },
-  targetValue: { color: BRAND_GOLD, fontSize: 14, fontWeight: "800", flexShrink: 1, textAlign: "right" },
+  targetBar: { marginHorizontal: 16, marginTop: 10, backgroundColor: "#1E293B", borderWidth: 1, borderColor: "#334155", borderRadius: 14, paddingVertical: 8, paddingHorizontal: 14, alignItems: "center" },
+  targetLabel: { color: "#94A3B8", fontSize: 12, fontWeight: "700" },
+  targetValue: { color: BRAND_GOLD, fontSize: 15, fontWeight: "800", textAlign: "center" },
   liveMid: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
   liveHr: { fontSize: 84, fontWeight: "800", letterSpacing: -2, marginTop: -24 },
   bpm: { fontSize: 16, color: "#94A3B8", fontWeight: "600", letterSpacing: 0 },
