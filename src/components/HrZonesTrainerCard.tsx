@@ -207,7 +207,13 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
             {self ? "Your" : `${first}'s`} zones · {HR_EXERCISES.find((e) => e.key === exercise)?.label.toLowerCase()}
           </Text>
           <Text style={styles.helper}>About 30 minutes in each zone. Good estimates from heart rate, body and fitness; exact numbers need a lab breathing test.</Text>
-          <HrZoneList zones={zones} target={target} mode="estimates" />
+          <Text style={styles.helper}>Tap a zone to open the speedometer in it.</Text>
+          <HrZoneList
+            zones={zones}
+            target={target}
+            mode="estimates"
+            onPick={(z) => inputs && navigation.navigate("HeartRateLive", { clientId: client.id, name: client.name, mode: "session", zone: z.key, inputs })}
+          />
           <Text style={styles.label}>{self ? "Your main goal" : `${first}'s main goal`}</Text>
           <View style={styles.chips}>{HR_GOALS.map((g) => chip(goal === g.key, g.label, () => setGoal(g.key), g.key))}</View>
           <Pressable style={[styles.send, (sending || !trainerId) && { opacity: 0.6 }]} onPress={send} disabled={sending || !trainerId} accessibilityRole="button">

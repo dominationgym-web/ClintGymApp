@@ -19,7 +19,7 @@
 // These are good estimates, not lab numbers: exact fuel use needs a breathing test.
 
 export type HrFitness = "beginner" | "average" | "trained";
-export type HrExercise = "walk" | "bike" | "elliptical" | "rower";
+export type HrExercise = "walk" | "bike" | "elliptical" | "rower" | "skierg";
 export type HrGoal = "fat" | "fitness" | "calories";
 export type HrSex = "male" | "female";
 export type HrZoneKey = "recover" | "fat" | "fitness" | "calories" | "speed";
@@ -35,6 +35,7 @@ export const HR_EXERCISES: { key: HrExercise; label: string; activity: "walk" | 
   { key: "bike", label: "Bike", activity: "cycle" },
   { key: "elliptical", label: "Elliptical", activity: "other" },
   { key: "rower", label: "Rower", activity: "other" },
+  { key: "skierg", label: "Ski Erg", activity: "other" },
 ];
 
 export const HR_GOALS: { key: HrGoal; label: string; zone: HrZoneKey }[] = [
