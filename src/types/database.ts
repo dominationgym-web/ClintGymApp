@@ -1358,7 +1358,7 @@ export type ClientAway = {
   credit_sessions?: boolean;
 };
 // The coach's blocked-out time (0177): sessions in it are cancelled and not charged.
-/** The trainer's answer for one public holiday (0237). */
+/** The trainer's answer for one public holiday (0238). */
 export type PublicHolidayAnswer = {
   trainer_id: string;
   day: string;
@@ -1616,7 +1616,7 @@ export interface Database {
       session_agreements: { Row: SessionAgreement; Insert: never; Update: never; Relationships: [] };
       live_sessions: { Row: LiveSession; Insert: never; Update: never; Relationships: [] };
       trainer_time_off: { Row: TrainerTimeOff; Insert: never; Update: never; Relationships: [] };
-      // Working on a public holiday? One answer per day (0237).
+      // Working on a public holiday? One answer per day (0238).
       trainer_public_holiday_answers: {
         Row: PublicHolidayAnswer;
         Insert: Pick<PublicHolidayAnswer, "trainer_id" | "day" | "name" | "working" | "catch_ups">;
