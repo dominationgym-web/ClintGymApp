@@ -25,6 +25,8 @@ import { ClientAppGuideScreen } from "@/screens/AppGuideScreen";
 import StabilityScreen from "@/screens/client/StabilityScreen";
 import RecoveryScreen from "@/screens/client/RecoveryScreen";
 import TimersScreen from "@/screens/TimersScreen";
+import HeartRateZonesScreen from "@/screens/client/HeartRateZonesScreen";
+import HeartRateScreen from "@/screens/client/HeartRateScreen";
 import VideoCheckInScreen from "@/screens/client/VideoCheckInScreen";
 import MySessionsScreen from "@/screens/client/MySessionsScreen";
 import SectionsMenuButton from "@/components/SectionsMenuButton";
@@ -193,6 +195,8 @@ export default function ClientNavigator() {
             <Stack.Screen name="AppGuide" component={ClientAppGuideScreen} options={{ title: "How to use the app", headerBackTitle: "Back" }} />
             <Stack.Screen name="Stability" component={StabilityScreen} options={{ title: "Stability", headerBackTitle: "Back" }} />
             <Stack.Screen name="Recovery" component={RecoveryScreen} options={{ title: "Recovery", headerBackTitle: "Back" }} />
+            <Stack.Screen name="HeartRateZones" component={HeartRateZonesScreen} options={{ title: "Heart rate zones", headerBackTitle: "Back" }} />
+            <Stack.Screen name="HeartRate" component={HeartRateScreen} options={{ title: "Heart rate", headerBackTitle: "Back" }} />
             <Stack.Screen name="VideoCheckIn" component={VideoCheckInScreen} options={{ title: "Video check-in", headerBackTitle: "Back" }} />
             <Stack.Screen name="MySessions" component={MySessionsScreen} options={{ title: "My sessions", headerBackTitle: "Back" }} />
             <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: "Notifications", headerBackTitle: "Back" }} />

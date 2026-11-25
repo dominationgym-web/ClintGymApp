@@ -137,7 +137,15 @@
           ]
         }
       ],
-      "@bacons/apple-targets"
+      "@bacons/apple-targets",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "Connects to your heart rate chest strap or watch so the app can show your live heart rate and guide you into your training zone."
+        }
+      ]
     ],
     "owner": "grizzly75",
     "extra": {

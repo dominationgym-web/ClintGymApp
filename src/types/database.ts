@@ -315,6 +315,25 @@ export type ClientBodyStat = {
   created_at: string;
 };
 
+// Personal heart rate zones the trainer worked out and sent (0237); the zones
+// themselves come from src/lib/heartRateZones.ts.
+export type ClientHrZones = {
+  client_id: string;
+  trainer_id: string;
+  weight_kg: number | null;
+  age: number | null;
+  sex: "male" | "female" | null;
+  fitness: "beginner" | "average" | "trained" | null;
+  exercise: "walk" | "bike" | "elliptical" | "rower" | null;
+  resting_hr: number | null;
+  goal: "fat" | "fitness" | "calories" | null;
+  sent_at: string | null;
+  // Measured by the client's own strap or watch (set_my_resting_hr).
+  measured_resting_hr: number | null;
+  measured_on: string | null;
+  updated_at: string;
+};
+
 export type ClientActivity = {
   id: string;
   client_id: string;
@@ -1523,6 +1542,7 @@ export interface Database {
       };
       client_cardio_tests: { Row: ClientCardioTest; Insert: Partial<ClientCardioTest>; Update: Partial<ClientCardioTest>; Relationships: [] };
       client_body_stats: { Row: ClientBodyStat; Insert: Partial<ClientBodyStat>; Update: Partial<ClientBodyStat>; Relationships: [] };
+      client_hr_zones: { Row: ClientHrZones; Insert: Partial<ClientHrZones>; Update: Partial<ClientHrZones>; Relationships: [] };
       client_activities: { Row: ClientActivity; Insert: Partial<ClientActivity>; Update: Partial<ClientActivity>; Relationships: [] };
       client_sleep: { Row: ClientSleep; Insert: Partial<ClientSleep>; Update: Partial<ClientSleep>; Relationships: [] };
       client_notification_prefs: {
@@ -1764,6 +1784,7 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      set_my_resting_hr: { Args: { p_bpm: number }; Returns: undefined };
       acknowledge_habit_win: { Args: { p_win: string; p_message: string }; Returns: undefined };
       mark_video_viewed: { Args: { p_video: string }; Returns: undefined };
       plan_workouts_left: { Args: { p_plan_id: string }; Returns: number };
