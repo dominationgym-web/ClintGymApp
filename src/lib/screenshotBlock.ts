@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Platform } from "react-native";
+import { SCREENSHOT_BLOCK_ON } from "@/lib/screenshotFlag";
 
 // Screenshots and screen recordings blocked inside the app (GRIZZ, 2026-11-25:
 // "especially on the trainer side"), through expo-screen-capture.
@@ -31,6 +32,7 @@ function screenCapture(): ScreenCapture | null {
 
 /** Who gets screenshots blocked. Signed-out screens (log in, sign up) stay open. */
 export function shouldBlockScreenshots(role: string | null): boolean {
+  if (!SCREENSHOT_BLOCK_ON) return false;
   return role === "trainer" || role === "client";
 }
 
