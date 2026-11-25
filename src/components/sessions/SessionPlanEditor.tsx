@@ -21,7 +21,7 @@ import { themeBg, themeText, themedStyles } from "@/lib/theme";
 
 // One client's session deal (0168): their fee (starts at the trainer's
 // normal fee), sessions a week, cancellation rule, billing and regular times.
-// Saving fills the calendar with the regular times to the end of next month.
+// Saving fills the calendar with the regular times 6 months ahead.
 export default function SessionPlanEditor({
   clientId,
   clientName,
@@ -147,7 +147,7 @@ export default function SessionPlanEditor({
     Alert.alert(
       "Saved ✅",
       regular.length && active
-        ? `${regularLabel(regular)} is filled in to the end of next month. ${plan ? "" : `${first} has been asked to sign the agreement.`}`
+        ? `${regularLabel(regular)} is filled in 6 months ahead. ${plan ? "" : `${first} has been asked to sign the agreement.`}`
         : "Add one-off sessions by tapping a day on the Calendar tab."
     );
   };

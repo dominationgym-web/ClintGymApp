@@ -12,6 +12,7 @@ import ScreenTabBar, { type ScreenTab } from "@/components/ScreenTabBar";
 import SessionMonthCalendar from "@/components/sessions/SessionMonthCalendar";
 import SessionActionsModal from "@/components/sessions/SessionActionsModal";
 import { refreshCalendarWidget } from "@/lib/calendarWidgetSync";
+import { fetchPaged } from "@/lib/paged";
 import ClientContractFold from "@/components/sessions/ClientContractFold";
 import SessionPlanEditor from "@/components/sessions/SessionPlanEditor";
 import ContractEditor from "@/components/sessions/ContractEditor";
@@ -168,7 +169,10 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
       supabase.from("clients").select("id, name, phone, email, live_only, one_on_one").eq("trainer_id", trainer.id).neq("id", trainer.id).is("archived_at", null).order("name"),
-      supabase.from("live_sessions").select("*").eq("trainer_id", trainer.id).gte("starts_at", from).lt("starts_at", to).order("starts_at"),
+      // Paged: months of weekly sessions can be over 1000 rows (0237).
+      fetchPaged<LiveSession>((a, b) =>
+        supabase.from("live_sessions").select("*").eq("trainer_id", trainer.id).gte("starts_at", from).lt("starts_at", to).order("starts_at").order("id").range(a, b)
+      ),
       supabase.from("session_invoices").select("*").eq("trainer_id", trainer.id).eq("status", "draft").order("month"),
       supabase.from("client_away").select("*").eq("trainer_id", trainer.id).is("ended_at", null).gt("until_at", new Date().toISOString()),
       supabase.from("client_stops").select("*").eq("trainer_id", trainer.id).is("undone_at", null),
