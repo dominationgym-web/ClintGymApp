@@ -169,7 +169,7 @@ export default function LiveSessionsScreen({ only }: { only?: Tab } = {}) {
       supabase.from("session_plans").select("*").eq("trainer_id", trainer.id),
       supabase.from("session_agreements").select("*").eq("trainer_id", trainer.id).order("signed_at", { ascending: false }),
       supabase.from("clients").select("id, name, phone, email, live_only, one_on_one").eq("trainer_id", trainer.id).neq("id", trainer.id).is("archived_at", null).order("name"),
-      // Paged: months of weekly sessions can be over 1000 rows (0237).
+      // Paged: months of weekly sessions can be over 1000 rows (0240).
       fetchPaged<LiveSession>((a, b) =>
         supabase.from("live_sessions").select("*").eq("trainer_id", trainer.id).gte("starts_at", from).lt("starts_at", to).order("starts_at").order("id").range(a, b)
       ),

@@ -1,5 +1,5 @@
 // Supabase hands back at most 1000 rows a request. With weekly sessions
-// filled months ahead (0237) a trainer's calendar window can hold several
+// filled months ahead (0240) a trainer's calendar window can hold several
 // thousand, so ask page by page until a short page comes back. The query
 // must have a stable order (e.g. starts_at then id) so pages don't overlap.
 export const PAGE_SIZE = 1000;
