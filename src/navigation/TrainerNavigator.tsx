@@ -39,6 +39,8 @@ import StabilityScreen from "@/screens/client/StabilityScreen";
 import { useAuth } from "@/context/AuthContext";
 import ExerciseLibraryScreen from "@/screens/client/ExerciseLibraryScreen";
 import { LiveClientProvider } from "@/context/LiveClientContext";
+import LiveHeartRateLayer from "@/components/LiveHeartRateLayer";
+import { HeartRateSession } from "@/screens/client/HeartRateScreen";
 import ReferralPopup from "@/components/ReferralPopup";
 import LinkNewClientPopup from "@/components/LinkNewClientPopup";
 import AppLockSuggestPopup from "@/components/AppLockSuggestPopup";
@@ -193,7 +195,21 @@ export default function TrainerNavigator() {
             >
               {({ route }) => (
                 <LiveClientProvider clientId={route.params.clientId} sessionId={route.params.sessionId}>
-                  <ExerciseLibraryScreen />
+                  <View style={{ flex: 1 }}>
+                    <ExerciseLibraryScreen />
+                    {/* Heart rate zones and the speedometer, over the workout (GRIZZ, 2026-11-25). */}
+                    <LiveHeartRateLayer />
+                  </View>
+                </LiveClientProvider>
+              )}
+            </Stack.Screen>
+            <Stack.Screen
+              name="HeartRateLive"
+              options={({ route }) => ({ title: `Heart rate · ${route.params.name.split(" ")[0]}`, headerBackTitle: "Back" })}
+            >
+              {({ route, navigation }) => (
+                <LiveClientProvider clientId={route.params.clientId}>
+                  <HeartRateSession mode={route.params.mode ?? "session"} onClose={() => navigation.goBack()} />
                 </LiveClientProvider>
               )}
             </Stack.Screen>

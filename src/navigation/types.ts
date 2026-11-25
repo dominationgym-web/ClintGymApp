@@ -104,6 +104,8 @@ export type TrainerStackParamList = {
   // `tab` opens the client on that tab, e.g. "training" from the recovery check;
   // `open` opens one heading on it, e.g. "videos" from the Dashboard's Watch link.
   // With no `tab` it opens on the tab the trainer used last (2026-10-27).
+  // A client's heart rate zones and speedometer run on the trainer's phone (GRIZZ, 2026-11-25).
+  HeartRateLive: { clientId: string; name: string; mode?: "session" | "resting" };
   ClientDetail: { clientId: string; tab?: "training" | "overview" | "diet"; open?: "videos" | "history" };
   // Live 1-on-1: the client's own workout screen, run by their trainer (0134).
   // `self`: the trainer training themselves (0146).

@@ -4,6 +4,9 @@ import Pressable from "@/components/Pressable";
 import NumberStepper from "@/components/NumberStepper";
 import FoldSection from "@/components/FoldSection";
 import HrZoneList from "@/components/HrZoneList";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { TrainerStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { intakeDetails } from "@/lib/dietPlan";
@@ -52,6 +55,11 @@ export const THREE_BURNS = [
 
 export default function HrZonesTrainerCard({ client, trainerId }: { client: Client; trainerId: string | undefined }) {
   const first = client.name.split(" ")[0];
+  // The trainer's own training row (0146: id = trainer_id): the same card for themselves.
+  const self = client.id === client.trainer_id;
+  const who = self ? "you" : first;
+  const whose = self ? "your" : `${first}'s`;
+  const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const intake = intakeDetails(client);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState<ClientHrZones | null>(null);
@@ -64,6 +72,9 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
   const [goal, setGoal] = useState<HrGoal>("fat");
   const [sending, setSending] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
+  // Back from measuring their resting heart rate: show the new reading.
+  const [reload, setReload] = useState(0);
+  useEffect(() => navigation.addListener("focus", () => setReload((r) => r + 1)), [navigation]);
 
   useEffect(() => {
     let live = true;
@@ -98,7 +109,7 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client.id]);
+  }, [client.id, reload]);
 
   const weightKg = Number(weight);
   const ageYears = Number(age);
@@ -131,9 +142,13 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
     }
     // Their own profile gets the sex too, if it was missing.
     if (!client.sex) await supabase.from("clients").update({ sex: inputs.sex }).eq("id", client.id);
+    setSaved((s) => ({ ...(s ?? { measured_resting_hr: null, measured_on: null }), ...row }) as ClientHrZones);
+    if (self) {
+      setSending(false);
+      return toast("Saved", "Tap ❤️ HR at the top of My workout to train in your zone.");
+    }
     const { error: told } = await supabase.from("coach_messages").insert({ client_id: client.id, trainer_id: trainerId, body: HEART_RATE_ZONES_MESSAGE });
     setSending(false);
-    setSaved((s) => ({ ...(s ?? { measured_resting_hr: null, measured_on: null }), ...row }) as ClientHrZones);
     if (told) return Alert.alert(`Saved, but ${first} wasn't told`, told.message);
     toast(`Sent to ${first}`, "They'll find them in ☰ Menu › Heart rate zones.");
   };
@@ -149,7 +164,7 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
   return (
     <View>
       <Text style={styles.helper}>
-        Filled in from {first}'s profile. Tap anything to change it.
+        Filled in from {whose} profile. Tap anything to change it.
         {saved?.sent_at ? ` Last sent ${new Date(saved.sent_at).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}.` : ""}
       </Text>
 
@@ -163,24 +178,24 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
         {chip(sex === "female", "Female", () => setSex("female"), "f")}
       </View>
 
-      <Text style={styles.label}>How fit is {first}?</Text>
+      <Text style={styles.label}>{self ? "How fit are you?" : `How fit is ${first}?`}</Text>
       <View style={styles.chips}>{HR_FITNESS.map((f) => chip(fitness === f.key, f.label, () => setFitness(f.key), f.key))}</View>
 
-      <Text style={styles.label}>What will {first} do?</Text>
+      <Text style={styles.label}>{self ? "What will you do?" : `What will ${first} do?`}</Text>
       <View style={styles.chips}>{HR_EXERCISES.map((e) => chip(exercise === e.key, e.label, () => setExercise(e.key), e.key))}</View>
 
       <Text style={styles.label}>Resting heart rate</Text>
       {measured != null && (
         <Pressable style={[styles.measured, resting === measured && styles.measuredOn]} onPress={() => setResting(measured)} accessibilityRole="button">
           <View style={{ flex: 1 }}>
-            <Text style={styles.measuredTitle}>Measured by {first}'s strap or watch</Text>
+            <Text style={styles.measuredTitle}>Measured by {whose} strap or watch</Text>
             {saved?.measured_on && <Text style={styles.helper}>On {saved.measured_on}</Text>}
           </View>
           <Text style={styles.measuredBpm}>{measured}</Text>
         </Pressable>
       )}
       <Text style={styles.helper}>
-        {measured != null ? "Or tap a guess:" : `${first} can measure it in the app with a strap or watch (☰ Menu › Heart rate zones). Until then, tap a guess:`}
+        {measured != null ? "Or tap a guess:" : self ? "Measure it with your strap or watch below, or tap a guess:" : `${first} can measure it in the app with a strap or watch (☰ Menu › Heart rate zones). Until then, tap a guess:`}
       </Text>
       <View style={styles.chips}>
         {RESTING_RANGES.map((r) => chip(resting === r.bpm && resting !== measured, r.label, () => setResting(r.bpm), r.label))}
@@ -189,19 +204,38 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
       {zones && target ? (
         <>
           <Text style={styles.label}>
-            {first}'s zones · {HR_EXERCISES.find((e) => e.key === exercise)?.label.toLowerCase()}
+            {self ? "Your" : `${first}'s`} zones · {HR_EXERCISES.find((e) => e.key === exercise)?.label.toLowerCase()}
           </Text>
           <Text style={styles.helper}>About 30 minutes in each zone. Good estimates from heart rate, body and fitness; exact numbers need a lab breathing test.</Text>
           <HrZoneList zones={zones} target={target} mode="estimates" />
-          <Text style={styles.label}>{first}'s main goal</Text>
+          <Text style={styles.label}>{self ? "Your main goal" : `${first}'s main goal`}</Text>
           <View style={styles.chips}>{HR_GOALS.map((g) => chip(goal === g.key, g.label, () => setGoal(g.key), g.key))}</View>
           <Pressable style={[styles.send, (sending || !trainerId) && { opacity: 0.6 }]} onPress={send} disabled={sending || !trainerId} accessibilityRole="button">
-            <Text style={styles.sendText}>{sending ? "Sending…" : saved?.sent_at ? `Send the new zones to ${first}` : `Send to ${first}`}</Text>
+            <Text style={styles.sendText}>{self ? (sending ? "Saving…" : "Save my zones") : sending ? "Sending…" : saved?.sent_at ? `Send the new zones to ${first}` : `Send to ${first}`}</Text>
           </Pressable>
         </>
       ) : (
         <Text style={[styles.helper, { marginTop: 10 }]}>Fill in the weight, age, sex and resting heart rate above to see the zones.</Text>
       )}
+
+      {/* The same heart rate tools the client has, on the trainer's phone (GRIZZ, 2026-11-25). */}
+      <View style={styles.liveRow}>
+        <Pressable
+          style={styles.live}
+          onPress={() => navigation.navigate("HeartRateLive", { clientId: client.id, name: client.name, mode: "session" })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.liveText}>❤️ Speedometer{self ? "" : ` with ${first}`}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.live}
+          onPress={() => navigation.navigate("HeartRateLive", { clientId: client.id, name: client.name, mode: "resting" })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.liveText}>Measure {whose} resting heart rate</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.helper}>{self ? "Also in My workout: tap ❤️ HR at the top." : "Also in a live workout: tap ❤️ HR at the top."}</Text>
 
       <View style={{ marginTop: 12 }}>
         <FoldSection icon="💡" title="Three different burns" hint="Fat burning, calorie burn and after-burn" open={tipOpen} onToggle={() => setTipOpen((o) => !o)}>
@@ -232,6 +266,9 @@ const styles = themedStyles({
   measuredBpm: { color: "#22C55E", fontWeight: "900", fontSize: 26 },
   send: { marginTop: 14, backgroundColor: BRAND_GOLD, borderRadius: 14, paddingVertical: 15, alignItems: "center" },
   sendText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
+  liveRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  live: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: "#334155", backgroundColor: "#1E293B", paddingVertical: 12, paddingHorizontal: 8, alignItems: "center", justifyContent: "center" },
+  liveText: { color: "#F1F5F9", fontWeight: "700", fontSize: 14, textAlign: "center" },
   burn: { borderLeftWidth: 4, paddingLeft: 10, marginBottom: 10 },
   burnTitle: { fontWeight: "800", fontSize: 15 },
   burnBody: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginTop: 2 },

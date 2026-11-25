@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { hrSessionRunning } from "@/lib/heartRateMini";
 import { Alert, AppState, Image, Text, View } from "react-native";
 import Pressable from "@/components/Pressable";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -39,6 +40,9 @@ export default function AppLockGate({ children }: { children: React.ReactNode })
         const since = awaySince.current;
         awaySince.current = null;
         const now = getAppLock();
+        // Coming back from the mini speedometer window mid-session: locking
+        // would end the heart rate session, so it stays open.
+        if (hrSessionRunning()) return;
         if (since != null && now.enabled && shouldLockAfterAway(Date.now() - since, now.delayMinutes)) setLocked(true);
       }
     });

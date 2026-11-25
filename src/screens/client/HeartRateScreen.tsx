@@ -7,7 +7,8 @@ import SafeBottom from "@/components/SafeBottom";
 import KeepScreenOn from "@/components/KeepScreenOn";
 import HeartRateGauge from "@/components/HeartRateGauge";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
+import { useWorkoutClient } from "@/context/LiveClientContext";
+import { toIsoDate } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { success, tick } from "@/lib/haptics";
 import { toast } from "@/lib/toast";
@@ -25,9 +26,12 @@ import {
   zoneHint,
   type HrInputs,
   type HrTally,
+  type HrZone,
 } from "@/lib/heartRateZones";
 import { connectStrap, lastStrap, scanForStraps, strapSupported, type FoundStrap, type ScanProblem, type StrapConnection } from "@/lib/heartRateStrap";
 import { MONITOR_BRANDS } from "@/lib/watchBroadcast";
+import { setHrMini } from "@/lib/heartRateMini";
+import { enterMiniWindow, miniWindowSupported, setAutoMiniWindow } from "@/lib/miniWindow";
 import type { ClientStackParamList } from "@/navigation/types";
 import type { ClientHrZones } from "@/types/database";
 import { themeText, themedStyles } from "@/lib/theme";
@@ -50,10 +54,34 @@ const PROBLEM_TEXT: Record<ScanProblem, string> = {
 };
 
 export default function HeartRateScreen() {
-  const { client } = useAuth();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<ClientStackParamList, "HeartRate">>();
-  const mode = route.params?.mode ?? "session";
+  return <HeartRateSession mode={route.params?.mode ?? "session"} onClose={() => navigation.goBack()} />;
+}
+
+export type HrStatus = { hr: number | null; colour: string; running: boolean };
+
+/**
+ * The whole heart rate flow. On the client's phone it's its own page. In a
+ * trainer's live workout (GRIZZ, 2026-11-25: "Trainer must have access to
+ * everything his clients do") it sits over the workout and can be tucked away
+ * while the strap stays connected (src/components/LiveHeartRateLayer.tsx);
+ * onStatus feeds the little heart rate button in the header.
+ */
+export function HeartRateSession({
+  mode,
+  onClose,
+  onStatus,
+  active = true,
+}: {
+  mode: "session" | "resting";
+  onClose: () => void;
+  onStatus?: (s: HrStatus) => void;
+  /** false while tucked away, so the phone's Back button goes to the workout. */
+  active?: boolean;
+}) {
+  const { client, live } = useWorkoutClient();
+  const first = client?.name.split(" ")[0] ?? "";
   const supported = useMemo(() => strapSupported(), []);
 
   const [row, setRow] = useState<ClientHrZones | null>(null);
@@ -91,23 +119,30 @@ export default function HeartRateScreen() {
     lastStrap().then(setLast);
   }, [client]);
 
+  // Leaving mid-session (e.g. the trainer taps Finish live session with the
+  // speedometer tucked away) still saves what was measured.
+  const saveOnLeave = useRef<() => void>(() => undefined);
   useEffect(
     () => () => {
       stopScan.current();
+      saveOnLeave.current();
       conn.current?.disconnect();
     },
     [],
   );
 
-  const inputs: HrInputs | null = row?.sent_at ? inputsFromSaved(row) : null;
+  // The trainer can use zones they've worked out but not sent yet.
+  const inputs: HrInputs | null = row && (row.sent_at || live) ? inputsFromSaved(row) : null;
   const zones = useMemo(() => (inputs ? buildZones(inputs) : null), [row]); // eslint-disable-line react-hooks/exhaustive-deps
   const target = zones ? zoneForGoal(zones, row?.goal ?? "fat") : null;
   const goalLabel = HR_GOALS.find((g) => g.key === (row?.goal ?? "fat"))?.label ?? "";
 
+  const credit = useRef<() => void>(() => undefined);
   const onBeat = useCallback((bpm: number) => {
     latest.current = { bpm, at: Date.now() };
     setHr(bpm);
     setLost(false);
+    credit.current();
   }, []);
 
   const connect = async (s: FoundStrap) => {
@@ -150,19 +185,59 @@ export default function HeartRateScreen() {
     );
   };
 
-  // A second at a time: time in the zone, calories and fat (only with a fresh reading).
+  // Time in the zone, calories and fat, a second at a time (only with a fresh
+  // reading). Each heart beat reading also counts the seconds since the last
+  // count, because Android stops app timers while the app is the mini window
+  // over a movie, but the strap keeps sending.
+  const lastCredit = useRef<number | null>(null);
+  credit.current = () => {
+    const l = latest.current;
+    const now = Date.now();
+    if (phase !== "live" || paused || !inputs || !target || !l || now - l.at > 5000) {
+      lastCredit.current = null;
+      return;
+    }
+    if (lastCredit.current == null) {
+      lastCredit.current = now;
+      return;
+    }
+    let secs = Math.floor((now - lastCredit.current) / 1000);
+    if (secs < 1) return;
+    if (secs > 5) {
+      secs = 5;
+      lastCredit.current = now;
+    } else lastCredit.current += secs * 1000;
+    const zone: HrZone = target;
+    const inp: HrInputs = inputs;
+    setTally((prev) => {
+      let t = prev;
+      for (let i = 0; i < secs; i++) t = addSecond(t, l.bpm, inp, zone);
+      return t;
+    });
+    const isIn = l.bpm >= zone.low && l.bpm <= zone.high;
+    if (isIn && !wasIn.current) success();
+    wasIn.current = isIn;
+  };
   useEffect(() => {
-    if (phase !== "live" || paused || !inputs || !target) return;
-    const t = setInterval(() => {
-      const l = latest.current;
-      if (!l || Date.now() - l.at > 5000) return;
-      setTally((prev) => addSecond(prev, l.bpm, inputs, target));
-      const isIn = l.bpm >= target.low && l.bpm <= target.high;
-      if (isIn && !wasIn.current) success();
-      wasIn.current = isIn;
-    }, 1000);
+    if (phase !== "live" || paused) return;
+    const t = setInterval(() => credit.current(), 1000);
     return () => clearInterval(t);
-  }, [phase, paused, row]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase, paused]);
+
+  // The mini speedometer window (Android): what it shows, and pressing Home
+  // mid-session shrinks the app into it by itself.
+  const running = phase === "live" && !!zones && !!target;
+  useEffect(() => {
+    if (running && zones && target) setHrMini({ zones, target, hr, lost });
+  }, [running, hr, lost, target?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!running) return;
+    setAutoMiniWindow(true);
+    return () => {
+      setAutoMiniWindow(false);
+      setHrMini(null);
+    };
+  }, [running]);
 
   // Resting: a minute of readings, then the lowest 20-second average.
   useEffect(() => {
@@ -186,7 +261,7 @@ export default function HeartRateScreen() {
     stopScan.current();
     conn.current?.disconnect();
     conn.current = null;
-    navigation.goBack();
+    onClose();
   };
 
   const finish = async () => {
@@ -209,22 +284,43 @@ export default function HeartRateScreen() {
     });
     setSaving(false);
     if (error) Alert.alert("Couldn't save the session", error.message);
-    else toast("Saved", "Your coach can see it under Other exercise.");
+    else toast("Saved", live ? `On ${first}'s Other exercise.` : "Your coach can see it under Other exercise.");
+  };
+
+  saveOnLeave.current = () => {
+    if (phase === "live") finish();
   };
 
   const saveResting = async () => {
     if (restResult == null) return;
     setSaving(true);
-    const { error } = await supabase.rpc("set_my_resting_hr", { p_bpm: restResult });
+    const { error } =
+      live && client
+        ? await supabase.from("client_hr_zones").upsert({
+            client_id: client.id,
+            trainer_id: client.trainer_id,
+            measured_resting_hr: restResult,
+            measured_on: toIsoDate(new Date()),
+            updated_at: new Date().toISOString(),
+          })
+        : await supabase.rpc("set_my_resting_hr", { p_bpm: restResult });
     setSaving(false);
     if (error) return Alert.alert("Couldn't save it", error.message);
-    toast("Saved", `Resting heart rate ${restResult}. Your coach will use it for your zones.`);
+    toast("Saved", live ? `${first}'s resting heart rate is ${restResult}. It's used next time you work out the zones.` : `Resting heart rate ${restResult}. Your coach will use it for your zones.`);
     leave();
   };
 
+  // The header button in a trainer's live workout shows the heart rate and zone colour.
+  useEffect(() => {
+    if (!onStatus) return;
+    const h = hr == null || !target ? null : zoneHint(target, hr);
+    const colour = h == null ? "#F1F5F9" : h.kind === "in" ? "#22C55E" : h.kind === "below" ? BRAND_GOLD : "#F97316";
+    onStatus({ hr: phase === "live" && !lost ? hr : null, colour, running: phase === "live" });
+  }, [hr, phase, lost, target?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Back closes the brand steps first, then the scan list.
-  useStepBack(phase === "connect" && brand != null, () => setBrand(null));
-  useStepBack(phase === "scanning", () => {
+  useStepBack(active && phase === "connect" && brand != null, () => setBrand(null));
+  useStepBack(active && phase === "scanning", () => {
     stopScan.current();
     setPhase("connect");
   });
@@ -360,7 +456,24 @@ export default function HeartRateScreen() {
     );
   }
 
-  if (!zones || !target || !inputs) return null;
+  if (!zones || !target || !inputs)
+    return (
+      <View style={styles.page}>
+        <View style={styles.content}>
+          <Text style={styles.title}>No heart rate zones yet</Text>
+          <Text style={[styles.sub, { textAlign: "left" }]}>
+            {live && client?.id === client?.trainer_id
+              ? "Work out your own zones first: Profile › My training › My heart rate zones."
+              : live
+              ? `Work out ${first}'s zones first: open ${first} on the Clients tab, then Training › Heart rate zones. You don't have to send them.`
+              : "Your coach hasn't sent your zones yet."}
+          </Text>
+          <Pressable style={styles.secondary} onPress={leave} accessibilityRole="button">
+            <Text style={styles.secondaryText}>Close</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
 
   // ---- Done ----
   if (phase === "done") {
@@ -378,7 +491,7 @@ export default function HeartRateScreen() {
           {tally.seconds < 60 && <Text style={styles.helper}>Under a minute, so it wasn't saved.</Text>}
         </View>
         <View style={styles.footer}>
-          <Pressable style={[styles.main, saving && { opacity: 0.6 }]} onPress={() => navigation.goBack()} disabled={saving} accessibilityRole="button">
+          <Pressable style={[styles.main, saving && { opacity: 0.6 }]} onPress={onClose} disabled={saving} accessibilityRole="button">
             <Text style={styles.mainText}>{saving ? "Saving…" : "Done"}</Text>
           </Pressable>
           <SafeBottom />
@@ -446,6 +559,11 @@ export default function HeartRateScreen() {
         <Stat value={grams(tally.fatG)} label="fat burned" green />
         <Stat value={`~${Math.round(tally.kcal)}`} label="kcal" />
       </View>
+      {miniWindowSupported() && (
+        <Pressable style={styles.mini} onPress={enterMiniWindow} accessibilityRole="button">
+          <Text style={styles.secondaryText}>📺 Watch a movie too (small window)</Text>
+        </Pressable>
+      )}
       <View style={styles.buttons}>
         <Pressable style={styles.pause} onPress={() => setPaused((p) => !p)} accessibilityRole="button">
           <Text style={styles.pauseText}>{paused ? "Carry on" : "Pause"}</Text>
@@ -521,6 +639,7 @@ const styles = themedStyles({
   stat: { flex: 1, alignItems: "center" },
   statValue: { color: "#F1F5F9", fontSize: 22, fontWeight: "800" },
   statLabel: { color: "#94A3B8", fontSize: 12 },
+  mini: { marginHorizontal: 16, marginBottom: 10, borderRadius: 14, borderWidth: 1, borderColor: "#334155", backgroundColor: "#1E293B", paddingVertical: 12, alignItems: "center" },
   buttons: { flexDirection: "row", gap: 12, paddingHorizontal: 16 },
   pause: { flex: 1, borderRadius: 14, borderWidth: 1, borderColor: "#334155", backgroundColor: "#1E293B", paddingVertical: 16, alignItems: "center" },
   pauseText: { color: "#F1F5F9", fontWeight: "800", fontSize: 17 },
