@@ -4,6 +4,9 @@ import Pressable from "@/components/Pressable";
 import NumberStepper from "@/components/NumberStepper";
 import FoldSection from "@/components/FoldSection";
 import HrZoneList from "@/components/HrZoneList";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { TrainerStackParamList } from "@/navigation/types";
 import { supabase } from "@/lib/supabase";
 import { BRAND_GOLD } from "@/lib/brand";
 import { intakeDetails } from "@/lib/dietPlan";
@@ -52,6 +55,7 @@ export const THREE_BURNS = [
 
 export default function HrZonesTrainerCard({ client, trainerId }: { client: Client; trainerId: string | undefined }) {
   const first = client.name.split(" ")[0];
+  const navigation = useNavigation<NativeStackNavigationProp<TrainerStackParamList>>();
   const intake = intakeDetails(client);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState<ClientHrZones | null>(null);
@@ -64,6 +68,9 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
   const [goal, setGoal] = useState<HrGoal>("fat");
   const [sending, setSending] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
+  // Back from measuring their resting heart rate: show the new reading.
+  const [reload, setReload] = useState(0);
+  useEffect(() => navigation.addListener("focus", () => setReload((r) => r + 1)), [navigation]);
 
   useEffect(() => {
     let live = true;
@@ -98,7 +105,7 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client.id]);
+  }, [client.id, reload]);
 
   const weightKg = Number(weight);
   const ageYears = Number(age);
@@ -203,6 +210,25 @@ export default function HrZonesTrainerCard({ client, trainerId }: { client: Clie
         <Text style={[styles.helper, { marginTop: 10 }]}>Fill in the weight, age, sex and resting heart rate above to see the zones.</Text>
       )}
 
+      {/* The same heart rate tools the client has, on the trainer's phone (GRIZZ, 2026-11-25). */}
+      <View style={styles.liveRow}>
+        <Pressable
+          style={styles.live}
+          onPress={() => navigation.navigate("HeartRateLive", { clientId: client.id, name: client.name, mode: "session" })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.liveText}>❤️ Speedometer with {first}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.live}
+          onPress={() => navigation.navigate("HeartRateLive", { clientId: client.id, name: client.name, mode: "resting" })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.liveText}>Measure {first}'s resting heart rate</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.helper}>Also in a live workout: tap ❤️ HR at the top.</Text>
+
       <View style={{ marginTop: 12 }}>
         <FoldSection icon="💡" title="Three different burns" hint="Fat burning, calorie burn and after-burn" open={tipOpen} onToggle={() => setTipOpen((o) => !o)}>
           {THREE_BURNS.map((b) => (
@@ -232,6 +258,9 @@ const styles = themedStyles({
   measuredBpm: { color: "#22C55E", fontWeight: "900", fontSize: 26 },
   send: { marginTop: 14, backgroundColor: BRAND_GOLD, borderRadius: 14, paddingVertical: 15, alignItems: "center" },
   sendText: { color: "#0F172A", fontWeight: "800", fontSize: 16 },
+  liveRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  live: { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: "#334155", backgroundColor: "#1E293B", paddingVertical: 12, paddingHorizontal: 8, alignItems: "center", justifyContent: "center" },
+  liveText: { color: "#F1F5F9", fontWeight: "700", fontSize: 14, textAlign: "center" },
   burn: { borderLeftWidth: 4, paddingLeft: 10, marginBottom: 10 },
   burnTitle: { fontWeight: "800", fontSize: 15 },
   burnBody: { color: "#CBD5E1", fontSize: 14, lineHeight: 20, marginTop: 2 },

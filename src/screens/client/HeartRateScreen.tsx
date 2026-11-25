@@ -7,7 +7,8 @@ import SafeBottom from "@/components/SafeBottom";
 import KeepScreenOn from "@/components/KeepScreenOn";
 import HeartRateGauge from "@/components/HeartRateGauge";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/context/AuthContext";
+import { useWorkoutClient } from "@/context/LiveClientContext";
+import { toIsoDate } from "@/lib/dates";
 import { BRAND_GOLD } from "@/lib/brand";
 import { success, tick } from "@/lib/haptics";
 import { toast } from "@/lib/toast";
@@ -50,10 +51,34 @@ const PROBLEM_TEXT: Record<ScanProblem, string> = {
 };
 
 export default function HeartRateScreen() {
-  const { client } = useAuth();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<ClientStackParamList, "HeartRate">>();
-  const mode = route.params?.mode ?? "session";
+  return <HeartRateSession mode={route.params?.mode ?? "session"} onClose={() => navigation.goBack()} />;
+}
+
+export type HrStatus = { hr: number | null; colour: string; running: boolean };
+
+/**
+ * The whole heart rate flow. On the client's phone it's its own page. In a
+ * trainer's live workout (GRIZZ, 2026-11-25: "Trainer must have access to
+ * everything his clients do") it sits over the workout and can be tucked away
+ * while the strap stays connected (src/components/LiveHeartRateLayer.tsx);
+ * onStatus feeds the little heart rate button in the header.
+ */
+export function HeartRateSession({
+  mode,
+  onClose,
+  onStatus,
+  active = true,
+}: {
+  mode: "session" | "resting";
+  onClose: () => void;
+  onStatus?: (s: HrStatus) => void;
+  /** false while tucked away, so the phone's Back button goes to the workout. */
+  active?: boolean;
+}) {
+  const { client, live } = useWorkoutClient();
+  const first = client?.name.split(" ")[0] ?? "";
   const supported = useMemo(() => strapSupported(), []);
 
   const [row, setRow] = useState<ClientHrZones | null>(null);
@@ -91,15 +116,20 @@ export default function HeartRateScreen() {
     lastStrap().then(setLast);
   }, [client]);
 
+  // Leaving mid-session (e.g. the trainer taps Finish live session with the
+  // speedometer tucked away) still saves what was measured.
+  const saveOnLeave = useRef<() => void>(() => undefined);
   useEffect(
     () => () => {
       stopScan.current();
+      saveOnLeave.current();
       conn.current?.disconnect();
     },
     [],
   );
 
-  const inputs: HrInputs | null = row?.sent_at ? inputsFromSaved(row) : null;
+  // The trainer can use zones they've worked out but not sent yet.
+  const inputs: HrInputs | null = row && (row.sent_at || live) ? inputsFromSaved(row) : null;
   const zones = useMemo(() => (inputs ? buildZones(inputs) : null), [row]); // eslint-disable-line react-hooks/exhaustive-deps
   const target = zones ? zoneForGoal(zones, row?.goal ?? "fat") : null;
   const goalLabel = HR_GOALS.find((g) => g.key === (row?.goal ?? "fat"))?.label ?? "";
@@ -186,7 +216,7 @@ export default function HeartRateScreen() {
     stopScan.current();
     conn.current?.disconnect();
     conn.current = null;
-    navigation.goBack();
+    onClose();
   };
 
   const finish = async () => {
@@ -209,22 +239,43 @@ export default function HeartRateScreen() {
     });
     setSaving(false);
     if (error) Alert.alert("Couldn't save the session", error.message);
-    else toast("Saved", "Your coach can see it under Other exercise.");
+    else toast("Saved", live ? `On ${first}'s Other exercise.` : "Your coach can see it under Other exercise.");
+  };
+
+  saveOnLeave.current = () => {
+    if (phase === "live") finish();
   };
 
   const saveResting = async () => {
     if (restResult == null) return;
     setSaving(true);
-    const { error } = await supabase.rpc("set_my_resting_hr", { p_bpm: restResult });
+    const { error } =
+      live && client
+        ? await supabase.from("client_hr_zones").upsert({
+            client_id: client.id,
+            trainer_id: client.trainer_id,
+            measured_resting_hr: restResult,
+            measured_on: toIsoDate(new Date()),
+            updated_at: new Date().toISOString(),
+          })
+        : await supabase.rpc("set_my_resting_hr", { p_bpm: restResult });
     setSaving(false);
     if (error) return Alert.alert("Couldn't save it", error.message);
-    toast("Saved", `Resting heart rate ${restResult}. Your coach will use it for your zones.`);
+    toast("Saved", live ? `${first}'s resting heart rate is ${restResult}. It's used next time you work out the zones.` : `Resting heart rate ${restResult}. Your coach will use it for your zones.`);
     leave();
   };
 
+  // The header button in a trainer's live workout shows the heart rate and zone colour.
+  useEffect(() => {
+    if (!onStatus) return;
+    const h = hr == null || !target ? null : zoneHint(target, hr);
+    const colour = h == null ? "#F1F5F9" : h.kind === "in" ? "#22C55E" : h.kind === "below" ? BRAND_GOLD : "#F97316";
+    onStatus({ hr: phase === "live" && !lost ? hr : null, colour, running: phase === "live" });
+  }, [hr, phase, lost, target?.key]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Back closes the brand steps first, then the scan list.
-  useStepBack(phase === "connect" && brand != null, () => setBrand(null));
-  useStepBack(phase === "scanning", () => {
+  useStepBack(active && phase === "connect" && brand != null, () => setBrand(null));
+  useStepBack(active && phase === "scanning", () => {
     stopScan.current();
     setPhase("connect");
   });
@@ -360,7 +411,22 @@ export default function HeartRateScreen() {
     );
   }
 
-  if (!zones || !target || !inputs) return null;
+  if (!zones || !target || !inputs)
+    return (
+      <View style={styles.page}>
+        <View style={styles.content}>
+          <Text style={styles.title}>No heart rate zones yet</Text>
+          <Text style={[styles.sub, { textAlign: "left" }]}>
+            {live
+              ? `Work out ${first}'s zones first: open ${first} on the Clients tab, then Training › Heart rate zones. You don't have to send them.`
+              : "Your coach hasn't sent your zones yet."}
+          </Text>
+          <Pressable style={styles.secondary} onPress={leave} accessibilityRole="button">
+            <Text style={styles.secondaryText}>Close</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
 
   // ---- Done ----
   if (phase === "done") {
@@ -378,7 +444,7 @@ export default function HeartRateScreen() {
           {tally.seconds < 60 && <Text style={styles.helper}>Under a minute, so it wasn't saved.</Text>}
         </View>
         <View style={styles.footer}>
-          <Pressable style={[styles.main, saving && { opacity: 0.6 }]} onPress={() => navigation.goBack()} disabled={saving} accessibilityRole="button">
+          <Pressable style={[styles.main, saving && { opacity: 0.6 }]} onPress={onClose} disabled={saving} accessibilityRole="button">
             <Text style={styles.mainText}>{saving ? "Saving…" : "Done"}</Text>
           </Pressable>
           <SafeBottom />
