@@ -138,6 +138,7 @@
         }
       ],
       "@bacons/apple-targets",
+      "./plugins/withNoDuplicateLocation",
       [
         "react-native-ble-plx",
         {
