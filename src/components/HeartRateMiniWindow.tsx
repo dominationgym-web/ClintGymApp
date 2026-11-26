@@ -14,6 +14,8 @@ import { themedStyles } from "@/lib/theme";
 
 const GAUGE_W = 330;
 const GAUGE_H = 183;
+// About the size of the floating window (4:3), with a little room spare.
+const BOX = { width: 150, height: 112 };
 
 export default function HeartRateMiniWindow() {
   if (!miniWindowSupported()) return null;
@@ -23,14 +25,37 @@ export default function HeartRateMiniWindow() {
 function MiniWhenShrunk() {
   const inMini = useInMiniWindow();
   const s = useHrMini();
-  const { width, height } = useWindowDimensions();
+  const win = useWindowDimensions();
   if (!inMini || !s) return null;
+  // On Samsung phones the app keeps its full-size layout in the small window
+  // and the window shows only the middle of it (GRIZZ's screenshot,
+  // 2026-11-26). So everything is drawn in a small box in the middle, sized
+  // like the floating window, never by the full screen.
+  const width = Math.min(win.width, BOX.width);
+  const height = Math.min(win.height, BOX.height);
 
   const hint = s.hr == null || s.lost ? null : zoneHint(s.target, s.hr);
   const inZone = hint?.kind === "in";
-  const colour = hint == null ? "#F1F5F9" : inZone ? "#22C55E" : hint.kind === "below" ? BRAND_GOLD : "#F97316";
-  const bg = hint == null ? "#0F172A" : inZone ? "#14532D" : hint.kind === "below" ? "#2A230C" : "#3A1606";
-  const k = Math.max(0.2, Math.min((width * 0.94) / GAUGE_W, (height * 0.5) / GAUGE_H));
+  const colour =
+    hint == null
+      ? "#F1F5F9"
+      : inZone
+        ? "#22C55E"
+        : hint.kind === "below"
+          ? BRAND_GOLD
+          : "#F97316";
+  const bg =
+    hint == null
+      ? "#0F172A"
+      : inZone
+        ? "#14532D"
+        : hint.kind === "below"
+          ? "#2A230C"
+          : "#3A1606";
+  const k = Math.max(
+    0.2,
+    Math.min((width * 0.94) / GAUGE_W, (height * 0.5) / GAUGE_H),
+  );
   const line =
     hint == null
       ? s.lost
@@ -45,25 +70,80 @@ function MiniWhenShrunk() {
 
   return (
     <View style={[styles.fill, { backgroundColor: bg }]} pointerEvents="none">
-      <HeartRateGauge zones={s.zones} target={s.target} hr={s.lost ? null : s.hr} size={GAUGE_W * k} hideLabels />
-      <Text allowFontScaling={false} style={[styles.hr, { color: colour, fontSize: font * 2.1 }]} numberOfLines={1}>
-        {s.hr == null || s.lost ? "–" : s.hr}
-        <Text allowFontScaling={false} style={[styles.bpm, { fontSize: font * 0.8, color: "#CBD5E1" }]}> bpm</Text>
-      </Text>
-      <View style={[styles.pill, inZone ? styles.pillIn : { borderColor: colour }]}>
-        <Text allowFontScaling={false} style={[styles.line, { fontSize: font, color: inZone ? "#0F172A" : colour }]} numberOfLines={1} adjustsFontSizeToFit>
-          {line}
+      <View
+        style={{
+          width,
+          height,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <HeartRateGauge
+          zones={s.zones}
+          target={s.target}
+          hr={s.lost ? null : s.hr}
+          size={GAUGE_W * k}
+          hideLabels
+        />
+        <Text
+          allowFontScaling={false}
+          style={[styles.hr, { color: colour, fontSize: font * 2.1 }]}
+          numberOfLines={1}
+        >
+          {s.hr == null || s.lost ? "–" : s.hr}
+          <Text
+            allowFontScaling={false}
+            style={[styles.bpm, { fontSize: font * 0.8, color: "#CBD5E1" }]}
+          >
+            {" "}
+            bpm
+          </Text>
         </Text>
+        <View
+          style={[
+            styles.pill,
+            inZone ? styles.pillIn : { borderColor: colour },
+          ]}
+        >
+          <Text
+            allowFontScaling={false}
+            style={[
+              styles.line,
+              { fontSize: font, color: inZone ? "#0F172A" : colour },
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            {line}
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = themedStyles({
-  fill: { position: "absolute", left: 0, top: 0, right: 0, bottom: 0, zIndex: 10000, elevation: 50, alignItems: "center", justifyContent: "center", padding: 4 },
+  fill: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10000,
+    elevation: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 4,
+  },
   hr: { fontWeight: "900", letterSpacing: -1, marginTop: -4 },
   bpm: { fontWeight: "700", letterSpacing: 0 },
-  pill: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, maxWidth: "96%" },
+  pill: {
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    maxWidth: "96%",
+  },
   pillIn: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   line: { fontWeight: "900" },
 });
